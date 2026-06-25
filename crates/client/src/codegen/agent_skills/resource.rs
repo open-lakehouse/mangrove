@@ -1,4 +1,5 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use super::builders::*;
 use super::client::AgentSkillServiceClient;
 use unitycatalog_common::models::agent_skills::v0alpha1::*;

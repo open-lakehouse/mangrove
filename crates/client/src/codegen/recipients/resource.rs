@@ -1,4 +1,5 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use super::builders::*;
 use super::client::RecipientServiceClient;
 use unitycatalog_common::models::recipients::v1::*;

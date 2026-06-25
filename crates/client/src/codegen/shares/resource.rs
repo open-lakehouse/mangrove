@@ -1,4 +1,5 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use super::builders::*;
 use super::client::ShareServiceClient;
 use unitycatalog_common::models::shares::v1::*;

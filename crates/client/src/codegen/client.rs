@@ -1,4 +1,5 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use crate::codegen::agent_skills::*;
 use crate::codegen::agents::*;
 use crate::codegen::catalogs::*;
