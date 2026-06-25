@@ -79,6 +79,7 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
         Ok(ListCredentialsResponse {
             credentials: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -90,11 +91,11 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
         let credential = CredentialContainer {
-            azure_msi: request.azure_managed_identity,
-            azure_sp: request.azure_service_principal,
-            azure_key: request.azure_storage_key,
-            aws_iam_role: request.aws_iam_role,
-            gcp_service_account: request.databricks_gcp_service_account,
+            azure_msi: request.azure_managed_identity.into_option(),
+            azure_sp: request.azure_service_principal.into_option(),
+            azure_key: request.azure_storage_key.into_option(),
+            aws_iam_role: request.aws_iam_role.into_option(),
+            gcp_service_account: request.databricks_gcp_service_account.into_option(),
         };
         credential.validate()?;
         self.put_secret(&request.name, credential.to_vec()?.into())
@@ -109,14 +110,15 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
             id: None,
             created_at: None,
             updated_at: None,
-            azure_managed_identity: None,
-            azure_service_principal: None,
-            azure_storage_key: None,
-            aws_iam_role: None,
-            databricks_gcp_service_account: None,
+            azure_managed_identity: ::buffa::MessageField::none(),
+            azure_service_principal: ::buffa::MessageField::none(),
+            azure_storage_key: ::buffa::MessageField::none(),
+            aws_iam_role: ::buffa::MessageField::none(),
+            databricks_gcp_service_account: ::buffa::MessageField::none(),
             owner: None,
             created_by: None,
             updated_by: None,
+            ..Default::default()
         };
         Ok(self.create(cred.into()).await?.0.try_into()?)
     }
@@ -141,11 +143,11 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
         let credential = CredentialContainer {
-            azure_msi: request.azure_managed_identity,
-            azure_sp: request.azure_service_principal,
-            azure_key: request.azure_storage_key,
-            aws_iam_role: request.aws_iam_role,
-            gcp_service_account: request.databricks_gcp_service_account,
+            azure_msi: request.azure_managed_identity.into_option(),
+            azure_sp: request.azure_service_principal.into_option(),
+            azure_key: request.azure_storage_key.into_option(),
+            aws_iam_role: request.aws_iam_role.into_option(),
+            gcp_service_account: request.databricks_gcp_service_account.into_option(),
         };
         credential.validate()?;
         self.put_secret(&request.name, credential.to_vec()?.into())
@@ -154,6 +156,7 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
             .get_credential(
                 GetCredentialRequest {
                     name: request.name.clone(),
+                    ..Default::default()
                 },
                 context.clone(),
             )
@@ -168,14 +171,15 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
             id: None,
             created_at: None,
             updated_at: None,
-            azure_managed_identity: None,
-            azure_service_principal: None,
-            azure_storage_key: None,
-            aws_iam_role: None,
-            databricks_gcp_service_account: None,
+            azure_managed_identity: ::buffa::MessageField::none(),
+            azure_service_principal: ::buffa::MessageField::none(),
+            azure_storage_key: ::buffa::MessageField::none(),
+            aws_iam_role: ::buffa::MessageField::none(),
+            databricks_gcp_service_account: ::buffa::MessageField::none(),
             owner: None,
             created_by: None,
             updated_by: None,
+            ..Default::default()
         };
         Ok(self
             .update(&curr.resource_ident(), cred.into())
@@ -210,15 +214,15 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
         let secret_data = self.get_secret(&cred.name).await?;
         let secret: CredentialContainer = serde_json::from_slice(&secret_data)?;
         if secret.azure_msi.is_some() {
-            cred.azure_managed_identity = secret.azure_msi;
+            cred.azure_managed_identity = secret.azure_msi.into();
         } else if secret.azure_sp.is_some() {
-            cred.azure_service_principal = secret.azure_sp;
+            cred.azure_service_principal = secret.azure_sp.into();
         } else if secret.azure_key.is_some() {
-            cred.azure_storage_key = secret.azure_key;
+            cred.azure_storage_key = secret.azure_key.into();
         } else if secret.aws_iam_role.is_some() {
-            cred.aws_iam_role = secret.aws_iam_role;
+            cred.aws_iam_role = secret.aws_iam_role.into();
         } else if secret.gcp_service_account.is_some() {
-            cred.databricks_gcp_service_account = secret.gcp_service_account;
+            cred.databricks_gcp_service_account = secret.gcp_service_account.into();
         }
         Ok(cred)
     }

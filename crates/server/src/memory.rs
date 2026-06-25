@@ -680,7 +680,7 @@ mod tests {
         let store = test_store();
         let resource: Resource = Provider {
             name: "acme".into(),
-            authentication_type: ProviderAuthenticationType::Token as i32,
+            authentication_type: ::buffa::EnumValue::Known(ProviderAuthenticationType::Token),
             comment: Some("inbound share from acme".into()),
             ..Default::default()
         }

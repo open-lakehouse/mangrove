@@ -45,12 +45,12 @@ where
     let (resource, _) = handler.get(&ident).await?;
     let table: Table = resource.try_into()?;
 
-    if table.table_type != TableType::Managed as i32 {
+    if table.table_type != ::buffa::EnumValue::Known(TableType::Managed) {
         return Err(Error::invalid_argument(
             "only managed tables support catalog-managed commits",
         ));
     }
-    if table.data_source_format != DataSourceFormat::Delta as i32 {
+    if table.data_source_format != ::buffa::EnumValue::Known(DataSourceFormat::Delta) {
         return Err(Error::invalid_argument(
             "only delta tables support catalog-managed commits",
         ));
@@ -102,7 +102,7 @@ where
         self.commit_coordinator()
             .commit(
                 &request.table_id,
-                request.commit_info,
+                request.commit_info.into_option(),
                 request.latest_backfilled_version,
             )
             .await
@@ -111,7 +111,7 @@ where
         // Apply any metadata change carried by the commit to the stored table.
         // The reference's `updateTableFromCommit` persists the commit's metadata
         // (here: the configuration/property map) as the table's new desired state.
-        if let Some(metadata) = request.metadata
+        if let Some(metadata) = request.metadata.into_option()
             && !metadata.configuration.is_empty()
         {
             let mut updated = table;
@@ -151,6 +151,7 @@ where
         Ok(GetCommitsResponse {
             commits,
             latest_table_version,
+            ..Default::default()
         })
     }
 }
@@ -183,8 +184,8 @@ mod tests {
             name: "managed_table".to_string(),
             catalog_name: "cat".to_string(),
             schema_name: "sch".to_string(),
-            table_type,
-            data_source_format: format,
+            table_type: table_type.into(),
+            data_source_format: format.into(),
             storage_location,
             ..Default::default()
         };
@@ -211,6 +212,7 @@ mod tests {
             file_name: format!("{version:020}.uuid.json"),
             file_size: 64,
             file_modification_timestamp: 2000 + version,
+            ..Default::default()
         }
     }
 
@@ -218,9 +220,10 @@ mod tests {
         CommitRequest {
             table_id: table_id.to_string(),
             table_uri: TABLE_URI.to_string(),
-            commit_info: info,
+            commit_info: info.into(),
             latest_backfilled_version: lbv,
-            metadata: None,
+            metadata: ::buffa::MessageField::none(),
+            ..Default::default()
         }
     }
 
@@ -250,6 +253,7 @@ mod tests {
                     table_uri: TABLE_URI.to_string(),
                     start_version: 0,
                     end_version: None,
+                    ..Default::default()
                 },
                 ctx(),
             )

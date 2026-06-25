@@ -1,5 +1,6 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
+#![allow(unused_imports)]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 use super::client::*;
 use crate::Result;
@@ -23,6 +24,7 @@ impl CreateStagingTableBuilder {
             name: name.into(),
             catalog_name: catalog_name.into(),
             schema_name: schema_name.into(),
+            ..Default::default()
         };
         Self { client, request }
     }

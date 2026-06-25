@@ -1,5 +1,6 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
+#![allow(unused_imports)]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 type BoxStr<'a, T> = ::futures::stream::BoxStream<'a, T>;
 use super::super::stream_paginated;
@@ -138,6 +139,7 @@ impl GetSchemaBuilder {
     pub(crate) fn new(client: SchemaServiceClient, full_name: impl Into<String>) -> Self {
         let request = GetSchemaRequest {
             full_name: full_name.into(),
+            ..Default::default()
         };
         Self { client, request }
     }

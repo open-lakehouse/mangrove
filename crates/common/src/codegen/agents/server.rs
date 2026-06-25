@@ -35,6 +35,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListAgentsRequest {
             max_results,
             page_token,
             include_browse,
+            ..Default::default()
         })
     }
 }
@@ -73,6 +74,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetAgentRequest {
         Ok(GetAgentRequest {
             name,
             include_browse,
+            ..Default::default()
         })
     }
 }
@@ -121,6 +123,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateAgentRequest {
             input_schema,
             comment,
             owner,
+            ..Default::default()
         })
     }
 }
@@ -134,6 +137,9 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteAgentRequest {
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteAgentRequest { name })
+        Ok(DeleteAgentRequest {
+            name,
+            ..Default::default()
+        })
     }
 }

@@ -1,5 +1,6 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
+#![allow(unused_imports)]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 type BoxStr<'a, T> = ::futures::stream::BoxStream<'a, T>;
 use super::super::stream_paginated;
@@ -185,7 +186,10 @@ impl DeleteShareBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `ShareServiceClient`.
     pub(crate) fn new(client: ShareServiceClient, name: impl Into<String>) -> Self {
-        let request = DeleteShareRequest { name: name.into() };
+        let request = DeleteShareRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }

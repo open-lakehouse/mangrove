@@ -2,6 +2,10 @@ descriptors: descriptors.bin
 buf_gen: buf.gen.yaml
 
 generate:
+  # Protobuf runtime the generated code consumes: "prost" (default) or "buffa".
+  # buffa emits its own Message impls + native serde JSON; the PyO3 boundary is
+  # handled by the generated models/_gen/pyo3_impls.rs (see crate `python` feature).
+  runtime: buffa
   output_common: crates/common/src/codegen
   output_models: crates/common/src/models
   output_server: crates/server/src/codegen

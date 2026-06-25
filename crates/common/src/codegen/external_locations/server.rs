@@ -29,6 +29,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListExternalLocation
             max_results,
             page_token,
             include_browse,
+            ..Default::default()
         })
     }
 }
@@ -55,7 +56,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetExternalLocationR
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(GetExternalLocationRequest { name })
+        Ok(GetExternalLocationRequest {
+            name,
+            ..Default::default()
+        })
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateExternalLocationRequest {
@@ -95,6 +99,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateExternalLocationReq
             new_name,
             force,
             skip_validation,
+            ..Default::default()
         })
     }
 }
@@ -117,6 +122,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteExternalLocati
             .extract::<axum_extra::extract::Query<QueryParams>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteExternalLocationRequest { name, force })
+        Ok(DeleteExternalLocationRequest {
+            name,
+            force,
+            ..Default::default()
+        })
     }
 }

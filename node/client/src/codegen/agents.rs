@@ -1,9 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports, dead_code, clippy::all)]
 use crate::error::NapiErrorExt;
+use buffa::Message;
 use napi::bindgen_prelude::Buffer;
 use napi_derive::napi;
-use prost::Message;
 use std::collections::HashMap;
 use unitycatalog_client::AgentClient;
 use unitycatalog_common::models::agents::v0alpha1::*;
@@ -36,8 +36,9 @@ impl NapiAgentClient {
     ) -> napi::Result<Buffer> {
         let mut request = self.client.update();
         request = request.with_new_name(new_name);
-        request = request
-            .with_invocation_protocol(invocation_protocol.map(|v| v.try_into().ok()).flatten());
+        request = request.with_invocation_protocol(
+            invocation_protocol.and_then(<InvocationProtocol as buffa::Enumeration>::from_i32),
+        );
         request = request.with_endpoint(endpoint);
         request = request.with_description(description);
         if let Some(capabilities) = capabilities {

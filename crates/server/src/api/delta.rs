@@ -223,6 +223,7 @@ where
                 name: request.name,
                 catalog_name: path.catalog,
                 schema_name: path.schema,
+                ..Default::default()
             },
             context.clone(),
         )
@@ -234,8 +235,9 @@ where
             .generate_temporary_path_credentials(
                 GenerateTemporaryPathCredentialsRequest {
                     url: staging.staging_location.clone(),
-                    operation: PathOp::PathReadWrite as i32,
+                    operation: ::buffa::EnumValue::Known(PathOp::PathReadWrite),
                     dry_run: Some(false),
+                    ..Default::default()
                 },
                 context,
             )
@@ -307,8 +309,8 @@ where
             name: request.name.clone(),
             catalog_name: path.catalog.clone(),
             schema_name: path.schema.clone(),
-            table_type: to_uc_table_type(request.table_type) as i32,
-            data_source_format: DataSourceFormat::Delta as i32,
+            table_type: ::buffa::EnumValue::Known(to_uc_table_type(request.table_type)),
+            data_source_format: ::buffa::EnumValue::Known(DataSourceFormat::Delta),
             ..Default::default()
         };
         self.check_required(&create_action, &context).await?;
@@ -369,15 +371,16 @@ where
             name: request.name,
             catalog_name: path.catalog,
             schema_name: path.schema,
-            table_type: to_uc_table_type(request.table_type) as i32,
-            data_source_format: DataSourceFormat::Delta as i32,
+            table_type: ::buffa::EnumValue::Known(to_uc_table_type(request.table_type)),
+            data_source_format: ::buffa::EnumValue::Known(DataSourceFormat::Delta),
             columns,
             storage_location: Some(request.location),
             comment: request.comment,
             properties: stored_properties.into_iter().collect(),
             // The Delta API only creates Delta tables, never view-like types.
             view_definition: None,
-            view_dependencies: None,
+            view_dependencies: ::buffa::MessageField::none(),
+            ..Default::default()
         };
         // The TableHandler create_table reads the snapshot for the managed branch;
         // for the Delta API we have already validated and want to trust the request,
@@ -400,6 +403,7 @@ where
                 include_delta_metadata: None,
                 include_browse: None,
                 include_manifest_capabilities: None,
+                ..Default::default()
             },
             context,
         )
@@ -421,6 +425,7 @@ where
             self,
             DeleteTableRequest {
                 full_name: format!("{}.{}.{}", path.catalog, path.schema, path.table),
+                ..Default::default()
             },
             context,
         )
@@ -436,6 +441,7 @@ where
                 include_delta_metadata: None,
                 include_browse: None,
                 include_manifest_capabilities: None,
+                ..Default::default()
             },
             context,
         )
@@ -469,6 +475,7 @@ where
                 include_delta_metadata: None,
                 include_browse: None,
                 include_manifest_capabilities: None,
+                ..Default::default()
             },
             context.clone(),
         )
@@ -480,10 +487,11 @@ where
             .generate_temporary_table_credentials(
                 GenerateTemporaryTableCredentialsRequest {
                     table_id,
-                    operation: match operation {
-                        DeltaCredentialOperation::Read => TableOp::Read as i32,
-                        DeltaCredentialOperation::ReadWrite => TableOp::ReadWrite as i32,
-                    },
+                    operation: ::buffa::EnumValue::Known(match operation {
+                        DeltaCredentialOperation::Read => TableOp::Read,
+                        DeltaCredentialOperation::ReadWrite => TableOp::ReadWrite,
+                    }),
+                    ..Default::default()
                 },
                 context,
             )
@@ -507,6 +515,7 @@ where
                 include_delta_metadata: None,
                 include_browse: None,
                 include_manifest_capabilities: None,
+                ..Default::default()
             },
             context,
         )
@@ -548,8 +557,9 @@ where
             .generate_temporary_path_credentials(
                 GenerateTemporaryPathCredentialsRequest {
                     url: staging.staging_location.clone(),
-                    operation: PathOp::PathReadWrite as i32,
+                    operation: ::buffa::EnumValue::Known(PathOp::PathReadWrite),
                     dry_run: Some(false),
+                    ..Default::default()
                 },
                 context,
             )
@@ -573,11 +583,12 @@ where
             .generate_temporary_path_credentials(
                 GenerateTemporaryPathCredentialsRequest {
                     url: location.clone(),
-                    operation: match operation {
-                        DeltaCredentialOperation::Read => PathOp::PathRead as i32,
-                        DeltaCredentialOperation::ReadWrite => PathOp::PathReadWrite as i32,
-                    },
+                    operation: ::buffa::EnumValue::Known(match operation {
+                        DeltaCredentialOperation::Read => PathOp::PathRead,
+                        DeltaCredentialOperation::ReadWrite => PathOp::PathReadWrite,
+                    }),
                     dry_run: Some(false),
+                    ..Default::default()
                 },
                 context,
             )
@@ -626,8 +637,8 @@ where
     // View-like table types (e.g. metric views) have no Delta log and no storage
     // of their own; the Delta API cannot serve them.
     if !matches!(
-        TableType::try_from(table.table_type),
-        Ok(TableType::Managed | TableType::External)
+        table.table_type.as_known(),
+        Some(TableType::Managed | TableType::External)
     ) {
         return Err(Error::invalid_argument(format!(
             "table '{}' is not a Delta table and cannot be loaded via the Delta API",
@@ -637,8 +648,9 @@ where
 
     let metadata = build_table_metadata(&table);
 
-    let (commits, latest_table_version) = if table.table_type == TableType::Managed as i32
-        && table.data_source_format == DataSourceFormat::Delta as i32
+    let (commits, latest_table_version) = if table.table_type
+        == ::buffa::EnumValue::Known(TableType::Managed)
+        && table.data_source_format == ::buffa::EnumValue::Known(DataSourceFormat::Delta)
         && let Some(id) = table.table_id.as_deref()
     {
         let (commits, latest) = handler
@@ -680,7 +692,7 @@ fn build_table_metadata(table: &Table) -> DeltaTableMetadata {
 
     DeltaTableMetadata {
         etag,
-        table_type: if table.table_type == TableType::External as i32 {
+        table_type: if table.table_type == ::buffa::EnumValue::Known(TableType::External) {
             DeltaTableType::External
         } else {
             DeltaTableType::Managed
@@ -779,6 +791,7 @@ where
             include_delta_metadata: None,
             include_browse: None,
             include_manifest_capabilities: None,
+            ..Default::default()
         },
         context.clone(),
     )
@@ -851,7 +864,7 @@ where
     }
 
     let mut properties: BTreeMap<String, String> = table.properties.clone().into_iter().collect();
-    let is_managed = table.table_type == TableType::Managed as i32;
+    let is_managed = table.table_type == ::buffa::EnumValue::Known(TableType::Managed);
     let mut metadata_changed = false;
 
     // Apply in canonical order (not request order). We make multiple passes.
@@ -984,6 +997,7 @@ where
                     file_name: c.file_name,
                     file_size: c.file_size,
                     file_modification_timestamp: c.file_modification_timestamp,
+                    ..Default::default()
                 },
             );
         handler
@@ -1095,8 +1109,8 @@ mod tests {
         h.create_credential(
             CreateCredentialRequest {
                 name: "cred".into(),
-                purpose: Purpose::Storage as i32,
-                aws_iam_role: Some(AwsIamRoleConfig {
+                purpose: ::buffa::EnumValue::Known(Purpose::Storage),
+                aws_iam_role: ::buffa::MessageField::some(AwsIamRoleConfig {
                     role_arn: "arn:aws:iam::123456789012:role/test".into(),
                     ..Default::default()
                 }),
@@ -1151,6 +1165,7 @@ mod tests {
                 name: name.into(),
                 catalog_name: "cat".into(),
                 schema_name: "sch".into(),
+                ..Default::default()
             },
             ctx(),
         )

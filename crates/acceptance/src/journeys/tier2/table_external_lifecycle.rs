@@ -171,7 +171,10 @@ impl UserJourney for TableExternalLifecycleJourney {
             .map_err(|e| {
                 AcceptanceError::JourneyExecution(format!("Failed to get table: {}", e))
             })?;
-        assert_eq!(fetched.table_type(), TableType::External);
+        assert_eq!(
+            fetched.table_type,
+            ::buffa::EnumValue::Known(TableType::External)
+        );
         println!("  ✓ Table type confirmed: External");
 
         Ok(())

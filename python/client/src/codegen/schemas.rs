@@ -5,16 +5,21 @@ use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::SchemaClient;
 use unitycatalog_common::models::schemas::v1::*;
+use unitycatalog_common::models::*;
 #[pyclass(name = "SchemaClient")]
 pub struct PySchemaClient {
     pub(crate) client: SchemaClient,
 }
 #[pymethods]
 impl PySchemaClient {
-    pub fn get(&self, py: Python) -> PyUnityCatalogResult<Schema> {
+    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PySchema> {
         let request = self.client.get();
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PySchema::from(result))
+        })
     }
     #[pyo3(signature = (comment = None, properties = None, new_name = None))]
     pub fn update(
@@ -23,7 +28,7 @@ impl PySchemaClient {
         comment: Option<String>,
         properties: Option<HashMap<String, String>>,
         new_name: Option<String>,
-    ) -> PyUnityCatalogResult<Schema> {
+    ) -> PyUnityCatalogResult<PySchema> {
         let mut request = self.client.update();
         request = request.with_comment(comment);
         if let Some(properties) = properties {
@@ -31,7 +36,11 @@ impl PySchemaClient {
         }
         request = request.with_new_name(new_name);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PySchema::from(result))
+        })
     }
     #[pyo3(signature = (force = None))]
     pub fn delete(&self, py: Python, force: Option<bool>) -> PyUnityCatalogResult<()> {

@@ -32,6 +32,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListSchemasRequest {
             max_results,
             page_token,
             include_browse,
+            ..Default::default()
         })
     }
 }
@@ -59,7 +60,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetSchemaRequest {
                 .extract::<axum::extract::Path<String>>()
                 .await
                 .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(GetSchemaRequest { full_name })
+        Ok(GetSchemaRequest {
+            full_name,
+            ..Default::default()
+        })
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateSchemaRequest {
@@ -85,6 +89,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateSchemaRequest {
             comment,
             properties,
             new_name,
+            ..Default::default()
         })
     }
 }
@@ -108,6 +113,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteSchemaRequest 
             .extract::<axum_extra::extract::Query<QueryParams>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteSchemaRequest { full_name, force })
+        Ok(DeleteSchemaRequest {
+            full_name,
+            force,
+            ..Default::default()
+        })
     }
 }

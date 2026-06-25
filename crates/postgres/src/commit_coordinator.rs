@@ -297,6 +297,7 @@ impl CommitCoordinator for GraphStore {
                 file_name: row.commit_filename,
                 file_size: row.commit_filesize,
                 file_modification_timestamp: dt_to_millis(row.commit_file_modification_timestamp),
+                ..Default::default()
             })
             .collect::<Vec<_>>();
 

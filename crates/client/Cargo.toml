@@ -12,6 +12,8 @@ keywords.workspace = true
 [dependencies]
 unitycatalog-common = { path = "../common" }
 
+# Generated request builders wrap enum query params in `buffa::EnumValue::Known`.
+buffa = { workspace = true }
 olai-http = { workspace = true }
 percent-encoding = "2.3"
 reqwest = { workspace = true }

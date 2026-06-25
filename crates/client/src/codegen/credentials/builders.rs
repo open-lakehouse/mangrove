@@ -1,5 +1,6 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
+#![allow(unused_imports)]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 type BoxStr<'a, T> = ::futures::stream::BoxStream<'a, T>;
 use super::super::stream_paginated;
@@ -24,7 +25,7 @@ impl ListCredentialsBuilder {
     }
     /// Return only credentials for the specified purpose.
     pub fn with_purpose(mut self, purpose: impl Into<Option<Purpose>>) -> Self {
-        self.request.purpose = purpose.into().map(|e| e as i32);
+        self.request.purpose = purpose.into().map(buffa::EnumValue::Known);
         self
     }
     /// The maximum number of results per page that should be returned.
@@ -85,7 +86,7 @@ impl CreateCredentialBuilder {
     ) -> Self {
         let request = CreateCredentialRequest {
             name: name.into(),
-            purpose: purpose as i32,
+            purpose: buffa::EnumValue::Known(purpose),
             ..Default::default()
         };
         Self { client, request }
@@ -110,7 +111,10 @@ impl CreateCredentialBuilder {
         mut self,
         azure_service_principal: impl Into<Option<AzureServicePrincipal>>,
     ) -> Self {
-        self.request.azure_service_principal = azure_service_principal.into();
+        self.request.azure_service_principal = {
+            let azure_service_principal: ::core::option::Option<_> = azure_service_principal.into();
+            buffa::MessageField::from(azure_service_principal)
+        };
         self
     }
     /// The Azure managed identity configuration.
@@ -118,7 +122,10 @@ impl CreateCredentialBuilder {
         mut self,
         azure_managed_identity: impl Into<Option<AzureManagedIdentity>>,
     ) -> Self {
-        self.request.azure_managed_identity = azure_managed_identity.into();
+        self.request.azure_managed_identity = {
+            let azure_managed_identity: ::core::option::Option<_> = azure_managed_identity.into();
+            buffa::MessageField::from(azure_managed_identity)
+        };
         self
     }
     /// The Azure storage key configuration.
@@ -126,12 +133,18 @@ impl CreateCredentialBuilder {
         mut self,
         azure_storage_key: impl Into<Option<AzureStorageKey>>,
     ) -> Self {
-        self.request.azure_storage_key = azure_storage_key.into();
+        self.request.azure_storage_key = {
+            let azure_storage_key: ::core::option::Option<_> = azure_storage_key.into();
+            buffa::MessageField::from(azure_storage_key)
+        };
         self
     }
     /// The AWS IAM role configuration.
     pub fn with_aws_iam_role(mut self, aws_iam_role: impl Into<Option<AwsIamRoleConfig>>) -> Self {
-        self.request.aws_iam_role = aws_iam_role.into();
+        self.request.aws_iam_role = {
+            let aws_iam_role: ::core::option::Option<_> = aws_iam_role.into();
+            buffa::MessageField::from(aws_iam_role)
+        };
         self
     }
     /// The Databricks managed GCP service account configuration.
@@ -139,7 +152,11 @@ impl CreateCredentialBuilder {
         mut self,
         databricks_gcp_service_account: impl Into<Option<DatabricksGcpServiceAccount>>,
     ) -> Self {
-        self.request.databricks_gcp_service_account = databricks_gcp_service_account.into();
+        self.request.databricks_gcp_service_account = {
+            let databricks_gcp_service_account: ::core::option::Option<_> =
+                databricks_gcp_service_account.into();
+            buffa::MessageField::from(databricks_gcp_service_account)
+        };
         self
     }
 }
@@ -161,7 +178,10 @@ impl GetCredentialBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `CredentialServiceClient`.
     pub(crate) fn new(client: CredentialServiceClient, name: impl Into<String>) -> Self {
-        let request = GetCredentialRequest { name: name.into() };
+        let request = GetCredentialRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }
@@ -225,7 +245,10 @@ impl UpdateCredentialBuilder {
         mut self,
         azure_service_principal: impl Into<Option<AzureServicePrincipal>>,
     ) -> Self {
-        self.request.azure_service_principal = azure_service_principal.into();
+        self.request.azure_service_principal = {
+            let azure_service_principal: ::core::option::Option<_> = azure_service_principal.into();
+            buffa::MessageField::from(azure_service_principal)
+        };
         self
     }
     /// The Azure managed identity configuration.
@@ -233,7 +256,10 @@ impl UpdateCredentialBuilder {
         mut self,
         azure_managed_identity: impl Into<Option<AzureManagedIdentity>>,
     ) -> Self {
-        self.request.azure_managed_identity = azure_managed_identity.into();
+        self.request.azure_managed_identity = {
+            let azure_managed_identity: ::core::option::Option<_> = azure_managed_identity.into();
+            buffa::MessageField::from(azure_managed_identity)
+        };
         self
     }
     /// The Azure storage key configuration.
@@ -241,12 +267,18 @@ impl UpdateCredentialBuilder {
         mut self,
         azure_storage_key: impl Into<Option<AzureStorageKey>>,
     ) -> Self {
-        self.request.azure_storage_key = azure_storage_key.into();
+        self.request.azure_storage_key = {
+            let azure_storage_key: ::core::option::Option<_> = azure_storage_key.into();
+            buffa::MessageField::from(azure_storage_key)
+        };
         self
     }
     /// The AWS IAM role configuration.
     pub fn with_aws_iam_role(mut self, aws_iam_role: impl Into<Option<AwsIamRoleConfig>>) -> Self {
-        self.request.aws_iam_role = aws_iam_role.into();
+        self.request.aws_iam_role = {
+            let aws_iam_role: ::core::option::Option<_> = aws_iam_role.into();
+            buffa::MessageField::from(aws_iam_role)
+        };
         self
     }
     /// The Databricks managed GCP service account configuration.
@@ -254,7 +286,11 @@ impl UpdateCredentialBuilder {
         mut self,
         databricks_gcp_service_account: impl Into<Option<DatabricksGcpServiceAccount>>,
     ) -> Self {
-        self.request.databricks_gcp_service_account = databricks_gcp_service_account.into();
+        self.request.databricks_gcp_service_account = {
+            let databricks_gcp_service_account: ::core::option::Option<_> =
+                databricks_gcp_service_account.into();
+            buffa::MessageField::from(databricks_gcp_service_account)
+        };
         self
     }
 }
@@ -276,7 +312,10 @@ impl DeleteCredentialBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `CredentialServiceClient`.
     pub(crate) fn new(client: CredentialServiceClient, name: impl Into<String>) -> Self {
-        let request = DeleteCredentialRequest { name: name.into() };
+        let request = DeleteCredentialRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }

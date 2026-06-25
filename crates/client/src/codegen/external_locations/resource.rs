@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use super::builders::*;
 use super::client::ExternalLocationServiceClient;
+use unitycatalog_common::models::external_locations::v1::*;
 /// A client scoped to a single `external_location`.
 #[derive(Clone)]
 pub struct ExternalLocationClient {

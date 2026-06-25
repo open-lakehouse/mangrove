@@ -70,6 +70,7 @@ where
                 })
                 .collect(),
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -78,6 +79,7 @@ where
         let shares_request = SharesGetShareRequest {
             name: request.name,
             include_shared_data: Some(false),
+            ..Default::default()
         };
         let share: Share = self.get(&shares_request.resource()).await?.0.try_into()?;
         Ok(SharingShare {
@@ -97,6 +99,7 @@ where
         let shares_request = SharesGetShareRequest {
             name: request.share,
             include_shared_data: Some(true),
+            ..Default::default()
         };
         let share: Share = self.get(&shares_request.resource()).await?.0.try_into()?;
         Ok(ListSchemasResponse {
@@ -104,9 +107,9 @@ where
                 .objects
                 .into_iter()
                 .filter_map(|a| {
-                    if matches!(a.data_object_type(), DataObjectType::Table) {
+                    if matches!(a.data_object_type.as_known(), Some(DataObjectType::Table)) {
                         Some(Schema {
-                            name: a.shared_as().split_once(".")?.0.to_string(),
+                            name: a.shared_as.as_deref()?.split_once(".")?.0.to_string(),
                             share: share.name.clone(),
                             ..Default::default()
                         })
@@ -117,6 +120,7 @@ where
                 .dedup()
                 .collect(),
             next_page_token: None,
+            ..Default::default()
         })
     }
 
@@ -129,14 +133,15 @@ where
         let shares_request = SharesGetShareRequest {
             name: request.share,
             include_shared_data: Some(true),
+            ..Default::default()
         };
         let share: Share = self.get(&shares_request.resource()).await?.0.try_into()?;
         let items = share
             .objects
             .into_iter()
             .filter_map(|a| {
-                if matches!(a.data_object_type(), DataObjectType::Table) {
-                    let (schema, name) = a.shared_as().split_once(".")?;
+                if matches!(a.data_object_type.as_known(), Some(DataObjectType::Table)) {
+                    let (schema, name) = a.shared_as.as_deref()?.split_once(".")?;
                     if schema == request.name {
                         Some(Table {
                             name: name.to_string(),
@@ -156,6 +161,7 @@ where
         Ok(ListTablesResponse {
             items,
             next_page_token: None,
+            ..Default::default()
         })
     }
 
@@ -168,14 +174,15 @@ where
         let shares_request = SharesGetShareRequest {
             name: request.name,
             include_shared_data: Some(true),
+            ..Default::default()
         };
         let share: Share = self.get(&shares_request.resource()).await?.0.try_into()?;
         let items = share
             .objects
             .into_iter()
             .filter_map(|a| {
-                if matches!(a.data_object_type(), DataObjectType::Table) {
-                    let (schema, name) = a.shared_as().split_once(".")?;
+                if matches!(a.data_object_type.as_known(), Some(DataObjectType::Table)) {
+                    let (schema, name) = a.shared_as.as_deref()?.split_once(".")?;
                     Some(Table {
                         name: name.to_string(),
                         share: share.name.clone(),
@@ -191,6 +198,7 @@ where
         Ok(ListAllTablesResponse {
             items,
             next_page_token: None,
+            ..Default::default()
         })
     }
 }

@@ -65,6 +65,7 @@ use unitycatalog_common::models::tags::v1::*;
 use unitycatalog_common::models::tags::v1::*;
 use unitycatalog_common::models::temporary_credentials::v1::*;
 use unitycatalog_common::models::volumes::v1::*;
+use unitycatalog_common::models::*;
 #[pyclass(name = "UnityCatalogClient")]
 pub struct PyUnityCatalogClient {
     client: UnityCatalogClient,
@@ -99,15 +100,15 @@ impl PyUnityCatalogClient {
         schema_name: String,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<Vec<AgentSkill>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyAgentSkill>> {
         let mut request = self.client.list_agent_skills(catalog_name, schema_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyAgentSkill::from).collect())
         })
     }
     #[pyo3(
@@ -130,17 +131,20 @@ impl PyUnityCatalogClient {
         catalog_name: String,
         schema_name: String,
         name: String,
-        agent_skill_type: AgentSkillType,
+        agent_skill_type: PyAgentSkillType,
         storage_location: Option<String>,
         description: Option<String>,
         license: Option<String>,
         allowed_tools: Option<Vec<String>>,
         metadata: Option<HashMap<String, String>>,
         comment: Option<String>,
-    ) -> PyUnityCatalogResult<AgentSkill> {
-        let mut request =
-            self.client
-                .create_agent_skill(catalog_name, schema_name, name, agent_skill_type);
+    ) -> PyUnityCatalogResult<PyAgentSkill> {
+        let mut request = self.client.create_agent_skill(
+            catalog_name,
+            schema_name,
+            name,
+            agent_skill_type.into(),
+        );
         request = request.with_storage_location(storage_location);
         request = request.with_description(description);
         request = request.with_license(license);
@@ -152,7 +156,11 @@ impl PyUnityCatalogClient {
         }
         request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyAgentSkill::from(result))
+        })
     }
     #[pyo3(
         signature = (
@@ -169,15 +177,15 @@ impl PyUnityCatalogClient {
         schema_name: String,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<Vec<Agent>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyAgent>> {
         let mut request = self.client.list_agents(catalog_name, schema_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyAgent::from).collect())
         })
     }
     #[pyo3(
@@ -199,18 +207,18 @@ impl PyUnityCatalogClient {
         catalog_name: String,
         schema_name: String,
         name: String,
-        invocation_protocol: InvocationProtocol,
+        invocation_protocol: PyInvocationProtocol,
         endpoint: String,
         description: Option<String>,
         capabilities: Option<Vec<String>>,
         input_schema: Option<String>,
         comment: Option<String>,
-    ) -> PyUnityCatalogResult<Agent> {
+    ) -> PyUnityCatalogResult<PyAgent> {
         let mut request = self.client.create_agent(
             catalog_name,
             schema_name,
             name,
-            invocation_protocol,
+            invocation_protocol.into(),
             endpoint,
         );
         request = request.with_description(description);
@@ -220,21 +228,25 @@ impl PyUnityCatalogClient {
         request = request.with_input_schema(input_schema);
         request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyAgent::from(result))
+        })
     }
     #[pyo3(signature = (max_results = None))]
     pub fn list_catalogs(
         &self,
         py: Python,
         max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<Vec<Catalog>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyCatalog>> {
         let mut request = self.client.list_catalogs();
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyCatalog::from).collect())
         })
     }
     #[pyo3(
@@ -256,7 +268,7 @@ impl PyUnityCatalogClient {
         storage_root: Option<String>,
         provider_name: Option<String>,
         share_name: Option<String>,
-    ) -> PyUnityCatalogResult<Catalog> {
+    ) -> PyUnityCatalogResult<PyCatalog> {
         let mut request = self.client.create_catalog(name);
         request = request.with_comment(comment);
         if let Some(properties) = properties {
@@ -266,23 +278,27 @@ impl PyUnityCatalogClient {
         request = request.with_provider_name(provider_name);
         request = request.with_share_name(share_name);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyCatalog::from(result))
+        })
     }
     #[pyo3(signature = (purpose = None, max_results = None))]
     pub fn list_credentials(
         &self,
         py: Python,
-        purpose: Option<Purpose>,
+        purpose: ::core::option::Option<PyPurpose>,
         max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<Vec<Credential>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyCredential>> {
         let mut request = self.client.list_credentials();
-        request = request.with_purpose(purpose);
+        request = request.with_purpose(purpose.map(::core::convert::Into::into));
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyCredential::from).collect())
         })
     }
     #[pyo3(
@@ -303,27 +319,36 @@ impl PyUnityCatalogClient {
         &self,
         py: Python,
         name: String,
-        purpose: Purpose,
+        purpose: PyPurpose,
         comment: Option<String>,
         read_only: Option<bool>,
         skip_validation: Option<bool>,
-        azure_service_principal: Option<AzureServicePrincipal>,
-        azure_managed_identity: Option<AzureManagedIdentity>,
-        azure_storage_key: Option<AzureStorageKey>,
-        aws_iam_role: Option<AwsIamRoleConfig>,
-        databricks_gcp_service_account: Option<DatabricksGcpServiceAccount>,
-    ) -> PyUnityCatalogResult<Credential> {
-        let mut request = self.client.create_credential(name, purpose);
+        azure_service_principal: ::core::option::Option<PyAzureServicePrincipal>,
+        azure_managed_identity: ::core::option::Option<PyAzureManagedIdentity>,
+        azure_storage_key: ::core::option::Option<PyAzureStorageKey>,
+        aws_iam_role: ::core::option::Option<PyAwsIamRoleConfig>,
+        databricks_gcp_service_account: ::core::option::Option<PyDatabricksGcpServiceAccount>,
+    ) -> PyUnityCatalogResult<PyCredential> {
+        let mut request = self.client.create_credential(name, purpose.into());
         request = request.with_comment(comment);
         request = request.with_read_only(read_only);
         request = request.with_skip_validation(skip_validation);
-        request = request.with_azure_service_principal(azure_service_principal);
-        request = request.with_azure_managed_identity(azure_managed_identity);
-        request = request.with_azure_storage_key(azure_storage_key);
-        request = request.with_aws_iam_role(aws_iam_role);
-        request = request.with_databricks_gcp_service_account(databricks_gcp_service_account);
+        request = request
+            .with_azure_service_principal(azure_service_principal.map(::core::convert::Into::into));
+        request = request
+            .with_azure_managed_identity(azure_managed_identity.map(::core::convert::Into::into));
+        request =
+            request.with_azure_storage_key(azure_storage_key.map(::core::convert::Into::into));
+        request = request.with_aws_iam_role(aws_iam_role.map(::core::convert::Into::into));
+        request = request.with_databricks_gcp_service_account(
+            databricks_gcp_service_account.map(::core::convert::Into::into),
+        );
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyCredential::from(result))
+        })
     }
     #[pyo3(
         signature = (
@@ -339,16 +364,20 @@ impl PyUnityCatalogClient {
         py: Python,
         table_id: String,
         table_uri: String,
-        commit_info: Option<CommitInfo>,
+        commit_info: ::core::option::Option<PyCommitInfo>,
         latest_backfilled_version: Option<i64>,
-        metadata: Option<Metadata>,
+        metadata: ::core::option::Option<PyMetadata>,
     ) -> PyUnityCatalogResult<()> {
         let mut request = self.client.commit(table_id, table_uri);
-        request = request.with_commit_info(commit_info);
+        request = request.with_commit_info(commit_info.map(::core::convert::Into::into));
         request = request.with_latest_backfilled_version(latest_backfilled_version);
-        request = request.with_metadata(metadata);
+        request = request.with_metadata(metadata.map(::core::convert::Into::into));
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(result)
+        })
     }
     #[pyo3(signature = (table_id, table_uri, start_version, end_version = None))]
     pub fn get_commits(
@@ -358,11 +387,15 @@ impl PyUnityCatalogClient {
         table_uri: String,
         start_version: i64,
         end_version: Option<i64>,
-    ) -> PyUnityCatalogResult<GetCommitsResponse> {
+    ) -> PyUnityCatalogResult<PyGetCommitsResponse> {
         let mut request = self.client.get_commits(table_id, table_uri, start_version);
         request = request.with_end_version(end_version);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyGetCommitsResponse::from(result))
+        })
     }
     #[pyo3(
         signature = (entity_type, entity_name, max_results = None, page_token = None)
@@ -374,24 +407,34 @@ impl PyUnityCatalogClient {
         entity_name: String,
         max_results: Option<i32>,
         page_token: Option<String>,
-    ) -> PyUnityCatalogResult<ListEntityTagAssignmentsResponse> {
+    ) -> PyUnityCatalogResult<PyListEntityTagAssignmentsResponse> {
         let mut request = self
             .client
             .list_entity_tag_assignments(entity_type, entity_name);
         request = request.with_max_results(max_results);
         request = request.with_page_token(page_token);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyListEntityTagAssignmentsResponse::from(result))
+        })
     }
     #[pyo3(signature = (tag_assignment))]
     pub fn create_entity_tag_assignment(
         &self,
         py: Python,
-        tag_assignment: EntityTagAssignment,
-    ) -> PyUnityCatalogResult<EntityTagAssignment> {
-        let request = self.client.create_entity_tag_assignment(tag_assignment);
+        tag_assignment: PyEntityTagAssignment,
+    ) -> PyUnityCatalogResult<PyEntityTagAssignment> {
+        let request = self
+            .client
+            .create_entity_tag_assignment(tag_assignment.into());
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
+        })
     }
     #[pyo3(signature = (entity_type, entity_name, tag_key))]
     pub fn get_entity_tag_assignment(
@@ -400,12 +443,16 @@ impl PyUnityCatalogClient {
         entity_type: String,
         entity_name: String,
         tag_key: String,
-    ) -> PyUnityCatalogResult<EntityTagAssignment> {
+    ) -> PyUnityCatalogResult<PyEntityTagAssignment> {
         let request = self
             .client
             .get_entity_tag_assignment(entity_type, entity_name, tag_key);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
+        })
     }
     #[pyo3(
         signature = (
@@ -422,18 +469,22 @@ impl PyUnityCatalogClient {
         entity_type: String,
         entity_name: String,
         tag_key: String,
-        tag_assignment: EntityTagAssignment,
+        tag_assignment: PyEntityTagAssignment,
         update_mask: Option<String>,
-    ) -> PyUnityCatalogResult<EntityTagAssignment> {
+    ) -> PyUnityCatalogResult<PyEntityTagAssignment> {
         let mut request = self.client.update_entity_tag_assignment(
             entity_type,
             entity_name,
             tag_key,
-            tag_assignment,
+            tag_assignment.into(),
         );
         request = request.with_update_mask(update_mask);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
+        })
     }
     #[pyo3(signature = (entity_type, entity_name, tag_key))]
     pub fn delete_entity_tag_assignment(
@@ -447,7 +498,11 @@ impl PyUnityCatalogClient {
             .client
             .delete_entity_tag_assignment(entity_type, entity_name, tag_key);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(result)
+        })
     }
     #[pyo3(signature = (max_results = None, include_browse = None))]
     pub fn list_external_locations(
@@ -455,15 +510,15 @@ impl PyUnityCatalogClient {
         py: Python,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<Vec<ExternalLocation>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyExternalLocation>> {
         let mut request = self.client.list_external_locations();
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyExternalLocation::from).collect())
         })
     }
     #[pyo3(
@@ -485,7 +540,7 @@ impl PyUnityCatalogClient {
         read_only: Option<bool>,
         comment: Option<String>,
         skip_validation: Option<bool>,
-    ) -> PyUnityCatalogResult<ExternalLocation> {
+    ) -> PyUnityCatalogResult<PyExternalLocation> {
         let mut request = self
             .client
             .create_external_location(name, url, credential_name);
@@ -493,7 +548,11 @@ impl PyUnityCatalogClient {
         request = request.with_comment(comment);
         request = request.with_skip_validation(skip_validation);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
+        })
     }
     #[pyo3(
         signature = (
@@ -510,15 +569,15 @@ impl PyUnityCatalogClient {
         schema_name: String,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<Vec<Function>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyFunction>> {
         let mut request = self.client.list_functions(catalog_name, schema_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyFunction::from).collect())
         })
     }
     #[pyo3(
@@ -549,32 +608,32 @@ impl PyUnityCatalogClient {
         schema_name: String,
         data_type: String,
         full_data_type: String,
-        parameter_style: ParameterStyle,
+        parameter_style: PyParameterStyle,
         is_deterministic: bool,
-        sql_data_access: SqlDataAccess,
+        sql_data_access: PySqlDataAccess,
         is_null_call: bool,
-        security_type: SecurityType,
-        routine_body: RoutineBody,
-        input_params: Option<FunctionParameterInfos>,
+        security_type: PySecurityType,
+        routine_body: PyRoutineBody,
+        input_params: ::core::option::Option<PyFunctionParameterInfos>,
         routine_definition: Option<String>,
         routine_body_language: Option<String>,
         comment: Option<String>,
         properties: Option<HashMap<String, String>>,
-    ) -> PyUnityCatalogResult<Function> {
+    ) -> PyUnityCatalogResult<PyFunction> {
         let mut request = self.client.create_function(
             name,
             catalog_name,
             schema_name,
             data_type,
             full_data_type,
-            parameter_style,
+            parameter_style.into(),
             is_deterministic,
-            sql_data_access,
+            sql_data_access.into(),
             is_null_call,
-            security_type,
-            routine_body,
+            security_type.into(),
+            routine_body.into(),
         );
-        request = request.with_input_params(input_params);
+        request = request.with_input_params(input_params.map(::core::convert::Into::into));
         request = request.with_routine_definition(routine_definition);
         request = request.with_routine_body_language(routine_body_language);
         request = request.with_comment(comment);
@@ -582,21 +641,25 @@ impl PyUnityCatalogClient {
             request = request.with_properties(properties);
         }
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyFunction::from(result))
+        })
     }
     #[pyo3(signature = (max_results = None))]
     pub fn list_providers(
         &self,
         py: Python,
         max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<Vec<Provider>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyProvider>> {
         let mut request = self.client.list_providers();
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyProvider::from).collect())
         })
     }
     #[pyo3(
@@ -613,13 +676,15 @@ impl PyUnityCatalogClient {
         &self,
         py: Python,
         name: String,
-        authentication_type: ProviderAuthenticationType,
+        authentication_type: PyProviderAuthenticationType,
         owner: Option<String>,
         comment: Option<String>,
         recipient_profile_str: Option<String>,
         properties: Option<HashMap<String, String>>,
-    ) -> PyUnityCatalogResult<Provider> {
-        let mut request = self.client.create_provider(name, authentication_type);
+    ) -> PyUnityCatalogResult<PyProvider> {
+        let mut request = self
+            .client
+            .create_provider(name, authentication_type.into());
         request = request.with_owner(owner);
         request = request.with_comment(comment);
         request = request.with_recipient_profile_str(recipient_profile_str);
@@ -627,21 +692,25 @@ impl PyUnityCatalogClient {
             request = request.with_properties(properties);
         }
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyProvider::from(result))
+        })
     }
     #[pyo3(signature = (max_results = None))]
     pub fn list_recipients(
         &self,
         py: Python,
         max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<Vec<Recipient>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyRecipient>> {
         let mut request = self.client.list_recipients();
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyRecipient::from).collect())
         })
     }
     #[pyo3(
@@ -658,22 +727,26 @@ impl PyUnityCatalogClient {
         &self,
         py: Python,
         name: String,
-        authentication_type: AuthenticationType,
+        authentication_type: PyAuthenticationType,
         owner: String,
         comment: Option<String>,
         properties: Option<HashMap<String, String>>,
         expiration_time: Option<i64>,
-    ) -> PyUnityCatalogResult<Recipient> {
+    ) -> PyUnityCatalogResult<PyRecipient> {
         let mut request = self
             .client
-            .create_recipient(name, authentication_type, owner);
+            .create_recipient(name, authentication_type.into(), owner);
         request = request.with_comment(comment);
         if let Some(properties) = properties {
             request = request.with_properties(properties);
         }
         request = request.with_expiration_time(expiration_time);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
+        })
     }
     #[pyo3(signature = (catalog_name, max_results = None, include_browse = None))]
     pub fn list_schemas(
@@ -682,15 +755,15 @@ impl PyUnityCatalogClient {
         catalog_name: String,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<Vec<Schema>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PySchema>> {
         let mut request = self.client.list_schemas(catalog_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PySchema::from).collect())
         })
     }
     #[pyo3(
@@ -710,7 +783,7 @@ impl PyUnityCatalogClient {
         comment: Option<String>,
         properties: Option<HashMap<String, String>>,
         storage_root: Option<String>,
-    ) -> PyUnityCatalogResult<Schema> {
+    ) -> PyUnityCatalogResult<PySchema> {
         let mut request = self.client.create_schema(name, catalog_name);
         request = request.with_comment(comment);
         if let Some(properties) = properties {
@@ -718,21 +791,25 @@ impl PyUnityCatalogClient {
         }
         request = request.with_storage_root(storage_root);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PySchema::from(result))
+        })
     }
     #[pyo3(signature = (max_results = None))]
     pub fn list_shares(
         &self,
         py: Python,
         max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<Vec<Share>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyShare>> {
         let mut request = self.client.list_shares();
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyShare::from).collect())
         })
     }
     #[pyo3(signature = (name, comment = None))]
@@ -741,11 +818,15 @@ impl PyUnityCatalogClient {
         py: Python,
         name: String,
         comment: Option<String>,
-    ) -> PyUnityCatalogResult<Share> {
+    ) -> PyUnityCatalogResult<PyShare> {
         let mut request = self.client.create_share(name);
         request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyShare::from(result))
+        })
     }
     #[pyo3(signature = (name, catalog_name, schema_name))]
     pub fn create_staging_table(
@@ -754,12 +835,16 @@ impl PyUnityCatalogClient {
         name: String,
         catalog_name: String,
         schema_name: String,
-    ) -> PyUnityCatalogResult<StagingTable> {
+    ) -> PyUnityCatalogResult<PyStagingTable> {
         let request = self
             .client
             .create_staging_table(name, catalog_name, schema_name);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyStagingTable::from(result))
+        })
     }
     #[pyo3(
         signature = (
@@ -786,7 +871,7 @@ impl PyUnityCatalogClient {
         omit_username: Option<bool>,
         include_browse: Option<bool>,
         include_manifest_capabilities: Option<bool>,
-    ) -> PyUnityCatalogResult<Vec<Table>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyTable>> {
         let mut request = self.client.list_tables(catalog_name, schema_name);
         request = request.with_max_results(max_results);
         request = request.with_include_delta_metadata(include_delta_metadata);
@@ -797,9 +882,9 @@ impl PyUnityCatalogClient {
         request = request.with_include_manifest_capabilities(include_manifest_capabilities);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyTable::from).collect())
         })
     }
     #[pyo3(
@@ -823,24 +908,29 @@ impl PyUnityCatalogClient {
         name: String,
         schema_name: String,
         catalog_name: String,
-        table_type: TableType,
-        data_source_format: DataSourceFormat,
-        columns: Option<Vec<Column>>,
+        table_type: PyTableType,
+        data_source_format: PyDataSourceFormat,
+        columns: ::core::option::Option<::std::vec::Vec<PyColumn>>,
         storage_location: Option<String>,
         comment: Option<String>,
         properties: Option<HashMap<String, String>>,
         view_definition: Option<String>,
-        view_dependencies: Option<DependencyList>,
-    ) -> PyUnityCatalogResult<Table> {
+        view_dependencies: ::core::option::Option<PyDependencyList>,
+    ) -> PyUnityCatalogResult<PyTable> {
         let mut request = self.client.create_table(
             name,
             schema_name,
             catalog_name,
-            table_type,
-            data_source_format,
+            table_type.into(),
+            data_source_format.into(),
         );
         if let Some(columns) = columns {
-            request = request.with_columns(columns);
+            request = request.with_columns(
+                columns
+                    .into_iter()
+                    .map(::core::convert::Into::into)
+                    .collect::<::std::vec::Vec<_>>(),
+            );
         }
         request = request.with_storage_location(storage_location);
         request = request.with_comment(comment);
@@ -848,75 +938,96 @@ impl PyUnityCatalogClient {
             request = request.with_properties(properties);
         }
         request = request.with_view_definition(view_definition);
-        request = request.with_view_dependencies(view_dependencies);
+        request =
+            request.with_view_dependencies(view_dependencies.map(::core::convert::Into::into));
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyTable::from(result))
+        })
     }
     #[pyo3(signature = (max_results = None))]
     pub fn list_tag_policies(
         &self,
         py: Python,
         max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<Vec<TagPolicy>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyTagPolicy>> {
         let mut request = self.client.list_tag_policies();
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyTagPolicy::from).collect())
         })
     }
     #[pyo3(signature = (tag_policy))]
     pub fn create_tag_policy(
         &self,
         py: Python,
-        tag_policy: TagPolicy,
-    ) -> PyUnityCatalogResult<TagPolicy> {
-        let request = self.client.create_tag_policy(tag_policy);
+        tag_policy: PyTagPolicy,
+    ) -> PyUnityCatalogResult<PyTagPolicy> {
+        let request = self.client.create_tag_policy(tag_policy.into());
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyTagPolicy::from(result))
+        })
     }
     #[pyo3(signature = (table_id, operation))]
     pub fn generate_temporary_table_credentials(
         &self,
         py: Python,
         table_id: String,
-        operation: generate_temporary_table_credentials_request::Operation,
-    ) -> PyUnityCatalogResult<TemporaryCredential> {
+        operation: PyGenerateTemporaryTableCredentialsRequestOperation,
+    ) -> PyUnityCatalogResult<PyTemporaryCredential> {
         let request = self
             .client
-            .generate_temporary_table_credentials(table_id, operation);
+            .generate_temporary_table_credentials(table_id, operation.into());
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
+        })
     }
     #[pyo3(signature = (url, operation, dry_run = None))]
     pub fn generate_temporary_path_credentials(
         &self,
         py: Python,
         url: String,
-        operation: generate_temporary_path_credentials_request::Operation,
+        operation: PyGenerateTemporaryPathCredentialsRequestOperation,
         dry_run: Option<bool>,
-    ) -> PyUnityCatalogResult<TemporaryCredential> {
+    ) -> PyUnityCatalogResult<PyTemporaryCredential> {
         let mut request = self
             .client
-            .generate_temporary_path_credentials(url, operation);
+            .generate_temporary_path_credentials(url, operation.into());
         request = request.with_dry_run(dry_run);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
+        })
     }
     #[pyo3(signature = (volume_id, operation))]
     pub fn generate_temporary_volume_credentials(
         &self,
         py: Python,
         volume_id: String,
-        operation: generate_temporary_volume_credentials_request::Operation,
-    ) -> PyUnityCatalogResult<TemporaryCredential> {
+        operation: PyGenerateTemporaryVolumeCredentialsRequestOperation,
+    ) -> PyUnityCatalogResult<PyTemporaryCredential> {
         let request = self
             .client
-            .generate_temporary_volume_credentials(volume_id, operation);
+            .generate_temporary_volume_credentials(volume_id, operation.into());
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
+        })
     }
     #[pyo3(
         signature = (
@@ -933,15 +1044,15 @@ impl PyUnityCatalogClient {
         schema_name: String,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<Vec<Volume>> {
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyVolume>> {
         let mut request = self.client.list_volumes(catalog_name, schema_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
-            let result =
+            let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result)
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyVolume::from).collect())
         })
     }
     #[pyo3(
@@ -960,17 +1071,21 @@ impl PyUnityCatalogClient {
         catalog_name: String,
         schema_name: String,
         name: String,
-        volume_type: VolumeType,
+        volume_type: PyVolumeType,
         storage_location: Option<String>,
         comment: Option<String>,
-    ) -> PyUnityCatalogResult<Volume> {
-        let mut request = self
-            .client
-            .create_volume(catalog_name, schema_name, name, volume_type);
+    ) -> PyUnityCatalogResult<PyVolume> {
+        let mut request =
+            self.client
+                .create_volume(catalog_name, schema_name, name, volume_type.into());
         request = request.with_storage_location(storage_location);
         request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyVolume::from(result))
+        })
     }
     pub fn agent_skill(
         &self,

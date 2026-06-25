@@ -35,6 +35,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListFunctionsRequest
             max_results,
             page_token,
             include_browse,
+            ..Default::default()
         })
     }
 }
@@ -61,7 +62,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetFunctionRequest {
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(GetFunctionRequest { name })
+        Ok(GetFunctionRequest {
+            name,
+            ..Default::default()
+        })
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateFunctionRequest {
@@ -81,7 +85,11 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateFunctionRequest {
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
         let owner = body.owner;
-        Ok(UpdateFunctionRequest { name, owner })
+        Ok(UpdateFunctionRequest {
+            name,
+            owner,
+            ..Default::default()
+        })
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteFunctionRequest {
@@ -103,6 +111,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteFunctionReques
             .extract::<axum_extra::extract::Query<QueryParams>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteFunctionRequest { name, force })
+        Ok(DeleteFunctionRequest {
+            name,
+            force,
+            ..Default::default()
+        })
     }
 }

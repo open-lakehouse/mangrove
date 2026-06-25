@@ -1,5 +1,6 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
+#![allow(unused_imports)]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 use super::client::*;
 use crate::Result;
@@ -27,7 +28,10 @@ impl CommitBuilder {
     }
     /// The commit to ratify. Absent for a backfill-only notification.
     pub fn with_commit_info(mut self, commit_info: impl Into<Option<CommitInfo>>) -> Self {
-        self.request.commit_info = commit_info.into();
+        self.request.commit_info = {
+            let commit_info: ::core::option::Option<_> = commit_info.into();
+            buffa::MessageField::from(commit_info)
+        };
         self
     }
     /** Notify the catalog that commits up to and including this version have been
@@ -42,7 +46,10 @@ impl CommitBuilder {
     }
     /// An optional Delta metadata change accompanying the commit.
     pub fn with_metadata(mut self, metadata: impl Into<Option<Metadata>>) -> Self {
-        self.request.metadata = metadata.into();
+        self.request.metadata = {
+            let metadata: ::core::option::Option<_> = metadata.into();
+            buffa::MessageField::from(metadata)
+        };
         self
     }
 }

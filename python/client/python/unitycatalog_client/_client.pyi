@@ -49,21 +49,21 @@ class Agent:
 
     def __init__(
         self,
-        agent_id: str,
-        catalog_name: str,
-        endpoint: str,
-        full_name: str,
-        invocation_protocol: InvocationProtocol,
-        name: str,
-        schema_name: str,
+        agent_id: Optional[str] = None,
         capabilities: Optional[List[str]] = None,
+        catalog_name: Optional[str] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
         description: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        full_name: Optional[str] = None,
         input_schema: Optional[str] = None,
+        invocation_protocol: Optional[InvocationProtocol] = None,
         metastore_id: Optional[str] = None,
+        name: Optional[str] = None,
         owner: Optional[str] = None,
+        schema_name: Optional[str] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
     ) -> None: ...
@@ -118,22 +118,22 @@ class AgentSkill:
 
     def __init__(
         self,
-        agent_skill_id: str,
-        agent_skill_type: AgentSkillType,
-        catalog_name: str,
-        full_name: str,
-        metadata: Dict[str, str],
-        name: str,
-        schema_name: str,
-        storage_location: str,
+        agent_skill_id: Optional[str] = None,
+        agent_skill_type: Optional[AgentSkillType] = None,
         allowed_tools: Optional[List[str]] = None,
+        catalog_name: Optional[str] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
         description: Optional[str] = None,
+        full_name: Optional[str] = None,
         license: Optional[str] = None,
+        metadata: Optional[Dict[str, str]] = None,
         metastore_id: Optional[str] = None,
+        name: Optional[str] = None,
         owner: Optional[str] = None,
+        schema_name: Optional[str] = None,
+        storage_location: Optional[str] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
     ) -> None: ...
@@ -166,9 +166,9 @@ class AwsIamRoleConfig:
 
     def __init__(
         self,
-        role_arn: str,
         access_key_id: Optional[str] = None,
         region: Optional[str] = None,
+        role_arn: Optional[str] = None,
         secret_access_key: Optional[str] = None,
         session_token: Optional[str] = None,
     ) -> None: ...
@@ -187,7 +187,11 @@ class AwsTemporaryCredentials:
     """The token that users must pass to AWS API to use the temporary credentials."""
 
     def __init__(
-        self, access_key_id: str, access_point: str, secret_access_key: str, session_token: str
+        self,
+        access_key_id: Optional[str] = None,
+        access_point: Optional[str] = None,
+        secret_access_key: Optional[str] = None,
+        session_token: Optional[str] = None,
     ) -> None: ...
 
 class AzureAad:
@@ -197,7 +201,7 @@ class AzureAad:
     cloud services.
     """
 
-    def __init__(self, aad_token: str) -> None: ...
+    def __init__(self, aad_token: Optional[str] = None) -> None: ...
 
 class AzureManagedIdentity:
     """The Azure managed identity configuration."""
@@ -221,7 +225,7 @@ class AzureManagedIdentity:
 
     def __init__(
         self,
-        access_connector_id: str,
+        access_connector_id: Optional[str] = None,
         credential_id: Optional[str] = None,
         managed_identity_id: Optional[str] = None,
     ) -> None: ...
@@ -245,8 +249,8 @@ Specifically useful for workload identity federation."""
 
     def __init__(
         self,
-        application_id: str,
-        directory_id: str,
+        application_id: Optional[str] = None,
+        directory_id: Optional[str] = None,
         client_secret: Optional[str] = None,
         federated_token_file: Optional[str] = None,
     ) -> None: ...
@@ -259,13 +263,15 @@ class AzureStorageKey:
     account_name: str
     """The name of the storage account."""
 
-    def __init__(self, account_key: str, account_name: str) -> None: ...
+    def __init__(
+        self, account_key: Optional[str] = None, account_name: Optional[str] = None
+    ) -> None: ...
 
 class AzureUserDelegationSas:
     sas_token: str
     """The signed URI (SAS Token) used to access blob services for a given path"""
 
-    def __init__(self, sas_token: str) -> None: ...
+    def __init__(self, sas_token: Optional[str] = None) -> None: ...
 
 class Catalog:
     """A catalog is a root-level namespace that contains schemas."""
@@ -314,15 +320,15 @@ class Catalog:
 
     def __init__(
         self,
-        name: str,
-        properties: Dict[str, str],
         browse_only: Optional[bool] = None,
         catalog_type: Optional[CatalogType] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
         id: Optional[str] = None,
+        name: Optional[str] = None,
         owner: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None,
         provider_name: Optional[str] = None,
         share_name: Optional[str] = None,
         storage_location: Optional[str] = None,
@@ -359,18 +365,18 @@ class Column:
 
     def __init__(
         self,
-        name: str,
-        type_json: str,
-        type_name: ColumnTypeName,
-        type_text: str,
         column_id: Optional[str] = None,
         comment: Optional[str] = None,
+        name: Optional[str] = None,
         nullable: Optional[bool] = None,
         partition_index: Optional[int] = None,
         position: Optional[int] = None,
         type_interval_type: Optional[str] = None,
+        type_json: Optional[str] = None,
+        type_name: Optional[ColumnTypeName] = None,
         type_precision: Optional[int] = None,
         type_scale: Optional[int] = None,
+        type_text: Optional[str] = None,
     ) -> None: ...
 
 class CommitInfo:
@@ -404,11 +410,11 @@ class CommitInfo:
 
     def __init__(
         self,
-        file_modification_timestamp: int,
-        file_name: str,
-        file_size: int,
-        timestamp: int,
-        version: int,
+        file_modification_timestamp: Optional[int] = None,
+        file_name: Optional[str] = None,
+        file_size: Optional[int] = None,
+        timestamp: Optional[int] = None,
+        version: Optional[int] = None,
     ) -> None: ...
 
 class Credential:
@@ -460,10 +466,6 @@ class Credential:
 
     def __init__(
         self,
-        name: str,
-        purpose: Purpose,
-        read_only: bool,
-        used_for_managed_storage: bool,
         aws_iam_role: Optional[AwsIamRoleConfig] = None,
         azure_managed_identity: Optional[AzureManagedIdentity] = None,
         azure_service_principal: Optional[AzureServicePrincipal] = None,
@@ -474,9 +476,13 @@ class Credential:
         databricks_gcp_service_account: Optional[DatabricksGcpServiceAccount] = None,
         full_name: Optional[str] = None,
         id: Optional[str] = None,
+        name: Optional[str] = None,
         owner: Optional[str] = None,
+        purpose: Optional[Purpose] = None,
+        read_only: Optional[bool] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
+        used_for_managed_storage: Optional[bool] = None,
     ) -> None: ...
 
 class DataObject:
@@ -520,13 +526,13 @@ class DataObject:
 
     def __init__(
         self,
-        data_object_type: DataObjectType,
-        name: str,
         added_at: Optional[int] = None,
         added_by: Optional[str] = None,
         comment: Optional[str] = None,
+        data_object_type: Optional[DataObjectType] = None,
         enable_cdf: Optional[bool] = None,
         history_data_sharing_status: Optional[HistoryStatus] = None,
+        name: Optional[str] = None,
         partitions: Optional[List[str]] = None,
         shared_as: Optional[str] = None,
         start_version: Optional[int] = None,
@@ -537,10 +543,12 @@ class DataObjectUpdate:
 
     action: Action
     """Name of the share."""
-    data_object: DataObject
+    data_object: Optional[DataObject]
     """User-provided free-form text description."""
 
-    def __init__(self, action: Action, data_object: DataObject) -> None: ...
+    def __init__(
+        self, action: Optional[Action] = None, data_object: Optional[DataObject] = None
+    ) -> None: ...
 
 class DatabricksGcpServiceAccount:
     """The Databricks managed GCP service account configuration."""
@@ -598,7 +606,11 @@ class EntityTagAssignment:
     """The value of the tag."""
 
     def __init__(
-        self, entity_name: str, entity_type: str, tag_key: str, tag_value: Optional[str] = None
+        self,
+        entity_name: Optional[str] = None,
+        entity_type: Optional[str] = None,
+        tag_key: Optional[str] = None,
+        tag_value: Optional[str] = None,
     ) -> None: ...
 
 class ExternalLocation:
@@ -633,19 +645,19 @@ class ExternalLocation:
 
     def __init__(
         self,
-        credential_id: str,
-        credential_name: str,
-        name: str,
-        read_only: bool,
-        url: str,
         browse_only: Optional[bool] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
+        credential_id: Optional[str] = None,
+        credential_name: Optional[str] = None,
         external_location_id: Optional[str] = None,
+        name: Optional[str] = None,
         owner: Optional[str] = None,
+        read_only: Optional[bool] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
+        url: Optional[str] = None,
     ) -> None: ...
 
 class Function:
@@ -709,30 +721,30 @@ class Function:
 
     def __init__(
         self,
-        catalog_name: str,
-        data_type: str,
-        full_data_type: str,
-        full_name: str,
-        is_deterministic: bool,
-        is_null_call: bool,
-        name: str,
-        parameter_style: ParameterStyle,
-        properties: Dict[str, str],
-        routine_body: RoutineBody,
-        schema_name: str,
-        security_type: SecurityType,
-        sql_data_access: SqlDataAccess,
+        catalog_name: Optional[str] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
+        data_type: Optional[str] = None,
+        full_data_type: Optional[str] = None,
+        full_name: Optional[str] = None,
         function_id: Optional[str] = None,
         input_params: Optional[FunctionParameterInfos] = None,
+        is_deterministic: Optional[bool] = None,
+        is_null_call: Optional[bool] = None,
+        name: Optional[str] = None,
         owner: Optional[str] = None,
+        parameter_style: Optional[ParameterStyle] = None,
+        properties: Optional[Dict[str, str]] = None,
         return_params: Optional[str] = None,
+        routine_body: Optional[RoutineBody] = None,
         routine_body_language: Optional[str] = None,
         routine_definition: Optional[str] = None,
         routine_dependencies: Optional[str] = None,
+        schema_name: Optional[str] = None,
+        security_type: Optional[SecurityType] = None,
         specific_name: Optional[str] = None,
+        sql_data_access: Optional[SqlDataAccess] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
     ) -> None: ...
@@ -745,7 +757,7 @@ class FunctionDependency:
     Full name of the dependent function, in the form of catalog_name.schema_name.function_name.
     """
 
-    def __init__(self, function_full_name: str) -> None: ...
+    def __init__(self, function_full_name: Optional[str] = None) -> None: ...
 
 class FunctionParameterInfo:
     """Information about a single function parameter."""
@@ -777,18 +789,18 @@ class FunctionParameterInfo:
 
     def __init__(
         self,
-        name: str,
-        parameter_mode: ParameterMode,
-        parameter_type: FunctionParameterType,
-        type_name: ColumnTypeName,
-        type_text: str,
         comment: Optional[str] = None,
+        name: Optional[str] = None,
         parameter_default: Optional[str] = None,
+        parameter_mode: Optional[ParameterMode] = None,
+        parameter_type: Optional[FunctionParameterType] = None,
         position: Optional[int] = None,
         type_interval_type: Optional[str] = None,
         type_json: Optional[str] = None,
+        type_name: Optional[ColumnTypeName] = None,
         type_precision: Optional[int] = None,
         type_scale: Optional[int] = None,
+        type_text: Optional[str] = None,
     ) -> None: ...
 
 class FunctionParameterInfos:
@@ -803,7 +815,7 @@ class GcpOauthToken:
     oauth_token: str
     """The OAuth token used to access Google Cloud services."""
 
-    def __init__(self, oauth_token: str) -> None: ...
+    def __init__(self, oauth_token: Optional[str] = None) -> None: ...
 
 class GetCommitsResponse:
     """Response listing ratified-but-unpublished commits for a table."""
@@ -820,7 +832,7 @@ class GetCommitsResponse:
     """
 
     def __init__(
-        self, latest_table_version: int, commits: Optional[List[CommitInfo]] = None
+        self, commits: Optional[List[CommitInfo]] = None, latest_table_version: Optional[int] = None
     ) -> None: ...
 
 class GetPermissionsResponse:
@@ -841,7 +853,7 @@ class GetTableExistsResponse:
     table_exists: bool
     """Boolean reflecting if table exists."""
 
-    def __init__(self, table_exists: bool) -> None: ...
+    def __init__(self, table_exists: Optional[bool] = None) -> None: ...
 
 class ListEntityTagAssignmentsResponse:
     """List entity tag assignments response."""
@@ -880,7 +892,7 @@ class Metadata:
 
     def __init__(
         self,
-        configuration: Dict[str, str],
+        configuration: Optional[Dict[str, str]] = None,
         id: Optional[str] = None,
         schema_string: Optional[str] = None,
     ) -> None: ...
@@ -894,7 +906,10 @@ class PermissionsChange:
     """The set of privileges to remove."""
 
     def __init__(
-        self, principal: str, add: Optional[List[str]] = None, remove: Optional[List[str]] = None
+        self,
+        add: Optional[List[str]] = None,
+        principal: Optional[str] = None,
+        remove: Optional[List[str]] = None,
     ) -> None: ...
 
 class PrivilegeAssignment:
@@ -906,7 +921,9 @@ class PrivilegeAssignment:
     privileges: List[str]
     """The privileges assigned to the principal."""
 
-    def __init__(self, principal: str, privileges: Optional[List[str]] = None) -> None: ...
+    def __init__(
+        self, principal: Optional[str] = None, privileges: Optional[List[str]] = None
+    ) -> None: ...
 
 class Provider:
     """A provider represents an organization sharing data with this metastore.
@@ -942,14 +959,14 @@ class Provider:
 
     def __init__(
         self,
-        authentication_type: ProviderAuthenticationType,
-        name: str,
-        properties: Dict[str, str],
+        authentication_type: Optional[ProviderAuthenticationType] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
         id: Optional[str] = None,
+        name: Optional[str] = None,
         owner: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None,
         recipient_profile_str: Optional[str] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
@@ -963,7 +980,12 @@ class R2TemporaryCredentials:
     session_token: str
     """The generated JWT that users must pass to use the temporary credentials."""
 
-    def __init__(self, access_key_id: str, secret_access_key: str, session_token: str) -> None: ...
+    def __init__(
+        self,
+        access_key_id: Optional[str] = None,
+        secret_access_key: Optional[str] = None,
+        session_token: Optional[str] = None,
+    ) -> None: ...
 
 class Recipient:
     authentication_type: AuthenticationType
@@ -991,14 +1013,14 @@ class Recipient:
 
     def __init__(
         self,
-        authentication_type: AuthenticationType,
-        name: str,
-        properties: Dict[str, str],
+        authentication_type: Optional[AuthenticationType] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
         id: Optional[str] = None,
+        name: Optional[str] = None,
         owner: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None,
         tokens: Optional[List[RecipientToken]] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
@@ -1025,13 +1047,13 @@ class RecipientToken:
 
     def __init__(
         self,
-        activation_url: str,
-        created_at: int,
-        created_by: str,
-        expiration_time: int,
-        id: str,
-        updated_at: int,
-        updated_by: str,
+        activation_url: Optional[str] = None,
+        created_at: Optional[int] = None,
+        created_by: Optional[str] = None,
+        expiration_time: Optional[int] = None,
+        id: Optional[str] = None,
+        updated_at: Optional[int] = None,
+        updated_by: Optional[str] = None,
     ) -> None: ...
 
 class Schema:
@@ -1075,14 +1097,14 @@ class Schema:
 
     def __init__(
         self,
-        catalog_name: str,
-        full_name: str,
-        name: str,
-        properties: Dict[str, str],
+        catalog_name: Optional[str] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
+        full_name: Optional[str] = None,
+        name: Optional[str] = None,
         owner: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None,
         schema_id: Optional[str] = None,
         storage_location: Optional[str] = None,
         storage_root: Optional[str] = None,
@@ -1116,11 +1138,11 @@ class Share:
 
     def __init__(
         self,
-        name: str,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
         id: Optional[str] = None,
+        name: Optional[str] = None,
         objects: Optional[List[DataObject]] = None,
         owner: Optional[str] = None,
         storage_location: Optional[str] = None,
@@ -1166,14 +1188,14 @@ class StagingTable:
 
     def __init__(
         self,
-        catalog_name: str,
-        id: str,
-        name: str,
-        schema_name: str,
-        stage_committed: bool,
-        staging_location: str,
+        catalog_name: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        schema_name: Optional[str] = None,
+        stage_committed: Optional[bool] = None,
+        staging_location: Optional[str] = None,
     ) -> None: ...
 
 class Table:
@@ -1231,22 +1253,22 @@ class Table:
 
     def __init__(
         self,
-        catalog_name: str,
-        data_source_format: DataSourceFormat,
-        full_name: str,
-        name: str,
-        properties: Dict[str, str],
-        schema_name: str,
-        table_type: TableType,
+        catalog_name: Optional[str] = None,
         columns: Optional[List[Column]] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
+        data_source_format: Optional[DataSourceFormat] = None,
         deleted_at: Optional[int] = None,
+        full_name: Optional[str] = None,
+        name: Optional[str] = None,
         owner: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None,
+        schema_name: Optional[str] = None,
         storage_credential_name: Optional[str] = None,
         storage_location: Optional[str] = None,
         table_id: Optional[str] = None,
+        table_type: Optional[TableType] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
         view_definition: Optional[str] = None,
@@ -1259,14 +1281,16 @@ class TableDependency:
     table_full_name: str
     """Full name of the dependent table, in the form of catalog_name.schema_name.table_name."""
 
-    def __init__(self, table_full_name: str) -> None: ...
+    def __init__(self, table_full_name: Optional[str] = None) -> None: ...
 
 class TableSummary:
     full_name: str
     """The full name of the table."""
     table_type: TableType
 
-    def __init__(self, full_name: str, table_type: TableType) -> None: ...
+    def __init__(
+        self, full_name: Optional[str] = None, table_type: Optional[TableType] = None
+    ) -> None: ...
 
 class TagPolicy:
     """A governed tag definition (tag policy).
@@ -1293,10 +1317,10 @@ class TagPolicy:
 
     def __init__(
         self,
-        tag_key: str,
         created_at: Optional[int] = None,
         description: Optional[str] = None,
         id: Optional[str] = None,
+        tag_key: Optional[str] = None,
         updated_at: Optional[int] = None,
         values: Optional[List[Value]] = None,
     ) -> None: ...
@@ -1324,8 +1348,8 @@ class TemporaryCredential:
 
     def __init__(
         self,
-        expiration_time: int,
-        url: str,
+        expiration_time: Optional[int] = None,
+        url: Optional[str] = None,
         aws_temp_credentials: Optional[AwsTemporaryCredentials] = None,
         azure_aad: Optional[AzureAad] = None,
         azure_user_delegation_sas: Optional[AzureUserDelegationSas] = None,
@@ -1347,7 +1371,7 @@ class Value:
     name: str
     """The name of the allowed value."""
 
-    def __init__(self, name: str) -> None: ...
+    def __init__(self, name: Optional[str] = None) -> None: ...
 
 class Volume:
     browse_only: Optional[bool]
@@ -1390,21 +1414,21 @@ class Volume:
 
     def __init__(
         self,
-        catalog_name: str,
-        full_name: str,
-        name: str,
-        schema_name: str,
-        storage_location: str,
-        volume_id: str,
-        volume_type: VolumeType,
         browse_only: Optional[bool] = None,
+        catalog_name: Optional[str] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
+        full_name: Optional[str] = None,
         metastore_id: Optional[str] = None,
+        name: Optional[str] = None,
         owner: Optional[str] = None,
+        schema_name: Optional[str] = None,
+        storage_location: Optional[str] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
+        volume_id: Optional[str] = None,
+        volume_type: Optional[VolumeType] = None,
     ) -> None: ...
 
 class Action(enum.Enum):

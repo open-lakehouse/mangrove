@@ -9,6 +9,7 @@ descriptors: sharing-descriptors.bin
 buf_gen: buf.gen.sharing.yaml
 
 generate:
+  runtime: buffa
   # `output_common` (axum extractors) and `output_client` must be distinct dirs:
   # both write a per-service `mod.rs`, so sharing them would clobber one.
   output_common: crates/sharing-client/src/codegen/extractors

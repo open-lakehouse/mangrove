@@ -215,8 +215,10 @@ impl UnityCatalogSchemaProvider {
         full_name: &str,
         table: &unitycatalog_common::models::tables::v1::Table,
     ) -> Result<Arc<dyn TableProvider>> {
-        let format = DataSourceFormat::try_from(table.data_source_format)
-            .unwrap_or(DataSourceFormat::Unspecified);
+        let format = table
+            .data_source_format
+            .as_known()
+            .unwrap_or(DataSourceFormat::DATA_SOURCE_FORMAT_UNSPECIFIED);
         if format != DataSourceFormat::Delta {
             return Err(DataFusionError::NotImplemented(format!(
                 "Unity Catalog table '{full_name}' has unsupported data source format {format:?}; \

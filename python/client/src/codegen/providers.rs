@@ -5,16 +5,21 @@ use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::ProviderClient;
 use unitycatalog_common::models::providers::v1::*;
+use unitycatalog_common::models::*;
 #[pyclass(name = "ProviderClient")]
 pub struct PyProviderClient {
     pub(crate) client: ProviderClient,
 }
 #[pymethods]
 impl PyProviderClient {
-    pub fn get(&self, py: Python) -> PyUnityCatalogResult<Provider> {
+    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyProvider> {
         let request = self.client.get();
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyProvider::from(result))
+        })
     }
     #[pyo3(
         signature = (
@@ -33,7 +38,7 @@ impl PyProviderClient {
         comment: Option<String>,
         recipient_profile_str: Option<String>,
         properties: Option<HashMap<String, String>>,
-    ) -> PyUnityCatalogResult<Provider> {
+    ) -> PyUnityCatalogResult<PyProvider> {
         let mut request = self.client.update();
         request = request.with_new_name(new_name);
         request = request.with_owner(owner);
@@ -43,7 +48,11 @@ impl PyProviderClient {
             request = request.with_properties(properties);
         }
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyProvider::from(result))
+        })
     }
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();

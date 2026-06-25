@@ -254,10 +254,11 @@ impl TemporaryCredentialClient {
                         include_browse: Some(false),
                         include_delta_metadata: Some(false),
                         include_manifest_capabilities: Some(false),
+                        ..Default::default()
                     })
                     .await?;
                 (
-                    table_info.table_id().to_string(),
+                    table_info.table_id.clone().unwrap_or_default(),
                     table_info.storage_location.clone(),
                 )
             }
@@ -269,7 +270,8 @@ impl TemporaryCredentialClient {
                 "temporary-table-credentials",
                 &GenerateTemporaryTableCredentialsRequest {
                     table_id,
-                    operation: operation.into(),
+                    operation: ::buffa::EnumValue::Known(operation.into()),
+                    ..Default::default()
                 },
             )
             .await?;
@@ -289,8 +291,9 @@ impl TemporaryCredentialClient {
                 "temporary-path-credentials",
                 &GenerateTemporaryPathCredentialsRequest {
                     url: url.to_string(),
-                    operation: operation.into(),
+                    operation: ::buffa::EnumValue::Known(operation.into()),
                     dry_run: dry_run.into(),
+                    ..Default::default()
                 },
             )
             .await?,
@@ -331,6 +334,7 @@ impl TemporaryCredentialClient {
                     .get_volume(&GetVolumeRequest {
                         name,
                         include_browse: Some(false),
+                        ..Default::default()
                     })
                     .await?;
                 (info.volume_id, Some(info.storage_location))
@@ -343,7 +347,8 @@ impl TemporaryCredentialClient {
                 "temporary-volume-credentials",
                 &GenerateTemporaryVolumeCredentialsRequest {
                     volume_id,
-                    operation: operation.into(),
+                    operation: ::buffa::EnumValue::Known(operation.into()),
+                    ..Default::default()
                 },
             )
             .await?;

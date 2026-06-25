@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use super::builders::*;
 use super::client::FunctionServiceClient;
+use unitycatalog_common::models::functions::v1::*;
 /// A client scoped to a single `function`.
 #[derive(Clone)]
 pub struct FunctionClient {

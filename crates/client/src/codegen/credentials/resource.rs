@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use super::builders::*;
 use super::client::CredentialServiceClient;
+use unitycatalog_common::models::credentials::v1::*;
 /// A client scoped to a single `credential`.
 #[derive(Clone)]
 pub struct CredentialClient {

@@ -16,6 +16,7 @@ unitycatalog-client = { path = "../client" }
 unitycatalog-common = { path = "../common" }
 
 # workspace dependencies
+buffa = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 olai-http = { workspace = true, features = ["recording"] }
 itertools = { workspace = true }

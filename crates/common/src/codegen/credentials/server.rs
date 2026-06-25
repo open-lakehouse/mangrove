@@ -26,9 +26,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListCredentialsReque
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
         Ok(ListCredentialsRequest {
-            purpose: purpose.map(|v| v as i32),
+            purpose: purpose.map(buffa::EnumValue::Known),
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -55,7 +56,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetCredentialRequest
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(GetCredentialRequest { name })
+        Ok(GetCredentialRequest {
+            name,
+            ..Default::default()
+        })
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateCredentialRequest {
@@ -112,6 +116,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateCredentialRequest {
             azure_storage_key,
             aws_iam_role,
             databricks_gcp_service_account,
+            ..Default::default()
         })
     }
 }
@@ -125,6 +130,9 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteCredentialRequ
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteCredentialRequest { name })
+        Ok(DeleteCredentialRequest {
+            name,
+            ..Default::default()
+        })
     }
 }

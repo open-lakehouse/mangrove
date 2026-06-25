@@ -1,16 +1,22 @@
 // @generated — do not edit by hand.
 #![allow(unexpected_cfgs)]
 #![allow(clippy::empty_docs)]
+#![allow(non_camel_case_types)]
+#![allow(clippy::derivable_impls)]
 use std::collections::HashMap;
 pub mod labels;
+pub use labels::{ObjectLabel, Resource};
+#[cfg(feature = "python")]
+pub mod pyo3_impls;
 pub use agent_skills::v0alpha1::AgentSkill;
 pub use agents::v0alpha1::Agent;
 pub use catalogs::v1::Catalog;
 pub use credentials::v1::Credential;
 pub use external_locations::v1::ExternalLocation;
 pub use functions::v1::Function;
-pub use labels::{ObjectLabel, Resource};
 pub use providers::v1::Provider;
+#[cfg(feature = "python")]
+pub use pyo3_impls::*;
 pub use recipients::v1::Recipient;
 pub use schemas::v1::Schema;
 pub use shares::v1::Share;
@@ -23,112 +29,80 @@ pub type PropertyMap = HashMap<String, serde_json::Value>;
 pub mod agent_skills {
     pub mod v0alpha1 {
         include!("./../gen/unitycatalog.agent_skills.v0alpha1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.agent_skills.v0alpha1.tonic.rs");
     }
 }
 pub mod agents {
     pub mod v0alpha1 {
         include!("./../gen/unitycatalog.agents.v0alpha1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.agents.v0alpha1.tonic.rs");
     }
 }
 pub mod catalogs {
     pub mod v1 {
         include!("./../gen/unitycatalog.catalogs.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.catalogs.v1.tonic.rs");
     }
 }
 pub mod credentials {
     pub mod v1 {
         include!("./../gen/unitycatalog.credentials.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.credentials.v1.tonic.rs");
     }
 }
 pub mod delta_commits {
     pub mod v1 {
         include!("./../gen/unitycatalog.delta_commits.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.delta_commits.v1.tonic.rs");
     }
 }
 pub mod external_locations {
     pub mod v1 {
         include!("./../gen/unitycatalog.external_locations.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.external_locations.v1.tonic.rs");
     }
 }
 pub mod functions {
     pub mod v1 {
         include!("./../gen/unitycatalog.functions.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.functions.v1.tonic.rs");
     }
 }
 pub mod providers {
     pub mod v1 {
         include!("./../gen/unitycatalog.providers.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.providers.v1.tonic.rs");
     }
 }
 pub mod recipients {
     pub mod v1 {
         include!("./../gen/unitycatalog.recipients.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.recipients.v1.tonic.rs");
     }
 }
 pub mod schemas {
     pub mod v1 {
         include!("./../gen/unitycatalog.schemas.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.schemas.v1.tonic.rs");
     }
 }
 pub mod shares {
     pub mod v1 {
         include!("./../gen/unitycatalog.shares.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.shares.v1.tonic.rs");
     }
 }
 pub mod staging_tables {
     pub mod v1 {
         include!("./../gen/unitycatalog.staging_tables.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.staging_tables.v1.tonic.rs");
     }
 }
 pub mod tables {
     pub mod v1 {
         include!("./../gen/unitycatalog.tables.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.tables.v1.tonic.rs");
     }
 }
 pub mod tags {
     pub mod v1 {
         include!("./../gen/unitycatalog.tags.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.tags.v1.tonic.rs");
     }
 }
 pub mod temporary_credentials {
     pub mod v1 {
         include!("./../gen/unitycatalog.temporary_credentials.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.temporary_credentials.v1.tonic.rs");
     }
 }
 pub mod volumes {
     pub mod v1 {
         include!("./../gen/unitycatalog.volumes.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./../gen/unitycatalog.volumes.v1.tonic.rs");
     }
 }

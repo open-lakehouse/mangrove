@@ -57,13 +57,20 @@ object_store = { version = "0.13.2", features = ["azure", "aws", "gcp"] }
 # Git ref pinned to trestle main, which carries the Azurite SAS fix + the
 # ObjectStore::create(id) change (external resource-id adoption). Bump the rev
 # as trestle main advances; published crate isn't usable yet (proxy offset).
-olai-http = { git = "https://github.com/open-lakehouse/trestle", rev = "be0368836baeb43c7212ff220bf65543f58536d0" }
-olai-store = { git = "https://github.com/open-lakehouse/trestle", rev = "be0368836baeb43c7212ff220bf65543f58536d0" }
+olai-http = { git = "https://github.com/open-lakehouse/trestle", rev = "091254e3170a85fa89411a8a4221a0ad8027896e" }
+olai-store = { git = "https://github.com/open-lakehouse/trestle", rev = "091254e3170a85fa89411a8a4221a0ad8027896e" }
+# buffa proto runtime (replaces the prost + pbjson stack for generated models).
+# Version tracks the `buf.build/anthropics/buffa` plugin pinned in buf.gen.yaml.
+buffa = { version = "0.7", features = ["json"] }
+buffa-types = { version = "0.7" }
 pbjson = { version = "0.9" }
 pbjson-types = "0.9"
 prost = { version = "0.14.1" }
 prost-types = { version = "0.14.1" }
 pyo3 = { version = "0.24", features = ["macros", "indexmap"] }
+# Bridges generated buffa models across the PyO3 boundary (serde <-> Python objects)
+# in the trestle-generated `models/_gen/pyo3_impls.rs`.
+pythonize = { version = "0.24" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 serde_yml = { version = "0.0.12" }

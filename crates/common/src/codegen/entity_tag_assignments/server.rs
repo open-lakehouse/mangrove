@@ -31,6 +31,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListEntityTagAssignm
             entity_name,
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -61,6 +62,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetEntityTagAssignme
             entity_type,
             entity_name,
             tag_key,
+            ..Default::default()
         })
     }
 }
@@ -87,6 +89,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateEntityTagAssignment
             tag_key,
             tag_assignment,
             update_mask,
+            ..Default::default()
         })
     }
 }
@@ -104,6 +107,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteEntityTagAssig
             entity_type,
             entity_name,
             tag_key,
+            ..Default::default()
         })
     }
 }

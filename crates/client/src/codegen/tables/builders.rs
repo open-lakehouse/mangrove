@@ -1,5 +1,6 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
+#![allow(unused_imports)]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 type BoxStr<'a, T> = ::futures::stream::BoxStream<'a, T>;
 use super::super::stream_paginated;
@@ -186,8 +187,8 @@ impl CreateTableBuilder {
             name: name.into(),
             schema_name: schema_name.into(),
             catalog_name: catalog_name.into(),
-            table_type: table_type as i32,
-            data_source_format: data_source_format as i32,
+            table_type: buffa::EnumValue::Known(table_type),
+            data_source_format: buffa::EnumValue::Known(data_source_format),
             ..Default::default()
         };
         Self { client, request }
@@ -237,7 +238,10 @@ impl CreateTableBuilder {
         mut self,
         view_dependencies: impl Into<Option<DependencyList>>,
     ) -> Self {
-        self.request.view_dependencies = view_dependencies.into();
+        self.request.view_dependencies = {
+            let view_dependencies: ::core::option::Option<_> = view_dependencies.into();
+            buffa::MessageField::from(view_dependencies)
+        };
         self
     }
 }
@@ -307,6 +311,7 @@ impl GetTableExistsBuilder {
     pub(crate) fn new(client: TableServiceClient, full_name: impl Into<String>) -> Self {
         let request = GetTableExistsRequest {
             full_name: full_name.into(),
+            ..Default::default()
         };
         Self { client, request }
     }
@@ -331,6 +336,7 @@ impl DeleteTableBuilder {
     pub(crate) fn new(client: TableServiceClient, full_name: impl Into<String>) -> Self {
         let request = DeleteTableRequest {
             full_name: full_name.into(),
+            ..Default::default()
         };
         Self { client, request }
     }

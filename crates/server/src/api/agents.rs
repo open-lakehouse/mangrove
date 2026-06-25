@@ -24,9 +24,10 @@ impl<T: ResourceStore + Policy<RequestContext>> AgentHandler<RequestContext> for
         // Agents are metadata-only: validate the invocation protocol is a known
         // variant (a 2-arg `try_from` rejects unspecified/unknown values) and
         // persist the record. There is no storage location to resolve.
-        let protocol = InvocationProtocol::try_from(request.invocation_protocol)
-            .ok()
-            .filter(|p| *p != InvocationProtocol::Unspecified)
+        let protocol = request
+            .invocation_protocol
+            .as_known()
+            .filter(|p| *p != InvocationProtocol::INVOCATION_PROTOCOL_UNSPECIFIED)
             .ok_or_else(|| {
                 Error::invalid_argument("invocation_protocol must be a known protocol")
             })?;
@@ -43,7 +44,7 @@ impl<T: ResourceStore + Policy<RequestContext>> AgentHandler<RequestContext> for
             catalog_name: request.catalog_name,
             schema_name: request.schema_name,
             agent_id: uuid::Uuid::now_v7().hyphenated().to_string(),
-            invocation_protocol: protocol as i32,
+            invocation_protocol: ::buffa::EnumValue::Known(protocol),
             endpoint: request.endpoint,
             description: request.description,
             capabilities: request.capabilities,
@@ -76,6 +77,7 @@ impl<T: ResourceStore + Policy<RequestContext>> AgentHandler<RequestContext> for
         Ok(ListAgentsResponse {
             agents: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -105,12 +107,13 @@ impl<T: ResourceStore + Policy<RequestContext>> AgentHandler<RequestContext> for
         let current: Agent = self.get(&ident).await?.0.try_into()?;
         let new_name = request.new_name.as_deref().unwrap_or(agent_name);
         let protocol = match request.invocation_protocol {
-            Some(p) => InvocationProtocol::try_from(p)
-                .ok()
-                .filter(|p| *p != InvocationProtocol::Unspecified)
-                .ok_or_else(|| {
-                    Error::invalid_argument("invocation_protocol must be a known protocol")
-                })? as i32,
+            Some(p) => ::buffa::EnumValue::Known(
+                p.as_known()
+                    .filter(|p| *p != InvocationProtocol::INVOCATION_PROTOCOL_UNSPECIFIED)
+                    .ok_or_else(|| {
+                        Error::invalid_argument("invocation_protocol must be a known protocol")
+                    })?,
+            ),
             None => current.invocation_protocol,
         };
         let resource = Agent {
@@ -239,8 +242,8 @@ mod tests {
         h.create_credential(
             CreateCredentialRequest {
                 name: "cred".to_string(),
-                purpose: Purpose::Storage as i32,
-                aws_iam_role: Some(AwsIamRoleConfig {
+                purpose: ::buffa::EnumValue::Known(Purpose::Storage),
+                aws_iam_role: ::buffa::MessageField::some(AwsIamRoleConfig {
                     role_arn: "arn:aws:iam::123456789012:role/test".to_string(),
                     ..Default::default()
                 }),
@@ -288,12 +291,13 @@ mod tests {
             catalog_name: "cat".to_string(),
             schema_name: "sch".to_string(),
             name: name.to_string(),
-            invocation_protocol: protocol as i32,
+            invocation_protocol: ::buffa::EnumValue::Known(protocol),
             endpoint: "https://agent.example.com".to_string(),
             description: Some("does things".to_string()),
             capabilities: vec!["sql_query".to_string()],
             input_schema: Some("{\"type\":\"object\"}".to_string()),
             comment: None,
+            ..Default::default()
         }
     }
 
@@ -307,7 +311,10 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(created.full_name, "cat.sch.agt");
-        assert_eq!(created.invocation_protocol, InvocationProtocol::Mcp as i32);
+        assert_eq!(
+            created.invocation_protocol,
+            ::buffa::EnumValue::Known(InvocationProtocol::Mcp)
+        );
         assert_eq!(created.endpoint, "https://agent.example.com");
         assert_eq!(created.capabilities, vec!["sql_query".to_string()]);
         assert!(uuid::Uuid::parse_str(&created.agent_id).is_ok());
@@ -332,7 +339,7 @@ mod tests {
         setup_namespace(&h).await;
         let res = h
             .create_agent(
-                create_request("agt", InvocationProtocol::Unspecified),
+                create_request("agt", InvocationProtocol::INVOCATION_PROTOCOL_UNSPECIFIED),
                 ctx(),
             )
             .await;
@@ -366,6 +373,7 @@ mod tests {
         h.delete_agent(
             DeleteAgentRequest {
                 name: "cat.sch.a1".to_string(),
+                ..Default::default()
             },
             ctx(),
         )
@@ -406,7 +414,10 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(updated.endpoint, "https://new.example.com");
-        assert_eq!(updated.invocation_protocol, InvocationProtocol::Mcp as i32);
+        assert_eq!(
+            updated.invocation_protocol,
+            ::buffa::EnumValue::Known(InvocationProtocol::Mcp)
+        );
         assert_eq!(updated.capabilities, vec!["sql_query".to_string()]);
         assert_eq!(updated.description.as_deref(), Some("does things"));
     }

@@ -1,5 +1,6 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
+#![allow(unused_imports)]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 type BoxStr<'a, T> = ::futures::stream::BoxStream<'a, T>;
 use super::super::stream_paginated;
@@ -96,7 +97,7 @@ impl CreateAgentSkillBuilder {
             catalog_name: catalog_name.into(),
             schema_name: schema_name.into(),
             name: name.into(),
-            agent_skill_type: agent_skill_type as i32,
+            agent_skill_type: buffa::EnumValue::Known(agent_skill_type),
             ..Default::default()
         };
         Self { client, request }
@@ -247,7 +248,10 @@ impl DeleteAgentSkillBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `AgentSkillServiceClient`.
     pub(crate) fn new(client: AgentSkillServiceClient, name: impl Into<String>) -> Self {
-        let request = DeleteAgentSkillRequest { name: name.into() };
+        let request = DeleteAgentSkillRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }

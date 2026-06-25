@@ -25,6 +25,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListProvidersRequest
         Ok(ListProvidersRequest {
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -51,7 +52,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetProviderRequest {
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(GetProviderRequest { name })
+        Ok(GetProviderRequest {
+            name,
+            ..Default::default()
+        })
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateProviderRequest {
@@ -84,6 +88,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateProviderRequest {
             comment,
             recipient_profile_str,
             properties,
+            ..Default::default()
         })
     }
 }
@@ -97,6 +102,9 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteProviderReques
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteProviderRequest { name })
+        Ok(DeleteProviderRequest {
+            name,
+            ..Default::default()
+        })
     }
 }

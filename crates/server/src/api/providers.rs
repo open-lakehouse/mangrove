@@ -74,6 +74,7 @@ impl<T: ResourceStore + Policy<RequestContext>> ProviderHandler<RequestContext> 
         Ok(ListProvidersResponse {
             providers: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
 

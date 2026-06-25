@@ -35,6 +35,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListAgentSkillsReque
             max_results,
             page_token,
             include_browse,
+            ..Default::default()
         })
     }
 }
@@ -73,6 +74,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetAgentSkillRequest
         Ok(GetAgentSkillRequest {
             name,
             include_browse,
+            ..Default::default()
         })
     }
 }
@@ -106,6 +108,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateAgentSkillRequest {
             allowed_tools,
             comment,
             owner,
+            ..Default::default()
         })
     }
 }
@@ -119,6 +122,9 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteAgentSkillRequ
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteAgentSkillRequest { name })
+        Ok(DeleteAgentSkillRequest {
+            name,
+            ..Default::default()
+        })
     }
 }

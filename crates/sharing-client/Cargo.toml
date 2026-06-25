@@ -14,13 +14,13 @@ unitycatalog-common = { path = "../common" }
 
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }
+buffa = { workspace = true }
+buffa-types = { workspace = true }
 chrono = { workspace = true }
 delta_kernel = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true }
 olai-http = { workspace = true }
-pbjson = { workspace = true }
-prost = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
