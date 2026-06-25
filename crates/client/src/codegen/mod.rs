@@ -18,6 +18,7 @@ pub mod tables;
 pub mod tag_policies;
 pub mod temporary_credentials;
 pub mod volumes;
+#[allow(unused_imports)]
 pub use client::*;
 use futures::Future;
 pub(super) fn stream_paginated<F, Fut, S, T>(

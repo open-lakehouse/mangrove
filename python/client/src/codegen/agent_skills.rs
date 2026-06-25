@@ -5,6 +5,7 @@ use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::AgentSkillClient;
 use unitycatalog_common::models::agent_skills::v0alpha1::*;
+use unitycatalog_common::models::*;
 #[pyclass(name = "AgentSkillClient")]
 pub struct PyAgentSkillClient {
     pub(crate) client: AgentSkillClient,
@@ -16,11 +17,15 @@ impl PyAgentSkillClient {
         &self,
         py: Python,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<AgentSkill> {
+    ) -> PyUnityCatalogResult<PyAgentSkill> {
         let mut request = self.client.get();
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyAgentSkill::from(result))
+        })
     }
     #[pyo3(
         signature = (
@@ -39,7 +44,7 @@ impl PyAgentSkillClient {
         allowed_tools: Option<Vec<String>>,
         comment: Option<String>,
         owner: Option<String>,
-    ) -> PyUnityCatalogResult<AgentSkill> {
+    ) -> PyUnityCatalogResult<PyAgentSkill> {
         let mut request = self.client.update();
         request = request.with_new_name(new_name);
         request = request.with_description(description);
@@ -49,7 +54,11 @@ impl PyAgentSkillClient {
         request = request.with_comment(comment);
         request = request.with_owner(owner);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyAgentSkill::from(result))
+        })
     }
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();

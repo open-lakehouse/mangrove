@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use super::builders::*;
 use super::client::TableServiceClient;
+use unitycatalog_common::models::tables::v1::*;
 /// A client scoped to a single `table`.
 #[derive(Clone)]
 pub struct TableClient {

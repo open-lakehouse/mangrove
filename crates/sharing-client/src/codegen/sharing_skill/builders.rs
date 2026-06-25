@@ -1,5 +1,6 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
+#![allow(unused_imports)]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 use super::client::*;
 use crate::Result;

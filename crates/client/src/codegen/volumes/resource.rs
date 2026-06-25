@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use super::builders::*;
 use super::client::VolumeServiceClient;
+use unitycatalog_common::models::volumes::v1::*;
 /// A client scoped to a single `volume`.
 #[derive(Clone)]
 pub struct VolumeClient {

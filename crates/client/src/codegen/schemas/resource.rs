@@ -1,9 +1,11 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use super::builders::*;
 use super::client::SchemaServiceClient;
 use unitycatalog_common::models::agent_skills::v0alpha1::*;
 use unitycatalog_common::models::agents::v0alpha1::*;
 use unitycatalog_common::models::functions::v1::*;
+use unitycatalog_common::models::schemas::v1::*;
 use unitycatalog_common::models::tables::v1::*;
 use unitycatalog_common::models::volumes::v1::*;
 /// A client scoped to a single `schema`.

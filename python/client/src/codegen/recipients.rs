@@ -5,16 +5,21 @@ use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::RecipientClient;
 use unitycatalog_common::models::recipients::v1::*;
+use unitycatalog_common::models::*;
 #[pyclass(name = "RecipientClient")]
 pub struct PyRecipientClient {
     pub(crate) client: RecipientClient,
 }
 #[pymethods]
 impl PyRecipientClient {
-    pub fn get(&self, py: Python) -> PyUnityCatalogResult<Recipient> {
+    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyRecipient> {
         let request = self.client.get();
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
+        })
     }
     #[pyo3(
         signature = (
@@ -33,7 +38,7 @@ impl PyRecipientClient {
         comment: Option<String>,
         properties: Option<HashMap<String, String>>,
         expiration_time: Option<i64>,
-    ) -> PyUnityCatalogResult<Recipient> {
+    ) -> PyUnityCatalogResult<PyRecipient> {
         let mut request = self.client.update();
         request = request.with_new_name(new_name);
         request = request.with_owner(owner);
@@ -43,7 +48,11 @@ impl PyRecipientClient {
         }
         request = request.with_expiration_time(expiration_time);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
+        })
     }
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
