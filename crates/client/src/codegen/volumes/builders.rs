@@ -95,7 +95,7 @@ impl CreateVolumeBuilder {
             catalog_name: catalog_name.into(),
             schema_name: schema_name.into(),
             name: name.into(),
-            volume_type: volume_type as i32,
+            volume_type: buffa::EnumValue::Known(volume_type),
             ..Default::default()
         };
         Self { client, request }
@@ -199,7 +199,10 @@ impl DeleteVolumeBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `VolumeServiceClient`.
     pub(crate) fn new(client: VolumeServiceClient, name: impl Into<String>) -> Self {
-        let request = DeleteVolumeRequest { name: name.into() };
+        let request = DeleteVolumeRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }

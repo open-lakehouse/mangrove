@@ -75,7 +75,8 @@ impl CreateTagPolicyBuilder {
     /// Obtain via the corresponding method on `TagPolicyServiceClient`.
     pub(crate) fn new(client: TagPolicyServiceClient, tag_policy: TagPolicy) -> Self {
         let request = CreateTagPolicyRequest {
-            tag_policy: Some(tag_policy),
+            tag_policy: buffa::MessageField::some(tag_policy),
+            ..Default::default()
         };
         Self { client, request }
     }
@@ -100,6 +101,7 @@ impl GetTagPolicyBuilder {
     pub(crate) fn new(client: TagPolicyServiceClient, tag_key: impl Into<String>) -> Self {
         let request = GetTagPolicyRequest {
             tag_key: tag_key.into(),
+            ..Default::default()
         };
         Self { client, request }
     }
@@ -128,7 +130,7 @@ impl UpdateTagPolicyBuilder {
     ) -> Self {
         let request = UpdateTagPolicyRequest {
             tag_key: tag_key.into(),
-            tag_policy: Some(tag_policy),
+            tag_policy: buffa::MessageField::some(tag_policy),
             ..Default::default()
         };
         Self { client, request }
@@ -159,6 +161,7 @@ impl DeleteTagPolicyBuilder {
     pub(crate) fn new(client: TagPolicyServiceClient, tag_key: impl Into<String>) -> Self {
         let request = DeleteTagPolicyRequest {
             tag_key: tag_key.into(),
+            ..Default::default()
         };
         Self { client, request }
     }

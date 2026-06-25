@@ -31,6 +31,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListVolumesRequest {
             schema,
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -62,6 +63,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListAllVolumesReques
             share,
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -79,6 +81,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetVolumeRequest {
             share,
             schema,
             name,
+            ..Default::default()
         })
     }
 }
@@ -97,6 +100,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for GenerateTemporaryVolumeCr
             share,
             schema,
             name,
+            ..Default::default()
         })
     }
 }

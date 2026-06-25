@@ -3,14 +3,18 @@
 #![allow(clippy::empty_docs)]
 use std::collections::HashMap;
 pub mod labels;
+pub use labels::{ObjectLabel, Resource};
+#[cfg(feature = "python")]
+pub mod pyo3_impls;
 pub use agent_skills::v0alpha1::AgentSkill;
 pub use agents::v0alpha1::Agent;
 pub use catalogs::v1::Catalog;
 pub use credentials::v1::Credential;
 pub use external_locations::v1::ExternalLocation;
 pub use functions::v1::Function;
-pub use labels::{ObjectLabel, Resource};
 pub use providers::v1::Provider;
+#[cfg(feature = "python")]
+pub use pyo3_impls::*;
 pub use recipients::v1::Recipient;
 pub use schemas::v1::Schema;
 pub use shares::v1::Share;

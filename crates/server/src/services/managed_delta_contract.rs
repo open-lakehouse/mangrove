@@ -365,7 +365,7 @@ pub fn delta_columns_to_uc(
                 name: f.name.clone(),
                 type_text: catalog_string(&f.data_type),
                 type_json: serde_json::to_string(f)?,
-                type_name: resolve_column_type_name(&f.data_type)? as i32,
+                type_name: ::buffa::EnumValue::Known(resolve_column_type_name(&f.data_type)?),
                 position: Some(idx as i32),
                 nullable: Some(f.nullable),
                 partition_index: partition_index(&f.name),
@@ -634,10 +634,16 @@ mod tests {
         let uc = delta_columns_to_uc(&columns, Some(&["id".to_string()])).unwrap();
         assert_eq!(uc.len(), 2);
         assert_eq!(uc[0].name, "id");
-        assert_eq!(uc[0].type_name, ColumnTypeName::Long as i32);
+        assert_eq!(
+            uc[0].type_name,
+            ::buffa::EnumValue::Known(ColumnTypeName::Long)
+        );
         assert_eq!(uc[0].partition_index, Some(0));
         assert_eq!(uc[1].type_text, "decimal(10,2)");
-        assert_eq!(uc[1].type_name, ColumnTypeName::Decimal as i32);
+        assert_eq!(
+            uc[1].type_name,
+            ::buffa::EnumValue::Known(ColumnTypeName::Decimal)
+        );
 
         // Reverse: stored type_json should reconstruct the Delta types.
         let back = uc_columns_to_delta(&uc);

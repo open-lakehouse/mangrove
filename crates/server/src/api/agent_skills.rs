@@ -31,8 +31,7 @@ impl<
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
 
-        let skill_type = AgentSkillType::try_from(request.agent_skill_type)
-            .unwrap_or(AgentSkillType::Unspecified);
+        let skill_type = request.agent_skill_type.as_known().unwrap_or_default();
 
         // Pre-allocate the id so the created record carries it (the store honors a
         // pre-set id, else mints a v7) and a managed skill can embed it in its
@@ -70,7 +69,7 @@ impl<
                 .await?;
                 child_location(&parent, "agent_skills", &agent_skill_id)
             }
-            AgentSkillType::Unspecified => {
+            AgentSkillType::AGENT_SKILL_TYPE_UNSPECIFIED => {
                 return Err(Error::invalid_argument(
                     "agent_skill_type must be specified (EXTERNAL or MANAGED)",
                 ));
@@ -121,6 +120,7 @@ impl<
         Ok(ListAgentSkillsResponse {
             agent_skills: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -279,8 +279,8 @@ mod tests {
         h.create_credential(
             CreateCredentialRequest {
                 name: format!("{tag}-cred"),
-                purpose: Purpose::Storage as i32,
-                aws_iam_role: Some(AwsIamRoleConfig {
+                purpose: ::buffa::EnumValue::Known(Purpose::Storage),
+                aws_iam_role: ::buffa::MessageField::some(AwsIamRoleConfig {
                     role_arn: "arn:aws:iam::123456789012:role/test".to_string(),
                     ..Default::default()
                 }),
@@ -334,13 +334,14 @@ mod tests {
             catalog_name: "cat".to_string(),
             schema_name: "sch".to_string(),
             name: name.to_string(),
-            agent_skill_type: AgentSkillType::External as i32,
+            agent_skill_type: ::buffa::EnumValue::Known(AgentSkillType::External),
             storage_location: location.map(str::to_string),
             description: Some("formats things".to_string()),
             license: Some("MIT".to_string()),
             allowed_tools: vec!["bash".to_string()],
             metadata: Default::default(),
             comment: None,
+            ..Default::default()
         }
     }
 
@@ -349,13 +350,14 @@ mod tests {
             catalog_name: "cat".to_string(),
             schema_name: "sch".to_string(),
             name: name.to_string(),
-            agent_skill_type: AgentSkillType::Managed as i32,
+            agent_skill_type: ::buffa::EnumValue::Known(AgentSkillType::Managed),
             storage_location: None,
             description: None,
             license: None,
             allowed_tools: vec![],
             metadata: Default::default(),
             comment: None,
+            ..Default::default()
         }
     }
 
@@ -408,6 +410,7 @@ mod tests {
         h.delete_agent_skill(
             DeleteAgentSkillRequest {
                 name: "cat.sch.fmt".to_string(),
+                ..Default::default()
             },
             ctx(),
         )

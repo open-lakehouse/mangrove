@@ -303,13 +303,14 @@ pub(crate) async fn get_object_store(
     let credential = handler
         .get_credential_internal(GetCredentialRequest {
             name: ext_loc.credential_name.clone(),
+            ..Default::default()
         })
         .await?;
     get_azure_store(
         location,
-        credential.azure_managed_identity,
-        credential.azure_service_principal,
-        credential.azure_storage_key,
+        credential.azure_managed_identity.into_option(),
+        credential.azure_service_principal.into_option(),
+        credential.azure_storage_key.into_option(),
     )
 }
 
@@ -369,6 +370,7 @@ fn get_azure_store(
         directory_id,
         application_id,
         credential,
+        ..
     }) = azure_service_principal
     {
         builder = builder
@@ -390,6 +392,7 @@ fn get_azure_store(
     } else if let Some(AzureStorageKey {
         account_name,
         account_key,
+        ..
     }) = azure_storage_key
     {
         builder = builder

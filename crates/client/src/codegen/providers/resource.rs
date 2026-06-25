@@ -1,6 +1,7 @@
 // @generated — do not edit by hand.
 use super::builders::*;
 use super::client::ProviderServiceClient;
+use unitycatalog_common::models::providers::v1::*;
 /// A client scoped to a single `provider`.
 #[derive(Clone)]
 pub struct ProviderClient {

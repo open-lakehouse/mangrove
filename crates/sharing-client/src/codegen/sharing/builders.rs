@@ -49,7 +49,10 @@ impl GetShareBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `SharingClient`.
     pub(crate) fn new(client: SharingClient, name: impl Into<String>) -> Self {
-        let request = GetShareRequest { name: name.into() };
+        let request = GetShareRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }

@@ -5,6 +5,7 @@ use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::AgentClient;
 use unitycatalog_common::models::agents::v0alpha1::*;
+use unitycatalog_common::models::*;
 #[pyclass(name = "AgentClient")]
 pub struct PyAgentClient {
     pub(crate) client: AgentClient,
@@ -12,11 +13,15 @@ pub struct PyAgentClient {
 #[pymethods]
 impl PyAgentClient {
     #[pyo3(signature = (include_browse = None))]
-    pub fn get(&self, py: Python, include_browse: Option<bool>) -> PyUnityCatalogResult<Agent> {
+    pub fn get(&self, py: Python, include_browse: Option<bool>) -> PyUnityCatalogResult<PyAgent> {
         let mut request = self.client.get();
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyAgent::from(result))
+        })
     }
     #[pyo3(
         signature = (
@@ -34,17 +39,18 @@ impl PyAgentClient {
         &self,
         py: Python,
         new_name: Option<String>,
-        invocation_protocol: Option<InvocationProtocol>,
+        invocation_protocol: ::core::option::Option<PyInvocationProtocol>,
         endpoint: Option<String>,
         description: Option<String>,
         capabilities: Option<Vec<String>>,
         input_schema: Option<String>,
         comment: Option<String>,
         owner: Option<String>,
-    ) -> PyUnityCatalogResult<Agent> {
+    ) -> PyUnityCatalogResult<PyAgent> {
         let mut request = self.client.update();
         request = request.with_new_name(new_name);
-        request = request.with_invocation_protocol(invocation_protocol);
+        request =
+            request.with_invocation_protocol(invocation_protocol.map(::core::convert::Into::into));
         request = request.with_endpoint(endpoint);
         request = request.with_description(description);
         if let Some(capabilities) = capabilities {
@@ -54,7 +60,11 @@ impl PyAgentClient {
         request = request.with_comment(comment);
         request = request.with_owner(owner);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyAgent::from(result))
+        })
     }
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();

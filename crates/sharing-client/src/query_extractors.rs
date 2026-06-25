@@ -38,6 +38,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetTableVersionReque
             schema,
             name,
             starting_timestamp,
+            ..Default::default()
         })
     }
 }
@@ -56,6 +57,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetTableMetadataRequ
             share,
             schema,
             name,
+            ..Default::default()
         })
     }
 }

@@ -4,7 +4,8 @@ use unitycatalog_client::{
     PathOperation, TableOperation, TableReference, TemporaryCredentialClient, VolumeOperation,
     VolumeReference,
 };
-use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
+// The model crosses the FFI boundary as its generated `#[pyclass]` wrapper.
+use unitycatalog_common::models::PyTemporaryCredential;
 
 pub use crate::codegen::PyUnityCatalogClient;
 pub use crate::codegen::catalogs::PyCatalogClient;
@@ -54,7 +55,7 @@ impl PyTemporaryCredentialClient {
         py: Python,
         table: String,
         operation: String,
-    ) -> PyUnityCatalogResult<(TemporaryCredential, String)> {
+    ) -> PyUnityCatalogResult<(PyTemporaryCredential, String)> {
         let table_ref = TableReference::Name(table);
         let op = match operation.to_ascii_lowercase().as_str() {
             "read" => TableOperation::Read,
@@ -72,7 +73,10 @@ impl PyTemporaryCredentialClient {
         py.allow_threads(|| {
             let (credential, uuid) =
                 runtime.block_on(self.client.temporary_table_credential(table_ref, op))?;
-            Ok::<_, PyUnityCatalogError>((credential, uuid.to_string()))
+            Ok::<_, PyUnityCatalogError>((
+                PyTemporaryCredential::from(credential),
+                uuid.to_string(),
+            ))
         })
     }
 
@@ -87,7 +91,7 @@ impl PyTemporaryCredentialClient {
         py: Python,
         volume: String,
         operation: String,
-    ) -> PyUnityCatalogResult<(TemporaryCredential, String)> {
+    ) -> PyUnityCatalogResult<(PyTemporaryCredential, String)> {
         let volume_ref = VolumeReference::Name(volume);
         let op = match operation.to_ascii_lowercase().as_str() {
             "read" => VolumeOperation::Read,
@@ -105,7 +109,10 @@ impl PyTemporaryCredentialClient {
         py.allow_threads(|| {
             let (credential, uuid) =
                 runtime.block_on(self.client.temporary_volume_credential(volume_ref, op))?;
-            Ok::<_, PyUnityCatalogError>((credential, uuid.to_string()))
+            Ok::<_, PyUnityCatalogError>((
+                PyTemporaryCredential::from(credential),
+                uuid.to_string(),
+            ))
         })
     }
 
@@ -116,7 +123,7 @@ impl PyTemporaryCredentialClient {
         path: String,
         operation: String,
         dry_run: Option<bool>,
-    ) -> PyUnityCatalogResult<(TemporaryCredential, String)> {
+    ) -> PyUnityCatalogResult<(PyTemporaryCredential, String)> {
         let runtime = get_runtime(py)?;
         let op = match operation.as_str().to_ascii_lowercase().as_str() {
             "read" => PathOperation::Read,
@@ -134,7 +141,7 @@ impl PyTemporaryCredentialClient {
         py.allow_threads(|| {
             let (credential, url) =
                 runtime.block_on(self.client.temporary_path_credential(path, op, dry_run))?;
-            Ok::<_, PyUnityCatalogError>((credential, url.to_string()))
+            Ok::<_, PyUnityCatalogError>((PyTemporaryCredential::from(credential), url.to_string()))
         })
     }
 }

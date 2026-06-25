@@ -57,6 +57,7 @@ pub(crate) fn local_path_credential(url: &str) -> TemporaryCredential {
         expiration_time: expiry_to_epoch_millis(None),
         url: url.to_owned(),
         credentials: None,
+        ..Default::default()
     }
 }
 
@@ -69,12 +70,16 @@ fn aws_token_to_temporary_credential(
     TemporaryCredential {
         expiration_time,
         url: url.to_owned(),
-        credentials: Some(Credentials::AwsTempCredentials(AwsTemporaryCredentials {
-            access_key_id: cred.key_id.clone(),
-            secret_access_key: cred.secret_key.clone(),
-            session_token: cred.token.clone().unwrap_or_default(),
-            access_point: String::new(),
-        })),
+        credentials: Some(Credentials::AwsTempCredentials(Box::new(
+            AwsTemporaryCredentials {
+                access_key_id: cred.key_id.clone(),
+                secret_access_key: cred.secret_key.clone(),
+                session_token: cred.token.clone().unwrap_or_default(),
+                access_point: String::new(),
+                ..Default::default()
+            },
+        ))),
+        ..Default::default()
     }
 }
 
@@ -85,9 +90,13 @@ fn azure_sas_to_temporary_credential(url: &str, sas_token: String) -> TemporaryC
     TemporaryCredential {
         expiration_time,
         url: url.to_owned(),
-        credentials: Some(Credentials::AzureUserDelegationSas(
-            AzureUserDelegationSas { sas_token },
-        )),
+        credentials: Some(Credentials::AzureUserDelegationSas(Box::new(
+            AzureUserDelegationSas {
+                sas_token,
+                ..Default::default()
+            },
+        ))),
+        ..Default::default()
     }
 }
 
@@ -236,19 +245,19 @@ async fn vend_credential_uncached(
     url: &str,
     operation: VendOperation,
 ) -> Result<TemporaryCredential> {
-    if let Some(sp) = &credential.azure_service_principal {
+    if let Some(sp) = credential.azure_service_principal.as_option() {
         return vend_azure_service_principal(sp, url, operation).await;
     }
-    if let Some(msi) = &credential.azure_managed_identity {
+    if let Some(msi) = credential.azure_managed_identity.as_option() {
         return vend_azure_managed_identity(msi, url, operation).await;
     }
-    if let Some(key) = &credential.azure_storage_key {
+    if let Some(key) = credential.azure_storage_key.as_option() {
         return vend_azure_storage_key(key, url, operation).await;
     }
-    if let Some(role) = &credential.aws_iam_role {
+    if let Some(role) = credential.aws_iam_role.as_option() {
         return vend_aws_iam_role(role, url, operation).await;
     }
-    if credential.databricks_gcp_service_account.is_some() {
+    if credential.databricks_gcp_service_account.is_set() {
         return Err(Error::generic(
             "GCP service account credential vending is not yet implemented.",
         ));
@@ -576,10 +585,11 @@ mod tests {
         );
         // A different credential (rotated secret) changes the key.
         let mut rotated = empty_credential();
-        rotated.azure_storage_key = Some(
+        rotated.azure_storage_key = ::buffa::MessageField::some(
             unitycatalog_common::models::credentials::v1::AzureStorageKey {
                 account_name: "acct".into(),
                 account_key: "rotated-secret".into(),
+                ..Default::default()
             },
         );
         assert_ne!(
@@ -599,6 +609,7 @@ mod tests {
             expiration_time: now_epoch_millis() + 3_600_000,
             url: url.to_string(),
             credentials: None,
+            ..Default::default()
         };
         vended_cache().lock().unwrap().insert(key, cached.clone());
 
@@ -620,6 +631,7 @@ mod tests {
             expiration_time: now_epoch_millis() + 1_000,
             url: url.to_string(),
             credentials: None,
+            ..Default::default()
         };
         vended_cache().lock().unwrap().insert(key, expired);
 

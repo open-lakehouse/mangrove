@@ -52,6 +52,7 @@ impl DeltaSharingClient {
             let request = ListSharesRequest {
                 max_results,
                 page_token,
+                ..Default::default()
             };
             let res = self.discovery.list_shares(&request).await?;
 
@@ -88,6 +89,7 @@ impl DeltaSharingClient {
                     share: share.clone(),
                     max_results,
                     page_token,
+                    ..Default::default()
                 };
                 let res = self
                     .discovery
@@ -125,6 +127,7 @@ impl DeltaSharingClient {
                     name: share.clone(),
                     max_results,
                     page_token,
+                    ..Default::default()
                 };
                 let res = self
                     .discovery
@@ -165,6 +168,7 @@ impl DeltaSharingClient {
                     name: schema.clone(),
                     max_results,
                     page_token,
+                    ..Default::default()
                 };
                 let res = self
                     .discovery

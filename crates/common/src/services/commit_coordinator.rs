@@ -438,6 +438,7 @@ mod tests {
             file_name: format!("{version:020}.0000-uuid.json"),
             file_size: 128,
             file_modification_timestamp: 2000 + version,
+            ..Default::default()
         }
     }
 

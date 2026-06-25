@@ -1,6 +1,7 @@
 // @generated — do not edit by hand.
 use super::builders::*;
 use super::client::AgentSkillServiceClient;
+use unitycatalog_common::models::agent_skills::v0alpha1::*;
 /// A client scoped to a single `agent_skill`.
 #[derive(Clone)]
 pub struct AgentSkillClient {

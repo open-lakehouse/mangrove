@@ -22,9 +22,10 @@ impl CredentialServiceClient {
         request: &ListCredentialsRequest,
     ) -> Result<ListCredentialsResponse> {
         let mut url = self.base_url.join("credentials")?;
-        if let Some(ref value) = request.purpose {
+        if let Some(known) = request.purpose.and_then(|v| v.as_known()) {
+            use buffa::Enumeration as _;
             url.query_pairs_mut()
-                .append_pair("purpose", &value.to_string());
+                .append_pair("purpose", known.proto_name());
         }
         if let Some(ref value) = request.max_results {
             url.query_pairs_mut()

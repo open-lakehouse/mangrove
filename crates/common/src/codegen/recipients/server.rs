@@ -25,6 +25,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListRecipientsReques
         Ok(ListRecipientsRequest {
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -51,7 +52,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetRecipientRequest 
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(GetRecipientRequest { name })
+        Ok(GetRecipientRequest {
+            name,
+            ..Default::default()
+        })
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateRecipientRequest {
@@ -84,6 +88,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateRecipientRequest {
             comment,
             properties,
             expiration_time,
+            ..Default::default()
         })
     }
 }
@@ -97,6 +102,9 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteRecipientReque
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteRecipientRequest { name })
+        Ok(DeleteRecipientRequest {
+            name,
+            ..Default::default()
+        })
     }
 }

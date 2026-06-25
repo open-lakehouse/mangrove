@@ -29,12 +29,12 @@ use crate::codegen::tables::NapiTableClient;
 use crate::codegen::tag_policies::NapiTagPolicyClient;
 use crate::codegen::volumes::NapiVolumeClient;
 use crate::error::NapiErrorExt;
+use buffa::Message;
 use futures::StreamExt;
 use futures::stream::TryStreamExt;
 use napi::Env;
 use napi::bindgen_prelude::{Buffer, ReadableStream};
 use napi_derive::napi;
-use prost::Message;
 use std::collections::HashMap;
 use unitycatalog_client::UnityCatalogClient;
 use unitycatalog_common::models::agent_skills::v0alpha1::*;
@@ -130,9 +130,9 @@ impl NapiUnityCatalogClient {
             catalog_name,
             schema_name,
             name,
-            agent_skill_type.try_into().map_err(|_| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
+            <AgentSkillType as buffa::Enumeration>::from_i32(agent_skill_type).ok_or_else(
+                || napi::Error::new(napi::Status::GenericFailure, "invalid enum value"),
+            )?,
         );
         request = request.with_storage_location(storage_location);
         request = request.with_description(description);
@@ -204,9 +204,9 @@ impl NapiUnityCatalogClient {
             catalog_name,
             schema_name,
             name,
-            invocation_protocol.try_into().map_err(|_| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
+            <InvocationProtocol as buffa::Enumeration>::from_i32(invocation_protocol).ok_or_else(
+                || napi::Error::new(napi::Status::GenericFailure, "invalid enum value"),
+            )?,
             endpoint,
         );
         request = request.with_description(description);
@@ -277,7 +277,7 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
     ) -> napi::Result<Vec<Buffer>> {
         let mut request = self.client.list_credentials();
-        request = request.with_purpose(purpose.map(|v| v.try_into().ok()).flatten());
+        request = request.with_purpose(purpose.and_then(<Purpose as buffa::Enumeration>::from_i32));
         request = request.with_max_results(max_results);
         request
             .into_stream()
@@ -294,7 +294,7 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
         let mut request = self.client.list_credentials();
-        request = request.with_purpose(purpose.map(|v| v.try_into().ok()).flatten());
+        request = request.with_purpose(purpose.and_then(<Purpose as buffa::Enumeration>::from_i32));
         request = request.with_max_results(max_results);
         ReadableStream::new(
             &env,
@@ -315,7 +315,7 @@ impl NapiUnityCatalogClient {
     ) -> napi::Result<Buffer> {
         let mut request = self.client.create_credential(
             name,
-            purpose.try_into().map_err(|_| {
+            <Purpose as buffa::Enumeration>::from_i32(purpose).ok_or_else(|| {
                 napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
             })?,
         );
@@ -377,14 +377,13 @@ impl NapiUnityCatalogClient {
         tag_assignment: napi::bindgen_prelude::Buffer,
     ) -> napi::Result<Buffer> {
         let mut request = self.client.create_entity_tag_assignment(
-            <EntityTagAssignment as prost::Message>::decode(tag_assignment.as_ref()).map_err(
-                |e| {
+            <EntityTagAssignment as buffa::Message>::decode_from_slice(tag_assignment.as_ref())
+                .map_err(|e| {
                     napi::Error::new(
                         napi::Status::GenericFailure,
                         format!("invalid {} payload: {e}", stringify!(EntityTagAssignment)),
                     )
-                },
-            )?,
+                })?,
         );
         request
             .await
@@ -419,14 +418,13 @@ impl NapiUnityCatalogClient {
             entity_type,
             entity_name,
             tag_key,
-            <EntityTagAssignment as prost::Message>::decode(tag_assignment.as_ref()).map_err(
-                |e| {
+            <EntityTagAssignment as buffa::Message>::decode_from_slice(tag_assignment.as_ref())
+                .map_err(|e| {
                     napi::Error::new(
                         napi::Status::GenericFailure,
                         format!("invalid {} payload: {e}", stringify!(EntityTagAssignment)),
                     )
-                },
-            )?,
+                })?,
         );
         request = request.with_update_mask(update_mask);
         request
@@ -564,18 +562,18 @@ impl NapiUnityCatalogClient {
             schema_name,
             data_type,
             full_data_type,
-            parameter_style.try_into().map_err(|_| {
+            <ParameterStyle as buffa::Enumeration>::from_i32(parameter_style).ok_or_else(|| {
                 napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
             })?,
             is_deterministic,
-            sql_data_access.try_into().map_err(|_| {
+            <SqlDataAccess as buffa::Enumeration>::from_i32(sql_data_access).ok_or_else(|| {
                 napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
             })?,
             is_null_call,
-            security_type.try_into().map_err(|_| {
+            <SecurityType as buffa::Enumeration>::from_i32(security_type).ok_or_else(|| {
                 napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
             })?,
-            routine_body.try_into().map_err(|_| {
+            <RoutineBody as buffa::Enumeration>::from_i32(routine_body).ok_or_else(|| {
                 napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
             })?,
         );
@@ -629,9 +627,10 @@ impl NapiUnityCatalogClient {
     ) -> napi::Result<Buffer> {
         let mut request = self.client.create_provider(
             name,
-            authentication_type.try_into().map_err(|_| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
+            <ProviderAuthenticationType as buffa::Enumeration>::from_i32(authentication_type)
+                .ok_or_else(|| {
+                    napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
+                })?,
         );
         request = request.with_owner(owner);
         request = request.with_comment(comment);
@@ -683,9 +682,9 @@ impl NapiUnityCatalogClient {
     ) -> napi::Result<Buffer> {
         let mut request = self.client.create_recipient(
             name,
-            authentication_type.try_into().map_err(|_| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
+            <AuthenticationType as buffa::Enumeration>::from_i32(authentication_type).ok_or_else(
+                || napi::Error::new(napi::Status::GenericFailure, "invalid enum value"),
+            )?,
             owner,
         );
         request = request.with_comment(comment);
@@ -884,12 +883,12 @@ impl NapiUnityCatalogClient {
             name,
             schema_name,
             catalog_name,
-            table_type.try_into().map_err(|_| {
+            <TableType as buffa::Enumeration>::from_i32(table_type).ok_or_else(|| {
                 napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
             })?,
-            data_source_format.try_into().map_err(|_| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
+            <DataSourceFormat as buffa::Enumeration>::from_i32(data_source_format).ok_or_else(
+                || napi::Error::new(napi::Status::GenericFailure, "invalid enum value"),
+            )?,
         );
         request = request.with_storage_location(storage_location);
         request = request.with_comment(comment);
@@ -935,7 +934,7 @@ impl NapiUnityCatalogClient {
         tag_policy: napi::bindgen_prelude::Buffer,
     ) -> napi::Result<Buffer> {
         let mut request = self.client.create_tag_policy(
-            <TagPolicy as prost::Message>::decode(tag_policy.as_ref()).map_err(|e| {
+            <TagPolicy as buffa::Message>::decode_from_slice(tag_policy.as_ref()).map_err(|e| {
                 napi::Error::new(
                     napi::Status::GenericFailure,
                     format!("invalid {} payload: {e}", stringify!(TagPolicy)),
@@ -953,12 +952,18 @@ impl NapiUnityCatalogClient {
         table_id: String,
         operation: i32,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.generate_temporary_table_credentials(
-            table_id,
-            operation.try_into().map_err(|_| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-        );
+        let mut request = self
+            .client
+            .generate_temporary_table_credentials(
+                table_id,
+                <generate_temporary_table_credentials_request::Operation as buffa::Enumeration>::from_i32(
+                        operation,
+                    )
+                    .ok_or_else(|| napi::Error::new(
+                        napi::Status::GenericFailure,
+                        "invalid enum value",
+                    ))?,
+            );
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
@@ -971,12 +976,18 @@ impl NapiUnityCatalogClient {
         operation: i32,
         dry_run: Option<bool>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.generate_temporary_path_credentials(
-            url,
-            operation.try_into().map_err(|_| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-        );
+        let mut request = self
+            .client
+            .generate_temporary_path_credentials(
+                url,
+                <generate_temporary_path_credentials_request::Operation as buffa::Enumeration>::from_i32(
+                        operation,
+                    )
+                    .ok_or_else(|| napi::Error::new(
+                        napi::Status::GenericFailure,
+                        "invalid enum value",
+                    ))?,
+            );
         request = request.with_dry_run(dry_run);
         request
             .await
@@ -989,12 +1000,18 @@ impl NapiUnityCatalogClient {
         volume_id: String,
         operation: i32,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.generate_temporary_volume_credentials(
-            volume_id,
-            operation.try_into().map_err(|_| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-        );
+        let mut request = self
+            .client
+            .generate_temporary_volume_credentials(
+                volume_id,
+                <generate_temporary_volume_credentials_request::Operation as buffa::Enumeration>::from_i32(
+                        operation,
+                    )
+                    .ok_or_else(|| napi::Error::new(
+                        napi::Status::GenericFailure,
+                        "invalid enum value",
+                    ))?,
+            );
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
@@ -1052,7 +1069,7 @@ impl NapiUnityCatalogClient {
             catalog_name,
             schema_name,
             name,
-            volume_type.try_into().map_err(|_| {
+            <VolumeType as buffa::Enumeration>::from_i32(volume_type).ok_or_else(|| {
                 napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
             })?,
         );

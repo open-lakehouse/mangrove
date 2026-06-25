@@ -98,6 +98,7 @@ impl GetVolumeBuilder {
             share: share.into(),
             schema: schema.into(),
             name: name.into(),
+            ..Default::default()
         };
         Self { client, request }
     }
@@ -129,6 +130,7 @@ impl GenerateTemporaryVolumeCredentialsBuilder {
             share: share.into(),
             schema: schema.into(),
             name: name.into(),
+            ..Default::default()
         };
         Self { client, request }
     }

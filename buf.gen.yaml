@@ -10,32 +10,21 @@ managed:
     - file_option: go_package_prefix
       value: github.com/delta-incubator/delta-sharing-rs/go
 plugins:
-  - remote: buf.build/community/neoeinstein-prost:v0.5.0
+  # Model generation (buffa runtime). Buffa emits its own `Message` impls plus
+  # native serde (JSON), so the historical prost + prost-serde + tonic plugin
+  # stack is replaced by this single plugin. The `#[pyclass]`/`#[napi]` attribute
+  # injection the prost stack used is gone: buffa has no attribute opt, so PyO3
+  # boundary conversions are emitted by trestle into `models/_gen/pyo3_impls.rs`
+  # (see proto-gen.yaml `runtime: buffa`), and the node binding crosses the napi
+  # boundary by buffa-encoding to bytes.
+  - remote: buf.build/anthropics/buffa:v0.7.0
     out: crates/common/src/models/gen
     opt:
-      # - bytes=.
-      - compile_well_known_types=true
-      # - extern_path=.google.protobuf=::pbjson_types
-      - file_descriptor_set=false
-      # Flat `<package>.rs` filenames (v0.5.0 defaults to a nested package-path
-      # tree); the generated `_gen/mod.rs` `include!`s the flat layout.
-      - flat_output_dir=true
-      - message_attribute=.unitycatalog=#[cfg_attr(feature = "python"\, ::pyo3::pyclass(get_all\, set_all))]
-      - enum_attribute=.unitycatalog=#[cfg_attr(feature = "python"\, ::pyo3::pyclass)]
-  - remote: buf.build/community/neoeinstein-prost-serde:v0.4.0
-    out: crates/common/src/models/gen
-    opt:
-      # useful to build reusable extractors for axum
-      - ignore_unknown_fields=true
-      - preserve_proto_field_names=true
-      - flat_output_dir=true
-  - remote: buf.build/community/neoeinstein-tonic:v0.5.0
-    out: crates/common/src/models/gen
-    opt:
-      - no_client=true
-      - extern_path=.google.protobuf=::pbjson_types
-      - no_include=true
-      - flat_output_dir=true
+      - json=true
+      # One consolidated `<package>.rs` per proto package (the flat layout the
+      # trestle-generated `models/_gen/mod.rs` `include!`s), instead of buffa's
+      # default split `<package>.mod.rs`/`.models.rs`/`.svc.rs` tree.
+      - file_per_package=true
   - remote: buf.build/community/google-gnostic-openapi:v0.7.1
     out: openapi
   - remote: buf.build/bufbuild/es:v2.12.1

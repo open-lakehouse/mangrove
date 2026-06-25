@@ -106,6 +106,7 @@ impl<T: ResourceStore + Policy<RequestContext> + ProvidesLocalStoragePolicy>
         Ok(ListExternalLocationsResponse {
             external_locations: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -280,8 +281,8 @@ mod tests {
         h.create_credential(
             CreateCredentialRequest {
                 name: name.to_string(),
-                purpose: Purpose::Storage as i32,
-                aws_iam_role: Some(AwsIamRoleConfig {
+                purpose: ::buffa::EnumValue::Known(Purpose::Storage),
+                aws_iam_role: ::buffa::MessageField::some(AwsIamRoleConfig {
                     role_arn: "arn:aws:iam::123456789012:role/test".to_string(),
                     ..Default::default()
                 }),

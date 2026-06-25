@@ -1,6 +1,7 @@
 // @generated — do not edit by hand.
 use super::builders::*;
 use super::client::RecipientServiceClient;
+use unitycatalog_common::models::recipients::v1::*;
 /// A client scoped to a single `recipient`.
 #[derive(Clone)]
 pub struct RecipientClient {

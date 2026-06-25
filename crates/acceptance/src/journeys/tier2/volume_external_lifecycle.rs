@@ -173,7 +173,10 @@ impl UserJourney for VolumeExternalLifecycleJourney {
             .map_err(|e| {
                 AcceptanceError::JourneyExecution(format!("Failed to get volume: {}", e))
             })?;
-        assert_eq!(fetched.volume_type(), VolumeType::External);
+        assert_eq!(
+            fetched.volume_type,
+            ::buffa::EnumValue::Known(VolumeType::External)
+        );
         println!("  ✓ Volume type confirmed: External");
 
         Ok(())

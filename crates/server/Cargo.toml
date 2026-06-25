@@ -21,6 +21,7 @@ unitycatalog-sharing-client = { path = "../sharing-client", features = [
 unitycatalog-client = { path = "../client", optional = true }
 
 async-trait = { workspace = true }
+buffa = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
 percent-encoding = "2.1"

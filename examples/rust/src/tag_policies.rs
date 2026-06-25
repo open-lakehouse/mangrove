@@ -21,9 +21,11 @@ pub async fn create_tag_policy_example(base_url: url::Url) {
             values: vec![
                 Value {
                     name: "public".to_string(),
+                    ..Default::default()
                 },
                 Value {
                     name: "restricted".to_string(),
+                    ..Default::default()
                 },
             ],
             ..Default::default()

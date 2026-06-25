@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
 use super::builders::*;
 use super::client::CatalogServiceClient;
+use unitycatalog_common::models::catalogs::v1::*;
+use unitycatalog_common::models::schemas::v1::*;
 /// A client scoped to a single `catalog`.
 #[derive(Clone)]
 pub struct CatalogClient {

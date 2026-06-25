@@ -85,6 +85,7 @@ impl<
             created_by,
             stage_committed: false,
             created_at: None,
+            ..Default::default()
         };
 
         Ok(self.create(staging_table.into()).await?.0.try_into()?)
@@ -271,8 +272,8 @@ mod tests {
         h.create_credential(
             CreateCredentialRequest {
                 name: format!("{tag}-cred"),
-                purpose: Purpose::Storage as i32,
-                aws_iam_role: Some(AwsIamRoleConfig {
+                purpose: ::buffa::EnumValue::Known(Purpose::Storage),
+                aws_iam_role: ::buffa::MessageField::some(AwsIamRoleConfig {
                     role_arn: "arn:aws:iam::123456789012:role/test".to_string(),
                     ..Default::default()
                 }),
@@ -344,6 +345,7 @@ mod tests {
             name: name.to_string(),
             catalog_name: catalog.to_string(),
             schema_name: schema.to_string(),
+            ..Default::default()
         }
     }
 
@@ -426,6 +428,7 @@ mod tests {
             .get_schema(
                 GetSchemaRequest {
                     full_name: "cat.sch".to_string(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -452,6 +455,7 @@ mod tests {
             .get_schema(
                 GetSchemaRequest {
                     full_name: "cat.sch".to_string(),
+                    ..Default::default()
                 },
                 ctx(),
             )

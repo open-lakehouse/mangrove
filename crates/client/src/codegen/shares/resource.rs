@@ -1,6 +1,7 @@
 // @generated — do not edit by hand.
 use super::builders::*;
 use super::client::ShareServiceClient;
+use unitycatalog_common::models::shares::v1::*;
 /// A client scoped to a single `share`.
 #[derive(Clone)]
 pub struct ShareClient {

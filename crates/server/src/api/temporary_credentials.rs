@@ -41,16 +41,20 @@ fn to_vend_operation(operation: i32) -> VendOperation {
     use generate_temporary_table_credentials_request::Operation as TableOp;
     use generate_temporary_volume_credentials_request::Operation as VolumeOp;
 
+    use ::buffa::Enumeration as _;
+
     // Check path operations first (values 0–3 are defined for both enums,
     // but semantically we just need to distinguish read from read-write).
-    match PathOp::try_from(operation) {
-        Ok(PathOp::PathReadWrite | PathOp::PathCreateTable) => return VendOperation::ReadWrite,
-        Ok(PathOp::PathRead | PathOp::Unspecified) | Err(_) => {}
+    match PathOp::from_i32(operation) {
+        Some(PathOp::PathReadWrite | PathOp::PathCreateTable) => return VendOperation::ReadWrite,
+        Some(PathOp::PathRead | PathOp::Unspecified) | None => {}
     }
     // The table (READ_WRITE = 2) and volume (WRITE_VOLUME = 2) write operations
     // share the same value, so either enum resolves write access identically.
-    match (TableOp::try_from(operation), VolumeOp::try_from(operation)) {
-        (Ok(TableOp::ReadWrite), _) | (_, Ok(VolumeOp::WriteVolume)) => VendOperation::ReadWrite,
+    match (TableOp::from_i32(operation), VolumeOp::from_i32(operation)) {
+        (Some(TableOp::ReadWrite), _) | (_, Some(VolumeOp::WriteVolume)) => {
+            VendOperation::ReadWrite
+        }
         _ => VendOperation::Read,
     }
 }
@@ -69,7 +73,7 @@ impl<
         request: GenerateTemporaryPathCredentialsRequest,
         context: RequestContext,
     ) -> Result<TemporaryCredential> {
-        let operation = to_vend_operation(request.operation);
+        let operation = to_vend_operation(request.operation.to_i32());
         let storage_url = StorageLocationUrl::parse(&request.url)?;
 
         // Local (`file://`) storage needs neither an external location nor a vended
@@ -97,6 +101,7 @@ impl<
         let credential = self
             .get_credential_internal(GetCredentialRequest {
                 name: ext_loc.credential_name.clone(),
+                ..Default::default()
             })
             .await?;
         vend_credential(&credential, &request.url, operation).await
@@ -116,7 +121,7 @@ impl<
         request: GenerateTemporaryVolumeCredentialsRequest,
         context: RequestContext,
     ) -> Result<TemporaryCredential> {
-        let operation = to_vend_operation(request.operation);
+        let operation = to_vend_operation(request.operation.to_i32());
         let volume_id = uuid::Uuid::parse_str(&request.volume_id)
             .map_err(|_| Error::invalid_argument("volume_id is not a valid UUID"))?;
         // Authorize against the concrete volume and the operation actually
@@ -132,6 +137,7 @@ impl<
         let credential = self
             .get_credential_internal(GetCredentialRequest {
                 name: ext_loc.credential_name.clone(),
+                ..Default::default()
             })
             .await?;
         vend_credential(&credential, &location, operation).await
@@ -143,7 +149,7 @@ impl<
         request: GenerateTemporaryTableCredentialsRequest,
         context: RequestContext,
     ) -> Result<TemporaryCredential> {
-        let operation = to_vend_operation(request.operation);
+        let operation = to_vend_operation(request.operation.to_i32());
         let table_id = uuid::Uuid::parse_str(&request.table_id)
             .map_err(|_| Error::invalid_argument("table_id is not a valid UUID"))?;
         // Authorize against the concrete table and the operation actually
@@ -161,6 +167,7 @@ impl<
         let credential = self
             .get_credential_internal(GetCredentialRequest {
                 name: ext_loc.credential_name.clone(),
+                ..Default::default()
             })
             .await?;
         vend_credential(&credential, &location, operation).await

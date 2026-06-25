@@ -43,6 +43,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetCommitsRequest {
             table_uri,
             start_version,
             end_version,
+            ..Default::default()
         })
     }
 }

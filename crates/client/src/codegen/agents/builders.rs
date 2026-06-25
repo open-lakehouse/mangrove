@@ -97,7 +97,7 @@ impl CreateAgentBuilder {
             catalog_name: catalog_name.into(),
             schema_name: schema_name.into(),
             name: name.into(),
-            invocation_protocol: invocation_protocol as i32,
+            invocation_protocol: buffa::EnumValue::Known(invocation_protocol),
             endpoint: endpoint.into(),
             ..Default::default()
         };
@@ -192,7 +192,7 @@ impl UpdateAgentBuilder {
         mut self,
         invocation_protocol: impl Into<Option<InvocationProtocol>>,
     ) -> Self {
-        self.request.invocation_protocol = invocation_protocol.into().map(|e| e as i32);
+        self.request.invocation_protocol = invocation_protocol.into().map(buffa::EnumValue::Known);
         self
     }
     /// The agent's invocation endpoint URL.
@@ -247,7 +247,10 @@ impl DeleteAgentBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `AgentServiceClient`.
     pub(crate) fn new(client: AgentServiceClient, name: impl Into<String>) -> Self {
-        let request = DeleteAgentRequest { name: name.into() };
+        let request = DeleteAgentRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }

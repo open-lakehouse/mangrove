@@ -1,5 +1,7 @@
 // @generated — do not edit by hand.
+use super::builders::*;
 use super::client::StagingTableServiceClient;
+use unitycatalog_common::models::staging_tables::v1::*;
 /// A client scoped to a single `staging_table`.
 #[derive(Clone)]
 pub struct StagingTableClient {
