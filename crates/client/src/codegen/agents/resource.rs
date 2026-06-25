@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use super::builders::*;
 use super::client::AgentServiceClient;
+use unitycatalog_common::models::agents::v0alpha1::*;
 /// A client scoped to a single `agent`.
 #[derive(Clone)]
 pub struct AgentClient {

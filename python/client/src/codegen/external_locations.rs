@@ -5,16 +5,21 @@ use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::ExternalLocationClient;
 use unitycatalog_common::models::external_locations::v1::*;
+use unitycatalog_common::models::*;
 #[pyclass(name = "ExternalLocationClient")]
 pub struct PyExternalLocationClient {
     pub(crate) client: ExternalLocationClient,
 }
 #[pymethods]
 impl PyExternalLocationClient {
-    pub fn get(&self, py: Python) -> PyUnityCatalogResult<ExternalLocation> {
+    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyExternalLocation> {
         let request = self.client.get();
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
+        })
     }
     #[pyo3(
         signature = (
@@ -39,7 +44,7 @@ impl PyExternalLocationClient {
         new_name: Option<String>,
         force: Option<bool>,
         skip_validation: Option<bool>,
-    ) -> PyUnityCatalogResult<ExternalLocation> {
+    ) -> PyUnityCatalogResult<PyExternalLocation> {
         let mut request = self.client.update();
         request = request.with_url(url);
         request = request.with_credential_name(credential_name);
@@ -50,7 +55,11 @@ impl PyExternalLocationClient {
         request = request.with_force(force);
         request = request.with_skip_validation(skip_validation);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| Ok::<_, PyUnityCatalogError>(runtime.block_on(request.into_future())?))
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
+        })
     }
     #[pyo3(signature = (force = None))]
     pub fn delete(&self, py: Python, force: Option<bool>) -> PyUnityCatalogResult<()> {

@@ -1,4 +1,5 @@
 // @generated — do not edit by hand.
+#![allow(unused_imports)]
 use crate::Result;
 use olai_http::CloudClient;
 use unitycatalog_common::models::recipients::v1::*;
