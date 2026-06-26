@@ -1,0 +1,57 @@
+# Trestle codegen config for the resource-oriented Unity Catalog surface.
+#
+# `just generate-code` reads this; `buf.gen.yaml` is hand-maintained separately
+# (mangrove runs `buf generate` directly, not via a trestle-emitted buf config).
+#
+# Output fields are crate `src` roots — the generator appends the convention
+# subdir (`codegen` for handler/client/binding glue, `_gen` for the co-located
+# model tree). Naming overrides are explicit because `unitycatalog_common` /
+# `UnityCatalogClient` / the `UC` error prefix are not derivable from the
+# project name.
+version: 1
+project:
+  name: unitycatalog
+generate:
+  proto_lib: prost
+  descriptors: descriptors.bin
+
+  servers:
+    rest: true
+
+  clients:
+    rust:
+      output: crates/client/src
+    python:
+      output: python/client/src
+      error_type: PyUnityCatalogError
+      result_type: PyUnityCatalogResult
+      typings_package_filter: unitycatalog
+    node:
+      napi:
+        output: node/client/src
+        error_ext_trait: NapiErrorExt
+      ts:
+        output: node/client/unitycatalog
+
+  bindings:
+    aggregate_client_name: UnityCatalogClient
+    client_crate_name: unitycatalog_client
+    error_base_class: UnityCatalogError
+    error_code_prefix: UC
+
+  models:
+    dir: crates/common/src/models
+    crate_name: unitycatalog_common
+
+  server:
+    output: crates/server/src
+    error_type_path: crate::Error
+    resource_enum: true
+    store_integration: true
+    object_conversions: true
+    resource_clients: true
+    resource_store_crate_name: olai_store
+
+enrich_openapi:
+  spec: openapi/openapi.yaml
+  jsonschema_dir: openapi/jsonschema

@@ -7,7 +7,7 @@ managed:
       module: buf.build/googleapis/googleapis
 plugins:
   - remote: buf.build/community/neoeinstein-prost:v0.5.0
-    out: crates/sharing-client/src/models/gen
+    out: crates/sharing-client/src/models/_gen
     opt:
       # - bytes=.
       - compile_well_known_types=true
@@ -16,14 +16,14 @@ plugins:
       # generated `_gen/mod.rs` `include!`s the flat layout.
       - flat_output_dir=true
   - remote: buf.build/community/neoeinstein-prost-serde:v0.4.0
-    out: crates/sharing-client/src/models/gen
+    out: crates/sharing-client/src/models/_gen
     opt:
       # useful to build reusable extractors for axum
       - ignore_unknown_fields=true
       - preserve_proto_field_names=true
       - flat_output_dir=true
   - remote: buf.build/bufbuild/es:v2.12.1
-    out: node/client/unitycatalog/models/gen
+    out: node/client/unitycatalog/codegen/models/gen
     opt:
       - target=ts
       - json_types=false

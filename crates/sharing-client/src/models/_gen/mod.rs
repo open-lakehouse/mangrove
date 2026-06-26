@@ -5,8 +5,10 @@ use std::collections::HashMap;
 pub type PropertyMap = HashMap<String, serde_json::Value>;
 pub mod open_sharing {
     pub mod v1 {
-        include!("./../gen/open_sharing.v1.rs");
+        include!("./open_sharing.v1.rs");
         #[cfg(feature = "grpc")]
-        include!("./../gen/open_sharing.v1.tonic.rs");
+        include!("./open_sharing.v1.tonic.rs");
     }
 }
+#[cfg(feature = "axum")]
+pub mod extractors;

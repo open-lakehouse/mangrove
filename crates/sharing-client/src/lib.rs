@@ -11,13 +11,10 @@ pub mod error;
 pub mod models;
 mod utils;
 
-// The generated axum request extractors live under `codegen/extractors` (a
-// distinct dir from the client code so their per-service `mod.rs` files don't
-// collide). They are wired in here because the generated `codegen/mod.rs` only
-// lists the client service modules.
-#[cfg(feature = "axum")]
-#[path = "codegen/extractors/mod.rs"]
-pub mod extractors;
+// The generated axum request extractors are co-located in the models `_gen/`
+// dir (re-declared by the generated models `mod.rs` and re-exported via
+// `models::*`), so the `FromRequest`/`FromRequestParts` impls are in scope
+// without a separate `extractors` module.
 
 // Hand-written extractors for the NDJSON query path (not part of the generated
 // service). See [`query_extractors`].

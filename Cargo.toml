@@ -101,9 +101,10 @@ default.extend-ignore-re = [
   "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
 ]
 files.extend-exclude = [
-  "crates/common/src/models/gen/**/*",
+  "crates/common/src/models/_gen/**/*",
+  "crates/sharing-client/src/models/_gen/**/*",
   "openapi/**/*",
-  "node/client/unitycatalog/models/gen/**/*",
+  "node/client/unitycatalog/codegen/models/gen/**/*",
   "../trestle/crates/trestle-codegen/src/gen/**/*",
 ]
 
