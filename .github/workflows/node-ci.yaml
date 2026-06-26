@@ -38,7 +38,10 @@ jobs:
         # Regenerate the TypeScript declarations (`--dts`) so a stale committed
         # `native.d.ts` cannot silently break `tsc` when the Rust NAPI surface
         # changes; the type definitions are always rebuilt from the binding.
-        run: npx napi build --platform --release --dts unitycatalog/native.d.ts
+        # Output into the co-located `unitycatalog/codegen/` dir (matching the
+        # `build:debug`/`build:release` package scripts) so the generated glue
+        # (`native.js`/`native.d.ts`) and binary sit beside `client.ts`.
+        run: npx napi build --platform --release --output-dir unitycatalog/codegen --dts native.d.ts --js native.js
         working-directory: node/client
 
       - name: Compile TypeScript
@@ -46,7 +49,9 @@ jobs:
         working-directory: node/client
 
       - name: Copy .node artifact to dist
-        run: cp client.linux-x64-gnu.node dist/client.linux-x64-gnu.node
+        # `dist/codegen/native.js` resolves the binary via `require("./client.<platform>.node")`,
+        # so the artifact must sit next to it under `dist/codegen/`.
+        run: cp unitycatalog/codegen/client.linux-x64-gnu.node dist/codegen/client.linux-x64-gnu.node
         working-directory: node/client
 
       - name: Run unit tests
