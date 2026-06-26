@@ -1,24 +1,36 @@
 # Trestle codegen config for the Open Sharing proto module.
 #
 # The sharing protocol is served from the `unitycatalog-sharing-client` crate
-# (models) + the `unitycatalog-server` crate (handler traits & axum routes),
-# separately from the resource-oriented Unity Catalog surface (see
-# `proto-gen.yaml`). Sharing services are RPC-style (non-resource), so the
-# resource-specific features are disabled.
-descriptors: sharing-descriptors.bin
-buf_gen: buf.gen.sharing.yaml
-
+# (models + client + co-located axum extractors) and the `unitycatalog-server`
+# crate (handler traits & axum routes), separately from the resource-oriented
+# Unity Catalog surface (see `trestle.yaml`). Sharing services are RPC-style
+# (non-resource), so the resource-specific features stay off.
+#
+# `buf.gen.sharing.yaml` is hand-maintained separately (mangrove runs
+# `buf generate` directly).
+version: 1
+project:
+  name: unitycatalog-sharing
 generate:
-  # `output_common` (axum extractors) and `output_client` must be distinct dirs:
-  # both write a per-service `mod.rs`, so sharing them would clobber one.
-  output_common: crates/sharing-client/src/codegen/extractors
-  output_models: crates/sharing-client/src/models
-  output_server: crates/server/src/sharing/codegen
-  output_client: crates/sharing-client/src/codegen
-  models_crate_name: unitycatalog_sharing_client
-  context_type: "crate::api::RequestContext"
-  error_type_path: "crate::Error"
-  generate_resource_enum: false
-  generate_store_integration: false
-  generate_object_conversions: false
-  generate_resource_clients: false
+  proto_lib: prost
+  descriptors: sharing-descriptors.bin
+
+  servers:
+    rest: true
+
+  clients:
+    rust:
+      output: crates/sharing-client/src
+
+  models:
+    dir: crates/sharing-client/src/models
+    crate_name: unitycatalog_sharing_client
+
+  server:
+    output: crates/server/src/sharing
+    context_type: crate::api::RequestContext
+    error_type_path: crate::Error
+    resource_enum: false
+    store_integration: false
+    object_conversions: false
+    resource_clients: false

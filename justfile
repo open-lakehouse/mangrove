@@ -59,11 +59,11 @@ generate-openapi:
 [group('codegen')]
 generate-code:
     buf build --output {{ justfile_directory() }}/descriptors.bin proto/unitycatalog
-    cargo run --manifest-path ../trestle/crates/trestle/Cargo.toml --bin trestle -- generate --config proto-gen.yaml \
+    cargo run --manifest-path ../trestle/crates/trestle/Cargo.toml --bin trestle -- generate --config trestle.yaml \
       --descriptors {{ justfile_directory() }}/descriptors.bin
     rm {{ justfile_directory() }}/descriptors.bin
     just fmt
-    mv python/client/src/codegen/_client.pyi python/client/python/unitycatalog_client/_client.pyi
+    mv python/client/src/codegen/client.pyi python/client/python/unitycatalog_client/_client.pyi
     # Splice in the hand-written PyO3 surface (exceptions, free functions,
     # and the hand-written `#[pymethods]` on `TemporaryCredentialClient`).
     # The codegen-emitted empty `class TemporaryCredentialClient: ...`
@@ -83,15 +83,15 @@ generate-code:
 # generate sharing (Open Sharing) server/client/extractor code from proto/sharing.
 #
 # The sharing surface lives in its own crate (`unitycatalog-sharing-client` for
-# models/client/extractors, `unitycatalog-server` for handler traits/routes), so
-# it has its own trestle config (`trestle.sharing.yaml`) separate from the
-# resource-oriented Unity Catalog pipeline in `generate-code`. The NDJSON table
+# models + co-located extractors + client, `unitycatalog-server` for handler
+# traits/routes), so it has its own trestle config (`trestle.sharing.yaml`)
+# separate from the resource-oriented Unity Catalog pipeline in `generate-code`.
+# The NDJSON table
 # query RPCs are intentionally excluded from the proto service and implemented by
 # hand (see `crates/sharing-client/src/query_extractors.rs`).
 [group('codegen')]
 generate-code-sharing:
     buf build --output {{ justfile_directory() }}/sharing-descriptors.bin proto/sharing
-    mkdir -p crates/sharing-client/src/codegen/extractors
     cargo run --manifest-path ../trestle/crates/trestle/Cargo.toml --bin trestle -- generate --config trestle.sharing.yaml \
       --descriptors {{ justfile_directory() }}/sharing-descriptors.bin
     rm {{ justfile_directory() }}/sharing-descriptors.bin

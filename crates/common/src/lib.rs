@@ -2,7 +2,6 @@ pub use error::{Error, Result};
 pub use models::*;
 pub use reference::UCReference;
 
-pub(crate) mod codegen;
 pub mod error;
 #[cfg(feature = "metric-view")]
 pub mod metric_view;

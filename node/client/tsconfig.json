@@ -1,5 +1,9 @@
 {
-  "include": ["unitycatalog/*.ts", "unitycatalog/**/*.ts", "unitycatalog/*.js"],
+  "include": [
+    "unitycatalog/*.ts",
+    "unitycatalog/**/*.ts",
+    "unitycatalog/**/*.js"
+  ],
   "compilerOptions": {
     "target": "es2022",
     "module": "commonjs",
