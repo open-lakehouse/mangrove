@@ -41,6 +41,7 @@ impl CatalogHierarchyJourney {
     }
 
     /// Create with a specific catalog name and schema names
+    #[allow(dead_code)] // retained as journey API surface
     pub fn with_names(catalog_name: impl Into<String>, schema_names: Vec<String>) -> Self {
         Self {
             catalog_name: catalog_name.into(),
@@ -50,6 +51,7 @@ impl CatalogHierarchyJourney {
     }
 
     /// Create with custom configuration
+    #[allow(dead_code)] // retained as journey API surface
     pub fn with_config(
         catalog_name: impl Into<String>,
         schema_names: Vec<String>,
@@ -65,11 +67,13 @@ impl CatalogHierarchyJourney {
     }
 
     /// Get the catalog name for this journey
+    #[allow(dead_code)] // retained as journey API surface
     pub fn catalog_name(&self) -> &str {
         &self.catalog_name
     }
 
     /// Get the schema names for this journey
+    #[allow(dead_code)] // retained as journey API surface
     pub fn schema_names(&self) -> &[String] {
         &self.schema_names
     }
