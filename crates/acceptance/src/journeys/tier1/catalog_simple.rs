@@ -34,6 +34,7 @@ impl CatalogSimpleJourney {
     }
 
     /// Create with a specific catalog name
+    #[allow(dead_code)] // retained as journey API surface
     pub fn with_catalog_name(catalog_name: impl Into<String>) -> Self {
         Self {
             catalog_name: catalog_name.into(),
@@ -42,6 +43,7 @@ impl CatalogSimpleJourney {
     }
 
     /// Create with custom configuration
+    #[allow(dead_code)] // retained as journey API surface
     pub fn with_config(catalog_name: impl Into<String>, config: ReportingConfig) -> Self {
         let logger = JourneyLogger::with_config("enhanced_catalog", config);
 
@@ -52,6 +54,7 @@ impl CatalogSimpleJourney {
     }
 
     /// Get the catalog name for this journey
+    #[allow(dead_code)] // retained as journey API surface
     pub fn catalog_name(&self) -> &str {
         &self.catalog_name
     }

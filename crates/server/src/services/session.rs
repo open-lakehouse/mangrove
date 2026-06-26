@@ -38,6 +38,7 @@ static PQ_FILE_EXTRACT: LazyLock<Expr> = LazyLock::new(|| {
 });
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)] // unified table reference, not yet wired into the session API
 pub enum TableReference {
     Sharing(SharingTableReference),
     Datafusion(DfTableReference),
@@ -84,10 +85,12 @@ impl KernelSession {
         })
     }
 
+    #[allow(dead_code)] // accessor retained for the kernel session API
     pub fn ctx(&self) -> &SessionContext {
         &self.ctx
     }
 
+    #[allow(dead_code)] // accessor retained for the kernel session API
     pub fn system_catalog(&self) -> Arc<dyn CatalogProvider> {
         self.ctx
             .catalog(UC_RS_SYSTEM_CATALOG_NAME)
