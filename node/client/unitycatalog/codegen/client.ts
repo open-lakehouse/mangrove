@@ -1206,7 +1206,7 @@ export class ShareClient {
 
 export class StagingTableClient {
   /** @internal */
-  constructor(private readonly inner: NativeStagingTableClient) {}
+  constructor(readonly inner: NativeStagingTableClient) {}
 }
 
 export class TableClient {
