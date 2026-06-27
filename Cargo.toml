@@ -33,7 +33,7 @@ delta_kernel = { package = "buoyant_kernel", git = "https://github.com/buoyant-d
   "default-engine-rustls",
   "arrow-58",
 ] }
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "10d23f5ca992e497a331e78a03eb82d1bdbd149d", features = [
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "82a2c28ff10650a028d65d30bb46eed12789cc9d", features = [
   "datafusion",
   "cloud",
 ] }
@@ -45,7 +45,7 @@ axum-extra = { version = "0.10", features = ["query"] }
 bytes = { version = "1.1" }
 chrono = { version = "0.4.41", features = ["serde"] }
 dashmap = { version = "6" }
-datafusion = { version = "53.1.0" }
+datafusion = { version = "54.0.0" }
 env_logger = "0.11"
 futures = "0.3.32"
 itertools = { version = "0.14.0" }
