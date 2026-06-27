@@ -188,8 +188,11 @@ build-sqlx: _start_pg_sqlx
     sleep 1
     # Run migrations to create tables
     DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres cargo sqlx migrate run --source ./crates/postgres/migrations
-    # Prepare SQLx
-    DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres cargo sqlx prepare --workspace -- --tests
+    # Prepare the postgres crate's queries from its OWN directory (not
+    # `--workspace`), so the cache lands in `crates/postgres/.sqlx/` and travels
+    # inside the published crate — `cargo publish`'s isolated verify build sees
+    # it under SQLX_OFFLINE. (Mirrors `build-sqlx-sqlite`.)
+    cd crates/postgres && DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres cargo sqlx prepare -- --tests
     # Clean up
     @just _stop_pg_sqlx
 
