@@ -1,0 +1,139 @@
+name: Bootstrap publish (one-shot, DELETE AFTER USE)
+
+# ONE-TIME bootstrap to create the never-published `olai-uc-*` crate names on
+# crates.io. crates.io OIDC trusted publishing (used by the steady-state
+# release-plz.yml) cannot publish a name that has never existed, so this job
+# does the first publish of each crate with a CARGO_REGISTRY_TOKEN instead.
+#
+# Staged, tier by tier. `cargo publish` builds each crate against the crates.io
+# copies of its deps, so a dependent can only publish AFTER its deps already
+# exist there. The publish steps below are grouped by dependency tier; only the
+# tiers whose deps are already on crates.io are uncommented. Each PR uncomments
+# the next tier once the prior tier has published. Publish/bootstrap order:
+#
+#   Tier 0: olai-uc-common
+#   Tier 1: olai-uc-client, olai-uc-sharing-client, olai-uc-postgres, olai-uc-sqlite
+#   Tier 2: olai-uc-object-store, olai-uc-datafusion
+#   Tier 3: olai-uc-server
+#   Tier 4: olai-uc-cli
+#
+# Run once with dry_run=true to package-check the active tier, then again with
+# dry_run=false to actually publish. A dependent's dry-run fails until its deps
+# exist on crates.io, so only uncomment a tier once the previous one is live.
+#
+# Prerequisite: a temporary `CARGO_REGISTRY_TOKEN` repo secret (a crates.io API
+# token with publish scope) on the protected `release` environment.
+#
+# After bootstrapping each tier, decommission it:
+#   1. Register Trusted Publishing on crates.io for the crate(s)
+#      (repo open-lakehouse/mangrove, workflow release-plz.yml, env release).
+#   2. Remove its `release = false` line in release-plz.toml so release-plz
+#      publishes it via OIDC from then on.
+# When ALL nine crates are live + on OIDC:
+#   3. Delete this workflow file.
+#   4. Delete + revoke the CARGO_REGISTRY_TOKEN secret.
+#
+# Manual trigger only — never runs automatically, so it can't race release-plz.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Package only, do not actually publish"
+        type: boolean
+        default: true
+
+permissions: {}
+
+jobs:
+  bootstrap-publish:
+    name: Bootstrap publish
+    if: ${{ github.repository == 'open-lakehouse/mangrove' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: release # reuse the protected release environment
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: "1.96"
+
+      # ----- Tier 0: no internal deps -----
+      - name: Publish olai-uc-common
+        run: |
+          cargo publish -p olai-uc-common --locked \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
+          SQLX_OFFLINE: "true"
+          # zizmor: ignore[use-trusted-publishing] — intentional: OIDC trusted
+          # publishing cannot create a never-before-published crate name. This
+          # one-shot token bootstrap is removed once the names exist.
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      # ----- Tier 1: depend on common — uncomment once Tier 0 is on crates.io -----
+      # - name: Publish olai-uc-client
+      #   run: |
+      #     cargo publish -p olai-uc-client --locked \
+      #       ${{ inputs.dry_run && '--dry-run' || '' }}
+      #   env:
+      #     SQLX_OFFLINE: "true"
+      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      # - name: Publish olai-uc-sharing-client
+      #   run: |
+      #     cargo publish -p olai-uc-sharing-client --locked \
+      #       ${{ inputs.dry_run && '--dry-run' || '' }}
+      #   env:
+      #     SQLX_OFFLINE: "true"
+      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      # - name: Publish olai-uc-postgres
+      #   run: |
+      #     cargo publish -p olai-uc-postgres --locked \
+      #       ${{ inputs.dry_run && '--dry-run' || '' }}
+      #   env:
+      #     SQLX_OFFLINE: "true"
+      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      # - name: Publish olai-uc-sqlite
+      #   run: |
+      #     cargo publish -p olai-uc-sqlite --locked \
+      #       ${{ inputs.dry_run && '--dry-run' || '' }}
+      #   env:
+      #     SQLX_OFFLINE: "true"
+      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      # ----- Tier 2: depend on client/common — uncomment once Tier 1 is on crates.io -----
+      # - name: Publish olai-uc-object-store
+      #   run: |
+      #     cargo publish -p olai-uc-object-store --locked \
+      #       ${{ inputs.dry_run && '--dry-run' || '' }}
+      #   env:
+      #     SQLX_OFFLINE: "true"
+      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      # - name: Publish olai-uc-datafusion
+      #   run: |
+      #     cargo publish -p olai-uc-datafusion --locked \
+      #       ${{ inputs.dry_run && '--dry-run' || '' }}
+      #   env:
+      #     SQLX_OFFLINE: "true"
+      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      # ----- Tier 3: server (common + client + sharing-client) — uncomment once Tier 2 is on crates.io -----
+      # - name: Publish olai-uc-server
+      #   run: |
+      #     cargo publish -p olai-uc-server --locked \
+      #       ${{ inputs.dry_run && '--dry-run' || '' }}
+      #   env:
+      #     SQLX_OFFLINE: "true"
+      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      # ----- Tier 4: cli (depends on the rest) — uncomment LAST -----
+      # - name: Publish olai-uc-cli
+      #   run: |
+      #     cargo publish -p olai-uc-cli --locked \
+      #       ${{ inputs.dry_run && '--dry-run' || '' }}
+      #   env:
+      #     SQLX_OFFLINE: "true"
+      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

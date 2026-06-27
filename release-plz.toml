@@ -1,0 +1,139 @@
+# release-plz configuration — automated, independent per-crate releases.
+#
+# release-plz (https://release-plz.dev) is the Rust-native release tool (NOT
+# Google's release-please). It analyzes conventional commits *per crate* to
+# compute semver bumps, regenerates per-crate changelogs, keeps intra-workspace
+# dependency version requirements in sync, and publishes to crates.io in
+# topological order. See .github/CONTRIBUTING.md for the end-to-end flow.
+#
+# Crate naming: the published names are provisional `olai-uc-*` (the package
+# `name` in each crate's Cargo.toml). The in-workspace dependency *key* stays
+# `unitycatalog(-)*` via each dependent's `package =` alias, so no source churn.
+#
+# Bootstrap note: crates.io OIDC trusted publishing cannot create a name that
+# has never been published. Each `olai-uc-*` crate therefore needs a one-time
+# token bootstrap (.github/workflows/bootstrap-publish.yml) before release-plz
+# can publish it via OIDC. Until a crate has been bootstrapped, it carries
+# `release = false` below — release-plz still versions/changelogs/tags it, but
+# does not attempt to publish a nonexistent name. Remove the `release = false`
+# line (and register its crates.io Trusted Publisher) once it is bootstrapped.
+#
+# Config reference: https://release-plz.dev/docs/config
+
+[workspace]
+# Link PRs/commits in the generated changelog back to the repo.
+repo_url = "https://github.com/open-lakehouse/mangrove"
+
+# --- Versioning / changelog ---
+changelog_update = true        # regenerate per-crate CHANGELOG.md on each release
+dependencies_update = false    # don't `cargo update` during the release PR —
+                               # keeps Cargo.lock churn out of release commits
+semver_check = true            # run cargo-semver-checks before bumping, to catch
+                               # accidental breaking changes in published crates
+
+# --- Git tags & GitHub releases (per-crate) ---
+# Per-crate tags, e.g. `olai-uc-cli-v0.0.1`. The cli tag is what the Docker
+# release workflow keys off; the prefix keeps each crate's tags distinct.
+git_tag_enable = true
+git_tag_name = "{{ package }}-v{{ version }}"
+git_release_enable = true
+git_release_name = "{{ package }} v{{ version }}"
+git_release_body = "{{ changelog }}"
+
+# --- Publishing ---
+# release-plz runs `cargo publish` itself, in dependency order. With
+# `id-token: write` in the workflow it performs crates.io OIDC trusted
+# publishing, so NO CARGO_REGISTRY_TOKEN is required.
+publish = true
+publish_timeout = "30m"        # datafusion/server are slow to verify
+
+# --- Release PR appearance ---
+pr_labels = ["release"]
+pr_draft = false
+
+# ---------------------------------------------------------------------------
+# Per-package overrides.
+#
+# `changelog_path` is pinned for every crate because the directory name
+# (e.g. crates/common) differs from the published package name (olai-uc-common).
+#
+# `release = false` is the BOOTSTRAP GATE: crates that have not yet had their
+# one-time token bootstrap publish stay held out of the OIDC release cycle.
+# Remove the `release = false` line as each crate is bootstrapped + its Trusted
+# Publisher registered. Start with all nine set; clear them tier by tier (see
+# bootstrap-publish.yml and CONTRIBUTING.md). Publish/bootstrap order:
+#   common -> client, sharing-client -> object-store, postgres, sqlite,
+#   datafusion -> server -> cli
+# ---------------------------------------------------------------------------
+[[package]]
+name = "olai-uc-common"
+changelog_path = "crates/common/CHANGELOG.md"
+release = false
+
+[[package]]
+name = "olai-uc-client"
+changelog_path = "crates/client/CHANGELOG.md"
+release = false
+
+[[package]]
+name = "olai-uc-sharing-client"
+changelog_path = "crates/sharing-client/CHANGELOG.md"
+release = false
+
+[[package]]
+name = "olai-uc-object-store"
+changelog_path = "crates/object-store/CHANGELOG.md"
+release = false
+
+[[package]]
+name = "olai-uc-postgres"
+changelog_path = "crates/postgres/CHANGELOG.md"
+release = false
+
+[[package]]
+name = "olai-uc-sqlite"
+changelog_path = "crates/sqlite/CHANGELOG.md"
+release = false
+
+[[package]]
+name = "olai-uc-datafusion"
+changelog_path = "crates/datafusion/CHANGELOG.md"
+release = false
+
+[[package]]
+name = "olai-uc-server"
+changelog_path = "crates/server/CHANGELOG.md"
+release = false
+
+[[package]]
+name = "olai-uc-cli"
+changelog_path = "crates/cli/CHANGELOG.md"
+release = false
+
+# ---------------------------------------------------------------------------
+# Changelog rendering (git-cliff, embedded). Conventional-commit grouping.
+# Because commits use crate scopes (feat(common): ...), each crate's changelog
+# naturally contains only commits that touched its files.
+# ---------------------------------------------------------------------------
+[changelog]
+protect_breaking_commits = true
+sort_commits = "newest"
+
+commit_parsers = [
+  { message = "^feat",     group = "Added" },
+  { message = "^fix",      group = "Fixed" },
+  { message = "^perf",     group = "Performance" },
+  { message = "^refactor", group = "Changed" },
+  { message = "^doc",      group = "Documentation" },
+  { message = "^build",    group = "Build" },
+  { message = "^test",     skip = true },
+  { message = "^chore",    skip = true },
+  { message = "^ci",       skip = true },
+]
+
+# Strip the redundant "(scope)" from each rendered line — each crate's changelog
+# is already crate-scoped. Scopes use the crate directory names / short names
+# the repo's conventional commits already use.
+commit_preprocessors = [
+  { pattern = '\((common|client|sharing-client|object-store|postgres|sqlite|datafusion|server|cli)\)', replace = "" },
+]
