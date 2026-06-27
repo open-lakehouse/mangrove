@@ -28,6 +28,28 @@ pub trait TableProviderBuilder: Send + Sync + std::fmt::Debug {
         table: &Table,
     ) -> Result<Arc<dyn TableProvider>, TableProviderError>;
 
+    /// Build a provider for an Iceberg table rooted at `location`.
+    ///
+    /// Receives the same fully resolved `location` and UC [`Table`] metadata as
+    /// [`build_delta`](Self::build_delta). Unlike Delta, Iceberg performs its own
+    /// object-store I/O through `FileIO` rather than the session's runtime
+    /// object-store registry, so implementations are expected to vend storage
+    /// credentials (via the host session's Unity Catalog client) and translate
+    /// them into Iceberg `FileIO` properties themselves.
+    ///
+    /// The default errors: only embedders that wire an Iceberg-capable builder
+    /// can resolve Iceberg tables.
+    async fn build_iceberg(
+        &self,
+        location: &Url,
+        table: &Table,
+    ) -> Result<Arc<dyn TableProvider>, TableProviderError> {
+        let _ = (location, table);
+        Err(TableProviderError::NotImplemented(
+            "this TableProviderBuilder does not support Iceberg".to_string(),
+        ))
+    }
+
     /// Build a provider for a metric view.
     ///
     /// `view` is the parsed metric-view definition and `source` is the

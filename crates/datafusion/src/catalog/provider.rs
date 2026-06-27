@@ -208,8 +208,8 @@ impl UnityCatalogSchemaProvider {
     /// Resolve a base (non-view) Unity Catalog table to a [`TableProvider`].
     ///
     /// Vends credentials, registers the per-table object store, and delegates
-    /// provider construction to the host session's builder. Only Delta is
-    /// supported for now.
+    /// provider construction to the host session's builder. Delta and Iceberg
+    /// are supported; the table's `data_source_format` selects the path.
     async fn build_base_table(
         &self,
         full_name: &str,
@@ -217,10 +217,10 @@ impl UnityCatalogSchemaProvider {
     ) -> Result<Arc<dyn TableProvider>> {
         let format = DataSourceFormat::try_from(table.data_source_format)
             .unwrap_or(DataSourceFormat::Unspecified);
-        if format != DataSourceFormat::Delta {
+        if !matches!(format, DataSourceFormat::Delta | DataSourceFormat::Iceberg) {
             return Err(DataFusionError::NotImplemented(format!(
                 "Unity Catalog table '{full_name}' has unsupported data source format {format:?}; \
-                 only Delta is supported"
+                 only Delta and Iceberg are supported"
             )));
         }
 
@@ -247,8 +247,13 @@ impl UnityCatalogSchemaProvider {
         self.ctx
             .register_table_store(uc_store.url(), uc_store.root());
 
-        // Delegate provider construction to the host session.
-        self.ctx.builder.build_delta(&location, table).await
+        // Delegate provider construction to the host session, routing on the
+        // table format. Iceberg does its own I/O via FileIO, but credentials
+        // are vended above the same way so the builder can reuse them.
+        match format {
+            DataSourceFormat::Iceberg => self.ctx.builder.build_iceberg(&location, table).await,
+            _ => self.ctx.builder.build_delta(&location, table).await,
+        }
     }
 
     /// If `table` is a metric view, resolve it: parse the definition, resolve
