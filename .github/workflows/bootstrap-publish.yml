@@ -70,13 +70,13 @@ jobs:
         env:
           SQLX_OFFLINE: "true"
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      - name: Publish olai-uc-sharing-client
-        run: |
-          cargo publish -p olai-uc-sharing-client --locked \
-            ${{ inputs.dry_run && '--dry-run' || '' }}
-        env:
-          SQLX_OFFLINE: "true"
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      # - name: Publish olai-uc-sharing-client
+      #   run: |
+      #     cargo publish -p olai-uc-sharing-client --locked \
+      #       ${{ inputs.dry_run && '--dry-run' || '' }}
+      #   env:
+      #     SQLX_OFFLINE: "true"
+      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
       - name: Publish olai-uc-postgres
         run: |
           cargo publish -p olai-uc-postgres --locked \
