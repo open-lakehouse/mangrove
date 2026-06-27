@@ -122,7 +122,7 @@ rest:
 rest-db:
     DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres cargo sqlx migrate run --source ./crates/postgres/migrations
     DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres RUST_LOG=INFO \
-    cargo run -p unitycatalog-cli -- server --rest --use-db
+    cargo run -p olai-uc-cli -- server --rest --use-db
 
 docs:
     npm run dev -w docs
@@ -291,7 +291,7 @@ record-oss-rust:
 integration-object-store:
     docker compose -f dev/compose.yaml --profile full up -d
     UC_INTEGRATION_URL="http://localhost:8080/api/2.1/unity-catalog/" \
-    cargo test -p unitycatalog-object-store --test integration -- --ignored --test-threads=1
+    cargo test -p olai-uc-object-store --test integration -- --ignored --test-threads=1
 
 # run the credential-vending integration test against an Azurite sidecar.
 # Boots the `azurite` compose profile (blob on localhost:10000), creates the
@@ -309,7 +309,7 @@ integration-azurite:
         az storage container create --name lakehouse --connection-string "$conn"
     UC_AZURITE_BLOB_ENDPOINT="http://127.0.0.1:10000" \
     UC_AZURITE_CONTAINER="lakehouse" \
-    cargo test -p unitycatalog-server --features integration-azurite \
+    cargo test -p olai-uc-server --features integration-azurite \
         --test credential_vending_azurite -- --ignored --test-threads=1 --nocapture
 
 [group('test')]
@@ -348,8 +348,8 @@ asd:
     UC_ENDPOINT=http://localhost:8081/api/2.1/unity-catalog/ \
     UC_TABLE=demo.managed_demo.events \
     AWS_REGION=eu-central-1 \
-    cargo run -p datafusion-unitycatalog --features delta --example managed_table_snapshot
+    cargo run -p olai-uc-datafusion --features delta --example managed_table_snapshot
 
 fgh:
     AWS_REGION=eu-central-1 \
-    cargo run -p datafusion-unitycatalog --features delta --example managed_table_write
+    cargo run -p olai-uc-datafusion --features delta --example managed_table_write

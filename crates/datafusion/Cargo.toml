@@ -1,9 +1,18 @@
 [package]
-name = "datafusion-unitycatalog"
+name = "olai-uc-datafusion"
 version = "0.1.0"
+description = "DataFusion catalog provider and Delta table integration backed by Unity Catalog."
 edition.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+readme.workspace = true
 rust-version.workspace = true
+
+[lib]
+# Stable Rust crate identifier, independent of the provisional package name.
+name = "datafusion_unitycatalog"
 
 [dependencies]
 async-trait = { workspace = true }
@@ -17,9 +26,9 @@ tokio = { workspace = true, features = ["rt-multi-thread"] }
 tracing = { workspace = true }
 url = { workspace = true }
 
-unitycatalog-common = { path = "../common" }
-unitycatalog-object-store = { path = "../object-store" }
-unitycatalog-client = { path = "../client" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1" }
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.1" }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.1" }
 
 deltalake-core = { workspace = true, optional = true }
 # Build catalog-managed kernel snapshots (log tail + max catalog version) to hand

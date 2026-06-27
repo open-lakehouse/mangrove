@@ -1,12 +1,13 @@
 [package]
-name = "unitycatalog-cli"
+name = "olai-uc-cli"
+version = "0.0.1"
+description = "Unity Catalog command-line interface and server launcher (the `uc` binary)."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
-version.workspace = true
 rust-version.workspace = true
 
 [[bin]]
@@ -15,11 +16,11 @@ path = "src/main.rs"
 
 [dependencies]
 # path dependencies (in alphabetical order)
-unitycatalog-client = { path = "../client" }
-unitycatalog-common = { path = "../common", features = ["axum", "store"] }
-unitycatalog-postgres = { path = "../postgres" }
-unitycatalog-sqlite = { path = "../sqlite" }
-unitycatalog-server = { path = "../server", features = ["axum", "proxy"] }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.1" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1", features = ["axum", "store"] }
+unitycatalog-postgres = { package = "olai-uc-postgres", path = "../postgres", version = "0.0.1" }
+unitycatalog-sqlite = { package = "olai-uc-sqlite", path = "../sqlite", version = "0.0.1" }
+unitycatalog-server = { package = "olai-uc-server", path = "../server", version = "0.0.1", features = ["axum", "proxy"] }
 
 # workspace dependencies (in alphabetical order)
 async-trait = { workspace = true }

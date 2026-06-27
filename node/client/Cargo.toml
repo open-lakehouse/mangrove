@@ -2,13 +2,15 @@
 edition = "2024"
 name = "unitycatalog_client"
 version = "0.0.0"
+# NAPI extension module — distributed as an npm package, not to crates.io.
+publish = false
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-unitycatalog-client = { path = "../../crates/client" }
-unitycatalog-common = { path = "../../crates/common", features = ["node"] }
+unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client" }
+unitycatalog-common = { package = "olai-uc-common", path = "../../crates/common", features = ["node"] }
 
 env_logger = { workspace = true }
 futures = { workspace = true }

@@ -1,20 +1,24 @@
 [package]
-name = "unitycatalog-object-store"
+name = "olai-uc-object-store"
+version = "0.0.1"
 description = "object_store implementation backed by Unity Catalog credential vending. Read and write data governed by UC volumes, tables, and external locations."
-categories = ["object-store", "unity-catalog", "lakehouse"]
-documentation = "https://docs.rs/unitycatalog-object-store"
+categories = ["filesystem"]
+documentation = "https://docs.rs/olai-uc-object-store"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
 rust-version.workspace = true
-version.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 
+[lib]
+# Stable Rust crate identifier, independent of the provisional package name.
+name = "unitycatalog_object_store"
+
 [dependencies]
-unitycatalog-client = { path = "../client", default-features = false }
-unitycatalog-common = { path = "../common", default-features = false }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.1", default-features = false }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1", default-features = false }
 
 async-trait = { workspace = true }
 chrono = { workspace = true }

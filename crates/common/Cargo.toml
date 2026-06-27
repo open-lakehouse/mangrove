@@ -1,13 +1,24 @@
 [package]
-name = "unitycatalog-common"
+# Published to crates.io under a provisional `olai-uc-*` name while the design
+# settles; the in-workspace dependency key + crate identifier stay
+# `unitycatalog(_)common` via each dependent's `package =` alias, so no source
+# changes. See release-plz.toml / CONTRIBUTING.md.
+name = "olai-uc-common"
+version = "0.0.1"
+description = "Shared types, generated Unity Catalog models, and storage/REST abstractions for the Unity Catalog server and client crates."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
-version.workspace = true
 rust-version.workspace = true
+
+[lib]
+# Keep the Rust crate identifier stable (`unitycatalog_common`) independent of
+# the provisional `olai-uc-*` package name, so source `use` paths, sibling
+# crates, and this crate's own tests/examples need no churn from the rename.
+name = "unitycatalog_common"
 
 [dependencies]
 aes-gcm = { workspace = true }

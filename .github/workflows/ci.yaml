@@ -422,7 +422,7 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
           SQLX_OFFLINE: "true"
         run: |
-          cargo llvm-cov --no-report nextest -p unitycatalog-postgres --features integration-pg --profile ci
+          cargo llvm-cov --no-report nextest -p olai-uc-postgres --features integration-pg --profile ci
           cargo llvm-cov report --codecov --output-path codecov.json
 
       - name: Upload to Codecov
@@ -513,7 +513,7 @@ jobs:
           UC_AZURITE_CONTAINER: "lakehouse"
           SQLX_OFFLINE: "true"
         run: |
-          cargo llvm-cov --no-report nextest -p unitycatalog-server --features integration-azurite --profile ci --run-ignored all -E 'binary(credential_vending_azurite)'
+          cargo llvm-cov --no-report nextest -p olai-uc-server --features integration-azurite --profile ci --run-ignored all -E 'binary(credential_vending_azurite)'
           cargo llvm-cov report --codecov --output-path codecov.json
 
       - name: Upload to Codecov

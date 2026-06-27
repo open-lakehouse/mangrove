@@ -1,16 +1,21 @@
 [package]
-name = "unitycatalog-client"
+name = "olai-uc-client"
+version = "0.0.1"
+description = "Async Rust client for the Unity Catalog REST API."
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
 rust-version.workspace = true
-version.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 
+[lib]
+# Stable Rust crate identifier, independent of the provisional package name.
+name = "unitycatalog_client"
+
 [dependencies]
-unitycatalog-common = { path = "../common" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1" }
 
 olai-http = { workspace = true }
 percent-encoding = "2.3"

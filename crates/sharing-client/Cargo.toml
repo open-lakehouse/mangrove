@@ -1,16 +1,21 @@
 [package]
-name = "unitycatalog-sharing-client"
+name = "olai-uc-sharing-client"
+version = "0.0.1"
+description = "Delta Sharing protocol client and server types for Unity Catalog."
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
 rust-version.workspace = true
-version.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 
+[lib]
+# Stable Rust crate identifier, independent of the provisional package name.
+name = "unitycatalog_sharing_client"
+
 [dependencies]
-unitycatalog-common = { path = "../common" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1" }
 
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }

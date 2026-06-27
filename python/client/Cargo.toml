@@ -1,6 +1,8 @@
 [package]
 name = "unitycatalog-client-py"
 version = "0.0.1"
+# PyO3 extension module — distributed as a wheel via maturin, not to crates.io.
+publish = false
 edition = "2024"
 homepage.workspace = true
 keywords.workspace = true
@@ -12,8 +14,8 @@ name = "unitycatalog_client"
 crate-type = ["cdylib"]
 
 [dependencies]
-unitycatalog-client = { path = "../../crates/client" }
-unitycatalog-common = { path = "../../crates/common", features = ["python"] }
+unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client" }
+unitycatalog-common = { package = "olai-uc-common", path = "../../crates/common", features = ["python"] }
 
 chrono = { workspace = true }
 delta_kernel = { workspace = true }
