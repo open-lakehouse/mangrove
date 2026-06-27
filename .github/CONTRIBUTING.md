@@ -108,13 +108,26 @@ Use a `(scope)` matching the affected crate's short name — `common`, `client`,
 so the bump and changelog land on the right crate. Prefer several focused commits over one
 mixed commit; keep generated output in the same commit as its source.
 
-**Cross-repo (trestle) dependencies.** `olai-http` / `olai-store` come from the sibling
-`../trestle` checkout and are declared as `{ version = "x.y.z", path = "../trestle/..." }`.
-Locally the `path` wins (so dev resolves against source and sidesteps the crates.io
-proxy's age filter); in CI and on `cargo publish` the `version` resolves from crates.io.
-**Ordering discipline:** when you need a trestle change, release trestle to crates.io
-*first*, then bump the `version` here. Bumping the `version` before trestle's matching
-release is on crates.io works locally (path masks it) but breaks CI.
+**Cross-repo (trestle) dependencies.** `olai-http` / `olai-store` are declared as plain
+published `version` deps in the root `Cargo.toml` (e.g. `olai-http = { version = "0.0.3" }`).
+They are **not** `path` deps: a committed `path` must physically exist for *every* cargo
+command, but CI has no `../trestle` checkout, so a committed path aborts CI; and a `git`
+source would block `cargo publish`. CI and `cargo publish` resolve the version from
+crates.io natively.
+
+To build against **local trestle source** — e.g. before a change is published, or while
+the crates.io proxy's 7-day age filter still hides a freshly published version — add a
+**local, uncommitted** `[patch.crates-io]` to the root `Cargo.toml`:
+
+```toml
+[patch.crates-io]
+olai-http  = { path = "../trestle/crates/olai-http" }
+olai-store = { path = "../trestle/crates/olai-store" }
+```
+
+Do **not** commit that block (CI has no `../trestle`, so it would fail). When you need a
+trestle change permanently, release trestle to crates.io *first*, then bump the `version`
+here.
 
 **How a release happens:**
 
