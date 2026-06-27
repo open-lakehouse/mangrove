@@ -89,16 +89,45 @@ Instead:
 Releases are driven by [release-plz](https://release-plz.dev) from
 [Conventional Commits](https://www.conventionalcommits.org). You never bump versions or
 write changelogs by hand. The PR title is the squash-merge commit, so CI lints it against
-the convention (`commitlint.config.mjs`); the commit type drives the semver bump.
+the convention (`.github/workflows/pr-title.yml`); the commit type drives the semver bump.
+
+**Provisional crate names.** The library/CLI crates are published to crates.io under
+provisional `olai-uc-*` names (e.g. `olai-uc-common`, `olai-uc-cli`) while the public
+design settles. To keep this rename source-free, each crate's package `name` is
+`olai-uc-*` but the **in-workspace dependency key stays `unitycatalog(-)*`** via Cargo's
+`package =` alias (the same trick used for `delta_kernel`/`buoyant_kernel`). So source
+keeps `use unitycatalog_common::…`; only `Cargo.toml` carries the published name.
 
 **Each crate versions independently.** release-plz bumps a crate from the commits that
-touch it (and bumps its dependents automatically), so `unitycatalog-object-store` and
-`datafusion-unitycatalog` can release on their own cadence. Config: `release-plz.toml`.
+touch it (and bumps its dependents automatically), so e.g. `olai-uc-object-store` and
+`olai-uc-datafusion` can release on their own cadence. Config: `release-plz.toml` (the
+changelog/git-cliff config is embedded there — there is no separate `cliff.toml`).
 
-Because release-plz derives the bump and changelog *from the commits*, **small,
-well-scoped commits with the right `type(scope):`** (per `~/.claude/CLAUDE.md`)
-directly produce an accurate per-crate history. Prefer several focused commits
-over one mixed commit; keep generated output in the same commit as its source.
+Use a `(scope)` matching the affected crate's short name — `common`, `client`,
+`sharing-client`, `object-store`, `postgres`, `sqlite`, `datafusion`, `server`, `cli` —
+so the bump and changelog land on the right crate. Prefer several focused commits over one
+mixed commit; keep generated output in the same commit as its source.
+
+**Cross-repo (trestle) dependencies.** `olai-http` / `olai-store` are declared as plain
+published `version` deps in the root `Cargo.toml` (e.g. `olai-http = { version = "0.0.3" }`).
+They are **not** `path` deps: a committed `path` must physically exist for *every* cargo
+command, but CI has no `../trestle` checkout, so a committed path aborts CI; and a `git`
+source would block `cargo publish`. CI and `cargo publish` resolve the version from
+crates.io natively.
+
+To build against **local trestle source** — e.g. before a change is published, or while
+the crates.io proxy's 7-day age filter still hides a freshly published version — add a
+**local, uncommitted** `[patch.crates-io]` to the root `Cargo.toml`:
+
+```toml
+[patch.crates-io]
+olai-http  = { path = "../trestle/crates/olai-http" }
+olai-store = { path = "../trestle/crates/olai-store" }
+```
+
+Do **not** commit that block (CI has no `../trestle`, so it would fail). When you need a
+trestle change permanently, release trestle to crates.io *first*, then bump the `version`
+here.
 
 **How a release happens:**
 
@@ -107,28 +136,41 @@ over one mixed commit; keep generated output in the same commit as its source.
 2. release-plz opens/updates a **Release PR** that bumps the affected crates' versions
    and updates their changelogs. Review it like any PR.
 3. **Merging the Release PR** publishes: release-plz tags each changed crate
-   (`<crate>-v<version>`) and creates its GitHub Release. The tag then triggers the build
-   workflow that attaches artifacts.
+   (`<crate>-v<version>`), creates its GitHub Release, and publishes it to crates.io via
+   OIDC trusted publishing. The `olai-uc-cli` tag additionally drives the container build
+   (see below).
 
-**Tags that trigger artifact builds:**
+**Tags / artifacts:**
 
-| Tag                          | Builds & attaches            | Workflow                            |
-|------------------------------|------------------------------|-------------------------------------|
-| `unitycatalog-cli-v*`        | `uc` binaries + GHCR image   | release.yml, docker-release.yml     |
-| `unitycatalog-client-py-v*`  | Python wheels (Linux + macOS)| python-release.yml                  |
+| Tag                  | Builds & attaches                                  | Workflow                          |
+|----------------------|----------------------------------------------------|-----------------------------------|
+| every `olai-uc-*-v*` | crates.io publish + GitHub Release (changelog)     | release-plz.yml                   |
+| `olai-uc-cli-v*`     | + `ghcr.io/open-lakehouse/hydrofoil` image         | release-plz.yml → docker-release.yml |
 
-Other crates get a tag + GitHub Release (changelog) but no extra artifact build. The crates
-are not published to crates.io (`publish = false`); release-plz only tags and releases them.
+The Python (`python/client`) and Node (`node/client`) bindings are `publish = false` for
+now (held off); so are `unitycatalog-acceptance` and the doc `examples`.
+
+**First-publish bootstrap.** crates.io OIDC trusted publishing cannot create a crate name
+that has never existed. Each `olai-uc-*` crate therefore needs a one-time token bootstrap
+before release-plz can publish it via OIDC. Until then it carries `release = false` in
+`release-plz.toml` (release-plz still versions/changelogs/tags it, just doesn't publish).
+The bootstrap is staged tier-by-tier in `.github/workflows/bootstrap-publish.yml`
+(`common` → `client`/`sharing-client`/`postgres`/`sqlite` → `object-store`/`datafusion`
+→ `server` → `cli`). For each tier: token-publish it, register its crates.io Trusted
+Publisher (repo `open-lakehouse/mangrove`, workflow `release-plz.yml`, env `release`),
+then remove its `release = false`. When all nine are live, delete the bootstrap workflow
+and revoke the `CARGO_REGISTRY_TOKEN` secret. Any *new* publishable crate added later
+needs the same one-time bootstrap.
 
 **Notes:**
 
 - Versions live committed in each `Cargo.toml`; release-plz writes them via the Release PR.
   Never edit a version manually and never use a placeholder — artifacts build from the
   committed version at a real commit SHA, which the provenance attestations bind to.
-- Release notes are generated by git-cliff (`cliff.toml`); the artifact workflows *append*
-  download/verify instructions to that body. To change note formatting, edit `cliff.toml`.
-- release-plz needs a `RELEASE_PLZ_TOKEN` secret (PAT/App token) so the tags it creates
-  trigger the downstream workflows — the default `GITHUB_TOKEN` cannot.
+- crates.io publishing uses OIDC (`id-token: write`); no `CARGO_REGISTRY_TOKEN` is needed
+  in steady state (only the temporary bootstrap workflow uses one).
+- An optional `RELEASE_PLZ_TOKEN` (PAT/App token) lets the Release PR run CI under a
+  non-`GITHUB_TOKEN` identity; the workflow falls back to `GITHUB_TOKEN` when it is unset.
 
 ## AI-assisted contributions
 

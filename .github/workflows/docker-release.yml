@@ -1,29 +1,42 @@
 name: Release Docker Image
 
-# Build and publish the `uc` service image to the GitHub Container Registry.
-# Adapted from open-lakehouse/hydrofoil's docker-release.yml; this repo ships a
-# single binary (`uc`), so the matrix axis is the *platform* only (no BIN
-# build-arg), and one GHCR image is produced. We publish to GHCR only (keyless
-# GITHUB_TOKEN — no stored registry secret).
+# Build and publish the `hydrofoil` image (the `uc` Unity Catalog CLI/server
+# binary) to the GitHub Container Registry. This repo ships a single binary
+# (`uc`), so the matrix axis is the *platform* only (no BIN build-arg), and one
+# GHCR image is produced. We publish to GHCR only (keyless GITHUB_TOKEN — no
+# stored registry secret).
 #
-# A `v*` tag push builds multi-arch (amd64 + native arm64), pushes each arch by
-# digest, then a merge job assembles the multi-arch manifest list, applies the
-# tags, and signs the index keyless via cosign. PRs / main pushes build for
-# validation but do not publish (see the `build` job's `if:` gate).
+# Primary trigger is `workflow_call` from release-plz.yml: when release-plz
+# publishes a new `olai-uc-cli` version, it calls this workflow with that
+# version + the release tag to build from. `workflow_dispatch` allows a manual
+# rebuild of an existing release (e.g. base-image CVE refresh). PRs / main
+# pushes build for validation but do not publish (see the `build` job's `if:`).
+#
+# A run builds multi-arch (amd64 + native arm64), pushes each arch by digest,
+# then a merge job assembles the multi-arch manifest list, applies the tags, and
+# signs the index keyless via cosign.
 
 on:
-  push:
-    tags: ["v*"]
-    branches: [main]
-    # Limit branch/main builds to inputs that affect the image. Tag pushes
-    # ignore `paths` and always run.
-    paths:
-      - crates/**
-      - Cargo.toml
-      - Cargo.lock
-      - crates/cli/Dockerfile
-      - .dockerignore
-      - .github/workflows/docker-release.yml
+  workflow_call:
+    inputs:
+      version:
+        description: "Released olai-uc-cli version, e.g. 0.0.1 (no v prefix)."
+        required: true
+        type: string
+      ref:
+        description: "Git ref/tag to build from (the release-plz tag, e.g. olai-uc-cli-v0.0.1)."
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "olai-uc-cli version to tag the image, e.g. 0.0.1."
+        required: true
+        type: string
+      ref:
+        description: "Git ref/tag to build from, e.g. olai-uc-cli-v0.0.1."
+        required: true
+        type: string
   pull_request:
     branches: [main]
     paths:
@@ -33,18 +46,26 @@ on:
       - crates/cli/Dockerfile
       - .dockerignore
       - .github/workflows/docker-release.yml
-  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - crates/**
+      - Cargo.toml
+      - Cargo.lock
+      - crates/cli/Dockerfile
+      - .dockerignore
+      - .github/workflows/docker-release.yml
 
-# Cancel superseded runs on the same ref.
+# Cancel superseded runs on the same ref/version.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.version || github.head_ref || github.ref }}
   cancel-in-progress: true
 
 # Least privilege by default; jobs opt into more.
 permissions: {}
 
 env:
-  IMAGE: ghcr.io/unitycatalog-incubator/unitycatalog-rs
+  IMAGE: ghcr.io/open-lakehouse/hydrofoil
 
 jobs:
   # Build each platform on its NATIVE runner and push BY DIGEST (no tags).
@@ -53,8 +74,10 @@ jobs:
     name: Build (${{ matrix.platform.arch }})
     runs-on: ${{ matrix.platform.runner }}
 
-    # Publish from the canonical repo on pushes to main / tags, not on PRs.
-    if: ${{ contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name) && github.repository == 'unitycatalog-incubator/unitycatalog-rs' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main') }}
+    # Publish from the canonical repo on a release (workflow_call /
+    # workflow_dispatch) or on a main push (edge build). Never on PRs (those run
+    # the validation-only `build_pr` job below).
+    if: ${{ contains(fromJSON('["workflow_call", "workflow_dispatch", "push"]'), github.event_name) && github.repository == 'open-lakehouse/mangrove' }}
 
     permissions:
       contents: read
@@ -76,6 +99,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
+          # On a release build, check out the exact tag release-plz published;
+          # otherwise (main push) build HEAD.
+          ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
 
       - name: Set up Docker Buildx
@@ -98,11 +124,11 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           labels: |
-            org.opencontainers.image.title=unitycatalog-rs
+            org.opencontainers.image.title=hydrofoil
             org.opencontainers.image.description=Unity Catalog server and CLI (uc)
-            org.opencontainers.image.vendor=unitycatalog-incubator
+            org.opencontainers.image.vendor=open-lakehouse
             org.opencontainers.image.licenses=Apache-2.0
-            org.opencontainers.image.source=https://github.com/unitycatalog-incubator/unitycatalog-rs
+            org.opencontainers.image.source=https://github.com/open-lakehouse/mangrove
 
       # Build + push by digest only (no tags here — the merge job assembles the
       # multi-arch manifest list and applies the tags). Per-arch cache scope so
@@ -170,9 +196,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Tagging strategy:
-      #   tag push v* -> <version> (e.g. 1.2.3) + the raw git tag + `latest`
-      #   main push   -> `main`, `main-<sha>`, and `edge` (latest dev build);
-      #                  never `latest`
+      #   release (workflow_call / workflow_dispatch) -> <inputs.version>
+      #     (e.g. 0.0.1) via type=semver, which also sets `latest` for a
+      #     non-prerelease version (flavor latest=auto).
+      #   main push -> `main`, `main-<sha>`, and `edge` (latest dev build);
+      #     never `latest`.
+      # type=semver reads the version from the `inputs.version` we feed it
+      # below (there is no git-tag push event to derive from on workflow_call).
       # DOCKER_METADATA_ANNOTATIONS_LEVELS=index emits index-level OCI
       # annotations (manifest-level labels from a per-arch build do NOT
       # propagate to the multi-arch index created by imagetools).
@@ -184,19 +214,18 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           tags: |
-            type=semver,pattern={{version}}
-            type=ref,event=tag
-            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' }}
-            type=sha,prefix=main-,enable=${{ github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}},value=${{ inputs.version }},enable=${{ inputs.version != '' }}
+            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+            type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+            type=sha,prefix=main-,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
           flavor: |
             latest=auto
           labels: |
-            org.opencontainers.image.title=unitycatalog-rs
+            org.opencontainers.image.title=hydrofoil
             org.opencontainers.image.description=Unity Catalog server and CLI (uc)
-            org.opencontainers.image.vendor=unitycatalog-incubator
+            org.opencontainers.image.vendor=open-lakehouse
             org.opencontainers.image.licenses=Apache-2.0
-            org.opencontainers.image.source=https://github.com/unitycatalog-incubator/unitycatalog-rs
+            org.opencontainers.image.source=https://github.com/open-lakehouse/mangrove
 
       # Create the manifest list referencing the per-arch digests, for each tag.
       # Index-level OCI annotations from metadata-action are applied here (they

@@ -29,14 +29,14 @@ COPY --from=planner /app/recipe.json recipe.json
 # source-only changes. Scope to the cli package: a bare workspace build unifies
 # features across all members, which would pull pyo3 (via python/client) into
 # `uc` and force a link against libpython that isn't present in this image.
-RUN cargo chef cook --release --recipe-path recipe.json -p unitycatalog-cli --bin uc
+RUN cargo chef cook --release --recipe-path recipe.json -p olai-uc-cli --bin uc
 
 # Build the application. SQLX_OFFLINE uses the committed `.sqlx` query cache so
-# no database is required at build time. `-p unitycatalog-cli` keeps feature
+# no database is required at build time. `-p olai-uc-cli` keeps feature
 # unification scoped to the cli package (see above) so pyo3 stays out.
 COPY . .
 ENV SQLX_OFFLINE=true
-RUN cargo build --release -p unitycatalog-cli --bin uc
+RUN cargo build --release -p olai-uc-cli --bin uc
 
 # Distroless `cc` (nonroot) gives us libgcc/libssl-free glibc + CA certs +
 # a nonroot passwd entry, without a shell or package manager.
@@ -54,11 +54,11 @@ FROM scratch
 
 # OCI image labels. The release workflow layers its own via docker/metadata-action,
 # but baking them here keeps locally/`just build-docker`-built images labelled too.
-LABEL org.opencontainers.image.title="unitycatalog-rs" \
+LABEL org.opencontainers.image.title="hydrofoil" \
       org.opencontainers.image.description="Unity Catalog server and CLI (uc)" \
-      org.opencontainers.image.source="https://github.com/unitycatalog-incubator/unitycatalog-rs" \
+      org.opencontainers.image.source="https://github.com/open-lakehouse/mangrove" \
       org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.vendor="unitycatalog-incubator"
+      org.opencontainers.image.vendor="open-lakehouse"
 
 # Bring in the distroless rootfs (CA certs, glibc, nonroot passwd/group).
 COPY --from=cleaner /clean /

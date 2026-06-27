@@ -7,12 +7,14 @@ members = ["crates/*", "python/client", "node/client", "examples/rust"]
 [workspace.package]
 edition = "2024"
 license = "Apache-2.0"
-repository = "https://github.com/unitycatalog-incubator/unitycatalog-rs"
+repository = "https://github.com/open-lakehouse/mangrove"
 readme = "README.md"
 # Floor set by the dependency tree: buoyant_kernel requires rustc 1.91
 # (datafusion 53 / darling 0.23 need 1.88). Keep CI's toolchain pin >= this.
 rust-version = "1.91"
-version = "0.0.1"
+# Crates are versioned independently in each crate's own `[package].version`
+# (the release-plz convention), so there is intentionally no workspace-wide
+# `version` here.
 homepage = "https://unitycatalog.io"
 keywords = [
   "unitycatalog",
@@ -54,11 +56,20 @@ napi = { version = "3.5", default-features = false, features = [
 ] }
 napi-derive = "3.5"
 object_store = { version = "0.13.2", features = ["azure", "aws", "gcp"] }
-# Git ref pinned to trestle main, which carries the Azurite SAS fix + the
-# ObjectStore::create(id) change (external resource-id adoption). Bump the rev
-# as trestle main advances; published crate isn't usable yet (proxy offset).
-olai-http = { git = "https://github.com/open-lakehouse/trestle", rev = "ea69a1cdab8d68bfc06248ef1fa7e3f41b48b6cf" }
-olai-store = { git = "https://github.com/open-lakehouse/trestle", rev = "ea69a1cdab8d68bfc06248ef1fa7e3f41b48b6cf" }
+# Cross-repo deps on the trestle sibling, pinned to published crates.io versions.
+# Plain `version` (no `path`): a `path` must physically exist for EVERY cargo
+# command — including in CI, which has no `../trestle` checkout — so a committed
+# path dep aborts CI. A `git` source would block `cargo publish`. So we depend on
+# the published version; CI and `cargo publish` resolve it from crates.io natively.
+#
+# To develop against local trestle source (e.g. before a change is published, or
+# while the crates.io proxy's 7-day age filter still hides a fresh version), add
+# a LOCAL, UNCOMMITTED `[patch.crates-io]` to this file — see .github/CONTRIBUTING.md:
+#   [patch.crates-io]
+#   olai-http  = { path = "../trestle/crates/olai-http" }
+#   olai-store = { path = "../trestle/crates/olai-store" }
+olai-http = { version = "0.0.3" }
+olai-store = { version = "0.0.3" }
 pbjson = { version = "0.9" }
 pbjson-types = "0.9"
 prost = { version = "0.14.1" }

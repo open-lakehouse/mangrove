@@ -1,24 +1,29 @@
 [package]
-name = "unitycatalog-server"
+name = "olai-uc-server"
+version = "0.0.1"
+description = "Unity Catalog REST and gRPC server with pluggable storage backends."
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
 rust-version.workspace = true
-version.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 
+[lib]
+# Stable Rust crate identifier, independent of the provisional package name.
+name = "unitycatalog_server"
+
 [dependencies]
-unitycatalog-common = { path = "../common", features = [
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1", features = [
   "axum",
   "store",
   "metric-view",
 ] }
-unitycatalog-sharing-client = { path = "../sharing-client", features = [
+unitycatalog-sharing-client = { package = "olai-uc-sharing-client", path = "../sharing-client", version = "0.0.1", features = [
   "server",
 ] }
-unitycatalog-client = { path = "../client", optional = true }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.1", optional = true }
 
 async-trait = { workspace = true }
 bytes = { workspace = true }

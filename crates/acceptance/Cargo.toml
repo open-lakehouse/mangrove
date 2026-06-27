@@ -1,19 +1,21 @@
 [package]
 name = "unitycatalog-acceptance"
+version = "0.0.1"
+# Internal test harness — never published to crates.io.
+publish = false
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
 rust-version.workspace = true
-version.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 description = "Acceptance testing framework for Unity Catalog"
 
 [dependencies]
 # repository dependencies
-unitycatalog-client = { path = "../client" }
-unitycatalog-common = { path = "../common" }
+unitycatalog-client = { package = "olai-uc-client", path = "../client" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common" }
 
 # workspace dependencies
 chrono = { workspace = true, features = ["serde"] }

@@ -1,17 +1,22 @@
 [package]
-name = "unitycatalog-sqlite"
+name = "olai-uc-sqlite"
+version = "0.0.1"
+description = "SQLite-backed resource and secret store for the Unity Catalog server."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
-version.workspace = true
 rust-version.workspace = true
+
+[lib]
+# Stable Rust crate identifier, independent of the provisional package name.
+name = "unitycatalog_sqlite"
 
 [dependencies]
 # path dependencies (in alphabetical order)
-unitycatalog-common = { path = "../common", default-features = false, features = [
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1", default-features = false, features = [
   "store",
 ] }
 

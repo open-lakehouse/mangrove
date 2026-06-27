@@ -1,17 +1,19 @@
 [package]
 name = "unitycatalog-examples"
+version = "0.0.1"
+# Type-checked doc examples — never published to crates.io.
+publish = false
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
 rust-version.workspace = true
-version.workspace = true
 homepage.workspace = true
 
 [dependencies]
-unitycatalog-client = { path = "../../crates/client" }
-unitycatalog-common = { path = "../../crates/common" }
-unitycatalog-object-store = { path = "../../crates/object-store" }
+unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client" }
+unitycatalog-common = { package = "olai-uc-common", path = "../../crates/common" }
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../../crates/object-store" }
 futures = { workspace = true }
 object_store = { workspace = true }
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
