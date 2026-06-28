@@ -37,24 +37,6 @@ on:
         description: "Git ref/tag to build from, e.g. olai-uc-cli-v0.0.1."
         required: true
         type: string
-  pull_request:
-    branches: [main]
-    paths:
-      - crates/**
-      - Cargo.toml
-      - Cargo.lock
-      - crates/cli/Dockerfile
-      - .dockerignore
-      - .github/workflows/docker-release.yml
-  push:
-    branches: [main]
-    paths:
-      - crates/**
-      - Cargo.toml
-      - Cargo.lock
-      - crates/cli/Dockerfile
-      - .dockerignore
-      - .github/workflows/docker-release.yml
 
 # Cancel superseded runs on the same ref/version.
 concurrency:
@@ -81,8 +63,8 @@ jobs:
 
     permissions:
       contents: read
-      packages: write   # push to ghcr.io with GITHUB_TOKEN
-      id-token: write   # build provenance / SBOM attestations
+      packages: write # push to ghcr.io with GITHUB_TOKEN
+      id-token: write # build provenance / SBOM attestations
 
     strategy:
       fail-fast: false
@@ -93,7 +75,7 @@ jobs:
             runner: ubuntu-latest
           - arch: arm64
             os: linux/arm64
-            runner: ubuntu-24.04-arm   # native arm64 hosted runner
+            runner: ubuntu-24.04-arm # native arm64 hosted runner
 
     steps:
       - name: Checkout repository
@@ -175,7 +157,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write   # cosign keyless signing
+      id-token: write # cosign keyless signing
 
     steps:
       - name: Download digests
