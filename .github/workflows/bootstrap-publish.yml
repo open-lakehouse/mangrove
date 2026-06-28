@@ -72,20 +72,13 @@ jobs:
       #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       # ----- Tier 2: depend on client/common — uncomment once Tier 1 is on crates.io -----
-      - name: Publish olai-uc-object-store
+      - name: Publish olai-uc-datafusion
         run: |
-          cargo publish -p olai-uc-object-store --locked \
+          cargo publish -p olai-uc-datafusion --locked \
             ${{ inputs.dry_run && '--dry-run' || '' }}
         env:
           SQLX_OFFLINE: "true"
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      # - name: Publish olai-uc-datafusion
-      #   run: |
-      #     cargo publish -p olai-uc-datafusion --locked \
-      #       ${{ inputs.dry_run && '--dry-run' || '' }}
-      #   env:
-      #     SQLX_OFFLINE: "true"
-      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       # ----- Tier 3: server (common + client + sharing-client) — uncomment once Tier 2 is on crates.io -----
       # - name: Publish olai-uc-server
