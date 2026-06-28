@@ -1,4 +1,3 @@
-use std::any::Any;
 use std::pin::Pin;
 use std::sync::{Arc, LazyLock};
 use std::task::{Context, Poll};
@@ -64,10 +63,6 @@ impl DeltaLogReplayProvider {
 
 #[async_trait]
 impl TableProvider for DeltaLogReplayProvider {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
     fn schema(&self) -> ArrowSchemaRef {
         Self::scan_row_schema()
     }
@@ -192,10 +187,6 @@ impl DisplayAs for DeltaLogReplayExec {
 }
 
 impl ExecutionPlan for DeltaLogReplayExec {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
     fn name(&self) -> &'static str {
         "DeltaLogReplayExec"
     }

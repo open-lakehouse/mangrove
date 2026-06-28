@@ -8,7 +8,6 @@
 //! analysis, [`TableProvider::scan`] is never reached for a metric view; it
 //! errors if somehow called.
 
-use std::any::Any;
 use std::borrow::Cow;
 use std::sync::Arc;
 
@@ -58,10 +57,6 @@ impl MetricViewTableProvider {
 
 #[async_trait::async_trait]
 impl TableProvider for MetricViewTableProvider {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
     fn schema(&self) -> SchemaRef {
         Arc::clone(&self.schema)
     }

@@ -19,7 +19,6 @@
 //!
 //! [`ResolveMetricView`]: super::analyzer::ResolveMetricView
 
-use std::any::Any;
 use std::sync::{Arc, LazyLock};
 
 use datafusion::arrow::datatypes::DataType;
@@ -51,10 +50,6 @@ impl Default for MeasureMarkerUdf {
 }
 
 impl AggregateUDFImpl for MeasureMarkerUdf {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
     fn name(&self) -> &str {
         MEASURE_UDF_NAME
     }
