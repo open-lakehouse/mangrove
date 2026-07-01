@@ -1,8 +1,9 @@
 // Schema-driven form renderer.
 //
 // A thin wrapper around @rjsf/core that renders JSON Schemas (generated from the
-// Unity Catalog OpenAPI spec — see uc-client/scripts/gen-form-schemas.mjs) using
-// the app's shadcn primitives instead of rjsf's default unstyled HTML. The
+// Unity Catalog OpenAPI spec — see
+// unity-catalog-client/scripts/gen-form-schemas.mjs) using the app's shadcn
+// primitives instead of rjsf's default unstyled HTML. The
 // default submit button is suppressed; callers render their own submit button in
 // a dialog footer and wire it to the form via `form={id}` + `type="submit"`.
 

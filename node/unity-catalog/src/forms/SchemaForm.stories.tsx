@@ -3,7 +3,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { SchemaForm } from "./SchemaForm";
 // SchemaForm renders the checked-in JSON Schemas that back the UI's create/edit
 // dialogs (generated from the Unity Catalog protos — see
-// uc-client/scripts/gen-form-schemas.mjs). These stories load those exact schemas
+// unity-catalog-client/scripts/gen-form-schemas.mjs). These stories load those exact
+// schemas
 // so the form here matches the one in the app's dialogs.
 import createCatalog from "./schemas/create-catalog.json";
 import createCredential from "./schemas/create-credential.json";
