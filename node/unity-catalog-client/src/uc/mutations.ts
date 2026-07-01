@@ -17,7 +17,9 @@ import {
   catalogDetailQuery,
   credentialDetailQuery,
   externalLocationDetailQuery,
+  functionDetailQuery,
   modelDetailQuery,
+  schemaDetailQuery,
   tableDetailQuery,
   volumeDetailQuery,
 } from "./queries";
@@ -127,11 +129,6 @@ export function invalidateModels(
 /** Drop a single catalog's detail cache. */
 export function removeCatalogDetail(queryClient: QueryClient, name: string) {
   queryClient.removeQueries({ queryKey: catalogDetailQuery(name).queryKey });
-}
-
-/** Drop a single table's detail cache. */
-export function removeTableDetail(queryClient: QueryClient, fullName: string) {
-  queryClient.removeQueries({ queryKey: tableDetailQuery(fullName).queryKey });
 }
 
 /**
@@ -288,6 +285,12 @@ export function useUpdateSchema() {
   const queryClient = useQueryClient();
   return $api.useMutation("patch", "/schemas/{full_name}", {
     onSuccess: (data) => {
+      if (data?.full_name) {
+        queryClient.setQueryData(
+          schemaDetailQuery(data.full_name).queryKey,
+          data,
+        );
+      }
       if (data?.catalog_name) invalidateSchemas(queryClient, data.catalog_name);
     },
   });
@@ -385,12 +388,14 @@ export function useDeleteSchema() {
 }
 
 // Shared optimistic-delete wiring for a schema-scoped leaf list. The caller
-// supplies the canonical list path + the field that holds the rows, plus the
-// fully-qualified name being deleted.
+// supplies the canonical list path + the field that holds the rows, plus a
+// detail-query builder so the deleted item's detail cache is dropped on success
+// (mirroring useDeleteCatalog). All handlers key off the fully-qualified name.
 function leafDeleteHandlers(
   queryClient: QueryClient,
   listPath: string,
   listField: string,
+  detailQuery: (fullName: string) => { queryKey: QueryKey },
 ) {
   return {
     onMutate: (fullName: string) => {
@@ -406,6 +411,9 @@ function leafDeleteHandlers(
     onError: (context: { snapshots?: InfiniteListSnapshot[] } | undefined) => {
       if (context?.snapshots) restore(queryClient, context.snapshots);
     },
+    onSuccess: (fullName: string) => {
+      queryClient.removeQueries({ queryKey: detailQuery(fullName).queryKey });
+    },
     onSettled: (fullName: string) => {
       const [catalog, schema] = fullName.split(".");
       if (catalog && schema) {
@@ -419,10 +427,16 @@ function leafDeleteHandlers(
 export function useDeleteTable() {
   const { $api } = useUnityCatalog();
   const queryClient = useQueryClient();
-  const h = leafDeleteHandlers(queryClient, "/tables", "tables");
+  const h = leafDeleteHandlers(
+    queryClient,
+    "/tables",
+    "tables",
+    tableDetailQuery,
+  );
   return $api.useMutation("delete", "/tables/{full_name}", {
     onMutate: ({ params }) => h.onMutate(params.path.full_name),
     onError: (_e, _v, ctx) => h.onError(ctx),
+    onSuccess: (_d, { params }) => h.onSuccess(params.path.full_name),
     onSettled: (_d, _e, { params }) => h.onSettled(params.path.full_name),
   });
 }
@@ -431,10 +445,16 @@ export function useDeleteTable() {
 export function useDeleteVolume() {
   const { $api } = useUnityCatalog();
   const queryClient = useQueryClient();
-  const h = leafDeleteHandlers(queryClient, "/volumes", "volumes");
+  const h = leafDeleteHandlers(
+    queryClient,
+    "/volumes",
+    "volumes",
+    volumeDetailQuery,
+  );
   return $api.useMutation("delete", "/volumes/{name}", {
     onMutate: ({ params }) => h.onMutate(params.path.name),
     onError: (_e, _v, ctx) => h.onError(ctx),
+    onSuccess: (_d, { params }) => h.onSuccess(params.path.name),
     onSettled: (_d, _e, { params }) => h.onSettled(params.path.name),
   });
 }
@@ -443,10 +463,16 @@ export function useDeleteVolume() {
 export function useDeleteFunction() {
   const { $api } = useUnityCatalog();
   const queryClient = useQueryClient();
-  const h = leafDeleteHandlers(queryClient, "/functions", "functions");
+  const h = leafDeleteHandlers(
+    queryClient,
+    "/functions",
+    "functions",
+    functionDetailQuery,
+  );
   return $api.useMutation("delete", "/functions/{name}", {
     onMutate: ({ params }) => h.onMutate(params.path.name),
     onError: (_e, _v, ctx) => h.onError(ctx),
+    onSuccess: (_d, { params }) => h.onSuccess(params.path.name),
     onSettled: (_d, _e, { params }) => h.onSettled(params.path.name),
   });
 }
@@ -455,10 +481,16 @@ export function useDeleteFunction() {
 export function useDeleteRegisteredModel() {
   const { $api } = useUnityCatalog();
   const queryClient = useQueryClient();
-  const h = leafDeleteHandlers(queryClient, "/models", "registered_models");
+  const h = leafDeleteHandlers(
+    queryClient,
+    "/models",
+    "registered_models",
+    modelDetailQuery,
+  );
   return $api.useMutation("delete", "/models/{full_name}", {
     onMutate: ({ params }) => h.onMutate(params.path.full_name),
     onError: (_e, _v, ctx) => h.onError(ctx),
+    onSuccess: (_d, { params }) => h.onSuccess(params.path.full_name),
     onSettled: (_d, _e, { params }) => h.onSettled(params.path.full_name),
   });
 }
