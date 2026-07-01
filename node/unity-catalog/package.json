@@ -7,7 +7,9 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
-    }
+    },
+    "./openapi/unity-catalog.yaml": "./openapi/unity-catalog.yaml",
+    "./package.json": "./package.json"
   },
   "scripts": {
     "gen:api": "openapi-typescript openapi/unity-catalog.yaml -o src/uc-api.d.ts",
@@ -18,8 +20,6 @@
     "@rjsf/core": "^5.24.13",
     "@rjsf/utils": "^5.24.13",
     "@rjsf/validator-ajv8": "^5.24.13",
-    "@tanstack/react-query": "^5.100.14",
-    "@tanstack/react-router": "^1.170.10",
     "ajv": "^8.20.0",
     "lucide-react": "^1.17.0",
     "openapi-fetch": "^0.17.0",
@@ -27,10 +27,14 @@
     "sonner": "^2.0.7"
   },
   "peerDependencies": {
+    "@tanstack/react-query": "^5.100.14",
+    "@tanstack/react-router": "^1.170.10",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@tanstack/react-query": "^5.100.14",
+    "@tanstack/react-router": "^1.170.10",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "openapi-typescript": "^7.13.0",

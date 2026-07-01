@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-
-import { CatalogRouterHarness } from "../../ui/.storybook/story-router";
 import { CatalogExplorer } from "./CatalogExplorer";
+import { CatalogRouterHarness } from "./testing/story-router";
 
 // The explorer is hook-driven: it reads catalogs/schemas/tables through the UC
 // query layer, which the Storybook host serves from fixtures via the fixture
