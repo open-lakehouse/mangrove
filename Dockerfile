@@ -26,11 +26,16 @@ RUN cargo chef prepare --recipe-path recipe.json
 # node:22-bookworm-slim
 FROM node:22-bookworm-slim AS ui
 WORKDIR /ui
+# Fetch npm packages from the public registry by default (override NPM_REGISTRY
+# to build behind a mirror). Combined with npm's default
+# `replace-registry-host=npmjs`, this rewrites the host of the lockfile's
+# `resolved` URLs at fetch time, so a lockfile pinned to the internal mirror
+# (baked in by a local install) still resolves from a reachable registry.
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+ENV npm_config_registry=${NPM_REGISTRY}
 # Lockfile + manifests first for a cacheable `npm ci` layer. The build needs the
 # whole npm workspace (root manifest + every node/* package the app imports).
-# `.npmrc` pins the public registry so `npm ci` fetches from registry.npmjs.org
-# regardless of the host baked into the lockfile's `resolved` URLs.
-COPY package.json package-lock.json .npmrc ./
+COPY package.json package-lock.json ./
 COPY node/ ./node/
 # `--no-audit`/`--no-fund` drop the post-install network calls a reproducible
 # image build has no use for. The workspace packages are consumed as TS source
