@@ -1,0 +1,26 @@
+# Generates JSON Schemas for the UI's schema-driven forms directly from the
+# Unity Catalog protobuf definitions (the upstream source of truth). Consumes
+# this repo's OWN local proto module (proto/unitycatalog), so the forms stay in
+# lockstep with the server's contract — no remote/pinned ref to drift against.
+#
+# Uses bufbuild's protoschema-jsonschema plugin with the `proto-bundle` target:
+#   - `proto` field names (snake_case) -> matches the UC REST/JSON API
+#   - `-bundle` -> each top-level message is emitted as one self-contained file
+#     with all dependencies inlined under `$defs` (consumable directly by rjsf).
+#
+# Output is post-processed and checked in by scripts/gen-form-schemas.mjs.
+version: v2
+inputs:
+  - directory: ../../proto/unitycatalog
+    types:
+      - unitycatalog.catalogs.v1.CreateCatalogRequest
+      - unitycatalog.schemas.v1.CreateSchemaRequest
+      - unitycatalog.credentials.v1.CreateCredentialRequest
+      - unitycatalog.credentials.v1.UpdateCredentialRequest
+      - unitycatalog.external_locations.v1.CreateExternalLocationRequest
+      - unitycatalog.external_locations.v1.UpdateExternalLocationRequest
+plugins:
+  - remote: buf.build/bufbuild/protoschema-jsonschema:v0.6.0
+    out: .gen-jsonschema
+    opt:
+      - target=proto-bundle

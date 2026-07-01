@@ -1,0 +1,88 @@
+{
+  "additionalProperties": false,
+  "description": "Create a new external location",
+  "properties": {
+    "comment": {
+      "description": "User-provided free-form text description.",
+      "type": "string"
+    },
+    "credential_name": {
+      "default": "",
+      "description": "Name of the storage credential used with this location.",
+      "minLength": 3,
+      "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "description": "Name of external location.",
+      "minLength": 3,
+      "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+      "type": "string"
+    },
+    "read_only": {
+      "description": "Indicates whether the external location is read-only.",
+      "type": "boolean"
+    },
+    "skip_validation": {
+      "description": "Skips validation of the storage credential associated with the external location.",
+      "type": "boolean"
+    },
+    "url": {
+      "default": "",
+      "description": "Path URL of the external location.",
+      "pattern": "^(?:(?:[a-zA-Z][a-zA-Z\\d+\\-.]*):)?(?://(?:[A-Za-z0-9\\-\\.]+(?::\\d+)?))?(/[^\\?#]*)?(?:\\?([^\\#]*))?(?:\\#(.*))?$",
+      "type": "string"
+    }
+  },
+  "title": "Create External Location Request",
+  "type": "object",
+  "$defs": {
+    "unitycatalog.external_locations.v1.CreateExternalLocationRequest.schema.json": {
+      "additionalProperties": false,
+      "description": "Create a new external location",
+      "properties": {
+        "comment": {
+          "description": "User-provided free-form text description.",
+          "type": "string"
+        },
+        "credential_name": {
+          "default": "",
+          "description": "Name of the storage credential used with this location.",
+          "minLength": 3,
+          "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "Name of external location.",
+          "minLength": 3,
+          "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+          "type": "string"
+        },
+        "read_only": {
+          "description": "Indicates whether the external location is read-only.",
+          "type": "boolean"
+        },
+        "skip_validation": {
+          "description": "Skips validation of the storage credential associated with the external location.",
+          "type": "boolean"
+        },
+        "url": {
+          "default": "",
+          "description": "Path URL of the external location.",
+          "pattern": "^(?:(?:[a-zA-Z][a-zA-Z\\d+\\-.]*):)?(?://(?:[A-Za-z0-9\\-\\.]+(?::\\d+)?))?(/[^\\?#]*)?(?:\\?([^\\#]*))?(?:\\#(.*))?$",
+          "type": "string"
+        }
+      },
+      "title": "Create External Location Request",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "required": [
+    "name",
+    "url",
+    "credential_name"
+  ]
+}

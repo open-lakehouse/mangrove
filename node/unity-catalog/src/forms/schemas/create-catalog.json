@@ -1,0 +1,101 @@
+{
+  "additionalProperties": false,
+  "description": "Create a new catalog",
+  "properties": {
+    "comment": {
+      "description": "User-provided free-form text description.",
+      "type": "string"
+    },
+    "name": {
+      "description": "Name of catalog.",
+      "minLength": 3,
+      "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+      "type": "string"
+    },
+    "properties": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "A map of key-value properties attached to the securable.",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "provider_name": {
+      "description": "A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.",
+      "minLength": 3,
+      "pattern": "^[a-z][0-9a-z-_]*[0-9a-z]$",
+      "title": "The name of delta sharing provider.",
+      "type": "string"
+    },
+    "share_name": {
+      "description": "The name of the share under the share provider.",
+      "minLength": 3,
+      "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+      "type": "string"
+    },
+    "storage_root": {
+      "description": "Storage root URL for managed tables within catalog.",
+      "pattern": "^(?:(?:[a-zA-Z][a-zA-Z\\d+\\-.]*):)?(?://(?:[A-Za-z0-9\\-\\.]+(?::\\d+)?))?(/[^\\?#]*)?(?:\\?([^\\#]*))?(?:\\#(.*))?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "Create Catalog Request",
+  "type": "object",
+  "$defs": {
+    "unitycatalog.catalogs.v1.CreateCatalogRequest.schema.json": {
+      "additionalProperties": false,
+      "description": "Create a new catalog",
+      "properties": {
+        "comment": {
+          "description": "User-provided free-form text description.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name of catalog.",
+          "minLength": 3,
+          "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+          "type": "string"
+        },
+        "properties": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A map of key-value properties attached to the securable.",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "provider_name": {
+          "description": "A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.",
+          "minLength": 3,
+          "pattern": "^[a-z][0-9a-z-_]*[0-9a-z]$",
+          "title": "The name of delta sharing provider.",
+          "type": "string"
+        },
+        "share_name": {
+          "description": "The name of the share under the share provider.",
+          "minLength": 3,
+          "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+          "type": "string"
+        },
+        "storage_root": {
+          "description": "Storage root URL for managed tables within catalog.",
+          "pattern": "^(?:(?:[a-zA-Z][a-zA-Z\\d+\\-.]*):)?(?://(?:[A-Za-z0-9\\-\\.]+(?::\\d+)?))?(/[^\\?#]*)?(?:\\?([^\\#]*))?(?:\\#(.*))?$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Create Catalog Request",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

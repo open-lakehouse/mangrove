@@ -1,0 +1,42 @@
+{
+  "name": "@open-lakehouse/unity-catalog",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "gen:api": "openapi-typescript openapi/unity-catalog.yaml -o src/uc-api.d.ts",
+    "gen:form-schemas": "node scripts/gen-form-schemas.mjs"
+  },
+  "dependencies": {
+    "@open-lakehouse/ui-kit": "^0.1.0",
+    "@rjsf/core": "^5.24.13",
+    "@rjsf/utils": "^5.24.13",
+    "@rjsf/validator-ajv8": "^5.24.13",
+    "@tanstack/react-query": "^5.100.14",
+    "@tanstack/react-router": "^1.170.10",
+    "ajv": "^8.20.0",
+    "lucide-react": "^1.17.0",
+    "openapi-fetch": "^0.17.0",
+    "openapi-react-query": "^0.5.4",
+    "sonner": "^2.0.7"
+  },
+  "peerDependencies": {
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "openapi-typescript": "^7.13.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "typescript": "^5",
+    "vite": "^7.0.0"
+  }
+}
