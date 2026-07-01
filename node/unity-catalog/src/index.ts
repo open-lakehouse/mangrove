@@ -63,3 +63,35 @@ export {
   useSchemas,
   useVolumes,
 } from "./uc/queries";
+// ── UC OpenAPI types ─────────────────────────────────────────────────────────
+// The generated UC REST surface (absorbed from what was @open-lakehouse/uc-client).
+// Re-exported so hosts type their own UC data (e.g. fixtures) against the same
+// contract the data layer uses, without reaching into internal paths.
+export type {
+  CatalogInfo,
+  ColumnInfo,
+  CreateCatalog,
+  CreateCredentialRequest,
+  CreateExternalLocation,
+  CreateRegisteredModel,
+  CreateSchema,
+  CreateVolumeRequestContent,
+  CredentialInfo,
+  components,
+  ExternalLocationInfo,
+  FunctionInfo,
+  ListCatalogsResponse,
+  ListCredentialsResponse,
+  ListExternalLocationsResponse,
+  ListFunctionsResponse,
+  ListRegisteredModelsResponse,
+  ListSchemasResponse,
+  ListTablesResponse,
+  ListVolumesResponse,
+  paths,
+  RegisteredModelInfo,
+  SchemaInfo,
+  TableInfo,
+  VolumeInfo,
+  VolumeType,
+} from "./uc-types";
