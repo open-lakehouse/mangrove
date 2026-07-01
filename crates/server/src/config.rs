@@ -683,9 +683,11 @@ mod tests {
 
     #[test]
     fn test_health_url_maps_wildcard_host_to_loopback() {
-        let mut cfg = Config::default();
-        cfg.host = Some("0.0.0.0".into());
-        cfg.port = Some(9000);
+        let mut cfg = Config {
+            host: Some("0.0.0.0".into()),
+            port: Some(9000),
+            ..Config::default()
+        };
         assert_eq!(cfg.health_url(), "http://127.0.0.1:9000/health");
 
         cfg.host = Some("example.test".into());

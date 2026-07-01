@@ -16,12 +16,14 @@ use std::path::Path;
 use std::sync::Arc;
 
 use axum::Router;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::routing::get;
 use swagger_ui_dist::{ApiDefinition, OpenApiSource};
 use tokio::net::TcpListener;
 use tokio::signal;
 use tower_http::LatencyUnit;
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::Level;
 use unitycatalog_client::UnityCatalogClient;
@@ -86,17 +88,25 @@ pub async fn serve(config: Config) -> Result<()> {
     let host = config.resolved_host().to_string();
     let port = config.resolved_port();
 
-    let encryptor = config
-        .encryption
-        .as_ref()
-        .ok_or_else(|| {
-            Error::Generic(
-                "missing `encryption` configuration: an active KEK is required to store secrets"
+    // A configured KEK is required for durable backends (secrets must survive a
+    // restart). For an ephemeral `:memory:` backend, secrets never persist, so
+    // fall back to the dev KEK when none is configured — this keeps a UI-only or
+    // otherwise minimal config file usable against the dev backend, matching the
+    // config-less default (which also ships the dev KEK). See
+    // [`crate::config::EncryptionConfig::dev_default`].
+    let encryptor = match config.encryption.as_ref() {
+        Some(enc) => enc.build_encryptor().map_err(Error::Generic)?,
+        None if config.backend.is_ephemeral() => crate::config::EncryptionConfig::dev_default()
+            .build_encryptor()
+            .map_err(Error::Generic)?,
+        None => {
+            return Err(Error::Generic(
+                "missing `encryption` configuration: an active KEK is required to store secrets \
+                 with a durable backend"
                     .into(),
-            )
-        })?
-        .build_encryptor()
-        .map_err(Error::Generic)?;
+            ));
+        }
+    };
 
     // Build the local-storage allowlist from config. Empty ⇒ deny all file://.
     // A configured root that does not exist is a hard startup error.
@@ -331,29 +341,17 @@ pub(crate) async fn run(api_router: Router, ui: &UiConfig, host: &str, port: u16
     // Operational endpoints first so they can never be shadowed by the SPA fallback.
     let mut router = operational_router().merge(router);
 
-    // Optionally mount the bundled SPA as a fallback: real files come off disk,
-    // any other path falls back to index.html for the SPA's client-side router.
-    // Absent a bundle on disk, these routes simply 404.
+    // Optionally mount the bundled SPA: real (hashed) asset files come off disk,
+    // and any non-file path falls back to `index.html` with a 200 so the SPA's
+    // client-side router takes over (deep links like `/catalog` must load the app,
+    // not 404). Absent a bundle on disk, the fallback 404s and the server stays up.
     if ui.serve {
-        let index = Path::new(UI_DIR).join("index.html");
-        let serve_dir = ServeDir::new(UI_DIR).not_found_service(ServeFile::new(index.clone()));
-        router = router.fallback_service(serve_dir);
-        if !index.exists() {
-            tracing::warn!(
-                "ui.serve is enabled but no bundle found at `{}/index.html`; SPA routes will 404",
-                UI_DIR
-            );
-        }
+        router = mount_spa(router);
     }
 
     // Mount the whole surface under the base path when configured (behind a
     // gateway sub-path). Empty base_path ⇒ served at root.
-    let base_path = ui.normalized_base_path();
-    let router = if base_path.is_empty() {
-        router
-    } else {
-        Router::new().nest(&base_path, router)
-    };
+    let router = mount_under_base(router, &ui.normalized_base_path());
 
     let router = router.layer(
         TraceLayer::new_for_http()
@@ -450,6 +448,114 @@ async fn connect_sqlite(
     )
     .map_err(|e| Error::Generic(e.to_string()))?;
     Ok((handler, policy))
+}
+
+/// Mount the bundled SPA onto `app`: real asset files off disk, with an
+/// `index.html` fallback (200) so client-side deep links load the app.
+///
+/// `index.html` is read once at startup into an `Arc<Option<String>>`: present ⇒
+/// the fallback serves it with a 200; absent (no bundle on disk) ⇒ the fallback
+/// 404s and the server still runs. `ServeDir` serves only the real hashed assets;
+/// `append_index_html_on_directories(false)` keeps it from serving the raw
+/// `index.html` off disk (all index serving goes through the 200 handler).
+fn mount_spa(app: Router) -> Router {
+    let index_path = Path::new(UI_DIR).join("index.html");
+    let index_html: Arc<Option<String>> = Arc::new(std::fs::read_to_string(&index_path).ok());
+    if index_html.is_none() {
+        tracing::warn!(
+            "ui.serve is enabled but no bundle found at `{}`; SPA routes will 404",
+            index_path.display()
+        );
+    }
+
+    let index_handler = move || {
+        let index_html = index_html.clone();
+        get(move || {
+            let index_html = index_html.clone();
+            async move {
+                match index_html.as_ref() {
+                    Some(html) => axum::response::Html(html.clone()).into_response(),
+                    None => StatusCode::NOT_FOUND.into_response(),
+                }
+            }
+        })
+    };
+
+    let serve_assets = ServeDir::new(UI_DIR)
+        .append_index_html_on_directories(false)
+        .fallback(index_handler());
+
+    app
+        // The SPA entry at the root + its explicit filename (ServeDir would serve
+        // these straight off disk; route them through the 200 handler instead).
+        .route("/", index_handler())
+        .route("/index.html", index_handler())
+        // Everything else: real asset files off disk, else the SPA entry (200).
+        .fallback_service(serve_assets)
+}
+
+/// Mount `app` under `base_path`, or return it unchanged when the prefix is empty
+/// (serve at root).
+///
+/// Rather than `Router::nest` — whose trailing-slash handling at the mount root
+/// is fiddly (`/{prefix}` vs `/{prefix}/` resolve inconsistently against the
+/// inner `/` route, and a nested `fallback_service` like `ServeDir` doesn't fire
+/// for the bare prefix) — this strips the prefix from the request path *before*
+/// the inner router routes, then delegates to the unchanged inner `app`. The
+/// strip runs as a layer wrapping the whole router **as a service** (via
+/// `ServiceBuilder`), not `Router::layer` — the latter runs only after a route is
+/// matched, too late to influence routing. The inner router then sees exactly the
+/// path it expects, and both `/{prefix}` and `/{prefix}/` map cleanly to `/`.
+/// Requests outside the prefix get a 404.
+fn mount_under_base(app: Router, base_path: &str) -> Router {
+    if base_path.is_empty() {
+        return app;
+    }
+    let prefix = base_path.to_string();
+    let stripped = tower::ServiceBuilder::new()
+        .layer(axum::middleware::from_fn(
+            move |mut req: axum::extract::Request, next: axum::middleware::Next| {
+                let prefix = prefix.clone();
+                async move {
+                    let path = req.uri().path();
+                    // Strip the prefix; `/{prefix}` and `/{prefix}/` -> `/`.
+                    let new_path = match path.strip_prefix(&prefix) {
+                        Some("") => Some("/".to_string()),
+                        Some(rest) if rest.starts_with('/') => Some(rest.to_string()),
+                        // A path that merely *starts* with the prefix as a
+                        // substring (e.g. `/{prefix}foo`) is not under it -> 404.
+                        _ => None,
+                    };
+                    match new_path {
+                        Some(new_path) => {
+                            rewrite_path(&mut req, &new_path);
+                            next.run(req).await
+                        }
+                        None => StatusCode::NOT_FOUND.into_response(),
+                    }
+                }
+            },
+        ))
+        .service(app);
+    Router::new().fallback_service(stripped)
+}
+
+/// Replace a request's path (preserving the query) with `new_path`.
+fn rewrite_path(req: &mut axum::extract::Request, new_path: &str) {
+    let uri = req.uri();
+    let path_and_query = match uri.query() {
+        Some(q) => format!("{new_path}?{q}"),
+        None => new_path.to_string(),
+    };
+    let mut parts = uri.clone().into_parts();
+    parts.path_and_query = Some(
+        path_and_query
+            .parse()
+            .expect("rewritten path-and-query is valid"),
+    );
+    if let Ok(new_uri) = axum::http::Uri::from_parts(parts) {
+        *req.uri_mut() = new_uri;
+    }
 }
 
 async fn shutdown_signal() {
