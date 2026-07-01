@@ -1,7 +1,7 @@
 [package]
 name = "olai-uc-cli"
 version = "0.0.1"
-description = "Unity Catalog command-line interface and server launcher (the `uc` binary)."
+description = "Unity Catalog command-line client (the `uc` binary) for a running server."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
@@ -18,36 +18,21 @@ path = "src/main.rs"
 # path dependencies (in alphabetical order)
 unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.1" }
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1", features = ["axum", "store"] }
-unitycatalog-postgres = { package = "olai-uc-postgres", path = "../postgres", version = "0.0.1" }
-unitycatalog-sqlite = { package = "olai-uc-sqlite", path = "../sqlite", version = "0.0.1" }
-unitycatalog-server = { package = "olai-uc-server", path = "../server", version = "0.0.1", features = ["axum", "proxy"] }
 
 # workspace dependencies (in alphabetical order)
-async-trait = { workspace = true }
-axum = { workspace = true, features = ["tracing"] }
 chrono = { workspace = true }
 olai-http = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
 url = { workspace = true }
 
 # crates.io dependencies (in alphabetical order)
-base64 = "0.22"
 clap = { version = "4.5", features = ["derive", "env"] }
 comfy-table = "7.1"
 console = "0.15"
 crossterm = { version = "0.28", features = ["event-stream"] }
 futures = "0.3"
 ratatui = "0.29"
-serde_yml = { workspace = true }
-swagger-ui-dist = { version = "5.18.3" }
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.6", features = ["trace"] }
-tracing-subscriber = { version = "0.3", features = [
-  "tracing-log",
-  "fmt",
-  "env-filter",
-] }
 tui-tree-widget = "0.23"
