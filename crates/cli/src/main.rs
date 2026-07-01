@@ -5,7 +5,6 @@ use crate::client::{ClientCommand, handle_client};
 use crate::error::{Error, Result};
 use crate::explore::{ExploreCommand, handle_explore};
 use crate::render::OutputFormat;
-use crate::server::{ServerArgs, handle_server};
 
 /// REST path prefix under which the Unity Catalog 2.1 API is served. The client
 /// resolves resource paths relative to its base URL, so the base must include
@@ -13,11 +12,9 @@ use crate::server::{ServerArgs, handle_server};
 const UC_API_PREFIX: &str = "/api/2.1/unity-catalog";
 
 mod client;
-mod config;
 mod error;
 mod explore;
 mod render;
-mod server;
 // mod test;
 
 #[derive(Parser)]
@@ -72,11 +69,14 @@ impl GlobalOpts {
     }
 }
 
+/// Subcommands for the `uc` client CLI.
+///
+/// This is a thin HTTP client for a running Unity Catalog server (mirroring
+/// headwaters' `hw`); the server itself — including `serve`, `migrate`, and
+/// `healthcheck` — lives in the separate `uc-server` binary (crate
+/// `olai-uc-server`).
 #[derive(Subcommand)]
 enum Commands {
-    #[clap(arg_required_else_help = true, about = "run a unity catalog server")]
-    Server(ServerArgs),
-
     #[clap(
         arg_required_else_help = true,
         about = "execute requests against a sharing server"
@@ -85,9 +85,6 @@ enum Commands {
 
     #[clap(about = "interactively browse the catalog hierarchy in a TUI")]
     Explore(ExploreCommand),
-
-    #[clap(about = "run database migrations")]
-    Migrate,
 }
 
 #[derive(Parser)]
@@ -100,14 +97,12 @@ struct ClientArgs {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
     match &args.command {
-        Commands::Server(cmd) => handle_server(cmd).await?,
         Commands::Client(client_args) => {
             handle_client(client_args, args.global_opts).await?;
         }
         Commands::Explore(cmd) => {
             handle_explore(cmd, args.global_opts).await?;
         }
-        Commands::Migrate => todo!(),
     };
     Ok(())
 }

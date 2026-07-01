@@ -1,0 +1,24 @@
+# Dev server config selecting the Postgres backend, used by `just rest-db` and
+# the `dev/compose.yaml` `uc` service. Backend connection fields resolve from
+# environment variables (see `ConfigValue::Environment`) so the same file works
+# for a local run and inside Compose.
+#
+# NOTE: `serve` does not migrate a durable backend — run `uc-server migrate -c
+# dev/config.yaml` (or the compose `uc-migrate` one-shot) once before `serve`.
+host: 0.0.0.0
+port: 8080
+
+backend:
+  engine: postgres
+  host: { env: PGHOST }
+  port: { env: PGPORT }
+  user: { env: PGUSER }
+  password: { env: PGPASSWORD }
+  database: { env: PGDATABASE }
+
+# Dev-only KEK so the server starts against the durable Postgres backend without
+# an external key. Do NOT use in production — supply a real `encryption` block.
+encryption:
+  active:
+    id: dev
+    key: "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="

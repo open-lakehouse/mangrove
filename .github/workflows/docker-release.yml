@@ -1,15 +1,14 @@
 name: Release Docker Image
 
-# Build and publish the `hydrofoil` image (the `uc` Unity Catalog CLI/server
-# binary) to the GitHub Container Registry. This repo ships a single binary
-# (`uc`), so the matrix axis is the *platform* only (no BIN build-arg), and one
-# GHCR image is produced. We publish to GHCR only (keyless GITHUB_TOKEN — no
-# stored registry secret).
+# Build and publish the `hydrofoil` image (the `uc-server` Unity Catalog server
+# binary, with the bundled web UI baked in) to the GitHub Container Registry.
+# The matrix axis is the *platform* only, and one GHCR image is produced. We
+# publish to GHCR only (keyless GITHUB_TOKEN — no stored registry secret).
 #
 # Primary trigger is `workflow_call` from release-plz.yml: when release-plz
-# publishes a new `olai-uc-cli` version, it calls this workflow with that
-# version + the release tag to build from. `workflow_dispatch` allows a manual
-# rebuild of an existing release (e.g. base-image CVE refresh). PRs / main
+# releases (git-tags) a new `olai-uc-server` version, it calls this workflow with
+# that version + the release tag to build from. `workflow_dispatch` allows a
+# manual rebuild of an existing release (e.g. base-image CVE refresh). PRs / main
 # pushes build for validation but do not publish (see the `build` job's `if:`).
 #
 # A run builds multi-arch (amd64 + native arm64), pushes each arch by digest,
@@ -20,21 +19,21 @@ on:
   workflow_call:
     inputs:
       version:
-        description: "Released olai-uc-cli version, e.g. 0.0.1 (no v prefix)."
+        description: "Released olai-uc-server version, e.g. 0.0.1 (no v prefix)."
         required: true
         type: string
       ref:
-        description: "Git ref/tag to build from (the release-plz tag, e.g. olai-uc-cli-v0.0.1)."
+        description: "Git ref/tag to build from (the release-plz tag, e.g. olai-uc-server-v0.0.1)."
         required: true
         type: string
   workflow_dispatch:
     inputs:
       version:
-        description: "olai-uc-cli version to tag the image, e.g. 0.0.1."
+        description: "olai-uc-server version to tag the image, e.g. 0.0.1."
         required: true
         type: string
       ref:
-        description: "Git ref/tag to build from, e.g. olai-uc-cli-v0.0.1."
+        description: "Git ref/tag to build from, e.g. olai-uc-server-v0.0.1."
         required: true
         type: string
 
@@ -107,7 +106,7 @@ jobs:
           images: ${{ env.IMAGE }}
           labels: |
             org.opencontainers.image.title=hydrofoil
-            org.opencontainers.image.description=Unity Catalog server and CLI (uc)
+            org.opencontainers.image.description=Unity Catalog server (uc-server) with bundled web UI
             org.opencontainers.image.vendor=open-lakehouse
             org.opencontainers.image.licenses=Apache-2.0
             org.opencontainers.image.source=https://github.com/open-lakehouse/mangrove
@@ -120,7 +119,7 @@ jobs:
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: .
-          file: crates/cli/Dockerfile
+          file: Dockerfile
           platforms: ${{ matrix.platform.os }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
@@ -204,7 +203,7 @@ jobs:
             latest=auto
           labels: |
             org.opencontainers.image.title=hydrofoil
-            org.opencontainers.image.description=Unity Catalog server and CLI (uc)
+            org.opencontainers.image.description=Unity Catalog server (uc-server) with bundled web UI
             org.opencontainers.image.vendor=open-lakehouse
             org.opencontainers.image.licenses=Apache-2.0
             org.opencontainers.image.source=https://github.com/open-lakehouse/mangrove

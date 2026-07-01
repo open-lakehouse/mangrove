@@ -77,6 +77,106 @@ pub struct Config {
     /// [`local_storage`](Config::local_storage) root.
     #[serde(default)]
     pub managed_storage_root: Option<String>,
+
+    /// Bundled web-UI serving settings (see [`UiConfig`]).
+    #[serde(default)]
+    pub ui: UiConfig,
+}
+
+/// Default bind host used when neither the config file nor a CLI flag sets one.
+pub const DEFAULT_HOST: &str = "0.0.0.0";
+/// Default listen port used when neither the config file nor a CLI flag sets one.
+pub const DEFAULT_PORT: u16 = 8080;
+
+impl Config {
+    /// Load configuration from an optional YAML file path, falling back to
+    /// [`Config::default`] when the path is `None` or does not exist.
+    ///
+    /// This is the single config entry point shared by every subcommand
+    /// (`serve` / `migrate` / `healthcheck`), so they all resolve host, port,
+    /// backend, and UI settings identically.
+    pub fn load(path: Option<&String>) -> Result<Self, String> {
+        let Some(path) = path else {
+            return Ok(Config::default());
+        };
+        let p = std::path::Path::new(path);
+        if !p.exists() {
+            tracing::info!("config file not found at {}, using defaults", p.display());
+            return Ok(Config::default());
+        }
+        let contents =
+            std::fs::read_to_string(p).map_err(|e| format!("reading config `{path}`: {e}"))?;
+        serde_yml::from_str(&contents).map_err(|e| format!("parsing config `{path}`: {e}"))
+    }
+
+    /// Resolved bind host: the configured value, else [`DEFAULT_HOST`].
+    pub fn resolved_host(&self) -> &str {
+        self.host.as_deref().unwrap_or(DEFAULT_HOST)
+    }
+
+    /// Resolved listen port: the configured value, else [`DEFAULT_PORT`].
+    pub fn resolved_port(&self) -> u16 {
+        self.port.unwrap_or(DEFAULT_PORT)
+    }
+
+    /// The `/health` URL a `healthcheck` probe should GET. A wildcard bind host
+    /// (`0.0.0.0` / empty) maps to loopback, since that is not a connectable
+    /// address for a client.
+    pub fn health_url(&self) -> String {
+        let host = match self.resolved_host() {
+            "0.0.0.0" | "" | "::" => "127.0.0.1",
+            other => other,
+        };
+        format!("http://{host}:{}/health", self.resolved_port())
+    }
+}
+
+/// Web UI serving settings.
+///
+/// By default the bundled single-page app is served from the service root (`/`)
+/// as a fallback behind the API routes. Set [`serve`](UiConfig::serve) to `false`
+/// to run the service API-only — the SPA routes are not mounted and any on-disk
+/// bundle is ignored — for deployments that embed a custom UI (built on the
+/// shipped `@open-lakehouse/*` components) or serve none. The CLI `--no-ui` flag
+/// sets this to `false`.
+///
+/// Set [`base_path`](UiConfig::base_path) to serve the UI (and every API route)
+/// under a sub-path instead — the "static prefix" pattern used when the server
+/// sits behind a gateway at e.g. `https://platform.example.com/catalog/`. The
+/// value is normalized on load (leading slash enforced, trailing slash stripped),
+/// so `catalog`, `/catalog`, and `/catalog/` all become `/catalog`; empty means
+/// "serve at root".
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[serde(default)]
+pub struct UiConfig {
+    /// URL prefix the UI and all API routes are served under. Empty = root.
+    pub base_path: String,
+    /// Whether to serve the bundled single-page app. `true` (default) mounts the
+    /// SPA routes; `false` runs API-only, even if a bundle is on disk. The CLI
+    /// `--no-ui` flag sets this to `false`.
+    pub serve: bool,
+}
+
+impl Default for UiConfig {
+    fn default() -> Self {
+        Self {
+            base_path: String::new(),
+            serve: true,
+        }
+    }
+}
+
+impl UiConfig {
+    /// Normalize [`base_path`](UiConfig::base_path): trim, and if non-empty force
+    /// a single leading slash and drop the trailing slash. Idempotent.
+    pub fn normalized_base_path(&self) -> String {
+        let trimmed = self.base_path.trim().trim_matches('/');
+        if trimmed.is_empty() {
+            String::new()
+        } else {
+            format!("/{trimmed}")
+        }
+    }
 }
 
 /// Configuration for local (`file://`) storage locations.
@@ -109,6 +209,7 @@ impl Default for Config {
             routing: RoutingConfig::default(),
             local_storage: LocalStorageConfig::default(),
             managed_storage_root: None,
+            ui: UiConfig::default(),
         }
     }
 }
@@ -230,6 +331,23 @@ pub enum Backend {
     /// non-persistent dev backend (it coordinates Delta commits like the
     /// file/Postgres backends, unlike the former bespoke in-memory store).
     Sqlite(SqliteBackendConfig),
+}
+
+impl Backend {
+    /// Whether this backend is an ephemeral, in-process SQLite database
+    /// (`:memory:`).
+    ///
+    /// An ephemeral backend is created fresh per process, so a separate
+    /// `migrate` step is meaningless — nothing it wrote would be visible to a
+    /// later `serve` process. [`crate::run::serve`] therefore auto-migrates only
+    /// this case, and keeps the strict "run `migrate` first" split for durable
+    /// backends (file-based SQLite and Postgres).
+    pub fn is_ephemeral(&self) -> bool {
+        matches!(
+            self,
+            Backend::Sqlite(cfg) if cfg.database_path().as_deref() == Some(":memory:")
+        )
+    }
 }
 
 impl Default for Backend {
@@ -528,6 +646,52 @@ mod tests {
         let bare: Config =
             serde_yml::from_str("backend:\n  engine: sqlite\n  path: \":memory:\"\n").unwrap();
         assert!(bare.managed_storage_root.is_none());
+    }
+
+    #[test]
+    fn test_backend_is_ephemeral() {
+        // The config-less default is the ephemeral in-memory backend.
+        assert!(Config::default().backend.is_ephemeral());
+
+        // An explicit `:memory:` path is ephemeral.
+        let mem: Config =
+            serde_yml::from_str("backend:\n  engine: sqlite\n  path: \":memory:\"\n").unwrap();
+        assert!(mem.backend.is_ephemeral());
+
+        // A file-backed SQLite database is durable, not ephemeral.
+        let file: Config =
+            serde_yml::from_str("backend:\n  engine: sqlite\n  path: /tmp/uc.db\n").unwrap();
+        assert!(!file.backend.is_ephemeral());
+    }
+
+    #[test]
+    fn test_ui_config_defaults_and_normalization() {
+        // Default: serve at root, UI enabled.
+        let ui = UiConfig::default();
+        assert!(ui.serve);
+        assert_eq!(ui.normalized_base_path(), "");
+
+        // Base-path normalization: leading slash forced, trailing stripped.
+        for raw in ["catalog", "/catalog", "/catalog/", "  catalog/  "] {
+            let ui = UiConfig {
+                base_path: raw.to_string(),
+                serve: true,
+            };
+            assert_eq!(ui.normalized_base_path(), "/catalog", "input {raw:?}");
+        }
+    }
+
+    #[test]
+    fn test_health_url_maps_wildcard_host_to_loopback() {
+        let mut cfg = Config {
+            host: Some("0.0.0.0".into()),
+            port: Some(9000),
+            ..Config::default()
+        };
+        assert_eq!(cfg.health_url(), "http://127.0.0.1:9000/health");
+
+        cfg.host = Some("example.test".into());
+        assert_eq!(cfg.health_url(), "http://example.test:9000/health");
     }
 
     #[test]

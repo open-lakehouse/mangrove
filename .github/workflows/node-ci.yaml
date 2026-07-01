@@ -9,6 +9,13 @@ on:
 env:
   SCCACHE_GHA_ENABLED: true
   RUSTC_WRAPPER: sccache
+  # Fetch npm packages from the public registry in CI. Local dev resolves through
+  # the internal mirror (npm-proxy.cloud.databricks.com) via the developer's own
+  # ~/.npmrc, which bakes mirror hosts into package-lock.json `resolved` URLs that
+  # GitHub runners can't reach. This env override + npm's default
+  # `replace-registry-host=npmjs` rewrites those hosts at fetch time, so CI works
+  # without a committed .npmrc (which would break local installs behind the proxy).
+  npm_config_registry: https://registry.npmjs.org/
 
 jobs:
   node-unit-tests:

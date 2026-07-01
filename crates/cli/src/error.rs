@@ -9,9 +9,6 @@ pub enum Error {
     #[error("Client error: {0}")]
     Client(#[from] unitycatalog_client::Error),
 
-    #[error("Server error: {0}")]
-    Server(#[from] unitycatalog_server::Error),
-
     #[error("Serde error: {0}")]
     Serde(#[from] serde_json::Error),
 

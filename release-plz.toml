@@ -60,10 +60,12 @@ pr_draft = false
 # `release = false` is the BOOTSTRAP GATE: crates that have not yet had their
 # one-time token bootstrap publish stay held out of the OIDC release cycle.
 # Remove the `release = false` line as each crate is bootstrapped + its Trusted
-# Publisher registered. Start with all nine set; clear them tier by tier (see
-# bootstrap-publish.yml and CONTRIBUTING.md). Publish/bootstrap order:
+# Publisher registered. Clear them tier by tier (see bootstrap-publish.yml and
+# CONTRIBUTING.md). crates.io publish/bootstrap order:
 #   common -> client, sharing-client -> object-store, postgres, sqlite,
-#   datafusion -> server -> cli
+#   datafusion -> cli
+# `olai-uc-server` is NOT on this list: it is a deployable (`git_only = true`),
+# released as a Docker image rather than to crates.io — see its block below.
 # ---------------------------------------------------------------------------
 [[package]]
 name = "olai-uc-common"
@@ -103,7 +105,21 @@ release = false
 [[package]]
 name = "olai-uc-server"
 changelog_path = "crates/server/CHANGELOG.md"
-release = false
+# The server is a DEPLOYABLE, not a crates.io library: it ships as the
+# `hydrofoil` Docker image, keyed off this crate's `olai-uc-server-v<version>`
+# git tag (see docker-release.yml). `git_only = true` versions/changelogs/tags
+# it from git (deriving the current version from the existing tag, not the
+# registry) and creates the tag + GitHub release — everything except
+# `cargo publish`. `publish = false` (also set in Cargo.toml) is the mutually-
+# exclusive companion release-plz requires alongside `git_only`. This replaces
+# the former `release = false` bootstrap gate: the server is never bootstrapped
+# onto crates.io.
+#
+# Its bundled UI lives in node/ (outside this crate's packaged fileset), so a UI
+# change is tied to this crate via crates/server/ui.lock — see `just
+# ui-fingerprint`.
+git_only = true
+publish = false
 
 [[package]]
 name = "olai-uc-cli"

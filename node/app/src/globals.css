@@ -1,0 +1,163 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+/* The shared UI packages are consumed directly from their `src/` (via each
+   package's `exports` map), so Tailwind's automatic source detection does not
+   scan them from this app. Register their source so the utility classes they
+   use are generated. Paths are relative to this stylesheet (node/app/src/) and
+   reach across to the sibling workspace packages under node/. */
+@source "../../ui-kit/src";
+@source "../../data-grid/src";
+@source "../../unity-catalog/src";
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-status-planned: hsl(var(--status-planned));
+  --color-status-ready: hsl(var(--status-ready));
+  --color-status-done: hsl(var(--status-done));
+  --color-status-in-progress: hsl(var(--status-in-progress));
+  --color-status-blocked: hsl(var(--status-blocked));
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius: var(--radius);
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+    --border: 210 18% 87%;
+    --input: 210 18% 87%;
+    --primary: 212 92% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
+    --ring: 212 92% 45%;
+    --radius: 0.5rem;
+
+    /* IDE chrome: sidebar sits slightly off the editor background. */
+    --sidebar: 210 40% 98%;
+    --sidebar-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 210 40% 93%;
+
+    --status-planned: 215 16% 47%;
+    --status-ready: 38 92% 50%;
+    --status-done: 137 55% 36%;
+    --status-in-progress: 212 92% 45%;
+    --status-blocked: 0 100% 50%;
+  }
+
+  .dark {
+    --background: 215 28% 7%;
+    --foreground: 215 31% 93%;
+    --muted: 215 19% 11%;
+    --muted-foreground: 210 9% 58%;
+    --popover: 215 19% 11%;
+    --popover-foreground: 215 31% 93%;
+    --border: 210 12% 21%;
+    --input: 210 12% 21%;
+    --primary: 212 100% 67%;
+    --primary-foreground: 215 28% 7%;
+    --secondary: 215 19% 11%;
+    --secondary-foreground: 215 31% 93%;
+    --destructive: 2 92% 63%;
+    --destructive-foreground: 215 31% 93%;
+    --accent: 216 47% 12%;
+    --accent-foreground: 215 31% 93%;
+    --card: 215 19% 11%;
+    --card-foreground: 215 31% 93%;
+    --ring: 215 84% 52%;
+
+    /* IDE chrome: darker than the editor surface, like VS Code's activity/side bar. */
+    --sidebar: 216 28% 9%;
+    --sidebar-foreground: 215 31% 93%;
+    --sidebar-accent: 216 47% 14%;
+
+    --status-planned: 210 9% 58%;
+    --status-ready: 38 92% 60%;
+    --status-done: 128 55% 58%;
+    --status-in-progress: 212 100% 67%;
+    --status-blocked: 2 92% 63%;
+  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: hsl(var(--border));
+  }
+  html {
+    font-feature-settings: "cv11", "ss01";
+    font-variation-settings: normal;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+  }
+  code,
+  kbd,
+  pre,
+  samp,
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  /* Thin, theme-aware scrollbars for an editor-like density. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border: 2px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+    background-clip: content-box;
+  }
+}

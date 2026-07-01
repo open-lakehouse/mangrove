@@ -9,6 +9,18 @@
       "recommended": true
     }
   },
+  "overrides": [
+    {
+      "includes": ["**/*.css"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUnknownAtRules": "off"
+          }
+        }
+      }
+    }
+  ],
   "formatter": {
     "indentStyle": "space"
   },
