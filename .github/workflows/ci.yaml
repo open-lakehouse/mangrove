@@ -48,6 +48,26 @@ jobs:
       - name: Format
         run: cargo fmt --all --check
 
+  ui-fingerprint:
+    name: ui-fingerprint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      # The bundled UI lives in node/, outside the olai-uc-server crate's
+      # packaged fileset, so a UI change is tied to the crate via
+      # crates/server/ui.lock. Fail the PR if that lock wasn't regenerated —
+      # otherwise release-plz wouldn't bump the server crate and the Docker image
+      # (which embeds the UI) would never rebuild. See `just ui-fingerprint`.
+      - uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3
+      - name: Check UI fingerprint is in sync
+        run: just ui-fingerprint-check
+
   clippy:
     name: clippy
     runs-on: ubuntu-latest

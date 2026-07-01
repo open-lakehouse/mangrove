@@ -6,12 +6,14 @@ name: Release-plz
 # + GitHub Releases and publishes the crates to crates.io via OIDC trusted
 # publishing.
 #
-# The CLI (`olai-uc-cli`) additionally ships as a container image: after the
-# release job, the `docker` job builds + pushes it to GHCR via a reusable
-# workflow (workflow_call), keyed off the version release-plz just published.
-# Running it in the SAME workflow keeps the build explicitly gated on "the cli
-# was released this run" — no second trigger to reason about, and the version is
-# passed in directly rather than re-derived from a tag event.
+# The server (`olai-uc-server`) is a DEPLOYABLE, not a crates.io library: it is
+# `git_only` in release-plz.toml (tagged from git, never published) and ships as
+# the `hydrofoil` container image instead. After the release job, the `docker`
+# job builds + pushes it to GHCR via a reusable workflow (workflow_call), keyed
+# off the version release-plz just tagged. Running it in the SAME workflow keeps
+# the build explicitly gated on "the server was released this run" — no second
+# trigger to reason about, and the version is passed in directly rather than
+# re-derived from a tag event.
 #
 # Bootstrap note: crates with `release = false` in release-plz.toml have not yet
 # had their one-time token bootstrap publish (.github/workflows/bootstrap-
@@ -65,9 +67,11 @@ jobs:
 
   # --- Tag + GitHub Release + cargo publish, after the Release PR is merged ---
   # release-plz publishes every crate whose `release` is not false to crates.io
-  # via OIDC. The cli's published version is read back from its Cargo.toml (the
-  # merged Release PR already bumped it) and, if a fresh `olai-uc-cli-v<ver>` tag
-  # was created this run, exposed as an output so the Docker job fires.
+  # via OIDC. The DEPLOYABLE server (`olai-uc-server`, `git_only = true`) is not
+  # published — it is tagged from git, and that tag drives the Docker image. Its
+  # version is read back from its Cargo.toml (the merged Release PR already bumped
+  # it) and, if a fresh `olai-uc-server-v<ver>` tag was created this run, exposed
+  # as an output so the Docker job fires.
   release-plz-release:
     name: Release
     if: ${{ github.repository == 'open-lakehouse/mangrove' }}
@@ -78,10 +82,10 @@ jobs:
       contents: write # create tags + GitHub Releases
       id-token: write # crates.io OIDC publish
     outputs:
-      # cli version + tag IF this run released the cli (tag was newly created),
-      # else empty — the Docker job keys off this.
-      cli_version: ${{ steps.cli.outputs.version }}
-      cli_tag: ${{ steps.cli.outputs.tag }}
+      # server version + tag IF this run released the server (tag was newly
+      # created), else empty — the Docker job keys off this.
+      server_version: ${{ steps.server.outputs.version }}
+      server_tag: ${{ steps.server.outputs.tag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -100,49 +104,50 @@ jobs:
         env:
           SQLX_OFFLINE: "true"
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-      # Determine whether the cli was released this run, to gate the Docker build.
-      # Read the (already-bumped) version from crates/cli/Cargo.toml and check
-      # whether the `olai-uc-cli-v<version>` tag exists yet. release-plz's own
-      # `release` step creates the tag when it publishes the cli; we look it up
-      # here to drive the Docker job in the same workflow. Idempotent: if the tag
-      # predates this run (cli unchanged), outputs stay empty and Docker is skipped.
-      - name: Detect cli release
-        id: cli
+      # Determine whether the server was released this run, to gate the Docker
+      # build. Read the (already-bumped) version from crates/server/Cargo.toml and
+      # check whether the `olai-uc-server-v<version>` tag exists yet. release-plz
+      # creates the tag when it releases the server (git_only); we look it up here
+      # to drive the Docker job in the same workflow. Idempotent: if the tag
+      # predates this run (server unchanged), outputs stay empty and Docker is
+      # skipped.
+      - name: Detect server release
+        id: server
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          version=$(grep -m1 '^version = ' crates/cli/Cargo.toml \
+          version=$(grep -m1 '^version = ' crates/server/Cargo.toml \
             | sed -E 's/^version = "([^"]+)".*/\1/')
           if [ -z "$version" ]; then
-            echo "::error::could not parse cli version from crates/cli/Cargo.toml"
+            echo "::error::could not parse server version from crates/server/Cargo.toml"
             exit 1
           fi
-          tag="olai-uc-cli-v${version}"
-          # release-plz creates this tag when it publishes the cli. If it exists
-          # AND points at the current commit, the cli was released in this run.
+          tag="olai-uc-server-v${version}"
+          # release-plz creates this tag when it releases the server. If it exists
+          # AND points at the current commit, the server was released this run.
           if git ls-remote --exit-code --tags origin "$tag" >/dev/null 2>&1; then
             tag_sha=$(git ls-remote --tags origin "$tag" | cut -f1)
             head_sha=$(git rev-parse HEAD)
             # Compare against the commit the merged Release PR landed (HEAD).
             if [ "${tag_sha}" = "${head_sha}" ] || git merge-base --is-ancestor "$tag_sha" HEAD 2>/dev/null; then
-              echo "cli ${version} released this run (tag ${tag})."
+              echo "server ${version} released this run (tag ${tag})."
               echo "version=$version" >> "$GITHUB_OUTPUT"
               echo "tag=$tag" >> "$GITHUB_OUTPUT"
               exit 0
             fi
           fi
-          echo "cli not released this run (no fresh ${tag}); skipping Docker."
+          echo "server not released this run (no fresh ${tag}); skipping Docker."
 
-  # --- Build + push the cli (hydrofoil) Docker image, iff the cli was released ---
+  # --- Build + push the server (hydrofoil) Docker image, iff it was released ---
   docker:
     name: Docker release
     needs: release-plz-release
-    if: ${{ needs.release-plz-release.outputs.cli_version != '' }}
+    if: ${{ needs.release-plz-release.outputs.server_version != '' }}
     permissions:
       contents: read
       packages: write
       id-token: write
     uses: ./.github/workflows/docker-release.yml
     with:
-      version: ${{ needs.release-plz-release.outputs.cli_version }}
-      ref: ${{ needs.release-plz-release.outputs.cli_tag }}
+      version: ${{ needs.release-plz-release.outputs.server_version }}
+      ref: ${{ needs.release-plz-release.outputs.server_tag }}
