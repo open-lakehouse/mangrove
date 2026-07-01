@@ -332,14 +332,11 @@ fn operational_router() -> Router {
 /// until shutdown.
 pub(crate) async fn run(api_router: Router, ui: &UiConfig, host: &str, port: u16) -> Result<()> {
     // Swagger UI asset routes are merged onto the API router.
-    let router = swagger_api_defs()
+    let mut router = swagger_api_defs()
         .into_iter()
         .fold(api_router, |router, api| {
             router.merge(swagger_ui_dist::generate_routes(api))
         });
-
-    // Operational endpoints first so they can never be shadowed by the SPA fallback.
-    let mut router = operational_router().merge(router);
 
     // Optionally mount the bundled SPA: real (hashed) asset files come off disk,
     // and any non-file path falls back to `index.html` with a 200 so the SPA's
@@ -349,9 +346,17 @@ pub(crate) async fn run(api_router: Router, ui: &UiConfig, host: &str, port: u16
         router = mount_spa(router);
     }
 
-    // Mount the whole surface under the base path when configured (behind a
-    // gateway sub-path). Empty base_path ⇒ served at root.
+    // Mount the app (API + Swagger + SPA) under the base path when configured
+    // (behind a gateway sub-path). Empty base_path ⇒ served at root.
     let router = mount_under_base(router, &ui.normalized_base_path());
+
+    // Operational endpoints are mounted at the ROOT, *outside* the base-path
+    // wrapper, so `/health` and `/version` are always reachable at the address the
+    // server binds — regardless of `ui.base_path`. This is what the `healthcheck`
+    // subcommand and the Docker `HEALTHCHECK` probe (both target root `/health`
+    // via `Config::health_url`), and it keeps liveness independent of the gateway
+    // routing. Merged last so nothing (including the SPA fallback) can shadow them.
+    let router = operational_router().merge(router);
 
     let router = router.layer(
         TraceLayer::new_for_http()

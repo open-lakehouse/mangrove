@@ -5,8 +5,29 @@ networks:
   sharing:
 
 services:
+  # One-shot: apply pending migrations against Postgres, then exit. `serve` does
+  # not migrate a durable backend, so this must complete before `uc` starts.
+  uc-migrate:
+    image: hydrofoil:dev
+    container_name: uc-migrate
+    profiles: ["full"]
+    networks:
+      - sharing
+    command: ["migrate", "-c", "/etc/uc/config.yaml"]
+    environment: &uc_env
+      - UC_SERVER_CONFIG=/etc/uc/config.yaml
+      - PGHOST=postgres
+      - PGPORT=5432
+      - PGUSER=postgres
+      - PGPASSWORD=postgres
+      - PGDATABASE=postgres
+    volumes: &uc_volumes
+      - ./config.yaml:/etc/uc/config.yaml:ro
+    depends_on:
+      - postgres_uc_dev
+
   uc:
-    image: unitycatalog-rs:dev
+    image: hydrofoil:dev
     container_name: uc
     hostname: uc
     profiles: ["full"]
@@ -15,12 +36,16 @@ services:
       - sharing
     ports:
       - "8080:8080"
-    command: ["server", "--rest", "--use-db"]
-    environment:
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/postgres
+    command: ["serve", "-c", "/etc/uc/config.yaml"]
+    environment: *uc_env
+    volumes: *uc_volumes
     depends_on:
-      - azurite_uc_dev
-      - postgres_uc_dev
+      azurite_uc_dev:
+        condition: service_started
+      postgres_uc_dev:
+        condition: service_started
+      uc-migrate:
+        condition: service_completed_successfully
 
   azurite_uc_dev:
     image: mcr.microsoft.com/azure-storage/azurite

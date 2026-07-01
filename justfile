@@ -330,8 +330,8 @@ record-oss-java:
 record-oss-rust:
     #!/usr/bin/env bash
     set -euo pipefail
-    cargo build --bin uc
-    RUST_LOG=INFO cargo run --bin uc -- server --rest &
+    cargo build -p olai-uc-server --features bin --bin uc-server
+    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- serve &
     server_pid=$!
     trap 'kill "$server_pid" 2>/dev/null || true' EXIT
     echo "⏳ Waiting for Rust server on http://localhost:8080 ..."
