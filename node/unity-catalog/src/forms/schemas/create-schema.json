@@ -1,0 +1,89 @@
+{
+  "additionalProperties": false,
+  "description": "Create a new Schema",
+  "properties": {
+    "catalog_name": {
+      "default": "",
+      "description": "Name of parent catalog.",
+      "minLength": 3,
+      "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+      "type": "string"
+    },
+    "comment": {
+      "description": "User-provided free-form text description.",
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "description": "Name of schema, relative to parent catalog.",
+      "minLength": 3,
+      "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+      "type": "string"
+    },
+    "properties": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "A map of key-value properties attached to the securable.",
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "storage_root": {
+      "description": "If not set, managed securables under this schema fall back to the parent\n catalog's storage location. Example: `s3://bucket/ucroot`.",
+      "title": "Storage root URL for managed storage location of the schema.",
+      "type": "string"
+    }
+  },
+  "title": "Create Schema Request",
+  "type": "object",
+  "$defs": {
+    "unitycatalog.schemas.v1.CreateSchemaRequest.schema.json": {
+      "additionalProperties": false,
+      "description": "Create a new Schema",
+      "properties": {
+        "catalog_name": {
+          "default": "",
+          "description": "Name of parent catalog.",
+          "minLength": 3,
+          "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+          "type": "string"
+        },
+        "comment": {
+          "description": "User-provided free-form text description.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "description": "Name of schema, relative to parent catalog.",
+          "minLength": 3,
+          "pattern": "^[a-z][0-9a-z_]*[0-9a-z]$",
+          "type": "string"
+        },
+        "properties": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A map of key-value properties attached to the securable.",
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "storage_root": {
+          "description": "If not set, managed securables under this schema fall back to the parent\n catalog's storage location. Example: `s3://bucket/ucroot`.",
+          "title": "Storage root URL for managed storage location of the schema.",
+          "type": "string"
+        }
+      },
+      "title": "Create Schema Request",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "required": [
+    "name",
+    "catalog_name"
+  ]
+}
