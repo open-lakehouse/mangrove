@@ -28,7 +28,9 @@ FROM node:22-bookworm-slim AS ui
 WORKDIR /ui
 # Lockfile + manifests first for a cacheable `npm ci` layer. The build needs the
 # whole npm workspace (root manifest + every node/* package the app imports).
-COPY package.json package-lock.json ./
+# `.npmrc` pins the public registry so `npm ci` fetches from registry.npmjs.org
+# regardless of the host baked into the lockfile's `resolved` URLs.
+COPY package.json package-lock.json .npmrc ./
 COPY node/ ./node/
 # `--no-audit`/`--no-fund` drop the post-install network calls a reproducible
 # image build has no use for. The workspace packages are consumed as TS source
