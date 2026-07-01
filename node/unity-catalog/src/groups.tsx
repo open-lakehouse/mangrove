@@ -1,3 +1,15 @@
+import type {
+  FunctionInfo,
+  RegisteredModelInfo,
+  TableInfo,
+  VolumeInfo,
+} from "@open-lakehouse/unity-catalog-client";
+import {
+  useFunctions,
+  useModels,
+  useTables,
+  useVolumes,
+} from "@open-lakehouse/unity-catalog-client";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import {
   Boxes,
@@ -8,13 +20,6 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ObjectKind } from "./types";
-import { useFunctions, useModels, useTables, useVolumes } from "./uc/queries";
-import type {
-  FunctionInfo,
-  RegisteredModelInfo,
-  TableInfo,
-  VolumeInfo,
-} from "./uc-types";
 
 export interface GroupDef {
   kind: ObjectKind;

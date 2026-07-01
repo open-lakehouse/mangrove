@@ -1,4 +1,4 @@
-import { useFunctionDetail } from "../uc/queries";
+import { useFunctionDetail } from "@open-lakehouse/unity-catalog-client";
 
 import { DetailStates } from "./DetailStates";
 import { Meta, MetaGrid } from "./Meta";

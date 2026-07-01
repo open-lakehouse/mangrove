@@ -5,6 +5,14 @@
 // sidebar used, so this is a presentation change over existing plumbing.
 
 import { Button, cn } from "@open-lakehouse/ui-kit";
+import type {
+  CredentialInfo,
+  ExternalLocationInfo,
+} from "@open-lakehouse/unity-catalog-client";
+import {
+  useCredentials,
+  useExternalLocations,
+} from "@open-lakehouse/unity-catalog-client";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -22,8 +30,6 @@ import { ExternalLocationDetail } from "../detail/ExternalLocationDetail";
 import { useCatalogDialogs } from "../dialogs";
 import { RowMenu } from "../RowMenu";
 import type { StorageKind } from "../types";
-import { useCredentials, useExternalLocations } from "../uc/queries";
-import type { CredentialInfo, ExternalLocationInfo } from "../uc-types";
 
 type StorageItem = CredentialInfo | ExternalLocationInfo;
 type StorageList = UseInfiniteQueryResult<StorageItem[], unknown>;

@@ -6,13 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@open-lakehouse/ui-kit";
-import { AlertTriangle } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import type { DeleteRequest } from "./dialog-types";
-import { useCatalogSelection } from "./selection";
-import { parseUcError } from "./uc/errors";
 import {
+  parseUcError,
   useDeleteCatalog,
   useDeleteCredential,
   useDeleteExternalLocation,
@@ -21,7 +16,12 @@ import {
   useDeleteSchema,
   useDeleteTable,
   useDeleteVolume,
-} from "./uc/mutations";
+} from "@open-lakehouse/unity-catalog-client";
+import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import type { DeleteRequest } from "./dialog-types";
+import { useCatalogSelection } from "./selection";
 
 // Catalogs / schemas / models accept a `force` flag to delete when non-empty.
 const FORCEABLE = new Set<DeleteRequest["kind"]>([

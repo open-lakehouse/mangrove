@@ -15,15 +15,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@open-lakehouse/ui-kit";
+import type { CredentialInfo } from "@open-lakehouse/unity-catalog-client";
+import {
+  parseUcError,
+  useCreateCredential,
+  useCredentialDetail,
+  useUpdateCredential,
+} from "@open-lakehouse/unity-catalog-client";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { SchemaForm } from "../forms/SchemaForm";
 import { cloneSchema, formSchemas } from "../forms/schemas";
-import { parseUcError } from "../uc/errors";
-import { useCreateCredential, useUpdateCredential } from "../uc/mutations";
-import { useCredentialDetail } from "../uc/queries";
-import type { CredentialInfo } from "../uc-types";
 
 import { CopyField } from "./CopyField";
 

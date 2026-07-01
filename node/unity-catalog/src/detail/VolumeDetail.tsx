@@ -1,4 +1,4 @@
-import { useVolumeDetail } from "../uc/queries";
+import { useVolumeDetail } from "@open-lakehouse/unity-catalog-client";
 
 import { DetailStates } from "./DetailStates";
 import { Meta, MetaGrid } from "./Meta";

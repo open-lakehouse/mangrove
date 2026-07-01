@@ -1,4 +1,4 @@
-import { useSchemaDetail } from "../uc/queries";
+import { useSchemaDetail } from "@open-lakehouse/unity-catalog-client";
 
 import { DetailStates } from "./DetailStates";
 import { Meta, MetaGrid } from "./Meta";

@@ -6,7 +6,7 @@
       "**",
       "!**/dist/**/*",
       "!**/node_modules/**/*",
-      "!**/unity-catalog/src/uc-api.d.ts",
+      "!**/unity-catalog-client/src/uc-api.d.ts",
       "!**/unity-catalog/src/forms/schemas/**/*"
     ]
   },

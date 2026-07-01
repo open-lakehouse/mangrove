@@ -1,4 +1,10 @@
 import { Button } from "@open-lakehouse/ui-kit";
+import {
+  objectFullName,
+  prefetchSchemas,
+  useCatalogs,
+  useSchemas,
+} from "@open-lakehouse/unity-catalog-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Database, FolderTree, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCatalogDialogs } from "./dialogs";
@@ -7,12 +13,6 @@ import { GROUPS, type GroupDef } from "./groups";
 import { RowMenu } from "./RowMenu";
 import { useCatalogSelection } from "./selection";
 import { CreateAction, ListStates, TreeRow } from "./TreeRow";
-import {
-  objectFullName,
-  prefetchSchemas,
-  useCatalogs,
-  useSchemas,
-} from "./uc/queries";
 
 export function CatalogTree() {
   const queryClient = useQueryClient();

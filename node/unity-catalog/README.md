@@ -1,73 +1,57 @@
 # `@open-lakehouse/unity-catalog`
 
-The Unity Catalog feature package: the catalog browser, per-entity detail panes,
-the create/edit/delete and storage dialogs, the schema-driven form renderer, the
-metastore storage admin table, and the React-Query data layer that talks to the
-Unity Catalog REST API.
+The Unity Catalog **presentational** package: the catalog browser, per-entity
+detail panes, the create/edit/delete and storage dialogs, the schema-driven form
+renderer, and the metastore storage admin table.
+
+The data-fetching half — the typed client, the React-Query hooks, and the UC
+OpenAPI types — lives in the separate **`@open-lakehouse/unity-catalog-client`**
+package, so *talking to* Unity Catalog and *rendering* it are not bundled
+together. This package depends on the client package for all data access, and
+hosts import client concerns (provider, hooks, `setDefaultUnityCatalogFetch`, UC
+types) from there directly — they are not re-exported here.
 
 ## Public surface
 
-Import only from the package root — `@open-lakehouse/unity-catalog`:
+Import only from the package root — `@open-lakehouse/unity-catalog`. This barrel
+exposes **presentational** exports only; data-access exports (the provider,
+hooks, client, `setDefaultUnityCatalogFetch`, UC types, `parseUcError`) come from
+`@open-lakehouse/unity-catalog-client`.
 
 | Export | Used by |
 | --- | --- |
-| `UnityCatalogProvider`, `useUnityCatalog` | app root (client injection) |
-| `createUnityCatalogClient`, `defaultUnityCatalogClient`, `fetchClient`, `setDefaultUnityCatalogFetch` | app root (transport wiring) |
 | `EnvironmentScopeProvider` | app root (feeds the env scope id) |
 | `CatalogExplorer` | `routes/catalog.lazy` (route-level browser) |
 | `CatalogDialogsProvider` | `environment/manager/EnvironmentManager` |
 | `StorageTable`, `StorageLocationPicker`, type `StorageKind` | `environment/manager/EnvironmentDetail` (StorageTable); StorageLocationPicker is exported for future consumers |
 | `Meta`, `MetaGrid` | `environment/manager/EnvironmentDetail` |
 | `ListStates`, `TreeRow` | `editor/fileTree/FileTree` |
-| `useCatalogs`, `useSchemas`, `useVolumes`, `useCredentials`, `useExternalLocations`, `prefetchCatalogs` | `editor/AddVolumeDialog`, `routes/import.lazy`, `routeTree` |
-| `invalidateTables` | `routes/import.lazy` |
-| `parseUcError` | `EnvironmentGate`, `ErrorBoundary` |
 
 Everything else — the tree internals (`CatalogTree`, `RowMenu`, `DetailPane`,
 `selection`, `ExpansionContext`, `groups`, `dialog-types`), the detail panes
 under `detail/`, the dialog wiring (`dialogs`, the `*EntityDialog`s, the storage
-dialogs under `storage/`), the form renderer under `forms/`, and the `uc/` data
-layer internals — is package-internal; the `exports` map reaches only the root
-barrel.
+dialogs under `storage/`), and the form renderer under `forms/` — is
+package-internal; the `exports` map reaches only the root barrel.
 
-## Client injection
+## Data access
 
-`uc/queries.ts` and `uc/mutations.ts` read their client from `useUnityCatalog()`
-(provided by `UnityCatalogProvider`) rather than a module singleton, so the host
-decides base URL / transport / auth. This is the seam a future proto-generated
-WASM client swaps into with no hook changes (see
-`docs/portable-uc-components.md`).
-
-Every fetch — list reads (`useCatalogs`, …), mutations, AND detail reads
-(`useCatalogDetail`, … and the storage dialogs) — routes through the injected
-client. The `*DetailQuery(id)` functions and `prefetch*` helpers deliberately
-bind the *default* client because they only derive query keys / warm caches;
-key derivation is client-independent, so the keys they produce match the
-injected-client hooks and caches stay aligned. `mutations.ts` reads
-`*DetailQuery(id).queryKey` for `setQueryData` / `removeQueries` — a key, not a
-fetch — which is why those stay on the default client.
-
-The default client's transport is a stable indirection over a mutable fetch: the
-host calls `setDefaultUnityCatalogFetch(fetch)` once at startup to route the
-default client (and the back-compat `$api` / `fetchClient` singletons and the
-prefetch helpers) through its own fetch — e.g. the Tauri desktop shell's IPC
-fetch — without this package depending on the host's transport registry. Absent
-that call, the default is the platform `fetch`.
+All fetching, hooks, and UC types come from
+`@open-lakehouse/unity-catalog-client`. Components call its hooks
+(`useCatalogs`, `useSchemaDetail`, the `useCreate*`/`useUpdate*`/`useDelete*`
+mutations, …), which read the injected client from that package's
+`UnityCatalogProvider`. This package never talks to the network itself — see the
+client package's README for the transport seam (`setDefaultUnityCatalogFetch`)
+and how a future in-process (wasm) UC client plugs in.
 
 ## External dependencies
 
-The package depends only on shared packages and one host edge:
-
 - `@open-lakehouse/ui-kit` — the shared shadcn primitives and `cn`.
-- Its own generated UC OpenAPI types — `src/uc-types.ts` re-exports the
-  `openapi-typescript` output (`src/uc-api.d.ts`, generated from
-  `openapi/unity-catalog.yaml` via `npm run gen:api`) that the data layer is typed
-  against. (This absorbs what used to be a separate `@open-lakehouse/uc-client`
-  package.) Note: this OSS-shaped UC spec differs from mangrove's native
-  `openapi/openapi.yaml`; reconciling the two is deferred follow-up work.
+- `@open-lakehouse/unity-catalog-client` — the UC client, hooks, and OpenAPI
+  types the components render against.
 - `@rjsf/*` — the JSON-schema form renderer backing `forms/SchemaForm`. The UC
-  entity/storage form schemas live in `forms/schemas/` (generated from this repo's
-  own UC proto by `scripts/gen-form-schemas.mjs`, i.e. `npm run gen:form-schemas`).
+  entity/storage form schemas live in `forms/schemas/`, generated by the client
+  package's `gen:form-schemas` (which writes them here since they're
+  presentational assets).
 - **`./env-seam` — the single host edge.** `ExpansionContext` namespaces its
   persisted tree-expansion state per active environment, so it needs the current
   environment id. The package owns an `EnvironmentScopeProvider`; the host mounts

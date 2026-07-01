@@ -1,4 +1,4 @@
-import { useCredentialDetail } from "../uc/queries";
+import { useCredentialDetail } from "@open-lakehouse/unity-catalog-client";
 
 import { DetailStates } from "./DetailStates";
 import { Meta, MetaGrid } from "./Meta";

@@ -1,4 +1,4 @@
-import { useExternalLocationDetail } from "../uc/queries";
+import { useExternalLocationDetail } from "@open-lakehouse/unity-catalog-client";
 
 import { DetailStates } from "./DetailStates";
 import { Meta, MetaGrid } from "./Meta";

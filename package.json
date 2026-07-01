@@ -4,6 +4,7 @@
     "node/client",
     "node/ui-kit",
     "node/data-grid",
+    "node/unity-catalog-client",
     "node/unity-catalog",
     "docs",
     "examples/typescript"

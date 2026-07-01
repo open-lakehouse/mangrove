@@ -8,6 +8,14 @@ import {
   Input,
   Label,
 } from "@open-lakehouse/ui-kit";
+import type { VolumeType } from "@open-lakehouse/unity-catalog-client";
+import {
+  parseUcError,
+  useCreateCatalog,
+  useCreateRegisteredModel,
+  useCreateSchema,
+  useCreateVolume,
+} from "@open-lakehouse/unity-catalog-client";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -15,14 +23,6 @@ import type { CreateRequest } from "./dialog-types";
 import { SchemaForm } from "./forms/SchemaForm";
 import { cloneSchema, formSchemas } from "./forms/schemas";
 import { StorageLocationPicker } from "./storage/StorageLocationPicker";
-import { parseUcError } from "./uc/errors";
-import {
-  useCreateCatalog,
-  useCreateRegisteredModel,
-  useCreateSchema,
-  useCreateVolume,
-} from "./uc/mutations";
-import type { VolumeType } from "./uc-types";
 
 export type { CreateRequest };
 

@@ -28,7 +28,11 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pkgDir = path.resolve(here, "..");
 const tmpDir = path.join(pkgDir, ".gen-jsonschema");
-const outDir = path.resolve(pkgDir, "src/forms/schemas");
+// The generated schemas are RJSF presentational assets consumed by the sibling
+// presentational package's SchemaForm, so they are written there (the
+// generation itself is UC-contract codegen and lives with the client package,
+// alongside gen:api).
+const outDir = path.resolve(pkgDir, "../unity-catalog/src/forms/schemas");
 
 /** Output file name (without extension) -> fully-qualified proto message. */
 const TARGETS = {

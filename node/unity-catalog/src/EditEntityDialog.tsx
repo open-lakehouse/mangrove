@@ -8,17 +8,17 @@ import {
   Input,
   Label,
 } from "@open-lakehouse/ui-kit";
-import { useId, useState } from "react";
-import { toast } from "sonner";
-import type { EditRequest } from "./dialog-types";
-import { useCatalogSelection } from "./selection";
-import { parseUcError } from "./uc/errors";
 import {
+  parseUcError,
   useUpdateCatalog,
   useUpdateRegisteredModel,
   useUpdateSchema,
   useUpdateVolume,
-} from "./uc/mutations";
+} from "@open-lakehouse/unity-catalog-client";
+import { useId, useState } from "react";
+import { toast } from "sonner";
+import type { EditRequest } from "./dialog-types";
+import { useCatalogSelection } from "./selection";
 
 const TITLES: Record<EditRequest["kind"], string> = {
   catalog: "Edit catalog",

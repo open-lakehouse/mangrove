@@ -1,4 +1,4 @@
-import { parseUcError } from "../uc/errors";
+import { parseUcError } from "@open-lakehouse/unity-catalog-client";
 
 export function DetailStates({
   isLoading,

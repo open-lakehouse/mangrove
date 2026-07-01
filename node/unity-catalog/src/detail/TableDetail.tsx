@@ -1,6 +1,5 @@
+import { useTableDetail } from "@open-lakehouse/unity-catalog-client";
 import { Columns3 } from "lucide-react";
-
-import { useTableDetail } from "../uc/queries";
 
 import { DetailStates } from "./DetailStates";
 import { Meta, MetaGrid } from "./Meta";

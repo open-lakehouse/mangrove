@@ -13,18 +13,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@open-lakehouse/ui-kit";
+import {
+  parseUcError,
+  useCreateExternalLocation,
+  useCredentials,
+  useExternalLocationDetail,
+  useUpdateExternalLocation,
+} from "@open-lakehouse/unity-catalog-client";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { SchemaForm } from "../forms/SchemaForm";
 import { cloneSchema, formSchemas } from "../forms/schemas";
-import { parseUcError } from "../uc/errors";
-import {
-  useCreateExternalLocation,
-  useUpdateExternalLocation,
-} from "../uc/mutations";
-import { useCredentials, useExternalLocationDetail } from "../uc/queries";
 
 import { CredentialDialog } from "./CredentialDialog";
 

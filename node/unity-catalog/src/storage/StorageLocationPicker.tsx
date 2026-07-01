@@ -15,8 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@open-lakehouse/ui-kit";
+import { useExternalLocations } from "@open-lakehouse/unity-catalog-client";
 import { useId, useMemo, useState } from "react";
-import { useExternalLocations } from "../uc/queries";
 
 // Radix Select can't use an empty-string value, so the modes need sentinels.
 const MANAGED = "__managed__";
