@@ -2,6 +2,8 @@
   "name": "unitycatalog",
   "workspaces": [
     "node/client",
+    "node/ui-kit",
+    "node/data-grid",
     "docs",
     "examples/typescript"
   ],
