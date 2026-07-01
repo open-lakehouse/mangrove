@@ -26,11 +26,6 @@ import {
 } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { $api, fetchClient } from "../api";
-import type {
-  FunctionInfo,
-  RegisteredModelInfo,
-  VolumeInfo,
-} from "../uc-types";
 import { useUnityCatalog } from "./context";
 
 // `$api` / `fetchClient` (imported above) are the DEFAULT client's members. The
@@ -384,7 +379,7 @@ export function useVolumes(
   );
 
   useEffect(() => {
-    for (const volume of (query.data as VolumeInfo[] | undefined) ?? []) {
+    for (const volume of query.data ?? []) {
       const fullName = volume.full_name || objectFullName(volume);
       if (fullName) {
         queryClient.setQueryData(volumeDetailQuery(fullName).queryKey, volume);
@@ -415,7 +410,7 @@ export function useFunctions(
   );
 
   useEffect(() => {
-    for (const fn of (query.data as FunctionInfo[] | undefined) ?? []) {
+    for (const fn of query.data ?? []) {
       const fullName = fn.full_name || objectFullName(fn);
       if (fullName) {
         queryClient.setQueryData(functionDetailQuery(fullName).queryKey, fn);
@@ -447,8 +442,7 @@ export function useModels(
   );
 
   useEffect(() => {
-    for (const model of (query.data as RegisteredModelInfo[] | undefined) ??
-      []) {
+    for (const model of query.data ?? []) {
       const fullName = model.full_name || objectFullName(model);
       if (fullName) {
         queryClient.setQueryData(modelDetailQuery(fullName).queryKey, model);
