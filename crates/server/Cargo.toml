@@ -9,10 +9,25 @@ readme.workspace = true
 rust-version.workspace = true
 homepage.workspace = true
 keywords.workspace = true
+# Deployable service, not a reusable library on crates.io: ship via Docker +
+# GitHub release, keyed off this crate's release-plz git tag. `publish = false`
+# makes that contract explicit and guards against an accidental `cargo publish`.
+# (The crate is still consumed in-workspace as a library by tests/tools.)
+publish = false
 
 [lib]
 # Stable Rust crate identifier, independent of the provisional package name.
 name = "unitycatalog_server"
+
+[[bin]]
+# The deployable server binary: `serve` | `migrate` | `healthcheck`. Distinct
+# from the `uc` client CLI (crates/cli), mirroring headwaters' `headwaters` vs
+# `hw` split. Gated behind the `bin` feature so a bare `olai-uc-server` library
+# build (and its library consumers) don't pull the CLI/serve/store dependency
+# stack.
+name = "uc-server"
+path = "src/main.rs"
+required-features = ["bin"]
 
 [dependencies]
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1", features = [
@@ -49,12 +64,27 @@ datafusion = { workspace = true }
 futures-util = { version = "0.3.28" }
 http = { version = "1.2", optional = true }
 olai-store = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "net"] }
 tower = { workspace = true, features = ["make"], optional = true }
+# Trace layer for the served router + `ServeDir`/`ServeFile` for the bundled SPA
+# (`bin` only). `fs` carries the static-file services; `trace` the HTTP tracing.
+tower-http = { version = "0.6", features = ["trace", "fs"], optional = true }
 
 # in-memory handler dependencies (in alphabetical order)
 dashmap = { workspace = true, optional = true }
 uuid = { workspace = true, optional = true, features = ["v7"] }
+
+# `bin` (deployable `uc-server` binary) dependencies — all optional so a library
+# build of this crate doesn't pull the CLI / storage-backend / serve stack.
+unitycatalog-postgres = { package = "olai-uc-postgres", path = "../postgres", version = "0.0.1", optional = true }
+unitycatalog-sqlite = { package = "olai-uc-sqlite", path = "../sqlite", version = "0.0.1", optional = true }
+base64 = { version = "0.22", optional = true }
+clap = { version = "4.5", features = ["derive", "env", "wrap_help"], optional = true }
+# `healthcheck` subcommand probes /health with a blocking client off the tokio
+# runtime; rustls avoids a system OpenSSL dependency in the distroless image.
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"], optional = true }
+serde_yml = { workspace = true, optional = true }
+swagger-ui-dist = { version = "5.18.3", optional = true }
 
 [dev-dependencies]
 tempfile = "3.1"
@@ -73,6 +103,23 @@ grpc = ["tonic"]
 # reusable handler patterns: proxy leaves + UC-client connector
 proxy = ["dep:unitycatalog-client"]
 federation = ["proxy"]
+
+# The deployable `uc-server` binary (serve | migrate | healthcheck) and its
+# config/backend/UI-serving stack. Pulls the storage backends, the hybrid proxy
+# (`proxy`), swagger UI, the CLI parser, and the healthcheck client. `axum` +
+# `proxy` are on so the router and upstream adapters are available.
+bin = [
+  "axum",
+  "proxy",
+  "dep:unitycatalog-postgres",
+  "dep:unitycatalog-sqlite",
+  "dep:base64",
+  "dep:clap",
+  "dep:reqwest",
+  "dep:serde_yml",
+  "dep:swagger-ui-dist",
+  "dep:tower-http",
+]
 
 # Gates the Azurite credential-vending integration test
 # (`tests/credential_vending_azurite.rs`). Requires a running Azurite blob
