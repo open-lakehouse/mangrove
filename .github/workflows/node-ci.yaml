@@ -17,6 +17,18 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Guard against a lockfile regenerated behind the internal npm mirror:
+      # its `resolved` tarball URLs point at npm-proxy.cloud.databricks.com,
+      # which GitHub-hosted runners can't reach (npm ci → ETIMEDOUT). The
+      # `integrity` hashes are mirror-independent, so re-point with:
+      #   sed -i 's#https://npm-proxy.cloud.databricks.com/#https://registry.npmjs.org/#g' package-lock.json
+      - name: Guard package-lock.json against internal mirror URLs
+        run: |
+          if grep -q 'npm-proxy\.cloud\.databricks\.com' package-lock.json; then
+            echo "::error file=package-lock.json::package-lock.json references the internal npm mirror (npm-proxy.cloud.databricks.com), unreachable from CI. Re-point to registry.npmjs.org — see the comment in this step."
+            exit 1
+          fi
+
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
