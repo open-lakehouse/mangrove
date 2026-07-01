@@ -10,7 +10,7 @@
 // shared primitives (@open-lakehouse/ui-kit), its own generated UC OpenAPI types
 // (./uc-types, from openapi/unity-catalog.yaml), and exactly one host edge — the
 // environment scope id, fed via EnvironmentScopeProvider (./env-seam). See
-// ./README.md.
+// ../README.md.
 //
 // Dependency direction: the package may build on @open-lakehouse/data-grid in
 // the future; data-grid never builds on it. (Today StorageTable hand-rolls its

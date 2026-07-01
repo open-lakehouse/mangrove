@@ -8,7 +8,7 @@
 // @open-lakehouse/ui-kit — never on Unity Catalog or any app feature. Both the
 // SQL editor result pane and the import preview build on it today; the Unity
 // Catalog package may build on it in the future, never the reverse.
-// See ./README.md.
+// See ../README.md.
 
 export { DataGrid } from "./data-grid";
 // The grid's input contract. Consumers (the editor's run controller, the import

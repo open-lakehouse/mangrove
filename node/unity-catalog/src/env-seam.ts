@@ -13,7 +13,7 @@
 // mounted the scope falls back to a stable constant, so tests and Storybook
 // stories render without a wrapper and behave exactly as before. To embed the
 // package elsewhere, supply whatever id represents the embedder's "current
-// scope" (or nothing, to share one namespace). See ./README.md.
+// scope" (or nothing, to share one namespace). See ../README.md.
 import {
   createContext,
   createElement,
