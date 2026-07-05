@@ -170,7 +170,7 @@ pub async fn discover_log(
         Ok(result) => {
             let bytes = result.bytes().await?;
             let hint: LastCheckpointHint = serde_json::from_slice(&bytes).map_err(|e| {
-                Error::InvalidResponse(format!("unparseable _last_checkpoint: {e}"))
+                Error::InvalidResponse(format!("unparsable _last_checkpoint: {e}"))
             })?;
             Some(hint)
         }
