@@ -10,6 +10,8 @@
 
 # Rust
 .cargo/
+# …but the wasm workspace's target rustflags (getrandom wasm_js cfg) are source:
+!crates/query-wasm/.cargo/
 target/
 /Cargo.lock
 integration-tests/Cargo.lock

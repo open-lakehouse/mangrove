@@ -1,8 +1,11 @@
 [workspace]
 resolver = "2"
 members = ["crates/*", "python/client", "node/client", "examples/rust"]
-# members = ["crates/*"]
-# exclude = ["python/client"]
+# The wasm query engine is its own workspace: its dependency graph patches the
+# arrow family (dropping C-backed parquet codecs) via [patch.crates-io], which
+# is workspace-global and must not leak into the native server build. See
+# crates/query-wasm/Cargo.toml.
+exclude = ["crates/query-wasm"]
 
 [workspace.package]
 edition = "2024"
