@@ -15,6 +15,8 @@
 target/
 /Cargo.lock
 integration-tests/Cargo.lock
+# wasm-bindgen output of `just build-query-wasm` (a build artifact)
+crates/query-wasm/pkg/
 
 # Project
 # Built Python wheels (maturin --out dist; see `just build-py-wheels`)

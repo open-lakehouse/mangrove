@@ -147,6 +147,30 @@ rest-ui *args: ui-build
 ui-build:
     npm run build --workspace @open-lakehouse/uc-app
 
+# one-time toolchain setup for the in-browser query engine (crates/query-wasm)
+[group('setup')]
+setup-wasm:
+    rustup target add wasm32-unknown-unknown
+    # The CLI's bindgen schema must exactly match the wasm-bindgen crate version
+    # in crates/query-wasm/Cargo.lock — keep the two pins in sync.
+    cargo install -f wasm-bindgen-cli --version 0.2.126 --locked
+
+# build the in-browser query engine into crates/query-wasm/pkg (gitignored).
+# Built from inside the crate so its own workspace, lockfile, and
+# .cargo/config.toml (wasm getrandom rustflags) apply.
+[group('build')]
+build-query-wasm:
+    cd crates/query-wasm && cargo build --target wasm32-unknown-unknown --release --locked
+    wasm-bindgen --target web --typescript \
+      --out-dir crates/query-wasm/pkg \
+      crates/query-wasm/target/wasm32-unknown-unknown/release/query_wasm.wasm
+
+# build the SPA with the in-browser wasm query engine + preview UI enabled
+# (default `ui-build` ships neither; see node/app/vite.config.ts)
+[group('build')]
+ui-build-wasm: build-query-wasm
+    VITE_ENABLE_WASM_QUERY=true VITE_ENABLE_PREVIEW=true npm run build --workspace @open-lakehouse/uc-app
+
 docs:
     npm run dev -w docs
 
