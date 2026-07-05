@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+// The neutral in-browser query contract for the Unity Catalog UI.
+//
+// This package is UPSTREAM-owned: it states the shape a query runner must
+// satisfy to feed the UI's table-preview grid, WITHOUT prescribing a transport.
+// Mangrove itself ships no runtime implementation — the future in-browser wasm
+// engine and downstream hosts (e.g. hydrofoil's ConnectRPC `QueryService`)
+// implement this contract. Keeping the contract here, upstream, keeps the
+// dependency arrow pointing the right way: downstream depends on this shape.
+//
+// Only TypeScript message types are generated from this proto (no service /
+// transport client). The UI's `@open-lakehouse/query` seam types its
+// `QueryRunner` against these messages; an implementing runner is registered at
+// runtime.
+//
+// Result framing mirrors a server-streaming RPC: a run yields a sequence of
+// `RunQueryResponse` messages, one per produced record batch. Each message's
+// `arrow_ipc` is a SELF-CONTAINED Arrow IPC stream (schema message + one batch +
+// EOS), so each decodes independently (`tableFromIPC`) and the client
+// concatenates rows. The first batch carries the schema; a query with no rows
+// still yields exactly one schema-only message.
+package open_lakehouse.query.v1;
+
+// A single SQL query to run.
+//
+// Field numbers 1-4 intentionally match `hydrofoil.query.v1.RunQueryRequest` so
+// a downstream host can implement this contract without a wire-shape mismatch.
+//
+// This contract deliberately carries no validation annotations (buf.validate /
+// field_behavior): it states message SHAPES only. `sql` is required and `limit`
+// is an optional row cap, but enforcement lives in the implementing runner's own
+// proto/server — mangrove generates TypeScript types, not a validating server.
+message RunQueryRequest {
+  // The SQL to execute. Required.
+  string sql = 1;
+
+  // Optional row cap. An implementing runner may clamp this to its own maximum;
+  // when omitted the runner applies its own default limit.
+  optional uint32 limit = 2;
+
+  // Optional session default namespace for bare table names in `sql`.
+  // Fully-qualified `catalog.schema.table` references resolve regardless.
+  optional string catalog = 3;
+  optional string schema = 4;
+}
+
+// One chunk of the result stream: a self-contained Arrow IPC stream for one
+// record batch (see the package docs for framing).
+message RunQueryResponse {
+  // Arrow IPC stream bytes for one record batch (schema + batch + EOS). The
+  // first message's bytes carry the schema, so an empty result still yields one
+  // schema-only message. Feeds `ArrowResultStore.append(ipc)` directly.
+  bytes arrow_ipc = 1;
+
+  // Rows in this chunk, so the client can show progress without decoding.
+  uint64 num_rows = 2;
+}

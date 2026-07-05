@@ -1,3 +1,4 @@
+import { QueryServiceProvider } from "@open-lakehouse/query";
 import {
   ThemeProvider,
   Toaster,
@@ -34,15 +35,21 @@ createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <UnityCatalogProvider client={ucClient}>
-        {/* Single-environment app: one stable scope namespace for the UC tree. */}
-        <EnvironmentScopeProvider scopeId="uc">
-          <ThemeProvider>
-            <TooltipProvider delayDuration={300}>
-              <RouterProvider router={router} />
-              <Toaster position="bottom-right" />
-            </TooltipProvider>
-          </ThemeProvider>
-        </EnvironmentScopeProvider>
+        {/* The preview seam. This standalone build registers NO query runner, so
+            the default service's runner throws and TableDetail keeps its preview
+            gated off (see @open-lakehouse/query). A host or the future wasm engine
+            registers a runner via registerQueryRunner to light it up. */}
+        <QueryServiceProvider>
+          {/* Single-environment app: one stable scope namespace for the UC tree. */}
+          <EnvironmentScopeProvider scopeId="uc">
+            <ThemeProvider>
+              <TooltipProvider delayDuration={300}>
+                <RouterProvider router={router} />
+                <Toaster position="bottom-right" />
+              </TooltipProvider>
+            </ThemeProvider>
+          </EnvironmentScopeProvider>
+        </QueryServiceProvider>
       </UnityCatalogProvider>
     </QueryClientProvider>
   </StrictMode>,

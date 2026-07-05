@@ -11,6 +11,7 @@
     "lint": "biome check ."
   },
   "dependencies": {
+    "@open-lakehouse/query": "^0.1.0",
     "@open-lakehouse/ui-kit": "^0.1.0",
     "@open-lakehouse/unity-catalog": "^0.1.0",
     "@open-lakehouse/unity-catalog-client": "^0.1.0",

@@ -1,0 +1,15 @@
+version: v2
+# The in-browser query contract (proto/query) generates TypeScript MESSAGE TYPES
+# ONLY — no service / transport client. Mangrove states the contract upstream;
+# the `@open-lakehouse/query` seam types its `QueryRunner` against these
+# messages, and a runtime runner (wasm engine or a downstream host) implements
+# the transport. Deliberately no `connect-es` plugin here: the transport is not
+# mangrove's concern (see proto/query/open_lakehouse/query/v1/svc.proto).
+managed:
+  enabled: true
+plugins:
+  - remote: buf.build/bufbuild/es:v2.12.1
+    out: node/query/src/gen
+    opt:
+      - target=ts
+      - json_types=false

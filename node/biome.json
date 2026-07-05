@@ -7,7 +7,8 @@
       "!**/dist/**/*",
       "!**/node_modules/**/*",
       "!**/unity-catalog-client/src/uc-api.d.ts",
-      "!**/unity-catalog/src/forms/schemas/**/*"
+      "!**/unity-catalog/src/forms/schemas/**/*",
+      "!**/query/src/gen/**/*"
     ]
   },
   "linter": {
@@ -44,6 +45,26 @@
                   {
                     "group": ["@open-lakehouse/unity-catalog"],
                     "message": "data-grid is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on data-grid, never the reverse."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["query/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@open-lakehouse/unity-catalog"],
+                    "message": "query is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on query, never the reverse."
                   }
                 ]
               }
