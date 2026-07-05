@@ -169,9 +169,8 @@ pub async fn discover_log(
     let checkpoint = match store.get(&last_checkpoint).await {
         Ok(result) => {
             let bytes = result.bytes().await?;
-            let hint: LastCheckpointHint = serde_json::from_slice(&bytes).map_err(|e| {
-                Error::InvalidResponse(format!("unparsable _last_checkpoint: {e}"))
-            })?;
+            let hint: LastCheckpointHint = serde_json::from_slice(&bytes)
+                .map_err(|e| Error::InvalidResponse(format!("unparsable _last_checkpoint: {e}")))?;
             Some(hint)
         }
         Err(object_store::Error::NotFound { .. }) => None,
