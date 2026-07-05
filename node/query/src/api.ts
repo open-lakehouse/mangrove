@@ -12,7 +12,7 @@
 // it when no provider is mounted.
 
 import { ArrowResultStore } from "@open-lakehouse/data-grid";
-import { queryRunner } from "./runner";
+import { queryRunner, queryRunnerSupports } from "./runner";
 import type {
   PreviewHandle,
   PreviewRequest,
@@ -121,12 +121,12 @@ export function createQueryService(): QueryService {
       const limit = req.limit ?? DEFAULT_PREVIEW_LIMIT;
       return new PreviewRun(req, limit);
     },
-    // Phase 0 is permissive: offer preview for any table the UI asks about. The
-    // real gating (Delta-only, no deletion vectors, no zstd) lands with the wasm
-    // engine that can actually read those. The feature flag + `hasQueryRunner`
-    // keep preview off in the standalone build regardless.
-    supports(_x: SupportsInput): boolean {
-      return true;
+    // Delegate to the registered runner's capability probe (permissive when it
+    // declares none): the runner knows what it can read — e.g. the wasm engine
+    // registers a Delta-only probe. The feature flag + `hasQueryRunner` keep
+    // preview off in the standalone build regardless.
+    supports(x: SupportsInput): boolean {
+      return queryRunnerSupports(x);
     },
   };
 }

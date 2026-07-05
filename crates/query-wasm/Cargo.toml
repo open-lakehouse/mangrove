@@ -1,0 +1,138 @@
+# The in-browser query engine (WASM_QUERY_PREVIEW.md Phase B): mangrove-specific
+# glue around `deltalake-wasm` — UC table resolution over the REST API, vended-
+# credential storage access, and a wasm-bindgen surface implementing the
+# `open_lakehouse.query.v1` runner contract.
+#
+# This is a STANDALONE workspace, deliberately excluded from the repo root
+# workspace: the wasm dependency graph pins deltalake-core/delta_kernel to the
+# wasm-compat forks and — crucially — carries a `[patch.crates-io]` on the arrow
+# family whose parquet build drops the C-backed zstd/brotli codecs. Patches are
+# workspace-global, so folding this crate into the root workspace would strip
+# zstd/brotli parquet support from mangrove's NATIVE server. Keeping a separate
+# workspace (own Cargo.lock) contains the fork pins to this crate.
+[workspace]
+
+[package]
+name = "olai-uc-query-wasm"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/open-lakehouse/mangrove"
+homepage = "https://unitycatalog.io"
+description = "In-browser (wasm32-unknown-unknown) Unity Catalog table preview engine: DataFusion + Delta over UC-vended credentials"
+# Floor set by the delta-rs wasm-engine dependency tree (see ../../Cargo.toml
+# for the root workspace's matching pin rationale).
+rust-version = "1.91"
+publish = false
+
+[lib]
+name = "query_wasm"
+crate-type = ["cdylib", "rlib"]
+
+# The delta-rs wasm engine: pinned to the same rev on the `wasm-core-compat`
+# branch of the roeap fork that WASM_QUERY_PREVIEW.md Phase A landed. Both deps
+# resolve from one git source so `Snapshot`/`DeltaScanNext` types unify with
+# what `deltalake-wasm` returns.
+[dependencies]
+deltalake-wasm = { git = "https://github.com/roeap/delta-rs", rev = "ed4242730a5a3eccbe0ccca5f66815ba704025b9" }
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "ed4242730a5a3eccbe0ccca5f66815ba704025b9", default-features = false, features = [
+  "datafusion",
+] }
+
+arrow-array = { version = "58" }
+arrow-ipc = { version = "58" }
+arrow-schema = { version = "58" }
+# Feature set copied from the delta-rs wasm workspace: default features minus
+# `compression` (async-compression pulls C codecs that cannot build for
+# wasm32-unknown-unknown).
+datafusion = { version = "54.0.0", default-features = false, features = [
+  "nested_expressions",
+  "crypto_expressions",
+  "datetime_expressions",
+  "encoding_expressions",
+  "regex_expressions",
+  "string_expressions",
+  "unicode_expressions",
+  "parquet",
+  "recursive_protection",
+  "sql",
+] }
+object_store = { version = "0.13.2" }
+
+futures = { version = "0.3" }
+percent-encoding = { version = "2" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0" }
+thiserror = { version = "2" }
+url = { version = "2.5" }
+
+# Native builds of deltalake-core require a TLS backend feature; the wasm target
+# needs none (the browser supplies fetch), so re-add it natively only. Mirrors
+# deltalake-wasm's own manifest.
+[target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "ed4242730a5a3eccbe0ccca5f66815ba704025b9", default-features = false, features = [
+  "datafusion",
+  "rustls",
+] }
+
+# wasm glue: the fetch-backed store, the UC REST client, and the wasm-bindgen
+# surface only exist on wasm32-unknown-unknown; everything else compiles (and is
+# tested) natively.
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+async-trait = { version = "0.1" }
+bytes = { version = "1" }
+chrono = { version = "0.4" }
+console_error_panic_hook = "0.1"
+js-sys = "0.3"
+# Kept at 0.13 to match the delta-rs wasm harness; wasm backend = browser fetch.
+reqwest = { version = "0.13", default-features = false, features = ["json"] }
+send_wrapper = { version = "0.6", features = ["futures"] }
+serde-wasm-bindgen = "0.6"
+# Pinned exactly: the wasm-bindgen CLI's schema must match this version (the
+# `just setup-wasm` recipe installs the same pin — bump both together).
+wasm-bindgen = "=0.2.126"
+wasm-bindgen-futures = "0.4"
+
+[dev-dependencies]
+arrow = { version = "58" }
+arrow-cast = { version = "58", features = ["prettyprint"] }
+
+# tokio's multi-threaded runtime does not compile for wasm; the native tests are
+# the only ones that need it (and the fixture generator writes parquet natively).
+[target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dev-dependencies]
+parquet = { version = "58", features = ["arrow"] }
+tokio = { version = "1.40", features = ["macros", "rt-multi-thread"] }
+
+# wasm-engine: patch parquet (and the arrow family it pins) to the
+# wasm-codec-58.3.0 branch of the arrow-rs fork, pinned by rev — the same patch
+# set as the delta-rs wasm workspace. That fork's parquet `default` features
+# drop the C-backed zstd/brotli codecs and target-gate arrow-ipc's zstd dep, so
+# the graph builds for wasm32-unknown-unknown. Same 58.3.0 version as crates.io.
+# This must stay a patch, not a feature flag: datafusion-datasource-parquet and
+# the kernel declare `parquet` without `default-features = false`, and Cargo
+# unions features graph-wide. See ../../WASM_QUERY_PREVIEW.md and delta-rs's
+# WASM.md for the full rationale.
+
+# The cdylib ships to browsers: optimize release for size. (Further shrinking —
+# wasm-opt -Oz, panic=abort — tracked with the browser-verification follow-up.)
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = "debuginfo"
+
+[patch.crates-io]
+parquet = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "parquet" }
+arrow = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow" }
+arrow-arith = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-arith" }
+arrow-array = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-array" }
+arrow-buffer = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-buffer" }
+arrow-cast = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-cast" }
+arrow-data = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-data" }
+arrow-ipc = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-ipc" }
+arrow-json = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-json" }
+arrow-ord = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-ord" }
+arrow-row = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-row" }
+arrow-schema = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-schema" }
+arrow-select = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-select" }
+arrow-string = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-string" }

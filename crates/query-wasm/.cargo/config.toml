@@ -1,0 +1,6 @@
+# getrandom 0.3 needs the JS backend selected via cfg on wasm32-unknown-unknown
+# (pulled transitively by uuid/rand in deltalake-core). Same setting as the
+# delta-rs wasm workspace. NOTE: cargo discovers this file from the CWD upward,
+# so build from inside crates/query-wasm (the just recipes do).
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg", 'getrandom_backend="wasm_js"']
