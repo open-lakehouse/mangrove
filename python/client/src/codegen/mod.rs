@@ -13,6 +13,8 @@ pub mod external_locations;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod functions;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
+pub mod policies;
+#[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod providers;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod recipients;
@@ -34,6 +36,7 @@ use crate::codegen::catalogs::PyCatalogClient;
 use crate::codegen::credentials::PyCredentialClient;
 use crate::codegen::external_locations::PyExternalLocationClient;
 use crate::codegen::functions::PyFunctionClient;
+use crate::codegen::policies::PyPolicyClient;
 use crate::codegen::providers::PyProviderClient;
 use crate::codegen::recipients::PyRecipientClient;
 use crate::codegen::schemas::PySchemaClient;
@@ -55,6 +58,7 @@ use unitycatalog_common::models::credentials::v1::*;
 use unitycatalog_common::models::delta_commits::v1::*;
 use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
+use unitycatalog_common::models::policies::v1::*;
 use unitycatalog_common::models::providers::v1::*;
 use unitycatalog_common::models::recipients::v1::*;
 use unitycatalog_common::models::schemas::v1::*;
@@ -1133,6 +1137,11 @@ impl PyUnityCatalogClient {
         let full_name = format!("{}.{}.{}", catalog_name, schema_name, function_name);
         PyFunctionClient {
             client: self.client.function_from_full_name(full_name),
+        }
+    }
+    pub fn policy(&self, policy_name: String) -> PyPolicyClient {
+        PyPolicyClient {
+            client: self.client.policy(policy_name),
         }
     }
     pub fn provider(&self, provider_name: String) -> PyProviderClient {

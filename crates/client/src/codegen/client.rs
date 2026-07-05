@@ -8,6 +8,7 @@ use crate::codegen::delta_commits::*;
 use crate::codegen::entity_tag_assignments::*;
 use crate::codegen::external_locations::*;
 use crate::codegen::functions::*;
+use crate::codegen::policies::*;
 use crate::codegen::providers::*;
 use crate::codegen::recipients::*;
 use crate::codegen::schemas::*;
@@ -25,6 +26,7 @@ use unitycatalog_common::models::credentials::v1::*;
 use unitycatalog_common::models::delta_commits::v1::*;
 use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
+use unitycatalog_common::models::policies::v1::*;
 use unitycatalog_common::models::providers::v1::*;
 use unitycatalog_common::models::recipients::v1::*;
 use unitycatalog_common::models::schemas::v1::*;
@@ -112,6 +114,13 @@ impl UnityCatalogClient {
     ///Low-level `functions` client exposing request/response passthrough methods.
     pub fn functions_client(&self) -> crate::codegen::functions::FunctionServiceClient {
         crate::codegen::functions::FunctionServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+    ///Low-level `policies` client exposing request/response passthrough methods.
+    pub fn policies_client(&self) -> crate::codegen::policies::PolicyServiceClient {
+        crate::codegen::policies::PolicyServiceClient::new(
             self.client.clone(),
             self.base_url.clone(),
         )
@@ -702,6 +711,41 @@ impl UnityCatalogClient {
         FunctionClient::from_full_name(
             full_name,
             crate::codegen::functions::FunctionServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+        )
+    }
+    /// List policies
+    ///
+    /// Gets an array of policies defined on the specified securable. There is no guarantee
+    /// of a specific ordering of the elements in the array.
+    ///
+    /// # Arguments
+    ///
+    /// * `on_securable_type` - The type of the securable to list policies on.
+    ///
+    /// Supported values: catalogs, schemas, tables.
+    /// * `on_securable_fullname` - The fully qualified name of the securable to list policies on.
+    pub fn list_policies(
+        &self,
+        on_securable_type: impl Into<String>,
+        on_securable_fullname: impl Into<String>,
+    ) -> ListPoliciesBuilder {
+        ListPoliciesBuilder::new(
+            crate::codegen::policies::PolicyServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            on_securable_type,
+            on_securable_fullname,
+        )
+    }
+    /// Access the `policy` resource scoped to the given name.
+    pub fn policy(&self, policy_name: impl Into<String>) -> PolicyClient {
+        PolicyClient::new(
+            policy_name,
+            crate::codegen::policies::PolicyServiceClient::new(
                 self.client.clone(),
                 self.base_url.clone(),
             ),

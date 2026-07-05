@@ -9,6 +9,7 @@ pub mod delta_commits;
 pub mod entity_tag_assignments;
 pub mod external_locations;
 pub mod functions;
+pub mod policies;
 pub mod providers;
 pub mod recipients;
 pub mod schemas;

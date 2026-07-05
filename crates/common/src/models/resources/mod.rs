@@ -24,6 +24,7 @@ pub enum ResourceIdent {
     Function(ResourceRef),
     TagPolicy(ResourceRef),
     StagingTable(ResourceRef),
+    PolicyInfo(ResourceRef),
 }
 
 impl ResourceIdent {
@@ -94,6 +95,10 @@ impl ResourceIdent {
     pub fn staging_table(name: impl Into<ResourceRef>) -> Self {
         Self::StagingTable(name.into())
     }
+
+    pub fn policy_info(name: impl Into<ResourceRef>) -> Self {
+        Self::PolicyInfo(name.into())
+    }
 }
 
 impl std::fmt::Display for ResourceIdent {
@@ -114,6 +119,7 @@ impl std::fmt::Display for ResourceIdent {
             ResourceIdent::Function(r) => write!(f, "function:{}", r),
             ResourceIdent::TagPolicy(r) => write!(f, "tag_policy:{}", r),
             ResourceIdent::StagingTable(r) => write!(f, "staging_table:{}", r),
+            ResourceIdent::PolicyInfo(r) => write!(f, "policy_info:{}", r),
         }
     }
 }
@@ -136,6 +142,7 @@ impl AsRef<ResourceRef> for ResourceIdent {
             ResourceIdent::Function(r) => r,
             ResourceIdent::TagPolicy(r) => r,
             ResourceIdent::StagingTable(r) => r,
+            ResourceIdent::PolicyInfo(r) => r,
         }
     }
 }
@@ -158,6 +165,7 @@ impl AsRef<ObjectLabel> for ResourceIdent {
             ResourceIdent::Function(_) => &ObjectLabel::Function,
             ResourceIdent::TagPolicy(_) => &ObjectLabel::TagPolicy,
             ResourceIdent::StagingTable(_) => &ObjectLabel::StagingTable,
+            ResourceIdent::PolicyInfo(_) => &ObjectLabel::PolicyInfo,
         }
     }
 }
@@ -180,6 +188,7 @@ impl From<ResourceIdent> for ResourceRef {
             ResourceIdent::Function(r) => r,
             ResourceIdent::TagPolicy(r) => r,
             ResourceIdent::StagingTable(r) => r,
+            ResourceIdent::PolicyInfo(r) => r,
         }
     }
 }
@@ -242,6 +251,7 @@ impl ObjectLabel {
             ObjectLabel::Function => ResourceIdent::function(id),
             ObjectLabel::TagPolicy => ResourceIdent::tag_policy(id),
             ObjectLabel::StagingTable => ResourceIdent::staging_table(id),
+            ObjectLabel::PolicyInfo => ResourceIdent::policy_info(id),
         }
     }
 }

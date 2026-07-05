@@ -5,6 +5,7 @@ pub use codegen::catalogs::CatalogClient;
 pub use codegen::credentials::CredentialClient;
 pub use codegen::external_locations::ExternalLocationClient;
 pub use codegen::functions::FunctionClient;
+pub use codegen::policies::PolicyClient;
 pub use codegen::providers::ProviderClient;
 pub use codegen::recipients::RecipientClient;
 pub use codegen::schemas::SchemaClient;

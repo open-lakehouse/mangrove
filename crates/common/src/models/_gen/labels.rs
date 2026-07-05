@@ -10,6 +10,7 @@ pub enum Resource {
     Credential(super::credentials::v1::Credential),
     ExternalLocation(super::external_locations::v1::ExternalLocation),
     Function(super::functions::v1::Function),
+    PolicyInfo(super::policies::v1::PolicyInfo),
     Provider(super::providers::v1::Provider),
     Recipient(super::recipients::v1::Recipient),
     Schema(super::schemas::v1::Schema),
@@ -51,6 +52,7 @@ pub enum ObjectLabel {
     Credential,
     ExternalLocation,
     Function,
+    PolicyInfo,
     Provider,
     Recipient,
     Schema,
@@ -71,6 +73,7 @@ impl Resource {
             Resource::Credential(_) => &ObjectLabel::Credential,
             Resource::ExternalLocation(_) => &ObjectLabel::ExternalLocation,
             Resource::Function(_) => &ObjectLabel::Function,
+            Resource::PolicyInfo(_) => &ObjectLabel::PolicyInfo,
             Resource::Provider(_) => &ObjectLabel::Provider,
             Resource::Recipient(_) => &ObjectLabel::Recipient,
             Resource::Schema(_) => &ObjectLabel::Schema,
@@ -197,6 +200,23 @@ impl TryFrom<Resource> for super::functions::v1::Function {
             _ => Err(<crate::Error>::generic(concat!(
                 "Resource is not a ",
                 stringify!(Function)
+            ))),
+        }
+    }
+}
+impl From<super::policies::v1::PolicyInfo> for Resource {
+    fn from(v: super::policies::v1::PolicyInfo) -> Self {
+        Resource::PolicyInfo(v)
+    }
+}
+impl TryFrom<Resource> for super::policies::v1::PolicyInfo {
+    type Error = crate::Error;
+    fn try_from(r: Resource) -> Result<Self, Self::Error> {
+        match r {
+            Resource::PolicyInfo(v) => Ok(v),
+            _ => Err(<crate::Error>::generic(concat!(
+                "Resource is not a ",
+                stringify!(PolicyInfo)
             ))),
         }
     }
@@ -645,6 +665,51 @@ impl ResourceExt for super::functions::v1::Function {
         (ObjectLabel::Function).to_ident(self.resource_ref())
     }
 }
+impl TryFrom<Object> for super::policies::v1::PolicyInfo {
+    type Error = Error;
+    fn try_from(object: Object) -> Result<Self, Self::Error> {
+        let props = object
+            .properties
+            .ok_or_else(|| Error::generic("expected properties"))?;
+        let mut res: super::policies::v1::PolicyInfo = ::serde_json::from_value(props)?;
+        res.id = Some(object.id.hyphenated().to_string());
+        Ok(res)
+    }
+}
+impl TryFrom<super::policies::v1::PolicyInfo> for Object {
+    type Error = Error;
+    fn try_from(obj: super::policies::v1::PolicyInfo) -> Result<Self, Self::Error> {
+        let id = obj
+            .id
+            .as_ref()
+            .map(|id| ::uuid::Uuid::parse_str(id))
+            .transpose()?
+            .unwrap_or_else(::uuid::Uuid::nil);
+        Ok(Object {
+            id,
+            name: obj.resource_name(),
+            label: ObjectLabel::PolicyInfo,
+            properties: Some(::serde_json::to_value(obj)?),
+            updated_at: None,
+            created_at: chrono::Utc::now(),
+        })
+    }
+}
+impl ResourceExt for super::policies::v1::PolicyInfo {
+    fn resource_name(&self) -> ResourceName {
+        ResourceName::new([&self.name])
+    }
+    fn resource_ref(&self) -> ResourceRef {
+        self.id
+            .as_ref()
+            .and_then(|id| ::uuid::Uuid::parse_str(id).ok())
+            .map(ResourceRef::Uuid)
+            .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
+    }
+    fn resource_ident(&self) -> ResourceIdent {
+        (ObjectLabel::PolicyInfo).to_ident(self.resource_ref())
+    }
+}
 impl TryFrom<Object> for super::providers::v1::Provider {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -1033,6 +1098,12 @@ impl super::functions::v1::Function {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
+    }
+}
+impl super::policies::v1::PolicyInfo {
+    /// Returns the fully-qualified dot-separated name computed from component fields.
+    pub fn qualified_name(&self) -> String {
+        self.name.clone()
     }
 }
 impl super::providers::v1::Provider {
@@ -1615,6 +1686,65 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
         ],
         path_names: &["catalog_name", "schema_name", "name"],
         parent_label: Some(ObjectLabel::Catalog),
+    },
+    ::olai_store::ResourceTypeDescriptor {
+        label: ObjectLabel::PolicyInfo,
+        fields: &[
+            ::olai_store::ResourceFieldDescriptor {
+                name: "name",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "id",
+                role: ::olai_store::FieldRole::Identifier,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "on_securable_type",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "on_securable_fullname",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "policy_type",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "to_principals",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "except_principals",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "when_condition",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "match_columns",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "comment",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "created_at",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "updated_at",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "function",
+                role: ::olai_store::FieldRole::Data,
+            },
+        ],
+        path_names: &["name"],
+        parent_label: None,
     },
     ::olai_store::ResourceTypeDescriptor {
         label: ObjectLabel::Provider,

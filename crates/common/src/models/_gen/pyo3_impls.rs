@@ -382,6 +382,43 @@ impl ::core::convert::From<PySqlDataAccess> for super::functions::v1::SqlDataAcc
     }
 }
 #[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "PolicyType")]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyPolicyType {
+    POLICY_TYPE_UNSPECIFIED = 0isize,
+    POLICY_TYPE_ROW_FILTER = 1isize,
+    POLICY_TYPE_COLUMN_MASK = 2isize,
+}
+impl PyPolicyType {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyPolicyType::POLICY_TYPE_UNSPECIFIED => 0i32,
+            PyPolicyType::POLICY_TYPE_ROW_FILTER => 1i32,
+            PyPolicyType::POLICY_TYPE_COLUMN_MASK => 2i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyPolicyType::POLICY_TYPE_UNSPECIFIED,
+            1i32 => PyPolicyType::POLICY_TYPE_ROW_FILTER,
+            2i32 => PyPolicyType::POLICY_TYPE_COLUMN_MASK,
+            _ => PyPolicyType::POLICY_TYPE_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::policies::v1::PolicyType> for PyPolicyType {
+    fn from(value: super::policies::v1::PolicyType) -> Self {
+        PyPolicyType::__from_proto_i32(value as i32)
+    }
+}
+impl ::core::convert::From<PyPolicyType> for super::policies::v1::PolicyType {
+    fn from(value: PyPolicyType) -> Self {
+        let n = value.__to_proto_i32();
+        <super::policies::v1::PolicyType as ::core::convert::TryFrom<i32>>::try_from(n)
+            .unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
 #[::pyo3::pyclass(eq, eq_int, name = "ProviderAuthenticationType")]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum PyProviderAuthenticationType {
@@ -7323,6 +7360,828 @@ impl ::core::convert::From<PyUpdateFunctionRequest>
     for super::functions::v1::UpdateFunctionRequest
 {
     fn from(value: PyUpdateFunctionRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "CreatePolicyRequest")]
+#[derive(Clone, Debug)]
+pub struct PyCreatePolicyRequest(pub super::policies::v1::CreatePolicyRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyCreatePolicyRequest {
+    #[new]
+    #[pyo3(
+        signature = (
+            on_securable_type = None,
+            on_securable_fullname = None,
+            policy_info = None
+        )
+    )]
+    fn new(
+        on_securable_type: ::core::option::Option<::std::string::String>,
+        on_securable_fullname: ::core::option::Option<::std::string::String>,
+        policy_info: ::core::option::Option<PyPolicyInfo>,
+    ) -> Self {
+        let mut inner =
+            <super::policies::v1::CreatePolicyRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = on_securable_type {
+            inner.on_securable_type = value;
+        }
+        if let ::core::option::Option::Some(value) = on_securable_fullname {
+            inner.on_securable_fullname = value;
+        }
+        {
+            let value = policy_info;
+            inner.policy_info = value.map(|w| w.into());
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn on_securable_type(&self) -> ::std::string::String {
+        self.0.on_securable_type.clone()
+    }
+    #[getter]
+    fn on_securable_fullname(&self) -> ::std::string::String {
+        self.0.on_securable_fullname.clone()
+    }
+    #[getter]
+    fn policy_info(&self) -> ::core::option::Option<PyPolicyInfo> {
+        self.0.policy_info.clone().map(PyPolicyInfo::from)
+    }
+    #[setter(on_securable_type)]
+    fn set_on_securable_type(&mut self, value: ::std::string::String) {
+        self.0.on_securable_type = value;
+    }
+    #[setter(on_securable_fullname)]
+    fn set_on_securable_fullname(&mut self, value: ::std::string::String) {
+        self.0.on_securable_fullname = value;
+    }
+    #[setter(policy_info)]
+    fn set_policy_info(&mut self, value: ::core::option::Option<PyPolicyInfo>) {
+        self.0.policy_info = value.map(|w| w.into());
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::CreatePolicyRequest> for PyCreatePolicyRequest {
+    fn from(value: super::policies::v1::CreatePolicyRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyCreatePolicyRequest> for super::policies::v1::CreatePolicyRequest {
+    fn from(value: PyCreatePolicyRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "DeletePolicyRequest")]
+#[derive(Clone, Debug)]
+pub struct PyDeletePolicyRequest(pub super::policies::v1::DeletePolicyRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyDeletePolicyRequest {
+    #[new]
+    #[pyo3(
+        signature = (on_securable_type = None, on_securable_fullname = None, name = None)
+    )]
+    fn new(
+        on_securable_type: ::core::option::Option<::std::string::String>,
+        on_securable_fullname: ::core::option::Option<::std::string::String>,
+        name: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::policies::v1::DeletePolicyRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = on_securable_type {
+            inner.on_securable_type = value;
+        }
+        if let ::core::option::Option::Some(value) = on_securable_fullname {
+            inner.on_securable_fullname = value;
+        }
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn on_securable_type(&self) -> ::std::string::String {
+        self.0.on_securable_type.clone()
+    }
+    #[getter]
+    fn on_securable_fullname(&self) -> ::std::string::String {
+        self.0.on_securable_fullname.clone()
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[setter(on_securable_type)]
+    fn set_on_securable_type(&mut self, value: ::std::string::String) {
+        self.0.on_securable_type = value;
+    }
+    #[setter(on_securable_fullname)]
+    fn set_on_securable_fullname(&mut self, value: ::std::string::String) {
+        self.0.on_securable_fullname = value;
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::DeletePolicyRequest> for PyDeletePolicyRequest {
+    fn from(value: super::policies::v1::DeletePolicyRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyDeletePolicyRequest> for super::policies::v1::DeletePolicyRequest {
+    fn from(value: PyDeletePolicyRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "FunctionArg")]
+#[derive(Clone, Debug)]
+pub struct PyFunctionArg(pub super::policies::v1::FunctionArg);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyFunctionArg {
+    #[new]
+    fn new() -> Self {
+        Self(::core::default::Default::default())
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::FunctionArg> for PyFunctionArg {
+    fn from(value: super::policies::v1::FunctionArg) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyFunctionArg> for super::policies::v1::FunctionArg {
+    fn from(value: PyFunctionArg) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "FunctionRef")]
+#[derive(Clone, Debug)]
+pub struct PyFunctionRef(pub super::policies::v1::FunctionRef);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyFunctionRef {
+    #[new]
+    #[pyo3(signature = (function_name = None, using = None))]
+    fn new(
+        function_name: ::core::option::Option<::std::string::String>,
+        using: ::core::option::Option<::std::vec::Vec<PyFunctionArg>>,
+    ) -> Self {
+        let mut inner = <super::policies::v1::FunctionRef as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = function_name {
+            inner.function_name = value;
+        }
+        if let ::core::option::Option::Some(value) = using {
+            inner.using = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn function_name(&self) -> ::std::string::String {
+        self.0.function_name.clone()
+    }
+    #[getter]
+    fn using(&self) -> ::std::vec::Vec<PyFunctionArg> {
+        self.0
+            .using
+            .iter()
+            .cloned()
+            .map(PyFunctionArg::from)
+            .collect()
+    }
+    #[setter(function_name)]
+    fn set_function_name(&mut self, value: ::std::string::String) {
+        self.0.function_name = value;
+    }
+    #[setter(using)]
+    fn set_using(&mut self, value: ::std::vec::Vec<PyFunctionArg>) {
+        self.0.using = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::FunctionRef> for PyFunctionRef {
+    fn from(value: super::policies::v1::FunctionRef) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyFunctionRef> for super::policies::v1::FunctionRef {
+    fn from(value: PyFunctionRef) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "GetPolicyRequest")]
+#[derive(Clone, Debug)]
+pub struct PyGetPolicyRequest(pub super::policies::v1::GetPolicyRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGetPolicyRequest {
+    #[new]
+    #[pyo3(
+        signature = (on_securable_type = None, on_securable_fullname = None, name = None)
+    )]
+    fn new(
+        on_securable_type: ::core::option::Option<::std::string::String>,
+        on_securable_fullname: ::core::option::Option<::std::string::String>,
+        name: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::policies::v1::GetPolicyRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = on_securable_type {
+            inner.on_securable_type = value;
+        }
+        if let ::core::option::Option::Some(value) = on_securable_fullname {
+            inner.on_securable_fullname = value;
+        }
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn on_securable_type(&self) -> ::std::string::String {
+        self.0.on_securable_type.clone()
+    }
+    #[getter]
+    fn on_securable_fullname(&self) -> ::std::string::String {
+        self.0.on_securable_fullname.clone()
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[setter(on_securable_type)]
+    fn set_on_securable_type(&mut self, value: ::std::string::String) {
+        self.0.on_securable_type = value;
+    }
+    #[setter(on_securable_fullname)]
+    fn set_on_securable_fullname(&mut self, value: ::std::string::String) {
+        self.0.on_securable_fullname = value;
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::GetPolicyRequest> for PyGetPolicyRequest {
+    fn from(value: super::policies::v1::GetPolicyRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyGetPolicyRequest> for super::policies::v1::GetPolicyRequest {
+    fn from(value: PyGetPolicyRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListPoliciesRequest")]
+#[derive(Clone, Debug)]
+pub struct PyListPoliciesRequest(pub super::policies::v1::ListPoliciesRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListPoliciesRequest {
+    #[new]
+    #[pyo3(
+        signature = (
+            on_securable_type = None,
+            on_securable_fullname = None,
+            include_inherited = None,
+            max_results = None,
+            page_token = None
+        )
+    )]
+    fn new(
+        on_securable_type: ::core::option::Option<::std::string::String>,
+        on_securable_fullname: ::core::option::Option<::std::string::String>,
+        include_inherited: ::core::option::Option<bool>,
+        max_results: ::core::option::Option<i32>,
+        page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::policies::v1::ListPoliciesRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = on_securable_type {
+            inner.on_securable_type = value;
+        }
+        if let ::core::option::Option::Some(value) = on_securable_fullname {
+            inner.on_securable_fullname = value;
+        }
+        {
+            let value = include_inherited;
+            inner.include_inherited = value;
+        }
+        {
+            let value = max_results;
+            inner.max_results = value;
+        }
+        {
+            let value = page_token;
+            inner.page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn on_securable_type(&self) -> ::std::string::String {
+        self.0.on_securable_type.clone()
+    }
+    #[getter]
+    fn on_securable_fullname(&self) -> ::std::string::String {
+        self.0.on_securable_fullname.clone()
+    }
+    #[getter]
+    fn include_inherited(&self) -> ::core::option::Option<bool> {
+        self.0.include_inherited
+    }
+    #[getter]
+    fn max_results(&self) -> ::core::option::Option<i32> {
+        self.0.max_results
+    }
+    #[getter]
+    fn page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.page_token.clone()
+    }
+    #[setter(on_securable_type)]
+    fn set_on_securable_type(&mut self, value: ::std::string::String) {
+        self.0.on_securable_type = value;
+    }
+    #[setter(on_securable_fullname)]
+    fn set_on_securable_fullname(&mut self, value: ::std::string::String) {
+        self.0.on_securable_fullname = value;
+    }
+    #[setter(include_inherited)]
+    fn set_include_inherited(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_inherited = value;
+    }
+    #[setter(max_results)]
+    fn set_max_results(&mut self, value: ::core::option::Option<i32>) {
+        self.0.max_results = value;
+    }
+    #[setter(page_token)]
+    fn set_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::ListPoliciesRequest> for PyListPoliciesRequest {
+    fn from(value: super::policies::v1::ListPoliciesRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListPoliciesRequest> for super::policies::v1::ListPoliciesRequest {
+    fn from(value: PyListPoliciesRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListPoliciesResponse")]
+#[derive(Clone, Debug)]
+pub struct PyListPoliciesResponse(pub super::policies::v1::ListPoliciesResponse);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListPoliciesResponse {
+    #[new]
+    #[pyo3(signature = (policies = None, next_page_token = None))]
+    fn new(
+        policies: ::core::option::Option<::std::vec::Vec<PyPolicyInfo>>,
+        next_page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::policies::v1::ListPoliciesResponse as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = policies {
+            inner.policies = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = next_page_token;
+            inner.next_page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn policies(&self) -> ::std::vec::Vec<PyPolicyInfo> {
+        self.0
+            .policies
+            .iter()
+            .cloned()
+            .map(PyPolicyInfo::from)
+            .collect()
+    }
+    #[getter]
+    fn next_page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.next_page_token.clone()
+    }
+    #[setter(policies)]
+    fn set_policies(&mut self, value: ::std::vec::Vec<PyPolicyInfo>) {
+        self.0.policies = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(next_page_token)]
+    fn set_next_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.next_page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::ListPoliciesResponse> for PyListPoliciesResponse {
+    fn from(value: super::policies::v1::ListPoliciesResponse) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListPoliciesResponse> for super::policies::v1::ListPoliciesResponse {
+    fn from(value: PyListPoliciesResponse) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "MatchColumn")]
+#[derive(Clone, Debug)]
+pub struct PyMatchColumn(pub super::policies::v1::MatchColumn);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyMatchColumn {
+    #[new]
+    #[pyo3(signature = (alias = None, condition = None))]
+    fn new(
+        alias: ::core::option::Option<::std::string::String>,
+        condition: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner = <super::policies::v1::MatchColumn as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = alias {
+            inner.alias = value;
+        }
+        if let ::core::option::Option::Some(value) = condition {
+            inner.condition = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn alias(&self) -> ::std::string::String {
+        self.0.alias.clone()
+    }
+    #[getter]
+    fn condition(&self) -> ::std::string::String {
+        self.0.condition.clone()
+    }
+    #[setter(alias)]
+    fn set_alias(&mut self, value: ::std::string::String) {
+        self.0.alias = value;
+    }
+    #[setter(condition)]
+    fn set_condition(&mut self, value: ::std::string::String) {
+        self.0.condition = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::MatchColumn> for PyMatchColumn {
+    fn from(value: super::policies::v1::MatchColumn) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyMatchColumn> for super::policies::v1::MatchColumn {
+    fn from(value: PyMatchColumn) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "PolicyInfo")]
+#[derive(Clone, Debug)]
+pub struct PyPolicyInfo(pub super::policies::v1::PolicyInfo);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyPolicyInfo {
+    #[new]
+    #[pyo3(
+        signature = (
+            name = None,
+            id = None,
+            on_securable_type = None,
+            on_securable_fullname = None,
+            policy_type = None,
+            to_principals = None,
+            except_principals = None,
+            when_condition = None,
+            match_columns = None,
+            comment = None,
+            created_at = None,
+            updated_at = None
+        )
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        id: ::core::option::Option<::std::string::String>,
+        on_securable_type: ::core::option::Option<::std::string::String>,
+        on_securable_fullname: ::core::option::Option<::std::string::String>,
+        policy_type: ::core::option::Option<PyPolicyType>,
+        to_principals: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        except_principals: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        when_condition: ::core::option::Option<::std::string::String>,
+        match_columns: ::core::option::Option<::std::vec::Vec<PyMatchColumn>>,
+        comment: ::core::option::Option<::std::string::String>,
+        created_at: ::core::option::Option<i64>,
+        updated_at: ::core::option::Option<i64>,
+    ) -> Self {
+        let mut inner = <super::policies::v1::PolicyInfo as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        {
+            let value = id;
+            inner.id = value;
+        }
+        if let ::core::option::Option::Some(value) = on_securable_type {
+            inner.on_securable_type = value;
+        }
+        if let ::core::option::Option::Some(value) = on_securable_fullname {
+            inner.on_securable_fullname = value;
+        }
+        if let ::core::option::Option::Some(value) = policy_type {
+            inner.policy_type =
+                <super::policies::v1::PolicyType as ::core::convert::From<_>>::from(value) as i32;
+        }
+        if let ::core::option::Option::Some(value) = to_principals {
+            inner.to_principals = value;
+        }
+        if let ::core::option::Option::Some(value) = except_principals {
+            inner.except_principals = value;
+        }
+        {
+            let value = when_condition;
+            inner.when_condition = value;
+        }
+        if let ::core::option::Option::Some(value) = match_columns {
+            inner.match_columns = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = created_at;
+            inner.created_at = value;
+        }
+        {
+            let value = updated_at;
+            inner.updated_at = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn id(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.id.clone()
+    }
+    #[getter]
+    fn on_securable_type(&self) -> ::std::string::String {
+        self.0.on_securable_type.clone()
+    }
+    #[getter]
+    fn on_securable_fullname(&self) -> ::std::string::String {
+        self.0.on_securable_fullname.clone()
+    }
+    #[getter]
+    fn policy_type(&self) -> PyPolicyType {
+        PyPolicyType::from(
+            <super::policies::v1::PolicyType as ::core::convert::TryFrom<i32>>::try_from(
+                self.0.policy_type,
+            )
+            .unwrap_or_default(),
+        )
+    }
+    #[getter]
+    fn to_principals(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.to_principals.clone()
+    }
+    #[getter]
+    fn except_principals(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.except_principals.clone()
+    }
+    #[getter]
+    fn when_condition(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.when_condition.clone()
+    }
+    #[getter]
+    fn match_columns(&self) -> ::std::vec::Vec<PyMatchColumn> {
+        self.0
+            .match_columns
+            .iter()
+            .cloned()
+            .map(PyMatchColumn::from)
+            .collect()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn created_at(&self) -> ::core::option::Option<i64> {
+        self.0.created_at
+    }
+    #[getter]
+    fn updated_at(&self) -> ::core::option::Option<i64> {
+        self.0.updated_at
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(id)]
+    fn set_id(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.id = value;
+    }
+    #[setter(on_securable_type)]
+    fn set_on_securable_type(&mut self, value: ::std::string::String) {
+        self.0.on_securable_type = value;
+    }
+    #[setter(on_securable_fullname)]
+    fn set_on_securable_fullname(&mut self, value: ::std::string::String) {
+        self.0.on_securable_fullname = value;
+    }
+    #[setter(policy_type)]
+    fn set_policy_type(&mut self, value: PyPolicyType) {
+        self.0.policy_type =
+            <super::policies::v1::PolicyType as ::core::convert::From<_>>::from(value) as i32;
+    }
+    #[setter(to_principals)]
+    fn set_to_principals(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.to_principals = value;
+    }
+    #[setter(except_principals)]
+    fn set_except_principals(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.except_principals = value;
+    }
+    #[setter(when_condition)]
+    fn set_when_condition(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.when_condition = value;
+    }
+    #[setter(match_columns)]
+    fn set_match_columns(&mut self, value: ::std::vec::Vec<PyMatchColumn>) {
+        self.0.match_columns = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(created_at)]
+    fn set_created_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.created_at = value;
+    }
+    #[setter(updated_at)]
+    fn set_updated_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.updated_at = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::PolicyInfo> for PyPolicyInfo {
+    fn from(value: super::policies::v1::PolicyInfo) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyPolicyInfo> for super::policies::v1::PolicyInfo {
+    fn from(value: PyPolicyInfo) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "UpdatePolicyRequest")]
+#[derive(Clone, Debug)]
+pub struct PyUpdatePolicyRequest(pub super::policies::v1::UpdatePolicyRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyUpdatePolicyRequest {
+    #[new]
+    #[pyo3(
+        signature = (
+            on_securable_type = None,
+            on_securable_fullname = None,
+            name = None,
+            policy_info = None,
+            update_mask = None
+        )
+    )]
+    fn new(
+        on_securable_type: ::core::option::Option<::std::string::String>,
+        on_securable_fullname: ::core::option::Option<::std::string::String>,
+        name: ::core::option::Option<::std::string::String>,
+        policy_info: ::core::option::Option<PyPolicyInfo>,
+        update_mask: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::policies::v1::UpdatePolicyRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = on_securable_type {
+            inner.on_securable_type = value;
+        }
+        if let ::core::option::Option::Some(value) = on_securable_fullname {
+            inner.on_securable_fullname = value;
+        }
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        {
+            let value = policy_info;
+            inner.policy_info = value.map(|w| w.into());
+        }
+        {
+            let value = update_mask;
+            inner.update_mask = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn on_securable_type(&self) -> ::std::string::String {
+        self.0.on_securable_type.clone()
+    }
+    #[getter]
+    fn on_securable_fullname(&self) -> ::std::string::String {
+        self.0.on_securable_fullname.clone()
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn policy_info(&self) -> ::core::option::Option<PyPolicyInfo> {
+        self.0.policy_info.clone().map(PyPolicyInfo::from)
+    }
+    #[getter]
+    fn update_mask(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.update_mask.clone()
+    }
+    #[setter(on_securable_type)]
+    fn set_on_securable_type(&mut self, value: ::std::string::String) {
+        self.0.on_securable_type = value;
+    }
+    #[setter(on_securable_fullname)]
+    fn set_on_securable_fullname(&mut self, value: ::std::string::String) {
+        self.0.on_securable_fullname = value;
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(policy_info)]
+    fn set_policy_info(&mut self, value: ::core::option::Option<PyPolicyInfo>) {
+        self.0.policy_info = value.map(|w| w.into());
+    }
+    #[setter(update_mask)]
+    fn set_update_mask(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.update_mask = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::UpdatePolicyRequest> for PyUpdatePolicyRequest {
+    fn from(value: super::policies::v1::UpdatePolicyRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyUpdatePolicyRequest> for super::policies::v1::UpdatePolicyRequest {
+    fn from(value: PyUpdatePolicyRequest) -> Self {
         value.0
     }
 }

@@ -6,6 +6,7 @@ pub mod catalogs;
 pub mod credentials;
 pub mod external_locations;
 pub mod functions;
+pub mod policies;
 pub mod providers;
 pub mod recipients;
 pub mod schemas;
@@ -20,6 +21,7 @@ use crate::codegen::catalogs::NapiCatalogClient;
 use crate::codegen::credentials::NapiCredentialClient;
 use crate::codegen::external_locations::NapiExternalLocationClient;
 use crate::codegen::functions::NapiFunctionClient;
+use crate::codegen::policies::NapiPolicyClient;
 use crate::codegen::providers::NapiProviderClient;
 use crate::codegen::recipients::NapiRecipientClient;
 use crate::codegen::schemas::NapiSchemaClient;
@@ -44,6 +46,7 @@ use unitycatalog_common::models::credentials::v1::*;
 use unitycatalog_common::models::delta_commits::v1::*;
 use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
+use unitycatalog_common::models::policies::v1::*;
 use unitycatalog_common::models::providers::v1::*;
 use unitycatalog_common::models::recipients::v1::*;
 use unitycatalog_common::models::schemas::v1::*;
@@ -1115,6 +1118,12 @@ impl NapiUnityCatalogClient {
         let full_name = format!("{}.{}.{}", catalog_name, schema_name, function_name);
         NapiFunctionClient {
             client: self.client.function_from_full_name(full_name),
+        }
+    }
+    #[napi]
+    pub fn policy(&self, policy_name: String) -> NapiPolicyClient {
+        NapiPolicyClient {
+            client: self.client.policy(policy_name),
         }
     }
     #[napi]

@@ -19,6 +19,8 @@ import {
   GetCommitsResponseSchema,
   type ListEntityTagAssignmentsResponse,
   ListEntityTagAssignmentsResponseSchema,
+  type PolicyInfo,
+  PolicyInfoSchema,
   type Provider,
   ProviderSchema,
   type Recipient,
@@ -46,6 +48,7 @@ import {
   type NapiCredentialClient as NativeCredentialClient,
   type NapiExternalLocationClient as NativeExternalLocationClient,
   type NapiFunctionClient as NativeFunctionClient,
+  type NapiPolicyClient as NativePolicyClient,
   type NapiProviderClient as NativeProviderClient,
   type NapiRecipientClient as NativeRecipientClient,
   type NapiSchemaClient as NativeSchemaClient,
@@ -422,6 +425,23 @@ export interface UpdateFunctionOptions {
 export interface DeleteFunctionOptions {
   /** Force deletion even if the function is not empty. */
   force?: boolean;
+}
+
+export interface ListPoliciesOptions {
+  /** When true, also return policies defined on the securable's ancestors
+   *  (e.g. for a table: its schema and catalog). Each returned PolicyInfo still
+   *  carries its own on_securable_type / on_securable_fullname, so callers can see
+   *  where it was defined. */
+  includeInherited?: boolean;
+  /** The maximum number of results per page that should be returned. */
+  maxResults?: number;
+  /** Opaque pagination token to go to next page based on previous query. */
+  pageToken?: string;
+}
+
+export interface UpdatePolicyOptions {
+  /** The list of fields to update, as a comma-separated string. */
+  updateMask?: string;
 }
 
 export interface ListProvidersOptions {
@@ -998,6 +1018,64 @@ export class FunctionClient {
   }
 }
 
+export class PolicyClient {
+  private readonly inner: NativePolicyClient;
+
+  /** @internal */
+  constructor(inner: NativePolicyClient) {
+    this.inner = inner;
+  }
+
+  /**
+   * Get a policy
+   *
+   * Gets the policy that matches the supplied name, defined on the specified securable.
+   */
+  async get(): Promise<PolicyInfo> {
+    try {
+      return fromBinary(PolicyInfoSchema, await this.inner.get());
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * Update a policy
+   *
+   * Updates the policy that matches the supplied name, defined on the specified securable.
+   */
+  async update(
+    policyInfo: PolicyInfo,
+    options?: UpdatePolicyOptions,
+  ): Promise<PolicyInfo> {
+    const { updateMask } = options || {};
+    try {
+      return fromBinary(
+        PolicyInfoSchema,
+        await this.inner.update(
+          Buffer.from(toBinary(PolicyInfoSchema, policyInfo)),
+          updateMask,
+        ),
+      );
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * Delete a policy
+   *
+   * Deletes the policy that matches the supplied name, defined on the specified securable.
+   */
+  async delete(): Promise<void> {
+    try {
+      await this.inner.delete();
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+}
+
 export class ProviderClient {
   private readonly inner: NativeProviderClient;
 
@@ -1206,7 +1284,7 @@ export class ShareClient {
 
 export class StagingTableClient {
   /** @internal */
-  constructor(readonly inner: NativeStagingTableClient) {}
+  constructor(private readonly inner: NativeStagingTableClient) {}
 }
 
 export class TableClient {
@@ -1996,6 +2074,10 @@ export class UnityCatalogClient {
     return new FunctionClient(
       this.inner.function(catalogName, schemaName, functionName),
     );
+  }
+
+  policy(policyName: string): PolicyClient {
+    return new PolicyClient(this.inner.policy(policyName));
   }
 
   /**

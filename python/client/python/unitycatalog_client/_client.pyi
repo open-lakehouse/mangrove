@@ -749,6 +749,16 @@ class Function:
         updated_by: Optional[str] = None,
     ) -> None: ...
 
+class FunctionArg:
+    """An argument passed to a row-filter or column-mask function."""
+
+    alias: Optional[str]
+    """References a column via its `MatchColumn.alias`."""
+    constant: Optional[str]
+    """A literal constant value, passed as-is to the function."""
+
+    def __init__(self, alias: Optional[str] = None, constant: Optional[str] = None) -> None: ...
+
 class FunctionDependency:
     """A function that a SQL object (such as a view or metric view) depends on."""
 
@@ -811,6 +821,19 @@ class FunctionParameterInfos:
 
     def __init__(self, parameters: Optional[List[FunctionParameterInfo]] = None) -> None: ...
 
+class FunctionRef:
+    """A reference to the SQL function that implements a row-filter or column-mask policy, together with
+    the arguments it is invoked with."""
+
+    function_name: str
+    """Fully qualified name of the function (catalog.schema.function) to invoke."""
+    using: List[FunctionArg]
+    """The arguments passed to the function, in declaration order."""
+
+    def __init__(
+        self, function_name: Optional[str] = None, using: Optional[List[FunctionArg]] = None
+    ) -> None: ...
+
 class GcpOauthToken:
     oauth_token: str
     """The OAuth token used to access Google Cloud services."""
@@ -869,6 +892,18 @@ class ListEntityTagAssignmentsResponse:
         tag_assignments: Optional[List[EntityTagAssignment]] = None,
     ) -> None: ...
 
+class ListPoliciesResponse:
+    """List policies response."""
+
+    next_page_token: Optional[str]
+    """The next_page_token value to include in the next List request."""
+    policies: List[PolicyInfo]
+    """The policies returned."""
+
+    def __init__(
+        self, next_page_token: Optional[str] = None, policies: Optional[List[PolicyInfo]] = None
+    ) -> None: ...
+
 class ListTableSummariesResponse:
     next_page_token: Optional[str]
     """The next_page_token value to include in the next List request."""
@@ -878,6 +913,20 @@ class ListTableSummariesResponse:
     def __init__(
         self, next_page_token: Optional[str] = None, tables: Optional[List[TableSummary]] = None
     ) -> None: ...
+
+class MatchColumn:
+    """A column referenced by a policy, together with the alias it is bound to in the row-filter or column-
+    mask function invocation."""
+
+    alias: str
+    """
+    The name of the alias the column is bound to when invoking the row-filter or column-mask
+    function.
+    """
+    condition: str
+    """The condition on the column, e.g. its name, that must match for this binding to apply."""
+
+    def __init__(self, alias: Optional[str] = None, condition: Optional[str] = None) -> None: ...
 
 class Metadata:
     """A Delta metadata change accompanying a commit. Modeled minimally; the coordinator stores it opaquely
@@ -910,6 +959,69 @@ class PermissionsChange:
         add: Optional[List[str]] = None,
         principal: Optional[str] = None,
         remove: Optional[List[str]] = None,
+    ) -> None: ...
+
+class PolicyInfo:
+    """A row-filter or column-mask policy bound to principals and scoped to a securable.
+
+    Policies are read as whole documents; enforcement is performed by the query engine, not by this
+    service. `when_condition` is stored and returned opaque — this service does not parse or evaluate
+    it."""
+
+    comment: Optional[str]
+    """User-provided free-form text description of the policy."""
+    created_at: Optional[int]
+    """Time at which this policy was created, in epoch milliseconds."""
+    except_principals: List[str]
+    """The principals explicitly excluded from the policy, even if matched by to_principals."""
+    id: Optional[str]
+    """Server-assigned unique identifier for the policy."""
+    match_columns: List[MatchColumn]
+    """
+    The columns referenced by the row-filter or column-mask function, and the aliases they are
+    bound to.
+    """
+    name: str
+    """The name of the policy. Unique within the securable it is defined on."""
+    on_securable_fullname: str
+    """The fully qualified name of the securable the policy is defined on."""
+    on_securable_type: str
+    """
+    The type of securable the policy is defined on. Supported values: catalogs, schemas,
+    tables.
+    """
+    policy_type: PolicyType
+    """The kind of enforcement this policy applies."""
+    to_principals: List[str]
+    """The principals the policy applies to. Empty means "all principals"."""
+    updated_at: Optional[int]
+    """Time at which this policy was last updated, in epoch milliseconds."""
+    when_condition: Optional[str]
+    """
+    An opaque condition expression, e.g. "hasTagValue('env','prod')", evaluated by the query
+    engine at enforcement time. Stored and returned as-is; not parsed server-side.
+    """
+    column_mask: Optional[FunctionRef]
+    """The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK."""
+    row_filter: Optional[FunctionRef]
+    """The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER."""
+
+    def __init__(
+        self,
+        comment: Optional[str] = None,
+        created_at: Optional[int] = None,
+        except_principals: Optional[List[str]] = None,
+        id: Optional[str] = None,
+        match_columns: Optional[List[MatchColumn]] = None,
+        name: Optional[str] = None,
+        on_securable_fullname: Optional[str] = None,
+        on_securable_type: Optional[str] = None,
+        policy_type: Optional[PolicyType] = None,
+        to_principals: Optional[List[str]] = None,
+        updated_at: Optional[int] = None,
+        when_condition: Optional[str] = None,
+        column_mask: Optional[FunctionRef] = None,
+        row_filter: Optional[FunctionRef] = None,
     ) -> None: ...
 
 class PrivilegeAssignment:
@@ -1585,6 +1697,15 @@ class ParameterStyle(enum.Enum):
     S = "S"
     """The parameters are passed positionally (S = SQL)."""
 
+class PolicyType(enum.Enum):
+    """The kind of enforcement a policy applies."""
+
+    POLICY_TYPE_COLUMN_MASK = "POLICY_TYPE_COLUMN_MASK"
+    """Masks a column's values for callers matched by the when_condition."""
+    POLICY_TYPE_ROW_FILTER = "POLICY_TYPE_ROW_FILTER"
+    """Filters rows returned from the securable based on the when_condition and match_columns."""
+    POLICY_TYPE_UNSPECIFIED = "POLICY_TYPE_UNSPECIFIED"
+
 class ProviderAuthenticationType(enum.Enum):
     """The delta sharing authentication type used by a provider."""
 
@@ -1951,6 +2072,70 @@ class FunctionClient:
 
         Returns:
             A User-Defined Function (UDF) registered under a catalog + schema hierarchy.
+        """
+        ...
+
+class PolicyClient:
+    def create_policy(self, policy_info: PolicyInfo) -> PolicyInfo:
+        """
+        Create a new policy
+
+        Creates a new row-filter or column-mask policy on the specified securable.
+
+
+        Args:
+            policy_info: The policy to create.
+
+
+        Returns:
+            A row-filter or column-mask policy bound to principals and scoped to a securable. Policies
+            are
+            read as whole documents; enforcement is performed by the query engine, not by this service.
+            `when_condition` is stored and returned opaque — this service does not parse or evaluate it.
+        """
+        ...
+    def delete(self) -> None:
+        """
+        Delete a policy
+
+        Deletes the policy that matches the supplied name, defined on the specified securable.
+
+
+        Returns:
+            None
+        """
+        ...
+    def get(self) -> PolicyInfo:
+        """
+        Get a policy
+
+        Gets the policy that matches the supplied name, defined on the specified securable.
+
+
+        Returns:
+            A row-filter or column-mask policy bound to principals and scoped to a securable. Policies
+            are
+            read as whole documents; enforcement is performed by the query engine, not by this service.
+            `when_condition` is stored and returned opaque — this service does not parse or evaluate it.
+        """
+        ...
+    def update(self, policy_info: PolicyInfo, update_mask: Optional[str] = None) -> PolicyInfo:
+        """
+        Update a policy
+
+        Updates the policy that matches the supplied name, defined on the specified securable.
+
+
+        Args:
+            policy_info: The policy with the updated fields.
+            update_mask: The list of fields to update, as a comma-separated string.
+
+
+        Returns:
+            A row-filter or column-mask policy bound to principals and scoped to a securable. Policies
+            are
+            read as whole documents; enforcement is performed by the query engine, not by this service.
+            `when_condition` is stored and returned opaque — this service does not parse or evaluate it.
         """
         ...
 
@@ -3191,6 +3376,7 @@ class UnityCatalogClient:
     def function(
         self, catalog_name: str, schema_name: str, function_name: str
     ) -> FunctionClient: ...
+    def policy(self, policy_name: str) -> PolicyClient: ...
     def provider(self, provider_name: str) -> ProviderClient: ...
     def recipient(self, recipient_name: str) -> RecipientClient: ...
     def schema(self, catalog_name: str, schema_name: str) -> SchemaClient: ...

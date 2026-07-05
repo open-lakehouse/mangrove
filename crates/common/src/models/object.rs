@@ -40,6 +40,7 @@ impl ResourceExt for Resource {
             Resource::Function(obj) => obj.resource_name(),
             Resource::TagPolicy(obj) => obj.resource_name(),
             Resource::StagingTable(obj) => obj.resource_name(),
+            Resource::PolicyInfo(obj) => obj.resource_name(),
         }
     }
 
@@ -60,6 +61,7 @@ impl ResourceExt for Resource {
             Resource::Function(obj) => obj.resource_ref(),
             Resource::TagPolicy(obj) => obj.resource_ref(),
             Resource::StagingTable(obj) => obj.resource_ref(),
+            Resource::PolicyInfo(obj) => obj.resource_ref(),
         }
     }
 
@@ -80,6 +82,7 @@ impl ResourceExt for Resource {
             Resource::Function(obj) => obj.resource_ident(),
             Resource::TagPolicy(obj) => obj.resource_ident(),
             Resource::StagingTable(obj) => obj.resource_ident(),
+            Resource::PolicyInfo(obj) => obj.resource_ident(),
         }
     }
 }
@@ -104,6 +107,7 @@ impl TryFrom<Resource> for Object {
             Resource::Function(obj) => obj.try_into(),
             Resource::TagPolicy(obj) => obj.try_into(),
             Resource::StagingTable(obj) => obj.try_into(),
+            Resource::PolicyInfo(obj) => obj.try_into(),
         }
     }
 }
@@ -128,6 +132,7 @@ impl TryFrom<Object> for Resource {
             ObjectLabel::Function => Ok(Resource::Function(obj.try_into()?)),
             ObjectLabel::TagPolicy => Ok(Resource::TagPolicy(obj.try_into()?)),
             ObjectLabel::StagingTable => Ok(Resource::StagingTable(obj.try_into()?)),
+            ObjectLabel::PolicyInfo => Ok(Resource::PolicyInfo(obj.try_into()?)),
         }
     }
 }

@@ -16,6 +16,8 @@ pub mod external_locations;
 #[cfg(feature = "axum")]
 pub mod functions;
 #[cfg(feature = "axum")]
+pub mod policies;
+#[cfg(feature = "axum")]
 pub mod providers;
 #[cfg(feature = "axum")]
 pub mod recipients;
