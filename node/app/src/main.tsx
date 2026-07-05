@@ -1,4 +1,5 @@
 import { QueryServiceProvider } from "@open-lakehouse/query";
+import { registerWasmPreview } from "@open-lakehouse/query-wasm";
 import {
   ThemeProvider,
   Toaster,
@@ -22,6 +23,15 @@ import "./globals.css";
 // `window.location.origin`, so no host/port is hardcoded. In dev the Vite proxy
 // forwards `/api` to a locally-running UC server (see vite.config.ts).
 const ucClient = createUnityCatalogClient({
+  baseUrl: `${window.location.origin}/api/2.1/unity-catalog`,
+});
+
+// In wasm-enabled builds (VITE_ENABLE_WASM_QUERY=true + `just build-query-wasm`)
+// this registers the in-browser engine as the app's query runner; default
+// builds alias @open-lakehouse/query-wasm to a no-op stub (vite.config.ts), so
+// no runner is registered and the preview UI stays gated off. The preview
+// section itself is additionally flag-gated via VITE_ENABLE_PREVIEW.
+registerWasmPreview({
   baseUrl: `${window.location.origin}/api/2.1/unity-catalog`,
 });
 

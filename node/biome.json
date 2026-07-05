@@ -72,6 +72,26 @@
           }
         }
       }
+    },
+    {
+      "includes": ["query-wasm/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@open-lakehouse/unity-catalog"],
+                    "message": "query-wasm implements the @open-lakehouse/query runner contract and must not import Unity Catalog UI: the app composes them, never the packages themselves."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }
