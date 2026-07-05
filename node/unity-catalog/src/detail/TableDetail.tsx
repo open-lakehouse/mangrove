@@ -3,6 +3,7 @@ import { Columns3 } from "lucide-react";
 
 import { DetailStates } from "./DetailStates";
 import { Meta, MetaGrid } from "./Meta";
+import { TablePreview } from "./TablePreview";
 
 export function TableDetail({ fullName }: { fullName: string }) {
   const { data: table, isLoading, error } = useTableDetail(fullName);
@@ -55,6 +56,12 @@ export function TableDetail({ fullName }: { fullName: string }) {
           <p className="text-sm text-muted-foreground">No column metadata.</p>
         )}
       </div>
+
+      <TablePreview
+        fullName={fullName}
+        format={table.data_source_format}
+        tableType={table.table_type}
+      />
     </>
   );
 }

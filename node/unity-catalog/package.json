@@ -10,6 +10,8 @@
     }
   },
   "dependencies": {
+    "@open-lakehouse/data-grid": "^0.1.0",
+    "@open-lakehouse/query": "^0.1.0",
     "@open-lakehouse/ui-kit": "^0.1.0",
     "@open-lakehouse/unity-catalog-client": "^0.1.0",
     "@rjsf/core": "^5.24.13",
