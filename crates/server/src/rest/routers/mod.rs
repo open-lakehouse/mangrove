@@ -1,8 +1,8 @@
 use crate::api::{
     AgentHandler, AgentSkillHandler, CatalogHandler, CredentialHandler, DeltaCommitHandler,
-    EntityTagAssignmentHandler, ExternalLocationHandler, FunctionHandler, ProviderHandler,
-    RecipientHandler, SchemaHandler, ShareHandler, StagingTableHandler, TableHandler,
-    TagPolicyHandler, TemporaryCredentialHandler, VolumeHandler,
+    EntityTagAssignmentHandler, ExternalLocationHandler, FunctionHandler, PolicyHandler,
+    ProviderHandler, RecipientHandler, SchemaHandler, ShareHandler, StagingTableHandler,
+    TableHandler, TagPolicyHandler, TemporaryCredentialHandler, VolumeHandler,
 };
 use axum::routing::{delete, get, patch, post};
 
@@ -270,6 +270,38 @@ where
         .route("/functions/{name}", get(get_function::<T, Cx>))
         .route("/functions/{name}", patch(update_function::<T, Cx>))
         .route("/functions/{name}", delete(delete_function::<T, Cx>))
+        .with_state(handler)
+}
+
+/// Router for the ABAC Policies API (row-filter / column-mask policies bound to securables).
+pub fn create_policies_router<T, Cx>(handler: T) -> axum::Router
+where
+    T: PolicyHandler<Cx> + Clone,
+    Cx: axum::extract::FromRequestParts<T> + Send + 'static,
+{
+    use crate::codegen::policies::server::*;
+
+    axum::Router::new()
+        .route(
+            "/policies/{on_securable_type}/{on_securable_fullname}",
+            get(list_policies::<T, Cx>),
+        )
+        .route(
+            "/policies/{on_securable_type}/{on_securable_fullname}",
+            post(create_policy::<T, Cx>),
+        )
+        .route(
+            "/policies/{on_securable_type}/{on_securable_fullname}/{name}",
+            get(get_policy::<T, Cx>),
+        )
+        .route(
+            "/policies/{on_securable_type}/{on_securable_fullname}/{name}",
+            patch(update_policy::<T, Cx>),
+        )
+        .route(
+            "/policies/{on_securable_type}/{on_securable_fullname}/{name}",
+            delete(delete_policy::<T, Cx>),
+        )
         .with_state(handler)
 }
 
