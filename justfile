@@ -104,8 +104,15 @@ generate-common-ext:
 
 # generate types for node client. these are all slow changing external types
 [group('codegen')]
-generate-node:
+generate-node: generate-query-contract
     just node/client/generate
+
+# Generate TypeScript message types for the in-browser query contract
+# (proto/query) into the @open-lakehouse/query package. Types only — no
+# transport client; the runner is registered at runtime. See buf.gen.query.yaml.
+[group('codegen')]
+generate-query-contract:
+    buf generate proto/query --template {{ justfile_directory() }}/buf.gen.query.yaml
 
 # Regenerate proto-gen test fixture descriptors from proto/ source files.
 [group('codegen')]
