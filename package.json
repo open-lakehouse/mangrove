@@ -4,6 +4,7 @@
     "node/client",
     "node/ui-kit",
     "node/data-grid",
+    "node/query",
     "node/unity-catalog-client",
     "node/unity-catalog",
     "node/app",
