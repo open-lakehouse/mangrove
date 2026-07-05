@@ -36,6 +36,8 @@ tags:
        External locations define cloud storage paths accessible via storage credentials.
   - name: FunctionsService
     description: Manage User-Defined Functions (UDFs) in the service.
+  - name: PoliciesService
+    description: Manage ABAC row-filter and column-mask policies bound to Unity Catalog securables.
   - name: ProvidersService
     description: |-
       Providers
@@ -1270,6 +1272,241 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Function"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /policies/{onSecurableType}/{onSecurableFullname}:
+    get:
+      tags:
+        - PoliciesService
+      description: |-
+        List policies
+
+         Gets an array of policies defined on the specified securable. There is no guarantee
+         of a specific ordering of the elements in the array.
+      operationId: ListPolicies
+      parameters:
+        - name: onSecurableType
+          in: path
+          description: |-
+            The type of the securable to list policies on.
+
+             Supported values: catalogs, schemas, tables.
+          required: true
+          schema:
+            type: string
+        - name: onSecurableFullname
+          in: path
+          description: The fully qualified name of the securable to list policies on.
+          required: true
+          schema:
+            type: string
+        - name: includeInherited
+          in: query
+          description: |-
+            When true, also return policies defined on the securable's ancestors
+             (e.g. for a table: its schema and catalog). Each returned PolicyInfo still
+             carries its own on_securable_type / on_securable_fullname, so callers can see
+             where it was defined.
+          schema:
+            type: boolean
+        - name: maxResults
+          in: query
+          description: The maximum number of results per page that should be returned.
+          schema:
+            type: integer
+            format: int32
+        - name: pageToken
+          in: query
+          description: Opaque pagination token to go to next page based on previous query.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPoliciesResponse"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+    post:
+      tags:
+        - PoliciesService
+      description: |-
+        Create a new policy
+
+         Creates a new row-filter or column-mask policy on the specified securable.
+      operationId: CreatePolicy
+      parameters:
+        - name: onSecurableType
+          in: path
+          description: |-
+            The type of the securable to create the policy on.
+
+             Supported values: catalogs, schemas, tables.
+          required: true
+          schema:
+            type: string
+        - name: onSecurableFullname
+          in: path
+          description: The fully qualified name of the securable to create the policy on.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyInfo"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyInfo"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /policies/{onSecurableType}/{onSecurableFullname}/{name}:
+    get:
+      tags:
+        - PoliciesService
+      description: |-
+        Get a policy
+
+         Gets the policy that matches the supplied name, defined on the specified securable.
+      operationId: GetPolicy
+      parameters:
+        - name: onSecurableType
+          in: path
+          description: |-
+            The type of the securable the policy is defined on.
+
+             Supported values: catalogs, schemas, tables.
+          required: true
+          schema:
+            type: string
+        - name: onSecurableFullname
+          in: path
+          description: The fully qualified name of the securable the policy is defined on.
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: The name of the policy.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyInfo"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+    delete:
+      tags:
+        - PoliciesService
+      description: |-
+        Delete a policy
+
+         Deletes the policy that matches the supplied name, defined on the specified securable.
+      operationId: DeletePolicy
+      parameters:
+        - name: onSecurableType
+          in: path
+          description: |-
+            The type of the securable the policy is defined on.
+
+             Supported values: catalogs, schemas, tables.
+          required: true
+          schema:
+            type: string
+        - name: onSecurableFullname
+          in: path
+          description: The fully qualified name of the securable the policy is defined on.
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: The name of the policy to delete.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content: {}
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+    patch:
+      tags:
+        - PoliciesService
+      description: |-
+        Update a policy
+
+         Updates the policy that matches the supplied name, defined on the specified securable.
+      operationId: UpdatePolicy
+      parameters:
+        - name: onSecurableType
+          in: path
+          description: |-
+            The type of the securable the policy is defined on.
+
+             Supported values: catalogs, schemas, tables.
+          required: true
+          schema:
+            type: string
+        - name: onSecurableFullname
+          in: path
+          description: The fully qualified name of the securable the policy is defined on.
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: The name of the policy to update.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePolicyRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyInfo"
         default:
           description: Default error response
           content:
@@ -4136,6 +4373,18 @@ components:
       description: A User-Defined Function (UDF) registered under a catalog + schema hierarchy.
       additionalProperties: false
       title: Function
+    FunctionArg:
+      type: object
+      properties:
+        alias:
+          type: string
+          description: References a column via its `MatchColumn.alias`.
+        constant:
+          type: string
+          description: A literal constant value, passed as-is to the function.
+      description: An argument passed to a row-filter or column-mask function.
+      additionalProperties: false
+      title: Function Arg
     FunctionDependency:
       required:
         - function_full_name
@@ -4225,6 +4474,27 @@ components:
       description: A collection of function parameters.
       additionalProperties: false
       title: Function Parameter Infos
+    FunctionRef:
+      required:
+        - function_name
+      type: object
+      properties:
+        functionName:
+          type: string
+          description: Fully qualified name of the function (catalog.schema.function) to invoke.
+        using:
+          type: array
+          items:
+            $ref: "#/components/schemas/FunctionArg"
+            additionalProperties: false
+            description: An argument passed to a row-filter or column-mask function.
+            title: Function Arg
+          description: The arguments passed to the function, in declaration order.
+      description: |-
+        A reference to the SQL function that implements a row-filter or column-mask policy,
+         together with the arguments it is invoked with.
+      additionalProperties: false
+      title: Function Ref
     GcpOauthToken:
       type: object
       properties:
@@ -4527,6 +4797,31 @@ components:
       description: List functions response.
       additionalProperties: false
       title: List Functions Response
+    ListPoliciesResponse:
+      type: object
+      properties:
+        policies:
+          type: array
+          items:
+            $ref: "#/components/schemas/PolicyInfo"
+            additionalProperties: false
+            required:
+              - name
+              - on_securable_type
+              - on_securable_fullname
+              - policy_type
+            description: |-
+              Policies are read as whole documents; enforcement is performed by the query engine,
+               not by this service. `when_condition` is stored and returned opaque — this service does
+               not parse or evaluate it.
+            title: A row-filter or column-mask policy bound to principals and scoped to a securable.
+          description: The policies returned.
+        nextPageToken:
+          type: string
+          description: The next_page_token value to include in the next List request.
+      description: List policies response.
+      additionalProperties: false
+      title: List Policies Response
     ListProvidersResponse:
       type: object
       properties:
@@ -4691,6 +4986,25 @@ components:
       description: List Schemas response.
       additionalProperties: false
       title: List Volumes Response
+    MatchColumn:
+      required:
+        - alias
+        - condition
+      type: object
+      properties:
+        alias:
+          type: string
+          description: |-
+            The name of the alias the column is bound to when invoking the row-filter or
+             column-mask function.
+        condition:
+          type: string
+          description: The condition on the column, e.g. its name, that must match for this binding to apply.
+      description: |-
+        A column referenced by a policy, together with the alias it is bound to in the
+         row-filter or column-mask function invocation.
+      additionalProperties: false
+      title: Match Column
     Metadata:
       type: object
       properties:
@@ -4765,6 +5079,81 @@ components:
       required:
         - principal
       title: Permissions Change
+    PolicyInfo:
+      required:
+        - name
+        - on_securable_type
+        - on_securable_fullname
+        - policy_type
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the policy. Unique within the securable it is defined on.
+        id:
+          readOnly: true
+          type: string
+          description: Server-assigned unique identifier for the policy.
+        onSecurableType:
+          type: string
+          description: |-
+            The type of securable the policy is defined on.
+
+             Supported values: catalogs, schemas, tables.
+        onSecurableFullname:
+          type: string
+          description: The fully qualified name of the securable the policy is defined on.
+        policyType:
+          type: integer
+          description: The kind of enforcement this policy applies.
+          format: enum
+        toPrincipals:
+          type: array
+          items:
+            type: string
+          description: The principals the policy applies to. Empty means "all principals".
+        exceptPrincipals:
+          type: array
+          items:
+            type: string
+          description: The principals explicitly excluded from the policy, even if matched by to_principals.
+        whenCondition:
+          type: string
+          description: |-
+            An opaque condition expression, e.g. "hasTagValue('env','prod')", evaluated by the
+             query engine at enforcement time. Stored and returned as-is; not parsed server-side.
+        matchColumns:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchColumn"
+          description: |-
+            The columns referenced by the row-filter or column-mask function, and the aliases
+             they are bound to.
+        rowFilter:
+          allOf:
+            - $ref: "#/components/schemas/FunctionRef"
+          description: The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+        columnMask:
+          allOf:
+            - $ref: "#/components/schemas/FunctionRef"
+          description: The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+        comment:
+          type: string
+          description: User-provided free-form text description of the policy.
+        createdAt:
+          readOnly: true
+          type: string
+          description: Time at which this policy was created, in epoch milliseconds.
+        updatedAt:
+          readOnly: true
+          type: string
+          description: Time at which this policy was last updated, in epoch milliseconds.
+      description: |-
+        Policies are read as whole documents; enforcement is performed by the query engine,
+         not by this service. `when_condition` is stored and returned opaque — this service does
+         not parse or evaluate it.
+      additionalProperties: false
+      title: A row-filter or column-mask policy bound to principals and scoped to a securable.
     PrivilegeAssignment:
       type: object
       properties:
@@ -5656,6 +6045,30 @@ components:
           description: The privileges assigned to each principal
       additionalProperties: false
       title: Update Permissions Response
+    UpdatePolicyRequest:
+      required:
+        - policy_info
+      type: object
+      properties:
+        onSecurableType:
+          type: string
+          description: |-
+            The type of the securable the policy is defined on.
+
+             Supported values: catalogs, schemas, tables.
+        onSecurableFullname:
+          type: string
+          description: The fully qualified name of the securable the policy is defined on.
+        policyInfo:
+          allOf:
+            - $ref: "#/components/schemas/PolicyInfo"
+          description: The policy with the updated fields.
+        updateMask:
+          type: string
+          description: The list of fields to update, as a comma-separated string.
+      description: Update a policy defined on a securable.
+      additionalProperties: false
+      title: Update Policy Request
     UpdateProviderRequest:
       required: []
       type: object

@@ -12,6 +12,7 @@ pub use catalogs::v1::Catalog;
 pub use credentials::v1::Credential;
 pub use external_locations::v1::ExternalLocation;
 pub use functions::v1::Function;
+pub use policies::v1::PolicyInfo;
 pub use providers::v1::Provider;
 #[cfg(feature = "python")]
 pub use pyo3_impls::*;
@@ -71,6 +72,13 @@ pub mod functions {
         include!("./unitycatalog.functions.v1.rs");
         #[cfg(feature = "grpc")]
         include!("./unitycatalog.functions.v1.tonic.rs");
+    }
+}
+pub mod policies {
+    pub mod v1 {
+        include!("./unitycatalog.policies.v1.rs");
+        #[cfg(feature = "grpc")]
+        include!("./unitycatalog.policies.v1.tonic.rs");
     }
 }
 pub mod providers {
