@@ -21,6 +21,8 @@ export {
 } from "./api";
 // React injection + hook.
 export { QueryServiceProvider, useQueryService } from "./context";
+// Runner composition (wasm-first with a host fallback).
+export { createFallbackQueryRunner } from "./fallback";
 // Generated contract message types (proto/query) — re-exported so runner
 // implementors and tests share the upstream-owned shapes.
 export type {
@@ -35,7 +37,9 @@ export {
   type QueryChunk,
   type QueryRequest,
   type QueryRunner,
+  type QueryRunnerCapabilities,
   queryRunner,
+  queryRunnerSupports,
   registerQueryRunner,
 } from "./runner";
 export type {

@@ -22,6 +22,7 @@ import type {
   RunQueryRequest,
   RunQueryResponse,
 } from "./gen/open_lakehouse/query/v1/svc_pb";
+import type { SupportsInput } from "./types";
 
 /**
  * A query to execute. Structurally the generated `RunQueryRequest` minus its
@@ -77,12 +78,33 @@ const noopQueryRunner: QueryRunner = () => ({
   },
 });
 
-let current: QueryRunner = noopQueryRunner;
+/**
+ * Optional capabilities a runner declares at registration. `supports` is the
+ * table-level probe the default `QueryService` consults (e.g. the wasm engine
+ * reads Delta only); omitted means "everything the UI asks about".
+ */
+export interface QueryRunnerCapabilities {
+  supports?(x: SupportsInput): boolean;
+}
 
-/** Install a custom runner. Hosts / later phases call this once, before the UI
- *  bootstraps (though late binding below tolerates any ordering). */
-export function registerQueryRunner(runner: QueryRunner): void {
+let current: QueryRunner = noopQueryRunner;
+let currentCaps: QueryRunnerCapabilities = {};
+
+/** Install a custom runner (with optional capabilities). Hosts / later phases
+ *  call this once, before the UI bootstraps (though late binding below
+ *  tolerates any ordering). */
+export function registerQueryRunner(
+  runner: QueryRunner,
+  caps: QueryRunnerCapabilities = {},
+): void {
   current = runner;
+  currentCaps = caps;
+}
+
+/** The registered runner's capability probe (permissive when undeclared).
+ *  Consulted by the default `QueryService.supports`. */
+export function queryRunnerSupports(x: SupportsInput): boolean {
+  return currentCaps.supports?.(x) ?? true;
 }
 
 /** The runner currently in effect (the registered one, or the throwing default). */
