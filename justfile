@@ -142,6 +142,14 @@ rest-ui *args: ui-build
     rm -rf web && cp -r node/app/dist web
     RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- serve {{ args }}
 
+# like `rest-ui`, but builds the SPA with the in-browser wasm query engine +
+# preview UI enabled (see `ui-build-wasm`), stages it at ./web, and serves it.
+# Requires the wasm toolchain — run `just setup-wasm` once first.
+[group('dev')]
+rest-ui-wasm *args: ui-build-wasm
+    rm -rf web && cp -r node/app/dist web
+    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- serve {{ args }}
+
 # build the bundled single-page app into node/app/dist
 [group('build')]
 ui-build:
