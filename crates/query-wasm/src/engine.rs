@@ -127,10 +127,16 @@ pub fn extract_table(
 /// executor); `None` picks the target's natural choice. The snapshot is pinned
 /// to the discovered log's newest version so the query sees exactly the
 /// manifest that was primed.
+///
+/// `max_catalog_version` must be set for catalog-managed tables (the kernel refuses to build
+/// their snapshot without it) and must be `None` for filesystem/external tables (the kernel
+/// rejects a catalog version on a non-catalog-managed table). Pass the catalog's latest
+/// ratified version, which the server reports only for managed tables.
 pub async fn open_table(
     store: Arc<dyn ObjectStore>,
     table_url: &Url,
     log: DiscoveredLog,
+    max_catalog_version: Option<u64>,
     executor: Option<deltalake_core::kernel::ExecutorHandle>,
 ) -> Result<OpenedTable> {
     let opened = open_table_with_store(
@@ -139,6 +145,7 @@ pub async fn open_table(
         LogSource::Manifest(log.manifest),
         OpenOptions {
             version: Some(log.version),
+            max_catalog_version,
             executor,
             ..OpenOptions::default()
         },
@@ -185,7 +192,24 @@ pub fn register_table(
         }
     };
 
-    let scan = DeltaScanNext::new(opened.snapshot.clone(), DeltaScanConfig::default())?;
+    // Disable Arrow "view" types (Utf8View/BinaryView): arrow-rs 58 / DataFusion
+    // materializes string & binary columns as view types by default, but the
+    // browser-side apache-arrow IPC reader can't decode them in any published
+    // release — its `Type` enum stops at `LargeUtf8 = 20`, so a Utf8View field
+    // (id 24) hits no case and throws "Unrecognized type: undefined (24)".
+    // Reading them as plain Utf8/Binary keeps the emitted IPC within the JS
+    // reader's vocabulary.
+    //
+    // This is an *unreleased* upstream gap, not a permanent one: apache/arrow-js
+    // added BinaryView/Utf8View read support on `main` (PR #320), but the latest
+    // npm release / git tag is still 21.1.0 and lacks it. Drop this override
+    // (revert to `DeltaScanConfig::default()`) once a release ships the reader —
+    // tracked in https://github.com/open-lakehouse/mangrove/issues/28.
+    let scan_config = DeltaScanConfig {
+        schema_force_view_types: false,
+        ..DeltaScanConfig::default()
+    };
+    let scan = DeltaScanNext::new(opened.snapshot.clone(), scan_config)?;
     schema.register_table(resolved.table.to_string(), Arc::new(scan))?;
     Ok(())
 }

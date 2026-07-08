@@ -33,3 +33,5 @@ ffi/examples/read-table/build
 node_modules/
 
 .claude/worktrees/
+
+web/

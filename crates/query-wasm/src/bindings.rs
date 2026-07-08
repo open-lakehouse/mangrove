@@ -196,8 +196,10 @@ impl UcQueryEngine {
         )?);
 
         // 4. Discover + prime the log, open, and register under the SQL's name.
+        //    `latest_version` is `Some` only for catalog-managed tables, which is
+        //    exactly when the kernel needs it as `max_catalog_version`.
         let log = discover_log(&store, &table_path, plan.latest_version).await?;
-        let opened = open_table(store, &storage.table_url, log, None).await?;
+        let opened = open_table(store, &storage.table_url, log, plan.latest_version, None).await?;
         let table_version = opened.snapshot.version();
         register_table(&opened.ctx, &opened, &reference)?;
 
