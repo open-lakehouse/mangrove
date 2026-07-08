@@ -155,6 +155,10 @@ rest-ui-wasm *args: ui-build-wasm
 # Delta table, then serve the API + SPA on one origin. Open the printed URL and
 # browse to demo.default.orders to run the in-browser query preview.
 #
+# On Ctrl-C (or any exit) it shuts down gracefully: SIGTERMs the server, tears
+# down the Azurite container, and unstages ./web — leaving no stray process,
+# container, or files behind.
+#
 # Requires the wasm toolchain (`just setup-wasm`) + Docker (for Azurite). The
 # server runs against dev/config-azurite.yaml (ephemeral SQLite, managed root
 # azurite://lakehouse); AZURITE_BLOB_STORAGE_URL points the server's own Delta
@@ -165,12 +169,46 @@ rest-ui-wasm-seeded: ui-build-wasm
     #!/usr/bin/env bash
     set -euo pipefail
     export AZURITE_BLOB_STORAGE_URL="http://127.0.0.1:10000"
+    compose_file="{{ justfile_directory() }}/dev/compose.yaml"
+
+    # Graceful shutdown: stop the server (SIGTERM → it flushes via
+    # `with_graceful_shutdown`), tear down the Azurite container the seed script
+    # started, and unstage ./web. Runs on Ctrl-C (INT), TERM, and normal EXIT;
+    # a guard makes it idempotent since EXIT also fires after INT/TERM.
+    cleaned=""
+    cleanup() {
+        [ -n "$cleaned" ] && return
+        cleaned=1
+        echo ""
+        echo "[seed] shutting down…"
+        if [ -n "${server_pid:-}" ] && kill -0 "$server_pid" 2>/dev/null; then
+            echo "[seed]   stopping UC server (pid $server_pid)…"
+            kill -TERM "$server_pid" 2>/dev/null || true
+            # Wait up to ~10s for a clean exit, then force-kill.
+            for _ in $(seq 1 100); do
+                kill -0 "$server_pid" 2>/dev/null || break
+                sleep 0.1
+            done
+            kill -KILL "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+        fi
+        # Stop + remove ONLY the azurite service by name — a plain
+        # `compose down` also reaps postgres_uc_dev (default profile) and the
+        # shared network, which the user may be using elsewhere. The seed
+        # script likewise starts azurite alone; mirror that surgical scope.
+        echo "[seed]   tearing down Azurite (docker compose rm -sf azurite_uc_dev)…"
+        docker compose -f "$compose_file" --profile azurite rm -sfv azurite_uc_dev >/dev/null 2>&1 || true
+        echo "[seed]   removing staged ./web…"
+        rm -rf "{{ justfile_directory() }}/web"
+        echo "[seed] done."
+    }
+    trap cleanup EXIT INT TERM
+
     rm -rf web && cp -r node/app/dist web
     echo "[seed] starting UC server (Azurite config) in the background…"
     RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- \
         serve -c dev/config-azurite.yaml &
     server_pid=$!
-    trap 'kill "$server_pid" 2>/dev/null || true' EXIT
     # Seed Azurite + UC (container, CORS, credential, external location, catalog,
     # schema). The script waits for the server's /catalogs to answer.
     bash dev/scripts/seed-azurite.sh
@@ -182,7 +220,7 @@ rest-ui-wasm-seeded: ui-build-wasm
         cargo run -p olai-uc-datafusion --features delta --example managed_table_azurite
     echo ""
     echo "[seed] ready — open http://localhost:8080 and browse to demo.default.orders"
-    echo "[seed] (Ctrl-C to stop the server)"
+    echo "[seed] (Ctrl-C to stop the server and clean up Azurite + ./web)"
     wait "$server_pid"
 
 # build the bundled single-page app into node/app/dist
