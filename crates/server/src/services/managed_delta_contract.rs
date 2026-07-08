@@ -28,7 +28,6 @@ pub const REQUIRED_MIN_WRITER_VERSION: i32 = 7;
 
 // Table-feature spec names.
 const FEATURE_CATALOG_MANAGED: &str = "catalogManaged";
-const FEATURE_DELETION_VECTORS: &str = "deletionVectors";
 const FEATURE_V2_CHECKPOINT: &str = "v2Checkpoint";
 const FEATURE_VACUUM_PROTOCOL_CHECK: &str = "vacuumProtocolCheck";
 const FEATURE_COLUMN_MAPPING: &str = "columnMapping";
@@ -37,18 +36,22 @@ const FEATURE_DOMAIN_METADATA: &str = "domainMetadata";
 const FEATURE_ROW_TRACKING: &str = "rowTracking";
 
 /// Required reader-features (the reader-writer subset of the required features).
+///
+/// `deletionVectors` is intentionally NOT required: it is a *recommended* Delta
+/// feature, and requiring it on every managed table makes those tables
+/// un-preview-able by the in-browser wasm query engine (`crates/query-wasm`),
+/// which refuses `delta.enableDeletionVectors=true`. Writers may still enable it
+/// explicitly; it is simply no longer mandated.
 pub const REQUIRED_READER_FEATURES: &[&str] = &[
     FEATURE_CATALOG_MANAGED,
     FEATURE_V2_CHECKPOINT,
     FEATURE_VACUUM_PROTOCOL_CHECK,
-    FEATURE_DELETION_VECTORS,
 ];
 /// Required writer-features (reader-writer features + the writer-only `inCommitTimestamp`).
 pub const REQUIRED_WRITER_FEATURES: &[&str] = &[
     FEATURE_CATALOG_MANAGED,
     FEATURE_V2_CHECKPOINT,
     FEATURE_VACUUM_PROTOCOL_CHECK,
-    FEATURE_DELETION_VECTORS,
     FEATURE_IN_COMMIT_TIMESTAMP,
 ];
 /// Suggested reader-features.
@@ -79,7 +82,8 @@ const FEATURE_SUPPORTED: &str = "supported";
 /// Required properties with fixed values (excludes `io.unitycatalog.tableId`, which is
 /// per-table). Order is irrelevant; kept as a slice of pairs.
 pub const REQUIRED_FIXED_PROPERTIES: &[(&str, &str)] = &[
-    (PROP_ENABLE_DELETION_VECTORS, "true"),
+    // `delta.enableDeletionVectors` is intentionally NOT required — see the note
+    // on `REQUIRED_READER_FEATURES`.
     (PROP_CHECKPOINT_POLICY, "v2"),
     (PROP_ENABLE_IN_COMMIT_TIMESTAMPS, "true"),
     (PROP_CHECKPOINT_WRITE_STATS_AS_STRUCT, "true"),
@@ -531,7 +535,8 @@ mod tests {
     #[test]
     fn missing_feature_rejected() {
         let mut proto = compliant_protocol();
-        proto.writer_features = Some(vec!["deletionVectors".to_string()]);
+        // Drop every required feature, leaving only an unrelated one.
+        proto.writer_features = Some(vec!["someOtherFeature".to_string()]);
         let err = validate(&proto, None, &compliant_properties("id-1")).unwrap_err();
         assert!(matches!(err, Error::InvalidArgument(_)), "{err:?}");
     }
