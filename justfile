@@ -150,6 +150,41 @@ rest-ui-wasm *args: ui-build-wasm
     rm -rf web && cp -r node/app/dist web
     RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- serve {{ args }}
 
+# Full "explore the wasm UI with real data" flow: build the wasm SPA, start the
+# server against Azurite-backed managed storage, seed a preview-able managed
+# Delta table, then serve the API + SPA on one origin. Open the printed URL and
+# browse to demo.default.orders to run the in-browser query preview.
+#
+# Requires the wasm toolchain (`just setup-wasm`) + Docker (for Azurite). The
+# server runs against dev/config-azurite.yaml (ephemeral SQLite, managed root
+# azurite://lakehouse); AZURITE_BLOB_STORAGE_URL points the server's own Delta
+# I/O at the host-published emulator port (the browser hardcodes 127.0.0.1:10000
+# in crates/query-wasm/src/creds.rs).
+[group('dev')]
+rest-ui-wasm-seeded: ui-build-wasm
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export AZURITE_BLOB_STORAGE_URL="http://127.0.0.1:10000"
+    rm -rf web && cp -r node/app/dist web
+    echo "[seed] starting UC server (Azurite config) in the background…"
+    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- \
+        serve -c dev/config-azurite.yaml &
+    server_pid=$!
+    trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+    # Seed Azurite + UC (container, CORS, credential, external location, catalog,
+    # schema). The script waits for the server's /catalogs to answer.
+    bash dev/scripts/seed-azurite.sh
+    # Write a real managed Delta table (create + append + publish/backfill) so the
+    # wasm preview has data. Reuses the end-to-end example.
+    echo "[seed] writing managed Delta table demo.default.orders…"
+    UC_ENDPOINT=http://localhost:8080/api/2.1/unity-catalog/ \
+    UC_CATALOG=demo UC_SCHEMA=default UC_TABLE=orders \
+        cargo run -p olai-uc-datafusion --features delta --example managed_table_azurite
+    echo ""
+    echo "[seed] ready — open http://localhost:8080 and browse to demo.default.orders"
+    echo "[seed] (Ctrl-C to stop the server)"
+    wait "$server_pid"
+
 # build the bundled single-page app into node/app/dist
 [group('build')]
 ui-build:
