@@ -24,6 +24,7 @@
 //! - [`router`] — the axum router mounting all 12 operations.
 
 pub mod column;
+pub mod contract;
 pub mod coordinator;
 pub mod error;
 pub mod models;
