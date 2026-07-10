@@ -23,10 +23,18 @@
 //! - [`handler`] — the `DeltaApiHandler` trait + the generic blanket impl.
 //! - [`router`] — the axum router mounting all 12 operations.
 
+pub mod backend;
 pub mod column;
 pub mod contract;
 pub mod coordinator;
 pub mod error;
+pub mod handler;
 pub mod models;
+pub mod router;
+#[cfg(feature = "testing")]
+pub mod testing;
 
+pub use backend::DeltaBackend;
 pub use error::{DeltaApiError, DeltaApiResult, DeltaBackendError};
+pub use handler::DeltaApiHandler;
+pub use router::get_router;

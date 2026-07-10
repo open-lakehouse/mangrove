@@ -32,6 +32,12 @@ uuid = { workspace = true, features = ["v7"] }
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
 
+# The handler integration test drives the in-memory backend, which lives behind
+# the `testing` feature.
+[[test]]
+name = "handler"
+required-features = ["testing"]
+
 [features]
 default = []
 # Exposes `InMemoryDeltaBackend`, an in-memory `DeltaBackend` implementation for
