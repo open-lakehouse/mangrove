@@ -1,0 +1,33 @@
+# Dev server config for the Azurite-backed managed-table preview flow, used by
+# `just rest-ui-wasm-seeded` (and runnable standalone). Managed tables land in
+# the Azurite blob emulator so the in-browser wasm query engine can fetch their
+# Delta files over HTTP with a vended SAS — a `file://` managed root is NOT
+# browser-reachable and would not render a preview.
+#
+# Pairs with `dev/scripts/seed-azurite.sh`, which starts Azurite, creates the
+# `lakehouse` container + a CORS rule, and seeds the storage credential +
+# external location the vending path requires (config alone does not vend).
+host: 0.0.0.0
+port: 8080
+
+# Ephemeral in-process SQLite: auto-migrated at startup, discarded on exit — a
+# clean catalog every run, which is what a throwaway preview wants. Swap in the
+# postgres block from dev/config.yaml if you need persistence across restarts.
+backend:
+  engine: sqlite
+  path: ":memory:"
+
+# Dev-only KEK (the value `EncryptionConfig::dev_default` ships) so the stored
+# azure_storage_key credential can be sealed at rest. Do NOT use in production.
+encryption:
+  active:
+    id: dev
+    key: "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+
+# Metastore-level managed storage root. A managed catalog created without its
+# own storage_root inherits this. The `azurite://<container>` scheme is what
+# makes the vended table location browser-reachable: the wasm engine's
+# credential resolver rewrites `azurite://lakehouse/...` to
+# `http://127.0.0.1:10000/devstoreaccount1/lakehouse/...` (see
+# crates/query-wasm/src/creds.rs). Do not use a host-style URL here.
+managed_storage_root: "azurite://lakehouse"

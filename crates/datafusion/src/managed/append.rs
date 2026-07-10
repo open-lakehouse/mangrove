@@ -42,10 +42,10 @@ use std::time::Duration;
 
 use datafusion::arrow::array::RecordBatch;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
-use delta_kernel::engine::default::DefaultEngineBuilder;
 use delta_kernel::snapshot::{Snapshot as KernelSnapshot, SnapshotRef};
 use delta_kernel::transaction::CommitResult;
 use delta_kernel::{Engine, Version};
+use delta_kernel_default_engine::DefaultEngineBuilder;
 use tracing::{debug, info, warn};
 use unitycatalog_client::DeltaV1Client;
 use unitycatalog_common::models::delta::v1::{

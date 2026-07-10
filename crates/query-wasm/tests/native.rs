@@ -129,7 +129,7 @@ async fn preview_pipeline_end_to_end() {
     assert_eq!(log.version, 0);
 
     // Open on the inline executor — the browser execution model.
-    let opened = open_table(store, &table_url(), log, Some(InlineExecutor.into()))
+    let opened = open_table(store, &table_url(), log, None, Some(InlineExecutor.into()))
         .await
         .unwrap();
     assert_eq!(opened.snapshot.version(), 0);
@@ -168,7 +168,7 @@ async fn empty_result_yields_one_schema_only_chunk() {
     let log = discover_log(&store, &Path::from(TABLE_PREFIX), None)
         .await
         .unwrap();
-    let opened = open_table(store, &table_url(), log, Some(InlineExecutor.into()))
+    let opened = open_table(store, &table_url(), log, None, Some(InlineExecutor.into()))
         .await
         .unwrap();
 
@@ -200,7 +200,7 @@ async fn bare_reference_resolves_via_session_defaults() {
     let log = discover_log(&store, &Path::from(TABLE_PREFIX), None)
         .await
         .unwrap();
-    let opened = open_table(store, &table_url(), log, Some(InlineExecutor.into()))
+    let opened = open_table(store, &table_url(), log, None, Some(InlineExecutor.into()))
         .await
         .unwrap();
 
@@ -226,4 +226,113 @@ async fn bare_reference_resolves_via_session_defaults() {
         .unwrap()
         .value(0);
     assert_eq!(n, 6);
+}
+
+/// A fixture identical to [`fixture_store`] but whose protocol advertises the
+/// `catalogManaged` table feature — the kernel then refuses to build a snapshot
+/// unless `max_catalog_version` is supplied. This is the shape a Unity Catalog
+/// managed table has, and the regression the wasm engine must handle.
+async fn catalog_managed_fixture_store() -> Arc<dyn ObjectStore> {
+    let store = InMemory::new();
+    let data = batch(&[1, 2, 3], &["a", "b", "c"]);
+    let bytes = parquet_bytes(&data);
+    let name = "part-00000.snappy.parquet";
+    let commit = format!(
+        concat!(
+            r#"{{"commitInfo":{{"timestamp":0,"inCommitTimestamp":0}}}}"#,
+            "\n",
+            r#"{{"protocol":{{"minReaderVersion":3,"minWriterVersion":7,"readerFeatures":["catalogManaged","v2Checkpoint"],"writerFeatures":["catalogManaged","v2Checkpoint","inCommitTimestamp"]}}}}"#,
+            "\n",
+            r#"{{"metaData":{{"id":"11111111-2222-3333-4444-555555555555","format":{{"provider":"parquet","options":{{}}}},"schemaString":"{schema}","partitionColumns":[],"configuration":{{"delta.enableInCommitTimestamps":"true"}},"createdTime":0}}}}"#,
+            "\n",
+            r#"{{"add":{{"path":"{name}","partitionValues":{{}},"size":{size},"modificationTime":0,"dataChange":true}}}}"#,
+            "\n",
+        ),
+        schema = SCHEMA_STRING,
+        name = name,
+        size = bytes.len(),
+    );
+    store
+        .put(&Path::from(format!("{TABLE_PREFIX}/{name}")), bytes.into())
+        .await
+        .unwrap();
+    store
+        .put(
+            &Path::from(format!(
+                "{TABLE_PREFIX}/_delta_log/00000000000000000000.json"
+            )),
+            commit.into_bytes().into(),
+        )
+        .await
+        .unwrap();
+    Arc::new(store)
+}
+
+/// Regression: a catalog-managed table opens and queries when the catalog's
+/// latest version is threaded through as `max_catalog_version`. Without it the
+/// kernel errors "Catalog-managed table requires max_catalog_version to be set".
+#[tokio::test]
+async fn catalog_managed_table_opens_with_max_catalog_version() {
+    let store = catalog_managed_fixture_store().await;
+
+    // Managed tables: the catalog reports the latest ratified version, which
+    // bounds discovery and must be passed to the kernel as max_catalog_version.
+    let latest = Some(0u64);
+    let log = discover_log(&store, &Path::from(TABLE_PREFIX), latest)
+        .await
+        .unwrap();
+    assert_eq!(log.version, 0);
+
+    let opened = open_table(
+        store,
+        &table_url(),
+        log,
+        latest,
+        Some(InlineExecutor.into()),
+    )
+    .await
+    .expect("catalog-managed table must open when max_catalog_version is supplied");
+    assert_eq!(opened.snapshot.version(), 0);
+
+    let sql = "SELECT * FROM `uc`.`sales`.`orders` ORDER BY `id`";
+    let (reference, _) = extract_table(sql, None, None).unwrap();
+    register_table(&opened.ctx, &opened, &reference).unwrap();
+
+    let chunks: Vec<_> = execute_chunks(&opened.ctx, sql, Some(100))
+        .await
+        .unwrap()
+        .try_collect()
+        .await
+        .unwrap();
+
+    // The emitted IPC schema must not use Arrow "view" types: the browser-side
+    // apache-arrow (v21) reader cannot decode Utf8View/BinaryView and fails with
+    // "Unrecognized type: undefined (24)". The `name` (string) column is the one
+    // arrow-rs would otherwise materialize as Utf8View.
+    let ipc_schema = StreamReader::try_new(std::io::Cursor::new(&chunks[0].ipc), None)
+        .unwrap()
+        .schema();
+    for f in ipc_schema.fields() {
+        assert!(
+            !matches!(f.data_type(), DataType::Utf8View | DataType::BinaryView),
+            "column {} emitted a view type ({:?}); the JS IPC reader cannot decode it",
+            f.name(),
+            f.data_type(),
+        );
+    }
+    let name_type = ipc_schema.field_with_name("name").unwrap().data_type();
+    assert_eq!(
+        name_type,
+        &DataType::Utf8,
+        "string column must be plain Utf8"
+    );
+
+    let mut ids = Vec::new();
+    for chunk in &chunks {
+        for b in decode_chunk(&chunk.ipc) {
+            let col = b.column(0).as_any().downcast_ref::<Int64Array>().unwrap();
+            ids.extend(col.iter().flatten());
+        }
+    }
+    assert_eq!(ids, vec![1, 2, 3], "catalog-managed table rows read back");
 }

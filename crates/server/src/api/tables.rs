@@ -389,6 +389,11 @@ impl FieldExt for StructField {
                 PrimitiveType::TimestampNtz => ColumnTypeName::TimestampNtz,
                 PrimitiveType::Decimal(_) => ColumnTypeName::Decimal,
                 PrimitiveType::Void => ColumnTypeName::Null,
+                // kernel v0.25 split the interval primitive into year-month and
+                // day-time; UC's column type taxonomy has a single `Interval`.
+                PrimitiveType::IntervalYearMonth | PrimitiveType::IntervalDayTime => {
+                    ColumnTypeName::Interval
+                }
             },
             DataType::Struct(_) => ColumnTypeName::Struct,
             DataType::Array(_) => ColumnTypeName::Array,

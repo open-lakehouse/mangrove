@@ -17,12 +17,12 @@ use std::sync::Arc;
 use datafusion::arrow::datatypes::{DataType as ArrowDataType, SchemaRef as ArrowSchemaRef};
 use delta_kernel::Engine;
 use delta_kernel::engine::arrow_conversion::TryIntoKernel;
-use delta_kernel::engine::default::DefaultEngineBuilder;
 use delta_kernel::schema::{SchemaRef, StructType};
 use delta_kernel::snapshot::Snapshot;
 use delta_kernel::transaction::CommitResult;
 use delta_kernel::transaction::create_table::create_table;
 use delta_kernel::transaction::data_layout::DataLayout;
+use delta_kernel_default_engine::DefaultEngineBuilder;
 use object_store::ObjectStore;
 use object_store::aws::AmazonS3Builder;
 use object_store::local::LocalFileSystem;
@@ -47,13 +47,16 @@ const V2_CHECKPOINT_FEATURE_KEY: &str = "delta.feature.v2Checkpoint";
 const CHECKPOINT_POLICY_KEY: &str = "delta.checkpointPolicy";
 const CHECKPOINT_POLICY_V2: &str = "v2";
 // Since v0.5.0-20260428 the server's `UcManagedDeltaContract` further requires the
-// `deletionVectors` reader/writer feature and three fixed-value properties
-// (`delta.enableDeletionVectors`, `delta.checkpoint.writeStatsAsStruct`,
-// `delta.checkpoint.writeStatsAsJson`). The enablement property auto-enables the DV
-// protocol feature at create time (the kernel's property-driven enablement), but we keep
-// the explicit feature signal too so the protocol intent is visible in one place.
-const DELETION_VECTORS_FEATURE_KEY: &str = "delta.feature.deletionVectors";
-const ENABLE_DELETION_VECTORS_KEY: &str = "delta.enableDeletionVectors";
+// fixed-value properties `delta.checkpoint.writeStatsAsStruct` and
+// `delta.checkpoint.writeStatsAsJson`.
+//
+// Deletion vectors are deliberately NOT enabled here. They are a *recommended*
+// (not required) Delta feature, and the in-browser wasm query engine
+// (`crates/query-wasm`) refuses to preview any table advertising
+// `delta.enableDeletionVectors=true`. A freshly written managed table carries no
+// deletion-vector files anyway, so omitting the feature keeps managed tables
+// preview-able at no cost to writers. The server contract mirrors this (see
+// `crates/server/src/services/managed_delta_contract.rs`).
 const WRITE_STATS_AS_STRUCT_KEY: &str = "delta.checkpoint.writeStatsAsStruct";
 const WRITE_STATS_AS_JSON_KEY: &str = "delta.checkpoint.writeStatsAsJson";
 const FEATURE_SUPPORTED: &str = "supported";
@@ -199,12 +202,10 @@ pub fn get_required_properties_for_disk(uc_table_id: &str) -> HashMap<String, St
         (CATALOG_MANAGED_FEATURE_KEY, FEATURE_SUPPORTED),
         (VACUUM_PROTOCOL_CHECK_FEATURE_KEY, FEATURE_SUPPORTED),
         (V2_CHECKPOINT_FEATURE_KEY, FEATURE_SUPPORTED),
-        (DELETION_VECTORS_FEATURE_KEY, FEATURE_SUPPORTED),
         // Fixed-value properties the server's MANAGED contract checks verbatim. These are
         // real metadata properties (unlike the feature signals above, which the kernel
         // strips into the protocol), so they flow into `snapshot.metadata_configuration()`
         // and from there into the UC createTable request.
-        (ENABLE_DELETION_VECTORS_KEY, "true"),
         (WRITE_STATS_AS_STRUCT_KEY, "true"),
         (WRITE_STATS_AS_JSON_KEY, "true"),
         (UC_TABLE_ID_KEY, uc_table_id),

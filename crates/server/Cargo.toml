@@ -45,6 +45,9 @@ bytes = { workspace = true }
 chrono = { workspace = true }
 percent-encoding = "2.1"
 delta_kernel = { workspace = true }
+# The default engine moved into its own crate in kernel v0.25; the server builds
+# one directly for the Delta log read path.
+delta_kernel_default_engine = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true }
 object_store = { workspace = true }

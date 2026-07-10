@@ -29,13 +29,15 @@ publish = false
 name = "query_wasm"
 crate-type = ["cdylib", "rlib"]
 
-# The delta-rs wasm engine: pinned to the same rev on the `wasm-core-compat`
-# branch of the roeap fork that WASM_QUERY_PREVIEW.md Phase A landed. Both deps
-# resolve from one git source so `Snapshot`/`DeltaScanNext` types unify with
-# what `deltalake-wasm` returns.
+# The delta-rs wasm engine: pinned by immutable rev to the roeap fork's
+# `feat/wasm-max-catalog-version` branch (`wasm-core-compat` + the
+# `OpenOptions.max_catalog_version` field this crate threads through). Both deps
+# resolve from one git source so `Snapshot`/`DeltaScanNext` types unify with what
+# `deltalake-wasm` returns, and it shares the roeap `delta_kernel` v0.25 kernel
+# with the native workspace (see ../../Cargo.toml).
 [dependencies]
-deltalake-wasm = { git = "https://github.com/roeap/delta-rs", rev = "ed4242730a5a3eccbe0ccca5f66815ba704025b9" }
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "ed4242730a5a3eccbe0ccca5f66815ba704025b9", default-features = false, features = [
+deltalake-wasm = { git = "https://github.com/roeap/delta-rs", rev = "8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c" }
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c", default-features = false, features = [
   "datafusion",
 ] }
 
@@ -70,7 +72,7 @@ url = { version = "2.5" }
 # needs none (the browser supplies fetch), so re-add it natively only. Mirrors
 # deltalake-wasm's own manifest.
 [target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "ed4242730a5a3eccbe0ccca5f66815ba704025b9", default-features = false, features = [
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c", default-features = false, features = [
   "datafusion",
   "rustls",
 ] }
