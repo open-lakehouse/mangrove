@@ -1,0 +1,41 @@
+[package]
+# Published to crates.io under a provisional `olai-uc-*` name while the design
+# settles; the in-workspace dependency key + crate identifier stay
+# `unitycatalog(_)delta_api` via each dependent's `package =` alias, so no source
+# changes. See release-plz.toml / CONTRIBUTING.md.
+name = "olai-uc-delta-api"
+version = "0.0.1"
+description = "Portable Unity Catalog Delta v1 REST API: wire models, managed-table contract, commit coordinator, and the backend-agnostic DeltaBackend port shared across server implementations."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+readme.workspace = true
+rust-version.workspace = true
+
+[lib]
+# Keep the Rust crate identifier stable (`unitycatalog_delta_api`) independent of
+# the provisional `olai-uc-*` package name, so source `use` paths, sibling
+# crates, and this crate's own tests/examples need no churn from the rename.
+name = "unitycatalog_delta_api"
+
+[dependencies]
+async-trait = { workspace = true }
+axum = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true, features = ["v7"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+
+[features]
+default = []
+# Exposes `InMemoryDeltaBackend`, an in-memory `DeltaBackend` implementation for
+# testing the Delta business logic without a real backend. Downstream servers
+# (e.g. lakekeeper) can enable it to test their own port wiring against
+# known-good Delta semantics.
+testing = []

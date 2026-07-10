@@ -3757,6 +3757,7 @@ dependencies = [
  "napi-derive",
  "olai-http",
  "olai-store",
+ "olai-uc-delta-api",
  "pbjson",
  "pbjson-types",
  "percent-encoding",
@@ -3802,6 +3803,20 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "url",
+]
+
+[[package]]
+name = "olai-uc-delta-api"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "axum",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
