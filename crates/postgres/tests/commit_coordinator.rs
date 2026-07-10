@@ -11,9 +11,9 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use unitycatalog_common::models::delta_commits::v1::CommitInfo;
-use unitycatalog_common::services::commit_coordinator::{CommitCoordinator, CommitError};
 use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
+use unitycatalog_delta_api::coordinator::CommitInfo;
+use unitycatalog_delta_api::coordinator::{CommitCoordinator, CommitError};
 use unitycatalog_postgres::GraphStore;
 use uuid::Uuid;
 

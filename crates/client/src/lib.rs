@@ -34,11 +34,11 @@ impl UnityCatalogClient {
 
     /// Ergonomic accessor for the hand-written `/delta/v1/` Delta REST API client.
     ///
-    /// Reuses the generated low-level `delta_commits` client's cloud client and base
-    /// URL (both carry the same auth + endpoint), so the Delta v1 client shares the
-    /// aggregate client's configuration without touching generated code.
+    /// Reuses a generated low-level client's cloud client and base URL (both carry
+    /// the same auth + endpoint), so the Delta v1 client shares the aggregate
+    /// client's configuration without touching generated code.
     pub fn delta_v1(&self) -> DeltaV1Client {
-        let base = self.delta_commits_client();
+        let base = self.tables_client();
         DeltaV1Client::new(base.client, base.base_url)
     }
 }

@@ -43,12 +43,6 @@ url = { workspace = true }
 uuid = { workspace = true }
 zeroize = { workspace = true }
 
-# Portable Delta v1 API crate: owns the hand-written Delta wire DTOs (re-exported
-# from `models::delta::v1`), the commit coordinator, and the managed-table
-# contract. `common` re-exports its models so existing `models::delta::v1::*`
-# paths keep resolving.
-unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.1" }
-
 # rest server dependencies (in alphabetical order)
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }

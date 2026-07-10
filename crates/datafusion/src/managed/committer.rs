@@ -26,7 +26,7 @@ use delta_kernel::{
 };
 use tracing::{debug, info};
 use unitycatalog_client::DeltaV1Client;
-use unitycatalog_common::models::delta::v1::{
+use unitycatalog_delta_api::models::{
     DeltaCommit, DeltaTableRequirement, DeltaTableUpdate, DeltaUpdateTableRequest,
 };
 
@@ -390,7 +390,7 @@ mod tests {
     use super::{UnityCatalogCommitter, is_conflict};
     use olai_http::CloudClient;
     use unitycatalog_client::{DeltaV1Client, Error, UcApiError};
-    use unitycatalog_common::models::delta::v1::{DeltaErrorModel, DeltaErrorType};
+    use unitycatalog_delta_api::models::{DeltaErrorModel, DeltaErrorType};
     use url::Url;
 
     fn test_committer() -> UnityCatalogCommitter {

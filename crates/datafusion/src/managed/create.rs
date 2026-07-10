@@ -27,7 +27,7 @@ use object_store::ObjectStore;
 use object_store::aws::AmazonS3Builder;
 use object_store::local::LocalFileSystem;
 use unitycatalog_client::DeltaV1Client;
-use unitycatalog_common::models::delta::v1::{
+use unitycatalog_delta_api::models::{
     DeltaCreateStagingTableRequest, DeltaCreateTableRequest, DeltaDataSourceFormat, DeltaDataType,
     DeltaStagingTableResponse, DeltaStructField, DeltaStructType, DeltaTableType,
 };
@@ -307,8 +307,8 @@ fn arrow_primitive_to_delta(dt: &ArrowDataType) -> Result<String, CreateManagedT
 
 /// The protocol to send in the UC createTable request, read off the committed v0 snapshot so it
 /// matches exactly what was written to `0.json`.
-fn snapshot_protocol(snapshot: &Snapshot) -> unitycatalog_common::models::delta::v1::DeltaProtocol {
-    use unitycatalog_common::models::delta::v1::DeltaProtocol;
+fn snapshot_protocol(snapshot: &Snapshot) -> unitycatalog_delta_api::models::DeltaProtocol {
+    use unitycatalog_delta_api::models::DeltaProtocol;
     let p = snapshot.table_configuration().protocol();
     DeltaProtocol {
         min_reader_version: p.min_reader_version(),

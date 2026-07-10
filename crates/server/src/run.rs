@@ -37,7 +37,6 @@ use crate::api::RequestContext;
 use crate::api::agent_skills::AgentSkillHandler;
 use crate::api::agents::AgentHandler;
 use crate::api::catalogs::CatalogHandler;
-use crate::api::commits::DeltaCommitHandler;
 use crate::api::credentials::CredentialHandler;
 use crate::api::delta::DeltaApiHandler;
 use crate::api::entity_tag_assignments::EntityTagAssignmentHandler;
@@ -58,7 +57,7 @@ use crate::config::{Backend, Config, PostgresBackendConfig, SqliteBackendConfig,
 use crate::policy::{ConstantPolicy, Policy};
 use crate::rest::{
     AnonymousAuthenticator, AuthenticationLayer, create_agent_skills_router, create_agents_router,
-    create_catalogs_router, create_commits_router, create_credentials_router, create_delta_router,
+    create_catalogs_router, create_credentials_router, create_delta_router,
     create_entity_tag_assignments_router, create_external_locations_router,
     create_functions_router, create_open_sharing_router, create_policies_router,
     create_providers_router, create_recipients_router, create_schemas_router, create_shares_router,
@@ -279,7 +278,6 @@ where
         + ExternalLocationHandler<Cx>
         + RecipientHandler<Cx>
         + ProviderHandler<Cx>
-        + DeltaCommitHandler<Cx>
         + DeltaApiHandler<Cx>
         + TagPolicyHandler<Cx>
         + EntityTagAssignmentHandler<Cx>
@@ -302,7 +300,6 @@ where
         .merge(create_recipients_router(handler.clone()))
         .merge(create_providers_router(handler.clone()))
         .merge(create_shares_router(handler.clone()))
-        .merge(create_commits_router(handler.clone()))
         .merge(create_delta_router(handler.clone()))
         .merge(create_entity_tag_assignments_router(handler.clone()))
         .merge(create_policies_router(handler.clone()));

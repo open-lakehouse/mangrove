@@ -43,7 +43,6 @@ use unitycatalog_common::models::agent_skills::v0alpha1::*;
 use unitycatalog_common::models::agents::v0alpha1::*;
 use unitycatalog_common::models::catalogs::v1::*;
 use unitycatalog_common::models::credentials::v1::*;
-use unitycatalog_common::models::delta_commits::v1::*;
 use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
 use unitycatalog_common::models::policies::v1::*;
@@ -325,32 +324,6 @@ impl NapiUnityCatalogClient {
         request = request.with_comment(comment);
         request = request.with_read_only(read_only);
         request = request.with_skip_validation(skip_validation);
-        request
-            .await
-            .map(|item| Buffer::from(item.encode_to_vec()))
-            .default_error()
-    }
-    #[napi(catch_unwind)]
-    pub async fn commit(
-        &self,
-        table_id: String,
-        table_uri: String,
-        latest_backfilled_version: Option<i64>,
-    ) -> napi::Result<()> {
-        let mut request = self.client.commit(table_id, table_uri);
-        request = request.with_latest_backfilled_version(latest_backfilled_version);
-        request.await.default_error()
-    }
-    #[napi(catch_unwind)]
-    pub async fn get_commits(
-        &self,
-        table_id: String,
-        table_uri: String,
-        start_version: i64,
-        end_version: Option<i64>,
-    ) -> napi::Result<Buffer> {
-        let mut request = self.client.get_commits(table_id, table_uri, start_version);
-        request = request.with_end_version(end_version);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))

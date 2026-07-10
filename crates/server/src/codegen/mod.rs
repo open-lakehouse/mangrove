@@ -3,7 +3,6 @@ pub mod agent_skills;
 pub mod agents;
 pub mod catalogs;
 pub mod credentials;
-pub mod delta_commits;
 pub mod entity_tag_assignments;
 pub mod external_locations;
 pub mod functions;

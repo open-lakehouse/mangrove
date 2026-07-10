@@ -1,6 +1,5 @@
 mod _gen;
 mod association;
-pub mod delta;
 mod error;
 mod object;
 mod resources;

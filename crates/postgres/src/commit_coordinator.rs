@@ -1,18 +1,19 @@
 //! Postgres-backed Delta [`CommitCoordinator`].
 //!
 //! Implements the same arbitration/backfill state machine as the in-memory
-//! coordinator in `unitycatalog-common` (a port of UC OSS `postCommitCore`), but
-//! persists ratified commits in the `delta_commits` table. The unique constraint
-//! on `(table_id, commit_version)` is the real first-writer-wins arbiter: each
-//! `commit` runs in a transaction, and a racing insert for the same version fails
-//! with a unique violation that maps to [`CommitError::VersionConflict`].
+//! coordinator in `unitycatalog-delta-api` (a port of UC OSS `postCommitCore`),
+//! but persists ratified commits in the `delta_commits` table. The unique
+//! constraint on `(table_id, commit_version)` is the real first-writer-wins
+//! arbiter: each `commit` runs in a transaction, and a racing insert for the same
+//! version fails with a unique violation that maps to
+//! [`CommitError::VersionConflict`].
 //!
-//! See the common module for the invariants (never-delete-highest backfill
-//! marker, unbackfilled cap, field validation, `latest_table_version` sentinels).
+//! See [`unitycatalog_delta_api::coordinator`] for the invariants
+//! (never-delete-highest backfill marker, unbackfilled cap, field validation,
+//! `latest_table_version` sentinels).
 
-use unitycatalog_common::models::delta_commits::v1::CommitInfo;
-use unitycatalog_common::services::commit_coordinator::{
-    CommitCoordinator, CommitError, CommitResult, DEFAULT_MAX_UNBACKFILLED_COMMITS,
+use unitycatalog_delta_api::coordinator::{
+    CommitCoordinator, CommitError, CommitInfo, CommitResult, DEFAULT_MAX_UNBACKFILLED_COMMITS,
     validate_commit_info,
 };
 use uuid::Uuid;

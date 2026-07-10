@@ -5,7 +5,6 @@ pub mod catalogs;
 #[allow(clippy::too_many_arguments, clippy::doc_lazy_continuation)]
 pub mod client;
 pub mod credentials;
-pub mod delta_commits;
 pub mod entity_tag_assignments;
 pub mod external_locations;
 pub mod functions;

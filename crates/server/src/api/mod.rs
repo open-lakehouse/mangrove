@@ -1,7 +1,6 @@
 pub use agent_skills::AgentSkillHandler;
 pub use agents::AgentHandler;
 pub use catalogs::CatalogHandler;
-pub use commits::DeltaCommitHandler;
 pub use credentials::CredentialHandler;
 pub use delta::DeltaApiHandler;
 pub use entity_tag_assignments::EntityTagAssignmentHandler;
@@ -37,7 +36,6 @@ use unitycatalog_common::models::ResourceIdent;
 pub mod agent_skills;
 pub mod agents;
 pub mod catalogs;
-pub mod commits;
 pub mod credentials;
 pub mod delta;
 pub mod entity_tag_assignments;

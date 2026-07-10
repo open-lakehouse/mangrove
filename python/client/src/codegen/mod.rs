@@ -55,7 +55,6 @@ use unitycatalog_common::models::agent_skills::v0alpha1::*;
 use unitycatalog_common::models::agents::v0alpha1::*;
 use unitycatalog_common::models::catalogs::v1::*;
 use unitycatalog_common::models::credentials::v1::*;
-use unitycatalog_common::models::delta_commits::v1::*;
 use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
 use unitycatalog_common::models::policies::v1::*;
@@ -352,53 +351,6 @@ impl PyUnityCatalogClient {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyCredential::from(result))
-        })
-    }
-    #[pyo3(
-        signature = (
-            table_id,
-            table_uri,
-            commit_info = None,
-            latest_backfilled_version = None,
-            metadata = None
-        )
-    )]
-    pub fn commit(
-        &self,
-        py: Python,
-        table_id: String,
-        table_uri: String,
-        commit_info: ::core::option::Option<PyCommitInfo>,
-        latest_backfilled_version: Option<i64>,
-        metadata: ::core::option::Option<PyMetadata>,
-    ) -> PyUnityCatalogResult<()> {
-        let mut request = self.client.commit(table_id, table_uri);
-        request = request.with_commit_info(commit_info.map(::core::convert::Into::into));
-        request = request.with_latest_backfilled_version(latest_backfilled_version);
-        request = request.with_metadata(metadata.map(::core::convert::Into::into));
-        let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
-    }
-    #[pyo3(signature = (table_id, table_uri, start_version, end_version = None))]
-    pub fn get_commits(
-        &self,
-        py: Python,
-        table_id: String,
-        table_uri: String,
-        start_version: i64,
-        end_version: Option<i64>,
-    ) -> PyUnityCatalogResult<PyGetCommitsResponse> {
-        let mut request = self.client.get_commits(table_id, table_uri, start_version);
-        request = request.with_end_version(end_version);
-        let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyGetCommitsResponse::from(result))
         })
     }
     #[pyo3(

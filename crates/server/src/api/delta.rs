@@ -26,7 +26,7 @@ use unitycatalog_common::models::temporary_credentials::v1::{
     temporary_credential::Credentials,
 };
 use unitycatalog_common::models::{ResourceIdent, ResourceRef};
-use unitycatalog_common::services::commit_coordinator::ProvidesCommitCoordinator;
+use unitycatalog_delta_api::coordinator::ProvidesCommitCoordinator;
 
 use crate::api::RequestContext;
 use crate::api::credentials::CredentialHandlerExt;
@@ -701,7 +701,7 @@ fn build_table_metadata(table: &Table) -> DeltaTableMetadata {
     }
 }
 
-fn to_delta_commit(c: unitycatalog_common::models::delta_commits::v1::CommitInfo) -> DeltaCommit {
+fn to_delta_commit(c: unitycatalog_delta_api::coordinator::CommitInfo) -> DeltaCommit {
     DeltaCommit {
         version: c.version,
         timestamp: c.timestamp,
@@ -976,16 +976,13 @@ where
                 "add-commit / set-latest-backfilled-version require a MANAGED table",
             ));
         }
-        let commit_info =
-            add_commit.map(
-                |c| unitycatalog_common::models::delta_commits::v1::CommitInfo {
-                    version: c.version,
-                    timestamp: c.timestamp,
-                    file_name: c.file_name,
-                    file_size: c.file_size,
-                    file_modification_timestamp: c.file_modification_timestamp,
-                },
-            );
+        let commit_info = add_commit.map(|c| unitycatalog_delta_api::coordinator::CommitInfo {
+            version: c.version,
+            timestamp: c.timestamp,
+            file_name: c.file_name,
+            file_size: c.file_size,
+            file_modification_timestamp: c.file_modification_timestamp,
+        });
         handler
             .commit_coordinator()
             .commit(&table_uuid, commit_info, backfill)

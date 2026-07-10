@@ -53,13 +53,6 @@ pub mod credentials {
         include!("./unitycatalog.credentials.v1.tonic.rs");
     }
 }
-pub mod delta_commits {
-    pub mod v1 {
-        include!("./unitycatalog.delta_commits.v1.rs");
-        #[cfg(feature = "grpc")]
-        include!("./unitycatalog.delta_commits.v1.tonic.rs");
-    }
-}
 pub mod external_locations {
     pub mod v1 {
         include!("./unitycatalog.external_locations.v1.rs");

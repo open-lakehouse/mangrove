@@ -14,7 +14,7 @@ use crate::policy::{Decision, Permission, Policy, ProvidesPolicy};
 use crate::store::{ProvidesObjectStore, ProvidesResourceStore, ResourceStore};
 use unitycatalog_common::ObjectLabel;
 use unitycatalog_common::models::ResourceIdent;
-use unitycatalog_common::services::commit_coordinator::{
+use unitycatalog_delta_api::coordinator::{
     CommitCoordinator, InMemoryCommitCoordinator, ProvidesCommitCoordinator,
 };
 

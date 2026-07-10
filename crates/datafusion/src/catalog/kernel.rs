@@ -16,7 +16,7 @@ use delta_kernel::snapshot::Snapshot as KernelSnapshot;
 use delta_kernel::{Engine, LogPath, Version};
 use deltalake_core::DeltaTableConfig;
 use deltalake_core::kernel::Snapshot;
-use unitycatalog_common::models::delta::v1::{DeltaCommit, DeltaLoadTableResponse, DeltaTableType};
+use unitycatalog_delta_api::models::{DeltaCommit, DeltaLoadTableResponse, DeltaTableType};
 use url::Url;
 
 use super::builder::TableProviderError;
@@ -261,9 +261,7 @@ pub fn ensure_trailing_slash(s: &str) -> String {
 mod tests {
     use std::collections::BTreeMap;
 
-    use unitycatalog_common::models::delta::v1::{
-        DeltaStructType, DeltaTableMetadata, StructTypeTag,
-    };
+    use unitycatalog_delta_api::models::{DeltaStructType, DeltaTableMetadata, StructTypeTag};
 
     use super::*;
 

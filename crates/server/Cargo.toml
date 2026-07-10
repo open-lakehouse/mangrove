@@ -35,6 +35,7 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
   "store",
   "metric-view",
 ] }
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.1" }
 unitycatalog-sharing-client = { package = "olai-uc-sharing-client", path = "../sharing-client", version = "0.0.1", features = [
   "server",
 ] }

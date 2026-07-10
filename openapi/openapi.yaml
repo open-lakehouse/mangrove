@@ -23,11 +23,6 @@ tags:
     description: |-
       Manage credentials to access external data sources and services
        as well as generate signed urls for the Delta Sharing service.
-  - name: DeltaCommitsService
-    description: |-
-      Service implementing the Delta catalog-managed commits ("commit coordinator")
-       protocol. The catalog is the source of truth for which commit wins each
-       version.
   - name: EntityTagAssignmentsService
     description: Manage assignments of tags to Unity Catalog entities.
   - name: ExternalLocationsService
@@ -686,73 +681,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Credential"
-        default:
-          description: Default error response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Status"
-  /delta/preview/commits:
-    get:
-      tags:
-        - DeltaCommitsService
-      description: |-
-        Return ratified-but-unpublished commits for a table, plus the latest
-         version the catalog tracks.
-      operationId: GetCommits
-      parameters:
-        - name: tableId
-          in: query
-          description: UUID of the catalog-managed table.
-          schema:
-            type: string
-        - name: tableUri
-          in: query
-          description: The storage URI of the table.
-          schema:
-            type: string
-        - name: startVersion
-          in: query
-          description: The lowest version to return (inclusive). Defaults to 0.
-          schema:
-            type: string
-        - name: endVersion
-          in: query
-          description: |-
-            The highest version to return (inclusive). When set, must be
-             `>= start_version`. Defaults to the latest version.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GetCommitsResponse"
-        default:
-          description: Default error response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Status"
-    post:
-      tags:
-        - DeltaCommitsService
-      description: |-
-        Ratify a staged commit at the requested version (first-writer-wins), and/or
-         notify the catalog that commits have been backfilled to the Delta log.
-      operationId: Commit
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CommitRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content: {}
         default:
           description: Default error response
           content:
@@ -3284,83 +3212,6 @@ components:
           description: a unique id for the column
       additionalProperties: false
       title: Column
-    CommitInfo:
-      required:
-        - version
-        - timestamp
-        - file_name
-        - file_size
-        - file_modification_timestamp
-      type: object
-      properties:
-        version:
-          type: string
-          description: |-
-            The table version this commit produces. Posted commits are >= 1; version 0
-             is established out-of-band by create-table.
-          minimum: 0
-          exclusiveMinimum: true
-        timestamp:
-          type: string
-          description: |-
-            The in-commit timestamp (milliseconds since epoch). Monotonicity is the
-             client's responsibility; the server only requires it to be positive.
-          minimum: 0
-          exclusiveMinimum: true
-        fileName:
-          type: string
-          description: |-
-            The name of the staged commit file, e.g.
-             `00000000000000000005.<uuid>.json` under `_delta_log/_staged_commits/`.
-        fileSize:
-          type: string
-          description: The size of the staged commit file in bytes.
-        fileModificationTimestamp:
-          type: string
-          description: |-
-            The filesystem modification timestamp of the staged commit file
-             (milliseconds since epoch).
-      description: |-
-        Mirrors the `CommitInfo` shape used by the Unity Catalog OSS commit
-         coordinator (`uc_delta_commits` rows). All fields are required and must be
-         positive / non-empty (see the `commit` RPC).
-      additionalProperties: false
-      title: Information about a single Delta commit ratified by the catalog.
-    CommitRequest:
-      required:
-        - table_id
-        - table_uri
-      type: object
-      properties:
-        tableId:
-          type: string
-          description: UUID of the catalog-managed table being committed to.
-        tableUri:
-          type: string
-          description: |-
-            The storage URI of the table. Must match the table's registered storage
-             location (normalized) on the commit path.
-        commitInfo:
-          allOf:
-            - $ref: "#/components/schemas/CommitInfo"
-          description: The commit to ratify. Absent for a backfill-only notification.
-        latestBackfilledVersion:
-          type: string
-          description: |-
-            Notify the catalog that commits up to and including this version have been
-             published (backfilled) to the Delta log. The catalog prunes ratified
-             commits accordingly.
-        metadata:
-          allOf:
-            - $ref: "#/components/schemas/Metadata"
-          description: |-
-            A Delta metadata change accompanying a commit. Modeled minimally; the
-             coordinator stores it opaquely and does not interpret it.
-          additionalProperties: false
-          title: Metadata
-      description: At least one of `commit_info` or `latest_backfilled_version` must be set.
-      additionalProperties: false
-      title: Request to ratify a Delta commit and/or notify the catalog of backfill.
     CreateAgentRequest:
       required:
         - catalog_name
@@ -4581,38 +4432,6 @@ components:
       description: Generate a new set of credentials for a volume.
       additionalProperties: false
       title: Generate Temporary Volume Credentials Request
-    GetCommitsResponse:
-      type: object
-      properties:
-        commits:
-          type: array
-          items:
-            $ref: "#/components/schemas/CommitInfo"
-            additionalProperties: false
-            required:
-              - version
-              - timestamp
-              - file_name
-              - file_size
-              - file_modification_timestamp
-            description: |-
-              Mirrors the `CommitInfo` shape used by the Unity Catalog OSS commit
-               coordinator (`uc_delta_commits` rows). All fields are required and must be
-               positive / non-empty (see the `commit` RPC).
-            title: Information about a single Delta commit ratified by the catalog.
-          description: |-
-            Ratified commits in `[start_version, end_version]`, contiguous and ordered
-             ascending by version. Excludes the internal fully-backfilled marker row.
-        latestTableVersion:
-          type: string
-          description: |-
-            The latest table version the catalog tracks. `0` indicates a managed table
-             with no commits yet.
-      description: Response listing ratified-but-unpublished commits for a table.
-      additionalProperties: false
-      required:
-        - latest_table_version
-      title: Get Commits Response
     GetPermissionsResponse:
       type: object
       properties:
@@ -5005,28 +4824,6 @@ components:
          row-filter or column-mask function invocation.
       additionalProperties: false
       title: Match Column
-    Metadata:
-      type: object
-      properties:
-        id:
-          type: string
-          description: The Delta metadata `id`.
-        schemaString:
-          type: string
-          description: The serialized schema string from the Delta metadata action.
-        configuration:
-          type: object
-          additionalProperties:
-            type: string
-          description: Configuration key/value pairs from the Delta metadata action.
-      description: |-
-        A Delta metadata change accompanying a commit. Modeled minimally; the
-         coordinator stores it opaquely and does not interpret it.
-      additionalProperties: false
-      required:
-        - id
-        - schema_string
-      title: Metadata
     NamedAny:
       type: object
       properties:

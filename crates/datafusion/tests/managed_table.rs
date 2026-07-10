@@ -113,7 +113,7 @@ async fn create_managed_table_round_trip() {
         .expect("loadTable failed");
     assert_eq!(
         loaded.metadata.table_type,
-        unitycatalog_common::models::delta::v1::DeltaTableType::Managed
+        unitycatalog_delta_api::models::DeltaTableType::Managed
     );
     let (commits, latest) =
         match datafusion_unitycatalog::catalog::resolve_managed_read_state(&loaded)

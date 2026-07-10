@@ -1,7 +1,7 @@
 //! Server-side glue for the UC Delta REST API (`/delta/v1/...`).
 //!
 //! The wire DTOs are hand-maintained and shared with the client, so they live in
-//! [`unitycatalog_common::models::delta::v1`] — re-exported here so the router and
+//! [`unitycatalog_delta_api::models`] — re-exported here so the router and
 //! the API trait can keep referring to them as `models::*`. What stays server-only
 //! is [`DeltaError`]: the mapping from the server's internal [`Error`] onto the
 //! Delta API error envelope, plus its axum [`IntoResponse`].
@@ -12,7 +12,7 @@ use axum::response::{IntoResponse, Response};
 
 use crate::Error;
 
-pub use unitycatalog_common::models::delta::v1::*;
+pub use unitycatalog_delta_api::models::*;
 
 /// Error wrapper used as the error half of every Delta handler's `Result`. It maps
 /// the server's internal [`Error`] onto the Delta API envelope
