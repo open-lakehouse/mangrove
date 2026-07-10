@@ -48,7 +48,9 @@ jobs:
         # Output into the co-located `unitycatalog/codegen/` dir (matching the
         # `build:debug`/`build:release` package scripts) so the generated glue
         # (`native.js`/`native.d.ts`) and binary sit beside `client.ts`.
-        run: npx napi build --platform --release --output-dir unitycatalog/codegen --dts native.d.ts --js native.js
+        # `-- --locked` forwards to cargo so the NAPI build resolves strictly from
+        # Cargo.lock and can never silently re-resolve a git dep to a drifted rev.
+        run: npx napi build --platform --release --output-dir unitycatalog/codegen --dts native.d.ts --js native.js -- --locked
         working-directory: node/client
 
       - name: Compile TypeScript

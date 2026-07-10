@@ -13,7 +13,11 @@
 # …but the wasm workspace's target rustflags (getrandom wasm_js cfg) are source:
 !crates/query-wasm/.cargo/
 target/
-/Cargo.lock
+# The root Cargo.lock IS committed: this workspace ships binaries (the server
+# CLI) and native bindings, and pins several git dependencies by rev. A tracked
+# lock is what makes `--locked` CI builds deterministic — without it every job
+# re-resolves the git deps against their branch HEAD and drifts (which is how a
+# moved `delta-kernel-rs` branch previously broke CI).
 integration-tests/Cargo.lock
 # wasm-bindgen output of `just build-query-wasm` (a build artifact)
 crates/query-wasm/pkg/

@@ -227,7 +227,7 @@ jobs:
           UC_INTEGRATION_STORAGE_ROOT: "s3://dummy"
           SQLX_OFFLINE: "true"
         run: |
-          cargo llvm-cov nextest --workspace --all-features -E 'not binary(commit_coordinator)' --codecov --output-path codecov.json
+          cargo llvm-cov nextest --workspace --all-features --locked -E 'not binary(commit_coordinator)' --codecov --output-path codecov.json
 
       # Upload under the `unit` flag. codecov.yml keeps the status informational
       # so it can't block a PR, and fail_ci_if_error stays false so a flaky
@@ -283,7 +283,7 @@ jobs:
           UC_INTEGRATION_STORAGE_ROOT: "s3://dummy"
           SQLX_OFFLINE: "true"
         run: |
-          cargo +nightly llvm-cov --doc --workspace --all-features --codecov --output-path codecov-doc.json
+          cargo +nightly llvm-cov --doc --workspace --all-features --locked --codecov --output-path codecov-doc.json
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
@@ -373,7 +373,7 @@ jobs:
           UC_INTEGRATION_URL: http://localhost:8080
           SQLX_OFFLINE: "true"
         run: |
-          cargo llvm-cov --no-report test -p unitycatalog-acceptance -- journey_tests_live --nocapture
+          cargo llvm-cov --no-report --locked test -p unitycatalog-acceptance -- journey_tests_live --nocapture
           cargo llvm-cov report --codecov --output-path codecov.json
 
       - name: Upload to Codecov
@@ -442,7 +442,7 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
           SQLX_OFFLINE: "true"
         run: |
-          cargo llvm-cov --no-report nextest -p olai-uc-postgres --features integration-pg --profile ci
+          cargo llvm-cov --no-report --locked nextest -p olai-uc-postgres --features integration-pg --profile ci
           cargo llvm-cov report --codecov --output-path codecov.json
 
       - name: Upload to Codecov
@@ -533,7 +533,7 @@ jobs:
           UC_AZURITE_CONTAINER: "lakehouse"
           SQLX_OFFLINE: "true"
         run: |
-          cargo llvm-cov --no-report nextest -p olai-uc-server --features integration-azurite --profile ci --run-ignored all -E 'binary(credential_vending_azurite)'
+          cargo llvm-cov --no-report --locked nextest -p olai-uc-server --features integration-azurite --profile ci --run-ignored all -E 'binary(credential_vending_azurite)'
           cargo llvm-cov report --codecov --output-path codecov.json
 
       - name: Upload to Codecov
