@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use datafusion::common::Result as DFResult;
 use delta_kernel::Engine;
-use delta_kernel::engine::default::DefaultEngine;
+use delta_kernel_default_engine::DefaultEngine;
 use object_store::DynObjectStore;
 use url::Url;
 

@@ -35,6 +35,9 @@ deltalake-core = { workspace = true, optional = true }
 # to deltalake-core's `Snapshot::new`. Shares the workspace `delta_kernel` git
 # source with `deltalake-core` so the `Snapshot` types unify.
 delta_kernel = { workspace = true, optional = true }
+# The default engine (`DefaultEngineBuilder`) moved out of `delta_kernel` into
+# its own crate in kernel v0.25; the managed-table commit path builds one.
+delta_kernel_default_engine = { workspace = true, optional = true }
 
 # Serialize UC DDL responses into result batches (the `sql` module, `delta`
 # feature) and deserialize metric-view YAML (`metric-view` feature).
@@ -46,7 +49,7 @@ default = ["delta", "metric-view"]
 # Expose a Delta-backed `TableProviderBuilder` (pulls in delta-rs) and the Unity
 # Catalog DDL statements + planner (the `sql` module), whose managed
 # `CREATE TABLE` path serializes responses with serde/serde_json.
-delta = ["dep:deltalake-core", "dep:delta_kernel", "dep:serde", "dep:serde_json"]
+delta = ["dep:deltalake-core", "dep:delta_kernel", "dep:delta_kernel_default_engine", "dep:serde", "dep:serde_json"]
 # Lower Unity Catalog metric-view YAML into a DataFusion `LogicalPlan`. The YAML
 # model + dependency extraction live in `unitycatalog-common` (single source of
 # truth); this crate re-exports them and adds the DataFusion lowering.

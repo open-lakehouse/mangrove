@@ -30,13 +30,23 @@ keywords = [
 [workspace.dependencies]
 # Kernel and delta-rs core share one git source so the `Snapshot` types unify when
 # `crates/datafusion` builds a catalog-managed kernel snapshot and hands it to
-# `deltalake-core::kernel::Snapshot::new`. Both are pinned here at the workspace level.
-delta_kernel = { package = "buoyant_kernel", git = "https://github.com/buoyant-data/delta-kernel-rs", branch = "buoyant/main", features = [
+# `deltalake-core::kernel::Snapshot::new`. All three are pinned here at the
+# workspace level by immutable `rev` (never a floating branch): a moving branch
+# drifts on any CI job that re-resolves instead of `--locked` (napi build,
+# `cargo llvm-cov --doc`), which is exactly how the old `buoyant/main` pin broke.
+#
+# The native server and the wasm preview engine (`crates/query-wasm`, its own
+# workspace) share ONE kernel fork: roeap `delta_kernel` v0.25.0. The default
+# engine (`DefaultEngineBuilder`) moved into its own `delta_kernel_default_engine`
+# crate in v0.25 — depend on it explicitly. Bump all four revs in lock-step; the
+# `delta-rs` and `delta-kernel-rs` revs must be a matched set.
+delta_kernel = { package = "delta_kernel", git = "https://github.com/roeap/delta-kernel-rs", rev = "530e94d241779dfc17eda242f554b24091e00d23", features = [
   "internal-api",
-  "default-engine-rustls",
+  "default-engine-base",
   "arrow-58",
 ] }
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "82a2c28ff10650a028d65d30bb46eed12789cc9d", features = [
+delta_kernel_default_engine = { git = "https://github.com/roeap/delta-kernel-rs", rev = "530e94d241779dfc17eda242f554b24091e00d23", package = "delta_kernel_default_engine" }
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c", features = [
   "datafusion",
   "cloud",
 ] }
