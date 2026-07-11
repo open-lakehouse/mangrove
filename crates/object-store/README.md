@@ -1,4 +1,4 @@
-# unitycatalog-object-store
+# olai-uc-object-store
 
 [`object_store`](https://docs.rs/object_store) integration for
 [Unity Catalog](https://www.unitycatalog.io/). Vends short-lived,
@@ -8,11 +8,20 @@ accepts one (DataFusion, `delta_kernel`, `parquet`, …) can read and
 write data governed by UC volumes, tables, and external locations with
 no extra plumbing.
 
+> [!NOTE]
+> The Rust crate identifier is `unitycatalog_object_store` (imports and
+> paths use that name); the crate is published to crates.io as
+> `olai-uc-object-store` while the naming settles. This is an experimental
+> component of an unofficial
+> [Unity Catalog](https://www.unitycatalog.io/) implementation.
+
 ## Install
+
+The `package` rename keeps the `unitycatalog_object_store` import path:
 
 ```toml
 [dependencies]
-unitycatalog-object-store = { git = "https://github.com/unitycatalog-incubator/unitycatalog-rs" }
+unitycatalog_object_store = { package = "olai-uc-object-store", version = "0.0.1" }
 object_store = "0.12"
 ```
 
