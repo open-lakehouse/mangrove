@@ -211,9 +211,32 @@ pub struct UpdateTableSpec {
     pub expected_etag: Option<String>,
 }
 
+/// Optional Delta operations a backend may or may not support.
+///
+/// Reported by [`DeltaBackend::capabilities`] and used by `getConfig` to advertise
+/// only the endpoints the backend actually serves — so a discovery-driven client is
+/// never pointed at an operation the backend will `501` on. All flags default to
+/// the conservative `false`; a backend opts in by overriding `capabilities()`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct DeltaCapabilities {
+    /// Whether `renameTable` is served. The port models rename as optionally
+    /// [`NotImplemented`](crate::error::DeltaBackendError::NotImplemented) (see
+    /// [`DeltaBackend::rename_table`]); a backend whose `rename_table` returns
+    /// `NotImplemented` must leave this `false` so `getConfig` does not advertise an
+    /// endpoint that 501s.
+    pub rename: bool,
+}
+
 /// The backend port. See the module docs.
 #[async_trait]
 pub trait DeltaBackend<Cx = ()>: Send + Sync + 'static {
+    /// The optional operations this backend serves, used by `getConfig` to advertise
+    /// a capability-accurate endpoint list. Defaults to [`DeltaCapabilities::default`]
+    /// (all off), so a backend advertises an optional operation only by opting in.
+    fn capabilities(&self) -> DeltaCapabilities {
+        DeltaCapabilities::default()
+    }
+
     /// Authorize an action before the handler performs it.
     ///
     /// The single authorization seam (see the [module authz contract](self)):

@@ -17,6 +17,8 @@
 //! - [`error`] — the decoupled error contract ([`DeltaApiError`](error::DeltaApiError) +
 //!   [`DeltaBackendError`](error::DeltaBackendError)).
 //! - [`column`] — the portable UC column model used by the contract.
+//! - [`config`] — `getConfig` support: capability-driven endpoint list + protocol
+//!   version negotiation.
 //! - [`contract`] — the managed-table contract + Delta↔UC column mapping.
 //! - [`coordinator`] — the commit coordinator (arbitration + backfill).
 //! - [`authz`] — the [`DeltaAction`](authz::DeltaAction) vocabulary the handler
@@ -28,6 +30,7 @@
 pub mod authz;
 pub mod backend;
 pub mod column;
+pub mod config;
 pub mod contract;
 pub mod coordinator;
 pub mod error;
@@ -38,7 +41,7 @@ pub mod router;
 pub mod testing;
 
 pub use authz::DeltaAction;
-pub use backend::DeltaBackend;
+pub use backend::{DeltaBackend, DeltaCapabilities};
 pub use error::{DeltaApiError, DeltaApiResult, DeltaBackendError};
 pub use handler::DeltaApiHandler;
 pub use router::get_router;

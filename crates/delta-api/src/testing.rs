@@ -19,8 +19,9 @@ use async_trait::async_trait;
 
 use crate::authz::DeltaAction;
 use crate::backend::{
-    BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, ResolvedTable, SchemaRef,
-    StagingReservation, TableRef, UpdateTableSpec, VendedCredential, VendedCredentialKind, etag_of,
+    BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, DeltaCapabilities,
+    ResolvedTable, SchemaRef, StagingReservation, TableRef, UpdateTableSpec, VendedCredential,
+    VendedCredentialKind, etag_of,
 };
 use crate::coordinator::{CommitCoordinator, InMemoryCommitCoordinator};
 use crate::error::DeltaBackendError;
@@ -111,6 +112,12 @@ fn fake_credential(url: &str) -> VendedCredential {
 
 #[async_trait]
 impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
+    fn capabilities(&self) -> DeltaCapabilities {
+        // This backend implements a working `rename_table`, so it advertises rename —
+        // exercising the capability-on branch of `getConfig`'s endpoint list.
+        DeltaCapabilities { rename: true }
+    }
+
     async fn authorize(&self, action: DeltaAction<'_>, _cx: &Cx) -> BackendResult<()> {
         // Allow everything except the creator-match, which reproduces mangrove's
         // string-equality-of-principal check so tests can exercise denial.

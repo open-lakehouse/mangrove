@@ -114,22 +114,6 @@ pub trait DeltaApiHandler<Cx>: Send + Sync + 'static {
     ) -> Result<DeltaCredentialsResponse>;
 }
 
-/// The static endpoint list `getConfig` advertises.
-const ENDPOINTS: &[&str] = &[
-    "POST /v1/catalogs/{catalog}/schemas/{schema}/staging-tables",
-    "POST /v1/catalogs/{catalog}/schemas/{schema}/tables",
-    "GET /v1/catalogs/{catalog}/schemas/{schema}/tables",
-    "GET /v1/catalogs/{catalog}/schemas/{schema}/tables/{table}",
-    "POST /v1/catalogs/{catalog}/schemas/{schema}/tables/{table}",
-    "DELETE /v1/catalogs/{catalog}/schemas/{schema}/tables/{table}",
-    "HEAD /v1/catalogs/{catalog}/schemas/{schema}/tables/{table}",
-    "POST /v1/catalogs/{catalog}/schemas/{schema}/tables/{table}/rename",
-    "GET /v1/catalogs/{catalog}/schemas/{schema}/tables/{table}/credentials",
-    "POST /v1/catalogs/{catalog}/schemas/{schema}/tables/{table}/metrics",
-    "GET /v1/staging-tables/{table_id}/credentials",
-    "GET /v1/temporary-path-credentials",
-];
-
 #[async_trait]
 impl<B, Cx> DeltaApiHandler<Cx> for B
 where
@@ -142,10 +126,13 @@ where
                 "catalog query parameter is required",
             ));
         }
+        // Negotiate before the catalog lookup so an unsupported client fails fast
+        // with 400 without incurring a catalog resolve.
+        let protocol_version = crate::config::negotiate_version(&query.protocol_versions)?;
         self.catalog_exists(&query.catalog, &context).await?;
         Ok(DeltaCatalogConfig {
-            endpoints: ENDPOINTS.iter().map(|s| s.to_string()).collect(),
-            protocol_version: "1.0".to_string(),
+            endpoints: crate::config::endpoints_for(self.capabilities()),
+            protocol_version,
         })
     }
 
