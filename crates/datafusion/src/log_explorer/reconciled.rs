@@ -26,7 +26,7 @@ use std::sync::{Arc, LazyLock};
 use std::task::{Context, Poll};
 
 use async_trait::async_trait;
-use datafusion::arrow::array::{AsArray, BooleanArray};
+use datafusion::arrow::array::BooleanArray;
 use datafusion::arrow::compute::filter_record_batch;
 use datafusion::arrow::datatypes::SchemaRef;
 use datafusion::arrow::record_batch::RecordBatch;
@@ -34,12 +34,11 @@ use datafusion::catalog::{Session, TableProvider};
 use datafusion::common::DataFusionError;
 use datafusion::common::error::Result;
 use datafusion::execution::{RecordBatchStream, SendableRecordBatchStream, TaskContext};
-use datafusion::logical_expr::utils::conjunction;
-use datafusion::logical_expr::{ColumnarValue, Expr, TableProviderFilterPushDown, TableType};
+use datafusion::logical_expr::{Expr, TableProviderFilterPushDown, TableType};
 use datafusion::physical_expr::EquivalenceProperties;
 use datafusion::physical_plan::execution_plan::{Boundedness, EmissionType};
 use datafusion::physical_plan::{
-    DisplayAs, DisplayFormatType, ExecutionPlan, Partitioning, PhysicalExpr, PlanProperties,
+    DisplayAs, DisplayFormatType, ExecutionPlan, Partitioning, PlanProperties,
 };
 use delta_kernel::arrow::datatypes::SchemaRef as ArrowSchemaRef;
 use delta_kernel::engine::arrow_conversion::TryIntoArrow as _;
@@ -109,9 +108,9 @@ impl TableProvider for ReconciledLogProvider {
 
     async fn scan(
         &self,
-        state: &dyn Session,
+        _state: &dyn Session,
         projection: Option<&Vec<usize>>,
-        filters: &[Expr],
+        _filters: &[Expr],
         _limit: Option<usize>,
     ) -> Result<Arc<dyn ExecutionPlan>> {
         let engine = self.engine.clone();
@@ -140,13 +139,6 @@ impl TableProvider for ReconciledLogProvider {
             .build()
             .map_err(|e| DataFusionError::Execution(e.to_string()))?;
 
-        let predicate = if let Some(pred) = conjunction(filters.iter().cloned()) {
-            let df_schema = projected_arrow.clone().try_into()?;
-            state.create_physical_expr(pred, &df_schema).ok()
-        } else {
-            None
-        };
-
         let exec = ReconciledLogExec::new(
             self.engine.clone(),
             scan.into(),
@@ -157,7 +149,6 @@ impl TableProvider for ReconciledLogProvider {
                 Boundedness::Bounded,
             ),
             projection.map(|p| p.to_vec()),
-            predicate,
         );
         Ok(Arc::new(exec))
     }
@@ -168,7 +159,6 @@ struct ReconciledLogExec {
     scan: Arc<Scan>,
     properties: Arc<PlanProperties>,
     projection: Option<Vec<usize>>,
-    predicate: Option<Arc<dyn PhysicalExpr>>,
 }
 
 impl std::fmt::Debug for ReconciledLogExec {
@@ -185,14 +175,12 @@ impl ReconciledLogExec {
         scan: Arc<Scan>,
         properties: PlanProperties,
         projection: Option<Vec<usize>>,
-        predicate: Option<Arc<dyn PhysicalExpr>>,
     ) -> Self {
         Self {
             engine,
             scan,
             properties: Arc::new(properties),
             projection,
-            predicate,
         }
     }
 }
@@ -249,7 +237,6 @@ impl ExecutionPlan for ReconciledLogExec {
             self.schema().clone(),
             Box::new(iter),
             self.projection.clone(),
-            self.predicate.clone(),
         );
         Ok(Box::pin(stream))
     }
@@ -259,7 +246,6 @@ struct ReconciledLogStream {
     schema: SchemaRef,
     input: Box<dyn Iterator<Item = DeltaResult<ScanMetadata>> + Send>,
     projection: Option<Vec<usize>>,
-    predicate: Option<Arc<dyn PhysicalExpr>>,
 }
 
 impl ReconciledLogStream {
@@ -267,13 +253,11 @@ impl ReconciledLogStream {
         schema: SchemaRef,
         input: Box<dyn Iterator<Item = DeltaResult<ScanMetadata>> + Send>,
         projection: Option<Vec<usize>>,
-        predicate: Option<Arc<dyn PhysicalExpr>>,
     ) -> Self {
         Self {
             schema,
             input,
             projection,
-            predicate,
         }
     }
 }
@@ -298,28 +282,6 @@ impl Stream for ReconciledLogStream {
                 let predicate = BooleanArray::from(selection_vector);
                 let mut record_batch = filter_record_batch(data.record_batch(), &predicate)
                     .map_err(|e| DataFusionError::ArrowError(Box::new(e), None));
-
-                // Apply the pushed-down predicate, if any.
-                if let (Some(predicate), Ok(batch)) = (&this.predicate, &record_batch) {
-                    match predicate.evaluate(batch) {
-                        Ok(ColumnarValue::Array(array)) => {
-                            let bool_array = array.as_boolean();
-                            record_batch = filter_record_batch(batch, bool_array)
-                                .map_err(|e| DataFusionError::ArrowError(Box::new(e), None));
-                        }
-                        Ok(ColumnarValue::Scalar(scalar)) => {
-                            return Poll::Ready(Some(Err(DataFusionError::Execution(format!(
-                                "predicate evaluated to a scalar ({scalar:?}); expected an array"
-                            )))));
-                        }
-                        Err(e) => {
-                            tracing::error!("failed to evaluate predicate: {}", e);
-                            return Poll::Ready(Some(Err(DataFusionError::Execution(
-                                e.to_string(),
-                            ))));
-                        }
-                    }
-                }
 
                 // Apply the projection.
                 if let Some(projection) = &this.projection {
