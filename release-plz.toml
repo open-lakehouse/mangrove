@@ -90,9 +90,6 @@ pr_draft = false
 [[package]]
 name = "olai-uc-delta-api"
 changelog_path = "crates/delta-api/CHANGELOG.md"
-# (a) Bootstrap gate: new crate, not yet on crates.io. Bootstrap it via
-# bootstrap-publish.yml (Tier 0), then remove this line.
-release = false
 
 [[package]]
 name = "olai-uc-common"
@@ -101,7 +98,6 @@ changelog_path = "crates/common/CHANGELOG.md"
 [[package]]
 name = "olai-uc-client"
 changelog_path = "crates/client/CHANGELOG.md"
-release = false
 
 [[package]]
 name = "olai-uc-sharing-client"
