@@ -46,7 +46,7 @@ delta_kernel = { package = "delta_kernel", git = "https://github.com/roeap/delta
   "arrow-58",
 ] }
 delta_kernel_default_engine = { git = "https://github.com/roeap/delta-kernel-rs", rev = "530e94d241779dfc17eda242f554b24091e00d23", package = "delta_kernel_default_engine" }
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c", features = [
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "ff862c293d31c954075f99f284f1353144ac1b31", features = [
   "datafusion",
   "cloud",
 ] }

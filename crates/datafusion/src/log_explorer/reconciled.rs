@@ -1,9 +1,32 @@
+//! [`ReconciledLogProvider`]: the effective add-file state at a snapshot version.
+//!
+//! Runs kernel log replay via `Snapshot::scan_builder().scan_metadata(..)` and
+//! materializes the surviving scan-file rows as Arrow (schema
+//! [`scan_row_schema`]). This is the *reconciled* view — add/remove tombstoning
+//! and protocol+metadata resolution already applied — the counterpart to
+//! [`RawLogProvider`](super::RawLogProvider)'s as-written history.
+//!
+//! Generalized from the server's `DeltaLogReplayProvider`
+//! (`crates/server/src/services/kernel/delta_log.rs`), which serves the same rows
+//! for Delta Sharing `query_table`.
+//!
+//! **Checkpoint pushdown is already handled by the kernel.** `scan_metadata`
+//! reads checkpoint parquet with an add/remove-*projected* schema
+//! (`CHECKPOINT_READ_SCHEMA`) and applies its own row-group-skipping
+//! `meta_predicate`, so the reconciled read never pulls the full action set or
+//! irrelevant row groups — no extra column/row-group pushdown is available to add
+//! here. DataFusion's column projection is applied to the emitted scan-file rows.
+//! A caller predicate over *table data* columns (to prune the file list by data
+//! stats via `scan_builder().with_predicate(..)`) is a Phase 2 feature: the
+//! output here is scan-file metadata (`path`/`size`/`stats`/…), not table data,
+//! so there is no data predicate to translate at the wiring stage.
+
 use std::pin::Pin;
 use std::sync::{Arc, LazyLock};
 use std::task::{Context, Poll};
 
 use async_trait::async_trait;
-use datafusion::arrow::array::{AsArray, BooleanArray};
+use datafusion::arrow::array::BooleanArray;
 use datafusion::arrow::compute::filter_record_batch;
 use datafusion::arrow::datatypes::SchemaRef;
 use datafusion::arrow::record_batch::RecordBatch;
@@ -11,12 +34,11 @@ use datafusion::catalog::{Session, TableProvider};
 use datafusion::common::DataFusionError;
 use datafusion::common::error::Result;
 use datafusion::execution::{RecordBatchStream, SendableRecordBatchStream, TaskContext};
-use datafusion::logical_expr::utils::conjunction;
-use datafusion::logical_expr::{ColumnarValue, Expr, TableProviderFilterPushDown, TableType};
+use datafusion::logical_expr::{Expr, TableProviderFilterPushDown, TableType};
 use datafusion::physical_expr::EquivalenceProperties;
 use datafusion::physical_plan::execution_plan::{Boundedness, EmissionType};
 use datafusion::physical_plan::{
-    DisplayAs, DisplayFormatType, ExecutionPlan, Partitioning, PhysicalExpr, PlanProperties,
+    DisplayAs, DisplayFormatType, ExecutionPlan, Partitioning, PlanProperties,
 };
 use delta_kernel::arrow::datatypes::SchemaRef as ArrowSchemaRef;
 use delta_kernel::engine::arrow_conversion::TryIntoArrow as _;
@@ -30,39 +52,42 @@ use url::Url;
 static SCAN_ROW_SCHEMA: LazyLock<ArrowSchemaRef> =
     LazyLock::new(|| Arc::new((scan_row_schema().as_ref()).try_into_arrow().unwrap()));
 
-/// A DataFusion [`TableProvider`] that replays a Delta table's log and exposes
-/// the resulting scan-file rows (per [`scan_row_schema`]).
+/// A DataFusion [`TableProvider`] over a Delta table's *reconciled* log: the
+/// surviving scan-file rows (per [`scan_row_schema`]) after kernel log replay.
 ///
-/// The provider carries the delta_kernel [`Engine`] used to read the log, so it
-/// is fully self-contained and does not depend on any session extension.
-pub(crate) struct DeltaLogReplayProvider {
+/// Carries the delta-kernel [`Engine`] used to read the log, so it is fully
+/// self-contained and depends on no session extension.
+pub struct ReconciledLogProvider {
     table: Url,
     engine: Arc<dyn Engine>,
 }
 
-impl std::fmt::Debug for DeltaLogReplayProvider {
+impl std::fmt::Debug for ReconciledLogProvider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("DeltaLogReplayProvider")
+        f.debug_struct("ReconciledLogProvider")
             .field("table", &self.table)
             .finish_non_exhaustive()
     }
 }
 
-impl DeltaLogReplayProvider {
-    pub(crate) fn new(mut table: Url, engine: Arc<dyn Engine>) -> Result<Self> {
+impl ReconciledLogProvider {
+    /// Build a provider for the Delta table rooted at `table`, reading its log
+    /// with `engine`.
+    pub fn new(mut table: Url, engine: Arc<dyn Engine>) -> Self {
         if !table.path().ends_with('/') {
             table.set_path(&format!("{}/", table.path()));
         }
-        Ok(Self { table, engine })
+        Self { table, engine }
     }
 
-    pub(crate) fn scan_row_schema() -> ArrowSchemaRef {
+    /// The Arrow schema of the reconciled scan-file rows.
+    pub fn scan_row_schema() -> ArrowSchemaRef {
         Arc::clone(&SCAN_ROW_SCHEMA)
     }
 }
 
 #[async_trait]
-impl TableProvider for DeltaLogReplayProvider {
+impl TableProvider for ReconciledLogProvider {
     fn schema(&self) -> ArrowSchemaRef {
         Self::scan_row_schema()
     }
@@ -83,13 +108,11 @@ impl TableProvider for DeltaLogReplayProvider {
 
     async fn scan(
         &self,
-        state: &dyn Session,
+        _state: &dyn Session,
         projection: Option<&Vec<usize>>,
-        filters: &[Expr],
+        _filters: &[Expr],
         _limit: Option<usize>,
     ) -> Result<Arc<dyn ExecutionPlan>> {
-        // TODO: handle predicate - this needs to be applied in the stream where we produce the
-        // record batches
         let engine = self.engine.clone();
         let table_root = self.table.clone();
 
@@ -116,14 +139,7 @@ impl TableProvider for DeltaLogReplayProvider {
             .build()
             .map_err(|e| DataFusionError::Execution(e.to_string()))?;
 
-        let predicate = if let Some(pred) = conjunction(filters.iter().cloned()) {
-            let df_schema = projected_arrow.clone().try_into()?;
-            state.create_physical_expr(pred, &df_schema).ok()
-        } else {
-            None
-        };
-
-        let exec = DeltaLogReplayExec::new(
+        let exec = ReconciledLogExec::new(
             self.engine.clone(),
             scan.into(),
             PlanProperties::new(
@@ -133,62 +149,57 @@ impl TableProvider for DeltaLogReplayProvider {
                 Boundedness::Bounded,
             ),
             projection.map(|p| p.to_vec()),
-            predicate,
         );
         Ok(Arc::new(exec))
     }
 }
 
-struct DeltaLogReplayExec {
+struct ReconciledLogExec {
     engine: Arc<dyn Engine>,
     scan: Arc<Scan>,
     properties: Arc<PlanProperties>,
     projection: Option<Vec<usize>>,
-    predicate: Option<Arc<dyn PhysicalExpr>>,
 }
 
-impl std::fmt::Debug for DeltaLogReplayExec {
+impl std::fmt::Debug for ReconciledLogExec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("DeltaLogReplayExec")
+        f.debug_struct("ReconciledLogExec")
             .field("projection", &self.projection)
             .finish_non_exhaustive()
     }
 }
 
-impl DeltaLogReplayExec {
-    pub fn new(
+impl ReconciledLogExec {
+    fn new(
         engine: Arc<dyn Engine>,
         scan: Arc<Scan>,
         properties: PlanProperties,
         projection: Option<Vec<usize>>,
-        predicate: Option<Arc<dyn PhysicalExpr>>,
     ) -> Self {
         Self {
             engine,
             scan,
             properties: Arc::new(properties),
             projection,
-            predicate,
         }
     }
 }
 
-impl DisplayAs for DeltaLogReplayExec {
+impl DisplayAs for ReconciledLogExec {
     fn fmt_as(&self, t: DisplayFormatType, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        // TODO: actually implement formatting according to the type
         match t {
             DisplayFormatType::Default
             | DisplayFormatType::Verbose
             | DisplayFormatType::TreeRender => {
-                write!(f, "DeltaLogReplayExec: ")
+                write!(f, "ReconciledLogExec: ")
             }
         }
     }
 }
 
-impl ExecutionPlan for DeltaLogReplayExec {
+impl ExecutionPlan for ReconciledLogExec {
     fn name(&self) -> &'static str {
-        "DeltaLogReplayExec"
+        "ReconciledLogExec"
     }
 
     fn properties(&self) -> &Arc<PlanProperties> {
@@ -213,53 +224,45 @@ impl ExecutionPlan for DeltaLogReplayExec {
     ) -> Result<SendableRecordBatchStream> {
         if partition != 0 {
             return Err(DataFusionError::Execution(
-                "DeltaLogReplayExec only supports a single partition".into(),
+                "ReconciledLogExec only supports a single partition".into(),
             ));
         }
 
         let engine = self.engine.clone();
-        // TODO: where should we do the work, also how does the work actually get executed?
-        // Since internally we are using channels, we may just be blocking when we are polling ...
         let iter = self
             .scan
             .scan_metadata(engine.as_ref())
             .map_err(|e| DataFusionError::Execution(e.to_string()))?;
-        let stream = DeltaLogReplayStream::new(
+        let stream = ReconciledLogStream::new(
             self.schema().clone(),
             Box::new(iter),
             self.projection.clone(),
-            self.predicate.clone(),
         );
         Ok(Box::pin(stream))
     }
 }
 
-// TODO: handle limits. to do this we likely need to also use ReceiverStreamBuilder
-// since otherwise the read futures might not be dropped and we do the work anyways.
-struct DeltaLogReplayStream {
+struct ReconciledLogStream {
     schema: SchemaRef,
     input: Box<dyn Iterator<Item = DeltaResult<ScanMetadata>> + Send>,
     projection: Option<Vec<usize>>,
-    predicate: Option<Arc<dyn PhysicalExpr>>,
 }
 
-impl DeltaLogReplayStream {
-    pub fn new(
+impl ReconciledLogStream {
+    fn new(
         schema: SchemaRef,
         input: Box<dyn Iterator<Item = DeltaResult<ScanMetadata>> + Send>,
         projection: Option<Vec<usize>>,
-        predicate: Option<Arc<dyn PhysicalExpr>>,
     ) -> Self {
         Self {
             schema,
             input,
             projection,
-            predicate,
         }
     }
 }
 
-impl Stream for DeltaLogReplayStream {
+impl Stream for ReconciledLogStream {
     type Item = Result<RecordBatch>;
 
     fn poll_next(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -275,34 +278,12 @@ impl Stream for DeltaLogReplayStream {
                     }
                 };
 
-                // Apply the selection vector to the record batch
+                // Apply the kernel selection vector to the record batch.
                 let predicate = BooleanArray::from(selection_vector);
                 let mut record_batch = filter_record_batch(data.record_batch(), &predicate)
                     .map_err(|e| DataFusionError::ArrowError(Box::new(e), None));
 
-                // Apply the predicate to the record batch
-                if let (Some(predicate), Ok(batch)) = (&this.predicate, &record_batch) {
-                    match predicate.evaluate(batch) {
-                        Ok(result) => match result {
-                            ColumnarValue::Array(array) => {
-                                let bool_array = array.as_boolean();
-                                record_batch = filter_record_batch(data.record_batch(), bool_array)
-                                    .map_err(|e| DataFusionError::ArrowError(Box::new(e), None));
-                            }
-                            ColumnarValue::Scalar(_scalar) => {
-                                todo!("handle scalar value");
-                            }
-                        },
-                        Err(e) => {
-                            tracing::error!("failed to evaluate predicate: {}", e);
-                            return Poll::Ready(Some(Err(DataFusionError::Execution(
-                                e.to_string(),
-                            ))));
-                        }
-                    }
-                }
-
-                // Apply the projection to the record batch
+                // Apply the projection.
                 if let Some(projection) = &this.projection {
                     record_batch = record_batch.and_then(|batch| {
                         batch
@@ -326,7 +307,7 @@ impl Stream for DeltaLogReplayStream {
     }
 }
 
-impl RecordBatchStream for DeltaLogReplayStream {
+impl RecordBatchStream for ReconciledLogStream {
     fn schema(&self) -> SchemaRef {
         Arc::clone(&self.schema)
     }

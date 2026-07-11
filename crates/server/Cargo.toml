@@ -36,6 +36,12 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
   "metric-view",
 ] }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.1" }
+# The reconciled Delta-log TableProvider (log replay → scan-file rows) lives here
+# as the single shared implementation; the server serves it as the Delta Sharing
+# `query_table` response. `delta` gates the kernel-backed providers.
+unitycatalog-datafusion = { package = "olai-uc-datafusion", path = "../datafusion", version = "0.1.0", default-features = false, features = [
+  "delta",
+] }
 unitycatalog-sharing-client = { package = "olai-uc-sharing-client", path = "../sharing-client", version = "0.0.1", features = [
   "server",
 ] }

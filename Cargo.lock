@@ -2000,7 +2000,7 @@ dependencies = [
 [[package]]
 name = "deltalake-core"
 version = "1.0.0"
-source = "git+https://github.com/roeap/delta-rs?rev=8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c#8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c"
+source = "git+https://github.com/roeap/delta-rs?rev=ff862c293d31c954075f99f284f1353144ac1b31#ff862c293d31c954075f99f284f1353144ac1b31"
 dependencies = [
  "alloc-stdlib",
  "arrow",
@@ -2059,7 +2059,7 @@ dependencies = [
 [[package]]
 name = "deltalake-derive"
 version = "1.0.0"
-source = "git+https://github.com/roeap/delta-rs?rev=8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c#8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c"
+source = "git+https://github.com/roeap/delta-rs?rev=ff862c293d31c954075f99f284f1353144ac1b31#ff862c293d31c954075f99f284f1353144ac1b31"
 dependencies = [
  "convert_case 0.9.0",
  "itertools 0.14.0",
@@ -3799,6 +3799,7 @@ dependencies = [
  "olai-uc-object-store",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror",
  "tokio",
  "tracing",
@@ -3887,6 +3888,7 @@ dependencies = [
  "olai-store",
  "olai-uc-client",
  "olai-uc-common",
+ "olai-uc-datafusion",
  "olai-uc-delta-api",
  "olai-uc-postgres",
  "olai-uc-sharing-client",

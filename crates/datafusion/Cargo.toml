@@ -61,6 +61,11 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 serde_json = { workspace = true }
 olai-http = { workspace = true }
+# The log-explorer tests write synthetic Delta tables (adds, checkpoint,
+# tombstoning overwrite) to drive the providers; delta-rs is the write side and
+# the correctness oracle.
+deltalake-core = { workspace = true }
+tempfile = "3.1"
 
 [[example]]
 name = "unity_catalog"

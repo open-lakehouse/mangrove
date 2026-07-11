@@ -14,7 +14,9 @@ use delta_kernel::{Snapshot, Version};
 use itertools::Itertools;
 use unitycatalog_common::models::tables::v1::DataSourceFormat;
 
-use super::kernel::{DeltaLogReplayProvider, ObjectStoreFactory, build_engine};
+use unitycatalog_datafusion::log_explorer::ReconciledLogProvider;
+
+use super::kernel::{ObjectStoreFactory, build_engine};
 use super::location::StorageLocationUrl;
 use super::sharing::SharingTableReference;
 use crate::api::tables::TableManager;
@@ -50,7 +52,7 @@ struct Extractors {
 
 impl Extractors {
     pub fn new(ctx: &SessionContext) -> Result<Self> {
-        let df_schema = DeltaLogReplayProvider::scan_row_schema()
+        let df_schema = ReconciledLogProvider::scan_row_schema()
             .try_into()
             .map_err(|_| Error::Generic("failed to convert schema".to_string()))?;
         let sharing_pq_files = ctx
@@ -119,10 +121,10 @@ impl KernelSession {
             self.ctx
                 .register_table(
                     inner_ref.clone(),
-                    Arc::new(
-                        DeltaLogReplayProvider::new(location.location().clone(), engine)
-                            .map_err(|e| Error::Generic(e.to_string()))?,
-                    ),
+                    Arc::new(ReconciledLogProvider::new(
+                        location.location().clone(),
+                        engine,
+                    )),
                 )
                 .map_err(|e| Error::Generic(e.to_string()))?;
         }
