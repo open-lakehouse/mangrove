@@ -19,10 +19,10 @@ use unitycatalog_delta_api::coordinator::{
 };
 
 pub mod credential_vending;
+mod delta_backend;
 pub(crate) mod kernel;
 pub mod location;
 pub mod location_policy;
-pub mod managed_delta_contract;
 pub(crate) mod object_store;
 pub mod secrets;
 mod session;

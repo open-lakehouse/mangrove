@@ -30,6 +30,7 @@ use unitycatalog_client::UnityCatalogClient;
 use unitycatalog_common::services::encryption::EnvelopeEncryptor;
 use unitycatalog_common::store::ObjectStoreAdapter;
 use unitycatalog_common::{Error, Result};
+use unitycatalog_delta_api::DeltaApiHandler;
 use unitycatalog_postgres::GraphStore;
 use unitycatalog_sqlite::SqliteStore;
 
@@ -38,7 +39,6 @@ use crate::api::agent_skills::AgentSkillHandler;
 use crate::api::agents::AgentHandler;
 use crate::api::catalogs::CatalogHandler;
 use crate::api::credentials::CredentialHandler;
-use crate::api::delta::DeltaApiHandler;
 use crate::api::entity_tag_assignments::EntityTagAssignmentHandler;
 use crate::api::external_locations::ExternalLocationHandler;
 use crate::api::functions::FunctionHandler;
