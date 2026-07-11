@@ -490,11 +490,14 @@ where
 
     // --- Requirements (assert-table-uuid mandatory; assert-etag optional) ---
     //
-    // `assert-table-uuid` is validated here against the resolved uuid (identity
-    // never changes under an update, so no race). `assert-etag` is *not* checked
-    // here: the etag guards against a concurrent modification, so it must be
-    // enforced at write time by the backend. We parse it out and thread it into
-    // `UpdateTableSpec::expected_etag` as a compare-and-swap precondition.
+    // `assert-table-uuid` is validated against the resolved uuid (identity never
+    // changes under an update, so no race). Each `assert-etag` is fast-failed here
+    // against the resolved snapshot so a stale etag rejects the *whole* request
+    // before the add-commit coordinator call or any write lands — and every
+    // requirement is enforced, not just the last one. The asserted etag is *also*
+    // threaded into `UpdateTableSpec::expected_etag`, where the backend re-checks
+    // it as a compare-and-swap at write time to close the read-modify-write race
+    // the snapshot check alone leaves open.
     let has_uuid_assert = request
         .requirements
         .iter()
@@ -504,6 +507,7 @@ where
             "assert-table-uuid requirement is required.",
         ));
     }
+    let current_etag = etag_of(&table);
     let mut expected_etag: Option<String> = None;
     for req in &request.requirements {
         match req {
@@ -517,6 +521,11 @@ where
                 }
             }
             DeltaTableRequirement::AssertEtag { etag } => {
+                if etag != &current_etag {
+                    return Err(DeltaApiError(DeltaBackendError::UpdateRequirementConflict(
+                        "assert-etag failed: table has been modified".to_string(),
+                    )));
+                }
                 expected_etag = Some(etag.clone());
             }
         }
@@ -699,16 +708,8 @@ where
             )
             .await?
     } else {
-        // No metadata write, so there is no CAS to delegate — but the client may
-        // still have asserted an etag, which must hold against the resolved
-        // snapshot (preserving the pre-CAS handler behavior for no-op updates).
-        if let Some(etag) = &expected_etag
-            && etag != &etag_of(&table)
-        {
-            return Err(DeltaApiError(DeltaBackendError::UpdateRequirementConflict(
-                "assert-etag failed: table has been modified".to_string(),
-            )));
-        }
+        // No metadata write to delegate the CAS to; any asserted etag was already
+        // fast-failed against this snapshot in the requirements loop above.
         table.properties = properties;
         table.columns = columns;
         table

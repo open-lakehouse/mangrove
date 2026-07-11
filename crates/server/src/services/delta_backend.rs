@@ -30,7 +30,8 @@ use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 use unitycatalog_delta_api::authz::DeltaAction;
 use unitycatalog_delta_api::backend::{
     BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, ResolvedTable, SchemaRef,
-    StagingReservation, TableRef, UpdateTableSpec, VendedCredential, VendedCredentialKind, etag_of,
+    StagingReservation, TableRef, UpdateTableSpec, VendedCredential, VendedCredentialKind,
+    etag_of_parts,
 };
 use unitycatalog_delta_api::column::{
     Column as CrateColumn, ColumnTypeName as CrateColumnTypeName,
@@ -429,7 +430,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         // needs a conditional UPDATE in olai-store (trestle follow-up:
         // https://github.com/open-lakehouse/trestle/issues/75 — CAS update + txn).
         if let Some(expected) = &spec.expected_etag
-            && expected != &etag_of(&table_to_resolved(table.clone()))
+            && expected != &etag_of_parts(table.updated_at, table.table_id.as_deref())
         {
             return Err(DeltaBackendError::UpdateRequirementConflict(
                 "assert-etag failed: table has been modified".into(),

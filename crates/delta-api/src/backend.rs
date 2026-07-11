@@ -94,9 +94,15 @@ pub struct ResolvedTable {
 /// `assert-etag` compare-and-swap in [`DeltaBackend::update_table_row`], so the
 /// asserted etag and the compared etag are always derived identically.
 pub fn etag_of(table: &ResolvedTable) -> String {
-    match table.updated_at_ms {
+    etag_of_parts(table.updated_at_ms, table.table_id.as_deref())
+}
+
+/// The etag formula over the two fields it actually depends on, for backends that
+/// hold those fields without a full [`ResolvedTable`]. See [`etag_of`].
+pub fn etag_of_parts(updated_at_ms: Option<i64>, table_id: Option<&str>) -> String {
+    match updated_at_ms {
         Some(ts) => format!("etag-{ts}"),
-        None => format!("etag-{}", table.table_id.clone().unwrap_or_default()),
+        None => format!("etag-{}", table_id.unwrap_or_default()),
     }
 }
 

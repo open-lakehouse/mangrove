@@ -239,6 +239,52 @@ async fn update_table_add_commit_then_load_shows_commit() {
     assert_eq!(commits[0].version, 1);
 }
 
+/// A stale `assert-etag` must reject the whole request *before* the add-commit
+/// reaches the coordinator — the etag guards the request, so a failed precondition
+/// must not leave a commit recorded.
+#[tokio::test]
+async fn update_table_stale_etag_does_not_record_commit() {
+    let b = backend();
+    let (table_id, _) = create_managed(&b, "t").await;
+
+    let err = b
+        .update_table(
+            table_path("t"),
+            DeltaUpdateTableRequest {
+                requirements: vec![
+                    DeltaTableRequirement::AssertTableUuid {
+                        uuid: table_id.clone(),
+                    },
+                    DeltaTableRequirement::AssertEtag {
+                        etag: "etag-stale".into(),
+                    },
+                ],
+                updates: vec![DeltaTableUpdate::AddCommit {
+                    commit: DeltaCommit {
+                        version: 1,
+                        timestamp: 1704067200000,
+                        file_name: "00000000-0000-0000-0000-00000000002a.json".into(),
+                        file_size: 2048,
+                        file_modification_timestamp: 1704067200000,
+                    },
+                    uniform: None,
+                }],
+            },
+            (),
+        )
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err.0, DeltaBackendError::UpdateRequirementConflict(_)),
+        "{err:?}"
+    );
+    // The commit must not have landed: the table is still at version 0.
+    let loaded = DeltaApiHandler::<Cx>::load_table(&b, table_path("t"), ())
+        .await
+        .unwrap();
+    assert_eq!(loaded.latest_table_version, Some(0));
+}
+
 #[tokio::test]
 async fn update_table_requires_assert_table_uuid() {
     let b = backend();
