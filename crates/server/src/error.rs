@@ -89,21 +89,6 @@ pub enum Error {
     },
 }
 
-/// Map a Delta [`CommitError`](unitycatalog_delta_api::coordinator::CommitError)
-/// onto the server [`Error`] (and thus the HTTP status). Used by the `/delta/v1`
-/// commit path via `?`.
-impl From<unitycatalog_delta_api::coordinator::CommitError> for Error {
-    fn from(err: unitycatalog_delta_api::coordinator::CommitError) -> Self {
-        use unitycatalog_delta_api::coordinator::CommitError;
-        match err {
-            CommitError::VersionConflict(msg) => Error::CommitVersionConflict(msg),
-            CommitError::InvalidArgument(msg) => Error::InvalidArgument(msg),
-            CommitError::ResourceExhausted(msg) => Error::ResourceExhausted(msg),
-            CommitError::Backend(msg) => Error::Generic(msg),
-        }
-    }
-}
-
 impl Error {
     pub fn generic(message: impl ToString) -> Self {
         Error::Generic(message.to_string())

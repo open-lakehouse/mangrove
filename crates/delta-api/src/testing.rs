@@ -21,12 +21,15 @@ use crate::backend::{
 };
 use crate::coordinator::{CommitCoordinator, InMemoryCommitCoordinator};
 use crate::error::DeltaBackendError;
-use crate::models::DeltaTableType;
+use crate::models::{DeltaDataSourceFormat, DeltaTableType};
 
 /// The stored state for one table.
 #[derive(Debug, Clone)]
 struct StoredTable {
     full_name: String,
+    /// The table comment. Kept out of `resolved.properties` — no port response
+    /// carries the comment, and real backends store it outside the property map.
+    comment: Option<String>,
     resolved: ResolvedTable,
 }
 
@@ -108,7 +111,9 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
         if state.catalogs.iter().any(|c| c == catalog) {
             Ok(())
         } else {
-            Err(DeltaBackendError::NotFound)
+            Err(DeltaBackendError::NotFound(format!(
+                "catalog '{catalog}' not found"
+            )))
         }
     }
 
@@ -118,7 +123,9 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             .tables
             .get(&table.full_name())
             .map(|t| t.resolved.clone())
-            .ok_or(DeltaBackendError::NotFound)
+            .ok_or_else(|| {
+                DeltaBackendError::NotFound(format!("table '{}' not found", table.full_name()))
+            })
     }
 
     async fn authorize_create_table(
@@ -148,7 +155,9 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
         let ts = Self::next_ts(&mut state);
         let full_name = format!("{}.{}.{}", spec.at.catalog, spec.at.schema, spec.name);
         if state.tables.contains_key(&full_name) {
-            return Err(DeltaBackendError::AlreadyExists);
+            return Err(DeltaBackendError::AlreadyExists(format!(
+                "table '{full_name}' already exists"
+            )));
         }
         let table_id = spec
             .table_id
@@ -156,7 +165,8 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
         let resolved = ResolvedTable {
             table_id: Some(table_id),
             location: spec.location,
-            table_type: spec.table_type,
+            table_type: Some(spec.table_type),
+            data_source_format: Some(DeltaDataSourceFormat::Delta),
             columns: spec.columns,
             properties: spec.properties,
             created_at_ms: Some(ts),
@@ -166,6 +176,7 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             full_name.clone(),
             StoredTable {
                 full_name,
+                comment: spec.comment,
                 resolved: resolved.clone(),
             },
         );
@@ -179,14 +190,14 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             .tables
             .values_mut()
             .find(|t| t.resolved.table_id.as_deref() == Some(spec.table_id.as_str()))
-            .ok_or(DeltaBackendError::NotFound)?;
+            .ok_or_else(|| {
+                DeltaBackendError::NotFound(format!("table id '{}' not found", spec.table_id))
+            })?;
         stored.resolved.columns = spec.columns;
         stored.resolved.properties = spec.properties;
+        // `None` means "leave the stored comment unchanged" (see `UpdateTableSpec`).
         if let Some(comment) = spec.comment {
-            stored
-                .resolved
-                .properties
-                .insert("comment".to_string(), comment);
+            stored.comment = Some(comment);
         }
         stored.resolved.updated_at_ms = Some(ts);
         Ok(())
@@ -198,13 +209,18 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             .tables
             .remove(&table.full_name())
             .map(|_| ())
-            .ok_or(DeltaBackendError::NotFound)
+            .ok_or_else(|| {
+                DeltaBackendError::NotFound(format!("table '{}' not found", table.full_name()))
+            })
     }
 
     async fn rename_table(&self, from: &TableRef, to_name: &str, _cx: &Cx) -> BackendResult<()> {
         let mut state = self.state.lock().unwrap();
         let Some(mut stored) = state.tables.remove(&from.full_name()) else {
-            return Err(DeltaBackendError::NotFound);
+            return Err(DeltaBackendError::NotFound(format!(
+                "table '{}' not found",
+                from.full_name()
+            )));
         };
         let new_full = format!("{}.{}.{}", from.catalog, from.schema, to_name);
         stored.full_name = new_full.clone();
@@ -241,7 +257,7 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             .staging
             .get(location)
             .cloned()
-            .ok_or(DeltaBackendError::NotFound)
+            .ok_or_else(|| DeltaBackendError::NotFound(format!("no staging table at '{location}'")))
     }
 
     async fn resolve_staging_by_id(
@@ -255,7 +271,9 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             .values()
             .find(|s| s.table_id == table_id)
             .cloned()
-            .ok_or(DeltaBackendError::NotFound)
+            .ok_or_else(|| {
+                DeltaBackendError::NotFound(format!("staging table '{table_id}' not found"))
+            })
     }
 
     async fn finalize_staging(&self, table_id: &str, _cx: &Cx) -> BackendResult<()> {
@@ -270,7 +288,9 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
                 state.staging.remove(&loc);
                 Ok(())
             }
-            None => Err(DeltaBackendError::NotFound),
+            None => Err(DeltaBackendError::NotFound(format!(
+                "staging table '{table_id}' not found"
+            ))),
         }
     }
 
@@ -286,7 +306,9 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             .values()
             .find(|t| t.resolved.table_id.as_deref() == Some(table_id))
             .map(|t| t.resolved.location.clone())
-            .ok_or(DeltaBackendError::NotFound)?;
+            .ok_or_else(|| {
+                DeltaBackendError::NotFound(format!("table id '{table_id}' not found"))
+            })?;
         Ok(fake_credential(&location))
     }
 

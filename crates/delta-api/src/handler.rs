@@ -23,40 +23,6 @@ use crate::coordinator::CommitInfo;
 use crate::error::{DeltaApiError, DeltaApiResult as Result, DeltaBackendError};
 use crate::models::*;
 
-/// A fully-qualified table coordinate parsed from the request path.
-#[derive(Debug, Clone)]
-pub struct TablePath {
-    pub catalog: String,
-    pub schema: String,
-    pub table: String,
-}
-
-impl TablePath {
-    fn as_ref(&self) -> TableRef {
-        TableRef {
-            catalog: self.catalog.clone(),
-            schema: self.schema.clone(),
-            table: self.table.clone(),
-        }
-    }
-}
-
-/// A schema coordinate (parent of staging-tables / tables creation).
-#[derive(Debug, Clone)]
-pub struct SchemaPath {
-    pub catalog: String,
-    pub schema: String,
-}
-
-impl SchemaPath {
-    fn as_ref(&self) -> SchemaRef {
-        SchemaRef {
-            catalog: self.catalog.clone(),
-            schema: self.schema.clone(),
-        }
-    }
-}
-
 /// Query parameters for `getConfig`.
 #[derive(Debug, Clone)]
 pub struct GetConfigQuery {
@@ -77,7 +43,7 @@ pub trait DeltaApiHandler<Cx>: Send + Sync + 'static {
     /// `POST /delta/v1/catalogs/{catalog}/schemas/{schema}/staging-tables`
     async fn create_staging_table(
         &self,
-        path: SchemaPath,
+        path: SchemaRef,
         request: DeltaCreateStagingTableRequest,
         context: Cx,
     ) -> Result<DeltaStagingTableResponse>;
@@ -85,32 +51,32 @@ pub trait DeltaApiHandler<Cx>: Send + Sync + 'static {
     /// `POST /delta/v1/catalogs/{catalog}/schemas/{schema}/tables`
     async fn create_table(
         &self,
-        path: SchemaPath,
+        path: SchemaRef,
         request: DeltaCreateTableRequest,
         context: Cx,
     ) -> Result<DeltaLoadTableResponse>;
 
     /// `GET /delta/v1/catalogs/{catalog}/schemas/{schema}/tables/{table}`
-    async fn load_table(&self, path: TablePath, context: Cx) -> Result<DeltaLoadTableResponse>;
+    async fn load_table(&self, path: TableRef, context: Cx) -> Result<DeltaLoadTableResponse>;
 
     /// `POST /delta/v1/catalogs/{catalog}/schemas/{schema}/tables/{table}`
     async fn update_table(
         &self,
-        path: TablePath,
+        path: TableRef,
         request: DeltaUpdateTableRequest,
         context: Cx,
     ) -> Result<DeltaLoadTableResponse>;
 
     /// `DELETE /delta/v1/catalogs/{catalog}/schemas/{schema}/tables/{table}`
-    async fn delete_table(&self, path: TablePath, context: Cx) -> Result<()>;
+    async fn delete_table(&self, path: TableRef, context: Cx) -> Result<()>;
 
     /// `HEAD /delta/v1/catalogs/{catalog}/schemas/{schema}/tables/{table}`
-    async fn table_exists(&self, path: TablePath, context: Cx) -> Result<()>;
+    async fn table_exists(&self, path: TableRef, context: Cx) -> Result<()>;
 
     /// `POST /delta/v1/catalogs/{catalog}/schemas/{schema}/tables/{table}/rename`
     async fn rename_table(
         &self,
-        path: TablePath,
+        path: TableRef,
         request: DeltaRenameTableRequest,
         context: Cx,
     ) -> Result<()>;
@@ -118,7 +84,7 @@ pub trait DeltaApiHandler<Cx>: Send + Sync + 'static {
     /// `GET /delta/v1/catalogs/{catalog}/schemas/{schema}/tables/{table}/credentials`
     async fn get_table_credentials(
         &self,
-        path: TablePath,
+        path: TableRef,
         operation: DeltaCredentialOperation,
         context: Cx,
     ) -> Result<DeltaCredentialsResponse>;
@@ -126,7 +92,7 @@ pub trait DeltaApiHandler<Cx>: Send + Sync + 'static {
     /// `POST /delta/v1/catalogs/{catalog}/schemas/{schema}/tables/{table}/metrics`
     async fn report_metrics(
         &self,
-        path: TablePath,
+        path: TableRef,
         request: DeltaReportMetricsRequest,
         context: Cx,
     ) -> Result<()>;
@@ -184,12 +150,12 @@ where
 
     async fn create_staging_table(
         &self,
-        path: SchemaPath,
+        path: SchemaRef,
         request: DeltaCreateStagingTableRequest,
         context: Cx,
     ) -> Result<DeltaStagingTableResponse> {
         let staging = self
-            .allocate_staging(&path.as_ref(), &request.name, &context)
+            .allocate_staging(&path, &request.name, &context)
             .await?;
 
         let creds = self
@@ -222,7 +188,7 @@ where
 
     async fn create_table(
         &self,
-        path: SchemaPath,
+        path: SchemaRef,
         request: DeltaCreateTableRequest,
         context: Cx,
     ) -> Result<DeltaLoadTableResponse> {
@@ -235,7 +201,7 @@ where
             ));
         }
 
-        self.authorize_create_table(&path.as_ref(), &request.name, request.table_type, &context)
+        self.authorize_create_table(&path, &request.name, request.table_type, &context)
             .await?;
 
         // MANAGED-only: validate the full catalog-managed contract.
@@ -259,7 +225,9 @@ where
                 .await?;
             let principal = self.principal_name(&context);
             if staging.created_by.as_deref() != principal.as_deref() {
-                return Err(DeltaApiError::permission_denied());
+                return Err(DeltaApiError::permission_denied(
+                    "caller is not the creator of the staging table",
+                ));
             }
             if staging.stage_committed {
                 return Err(DeltaApiError::invalid_argument(format!(
@@ -277,10 +245,11 @@ where
             None
         };
 
+        let full_name = format!("{}.{}.{}", path.catalog, path.schema, request.name);
         let stored = self
             .create_table_row(
                 CreateTableSpec {
-                    at: path.as_ref(),
+                    at: path,
                     name: request.name,
                     table_type: request.table_type,
                     location: request.location,
@@ -293,51 +262,51 @@ where
             )
             .await?;
 
-        build_load_table_response(self, &stored).await
+        build_load_table_response(self, &full_name, stored).await
     }
 
-    async fn load_table(&self, path: TablePath, context: Cx) -> Result<DeltaLoadTableResponse> {
-        let table = self.resolve_table(&path.as_ref(), &context).await?;
-        build_load_table_response(self, &table).await
+    async fn load_table(&self, path: TableRef, context: Cx) -> Result<DeltaLoadTableResponse> {
+        let table = self.resolve_table(&path, &context).await?;
+        build_load_table_response(self, &path.full_name(), table).await
     }
 
     async fn update_table(
         &self,
-        path: TablePath,
+        path: TableRef,
         request: DeltaUpdateTableRequest,
         context: Cx,
     ) -> Result<DeltaLoadTableResponse> {
         update_table_impl(self, path, request, context).await
     }
 
-    async fn delete_table(&self, path: TablePath, context: Cx) -> Result<()> {
-        self.delete_table(&path.as_ref(), &context).await?;
+    async fn delete_table(&self, path: TableRef, context: Cx) -> Result<()> {
+        self.delete_table(&path, &context).await?;
         Ok(())
     }
 
-    async fn table_exists(&self, path: TablePath, context: Cx) -> Result<()> {
-        self.resolve_table(&path.as_ref(), &context).await?;
+    async fn table_exists(&self, path: TableRef, context: Cx) -> Result<()> {
+        self.resolve_table(&path, &context).await?;
         Ok(())
     }
 
     async fn rename_table(
         &self,
-        path: TablePath,
+        path: TableRef,
         request: DeltaRenameTableRequest,
         context: Cx,
     ) -> Result<()> {
-        self.rename_table(&path.as_ref(), &request.new_name, &context)
+        self.rename_table(&path, &request.new_name, &context)
             .await?;
         Ok(())
     }
 
     async fn get_table_credentials(
         &self,
-        path: TablePath,
+        path: TableRef,
         operation: DeltaCredentialOperation,
         context: Cx,
     ) -> Result<DeltaCredentialsResponse> {
-        let table = self.resolve_table(&path.as_ref(), &context).await?;
+        let table = self.resolve_table(&path, &context).await?;
         let table_id = table
             .table_id
             .ok_or_else(|| DeltaApiError::invalid_argument("table has no id"))?;
@@ -351,11 +320,11 @@ where
 
     async fn report_metrics(
         &self,
-        path: TablePath,
+        path: TableRef,
         request: DeltaReportMetricsRequest,
         context: Cx,
     ) -> Result<()> {
-        let table = self.resolve_table(&path.as_ref(), &context).await?;
+        let table = self.resolve_table(&path, &context).await?;
         if table.table_id.as_deref() != Some(request.table_id.as_str()) {
             return Err(DeltaApiError::invalid_argument(
                 "report table-id does not match the table identified by the path",
@@ -419,7 +388,7 @@ where
 /// persist metadata, and return the refreshed table.
 async fn update_table_impl<B, Cx>(
     backend: &B,
-    path: TablePath,
+    path: TableRef,
     request: DeltaUpdateTableRequest,
     context: Cx,
 ) -> Result<DeltaLoadTableResponse>
@@ -427,7 +396,7 @@ where
     B: DeltaBackend<Cx> + ?Sized,
     Cx: Send + 'static,
 {
-    let table = backend.resolve_table(&path.as_ref(), &context).await?;
+    let mut table = backend.resolve_table(&path, &context).await?;
     let table_uuid = table
         .table_id
         .clone()
@@ -489,10 +458,12 @@ where
         }
     }
 
-    let mut properties: BTreeMap<String, String> = table.properties.clone();
-    let mut columns: Vec<Column> = table.columns.clone();
+    // Work on the fields directly (taken, not cloned); the untouched `table` is
+    // reassembled below when no metadata change needs persisting.
+    let mut properties: BTreeMap<String, String> = std::mem::take(&mut table.properties);
+    let mut columns: Vec<Column> = std::mem::take(&mut table.columns);
     let mut comment: Option<String> = None;
-    let is_managed = table.table_type == DeltaTableType::Managed;
+    let is_managed = table.table_type == Some(DeltaTableType::Managed);
     let mut metadata_changed = false;
 
     // Apply in canonical order (not request order).
@@ -624,12 +595,13 @@ where
             .map_err(commit_error)?;
     }
 
-    // Persist metadata changes (if any) before reloading.
-    if metadata_changed {
+    // Persist metadata changes and reload; the pure add-commit path never
+    // touches the table row, so the in-hand table is still current there.
+    let refreshed = if metadata_changed {
         backend
             .update_table_row(
                 UpdateTableSpec {
-                    table_id: table_uuid.clone(),
+                    table_id: table_uuid,
                     columns,
                     properties,
                     comment,
@@ -637,10 +609,13 @@ where
                 &context,
             )
             .await?;
-    }
-
-    let refreshed = backend.resolve_table(&path.as_ref(), &context).await?;
-    build_load_table_response(backend, &refreshed).await
+        backend.resolve_table(&path, &context).await?
+    } else {
+        table.properties = properties;
+        table.columns = columns;
+        table
+    };
+    build_load_table_response(backend, &path.full_name(), refreshed).await
 }
 
 /// Apply `set-columns` / `set-partition-columns` to `columns` in place, returning
@@ -696,17 +671,28 @@ fn apply_schema_and_partitions(
 // ===================================================================
 
 /// Build a `DeltaLoadTableResponse` from a resolved table, appending unbackfilled
-/// commits + `latest_table_version` for MANAGED tables.
+/// commits + `latest_table_version` for catalog-managed Delta tables.
+///
+/// Rejects table types the Delta API cannot serve (views, metric views, …) with
+/// 400; `full_name` is only used for that error message.
 async fn build_load_table_response<B, Cx>(
     backend: &B,
-    table: &ResolvedTable,
+    full_name: &str,
+    table: ResolvedTable,
 ) -> Result<DeltaLoadTableResponse>
 where
     B: DeltaBackend<Cx> + ?Sized,
 {
-    let metadata = build_table_metadata(table);
+    let Some(table_type) = table.table_type else {
+        return Err(DeltaApiError::invalid_argument(format!(
+            "table '{full_name}' is not a Delta table and cannot be loaded via the Delta API"
+        )));
+    };
 
-    let (commits, latest_table_version) = if table.table_type == DeltaTableType::Managed
+    // Commit-coordinator state only exists for catalog-managed *Delta* tables;
+    // a MANAGED table of another format gets no commits/version fields.
+    let (commits, latest_table_version) = if table_type == DeltaTableType::Managed
+        && table.data_source_format == Some(DeltaDataSourceFormat::Delta)
         && let Some(id) = table.table_id.as_deref()
     {
         let (commits, latest) = backend
@@ -723,36 +709,41 @@ where
     };
 
     Ok(DeltaLoadTableResponse {
-        metadata,
+        metadata: build_table_metadata(table, table_type),
         commits,
         uniform: None,
         latest_table_version,
     })
 }
 
-fn build_table_metadata(table: &ResolvedTable) -> DeltaTableMetadata {
-    let properties = &table.properties;
+fn build_table_metadata(table: ResolvedTable, table_type: DeltaTableType) -> DeltaTableMetadata {
+    let etag = etag_of(&table);
     let partition_columns = partition_names(&table.columns);
+    let columns = contract::uc_columns_to_delta(&table.columns);
+    let last_commit_version = table
+        .properties
+        .get(contract::PROP_LAST_UPDATE_VERSION)
+        .and_then(|v| v.parse().ok());
+    let last_commit_timestamp_ms = table
+        .properties
+        .get(contract::PROP_LAST_COMMIT_TIMESTAMP)
+        .and_then(|v| v.parse().ok());
 
     DeltaTableMetadata {
-        etag: etag_of(table),
-        table_type: table.table_type,
-        table_uuid: table.table_id.clone().unwrap_or_default(),
-        location: table.location.clone(),
+        etag,
+        table_type,
+        table_uuid: table.table_id.unwrap_or_default(),
+        location: table.location,
         created_time: table.created_at_ms.unwrap_or_default(),
         updated_time: table
             .updated_at_ms
             .or(table.created_at_ms)
             .unwrap_or_default(),
-        columns: contract::uc_columns_to_delta(&table.columns),
+        columns,
         partition_columns: (!partition_columns.is_empty()).then_some(partition_columns),
-        properties: properties.clone(),
-        last_commit_version: properties
-            .get(contract::PROP_LAST_UPDATE_VERSION)
-            .and_then(|v| v.parse().ok()),
-        last_commit_timestamp_ms: properties
-            .get(contract::PROP_LAST_COMMIT_TIMESTAMP)
-            .and_then(|v| v.parse().ok()),
+        properties: table.properties,
+        last_commit_version,
+        last_commit_timestamp_ms,
     }
 }
 

@@ -8,9 +8,10 @@
 use std::collections::BTreeMap;
 
 use unitycatalog_delta_api::DeltaApiHandler;
+use unitycatalog_delta_api::backend::{SchemaRef, TableRef};
 use unitycatalog_delta_api::contract;
 use unitycatalog_delta_api::error::DeltaBackendError;
-use unitycatalog_delta_api::handler::{GetConfigQuery, SchemaPath, TablePath};
+use unitycatalog_delta_api::handler::GetConfigQuery;
 use unitycatalog_delta_api::models::*;
 use unitycatalog_delta_api::testing::InMemoryDeltaBackend;
 
@@ -22,15 +23,15 @@ fn backend() -> InMemoryDeltaBackend {
     InMemoryDeltaBackend::new()
 }
 
-fn schema_path() -> SchemaPath {
-    SchemaPath {
+fn schema_path() -> SchemaRef {
+    SchemaRef {
         catalog: "catalog".to_string(),
         schema: "schema".to_string(),
     }
 }
 
-fn table_path(name: &str) -> TablePath {
-    TablePath {
+fn table_path(name: &str) -> TableRef {
+    TableRef {
         catalog: "catalog".to_string(),
         schema: "schema".to_string(),
         table: name.to_string(),
@@ -147,7 +148,7 @@ async fn get_config_unknown_catalog_is_not_found() {
         )
         .await
         .unwrap_err();
-    assert!(matches!(err.0, DeltaBackendError::NotFound), "{err:?}");
+    assert!(matches!(err.0, DeltaBackendError::NotFound(_)), "{err:?}");
 }
 
 #[tokio::test]
@@ -337,7 +338,7 @@ async fn table_credentials_and_delete() {
     let err = DeltaApiHandler::<Cx>::table_exists(&b, table_path("t"), ())
         .await
         .unwrap_err();
-    assert!(matches!(err.0, DeltaBackendError::NotFound), "{err:?}");
+    assert!(matches!(err.0, DeltaBackendError::NotFound(_)), "{err:?}");
 }
 
 #[tokio::test]

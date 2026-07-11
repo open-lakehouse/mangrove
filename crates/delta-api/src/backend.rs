@@ -17,16 +17,20 @@ use std::collections::BTreeMap;
 
 use async_trait::async_trait;
 
+use serde::Deserialize;
+
 use crate::column::Column;
 use crate::coordinator::CommitCoordinator;
 use crate::error::DeltaBackendError;
-use crate::models::DeltaTableType;
+use crate::models::{DeltaDataSourceFormat, DeltaTableType};
 
 /// Result of a [`DeltaBackend`] operation.
 pub type BackendResult<T> = Result<T, DeltaBackendError>;
 
 /// A fully-qualified table coordinate.
-#[derive(Debug, Clone)]
+///
+/// Deserializes from the router's `{catalog}/{schema}/{table}` path parameters.
+#[derive(Debug, Clone, Deserialize)]
 pub struct TableRef {
     pub catalog: String,
     pub schema: String,
@@ -41,7 +45,9 @@ impl TableRef {
 }
 
 /// A schema coordinate (the parent of table / staging-table creation).
-#[derive(Debug, Clone)]
+///
+/// Deserializes from the router's `{catalog}/{schema}` path parameters.
+#[derive(Debug, Clone, Deserialize)]
 pub struct SchemaRef {
     pub catalog: String,
     pub schema: String,
@@ -55,7 +61,13 @@ pub struct ResolvedTable {
     pub table_id: Option<String>,
     /// The table's storage root location.
     pub location: String,
-    pub table_type: DeltaTableType,
+    /// The Delta table type, or `None` for table types the Delta API cannot
+    /// serve (views, metric views, …), which `loadTable` rejects with 400.
+    pub table_type: Option<DeltaTableType>,
+    /// The table's data source format, if known. Commit-coordinator state is
+    /// only attached to MANAGED tables whose format is
+    /// [`DeltaDataSourceFormat::Delta`].
+    pub data_source_format: Option<DeltaDataSourceFormat>,
     pub columns: Vec<Column>,
     pub properties: BTreeMap<String, String>,
     /// Creation time, epoch milliseconds.
@@ -137,6 +149,9 @@ pub struct UpdateTableSpec {
     pub table_id: String,
     pub columns: Vec<Column>,
     pub properties: BTreeMap<String, String>,
+    /// The new comment. Unlike `columns`/`properties` (full replacement
+    /// snapshots), this is a delta: `None` leaves the stored comment unchanged
+    /// (the wire has no clear-comment action); `Some(c)` sets it.
     pub comment: Option<String>,
 }
 

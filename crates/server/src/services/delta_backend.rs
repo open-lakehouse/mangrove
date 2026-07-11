@@ -61,20 +61,20 @@ use crate::{Error, Result};
 /// status codes and error types are unchanged by the extraction.
 fn to_backend_err(e: Error) -> DeltaBackendError {
     match &e {
-        Error::NotFound | Error::ResourceStore { .. } => DeltaBackendError::NotFound,
+        Error::NotFound | Error::ResourceStore { .. } => DeltaBackendError::NotFound(e.to_string()),
         // The wrapped common error carries its own semantics; dispatch on its
         // machine-readable code so e.g. an "already exists" doesn't surface as 404.
         Error::Common { source } => match source.error_code() {
-            "RESOURCE_ALREADY_EXISTS" => DeltaBackendError::AlreadyExists,
+            "RESOURCE_ALREADY_EXISTS" => DeltaBackendError::AlreadyExists(e.to_string()),
             "INVALID_PARAMETER_VALUE" => DeltaBackendError::InvalidArgument(e.to_string()),
-            "PERMISSION_DENIED" => DeltaBackendError::PermissionDenied,
+            "PERMISSION_DENIED" => DeltaBackendError::PermissionDenied(e.to_string()),
             "COMMIT_VERSION_CONFLICT" => DeltaBackendError::CommitVersionConflict(e.to_string()),
             "RESOURCE_EXHAUSTED" => DeltaBackendError::ResourceExhausted(e.to_string()),
-            _ => DeltaBackendError::NotFound,
+            _ => DeltaBackendError::NotFoundGeneric(e.to_string()),
         },
-        Error::NotAllowed => DeltaBackendError::PermissionDenied,
-        Error::Unauthenticated => DeltaBackendError::Unauthenticated,
-        Error::AlreadyExists => DeltaBackendError::AlreadyExists,
+        Error::NotAllowed => DeltaBackendError::PermissionDenied(e.to_string()),
+        Error::Unauthenticated => DeltaBackendError::Unauthenticated(e.to_string()),
+        Error::AlreadyExists => DeltaBackendError::AlreadyExists(e.to_string()),
         Error::CommitVersionConflict(m) => DeltaBackendError::CommitVersionConflict(m.clone()),
         Error::UpdateRequirementConflict(m) => {
             DeltaBackendError::UpdateRequirementConflict(m.clone())
@@ -93,48 +93,15 @@ fn to_backend_err(e: Error) -> DeltaBackendError {
 // Column mapping
 // ===================================================================
 
-/// Map an `i32` discriminant onto the crate's [`ColumnTypeName`](CrateColumnTypeName).
-///
-/// The crate enum's discriminants match `unitycatalog_common`'s `ColumnTypeName`
-/// exactly (`Unspecified = 0 ..= TableType = 22`), so the reverse is a plain
-/// `as i32` cast.
-fn to_crate_type_name(i: i32) -> CrateColumnTypeName {
-    match i {
-        1 => CrateColumnTypeName::Boolean,
-        2 => CrateColumnTypeName::Byte,
-        3 => CrateColumnTypeName::Short,
-        4 => CrateColumnTypeName::Int,
-        5 => CrateColumnTypeName::Long,
-        6 => CrateColumnTypeName::Float,
-        7 => CrateColumnTypeName::Double,
-        8 => CrateColumnTypeName::Date,
-        9 => CrateColumnTypeName::Timestamp,
-        10 => CrateColumnTypeName::String,
-        11 => CrateColumnTypeName::Binary,
-        12 => CrateColumnTypeName::Decimal,
-        13 => CrateColumnTypeName::Interval,
-        14 => CrateColumnTypeName::Array,
-        15 => CrateColumnTypeName::Struct,
-        16 => CrateColumnTypeName::Map,
-        17 => CrateColumnTypeName::Char,
-        18 => CrateColumnTypeName::Null,
-        19 => CrateColumnTypeName::UserDefinedType,
-        20 => CrateColumnTypeName::TimestampNtz,
-        21 => CrateColumnTypeName::Variant,
-        22 => CrateColumnTypeName::TableType,
-        _ => CrateColumnTypeName::Unspecified,
-    }
-}
-
 /// Map a common UC column onto the crate's portable [`Column`](CrateColumn).
-fn uc_column_to_crate(c: &UcColumn) -> CrateColumn {
+fn uc_column_to_crate(c: UcColumn) -> CrateColumn {
     CrateColumn {
-        name: c.name.clone(),
-        type_text: c.type_text.clone(),
-        type_json: c.type_json.clone(),
+        name: c.name,
+        type_text: c.type_text,
+        type_json: c.type_json,
         position: c.position,
-        type_name: to_crate_type_name(c.type_name),
-        comment: c.comment.clone(),
+        type_name: CrateColumnTypeName::from(c.type_name),
+        comment: c.comment,
         nullable: c.nullable,
         partition_index: c.partition_index,
     }
@@ -146,14 +113,14 @@ fn uc_column_to_crate(c: &UcColumn) -> CrateColumn {
 /// remaining generated fields (`type_precision`, `type_scale`,
 /// `type_interval_type`, `column_id`) are left at their defaults, mirroring the
 /// columns the old contract-derived `CreateTableRequest` persisted.
-fn crate_column_to_uc(c: &CrateColumn) -> UcColumn {
+fn crate_column_to_uc(c: CrateColumn) -> UcColumn {
     UcColumn {
-        name: c.name.clone(),
-        type_text: c.type_text.clone(),
-        type_json: c.type_json.clone(),
+        name: c.name,
+        type_text: c.type_text,
+        type_json: c.type_json,
         position: c.position,
         type_name: c.type_name as i32,
-        comment: c.comment.clone(),
+        comment: c.comment,
         nullable: c.nullable,
         partition_index: c.partition_index,
         ..Default::default()
@@ -171,19 +138,43 @@ fn to_uc_table_type(t: DeltaTableType) -> TableType {
     }
 }
 
+/// Map a stored data source format onto the crate's wire format enum. Formats
+/// the wire enum does not carry (`Unspecified`, unknown) map to `None`.
+fn to_delta_format(f: i32) -> Option<unitycatalog_delta_api::models::DeltaDataSourceFormat> {
+    use unitycatalog_delta_api::models::DeltaDataSourceFormat as F;
+    match DataSourceFormat::try_from(f).ok()? {
+        DataSourceFormat::Delta => Some(F::Delta),
+        DataSourceFormat::Iceberg => Some(F::Iceberg),
+        DataSourceFormat::Hudi => Some(F::Hudi),
+        DataSourceFormat::Parquet => Some(F::Parquet),
+        DataSourceFormat::Csv => Some(F::Csv),
+        DataSourceFormat::Json => Some(F::Json),
+        DataSourceFormat::Orc => Some(F::Orc),
+        DataSourceFormat::Avro => Some(F::Avro),
+        DataSourceFormat::Text => Some(F::Text),
+        DataSourceFormat::UnityCatalog => Some(F::UnityCatalog),
+        DataSourceFormat::Deltasharing => Some(F::Deltasharing),
+        DataSourceFormat::Unspecified => None,
+    }
+}
+
 /// Map a stored [`Table`] into the crate's portable [`ResolvedTable`].
+///
+/// View-like table types (views, metric views, …) map to `table_type: None`,
+/// which the shared handler rejects with the spec's "not a Delta table" 400.
 fn table_to_resolved(table: Table) -> ResolvedTable {
-    let table_type = if table.table_type == TableType::External as i32 {
-        DeltaTableType::External
-    } else {
-        DeltaTableType::Managed
+    let table_type = match TableType::try_from(table.table_type) {
+        Ok(TableType::Managed) => Some(DeltaTableType::Managed),
+        Ok(TableType::External) => Some(DeltaTableType::External),
+        _ => None,
     };
     ResolvedTable {
-        table_id: table.table_id.clone(),
-        location: table.storage_location.clone().unwrap_or_default(),
+        table_id: table.table_id,
+        location: table.storage_location.unwrap_or_default(),
         table_type,
-        columns: table.columns.iter().map(uc_column_to_crate).collect(),
-        properties: table.properties.clone().into_iter().collect(),
+        data_source_format: to_delta_format(table.data_source_format),
+        columns: table.columns.into_iter().map(uc_column_to_crate).collect(),
+        properties: table.properties.into_iter().collect(),
         created_at_ms: table.created_at,
         updated_at_ms: table.updated_at,
     }
@@ -343,7 +334,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             schema_name: spec.at.schema,
             table_type: to_uc_table_type(spec.table_type) as i32,
             data_source_format: DataSourceFormat::Delta as i32,
-            columns: spec.columns.iter().map(crate_column_to_uc).collect(),
+            columns: spec.columns.into_iter().map(crate_column_to_uc).collect(),
             storage_location: Some(spec.location),
             comment: spec.comment,
             properties: spec.properties.into_iter().collect(),
@@ -377,9 +368,13 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             .map_err(Error::from)
             .and_then(|(r, _)| r.try_into().map_err(Error::from))
             .map_err(to_backend_err)?;
-        table.columns = spec.columns.iter().map(crate_column_to_uc).collect();
+        table.columns = spec.columns.into_iter().map(crate_column_to_uc).collect();
         table.properties = spec.properties.into_iter().collect();
-        table.comment = spec.comment;
+        // `None` means "leave the stored comment unchanged" (see `UpdateTableSpec`):
+        // the handler only sets it when a set-table-comment action is present.
+        if let Some(comment) = spec.comment {
+            table.comment = Some(comment);
+        }
         self.update(&ident, table.into())
             .await
             .map_err(Error::from)

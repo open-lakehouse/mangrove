@@ -32,20 +32,25 @@ use crate::models::{DeltaErrorModel, DeltaErrorResponse, DeltaErrorType};
 #[derive(Debug, thiserror::Error)]
 pub enum DeltaBackendError {
     /// The requested resource does not exist. → 404 `NoSuchTableException`.
-    #[error("not found")]
-    NotFound,
+    #[error("{0}")]
+    NotFound(String),
+
+    /// A backend failure with no recognized semantics, surfaced as a generic
+    /// not-found. → 404 `NotFoundException`.
+    #[error("{0}")]
+    NotFoundGeneric(String),
 
     /// A resource with the same identity already exists. → 409 `AlreadyExistsException`.
-    #[error("already exists")]
-    AlreadyExists,
+    #[error("{0}")]
+    AlreadyExists(String),
 
     /// The caller is authenticated but not permitted. → 403 `PermissionDeniedException`.
-    #[error("permission denied")]
-    PermissionDenied,
+    #[error("{0}")]
+    PermissionDenied(String),
 
     /// The caller is not authenticated. → 401 `NotAuthorizedException`.
-    #[error("not authenticated")]
-    Unauthenticated,
+    #[error("{0}")]
+    Unauthenticated(String),
 
     /// The request is malformed or a parameter is invalid. → 400 `InvalidParameterValueException`.
     #[error("invalid argument: {0}")]
@@ -88,13 +93,13 @@ impl DeltaApiError {
     }
 
     /// A 403 `PermissionDeniedException`.
-    pub fn permission_denied() -> Self {
-        DeltaApiError(DeltaBackendError::PermissionDenied)
+    pub fn permission_denied(message: impl Into<String>) -> Self {
+        DeltaApiError(DeltaBackendError::PermissionDenied(message.into()))
     }
 
     /// A 404 `NoSuchTableException`.
-    pub fn not_found() -> Self {
-        DeltaApiError(DeltaBackendError::NotFound)
+    pub fn not_found(message: impl Into<String>) -> Self {
+        DeltaApiError(DeltaBackendError::NotFound(message.into()))
     }
 
     /// A 501 `NotImplementedException`.
@@ -107,12 +112,13 @@ impl DeltaApiError {
     fn parts(&self) -> (StatusCode, DeltaErrorType) {
         use DeltaErrorType::*;
         match &self.0 {
-            DeltaBackendError::NotFound => (StatusCode::NOT_FOUND, NoSuchTableException),
-            DeltaBackendError::AlreadyExists => (StatusCode::CONFLICT, AlreadyExistsException),
-            DeltaBackendError::PermissionDenied => {
+            DeltaBackendError::NotFound(_) => (StatusCode::NOT_FOUND, NoSuchTableException),
+            DeltaBackendError::NotFoundGeneric(_) => (StatusCode::NOT_FOUND, NotFoundException),
+            DeltaBackendError::AlreadyExists(_) => (StatusCode::CONFLICT, AlreadyExistsException),
+            DeltaBackendError::PermissionDenied(_) => {
                 (StatusCode::FORBIDDEN, PermissionDeniedException)
             }
-            DeltaBackendError::Unauthenticated => {
+            DeltaBackendError::Unauthenticated(_) => {
                 (StatusCode::UNAUTHORIZED, NotAuthorizedException)
             }
             DeltaBackendError::InvalidArgument(_) => {

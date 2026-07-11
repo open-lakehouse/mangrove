@@ -70,3 +70,35 @@ pub enum ColumnTypeName {
     Variant = 21,
     TableType = 22,
 }
+
+impl From<i32> for ColumnTypeName {
+    /// The inverse of `as i32`. Unknown discriminants map to
+    /// [`Unspecified`](Self::Unspecified), matching prost's open-enum behavior.
+    fn from(v: i32) -> Self {
+        match v {
+            1 => Self::Boolean,
+            2 => Self::Byte,
+            3 => Self::Short,
+            4 => Self::Int,
+            5 => Self::Long,
+            6 => Self::Float,
+            7 => Self::Double,
+            8 => Self::Date,
+            9 => Self::Timestamp,
+            10 => Self::String,
+            11 => Self::Binary,
+            12 => Self::Decimal,
+            13 => Self::Interval,
+            14 => Self::Array,
+            15 => Self::Struct,
+            16 => Self::Map,
+            17 => Self::Char,
+            18 => Self::Null,
+            19 => Self::UserDefinedType,
+            20 => Self::TimestampNtz,
+            21 => Self::Variant,
+            22 => Self::TableType,
+            _ => Self::Unspecified,
+        }
+    }
+}
