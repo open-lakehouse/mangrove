@@ -3888,6 +3888,7 @@ dependencies = [
  "olai-store",
  "olai-uc-client",
  "olai-uc-common",
+ "olai-uc-datafusion",
  "olai-uc-delta-api",
  "olai-uc-postgres",
  "olai-uc-sharing-client",

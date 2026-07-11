@@ -1,10 +1,11 @@
 //! Minimal delta_kernel integration for the Unity Catalog server.
 //!
-//! This module inlines the small slice of `deltalake-datafusion` that the server
+//! This module provides the small slice of `deltalake-datafusion` that the server
 //! actually relies on: an [`ObjectStoreFactory`] abstraction (implemented by the
 //! server to resolve credentialed object stores per storage location) and a
-//! self-contained [`DeltaLogReplayProvider`] used to serve the Delta Sharing
-//! `query_table` response.
+//! kernel [`Engine`] builder. The Delta-log `query_table` response is served by
+//! the shared [`ReconciledLogProvider`](unitycatalog_datafusion::log_explorer::ReconciledLogProvider)
+//! from the `olai-uc-datafusion` crate.
 //!
 //! Rather than registering a custom DataFusion-backed kernel engine as a session
 //! extension, we construct delta_kernel's built-in [`DefaultEngine`] directly from
@@ -17,10 +18,6 @@ use delta_kernel::Engine;
 use delta_kernel_default_engine::DefaultEngine;
 use object_store::DynObjectStore;
 use url::Url;
-
-pub(crate) mod delta_log;
-
-pub(crate) use delta_log::DeltaLogReplayProvider;
 
 /// Resolves an [`object_store`] for a given storage location.
 ///
