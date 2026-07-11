@@ -30,7 +30,7 @@ use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 use unitycatalog_delta_api::authz::DeltaAction;
 use unitycatalog_delta_api::backend::{
     BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, ResolvedTable, SchemaRef,
-    StagingReservation, TableRef, UpdateTableSpec, VendedCredential, VendedCredentialKind,
+    StagingReservation, TableRef, UpdateTableSpec, VendedCredential, VendedCredentialKind, etag_of,
 };
 use unitycatalog_delta_api::column::{
     Column as CrateColumn, ColumnTypeName as CrateColumnTypeName,
@@ -184,6 +184,7 @@ fn table_to_resolved(table: Table) -> ResolvedTable {
 fn staging_to_reservation(st: StagingTable) -> StagingReservation {
     StagingReservation {
         table_id: st.id,
+        name: st.name,
         location: st.staging_location,
         created_by: st.created_by,
         stage_committed: st.stage_committed,
@@ -364,6 +365,23 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         spec: CreateTableSpec,
         _cx: &RequestContext,
     ) -> BackendResult<ResolvedTable> {
+        // Managed adoption: consume the reservation, then create the table adopting
+        // its id. The store keys objects by a single id PRIMARY KEY, so the staging
+        // object must be removed before the table can claim that id — the same
+        // ordering (and the same non-atomic window) as before the port collapsed
+        // finalize + create. `olai-store` has no cross-op transaction, so a failed
+        // `create` after the `delete` still orphans the reservation; truly closing
+        // this needs a transaction in olai-store (trestle follow-up:
+        // https://github.com/open-lakehouse/trestle/issues/75 — CAS update + txn).
+        // `StagingReservation` carries `name`, so the delete needs no re-read.
+        if let Some(reservation) = &spec.adopt_staging {
+            let ident =
+                ResourceIdent::staging_table(ResourceName::new([reservation.name.as_str()]));
+            self.delete(&ident)
+                .await
+                .map_err(Error::from)
+                .map_err(to_backend_err)?;
+        }
         let table = Table {
             name: spec.name,
             catalog_name: spec.at.catalog,
@@ -393,7 +411,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         &self,
         spec: UpdateTableSpec,
         _cx: &RequestContext,
-    ) -> BackendResult<()> {
+    ) -> BackendResult<ResolvedTable> {
         let uuid = uuid::Uuid::parse_str(&spec.table_id).map_err(|_| {
             DeltaBackendError::InvalidArgument("table id is not a valid UUID".into())
         })?;
@@ -404,6 +422,19 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             .map_err(Error::from)
             .and_then(|(r, _)| r.try_into().map_err(Error::from))
             .map_err(to_backend_err)?;
+        // assert-etag compare-and-swap: `ResourceStore::update` (backed by
+        // `olai-store`) is an unconditional overwrite with no expected-version, so
+        // this is a *best-effort* check against the row we just read — it narrows
+        // but does not fully close the read-modify-write race. Truly closing it
+        // needs a conditional UPDATE in olai-store (trestle follow-up:
+        // https://github.com/open-lakehouse/trestle/issues/75 — CAS update + txn).
+        if let Some(expected) = &spec.expected_etag
+            && expected != &etag_of(&table_to_resolved(table.clone()))
+        {
+            return Err(DeltaBackendError::UpdateRequirementConflict(
+                "assert-etag failed: table has been modified".into(),
+            ));
+        }
         table.columns = spec.columns.into_iter().map(crate_column_to_uc).collect();
         table.properties = spec.properties.into_iter().collect();
         // `None` means "leave the stored comment unchanged" (see `UpdateTableSpec`):
@@ -411,11 +442,13 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         if let Some(comment) = spec.comment {
             table.comment = Some(comment);
         }
-        self.update(&ident, table.into())
+        let updated: Table = self
+            .update(&ident, table.into())
             .await
             .map_err(Error::from)
+            .and_then(|(r, _)| r.try_into().map_err(Error::from))
             .map_err(to_backend_err)?;
-        Ok(())
+        Ok(table_to_resolved(updated))
     }
 
     async fn delete_table(&self, table: &TableRef, cx: &RequestContext) -> BackendResult<()> {
@@ -481,23 +514,6 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             .await
             .map_err(to_backend_err)?;
         Ok(staging_to_reservation(staging))
-    }
-
-    async fn finalize_staging(&self, table_id: &str, _cx: &RequestContext) -> BackendResult<()> {
-        // Consume the staging reservation so the created table can adopt its id:
-        // objects are keyed by a single id PRIMARY KEY, so the staging object must
-        // be removed before the table claims that id. The store keys it by the bare
-        // `[name]`, so resolve by uuid first to get its name, then delete by name.
-        let staging = self
-            .get_staging_by_id(table_id)
-            .await
-            .map_err(to_backend_err)?;
-        let ident = ResourceIdent::staging_table(ResourceName::new([staging.name.as_str()]));
-        self.delete(&ident)
-            .await
-            .map_err(Error::from)
-            .map_err(to_backend_err)?;
-        Ok(())
     }
 
     async fn vend_table_credential(

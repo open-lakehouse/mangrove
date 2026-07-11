@@ -20,7 +20,7 @@ use async_trait::async_trait;
 use crate::authz::DeltaAction;
 use crate::backend::{
     BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, ResolvedTable, SchemaRef,
-    StagingReservation, TableRef, UpdateTableSpec, VendedCredential, VendedCredentialKind,
+    StagingReservation, TableRef, UpdateTableSpec, VendedCredential, VendedCredentialKind, etag_of,
 };
 use crate::coordinator::{CommitCoordinator, InMemoryCommitCoordinator};
 use crate::error::DeltaBackendError;
@@ -159,9 +159,18 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
         let ts = Self::next_ts(&mut state);
         let full_name = format!("{}.{}.{}", spec.at.catalog, spec.at.schema, spec.name);
         if state.tables.contains_key(&full_name) {
+            // The reservation (if any) is untouched: holding the lock across the
+            // check and the consume-and-insert below makes this atomic, so a
+            // failed create never orphans the staging reservation.
             return Err(DeltaBackendError::AlreadyExists(format!(
                 "table '{full_name}' already exists"
             )));
+        }
+        // Atomically consume the adopted staging reservation, if any, in the same
+        // critical section as the insert (a transactional backend does the same in
+        // one transaction).
+        if let Some(reservation) = &spec.adopt_staging {
+            state.staging.remove(&reservation.location);
         }
         let table_id = spec
             .table_id
@@ -187,7 +196,11 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
         Ok(resolved)
     }
 
-    async fn update_table_row(&self, spec: UpdateTableSpec, _cx: &Cx) -> BackendResult<()> {
+    async fn update_table_row(
+        &self,
+        spec: UpdateTableSpec,
+        _cx: &Cx,
+    ) -> BackendResult<ResolvedTable> {
         let mut state = self.state.lock().unwrap();
         let ts = Self::next_ts(&mut state);
         let stored = state
@@ -197,6 +210,17 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             .ok_or_else(|| {
                 DeltaBackendError::NotFound(format!("table id '{}' not found", spec.table_id))
             })?;
+        // Compare-and-swap: the etag is checked *under the lock* against the
+        // current row, so a concurrent update that advanced the etag between the
+        // caller's resolve and this write is caught (closing the TOCTOU race a
+        // handler-side check would leave open).
+        if let Some(expected) = &spec.expected_etag
+            && expected != &etag_of(&stored.resolved)
+        {
+            return Err(DeltaBackendError::UpdateRequirementConflict(
+                "assert-etag failed: table has been modified".to_string(),
+            ));
+        }
         stored.resolved.columns = spec.columns;
         stored.resolved.properties = spec.properties;
         // `None` means "leave the stored comment unchanged" (see `UpdateTableSpec`).
@@ -204,7 +228,7 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             stored.comment = Some(comment);
         }
         stored.resolved.updated_at_ms = Some(ts);
-        Ok(())
+        Ok(stored.resolved.clone())
     }
 
     async fn delete_table(&self, table: &TableRef, _cx: &Cx) -> BackendResult<()> {
@@ -235,7 +259,7 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
     async fn allocate_staging(
         &self,
         _at: &SchemaRef,
-        _name: &str,
+        name: &str,
         _cx: &Cx,
     ) -> BackendResult<StagingReservation> {
         let mut state = self.state.lock().unwrap();
@@ -243,6 +267,7 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
         let location = format!("s3://bucket/staging/{id}");
         let reservation = StagingReservation {
             table_id: id,
+            name: name.to_string(),
             location: location.clone(),
             created_by: self.principal.clone(),
             stage_committed: false,
@@ -278,24 +303,6 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             .ok_or_else(|| {
                 DeltaBackendError::NotFound(format!("staging table '{table_id}' not found"))
             })
-    }
-
-    async fn finalize_staging(&self, table_id: &str, _cx: &Cx) -> BackendResult<()> {
-        let mut state = self.state.lock().unwrap();
-        let location = state
-            .staging
-            .iter()
-            .find(|(_, s)| s.table_id == table_id)
-            .map(|(loc, _)| loc.clone());
-        match location {
-            Some(loc) => {
-                state.staging.remove(&loc);
-                Ok(())
-            }
-            None => Err(DeltaBackendError::NotFound(format!(
-                "staging table '{table_id}' not found"
-            ))),
-        }
     }
 
     async fn vend_table_credential(
