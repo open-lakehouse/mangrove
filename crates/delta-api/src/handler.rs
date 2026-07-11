@@ -372,6 +372,10 @@ where
             .table_id
             .clone()
             .ok_or_else(|| DeltaApiError::invalid_argument("table has no id"))?;
+        // Metrics reports feed table maintenance (compaction/checkpointing) and are
+        // an assertion by a writer about commits it has made, so we gate them on
+        // WRITE. This is deliberately stricter than the pre-crate behavior, which
+        // required no permission on this endpoint at all.
         self.authorize(
             DeltaAction::WriteTable {
                 table: &path,
