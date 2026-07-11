@@ -63,7 +63,7 @@ import path):
 
 ```toml
 [dependencies]
-unitycatalog_delta_api = { package = "olai-uc-delta-api", version = "0.0.1" }
+unitycatalog-delta-api = { package = "olai-uc-delta-api", version = "0.0.1" }
 ```
 
 Implement the port, then mount the router:
@@ -119,7 +119,7 @@ implementation of the port:
 
 ```toml
 [dev-dependencies]
-unitycatalog_delta_api = { package = "olai-uc-delta-api", version = "0.0.1", features = ["testing"] }
+unitycatalog-delta-api = { package = "olai-uc-delta-api", version = "0.0.1", features = ["testing"] }
 ```
 
 Use it to exercise the Delta semantics without a real backend, or as a

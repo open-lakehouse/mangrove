@@ -21,7 +21,7 @@ path):
 
 ```toml
 [dependencies]
-unitycatalog_client = { package = "olai-uc-client", version = "0.0.1" }
+unitycatalog-client = { package = "olai-uc-client", version = "0.0.1" }
 ```
 
 Construct the client and call a resource:

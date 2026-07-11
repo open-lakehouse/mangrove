@@ -26,7 +26,7 @@ path):
 
 ```toml
 [dependencies]
-unitycatalog_common = { package = "olai-uc-common", version = "0.0.1" }
+unitycatalog-common = { package = "olai-uc-common", version = "0.0.1" }
 ```
 
 ## Feature flags

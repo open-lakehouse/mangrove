@@ -21,7 +21,7 @@ The `package` rename keeps the `unitycatalog_object_store` import path:
 
 ```toml
 [dependencies]
-unitycatalog_object_store = { package = "olai-uc-object-store", version = "0.0.1" }
+unitycatalog-object-store = { package = "olai-uc-object-store", version = "0.0.1" }
 object_store = "0.12"
 ```
 
