@@ -7,7 +7,7 @@
 //! - The DEK is itself encrypted ("wrapped") by a **key encryption key** (KEK) obtained from a
 //!   pluggable [`KeyProvider`]. Only the wrapped DEK is persisted alongside the ciphertext.
 //!
-//! The persisted blob ([`Envelope`]) is self-describing: it records which KEK wrapped the DEK so a
+//! The persisted blob is self-describing: it records which KEK wrapped the DEK so a
 //! value can always be decrypted, and so a KEK can be rotated by re-wrapping the DEK without
 //! re-encrypting the (potentially large) value — see [`EnvelopeEncryptor::rewrap`].
 //!
@@ -30,7 +30,7 @@ use crate::{Error, Result};
 
 /// Identifier for a key encryption key (KEK).
 ///
-/// A short, stable tag (e.g. `"v1"`) recorded in every [`Envelope`] so the wrapping key can be
+/// A short, stable tag (e.g. `"v1"`) recorded in every envelope so the wrapping key can be
 /// located at decrypt time and so rotation can detect blobs sealed under a retired key.
 pub type KekId = String;
 
@@ -161,8 +161,7 @@ impl KeyProvider for LocalKeyProvider {
 }
 
 /// A decoded envelope: the wrapped DEK plus the value ciphertext and the metadata needed to open
-/// it. Serialized to/from the self-describing on-disk format via [`Envelope::encode`] /
-/// [`Envelope::decode`].
+/// it. Serialized to/from the self-describing on-disk format via its `encode` / `decode` methods.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Envelope {
     kek_id: KekId,
@@ -254,7 +253,7 @@ fn take_u32(cur: &mut &[u8]) -> Result<u32> {
 
 /// High-level envelope-encryption API used by secret stores.
 ///
-/// Seals plaintext into a self-describing [`Envelope`] blob and opens it again, delegating DEK
+/// Seals plaintext into a self-describing envelope blob and opens it again, delegating DEK
 /// wrap/unwrap to the configured [`KeyProvider`].
 #[derive(Clone)]
 pub struct EnvelopeEncryptor {
