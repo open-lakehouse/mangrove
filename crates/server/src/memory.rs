@@ -253,8 +253,16 @@ impl ResourceStore for InMemoryResourceStore {
         // Each edge stores the label of *its* target so the row can be located in
         // `resources` (keyed by `(label, uuid)`). The forward edge targets `to`;
         // the inverse edge targets `from`.
-        let map = self.associations.entry(label.clone()).or_default();
-        map.insert((from_uuid, to_uuid), (*to.label(), properties.clone()));
+        //
+        // `DashMap::entry` holds a write lock on the shard its key hashes to for as
+        // long as the returned guard lives. A label and its inverse can hash to the
+        // same shard, so acquiring the second entry while the first guard is still
+        // alive self-deadlocks that shard. Scope each entry so its guard drops
+        // before the next `entry` call.
+        {
+            let map = self.associations.entry(label.clone()).or_default();
+            map.insert((from_uuid, to_uuid), (*to.label(), properties.clone()));
+        }
         if let Some(inverse) = label.inverse() {
             let inverse_map = self.associations.entry(inverse).or_default();
             inverse_map.insert((to_uuid, from_uuid), (*from.label(), properties.clone()));
@@ -278,8 +286,13 @@ impl ResourceStore for InMemoryResourceStore {
             ResourceRef::Name(name) => self.get_uuid(to.label(), name).ok_or(Error::NotFound)?,
             ResourceRef::Undefined => return Err(Error::NotFound),
         };
-        let map = self.associations.get(label).ok_or(Error::NotFound)?;
-        map.remove(&(from_uuid, to_uuid));
+        // Scope each outer-map guard so it drops before the next lookup: a label and
+        // its inverse can share a shard, and holding one guard while acquiring the
+        // other can deadlock that shard (see `add_association`).
+        {
+            let map = self.associations.get(label).ok_or(Error::NotFound)?;
+            map.remove(&(from_uuid, to_uuid));
+        }
         if let Some(inverse) = label.inverse() {
             let inverse_map = self.associations.get(&inverse).ok_or(Error::NotFound)?;
             inverse_map.remove(&(to_uuid, from_uuid));
