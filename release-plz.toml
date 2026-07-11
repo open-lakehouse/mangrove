@@ -57,25 +57,46 @@ pr_draft = false
 # `changelog_path` is pinned for every crate because the directory name
 # (e.g. crates/common) differs from the published package name (olai-uc-common).
 #
-# `release = false` is the BOOTSTRAP GATE: crates that have not yet had their
-# one-time token bootstrap publish stay held out of the OIDC release cycle.
-# Remove the `release = false` line as each crate is bootstrapped + its Trusted
-# Publisher registered. Clear them tier by tier (see bootstrap-publish.yml and
-# CONTRIBUTING.md). crates.io publish/bootstrap order:
-#   delta-api -> common -> client, sharing-client -> object-store, postgres,
-#   sqlite, datafusion -> cli
-# `olai-uc-server` is NOT on this list: it is a deployable (`git_only = true`),
+# `release = false` gates a crate out of the OIDC release cycle. Two distinct
+# reasons a crate carries it here — do NOT lump them together:
+#
+#   (a) BOOTSTRAP GATE — the crate name has never been published, and crates.io
+#       OIDC trusted publishing cannot create a brand-new name. It needs a
+#       one-time token bootstrap (bootstrap-publish.yml) first. Remove the
+#       `release = false` line once the crate is bootstrapped + its Trusted
+#       Publisher is registered. Currently only `olai-uc-delta-api`.
+#
+#   (b) GIT-DEP BLOCK — the crate depends (transitively, via the workspace
+#       `delta_kernel` / `deltalake-core` git revs) on a git source. `cargo
+#       publish` rejects ANY git dependency, optional or not, so these crates
+#       CANNOT go to crates.io until those deps are published to the registry.
+#       This is a hard, standing block — NOT a bootstrap step. `sharing-client`
+#       (non-optional `delta_kernel`) and `datafusion` (optional kernel/delta-rs
+#       behind the `delta` feature) are both blocked this way.
+#
+# crates.io publish/bootstrap order (root -> leaf):
+#   delta-api, common -> client, object-store, postgres, sqlite -> cli
+# (sharing-client, datafusion are out of the order entirely — see (b) above.)
+#
+# Already on crates.io (bootstrapped, releasing via OIDC): common, client,
+# object-store, postgres, sqlite — these carry NO `release = false`.
+#
+# `olai-uc-cli` is publishable (no git deps, its deps are live) but is
+# intentionally held out of crates.io for now; it keeps `release = false`.
+#
+# `olai-uc-server` is NOT a library: it is a deployable (`git_only = true`),
 # released as a Docker image rather than to crates.io — see its block below.
 # ---------------------------------------------------------------------------
 [[package]]
 name = "olai-uc-delta-api"
 changelog_path = "crates/delta-api/CHANGELOG.md"
+# (a) Bootstrap gate: new crate, not yet on crates.io. Bootstrap it via
+# bootstrap-publish.yml (Tier 0), then remove this line.
 release = false
 
 [[package]]
 name = "olai-uc-common"
 changelog_path = "crates/common/CHANGELOG.md"
-release = false
 
 [[package]]
 name = "olai-uc-client"
@@ -85,26 +106,28 @@ release = false
 [[package]]
 name = "olai-uc-sharing-client"
 changelog_path = "crates/sharing-client/CHANGELOG.md"
+# (b) Git-dep block: non-optional `delta_kernel` git dep — cannot publish to
+# crates.io. Standing block, not a bootstrap step.
 release = false
 
 [[package]]
 name = "olai-uc-object-store"
 changelog_path = "crates/object-store/CHANGELOG.md"
-release = false
 
 [[package]]
 name = "olai-uc-postgres"
 changelog_path = "crates/postgres/CHANGELOG.md"
-release = false
 
 [[package]]
 name = "olai-uc-sqlite"
 changelog_path = "crates/sqlite/CHANGELOG.md"
-release = false
 
 [[package]]
 name = "olai-uc-datafusion"
 changelog_path = "crates/datafusion/CHANGELOG.md"
+# (b) Git-dep block: kernel/delta-rs git deps (optional, behind `delta`) — cargo
+# rejects git deps even when optional, so cannot publish to crates.io. Standing
+# block, not a bootstrap step.
 release = false
 
 [[package]]
@@ -129,6 +152,8 @@ publish = false
 [[package]]
 name = "olai-uc-cli"
 changelog_path = "crates/cli/CHANGELOG.md"
+# Publishable (no git deps; its deps client/common are live), but intentionally
+# held out of crates.io for now. Remove this line to release the `uc` CLI crate.
 release = false
 
 # ---------------------------------------------------------------------------
