@@ -318,6 +318,225 @@ async fn update_table_set_properties_persists() {
 }
 
 #[tokio::test]
+async fn update_table_assert_etag_matches() {
+    let b = backend();
+    let (table_id, _) = create_managed(&b, "t").await;
+    // The current etag from a fresh load is accepted; the write succeeds and the
+    // etag advances.
+    let before = DeltaApiHandler::<Cx>::load_table(&b, table_path("t"), ())
+        .await
+        .unwrap()
+        .metadata
+        .etag;
+
+    b.update_table(
+        table_path("t"),
+        DeltaUpdateTableRequest {
+            requirements: vec![
+                DeltaTableRequirement::AssertTableUuid {
+                    uuid: table_id.clone(),
+                },
+                DeltaTableRequirement::AssertEtag {
+                    etag: before.clone(),
+                },
+            ],
+            updates: vec![DeltaTableUpdate::SetProperties {
+                updates: BTreeMap::from([("k".to_string(), "v".to_string())]),
+            }],
+        },
+        (),
+    )
+    .await
+    .expect("update with current etag");
+
+    let after = DeltaApiHandler::<Cx>::load_table(&b, table_path("t"), ())
+        .await
+        .unwrap()
+        .metadata
+        .etag;
+    assert_ne!(before, after, "etag should advance after a metadata write");
+}
+
+#[tokio::test]
+async fn update_table_assert_etag_conflicts() {
+    let b = backend();
+    let (table_id, _) = create_managed(&b, "t").await;
+    // A stale etag (one that never matched) is rejected as a requirement conflict.
+    let err = b
+        .update_table(
+            table_path("t"),
+            DeltaUpdateTableRequest {
+                requirements: vec![
+                    DeltaTableRequirement::AssertTableUuid {
+                        uuid: table_id.clone(),
+                    },
+                    DeltaTableRequirement::AssertEtag {
+                        etag: "etag-stale".into(),
+                    },
+                ],
+                updates: vec![DeltaTableUpdate::SetProperties {
+                    updates: BTreeMap::from([("k".to_string(), "v".to_string())]),
+                }],
+            },
+            (),
+        )
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err.0, DeltaBackendError::UpdateRequirementConflict(_)),
+        "{err:?}"
+    );
+}
+
+/// The CAS closes the lost-update race: two callers read the same etag, the first
+/// write lands and advances the etag, and the second write — asserting the now-stale
+/// etag it read earlier — is rejected instead of silently clobbering the first.
+#[tokio::test]
+async fn update_table_assert_etag_closes_lost_update() {
+    let b = backend();
+    let (table_id, _) = create_managed(&b, "t").await;
+
+    // Both callers resolve the same starting etag.
+    let etag_a = DeltaApiHandler::<Cx>::load_table(&b, table_path("t"), ())
+        .await
+        .unwrap()
+        .metadata
+        .etag;
+    let etag_b = etag_a.clone();
+
+    // Caller A's write lands first, advancing the etag.
+    b.update_table(
+        table_path("t"),
+        DeltaUpdateTableRequest {
+            requirements: vec![
+                DeltaTableRequirement::AssertTableUuid {
+                    uuid: table_id.clone(),
+                },
+                DeltaTableRequirement::AssertEtag { etag: etag_a },
+            ],
+            updates: vec![DeltaTableUpdate::SetProperties {
+                updates: BTreeMap::from([("a".to_string(), "1".to_string())]),
+            }],
+        },
+        (),
+    )
+    .await
+    .expect("caller A writes");
+
+    // Caller B, still holding the pre-A etag, is rejected rather than clobbering A.
+    let err = b
+        .update_table(
+            table_path("t"),
+            DeltaUpdateTableRequest {
+                requirements: vec![
+                    DeltaTableRequirement::AssertTableUuid {
+                        uuid: table_id.clone(),
+                    },
+                    DeltaTableRequirement::AssertEtag { etag: etag_b },
+                ],
+                updates: vec![DeltaTableUpdate::SetProperties {
+                    updates: BTreeMap::from([("b".to_string(), "2".to_string())]),
+                }],
+            },
+            (),
+        )
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err.0, DeltaBackendError::UpdateRequirementConflict(_)),
+        "{err:?}"
+    );
+    // Caller A's write survived; B's did not land.
+    let props = DeltaApiHandler::<Cx>::load_table(&b, table_path("t"), ())
+        .await
+        .unwrap()
+        .metadata
+        .properties;
+    assert_eq!(props.get("a").map(String::as_str), Some("1"));
+    assert_eq!(props.get("b"), None);
+}
+
+/// Managed `createTable` atomically consumes the staging reservation: after a
+/// successful create, the reservation is gone (a second create at the same location
+/// finds nothing to adopt).
+#[tokio::test]
+async fn create_managed_consumes_reservation() {
+    let b = backend();
+    let (_id, location) = create_managed(&b, "t").await;
+
+    // The reservation was consumed by the create — resolving it now fails.
+    let err = b
+        .create_table(
+            schema_path(),
+            DeltaCreateTableRequest {
+                name: "t2".into(),
+                location,
+                table_type: DeltaTableType::Managed,
+                data_source_format: Some(DeltaDataSourceFormat::Delta),
+                comment: None,
+                columns: simple_columns(),
+                partition_columns: None,
+                protocol: compliant_protocol(),
+                properties: managed_properties("some-id"),
+                domain_metadata: None,
+                last_commit_timestamp_ms: 1700,
+                uniform: None,
+            },
+            (),
+        )
+        .await
+        .unwrap_err();
+    assert!(matches!(err.0, DeltaBackendError::NotFound(_)), "{err:?}");
+}
+
+/// A failed managed create does not leave a half-created table. (In the in-memory
+/// backend the reservation-consume + insert share one critical section, so a
+/// create that fails its own validation never even reaches the store; this guards
+/// that the atomic path stays all-or-nothing.)
+#[tokio::test]
+async fn create_managed_failure_does_not_create_table() {
+    let b = backend();
+    let staging = b
+        .create_staging_table(
+            schema_path(),
+            DeltaCreateStagingTableRequest { name: "t".into() },
+            (),
+        )
+        .await
+        .unwrap();
+    // A tableId property that disagrees with the reservation fails the contract
+    // check before any store mutation.
+    let err = b
+        .create_table(
+            schema_path(),
+            DeltaCreateTableRequest {
+                name: "t".into(),
+                location: staging.location.clone(),
+                table_type: DeltaTableType::Managed,
+                data_source_format: Some(DeltaDataSourceFormat::Delta),
+                comment: None,
+                columns: simple_columns(),
+                partition_columns: None,
+                protocol: compliant_protocol(),
+                properties: managed_properties("mismatched-id"),
+                domain_metadata: None,
+                last_commit_timestamp_ms: 1700,
+                uniform: None,
+            },
+            (),
+        )
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err.0, DeltaBackendError::InvalidArgument(_)),
+        "{err:?}"
+    );
+    // No table was created.
+    let load = DeltaApiHandler::<Cx>::load_table(&b, table_path("t"), ()).await;
+    assert!(load.is_err(), "no table should exist after a failed create");
+}
+
+#[tokio::test]
 async fn table_credentials_and_delete() {
     let b = backend();
     create_managed(&b, "t").await;
