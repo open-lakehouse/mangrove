@@ -8,10 +8,11 @@
 use crate::backend::DeltaCapabilities;
 use crate::error::{DeltaApiError, DeltaApiResult};
 
-/// Protocol versions this crate implements, **highest first**. Today: just `1.0`.
+/// Protocol versions this crate implements. Today: just `1.0`.
 ///
-/// This is the single source of truth for both negotiation and the version string
-/// returned to clients.
+/// The single source of truth for negotiation and the `server supports: …` error
+/// message. Order does not matter — [`negotiate_version`] picks the highest covered
+/// version by value.
 pub(crate) const SUPPORTED_VERSIONS: &[&str] = &["1.0"];
 
 /// The endpoints served regardless of backend capability: the 10 always-present
@@ -50,7 +51,11 @@ pub(crate) fn endpoints_for(caps: DeltaCapabilities) -> Vec<String> {
 }
 
 /// A parsed `major.minor` protocol version.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// `Ord` sorts by `(major, minor)` — the field order the derive uses — so the
+/// "highest" version is simply the maximum, independent of how `SUPPORTED_VERSIONS`
+/// happens to be ordered in source.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct Version {
     major: u32,
     minor: u32,
@@ -80,7 +85,7 @@ impl Version {
 ///
 /// `client_versions` is the raw comma-separated `protocol-versions` query value:
 /// each entry is the highest minor the client supports for that major (e.g.
-/// `"1.1,2.3"` ⇒ supports `1.0-1.1` and `2.0-2.3`). Unparseable entries are ignored
+/// `"1.1,2.3"` ⇒ supports `1.0-1.1` and `2.0-2.3`). Unparsable entries are ignored
 /// so a client advertising a version we can't parse still negotiates against the
 /// ones we can.
 ///
@@ -93,19 +98,24 @@ pub(crate) fn negotiate_version(client_versions: &str) -> DeltaApiResult<String>
         .filter_map(Version::parse)
         .collect();
 
-    // SUPPORTED_VERSIONS is highest-first, so the first server version any client
-    // entry covers is the highest mutually supported one.
-    for supported in SUPPORTED_VERSIONS {
-        let server = Version::parse(supported).expect("SUPPORTED_VERSIONS entries are valid");
-        if client.iter().any(|c| c.covers(server)) {
-            return Ok((*supported).to_string());
-        }
-    }
+    // Pick the highest server version the client covers, by value — not by relying
+    // on the source order of SUPPORTED_VERSIONS, so an out-of-order edit can't return
+    // a non-highest version.
+    let best = SUPPORTED_VERSIONS
+        .iter()
+        .filter_map(|supported| {
+            let server = Version::parse(supported).expect("SUPPORTED_VERSIONS entries are valid");
+            client.iter().any(|c| c.covers(server)).then_some(server)
+        })
+        .max();
 
-    Err(DeltaApiError::invalid_argument(format!(
-        "no mutually supported protocol version; server supports: {}",
-        SUPPORTED_VERSIONS.join(", ")
-    )))
+    match best {
+        Some(v) => Ok(format!("{}.{}", v.major, v.minor)),
+        None => Err(DeltaApiError::invalid_argument(format!(
+            "no mutually supported protocol version; server supports: {}",
+            SUPPORTED_VERSIONS.join(", ")
+        ))),
+    }
 }
 
 #[cfg(test)]
@@ -133,8 +143,16 @@ mod tests {
     #[test]
     fn negotiate_tolerates_whitespace_and_garbage() {
         assert_eq!(negotiate_version(" 1.0 ").unwrap(), "1.0");
-        // Unparseable entries are skipped; the valid 1.0 still negotiates.
+        // Unparsable entries are skipped; the valid 1.0 still negotiates.
         assert_eq!(negotiate_version("nonsense, 1.0").unwrap(), "1.0");
+    }
+
+    #[test]
+    fn version_orders_by_major_then_minor() {
+        // `negotiate_version` relies on `Ord` to pick the highest covered version by
+        // value rather than the source order of SUPPORTED_VERSIONS.
+        assert!(Version::parse("2.0").unwrap() > Version::parse("1.9").unwrap());
+        assert!(Version::parse("1.10").unwrap() > Version::parse("1.9").unwrap());
     }
 
     #[test]
