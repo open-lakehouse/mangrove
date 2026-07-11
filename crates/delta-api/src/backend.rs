@@ -12,6 +12,16 @@
 //! lakekeeper's `RequestMetadata`, …) threaded from the axum router. All types
 //! exchanged here are the crate's own — the Delta wire DTOs, [`crate::column`],
 //! and the coordinate/spec structs below — never a server's resource model.
+//!
+//! # Authorization contract
+//!
+//! Authorization goes through **one** hook, [`DeltaBackend::authorize`], which the
+//! handler calls with a [`DeltaAction`] before every user-facing operation. The
+//! data methods below (`resolve_table`, `create_table_row`, `delete_table`,
+//! `vend_*`, `resolve_staging_*`, …) are **pure data access and must not perform
+//! their own authorization** — the handler has already authorized the operation.
+//! (An implementor is of course free to enforce coarse storage-level guards, but
+//! the caller-facing access decision belongs in `authorize`.) See [`crate::authz`].
 
 use std::collections::BTreeMap;
 
@@ -19,6 +29,7 @@ use async_trait::async_trait;
 
 use serde::Deserialize;
 
+use crate::authz::DeltaAction;
 use crate::column::Column;
 use crate::coordinator::CommitCoordinator;
 use crate::error::DeltaBackendError;
@@ -158,23 +169,20 @@ pub struct UpdateTableSpec {
 /// The backend port. See the module docs.
 #[async_trait]
 pub trait DeltaBackend<Cx = ()>: Send + Sync + 'static {
+    /// Authorize an action before the handler performs it.
+    ///
+    /// The single authorization seam (see the [module authz contract](self)):
+    /// the handler calls this with a [`DeltaAction`] at the top of every
+    /// user-facing operation. Deny by returning
+    /// [`DeltaBackendError::PermissionDenied`] (→ 403) or
+    /// [`DeltaBackendError::Unauthenticated`] (→ 401).
+    async fn authorize(&self, action: DeltaAction<'_>, cx: &Cx) -> BackendResult<()>;
+
     /// Confirm the catalog exists (for `getConfig`). Missing → [`DeltaBackendError::NotFound`].
     async fn catalog_exists(&self, catalog: &str, cx: &Cx) -> BackendResult<()>;
 
     /// Resolve a table by 3-part name. Missing → [`DeltaBackendError::NotFound`].
     async fn resolve_table(&self, table: &TableRef, cx: &Cx) -> BackendResult<ResolvedTable>;
-
-    /// Authorize CREATE on the target table coordinate.
-    async fn authorize_create_table(
-        &self,
-        at: &SchemaRef,
-        name: &str,
-        table_type: DeltaTableType,
-        cx: &Cx,
-    ) -> BackendResult<()>;
-
-    /// Authorize WRITE on the resolved table (the `updateTable` path).
-    async fn authorize_write(&self, table_id: &str, cx: &Cx) -> BackendResult<()>;
 
     /// Validate that an EXTERNAL table location lies within a registered external
     /// location.
@@ -240,8 +248,4 @@ pub trait DeltaBackend<Cx = ()>: Send + Sync + 'static {
 
     /// The commit coordinator backing this backend's Delta commit log.
     fn commit_coordinator(&self) -> &dyn CommitCoordinator;
-
-    /// The caller's principal name (for the managed-createTable creator-match), or
-    /// `None` for an anonymous caller.
-    fn principal_name(&self, cx: &Cx) -> Option<String>;
 }

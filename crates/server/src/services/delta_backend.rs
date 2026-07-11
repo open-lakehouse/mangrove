@@ -27,6 +27,7 @@ use unitycatalog_common::models::temporary_credentials::v1::{
 };
 use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 
+use unitycatalog_delta_api::authz::DeltaAction;
 use unitycatalog_delta_api::backend::{
     BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, ResolvedTable, SchemaRef,
     StagingReservation, TableRef, UpdateTableSpec, VendedCredential, VendedCredentialKind,
@@ -278,36 +279,71 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         Ok(table_to_resolved(t))
     }
 
-    async fn authorize_create_table(
-        &self,
-        at: &SchemaRef,
-        name: &str,
-        table_type: DeltaTableType,
-        cx: &RequestContext,
-    ) -> BackendResult<()> {
-        // Authorize CREATE on the target table via the same SecuredAction the
-        // UC-REST createTable uses.
-        let create_action = CreateTableRequest {
-            name: name.to_string(),
-            catalog_name: at.catalog.clone(),
-            schema_name: at.schema.clone(),
-            table_type: to_uc_table_type(table_type) as i32,
-            data_source_format: DataSourceFormat::Delta as i32,
-            ..Default::default()
-        };
-        self.check_required(&create_action, cx)
-            .await
-            .map_err(to_backend_err)
-    }
-
-    async fn authorize_write(&self, table_id: &str, cx: &RequestContext) -> BackendResult<()> {
-        let uuid = uuid::Uuid::parse_str(table_id).map_err(|_| {
-            DeltaBackendError::InvalidArgument("table id is not a valid UUID".into())
-        })?;
-        let ident = ResourceIdent::Table(ResourceRef::Uuid(uuid));
-        self.authorize_checked(&ident, &Permission::Write, cx)
-            .await
-            .map_err(to_backend_err)
+    async fn authorize(&self, action: DeltaAction<'_>, cx: &RequestContext) -> BackendResult<()> {
+        match action {
+            DeltaAction::CreateTable {
+                at,
+                name,
+                table_type,
+            } => {
+                // Authorize CREATE on the target table via the same SecuredAction
+                // the UC-REST createTable uses.
+                let create_action = CreateTableRequest {
+                    name: name.to_string(),
+                    catalog_name: at.catalog.clone(),
+                    schema_name: at.schema.clone(),
+                    table_type: to_uc_table_type(table_type) as i32,
+                    data_source_format: DataSourceFormat::Delta as i32,
+                    ..Default::default()
+                };
+                self.check_required(&create_action, cx)
+                    .await
+                    .map_err(to_backend_err)
+            }
+            DeltaAction::WriteTable { table_id, .. } => {
+                let uuid = uuid::Uuid::parse_str(table_id).map_err(|_| {
+                    DeltaBackendError::InvalidArgument("table id is not a valid UUID".into())
+                })?;
+                let ident = ResourceIdent::Table(ResourceRef::Uuid(uuid));
+                self.authorize_checked(&ident, &Permission::Write, cx)
+                    .await
+                    .map_err(to_backend_err)
+            }
+            DeltaAction::AdoptStaging { reservation } => {
+                // The creator-match, in mangrove's identity terms: the caller's
+                // principal name must equal the reservation's `created_by`
+                // (anonymous reservations, `created_by == None`, are adoptable by
+                // any anonymous caller — the pre-crate behavior).
+                let principal = match cx.recipient() {
+                    Principal::User(name) => Some(name.clone()),
+                    Principal::Anonymous => None,
+                };
+                if reservation.created_by.as_deref() != principal.as_deref() {
+                    return Err(DeltaBackendError::PermissionDenied(
+                        "caller is not the creator of the staging table".to_string(),
+                    ));
+                }
+                Ok(())
+            }
+            // Read / delete / rename / credential vending / staging creation are
+            // authorized by the downstream handler traits these operations
+            // delegate to (`TableHandler`, `StagingTableHandler`,
+            // `TemporaryCredentialHandler`), each of which runs `check_required`
+            // itself. Authorizing again here would double-check; matching the
+            // pre-crate behavior, the handler-level hook is a no-op for them.
+            DeltaAction::ReadTable { .. }
+            | DeltaAction::DeleteTable { .. }
+            | DeltaAction::RenameTable { .. }
+            | DeltaAction::VendTableCredential { .. }
+            | DeltaAction::VendPathCredential { .. }
+            | DeltaAction::CreateStaging { .. } => Ok(()),
+            // `DeltaAction` is `#[non_exhaustive]`. Fail closed on an action this
+            // adapter has not been taught: a newly added operation must not slip
+            // through unauthorized until its arm is written.
+            _ => Err(DeltaBackendError::PermissionDenied(
+                "unrecognized Delta action".to_string(),
+            )),
+        }
     }
 
     async fn validate_external_location(
@@ -507,12 +543,5 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
 
     fn commit_coordinator(&self) -> &dyn CommitCoordinator {
         ProvidesCommitCoordinator::commit_coordinator(self)
-    }
-
-    fn principal_name(&self, cx: &RequestContext) -> Option<String> {
-        match cx.recipient() {
-            Principal::User(name) => Some(name.clone()),
-            Principal::Anonymous => None,
-        }
     }
 }

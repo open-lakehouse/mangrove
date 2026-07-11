@@ -5,23 +5,26 @@
 //! handler end-to-end; downstream servers (e.g. lakekeeper) can enable it to test
 //! their own port wiring against known-good Delta semantics.
 //!
-//! It is deliberately permissive: authorization always allows, credential vending
-//! returns a fixed fake S3 credential, and external-location validation is a
-//! no-op. The point is to exercise the *Delta* logic (contract, dispatcher,
-//! commit arbitration), not access control.
+//! It is deliberately permissive: authorization allows everything except the
+//! staging creator-match (which compares the configured principal against the
+//! reservation's `created_by`, reproducing mangrove's behavior so denial can be
+//! tested), credential vending returns a fixed fake S3 credential, and
+//! external-location validation is a no-op. The point is to exercise the *Delta*
+//! logic (contract, dispatcher, commit arbitration), not access control.
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 
+use crate::authz::DeltaAction;
 use crate::backend::{
     BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, ResolvedTable, SchemaRef,
     StagingReservation, TableRef, UpdateTableSpec, VendedCredential, VendedCredentialKind,
 };
 use crate::coordinator::{CommitCoordinator, InMemoryCommitCoordinator};
 use crate::error::DeltaBackendError;
-use crate::models::{DeltaDataSourceFormat, DeltaTableType};
+use crate::models::DeltaDataSourceFormat;
 
 /// The stored state for one table.
 #[derive(Debug, Clone)]
@@ -50,7 +53,8 @@ struct State {
 pub struct InMemoryDeltaBackend {
     state: Arc<Mutex<State>>,
     coordinator: Arc<InMemoryCommitCoordinator>,
-    /// The principal name reported by [`DeltaBackend::principal_name`].
+    /// The caller's principal, stamped onto staging reservations at allocation
+    /// time and compared against `created_by` in the `AdoptStaging` decision.
     principal: Option<String>,
 }
 
@@ -80,7 +84,8 @@ impl InMemoryDeltaBackend {
         self
     }
 
-    /// Set the principal name reported to the handler (for the creator-match).
+    /// Set the caller's principal, used to stamp `created_by` on new staging
+    /// reservations and to decide the `AdoptStaging` creator-match.
     pub fn with_principal(mut self, principal: impl Into<String>) -> Self {
         self.principal = Some(principal.into());
         self
@@ -106,6 +111,19 @@ fn fake_credential(url: &str) -> VendedCredential {
 
 #[async_trait]
 impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
+    async fn authorize(&self, action: DeltaAction<'_>, _cx: &Cx) -> BackendResult<()> {
+        // Allow everything except the creator-match, which reproduces mangrove's
+        // string-equality-of-principal check so tests can exercise denial.
+        if let DeltaAction::AdoptStaging { reservation } = action
+            && reservation.created_by.as_deref() != self.principal.as_deref()
+        {
+            return Err(DeltaBackendError::PermissionDenied(
+                "caller is not the creator of the staging table".to_string(),
+            ));
+        }
+        Ok(())
+    }
+
     async fn catalog_exists(&self, catalog: &str, _cx: &Cx) -> BackendResult<()> {
         let state = self.state.lock().unwrap();
         if state.catalogs.iter().any(|c| c == catalog) {
@@ -126,20 +144,6 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             .ok_or_else(|| {
                 DeltaBackendError::NotFound(format!("table '{}' not found", table.full_name()))
             })
-    }
-
-    async fn authorize_create_table(
-        &self,
-        _at: &SchemaRef,
-        _name: &str,
-        _table_type: DeltaTableType,
-        _cx: &Cx,
-    ) -> BackendResult<()> {
-        Ok(())
-    }
-
-    async fn authorize_write(&self, _table_id: &str, _cx: &Cx) -> BackendResult<()> {
-        Ok(())
     }
 
     async fn validate_external_location(&self, _location: &str, _cx: &Cx) -> BackendResult<()> {
@@ -323,9 +327,5 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
 
     fn commit_coordinator(&self) -> &dyn CommitCoordinator {
         self.coordinator.as_ref()
-    }
-
-    fn principal_name(&self, _cx: &Cx) -> Option<String> {
-        self.principal.clone()
     }
 }
