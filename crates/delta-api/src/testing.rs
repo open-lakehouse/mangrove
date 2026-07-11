@@ -51,6 +51,14 @@ struct State {
 
 /// An in-memory [`DeltaBackend`] (see the module docs). Generic over the context
 /// type `Cx`, which it ignores.
+///
+/// [`Clone`] is a shallow copy: clones share the same underlying state and commit
+/// coordinator (both behind an [`Arc`]), so a clone handed to [`get_router`] sees
+/// the same tables. This is what lets it drop straight into the axum router, whose
+/// state must be `Clone`.
+///
+/// [`get_router`]: crate::get_router
+#[derive(Clone)]
 pub struct InMemoryDeltaBackend {
     state: Arc<Mutex<State>>,
     coordinator: Arc<InMemoryCommitCoordinator>,

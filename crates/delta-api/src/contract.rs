@@ -63,13 +63,22 @@ pub const SUGGESTED_WRITER_FEATURES: &[&str] = &[
 ];
 
 // Table-property keys.
+
+/// Property key holding the UC table id on a managed Delta table.
 pub const PROP_UC_TABLE_ID: &str = "io.unitycatalog.tableId";
+/// Property key for the last table version UC has recorded.
 pub const PROP_LAST_UPDATE_VERSION: &str = "delta.lastUpdateVersion";
+/// Property key for the timestamp of the last recorded commit.
 pub const PROP_LAST_COMMIT_TIMESTAMP: &str = "delta.lastCommitTimestamp";
+/// Property key selecting the checkpoint policy (managed tables require `"v2"`).
 pub const PROP_CHECKPOINT_POLICY: &str = "delta.checkpointPolicy";
+/// Property key toggling deletion vectors.
 pub const PROP_ENABLE_DELETION_VECTORS: &str = "delta.enableDeletionVectors";
+/// Property key toggling in-commit timestamps (required `"true"` on managed tables).
 pub const PROP_ENABLE_IN_COMMIT_TIMESTAMPS: &str = "delta.enableInCommitTimestamps";
+/// Property key requesting checkpoint stats be written as a struct.
 pub const PROP_CHECKPOINT_WRITE_STATS_AS_STRUCT: &str = "delta.checkpoint.writeStatsAsStruct";
+/// Property key requesting checkpoint stats be written as JSON.
 pub const PROP_CHECKPOINT_WRITE_STATS_AS_JSON: &str = "delta.checkpoint.writeStatsAsJson";
 const PROP_MIN_READER_VERSION: &str = "delta.minReaderVersion";
 const PROP_MIN_WRITER_VERSION: &str = "delta.minWriterVersion";

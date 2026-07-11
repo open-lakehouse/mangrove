@@ -53,3 +53,9 @@ default = []
 # (e.g. lakekeeper) can enable it to test their own port wiring against
 # known-good Delta semantics.
 testing = []
+
+# docs.rs builds with default features only; enable all features there so the
+# `testing` module (and the crate-root example that uses `InMemoryDeltaBackend`)
+# are documented.
+[package.metadata.docs.rs]
+all-features = true
