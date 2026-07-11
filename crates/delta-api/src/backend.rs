@@ -1,0 +1,247 @@
+//! The `DeltaBackend` port: the narrow backend interface the Delta business logic
+//! calls.
+//!
+//! All Delta *semantics* — the managed-table contract, the `updateTable` action
+//! dispatcher, `loadTable` list construction, credential→config mapping, and
+//! commit arbitration — live in [`crate::handler`] and are expressed in terms of
+//! this trait. A server implements only these operations over its own storage,
+//! credential vending, and authorization; it never re-implements any Delta
+//! semantics.
+//!
+//! The trait is generic over a context `Cx` (mangrove's `RequestContext`,
+//! lakekeeper's `RequestMetadata`, …) threaded from the axum router. All types
+//! exchanged here are the crate's own — the Delta wire DTOs, [`crate::column`],
+//! and the coordinate/spec structs below — never a server's resource model.
+
+use std::collections::BTreeMap;
+
+use async_trait::async_trait;
+
+use serde::Deserialize;
+
+use crate::column::Column;
+use crate::coordinator::CommitCoordinator;
+use crate::error::DeltaBackendError;
+use crate::models::{DeltaDataSourceFormat, DeltaTableType};
+
+/// Result of a [`DeltaBackend`] operation.
+pub type BackendResult<T> = Result<T, DeltaBackendError>;
+
+/// A fully-qualified table coordinate.
+///
+/// Deserializes from the router's `{catalog}/{schema}/{table}` path parameters.
+#[derive(Debug, Clone, Deserialize)]
+pub struct TableRef {
+    pub catalog: String,
+    pub schema: String,
+    pub table: String,
+}
+
+impl TableRef {
+    /// The dotted `catalog.schema.table` full name.
+    pub fn full_name(&self) -> String {
+        format!("{}.{}.{}", self.catalog, self.schema, self.table)
+    }
+}
+
+/// A schema coordinate (the parent of table / staging-table creation).
+///
+/// Deserializes from the router's `{catalog}/{schema}` path parameters.
+#[derive(Debug, Clone, Deserialize)]
+pub struct SchemaRef {
+    pub catalog: String,
+    pub schema: String,
+}
+
+/// A table resolved by the backend, in the crate's portable shape.
+#[derive(Debug, Clone)]
+pub struct ResolvedTable {
+    /// The table UUID (as a string). `None` for tables the backend does not
+    /// assign an id to (which the Delta API rejects downstream).
+    pub table_id: Option<String>,
+    /// The table's storage root location.
+    pub location: String,
+    /// The Delta table type, or `None` for table types the Delta API cannot
+    /// serve (views, metric views, …), which `loadTable` rejects with 400.
+    pub table_type: Option<DeltaTableType>,
+    /// The table's data source format, if known. Commit-coordinator state is
+    /// only attached to MANAGED tables whose format is
+    /// [`DeltaDataSourceFormat::Delta`].
+    pub data_source_format: Option<DeltaDataSourceFormat>,
+    pub columns: Vec<Column>,
+    pub properties: BTreeMap<String, String>,
+    /// Creation time, epoch milliseconds.
+    pub created_at_ms: Option<i64>,
+    /// Last-update time, epoch milliseconds. Drives the etag.
+    pub updated_at_ms: Option<i64>,
+}
+
+/// A staging-table reservation (uuid + managed location) allocated before a
+/// managed `createTable`.
+#[derive(Debug, Clone)]
+pub struct StagingReservation {
+    /// The reservation UUID the created table adopts.
+    pub table_id: String,
+    /// The managed location under which the client writes the initial commit.
+    pub location: String,
+    /// The principal that created the reservation, for the creator-match check.
+    pub created_by: Option<String>,
+    /// Whether the reservation has already been finalized into a table.
+    pub stage_committed: bool,
+}
+
+/// The access level for a vended storage credential.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CredentialAccess {
+    Read,
+    ReadWrite,
+}
+
+/// A credential vended by the backend, in a cloud-neutral shape the handler maps
+/// onto the wire `DeltaStorageCredential`.
+#[derive(Debug, Clone)]
+pub struct VendedCredential {
+    /// The prefix / URL the credential applies to.
+    pub url: String,
+    /// Expiration, epoch milliseconds.
+    pub expiration_time_ms: i64,
+    pub kind: VendedCredentialKind,
+}
+
+/// Cloud-provider-specific credential material.
+#[derive(Debug, Clone)]
+pub enum VendedCredentialKind {
+    /// AWS (and R2, which reuses the S3-shaped fields).
+    S3 {
+        access_key_id: String,
+        secret_access_key: String,
+        session_token: Option<String>,
+    },
+    /// Azure user-delegation SAS.
+    AzureSas { sas_token: String },
+    /// GCS OAuth token.
+    GcsOauth { oauth_token: String },
+    /// No recognized credential material (an empty config is vended).
+    None,
+}
+
+/// Specification for persisting a new Delta table row. The handler has already
+/// validated the contract and derived the UC-shaped columns + stored properties.
+#[derive(Debug, Clone)]
+pub struct CreateTableSpec {
+    pub at: SchemaRef,
+    pub name: String,
+    pub table_type: DeltaTableType,
+    pub location: String,
+    pub comment: Option<String>,
+    pub columns: Vec<Column>,
+    pub properties: BTreeMap<String, String>,
+    /// For MANAGED tables, the adopted staging reservation id; `None` for EXTERNAL
+    /// (the backend assigns the id).
+    pub table_id: Option<String>,
+}
+
+/// Specification for persisting metadata changes to an existing table (the
+/// non-commit half of `updateTable`). The handler has already applied the
+/// canonical-order action dispatch to produce the new columns/properties/comment.
+#[derive(Debug, Clone)]
+pub struct UpdateTableSpec {
+    pub table_id: String,
+    pub columns: Vec<Column>,
+    pub properties: BTreeMap<String, String>,
+    /// The new comment. Unlike `columns`/`properties` (full replacement
+    /// snapshots), this is a delta: `None` leaves the stored comment unchanged
+    /// (the wire has no clear-comment action); `Some(c)` sets it.
+    pub comment: Option<String>,
+}
+
+/// The backend port. See the module docs.
+#[async_trait]
+pub trait DeltaBackend<Cx = ()>: Send + Sync + 'static {
+    /// Confirm the catalog exists (for `getConfig`). Missing → [`DeltaBackendError::NotFound`].
+    async fn catalog_exists(&self, catalog: &str, cx: &Cx) -> BackendResult<()>;
+
+    /// Resolve a table by 3-part name. Missing → [`DeltaBackendError::NotFound`].
+    async fn resolve_table(&self, table: &TableRef, cx: &Cx) -> BackendResult<ResolvedTable>;
+
+    /// Authorize CREATE on the target table coordinate.
+    async fn authorize_create_table(
+        &self,
+        at: &SchemaRef,
+        name: &str,
+        table_type: DeltaTableType,
+        cx: &Cx,
+    ) -> BackendResult<()>;
+
+    /// Authorize WRITE on the resolved table (the `updateTable` path).
+    async fn authorize_write(&self, table_id: &str, cx: &Cx) -> BackendResult<()>;
+
+    /// Validate that an EXTERNAL table location lies within a registered external
+    /// location.
+    async fn validate_external_location(&self, location: &str, cx: &Cx) -> BackendResult<()>;
+
+    /// Persist a new Delta table row and return it resolved.
+    async fn create_table_row(
+        &self,
+        spec: CreateTableSpec,
+        cx: &Cx,
+    ) -> BackendResult<ResolvedTable>;
+
+    /// Persist metadata changes to an existing table.
+    async fn update_table_row(&self, spec: UpdateTableSpec, cx: &Cx) -> BackendResult<()>;
+
+    /// Delete a table.
+    async fn delete_table(&self, table: &TableRef, cx: &Cx) -> BackendResult<()>;
+
+    /// Rename a table within the same catalog + schema. Backends without rename
+    /// support return [`DeltaBackendError::NotImplemented`].
+    async fn rename_table(&self, from: &TableRef, to_name: &str, cx: &Cx) -> BackendResult<()>;
+
+    /// Allocate a staging reservation (uuid + managed location) under a schema.
+    async fn allocate_staging(
+        &self,
+        at: &SchemaRef,
+        name: &str,
+        cx: &Cx,
+    ) -> BackendResult<StagingReservation>;
+
+    /// Resolve a staging reservation by its managed location.
+    async fn resolve_staging_by_location(
+        &self,
+        location: &str,
+        cx: &Cx,
+    ) -> BackendResult<StagingReservation>;
+
+    /// Resolve a staging reservation by its uuid.
+    async fn resolve_staging_by_id(
+        &self,
+        table_id: &str,
+        cx: &Cx,
+    ) -> BackendResult<StagingReservation>;
+
+    /// Consume (delete) a staging reservation so the created table can adopt its id.
+    async fn finalize_staging(&self, table_id: &str, cx: &Cx) -> BackendResult<()>;
+
+    /// Vend a credential for a table's location at the given access level.
+    async fn vend_table_credential(
+        &self,
+        table_id: &str,
+        access: CredentialAccess,
+        cx: &Cx,
+    ) -> BackendResult<VendedCredential>;
+
+    /// Vend a credential for an arbitrary path at the given access level.
+    async fn vend_path_credential(
+        &self,
+        location: &str,
+        access: CredentialAccess,
+        cx: &Cx,
+    ) -> BackendResult<VendedCredential>;
+
+    /// The commit coordinator backing this backend's Delta commit log.
+    fn commit_coordinator(&self) -> &dyn CommitCoordinator;
+
+    /// The caller's principal name (for the managed-createTable creator-match), or
+    /// `None` for an anonymous caller.
+    fn principal_name(&self, cx: &Cx) -> Option<String>;
+}

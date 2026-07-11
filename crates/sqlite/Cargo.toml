@@ -19,6 +19,7 @@ name = "unitycatalog_sqlite"
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1", default-features = false, features = [
   "store",
 ] }
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.1" }
 
 # workspace dependencies (in alphabetical order)
 async-trait = { workspace = true }

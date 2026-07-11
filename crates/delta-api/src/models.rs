@@ -8,9 +8,9 @@
 //!
 //! This is a standalone REST protocol (not resource-CRUD), so — unlike most of
 //! the workspace — it is not generated from proto. The pure wire DTOs live here
-//! in `common` so both the server router (`crates/server`) and the client
-//! (`crates/client`) share a single definition; the server's `IntoResponse`
-//! error envelope stays in the server crate.
+//! so every server implementation of the Delta API and every client shares a
+//! single definition; the runtime error envelope (`DeltaApiError` +
+//! `IntoResponse`) lives in the sibling [`crate::error`] module.
 
 use std::collections::BTreeMap;
 

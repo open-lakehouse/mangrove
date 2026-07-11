@@ -7,8 +7,6 @@ export * from "./gen/unitycatalog/catalogs/v1/models_pb";
 export * from "./gen/unitycatalog/catalogs/v1/svc_pb";
 export * from "./gen/unitycatalog/credentials/v1/models_pb";
 export * from "./gen/unitycatalog/credentials/v1/svc_pb";
-export * from "./gen/unitycatalog/delta_commits/v1/models_pb";
-export * from "./gen/unitycatalog/delta_commits/v1/svc_pb";
 export * from "./gen/unitycatalog/external_locations/v1/models_pb";
 export * from "./gen/unitycatalog/external_locations/v1/svc_pb";
 export * from "./gen/unitycatalog/functions/v1/models_pb";

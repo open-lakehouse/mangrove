@@ -379,44 +379,6 @@ class Column:
         type_text: Optional[str] = None,
     ) -> None: ...
 
-class CommitInfo:
-    """Information about a single Delta commit ratified by the catalog.
-
-    Mirrors the `CommitInfo` shape used by the Unity Catalog OSS commit coordinator (`uc_delta_commits`
-    rows). All fields are required and must be positive / non-empty (see the `commit` RPC)."""
-
-    file_modification_timestamp: int
-    """
-    The filesystem modification timestamp of the staged commit file (milliseconds since
-    epoch).
-    """
-    file_name: str
-    """
-    The name of the staged commit file, e.g. `00000000000000000005.<uuid>.json` under
-    `_delta_log/ _staged_commits/`.
-    """
-    file_size: int
-    """The size of the staged commit file in bytes."""
-    timestamp: int
-    """
-    The in-commit timestamp (milliseconds since epoch). Monotonicity is the client's
-    responsibility; the server only requires it to be positive.
-    """
-    version: int
-    """
-    The table version this commit produces. Posted commits are >= 1; version 0 is established
-    out-of- band by create-table.
-    """
-
-    def __init__(
-        self,
-        file_modification_timestamp: Optional[int] = None,
-        file_name: Optional[str] = None,
-        file_size: Optional[int] = None,
-        timestamp: Optional[int] = None,
-        version: Optional[int] = None,
-    ) -> None: ...
-
 class Credential:
     """A credential used to access external data sources or services."""
 
@@ -840,24 +802,6 @@ class GcpOauthToken:
 
     def __init__(self, oauth_token: Optional[str] = None) -> None: ...
 
-class GetCommitsResponse:
-    """Response listing ratified-but-unpublished commits for a table."""
-
-    commits: List[CommitInfo]
-    """
-    Ratified commits in `[start_version, end_version]`, contiguous and ordered ascending by
-    version. Excludes the internal fully-backfilled marker row.
-    """
-    latest_table_version: int
-    """
-    The latest table version the catalog tracks. `0` indicates a managed table with no commits
-    yet.
-    """
-
-    def __init__(
-        self, commits: Optional[List[CommitInfo]] = None, latest_table_version: Optional[int] = None
-    ) -> None: ...
-
 class GetPermissionsResponse:
     """Response to list shares."""
 
@@ -927,24 +871,6 @@ class MatchColumn:
     """The condition on the column, e.g. its name, that must match for this binding to apply."""
 
     def __init__(self, alias: Optional[str] = None, condition: Optional[str] = None) -> None: ...
-
-class Metadata:
-    """A Delta metadata change accompanying a commit. Modeled minimally; the coordinator stores it opaquely
-    and does not interpret it."""
-
-    configuration: Dict[str, str]
-    """Configuration key/value pairs from the Delta metadata action."""
-    id: Optional[str]
-    """The Delta metadata `id`."""
-    schema_string: Optional[str]
-    """The serialized schema string from the Delta metadata action."""
-
-    def __init__(
-        self,
-        configuration: Optional[Dict[str, str]] = None,
-        id: Optional[str] = None,
-        schema_string: Optional[str] = None,
-    ) -> None: ...
 
 class PermissionsChange:
     add: List[str]
@@ -2482,34 +2408,6 @@ class VolumeClient:
 
 class UnityCatalogClient:
     def __init__(self, base_url: str, token: Optional[str] = None) -> None: ...
-    def commit(
-        self,
-        table_id: str,
-        table_uri: str,
-        commit_info: Optional[CommitInfo] = None,
-        latest_backfilled_version: Optional[int] = None,
-        metadata: Optional[Metadata] = None,
-    ) -> None:
-        """
-        Ratify a staged commit at the requested version (first-writer-wins), and/or notify the catalog that
-        commits have been backfilled to the Delta log.
-
-
-        Args:
-            table_id: UUID of the catalog-managed table being committed to.
-            table_uri: The storage URI of the table. Must match the table's registered storage location
-                       (normalized) on the commit path.
-            commit_info: The commit to ratify. Absent for a backfill-only notification.
-            latest_backfilled_version: Notify the catalog that commits up to and including this version
-                                       have been published (backfilled) to the Delta log. The catalog prunes
-                                       ratified commits accordingly.
-            metadata: An optional Delta metadata change accompanying the commit.
-
-
-        Returns:
-            The requested resource
-        """
-        ...
     def create_agent(
         self,
         catalog_name: str,
@@ -3011,25 +2909,6 @@ class UnityCatalogClient:
 
         Returns:
             The response to the GenerateTemporaryTableCredentialsRequest.
-        """
-        ...
-    def get_commits(
-        self, table_id: str, table_uri: str, start_version: int, end_version: Optional[int] = None
-    ) -> GetCommitsResponse:
-        """
-        Return ratified-but-unpublished commits for a table, plus the latest version the catalog tracks.
-
-
-        Args:
-            table_id: UUID of the catalog-managed table.
-            table_uri: The storage URI of the table.
-            start_version: The lowest version to return (inclusive). Defaults to 0.
-            end_version: The highest version to return (inclusive). When set, must be `>= start_version`.
-                         Defaults to the latest version.
-
-
-        Returns:
-            Response listing ratified-but-unpublished commits for a table.
         """
         ...
     def get_entity_tag_assignment(

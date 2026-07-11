@@ -9,13 +9,12 @@
 
 use std::collections::BTreeMap;
 
-use unitycatalog_common::models::tables::v1::{Column, ColumnTypeName};
-
-use crate::rest::routers::delta::models::{
+use crate::column::{Column, ColumnTypeName};
+use crate::error::{DeltaApiError as Error, DeltaApiResult as Result};
+use crate::models::{
     DeltaArrayType, DeltaCreateTableRequest, DeltaDataType, DeltaDecimalType,
     DeltaDomainMetadataUpdates, DeltaMapType, DeltaProtocol, DeltaStructField, DeltaStructType,
 };
-use crate::{Error, Result};
 
 // ===================================================================
 // Contract constants (DeltaConsts + UcManagedDeltaContract)
@@ -139,8 +138,9 @@ pub fn required_properties(table_id: &str) -> BTreeMap<String, Option<String>> {
 
 /// Validate that the supplied protocol, domain-metadata, and properties satisfy the
 /// UC catalog-managed Delta contract. Apply only to MANAGED tables; EXTERNAL tables
-/// mirror what the client wrote and skip this. All failures map to
-/// [`Error::InvalidArgument`] (HTTP 400, the spec's `INVALID_PARAMETER_VALUE`).
+/// mirror what the client wrote and skip this. All failures are
+/// [`DeltaApiError::invalid_argument`](crate::error::DeltaApiError) (HTTP 400,
+/// the spec's `INVALID_PARAMETER_VALUE`).
 pub fn validate(
     protocol: &DeltaProtocol,
     domain_metadata: Option<&DeltaDomainMetadataUpdates>,
@@ -368,8 +368,10 @@ pub fn delta_columns_to_uc(
             Ok(Column {
                 name: f.name.clone(),
                 type_text: catalog_string(&f.data_type),
-                type_json: serde_json::to_string(f)?,
-                type_name: resolve_column_type_name(&f.data_type)? as i32,
+                type_json: serde_json::to_string(f).map_err(|e| {
+                    Error::invalid_argument(format!("failed to serialize column: {e}"))
+                })?,
+                type_name: resolve_column_type_name(&f.data_type)?,
                 position: Some(idx as i32),
                 nullable: Some(f.nullable),
                 partition_index: partition_index(&f.name),
@@ -497,7 +499,8 @@ fn catalog_string(data_type: &DeltaDataType) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rest::routers::delta::models::{DeltaDataSourceFormat, DeltaProtocol};
+    use crate::error::DeltaBackendError;
+    use crate::models::{DeltaDataSourceFormat, DeltaProtocol, DeltaTableType};
 
     fn compliant_protocol() -> DeltaProtocol {
         DeltaProtocol {
@@ -538,7 +541,10 @@ mod tests {
         // Drop every required feature, leaving only an unrelated one.
         proto.writer_features = Some(vec!["someOtherFeature".to_string()]);
         let err = validate(&proto, None, &compliant_properties("id-1")).unwrap_err();
-        assert!(matches!(err, Error::InvalidArgument(_)), "{err:?}");
+        assert!(
+            matches!(err, Error(DeltaBackendError::InvalidArgument(_))),
+            "{err:?}"
+        );
     }
 
     #[test]
@@ -546,7 +552,10 @@ mod tests {
         let mut proto = compliant_protocol();
         proto.min_writer_version = 5;
         let err = validate(&proto, None, &compliant_properties("id-1")).unwrap_err();
-        assert!(matches!(err, Error::InvalidArgument(_)), "{err:?}");
+        assert!(
+            matches!(err, Error(DeltaBackendError::InvalidArgument(_))),
+            "{err:?}"
+        );
     }
 
     #[test]
@@ -554,7 +563,10 @@ mod tests {
         let mut proto = compliant_protocol();
         proto.reader_features = Some(vec!["someReaderOnly".to_string()]);
         let err = validate(&proto, None, &compliant_properties("id-1")).unwrap_err();
-        assert!(matches!(err, Error::InvalidArgument(_)), "{err:?}");
+        assert!(
+            matches!(err, Error(DeltaBackendError::InvalidArgument(_))),
+            "{err:?}"
+        );
     }
 
     #[test]
@@ -562,14 +574,20 @@ mod tests {
         let mut props = compliant_properties("id-1");
         props.remove(PROP_CHECKPOINT_POLICY);
         let err = validate(&compliant_protocol(), None, &props).unwrap_err();
-        assert!(matches!(err, Error::InvalidArgument(_)), "{err:?}");
+        assert!(
+            matches!(err, Error(DeltaBackendError::InvalidArgument(_))),
+            "{err:?}"
+        );
     }
 
     #[test]
     fn table_id_mismatch_rejected() {
         let props = compliant_properties("id-1");
         let err = validate_table_id_property(&props, "id-2").unwrap_err();
-        assert!(matches!(err, Error::InvalidArgument(_)), "{err:?}");
+        assert!(
+            matches!(err, Error(DeltaBackendError::InvalidArgument(_))),
+            "{err:?}"
+        );
         assert!(validate_table_id_property(&props, "id-1").is_ok());
     }
 
@@ -578,7 +596,7 @@ mod tests {
         let req = DeltaCreateTableRequest {
             name: "t".into(),
             location: "s3://b/t".into(),
-            table_type: crate::rest::routers::delta::models::DeltaTableType::Managed,
+            table_type: DeltaTableType::Managed,
             comment: None,
             columns: DeltaStructType {
                 type_tag: Default::default(),
@@ -639,10 +657,10 @@ mod tests {
         let uc = delta_columns_to_uc(&columns, Some(&["id".to_string()])).unwrap();
         assert_eq!(uc.len(), 2);
         assert_eq!(uc[0].name, "id");
-        assert_eq!(uc[0].type_name, ColumnTypeName::Long as i32);
+        assert_eq!(uc[0].type_name, ColumnTypeName::Long);
         assert_eq!(uc[0].partition_index, Some(0));
         assert_eq!(uc[1].type_text, "decimal(10,2)");
-        assert_eq!(uc[1].type_name, ColumnTypeName::Decimal as i32);
+        assert_eq!(uc[1].type_name, ColumnTypeName::Decimal);
 
         // Reverse: stored type_json should reconstruct the Delta types.
         let back = uc_columns_to_delta(&uc);
@@ -662,6 +680,9 @@ mod tests {
             }],
         };
         let err = delta_columns_to_uc(&columns, Some(&["missing".to_string()])).unwrap_err();
-        assert!(matches!(err, Error::InvalidArgument(_)), "{err:?}");
+        assert!(
+            matches!(err, Error(DeltaBackendError::InvalidArgument(_))),
+            "{err:?}"
+        );
     }
 }

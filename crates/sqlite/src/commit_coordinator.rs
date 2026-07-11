@@ -1,7 +1,7 @@
 //! SQLite-backed Delta [`CommitCoordinator`].
 //!
 //! Implements the same arbitration/backfill state machine as the in-memory
-//! coordinator in `unitycatalog-common` (a port of UC OSS `postCommitCore`) and
+//! coordinator in `unitycatalog-delta-api` (a port of UC OSS `postCommitCore`) and
 //! the Postgres backend, but persists ratified commits in the SQLite
 //! `delta_commits` table. The unique constraint on `(table_id, commit_version)`
 //! is the first-writer-wins arbiter: each `commit` runs in a transaction, and a
@@ -11,9 +11,8 @@
 //! Timestamps are stored as INTEGER epoch-millis — the same representation used
 //! on the wire — so no timezone conversion is needed.
 
-use unitycatalog_common::models::delta_commits::v1::CommitInfo;
-use unitycatalog_common::services::commit_coordinator::{
-    CommitCoordinator, CommitError, CommitResult, DEFAULT_MAX_UNBACKFILLED_COMMITS,
+use unitycatalog_delta_api::coordinator::{
+    CommitCoordinator, CommitError, CommitInfo, CommitResult, DEFAULT_MAX_UNBACKFILLED_COMMITS,
     validate_commit_info,
 };
 use uuid::Uuid;

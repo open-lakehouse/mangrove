@@ -15,8 +15,6 @@ import {
   ExternalLocationSchema,
   type Function as Function$,
   FunctionSchema,
-  type GetCommitsResponse,
-  GetCommitsResponseSchema,
   type ListEntityTagAssignmentsResponse,
   ListEntityTagAssignmentsResponseSchema,
   type PolicyInfo,
@@ -328,19 +326,6 @@ export interface UpdateCredentialOptions {
   /** Force an update even if there are dependent services (when purpose is SERVICE)
    *  or dependent external locations and external tables (when purpose is STORAGE). */
   force?: boolean;
-}
-
-export interface CommitOptions {
-  /** Notify the catalog that commits up to and including this version have been
-   *  published (backfilled) to the Delta log. The catalog prunes ratified
-   *  commits accordingly. */
-  latestBackfilledVersion?: number;
-}
-
-export interface GetCommitsOptions {
-  /** The highest version to return (inclusive). When set, must be
-   *  `>= start_version`. Defaults to the latest version. */
-  endVersion?: number;
 }
 
 export interface ListEntityTagAssignmentsOptions {
@@ -1733,49 +1718,6 @@ export class UnityCatalogClient {
 
   credential(credentialName: string): CredentialClient {
     return new CredentialClient(this.inner.credential(credentialName));
-  }
-
-  /**
-   * Ratify a staged commit at the requested version (first-writer-wins), and/or
-   * notify the catalog that commits have been backfilled to the Delta log.
-   */
-  async commit(
-    tableId: string,
-    tableUri: string,
-    options?: CommitOptions,
-  ): Promise<void> {
-    const { latestBackfilledVersion } = options || {};
-    try {
-      await this.inner.commit(tableId, tableUri, latestBackfilledVersion);
-    } catch (e) {
-      throw parseNativeError(e);
-    }
-  }
-
-  /**
-   * Return ratified-but-unpublished commits for a table, plus the latest
-   * version the catalog tracks.
-   */
-  async getCommits(
-    tableId: string,
-    tableUri: string,
-    startVersion: number,
-    options?: GetCommitsOptions,
-  ): Promise<GetCommitsResponse> {
-    const { endVersion } = options || {};
-    try {
-      return fromBinary(
-        GetCommitsResponseSchema,
-        await this.inner.getCommits(
-          tableId,
-          tableUri,
-          startVersion,
-          endVersion,
-        ),
-      );
-    } catch (e) {
-      throw parseNativeError(e);
-    }
   }
 
   /**

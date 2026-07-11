@@ -1,16 +1,15 @@
 use crate::api::{
-    AgentHandler, AgentSkillHandler, CatalogHandler, CredentialHandler, DeltaCommitHandler,
-    EntityTagAssignmentHandler, ExternalLocationHandler, FunctionHandler, PolicyHandler,
-    ProviderHandler, RecipientHandler, SchemaHandler, ShareHandler, StagingTableHandler,
-    TableHandler, TagPolicyHandler, TemporaryCredentialHandler, VolumeHandler,
+    AgentHandler, AgentSkillHandler, CatalogHandler, CredentialHandler, EntityTagAssignmentHandler,
+    ExternalLocationHandler, FunctionHandler, PolicyHandler, ProviderHandler, RecipientHandler,
+    SchemaHandler, ShareHandler, StagingTableHandler, TableHandler, TagPolicyHandler,
+    TemporaryCredentialHandler, VolumeHandler,
 };
 use axum::routing::{delete, get, patch, post};
 
-pub use delta::get_router as create_delta_router;
 pub use sharing::get_router as create_sharing_router;
 pub use sharing::open_sharing_router as create_open_sharing_router;
+pub use unitycatalog_delta_api::get_router as create_delta_router;
 
-pub mod delta;
 mod sharing;
 
 pub fn create_catalogs_router<T, Cx>(handler: T) -> axum::Router
@@ -190,21 +189,6 @@ where
         .route(
             "/temporary-volume-credentials",
             post(generate_temporary_volume_credentials::<T, Cx>),
-        )
-        .with_state(handler)
-}
-
-pub fn create_commits_router<T, Cx>(handler: T) -> axum::Router
-where
-    T: DeltaCommitHandler<Cx> + Clone,
-    Cx: axum::extract::FromRequestParts<T> + Send + 'static,
-{
-    use crate::codegen::delta_commits::server::*;
-
-    axum::Router::new()
-        .route(
-            "/delta/preview/commits",
-            post(commit::<T, Cx>).get(get_commits::<T, Cx>),
         )
         .with_state(handler)
 }

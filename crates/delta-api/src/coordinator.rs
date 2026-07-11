@@ -8,8 +8,9 @@
 //! commits and merge them with the published Delta log.
 //!
 //! [`CommitCoordinator`] is the backend-agnostic trait; [`InMemoryCommitCoordinator`]
-//! is the default in-memory implementation. A Postgres-backed implementation lives
-//! in `unitycatalog-postgres`. Both faithfully port the arbitration and backfill
+//! is the default in-memory implementation. Persistent implementations (e.g. a
+//! Postgres-backed one in `unitycatalog-postgres`) live in each backend crate.
+//! Both faithfully port the arbitration and backfill
 //! logic of the Unity Catalog OSS reference implementation
 //! (`DeltaCommitRepository.java`'s `postCommitCore` → `handleOnboardingCommit` /
 //! `handleNormalCommit` / `handleBackfillOnlyCommit`). The notable invariants:
@@ -32,7 +33,25 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 
-use crate::models::delta_commits::v1::CommitInfo;
+/// A ratified Delta commit, the coordinator's per-version record.
+///
+/// This is the hand-written replacement for the former proto-generated
+/// `CommitInfo`; its fields (names and types) are identical, so backends'
+/// SQL ↔ struct mapping is unaffected by the move. All fields must be positive /
+/// non-empty — see [`validate_commit_info`].
+#[derive(Clone, Debug, PartialEq)]
+pub struct CommitInfo {
+    /// The commit version.
+    pub version: i64,
+    /// In-commit timestamp, in epoch milliseconds.
+    pub timestamp: i64,
+    /// UUID-based commit file name.
+    pub file_name: String,
+    /// Size of the commit file, in bytes.
+    pub file_size: i64,
+    /// File modification timestamp, in epoch milliseconds.
+    pub file_modification_timestamp: i64,
+}
 
 /// Default cap on the number of unbackfilled commits a table may accumulate
 /// before further commits are rejected. Matches UC OSS `MAX_NUM_COMMITS_PER_TABLE`.

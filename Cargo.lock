@@ -3724,6 +3724,7 @@ dependencies = [
  "mockito",
  "olai-http",
  "olai-uc-common",
+ "olai-uc-delta-api",
  "percent-encoding",
  "reqwest 0.12.28",
  "rstest",
@@ -3794,6 +3795,7 @@ dependencies = [
  "olai-http",
  "olai-uc-client",
  "olai-uc-common",
+ "olai-uc-delta-api",
  "olai-uc-object-store",
  "serde",
  "serde_json",
@@ -3802,6 +3804,20 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "url",
+]
+
+[[package]]
+name = "olai-uc-delta-api"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "axum",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -3835,6 +3851,7 @@ dependencies = [
  "olai-http",
  "olai-store",
  "olai-uc-common",
+ "olai-uc-delta-api",
  "paste",
  "serde",
  "serde_json",
@@ -3870,6 +3887,7 @@ dependencies = [
  "olai-store",
  "olai-uc-client",
  "olai-uc-common",
+ "olai-uc-delta-api",
  "olai-uc-postgres",
  "olai-uc-sharing-client",
  "olai-uc-sqlite",
@@ -3924,6 +3942,7 @@ dependencies = [
  "chrono",
  "olai-store",
  "olai-uc-common",
+ "olai-uc-delta-api",
  "serde",
  "serde_json",
  "sqlx",

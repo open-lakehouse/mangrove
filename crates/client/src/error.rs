@@ -1,4 +1,4 @@
-use unitycatalog_common::models::delta::v1::DeltaErrorModel;
+use unitycatalog_delta_api::models::DeltaErrorModel;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -68,7 +68,7 @@ impl Error {
             Error::Delta(model) => {
                 matches!(
                     model.error_type,
-                    unitycatalog_common::models::delta::v1::DeltaErrorType::PermissionDeniedException
+                    unitycatalog_delta_api::models::DeltaErrorType::PermissionDeniedException
                 )
             }
             _ => false,
@@ -81,7 +81,7 @@ impl Error {
             Error::Delta(model) => {
                 matches!(
                     model.error_type,
-                    unitycatalog_common::models::delta::v1::DeltaErrorType::NotAuthorizedException
+                    unitycatalog_delta_api::models::DeltaErrorType::NotAuthorizedException
                 )
             }
             _ => false,
@@ -275,7 +275,7 @@ pub(crate) async fn parse_error_response(response: reqwest::Response) -> Error {
 /// error envelope (e.g. a bare proxy 502 or a truncated body), preserving the raw
 /// bytes for diagnostics.
 pub(crate) async fn parse_delta_error_response(response: reqwest::Response) -> Error {
-    use unitycatalog_common::models::delta::v1::DeltaErrorResponse;
+    use unitycatalog_delta_api::models::DeltaErrorResponse;
 
     let status = response.status().as_u16();
     match response.bytes().await {

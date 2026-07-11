@@ -19,7 +19,7 @@ use crate::handlers::upstream::{
 };
 use crate::policy::Policy;
 use crate::rest::{
-    create_catalogs_router, create_commits_router, create_credentials_router, create_delta_router,
+    create_catalogs_router, create_credentials_router, create_delta_router,
     create_entity_tag_assignments_router, create_external_locations_router,
     create_functions_router, create_open_sharing_router, create_policies_router,
     create_providers_router, create_recipients_router, create_schemas_router, create_shares_router,
@@ -90,7 +90,6 @@ pub(crate) fn build_hybrid_router(
         .merge(create_recipients_router(handler.clone()))
         .merge(create_providers_router(handler.clone()))
         .merge(create_shares_router(handler.clone()))
-        .merge(create_commits_router(handler.clone()))
         .merge(create_delta_router(handler.clone()))
         .merge(create_entity_tag_assignments_router(handler.clone()))
         .merge(create_policies_router(handler.clone()));

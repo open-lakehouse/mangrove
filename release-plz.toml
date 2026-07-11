@@ -62,11 +62,16 @@ pr_draft = false
 # Remove the `release = false` line as each crate is bootstrapped + its Trusted
 # Publisher registered. Clear them tier by tier (see bootstrap-publish.yml and
 # CONTRIBUTING.md). crates.io publish/bootstrap order:
-#   common -> client, sharing-client -> object-store, postgres, sqlite,
-#   datafusion -> cli
+#   delta-api -> common -> client, sharing-client -> object-store, postgres,
+#   sqlite, datafusion -> cli
 # `olai-uc-server` is NOT on this list: it is a deployable (`git_only = true`),
 # released as a Docker image rather than to crates.io — see its block below.
 # ---------------------------------------------------------------------------
+[[package]]
+name = "olai-uc-delta-api"
+changelog_path = "crates/delta-api/CHANGELOG.md"
+release = false
+
 [[package]]
 name = "olai-uc-common"
 changelog_path = "crates/common/CHANGELOG.md"
@@ -151,5 +156,5 @@ commit_parsers = [
 # is already crate-scoped. Scopes use the crate directory names / short names
 # the repo's conventional commits already use.
 commit_preprocessors = [
-  { pattern = '\((common|client|sharing-client|object-store|postgres|sqlite|datafusion|server|cli)\)', replace = "" },
+  { pattern = '\((delta-api|common|client|sharing-client|object-store|postgres|sqlite|datafusion|server|cli)\)', replace = "" },
 ]

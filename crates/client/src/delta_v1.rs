@@ -3,7 +3,7 @@
 //! The Delta API is a standalone REST protocol (not a generated resource API),
 //! so — like [`crate::temporary_credentials`] — it is hand-maintained. The wire
 //! DTOs are shared with the server via
-//! [`unitycatalog_common::models::delta::v1`]. This client covers the full
+//! [`unitycatalog_delta_api::models`]. This client covers the full
 //! `delta.yaml` surface: catalog config negotiation, the catalog-managed table
 //! lifecycle (`createStagingTable`, `createTable`, `loadTable`, `updateTable`,
 //! `deleteTable`, `tableExists`, `renameTable`), credential vending
@@ -12,7 +12,7 @@
 
 use olai_http::CloudClient;
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
-use unitycatalog_common::models::delta::v1::{
+use unitycatalog_delta_api::models::{
     DeltaCatalogConfig, DeltaCreateStagingTableRequest, DeltaCreateTableRequest,
     DeltaCredentialOperation, DeltaCredentialsResponse, DeltaLoadTableResponse,
     DeltaRenameTableRequest, DeltaReportMetricsRequest, DeltaStagingTableResponse,
@@ -351,7 +351,7 @@ impl DeltaV1Client {
 mod tests {
     use super::*;
     use mockito::Server;
-    use unitycatalog_common::models::delta::v1::DeltaErrorType;
+    use unitycatalog_delta_api::models::DeltaErrorType;
 
     fn test_client(server: &Server) -> DeltaV1Client {
         let base = Url::parse(&server.url()).unwrap();

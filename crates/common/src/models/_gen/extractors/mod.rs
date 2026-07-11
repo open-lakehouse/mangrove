@@ -8,8 +8,6 @@ pub mod catalogs;
 #[cfg(feature = "axum")]
 pub mod credentials;
 #[cfg(feature = "axum")]
-pub mod delta_commits;
-#[cfg(feature = "axum")]
 pub mod entity_tag_assignments;
 #[cfg(feature = "axum")]
 pub mod external_locations;

@@ -48,7 +48,7 @@ use delta_kernel::{Engine, Version};
 use delta_kernel_default_engine::DefaultEngineBuilder;
 use tracing::{debug, info, warn};
 use unitycatalog_client::DeltaV1Client;
-use unitycatalog_common::models::delta::v1::{
+use unitycatalog_delta_api::models::{
     DeltaCommitReport, DeltaLoadTableResponse, DeltaReport, DeltaReportMetricsRequest,
     DeltaTableRequirement, DeltaTableUpdate, DeltaUpdateTableRequest,
 };

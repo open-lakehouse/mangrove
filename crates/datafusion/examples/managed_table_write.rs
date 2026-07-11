@@ -73,7 +73,7 @@ use deltalake_core::parquet::arrow::ArrowWriter;
 use object_store::aws::AmazonS3Builder;
 use object_store::{ObjectStore, ObjectStoreExt, PutPayload, path::Path};
 use serde_json::json;
-use unitycatalog_common::models::delta::v1::{
+use unitycatalog_delta_api::models::{
     DeltaCommit, DeltaCreateStagingTableRequest, DeltaCreateTableRequest, DeltaDataSourceFormat,
     DeltaDataType, DeltaProtocol, DeltaStagingTableResponse, DeltaStructField, DeltaStructType,
     DeltaTableRequirement, DeltaTableType, DeltaTableUpdate, DeltaUpdateTableRequest,

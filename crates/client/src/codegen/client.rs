@@ -4,7 +4,6 @@ use crate::codegen::agent_skills::*;
 use crate::codegen::agents::*;
 use crate::codegen::catalogs::*;
 use crate::codegen::credentials::*;
-use crate::codegen::delta_commits::*;
 use crate::codegen::entity_tag_assignments::*;
 use crate::codegen::external_locations::*;
 use crate::codegen::functions::*;
@@ -23,7 +22,6 @@ use unitycatalog_common::models::agent_skills::v0alpha1::*;
 use unitycatalog_common::models::agents::v0alpha1::*;
 use unitycatalog_common::models::catalogs::v1::*;
 use unitycatalog_common::models::credentials::v1::*;
-use unitycatalog_common::models::delta_commits::v1::*;
 use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
 use unitycatalog_common::models::policies::v1::*;
@@ -82,13 +80,6 @@ impl UnityCatalogClient {
     ///Low-level `credentials` client exposing request/response passthrough methods.
     pub fn credentials_client(&self) -> crate::codegen::credentials::CredentialServiceClient {
         crate::codegen::credentials::CredentialServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `delta_commits` client exposing request/response passthrough methods.
-    pub fn delta_commits_client(&self) -> crate::codegen::delta_commits::DeltaCommitClient {
-        crate::codegen::delta_commits::DeltaCommitClient::new(
             self.client.clone(),
             self.base_url.clone(),
         )
@@ -402,52 +393,6 @@ impl UnityCatalogClient {
                 self.client.clone(),
                 self.base_url.clone(),
             ),
-        )
-    }
-    /// Ratify a staged commit at the requested version (first-writer-wins), and/or
-    /// notify the catalog that commits have been backfilled to the Delta log.
-    ///
-    /// # Arguments
-    ///
-    /// * `table_id` - UUID of the catalog-managed table being committed to.
-    /// * `table_uri` - The storage URI of the table. Must match the table's registered storage
-    /// location (normalized) on the commit path.
-    pub fn commit(
-        &self,
-        table_id: impl Into<String>,
-        table_uri: impl Into<String>,
-    ) -> CommitBuilder {
-        CommitBuilder::new(
-            crate::codegen::delta_commits::DeltaCommitClient::new(
-                self.client.clone(),
-                self.base_url.clone(),
-            ),
-            table_id,
-            table_uri,
-        )
-    }
-    /// Return ratified-but-unpublished commits for a table, plus the latest
-    /// version the catalog tracks.
-    ///
-    /// # Arguments
-    ///
-    /// * `table_id` - UUID of the catalog-managed table.
-    /// * `table_uri` - The storage URI of the table.
-    /// * `start_version` - The lowest version to return (inclusive). Defaults to 0.
-    pub fn get_commits(
-        &self,
-        table_id: impl Into<String>,
-        table_uri: impl Into<String>,
-        start_version: i64,
-    ) -> GetCommitsBuilder {
-        GetCommitsBuilder::new(
-            crate::codegen::delta_commits::DeltaCommitClient::new(
-                self.client.clone(),
-                self.base_url.clone(),
-            ),
-            table_id,
-            table_uri,
-            start_version,
         )
     }
     /// List entity tag assignments
