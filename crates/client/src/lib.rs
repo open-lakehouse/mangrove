@@ -1,3 +1,37 @@
+//! Async Rust client for the Unity Catalog REST API.
+//!
+//! [`UnityCatalogClient`] is the entry point: construct it from a base URL and an
+//! auth token, then reach a resource through the accessor for that resource —
+//! `catalog(name)`, `list_catalogs()`, `tables_client()`, and so on. Each accessor
+//! returns a scoped sub-client or request builder; list builders implement
+//! `IntoFuture` (so you can `.await` them directly) and `into_stream()` for
+//! auto-paginated iteration.
+//!
+//! Two surfaces are hand-written rather than generated from the API spec and have
+//! their own accessors: [`UnityCatalogClient::delta_v1`] for the `/delta/v1` Delta
+//! REST API and [`UnityCatalogClient::temporary_credentials`] for credential
+//! vending with name → UUID resolution.
+//!
+//! ```no_run
+//! use unitycatalog_client::UnityCatalogClient;
+//! use url::Url;
+//!
+//! # async fn run() -> unitycatalog_client::Result<()> {
+//! let client = UnityCatalogClient::new_with_token(
+//!     Url::parse("https://example.com/api/2.1/unity-catalog/").unwrap(),
+//!     "dapi...",
+//! );
+//!
+//! // Fetch one catalog by name.
+//! let catalog = client.catalog("main").get().await?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! Fallible calls return [`Result`], whose error type [`Error`] distinguishes UC
+//! API errors ([`UcApiError`]) from Delta error envelopes and offers predicates
+//! like [`Error::is_not_found`] for control flow.
+
 pub use codegen::UnityCatalogClient;
 pub use codegen::agent_skills::AgentSkillClient;
 pub use codegen::agents::AgentClient;

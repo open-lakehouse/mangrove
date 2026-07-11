@@ -79,9 +79,12 @@ impl From<Uuid> for VolumeReference {
     }
 }
 
+/// The kind of access requested for a table.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TableOperation {
+    /// Read-only access.
     Read,
+    /// Read and write access.
     ReadWrite,
 }
 
@@ -103,10 +106,14 @@ impl From<TableOperation> for TblOperation {
     }
 }
 
+/// The kind of access requested for a storage path.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PathOperation {
+    /// Read-only access.
     Read,
+    /// Read and write access.
     ReadWrite,
+    /// Access for creating a new table at the path.
     CreateTable,
 }
 
@@ -157,12 +164,22 @@ impl From<VolumeOperation> for VolOperation {
     }
 }
 
+/// Client for vending temporary storage credentials for tables, volumes, and paths.
+///
+/// Wraps the generated low-level client with name → UUID resolution: callers may
+/// pass a fully qualified name or a UUID, and the client issues the lookup needed
+/// to obtain the ID the credential endpoint requires. Prefer
+/// [`UnityCatalogClient::temporary_credentials`](crate::UnityCatalogClient::temporary_credentials).
 #[derive(Clone)]
 pub struct TemporaryCredentialClient {
     client: TemporaryCredentialClientBase,
 }
 
 impl TemporaryCredentialClient {
+    /// Creates a client from a [`CloudClient`] (carrying auth) and a base URL.
+    ///
+    /// The base URL is normalized to end in `/` so it joins cleanly with the
+    /// relative endpoint paths.
     pub fn new_with_url(client: CloudClient, mut base_url: Url) -> Self {
         if !base_url.path().ends_with('/') {
             base_url.set_path(&format!("{}/", base_url.path()));
@@ -172,6 +189,7 @@ impl TemporaryCredentialClient {
         }
     }
 
+    /// Creates a client wrapping an existing generated low-level client.
     pub fn new(client: TemporaryCredentialClientBase) -> Self {
         Self { client }
     }
@@ -224,16 +242,14 @@ impl TemporaryCredentialClient {
         Ok(serde_json::from_value(value)?)
     }
 
-    /// Get a temporary credential for reading or writing to a table.
+    /// Gets a temporary credential for reading or writing to a table.
     ///
-    /// ## Parameters
+    /// # Arguments
     ///
     /// * `table`: The table to get a temporary credential for.
     /// * `operation`: The operation to perform on the table.
     ///
-    /// ## Returns
-    ///
-    /// A tuple containing the temporary credential and the resolved table ID.
+    /// Returns a tuple of the temporary credential and the resolved table ID.
     pub async fn temporary_table_credential(
         &self,
         table: impl Into<TableReference>,
@@ -277,6 +293,10 @@ impl TemporaryCredentialClient {
         Ok((credential, uuid))
     }
 
+    /// Gets a temporary credential for reading or writing to a storage path.
+    ///
+    /// Pass `dry_run` to validate access without vending a usable credential.
+    /// Returns a tuple of the temporary credential and the parsed path URL.
     pub async fn temporary_path_credential(
         &self,
         path: impl IntoUrl,
@@ -298,9 +318,10 @@ impl TemporaryCredentialClient {
         ))
     }
 
-    /// Get a temporary credential for reading or writing to a volume.
+    /// Gets a temporary credential for reading or writing to a volume.
     ///
-    /// ## Parameters
+    /// # Arguments
+    ///
     /// * `volume`: The volume to get a temporary credential for. May be either
     ///   a [`VolumeReference::Id`] (UUID, preferred when known) or a
     ///   [`VolumeReference::Name`] in three-level dotted form
@@ -309,10 +330,8 @@ impl TemporaryCredentialClient {
     /// * `operation`: Whether the credentials should grant read-only or
     ///   read-write access.
     ///
-    /// ## Returns
-    /// A tuple containing the temporary credential and the resolved volume ID.
+    /// Returns a tuple of the temporary credential and the resolved volume ID.
     ///
-    /// ## Server requirements
     /// The Unity Catalog metastore must have `external_access_enabled = true`
     /// and the caller must hold `EXTERNAL_USE_SCHEMA` on the parent schema.
     pub async fn temporary_volume_credential(
