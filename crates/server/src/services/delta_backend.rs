@@ -470,7 +470,13 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         _to_name: &str,
         _cx: &RequestContext,
     ) -> BackendResult<()> {
-        // The UC table store has no rename op yet (tracked as a follow-up).
+        // Rename is not served yet: the `olai-store` `ObjectStore::update` trait this
+        // handler's store is reached through carries no name, so `ResourceStore::update`
+        // (crates/common/src/store.rs) forwards only properties and cannot re-key the
+        // object. A real rename needs an upstream trestle/`olai-store` change (add a name
+        // to `update`, or a dedicated `rename`) + regen + plumbing — tracked as a
+        // follow-up. Because the default `capabilities()` reports `rename: false`,
+        // `getConfig` does not advertise this endpoint, so clients never reach here.
         Err(DeltaBackendError::NotImplemented("Delta API: renameTable"))
     }
 

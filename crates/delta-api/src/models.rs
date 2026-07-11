@@ -894,7 +894,7 @@ mod tests {
     #[test]
     fn catalog_config() {
         round_trip::<DeltaCatalogConfig>(json!({
-            "endpoints": ["GET /v1/config"],
+            "endpoints": ["GET /v1/temporary-path-credentials"],
             "protocol-version": "1.0"
         }));
     }

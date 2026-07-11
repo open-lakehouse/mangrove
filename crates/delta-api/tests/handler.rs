@@ -132,7 +132,56 @@ async fn get_config_lists_endpoints() {
         .await
         .unwrap();
     assert_eq!(cfg.protocol_version, "1.0");
-    assert!(!cfg.endpoints.is_empty());
+    // The in-memory backend advertises rename, so the list is the 10 core endpoints
+    // plus rename (11 total).
+    assert_eq!(cfg.endpoints.len(), 11);
+    assert!(
+        cfg.endpoints
+            .contains(&"POST /v1/catalogs/{catalog}/schemas/{schema}/tables/{table}/rename".into())
+    );
+    // getConfig is the bootstrap endpoint — not advertised in its own response.
+    assert!(!cfg.endpoints.contains(&"GET /v1/config".into()));
+    // listTables is not a real spec operation and must not be advertised.
+    assert!(
+        !cfg.endpoints
+            .contains(&"GET /v1/catalogs/{catalog}/schemas/{schema}/tables".into())
+    );
+}
+
+#[tokio::test]
+async fn get_config_negotiates_supported_version() {
+    let b = backend();
+    // A client whose highest 1.x is 1.1 still negotiates down to the server's 1.0.
+    let cfg = b
+        .get_config(
+            GetConfigQuery {
+                catalog: "catalog".into(),
+                protocol_versions: "1.1,2.3".into(),
+            },
+            (),
+        )
+        .await
+        .unwrap();
+    assert_eq!(cfg.protocol_version, "1.0");
+}
+
+#[tokio::test]
+async fn get_config_no_mutual_version_is_invalid_argument() {
+    let b = backend();
+    let err = b
+        .get_config(
+            GetConfigQuery {
+                catalog: "catalog".into(),
+                protocol_versions: "2.0".into(),
+            },
+            (),
+        )
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err.0, DeltaBackendError::InvalidArgument(_)),
+        "{err:?}"
+    );
 }
 
 #[tokio::test]
