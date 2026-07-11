@@ -38,6 +38,12 @@ tokio = { version = "1", features = ["full"] }
 name = "handler"
 required-features = ["testing"]
 
+# The authz test wraps the in-memory backend to record the `DeltaAction`s the
+# handler authorizes with.
+[[test]]
+name = "authz"
+required-features = ["testing"]
+
 [features]
 default = []
 # Exposes `InMemoryDeltaBackend`, an in-memory `DeltaBackend` implementation for

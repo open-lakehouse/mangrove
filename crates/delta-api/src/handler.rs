@@ -13,6 +13,7 @@ use std::collections::BTreeMap;
 
 use async_trait::async_trait;
 
+use crate::authz::DeltaAction;
 use crate::backend::{
     CreateTableSpec, CredentialAccess, DeltaBackend, ResolvedTable, SchemaRef, TableRef,
     UpdateTableSpec, VendedCredential, VendedCredentialKind,
@@ -154,6 +155,15 @@ where
         request: DeltaCreateStagingTableRequest,
         context: Cx,
     ) -> Result<DeltaStagingTableResponse> {
+        self.authorize(
+            DeltaAction::CreateStaging {
+                at: &path,
+                name: &request.name,
+            },
+            &context,
+        )
+        .await?;
+
         let staging = self
             .allocate_staging(&path, &request.name, &context)
             .await?;
@@ -201,8 +211,15 @@ where
             ));
         }
 
-        self.authorize_create_table(&path, &request.name, request.table_type, &context)
-            .await?;
+        self.authorize(
+            DeltaAction::CreateTable {
+                at: &path,
+                name: &request.name,
+                table_type: request.table_type,
+            },
+            &context,
+        )
+        .await?;
 
         // MANAGED-only: validate the full catalog-managed contract.
         if request.table_type == DeltaTableType::Managed {
@@ -223,12 +240,15 @@ where
             let staging = self
                 .resolve_staging_by_location(&request.location, &context)
                 .await?;
-            let principal = self.principal_name(&context);
-            if staging.created_by.as_deref() != principal.as_deref() {
-                return Err(DeltaApiError::permission_denied(
-                    "caller is not the creator of the staging table",
-                ));
-            }
+            // The creator-match: the backend decides, in its own identity terms,
+            // whether this caller may adopt the reservation.
+            self.authorize(
+                DeltaAction::AdoptStaging {
+                    reservation: &staging,
+                },
+                &context,
+            )
+            .await?;
             if staging.stage_committed {
                 return Err(DeltaApiError::invalid_argument(format!(
                     "staging table at '{}' has already been committed",
@@ -266,6 +286,8 @@ where
     }
 
     async fn load_table(&self, path: TableRef, context: Cx) -> Result<DeltaLoadTableResponse> {
+        self.authorize(DeltaAction::ReadTable { table: &path }, &context)
+            .await?;
         let table = self.resolve_table(&path, &context).await?;
         build_load_table_response(self, &path.full_name(), table).await
     }
@@ -280,11 +302,15 @@ where
     }
 
     async fn delete_table(&self, path: TableRef, context: Cx) -> Result<()> {
+        self.authorize(DeltaAction::DeleteTable { table: &path }, &context)
+            .await?;
         self.delete_table(&path, &context).await?;
         Ok(())
     }
 
     async fn table_exists(&self, path: TableRef, context: Cx) -> Result<()> {
+        self.authorize(DeltaAction::ReadTable { table: &path }, &context)
+            .await?;
         self.resolve_table(&path, &context).await?;
         Ok(())
     }
@@ -295,6 +321,14 @@ where
         request: DeltaRenameTableRequest,
         context: Cx,
     ) -> Result<()> {
+        self.authorize(
+            DeltaAction::RenameTable {
+                from: &path,
+                to: &request.new_name,
+            },
+            &context,
+        )
+        .await?;
         self.rename_table(&path, &request.new_name, &context)
             .await?;
         Ok(())
@@ -310,8 +344,17 @@ where
         let table_id = table
             .table_id
             .ok_or_else(|| DeltaApiError::invalid_argument("table has no id"))?;
+        let access = to_access(operation);
+        self.authorize(
+            DeltaAction::VendTableCredential {
+                table_id: &table_id,
+                access,
+            },
+            &context,
+        )
+        .await?;
         let creds = self
-            .vend_table_credential(&table_id, to_access(operation), &context)
+            .vend_table_credential(&table_id, access, &context)
             .await?;
         Ok(DeltaCredentialsResponse {
             storage_credentials: vec![to_storage_credential(&creds.url, &creds, operation)],
@@ -325,6 +368,18 @@ where
         context: Cx,
     ) -> Result<()> {
         let table = self.resolve_table(&path, &context).await?;
+        let table_id = table
+            .table_id
+            .clone()
+            .ok_or_else(|| DeltaApiError::invalid_argument("table has no id"))?;
+        self.authorize(
+            DeltaAction::WriteTable {
+                table: &path,
+                table_id: &table_id,
+            },
+            &context,
+        )
+        .await?;
         if table.table_id.as_deref() != Some(request.table_id.as_str()) {
             return Err(DeltaApiError::invalid_argument(
                 "report table-id does not match the table identified by the path",
@@ -352,6 +407,14 @@ where
         context: Cx,
     ) -> Result<DeltaCredentialsResponse> {
         let staging = self.resolve_staging_by_id(&table_id, &context).await?;
+        self.authorize(
+            DeltaAction::VendPathCredential {
+                location: &staging.location,
+                access: CredentialAccess::ReadWrite,
+            },
+            &context,
+        )
+        .await?;
         let creds = self
             .vend_path_credential(&staging.location, CredentialAccess::ReadWrite, &context)
             .await?;
@@ -370,8 +433,17 @@ where
         operation: DeltaCredentialOperation,
         context: Cx,
     ) -> Result<DeltaCredentialsResponse> {
+        let access = to_access(operation);
+        self.authorize(
+            DeltaAction::VendPathCredential {
+                location: &location,
+                access,
+            },
+            &context,
+        )
+        .await?;
         let creds = self
-            .vend_path_credential(&location, to_access(operation), &context)
+            .vend_path_credential(&location, access, &context)
             .await?;
         Ok(DeltaCredentialsResponse {
             storage_credentials: vec![to_storage_credential(&creds.url, &creds, operation)],
@@ -401,7 +473,15 @@ where
         .table_id
         .clone()
         .ok_or_else(|| DeltaApiError::invalid_argument("table has no id"))?;
-    backend.authorize_write(&table_uuid, &context).await?;
+    backend
+        .authorize(
+            DeltaAction::WriteTable {
+                table: &path,
+                table_id: &table_uuid,
+            },
+            &context,
+        )
+        .await?;
 
     // --- Requirements (assert-table-uuid mandatory; assert-etag optional) ---
     let has_uuid_assert = request

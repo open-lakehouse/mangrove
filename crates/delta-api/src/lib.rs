@@ -19,10 +19,13 @@
 //! - [`column`] — the portable UC column model used by the contract.
 //! - [`contract`] — the managed-table contract + Delta↔UC column mapping.
 //! - [`coordinator`] — the commit coordinator (arbitration + backfill).
+//! - [`authz`] — the [`DeltaAction`](authz::DeltaAction) vocabulary the handler
+//!   authorizes with.
 //! - [`backend`] — the `DeltaBackend` port trait + its coordinate/request types.
 //! - [`handler`] — the `DeltaApiHandler` trait + the generic blanket impl.
 //! - [`router`] — the axum router mounting all 12 operations.
 
+pub mod authz;
 pub mod backend;
 pub mod column;
 pub mod contract;
@@ -34,6 +37,7 @@ pub mod router;
 #[cfg(feature = "testing")]
 pub mod testing;
 
+pub use authz::DeltaAction;
 pub use backend::DeltaBackend;
 pub use error::{DeltaApiError, DeltaApiResult, DeltaBackendError};
 pub use handler::DeltaApiHandler;
