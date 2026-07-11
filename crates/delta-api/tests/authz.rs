@@ -88,7 +88,11 @@ impl DeltaBackend<Cx> for RecordingBackend {
         self.inner.create_table_row(spec, cx).await
     }
 
-    async fn update_table_row(&self, spec: UpdateTableSpec, cx: &Cx) -> BackendResult<()> {
+    async fn update_table_row(
+        &self,
+        spec: UpdateTableSpec,
+        cx: &Cx,
+    ) -> BackendResult<ResolvedTable> {
         self.inner.update_table_row(spec, cx).await
     }
 
@@ -123,10 +127,6 @@ impl DeltaBackend<Cx> for RecordingBackend {
         cx: &Cx,
     ) -> BackendResult<StagingReservation> {
         self.inner.resolve_staging_by_id(table_id, cx).await
-    }
-
-    async fn finalize_staging(&self, table_id: &str, cx: &Cx) -> BackendResult<()> {
-        self.inner.finalize_staging(table_id, cx).await
     }
 
     async fn vend_table_credential(
@@ -361,6 +361,7 @@ async fn adopt_staging_is_a_backend_decision() {
     let other = InMemoryDeltaBackend::new().with_principal("bob");
     let reservation = StagingReservation {
         table_id: "id".to_string(),
+        name: "t".to_string(),
         location: "s3://bucket/staging/id".to_string(),
         created_by: Some("alice".to_string()),
         stage_committed: false,

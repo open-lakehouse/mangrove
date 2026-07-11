@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use crate::authz::DeltaAction;
 use crate::backend::{
     CreateTableSpec, CredentialAccess, DeltaBackend, ResolvedTable, SchemaRef, TableRef,
-    UpdateTableSpec, VendedCredential, VendedCredentialKind,
+    UpdateTableSpec, VendedCredential, VendedCredentialKind, etag_of,
 };
 use crate::column::Column;
 use crate::contract;
@@ -234,9 +234,10 @@ where
             contract::delta_columns_to_uc(&request.columns, request.partition_columns.as_deref())?;
         let stored_properties = contract::build_stored_properties(&request);
 
-        // For MANAGED, finalize the staging reservation (creator-match, tableId
-        // identity, adopt the staging uuid).
-        let table_id = if request.table_type == DeltaTableType::Managed {
+        // For MANAGED, resolve + authorize the staging reservation. It is not
+        // consumed here: the reservation is handed to `create_table_row`, which
+        // consumes it and creates the table atomically (see `CreateTableSpec`).
+        let (table_id, adopt_staging) = if request.table_type == DeltaTableType::Managed {
             let staging = self
                 .resolve_staging_by_location(&request.location, &context)
                 .await?;
@@ -256,13 +257,12 @@ where
                 )));
             }
             contract::validate_table_id_property(&request.properties, &staging.table_id)?;
-            self.finalize_staging(&staging.table_id, &context).await?;
-            Some(staging.table_id)
+            (Some(staging.table_id.clone()), Some(staging))
         } else {
             // EXTERNAL: the location must live inside a registered external location.
             self.validate_external_location(&request.location, &context)
                 .await?;
-            None
+            (None, None)
         };
 
         let full_name = format!("{}.{}.{}", path.catalog, path.schema, request.name);
@@ -277,6 +277,7 @@ where
                     columns,
                     properties: stored_properties,
                     table_id,
+                    adopt_staging,
                 },
                 &context,
             )
@@ -488,6 +489,15 @@ where
         .await?;
 
     // --- Requirements (assert-table-uuid mandatory; assert-etag optional) ---
+    //
+    // `assert-table-uuid` is validated against the resolved uuid (identity never
+    // changes under an update, so no race). Each `assert-etag` is fast-failed here
+    // against the resolved snapshot so a stale etag rejects the *whole* request
+    // before the add-commit coordinator call or any write lands — and every
+    // requirement is enforced, not just the last one. The asserted etag is *also*
+    // threaded into `UpdateTableSpec::expected_etag`, where the backend re-checks
+    // it as a compare-and-swap at write time to close the read-modify-write race
+    // the snapshot check alone leaves open.
     let has_uuid_assert = request
         .requirements
         .iter()
@@ -498,6 +508,7 @@ where
         ));
     }
     let current_etag = etag_of(&table);
+    let mut expected_etag: Option<String> = None;
     for req in &request.requirements {
         match req {
             DeltaTableRequirement::AssertTableUuid { uuid } => {
@@ -515,6 +526,7 @@ where
                         "assert-etag failed: table has been modified".to_string(),
                     )));
                 }
+                expected_etag = Some(etag.clone());
             }
         }
     }
@@ -679,8 +691,9 @@ where
             .map_err(commit_error)?;
     }
 
-    // Persist metadata changes and reload; the pure add-commit path never
-    // touches the table row, so the in-hand table is still current there.
+    // Persist metadata changes; `update_table_row` returns the refreshed table
+    // (and enforces the assert-etag CAS at write time). The pure add-commit path
+    // never touches the table row, so the in-hand table is still current there.
     let refreshed = if metadata_changed {
         backend
             .update_table_row(
@@ -689,12 +702,14 @@ where
                     columns,
                     properties,
                     comment,
+                    expected_etag,
                 },
                 &context,
             )
-            .await?;
-        backend.resolve_table(&path, &context).await?
+            .await?
     } else {
+        // No metadata write to delegate the CAS to; any asserted etag was already
+        // fast-failed against this snapshot in the requirements loop above.
         table.properties = properties;
         table.columns = columns;
         table
@@ -843,14 +858,6 @@ fn to_access(op: DeltaCredentialOperation) -> CredentialAccess {
     match op {
         DeltaCredentialOperation::Read => CredentialAccess::Read,
         DeltaCredentialOperation::ReadWrite => CredentialAccess::ReadWrite,
-    }
-}
-
-/// The etag for a resolved table: `etag-<updated_ms>`, else `etag-<uuid>`.
-fn etag_of(table: &ResolvedTable) -> String {
-    match table.updated_at_ms {
-        Some(ts) => format!("etag-{ts}"),
-        None => format!("etag-{}", table.table_id.clone().unwrap_or_default()),
     }
 }
 
