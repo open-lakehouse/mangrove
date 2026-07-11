@@ -13,9 +13,9 @@
 //!   (`{ "error": { message, type, code } }`) with the exact status codes the
 //!   reference `DeltaApiExceptionHandler` uses.
 //!
-//! The variant → status mapping in [`DeltaApiError::parts`] reproduces the
-//! previous server-side `DeltaError::parts` exactly, so response bodies and status
-//! codes are unchanged by the extraction.
+//! [`DeltaApiError`]'s [`IntoResponse`] implementation reproduces the previous
+//! server-side `DeltaError` variant → status mapping exactly, so response bodies
+//! and status codes are unchanged by the extraction.
 
 use axum::Json;
 use axum::http::StatusCode;
@@ -25,10 +25,10 @@ use crate::models::{DeltaErrorModel, DeltaErrorResponse, DeltaErrorType};
 
 /// Error returned by a [`DeltaBackend`](crate::backend::DeltaBackend) operation.
 ///
-/// Each variant has a fixed `(StatusCode, DeltaErrorType)` target (see
-/// [`DeltaApiError::parts`]). A server adapter converts its internal error into
-/// one of these variants, preserving the response semantics without exposing its
-/// own error type to the crate.
+/// Each variant has a fixed `(StatusCode, DeltaErrorType)` target, applied by
+/// [`DeltaApiError`]'s [`IntoResponse`]. A server adapter converts its internal
+/// error into one of these variants, preserving the response semantics without
+/// exposing its own error type to the crate.
 #[derive(Debug, thiserror::Error)]
 pub enum DeltaBackendError {
     /// The requested resource does not exist. → 404 `NoSuchTableException`.

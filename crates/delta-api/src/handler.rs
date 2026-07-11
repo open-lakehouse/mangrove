@@ -6,8 +6,8 @@
 //! Delta business logic — the managed-table contract, the `updateTable` action
 //! dispatcher (applied in the reference's canonical order), `loadTable` commit-list
 //! construction, and the credential→config mapping — expressed purely in terms of
-//! the [`DeltaBackend`] port. Any server that implements the port gets the handler
-//! (and thus the router) for free.
+//! the [`DeltaBackend`] port. A server that implements the port gets the handler,
+//! and thus the router, without writing any of that logic itself.
 
 use std::collections::BTreeMap;
 

@@ -164,6 +164,7 @@ pub enum DecimalTypeTag {
     Decimal,
 }
 
+/// Object form of an array type (`{"type":"array","element-type":..,"contains-null":..}`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct DeltaArrayType {
@@ -173,6 +174,7 @@ pub struct DeltaArrayType {
     pub contains_null: bool,
 }
 
+/// Object form of a map type (`{"type":"map","key-type":..,"value-type":..}`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct DeltaMapType {
@@ -183,6 +185,10 @@ pub struct DeltaMapType {
     pub value_contains_null: bool,
 }
 
+/// Object form of a decimal type (`{"type":"decimal","precision":..,"scale":..}`).
+///
+/// The compact string form `"decimal(p,s)"` is carried by
+/// [`DeltaDataType::Primitive`] instead.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeltaDecimalType {
     #[serde(rename = "type", default)]

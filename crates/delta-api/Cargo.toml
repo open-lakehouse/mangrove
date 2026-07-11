@@ -11,7 +11,9 @@ homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
-readme.workspace = true
+# Crate-local README (shown on crates.io / docs.rs), overriding the inherited
+# workspace-root README which describes the whole project rather than this crate.
+readme = "README.md"
 rust-version.workspace = true
 
 [lib]
@@ -51,3 +53,9 @@ default = []
 # (e.g. lakekeeper) can enable it to test their own port wiring against
 # known-good Delta semantics.
 testing = []
+
+# docs.rs builds with default features only; enable all features there so the
+# `testing` module (and the crate-root example that uses `InMemoryDeltaBackend`)
+# are documented.
+[package.metadata.docs.rs]
+all-features = true

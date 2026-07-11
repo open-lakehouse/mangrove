@@ -382,8 +382,8 @@ impl UnityObjectStoreFactory {
     /// the volume's storage location.
     ///
     /// A volume whose storage location is a `file://` path is served by a local
-    /// [`LocalFileSystem`] store and never hits the credential-vending API. See
-    /// [`local_store`].
+    /// [`LocalFileSystem`] store and never hits the credential-vending API —
+    /// local storage has no cloud credential to vend.
     pub async fn for_volume(
         &self,
         volume: impl Into<VolumeReference>,
@@ -440,8 +440,8 @@ impl UnityObjectStoreFactory {
     /// …). Uses `temporary-path-credentials` under the hood.
     ///
     /// `file://` URLs are served by a local [`LocalFileSystem`] store and
-    /// **never** hit the credential-vending API — local storage has no cloud
-    /// credential to vend. See [`local_store`].
+    /// never hit the credential-vending API — local storage has no cloud
+    /// credential to vend.
     pub async fn for_path(&self, path: &Url, operation: PathOperation) -> Result<UCStore> {
         if path.scheme() == "file" {
             return local_store(path, operation);
