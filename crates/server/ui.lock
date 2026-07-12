@@ -2,4 +2,4 @@
 # `just ui-fingerprint`. DO NOT EDIT BY HAND. This file lives in the
 # olai-uc-server crate so a UI change registers as a crate change and release-plz
 # rebuilds the Docker image — see the recipe and release-plz.toml.
-3f072852c2b21bb4377aea2323a7bc161c0ce092d301c9c67df09d17f966c022
+11c5e77f86562fa1935ae19fbab5fa7bdff16a474c7a45351154cc703ff20223
