@@ -304,11 +304,11 @@ build-py-server:
 build-node:
     npm run build -w @unitycatalog/client
 
-# build the server Docker image (hydrofoil): builds the bundled UI + the
+# build the server Docker image (mangrove): builds the bundled UI + the
 # `uc-server` binary and assembles the distroless runtime with the SPA at ./web.
 [group('build')]
 build-docker:
-    docker build -f Dockerfile -t hydrofoil:dev .
+    docker build -f Dockerfile -t mangrove:dev .
 
 # Path to the committed UI fingerprint. It lives INSIDE the server crate so it is
 # part of that crate's cargo-packaged file set — which is how release-plz decides
