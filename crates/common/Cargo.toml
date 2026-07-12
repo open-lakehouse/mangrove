@@ -47,7 +47,7 @@ zeroize = { workspace = true }
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }
 futures = { version = "0.3", optional = true }
-olai-store = { workspace = true }
+olai-store = { workspace = true, features = ["encryption"] }
 
 # grpc server specific dependencies (in alphabetical order)
 tonic = { workspace = true, optional = true }
