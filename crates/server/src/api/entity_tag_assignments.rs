@@ -180,7 +180,16 @@ impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<Reque
             .ok_or_else(|| crate::Error::invalid_argument("tag_assignment must be provided"))?;
         let entity = entity_ident(&request.entity_type, &request.entity_name)?;
         let tag = tag_ident(&request.tag_key);
-        // add_association upserts the edge (and its inverse), so re-adding updates the value.
+        // The edge store's `add` rejects an existing edge rather than upserting, so
+        // updating the tag value is remove-then-add (both carry the inverse edge).
+        // A missing edge on remove is fine — treat update as an upsert.
+        match self
+            .remove_association(&entity, &tag, &AssociationLabel::Tagged)
+            .await
+        {
+            Ok(()) | Err(unitycatalog_common::Error::NotFound) => {}
+            Err(e) => return Err(e.into()),
+        }
         self.add_association(
             &entity,
             &tag,
@@ -314,7 +323,7 @@ mod tests {
                 .unwrap();
         }
         let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
-        ServerHandler::try_new_tokio(policy, store.clone(), store).unwrap()
+        ServerHandler::try_new_tokio(policy, store).unwrap()
     }
 
     fn ctx() -> RequestContext {

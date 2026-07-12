@@ -457,19 +457,16 @@ async fn connect_sqlite(
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
     // `SqliteStore` implements the generic object/association stores (lifted to
-    // `ResourceStore` by `ObjectStoreAdapter`), `SecretManager`, and
-    // `CommitCoordinator`, but the adapter does not forward the latter two — so
-    // those roles are wired from the same shared store separately. Like the
-    // Postgres backend, Delta catalog-managed commits are persisted in the
-    // database rather than in memory.
+    // `ResourceStore` by `ObjectStoreAdapter`) and `CommitCoordinator`, but the
+    // adapter does not forward the latter — so the coordinator role is wired from
+    // the same shared store separately. Sensitive fields (credentials, tokens)
+    // are sealed inline on the stored resources rather than in a separate secret
+    // store. Like the Postgres backend, Delta catalog-managed commits are
+    // persisted in the database rather than in memory.
     let resource_store = Arc::new(ObjectStoreAdapter::new(store.clone()));
-    let handler = ServerHandler::try_new_tokio_with_coordinator(
-        policy.clone(),
-        resource_store,
-        store.clone(),
-        store,
-    )
-    .map_err(|e| Error::Generic(e.to_string()))?;
+    let handler =
+        ServerHandler::try_new_tokio_with_coordinator(policy.clone(), resource_store, store)
+            .map_err(|e| Error::Generic(e.to_string()))?;
     Ok((handler, policy))
 }
 

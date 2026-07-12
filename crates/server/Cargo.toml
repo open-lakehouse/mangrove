@@ -73,7 +73,7 @@ tonic = { workspace = true, optional = true }
 datafusion = { workspace = true }
 futures-util = { version = "0.3.28" }
 http = { version = "1.2", optional = true }
-olai-store = { workspace = true }
+olai-store = { workspace = true, features = ["encryption"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "net"] }
 tower = { workspace = true, features = ["make"], optional = true }
 # Trace layer for the served router + `ServeDir`/`ServeFile` for the bundled SPA
@@ -81,7 +81,6 @@ tower = { workspace = true, features = ["make"], optional = true }
 tower-http = { version = "0.6", features = ["trace", "fs"], optional = true }
 
 # in-memory handler dependencies (in alphabetical order)
-dashmap = { workspace = true, optional = true }
 uuid = { workspace = true, optional = true, features = ["v7"] }
 
 # `bin` (deployable `uc-server` binary) dependencies — all optional so a library
@@ -107,7 +106,7 @@ default = ["axum", "memory", "grpc"]
 axum = ["dep:axum", "dep:axum-extra", "http", "tower"]
 
 # in-memory handler features
-memory = ["dashmap", "uuid"]
+memory = ["uuid"]
 
 grpc = ["tonic"]
 
