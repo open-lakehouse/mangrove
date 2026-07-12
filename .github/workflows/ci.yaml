@@ -143,14 +143,17 @@ jobs:
       # --all-features turns on `integration-pg`, whose #[sqlx::test] commit-
       # coordinator tests provision a live database from DATABASE_URL — there is
       # no Postgres here, so exclude that binary. Those tests run (with a service
-      # container) in the dedicated integration_postgres job below.
+      # container) in the dedicated integration_postgres job below. Scope the
+      # exclusion to the postgres package: the sqlite crate has an identically
+      # named `commit_coordinator` binary whose tests use temp-file databases and
+      # need no service, so they must keep running here.
       - name: Test
         env:
           # journey replay reads this; a dummy value is fine for recorded runs.
           UC_INTEGRATION_STORAGE_ROOT: "s3://dummy"
           # Use the committed .sqlx cache so macros don't probe a live DB at build.
           SQLX_OFFLINE: "true"
-        run: cargo nextest run --workspace --all-features --profile ci -E 'not binary(commit_coordinator)'
+        run: cargo nextest run --workspace --all-features --profile ci -E 'not (package(olai-uc-postgres) and binary(commit_coordinator))'
 
       # nextest does not run doctests; the old `cargo test` did, so run them here
       # to keep doctest coverage. Runs even if nextest failed above.
@@ -219,15 +222,16 @@ jobs:
       # Doctest coverage is collected in its own `coverage_doc` job and uploaded
       # under a separate flag — splitting them keeps each job's single
       # instrumented workspace build within the runner's disk budget (running
-      # both in one job overran it: "No space left on device"). Exclude the
-      # commit_coordinator binary (live-DB #[sqlx::test]s); it reports separately
-      # from integration_postgres.
+      # both in one job overran it: "No space left on device"). Exclude only the
+      # postgres commit_coordinator binary (live-DB #[sqlx::test]s, covered by
+      # integration_postgres); the sqlite crate's identically named
+      # commit_coordinator tests use temp files and are covered here.
       - name: Collect coverage
         env:
           UC_INTEGRATION_STORAGE_ROOT: "s3://dummy"
           SQLX_OFFLINE: "true"
         run: |
-          cargo llvm-cov nextest --workspace --all-features --locked -E 'not binary(commit_coordinator)' --codecov --output-path codecov.json
+          cargo llvm-cov nextest --workspace --all-features --locked -E 'not (package(olai-uc-postgres) and binary(commit_coordinator))' --codecov --output-path codecov.json
 
       # Upload under the `unit` flag. codecov.yml keeps the status informational
       # so it can't block a PR, and fail_ci_if_error stays false so a flaky
