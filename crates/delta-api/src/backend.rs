@@ -83,27 +83,31 @@ pub struct ResolvedTable {
     pub properties: BTreeMap<String, String>,
     /// Creation time, epoch milliseconds.
     pub created_at_ms: Option<i64>,
-    /// Last-update time, epoch milliseconds. Drives the etag.
+    /// Last-update time, epoch milliseconds. Surfaced as `updated_time`.
     pub updated_at_ms: Option<i64>,
+    /// The backend's monotonic per-object version. Drives the etag and the
+    /// `assert-etag` compare-and-swap (see [`etag_of`]). A backend that does not
+    /// track versions leaves this `0`.
+    pub version: u64,
 }
 
-/// The etag for a resolved table: `etag-<updated_ms>`, else `etag-<uuid>`.
+/// The etag for a resolved table: `etag-<version>`.
 ///
 /// This is the single definition of the table etag, shared by the handler (which
 /// hands it to the client on `loadTable`) and by any backend enforcing the
 /// `assert-etag` compare-and-swap in [`DeltaBackend::update_table_row`], so the
-/// asserted etag and the compared etag are always derived identically.
+/// asserted etag and the compared etag are always derived identically. The
+/// version is the backend's monotonic per-object counter, bumped on every
+/// mutation — a purpose-built etag that maps directly to the store's
+/// version-precondition CAS.
 pub fn etag_of(table: &ResolvedTable) -> String {
-    etag_of_parts(table.updated_at_ms, table.table_id.as_deref())
+    etag_of_version(table.version)
 }
 
-/// The etag formula over the two fields it actually depends on, for backends that
-/// hold those fields without a full [`ResolvedTable`]. See [`etag_of`].
-pub fn etag_of_parts(updated_at_ms: Option<i64>, table_id: Option<&str>) -> String {
-    match updated_at_ms {
-        Some(ts) => format!("etag-{ts}"),
-        None => format!("etag-{}", table_id.unwrap_or_default()),
-    }
+/// The etag formula over the version it depends on, for backends that hold the
+/// version without a full [`ResolvedTable`]. See [`etag_of`].
+pub fn etag_of_version(version: u64) -> String {
+    format!("etag-{version}")
 }
 
 /// A staging-table reservation (uuid + managed location) allocated before a

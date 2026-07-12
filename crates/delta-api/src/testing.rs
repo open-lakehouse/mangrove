@@ -199,6 +199,8 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             properties: spec.properties,
             created_at_ms: Some(ts),
             updated_at_ms: Some(ts),
+            // Fresh row starts at version 0; each update bumps it (the etag).
+            version: 0,
         };
         state.tables.insert(
             full_name.clone(),
@@ -243,6 +245,9 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             stored.comment = Some(comment);
         }
         stored.resolved.updated_at_ms = Some(ts);
+        // Bump the version so the etag advances — the in-memory equivalent of the
+        // store's per-object version counter (what a durable backend's CAS keys on).
+        stored.resolved.version += 1;
         Ok(stored.resolved.clone())
     }
 
