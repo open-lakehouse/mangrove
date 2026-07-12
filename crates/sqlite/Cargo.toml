@@ -31,8 +31,7 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 
 # crates.io dependencies (in alphabetical order)
-base64 = "0.22"
-olai-store = { workspace = true }
+olai-store = { workspace = true, features = ["sqlite"] }
 sqlx = { workspace = true, features = [
   "sqlite",
   "chrono",

@@ -9,7 +9,10 @@ use std::path::PathBuf;
 
 use bytes::Bytes;
 use olai_store::name::ResourceName;
-use olai_store::{AssociationStore, AssociationStoreReader, ObjectStore, ObjectStoreReader};
+use olai_store::{
+    AssociationStore, AssociationStoreReader, EdgeQuery, ObjectStore, ObjectStoreReader,
+    Precondition,
+};
 use unitycatalog_common::models::ObjectLabel;
 use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 use unitycatalog_common::services::secrets::SecretManager;
@@ -77,6 +80,7 @@ async fn create_get_by_id_and_name() {
         &name(&["main"]),
         Some(props.clone()),
         None,
+        None,
     )
     .await
     .unwrap();
@@ -98,10 +102,10 @@ async fn duplicate_name_is_already_exists() {
     let temp = TempDb::new("dup");
     let s = store(&temp).await;
 
-    ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None)
+    ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None, None)
         .await
         .unwrap();
-    let err = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None)
+    let err = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None, None)
         .await
         .unwrap_err();
     assert!(
@@ -115,12 +119,18 @@ async fn update_and_delete() {
     let temp = TempDb::new("update");
     let s = store(&temp).await;
 
-    let created = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None)
+    let created = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None, None)
         .await
         .unwrap();
-    let updated = ObjectStore::update(&s, &created.id, Some(serde_json::json!({"k": "v"})))
-        .await
-        .unwrap();
+    let updated = ObjectStore::update(
+        &s,
+        &created.id,
+        Some(serde_json::json!({"k": "v"})),
+        Precondition::Any,
+        None,
+    )
+    .await
+    .unwrap();
     assert_eq!(updated.properties, Some(serde_json::json!({"k": "v"})));
     assert!(updated.updated_at.is_some());
 
@@ -142,13 +152,21 @@ async fn list_by_namespace_with_pagination() {
             &name(&["main", ns_schema]),
             None,
             None,
+            None,
         )
         .await
         .unwrap();
     }
-    ObjectStore::create(&s, ObjectLabel::Schema, &name(&["other", "c"]), None, None)
-        .await
-        .unwrap();
+    ObjectStore::create(
+        &s,
+        ObjectLabel::Schema,
+        &name(&["other", "c"]),
+        None,
+        None,
+        None,
+    )
+    .await
+    .unwrap();
 
     // Listing schemas under namespace `main` returns exactly the two children.
     let (page, token) =
@@ -191,39 +209,44 @@ async fn associations_create_inverse_and_cascade() {
     let temp = TempDb::new("assoc");
     let s = store(&temp).await;
 
-    let catalog = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None)
+    let catalog = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None, None)
         .await
         .unwrap();
-    let schema = ObjectStore::create(&s, ObjectLabel::Schema, &name(&["main", "s"]), None, None)
-        .await
-        .unwrap();
+    let schema = ObjectStore::create(
+        &s,
+        ObjectLabel::Schema,
+        &name(&["main", "s"]),
+        None,
+        None,
+        None,
+    )
+    .await
+    .unwrap();
 
     // parent_of catalog -> schema; the inverse child_of is auto-created.
     AssociationStore::add(&s, catalog.id, schema.id, "parent_of", None)
         .await
         .unwrap();
 
-    let (children, _) = AssociationStoreReader::list(&s, catalog.id, "parent_of", None, None, None)
-        .await
-        .unwrap();
+    let (children, _) =
+        AssociationStoreReader::query_edges(&s, EdgeQuery::from(catalog.id, "parent_of"))
+            .await
+            .unwrap();
     assert_eq!(children.len(), 1);
     assert_eq!(children[0].to_id, schema.id);
     assert_eq!(children[0].to_label, ObjectLabel::Schema);
 
-    let (parents, _) = AssociationStoreReader::list(&s, schema.id, "child_of", None, None, None)
-        .await
-        .unwrap();
+    let (parents, _) =
+        AssociationStoreReader::query_edges(&s, EdgeQuery::from(schema.id, "child_of"))
+            .await
+            .unwrap();
     assert_eq!(parents.len(), 1);
     assert_eq!(parents[0].to_id, catalog.id);
 
     // target_label filter excludes non-matching target types.
-    let (filtered, _) = AssociationStoreReader::list(
+    let (filtered, _) = AssociationStoreReader::query_edges(
         &s,
-        catalog.id,
-        "parent_of",
-        Some(ObjectLabel::Table),
-        None,
-        None,
+        EdgeQuery::from(catalog.id, "parent_of").target_label(ObjectLabel::Table),
     )
     .await
     .unwrap();
@@ -231,9 +254,10 @@ async fn associations_create_inverse_and_cascade() {
 
     // Deleting the catalog cascades its association rows away.
     ObjectStore::delete(&s, &catalog.id).await.unwrap();
-    let (after, _) = AssociationStoreReader::list(&s, schema.id, "child_of", None, None, None)
-        .await
-        .unwrap();
+    let (after, _) =
+        AssociationStoreReader::query_edges(&s, EdgeQuery::from(schema.id, "child_of"))
+            .await
+            .unwrap();
     assert_eq!(after.len(), 0);
 }
 
@@ -242,12 +266,19 @@ async fn remove_association_removes_inverse() {
     let temp = TempDb::new("assoc-remove");
     let s = store(&temp).await;
 
-    let a = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["a"]), None, None)
+    let a = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["a"]), None, None, None)
         .await
         .unwrap();
-    let b = ObjectStore::create(&s, ObjectLabel::Schema, &name(&["a", "b"]), None, None)
-        .await
-        .unwrap();
+    let b = ObjectStore::create(
+        &s,
+        ObjectLabel::Schema,
+        &name(&["a", "b"]),
+        None,
+        None,
+        None,
+    )
+    .await
+    .unwrap();
     AssociationStore::add(&s, a.id, b.id, "parent_of", None)
         .await
         .unwrap();
@@ -255,11 +286,11 @@ async fn remove_association_removes_inverse() {
         .await
         .unwrap();
 
-    let (children, _) = AssociationStoreReader::list(&s, a.id, "parent_of", None, None, None)
+    let (children, _) = AssociationStoreReader::query_edges(&s, EdgeQuery::from(a.id, "parent_of"))
         .await
         .unwrap();
     assert_eq!(children.len(), 0);
-    let (parents, _) = AssociationStoreReader::list(&s, b.id, "child_of", None, None, None)
+    let (parents, _) = AssociationStoreReader::query_edges(&s, EdgeQuery::from(b.id, "child_of"))
         .await
         .unwrap();
     assert_eq!(parents.len(), 0);
@@ -295,7 +326,7 @@ async fn data_persists_across_reopen() {
     let temp = TempDb::new("persist");
     let created_id = {
         let s = store(&temp).await;
-        let c = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None)
+        let c = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None, None)
             .await
             .unwrap();
         s.put_secret("k", Bytes::from_static(b"v")).await.unwrap();
@@ -316,10 +347,10 @@ async fn name_matching_is_ascii_case_insensitive() {
     let temp = TempDb::new("nocase");
     let s = store(&temp).await;
 
-    ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None)
+    ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None, None)
         .await
         .unwrap();
-    let err = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["MAIN"]), None, None)
+    let err = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["MAIN"]), None, None, None)
         .await
         .unwrap_err();
     assert!(

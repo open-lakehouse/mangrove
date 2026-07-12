@@ -22,8 +22,6 @@ pub use crate::error::{Error, Result};
 pub use crate::store::SqliteStore;
 
 mod commit_coordinator;
-mod constants;
 mod error;
-mod pagination;
 mod secrets;
 mod store;
