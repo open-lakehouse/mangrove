@@ -215,7 +215,7 @@ impl SecuredAction for UpdateCredentialRequest {
 
 impl SecuredAction for DeleteCredentialRequest {
     fn resource(&self) -> ResourceIdent {
-        ResourceIdent::catalog(ResourceName::new([self.name.as_str()]))
+        ResourceIdent::credential(ResourceName::new([self.name.as_str()]))
     }
 
     fn permission(&self) -> &'static Permission {
