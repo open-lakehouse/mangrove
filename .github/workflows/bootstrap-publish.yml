@@ -73,7 +73,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
-          toolchain: "1.96"
+          toolchain: "1.97"
 
       # ----- Tier 0: olai-uc-delta-api (root; deps are all registry/workspace) -----
       - name: Publish olai-uc-delta-api

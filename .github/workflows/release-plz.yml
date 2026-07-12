@@ -52,7 +52,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           # Matches the rest of CI; stays above the 1.91 workspace floor.
-          toolchain: "1.96"
+          toolchain: "1.97"
       - name: Run release-plz (release-pr)
         uses: release-plz/action@e8792575c7f2366cf6ff3ccc33ead9ace5b691c7 # v0.5.130
         with:
@@ -93,7 +93,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
-          toolchain: "1.96"
+          toolchain: "1.97"
       # No CARGO_REGISTRY_TOKEN: crates.io publish authenticates via OIDC
       # (`id-token: write`). Crates with `release = false` are skipped.
       - name: Run release-plz (release)

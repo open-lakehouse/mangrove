@@ -42,7 +42,7 @@ jobs:
       # seconds-fast for the quickest possible style feedback.
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
-          toolchain: "1.96"
+          toolchain: "1.97"
           components: rustfmt
 
       - name: Format
@@ -89,7 +89,7 @@ jobs:
       # rust-version floor is 1.91 (set by buoyant_kernel); this stays above it.
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
-          toolchain: "1.96"
+          toolchain: "1.97"
           components: clippy
 
       # Caches ~/.cargo and ./target keyed on the lockfile. clippy and test share
@@ -121,7 +121,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
-          toolchain: "1.96"
+          toolchain: "1.97"
 
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
@@ -204,7 +204,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
-          toolchain: "1.96"
+          toolchain: "1.97"
           components: llvm-tools-preview
 
       # Coverage recompiles with -C instrument-coverage, so it cannot reuse the
@@ -310,7 +310,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
-          toolchain: "1.96"
+          toolchain: "1.97"
           components: llvm-tools-preview
 
       # Its own cache key: this job builds the instrumented acceptance binary
@@ -385,7 +385,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
-          toolchain: "1.96"
+          toolchain: "1.97"
           components: llvm-tools-preview
 
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
@@ -451,7 +451,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
-          toolchain: "1.96"
+          toolchain: "1.97"
           components: llvm-tools-preview
 
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
@@ -536,7 +536,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
-          toolchain: "1.96"
+          toolchain: "1.97"
           components: clippy, rustfmt
           targets: wasm32-unknown-unknown
 
