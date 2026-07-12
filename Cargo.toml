@@ -104,6 +104,15 @@ reqwest = { version = "0.12", default-features = false, features = [
   "stream",
 ] }
 
+# Validation patch: point olai-store at the local ../trestle checkout so we can
+# prove the refactored generic SQLite backend (SqlStore) end-to-end and iterate
+# on it locally before cutting a release. This is temporary — once the design is
+# validated we cut a new olai-store release, bump the version above, and remove
+# this patch. Unlike the wasm sub-workspace patch, this one is intended to affect
+# the whole native workspace.
+[patch.crates-io]
+olai-store = { path = "../trestle/crates/olai-store" }
+
 [workspace.metadata.typos]
 default.extend-ignore-re = [
   # Custom ignore regex patterns: https://github.com/crate-ci/typos/blob/master/docs/reference.md#example-configurations
