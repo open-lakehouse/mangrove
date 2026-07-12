@@ -283,4 +283,96 @@ mod tests {
         ));
         Ok(())
     }
+
+    #[tokio::test]
+    async fn update_checked_cas_succeeds_on_match_conflicts_on_stale() -> Result<()> {
+        use unitycatalog_common::store::Precondition;
+
+        let store = test_store();
+        let (_, reference) = store
+            .create(
+                Catalog {
+                    name: "cat".into(),
+                    ..Default::default()
+                }
+                .into(),
+            )
+            .await?;
+        let ident = ObjectLabel::Catalog.to_ident(reference);
+
+        // Read the current version (etag) to pin the CAS against.
+        let (resource, _, version) = store.get_versioned(&ident).await?;
+        let mut catalog: Catalog = resource.try_into()?;
+        catalog.comment = Some("first".into());
+
+        // CAS with the observed version succeeds and bumps the version.
+        let (_, _, new_version) = store
+            .update_checked(
+                &ident,
+                catalog.clone().into(),
+                Precondition::Version(version),
+            )
+            .await?;
+        assert!(new_version > version, "version must advance on update");
+
+        // A second CAS against the now-stale original version must conflict.
+        catalog.comment = Some("second".into());
+        let res = store
+            .update_checked(&ident, catalog.into(), Precondition::Version(version))
+            .await;
+        assert!(matches!(res, Err(Error::Conflict)), "{res:?}");
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn rename_preserves_id_and_associations() -> Result<()> {
+        use unitycatalog_common::models::AssociationLabel;
+        use unitycatalog_common::models::ResourceName;
+        use unitycatalog_common::store::Precondition;
+
+        let store = test_store();
+        // Two catalogs, linked by an association edge.
+        let (_, from_ref) = store
+            .create(
+                Catalog {
+                    name: "old_name".into(),
+                    ..Default::default()
+                }
+                .into(),
+            )
+            .await?;
+        let (_, to_ref) = store
+            .create(
+                Catalog {
+                    name: "peer".into(),
+                    ..Default::default()
+                }
+                .into(),
+            )
+            .await?;
+        let from_ident = ObjectLabel::Catalog.to_ident(from_ref.clone());
+        let to_ident = ObjectLabel::Catalog.to_ident(to_ref);
+        store
+            .add_association(&from_ident, &to_ident, &AssociationLabel::ParentOf, None)
+            .await?;
+
+        // Rename the catalog; the id is preserved and the edge still resolves.
+        let (_, renamed_ref, _) = store
+            .rename(
+                &from_ident,
+                &ResourceName::new(["new_name"]),
+                Precondition::Any,
+            )
+            .await?;
+        assert_eq!(renamed_ref, from_ref, "rename must preserve the id");
+
+        let renamed: Catalog = store.get(&from_ident).await?.0.try_into()?;
+        assert_eq!(renamed.name, "new_name");
+
+        let (edges, _) = store
+            .list_associations(&from_ident, &AssociationLabel::ParentOf, None, None, None)
+            .await?;
+        assert_eq!(edges.len(), 1, "association must survive the rename");
+        Ok(())
+    }
 }

@@ -2,13 +2,19 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 use olai_store::store::{StoreExec, Transactional};
-use olai_store::{
-    AssociationStore, EdgeQuery, ObjectStore, ObjectStoreReader, Precondition, SecretObjectReader,
-};
+use olai_store::{AssociationStore, EdgeQuery, ObjectStore, ObjectStoreReader, SecretObjectReader};
 use uuid::Uuid;
 
 use crate::models::{AssociationLabel, ObjectLabel, PropertyMap, Resource};
 use crate::{Object, ResourceIdent, ResourceName, ResourceRef, Result};
+
+/// Optimistic-concurrency precondition for versioned writes, re-exported from
+/// `olai-store` so callers of [`ResourceStore`] need not depend on it directly.
+///
+/// [`Precondition::Version`] pins a write to the version observed on a prior read
+/// ([`ResourceStoreReader::get_versioned`]); a mismatch is a
+/// [`Conflict`](crate::Error::Conflict). [`Precondition::Any`] is an unconditional write.
+pub use olai_store::Precondition;
 
 /// Convert a stored association `properties` JSON value into a [`PropertyMap`].
 ///
@@ -52,6 +58,20 @@ pub trait ResourceStoreReader: Send + Sync + 'static {
     /// `olai_store::ManagedObjectStore` overrides it to merge the sealed fields back in.
     async fn get_with_secrets(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef)> {
         self.get(id).await
+    }
+
+    /// Get a resource together with its current version (etag).
+    ///
+    /// The `u64` is the store's monotonic per-object version, bumped on every
+    /// mutation. Pass it back as a [`Precondition::Version`] on a later
+    /// [`update_checked`](ResourceStore::update_checked) or
+    /// [`rename`](ResourceStore::rename) to perform a compare-and-swap.
+    ///
+    /// The default returns version `0` for stores that don't track versions;
+    /// [`ObjectStoreAdapter`] overrides it to surface the real version.
+    async fn get_versioned(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef, u64)> {
+        let (resource, reference) = self.get(id).await?;
+        Ok((resource, reference, 0))
     }
 
     /// List resources.
@@ -98,15 +118,18 @@ pub trait ResourceStore: ResourceStoreReader + Send + Sync + 'static {
     /// - `id`: The identifier of the resource to delete.
     async fn delete(&self, id: &ResourceIdent) -> Result<()>;
 
-    /// Atomically delete one resource and create another.
+    /// Atomically delete one resource and create another **in one transaction**.
     ///
     /// Used by the managed-table commit flow, where a `StagingTable` reservation
     /// must be replaced by a `Table` **at the same uuid** (the id is fixed at
-    /// staging time and the Delta API protocol depends on it). Because the object
-    /// store keys objects by a single uuid, the delete and the create cannot both
-    /// exist at that id: they must land in one atomic unit of work so a crash
-    /// between them cannot leave the reservation gone without the table, and
-    /// concurrent readers see either the old row or the new one, never neither.
+    /// staging time and the Delta API protocol depends on it). This is a genuine
+    /// **relabel** — `StagingTable` and `Table` are distinct, immutable object
+    /// labels — so it cannot be a [`rename`](Self::rename) (which changes the name,
+    /// not the label). Because the object store keys objects by a single uuid, the
+    /// delete and the create cannot both exist at that id: they must land in one
+    /// atomic unit of work so a crash between them cannot leave the reservation
+    /// gone without the table, and concurrent readers see either the old row or the
+    /// new one, never neither.
     ///
     /// ## Arguments
     /// - `delete`: The identifier of the resource to remove.
@@ -115,19 +138,19 @@ pub trait ResourceStore: ResourceStoreReader + Send + Sync + 'static {
     /// ## Returns
     /// The created resource and its reference.
     ///
-    /// The default implementation runs the two operations separately (delete then
-    /// create) so non-transactional stores still function; stores backed by a
-    /// transactional object store override it to run both in one transaction.
+    /// This is a required method with no default: every backend store is
+    /// transactional ([`olai_store::store::Transactional`]), so a non-atomic
+    /// delete-then-create fallback would be a silent correctness footgun.
     async fn replace_atomically(
         &self,
         delete: &ResourceIdent,
         create: Resource,
-    ) -> Result<(Resource, ResourceRef)> {
-        self.delete(delete).await?;
-        self.create(create).await
-    }
+    ) -> Result<(Resource, ResourceRef)>;
 
-    /// Update a resource.
+    /// Update a resource unconditionally.
+    ///
+    /// Convenience for [`update_checked`](Self::update_checked) with
+    /// [`Precondition::Any`], discarding the returned version.
     ///
     /// ## Arguments
     /// - `id`: The identifier of the resource to update.
@@ -139,7 +162,37 @@ pub trait ResourceStore: ResourceStoreReader + Send + Sync + 'static {
         &self,
         id: &ResourceIdent,
         resource: Resource,
-    ) -> Result<(Resource, ResourceRef)>;
+    ) -> Result<(Resource, ResourceRef)> {
+        let (resource, reference, _version) =
+            self.update_checked(id, resource, Precondition::Any).await?;
+        Ok((resource, reference))
+    }
+
+    /// Update a resource under an optimistic-concurrency precondition.
+    ///
+    /// With [`Precondition::Version`] this is a compare-and-swap: the write
+    /// succeeds only if the stored version still equals the expected one, else it
+    /// fails with [`Conflict`](crate::Error::Conflict). With [`Precondition::Any`]
+    /// it is an unconditional overwrite. Returns the resource and its new version.
+    async fn update_checked(
+        &self,
+        id: &ResourceIdent,
+        resource: Resource,
+        precondition: Precondition,
+    ) -> Result<(Resource, ResourceRef, u64)>;
+
+    /// Rename a resource to a new (possibly namespaced) name.
+    ///
+    /// Preserves the resource's id, label, associations, and sealed secrets —
+    /// only the name changes. With [`Precondition::Version`] the rename is a
+    /// compare-and-swap against the stored version. Returns the renamed resource
+    /// and its new version.
+    async fn rename(
+        &self,
+        id: &ResourceIdent,
+        new_name: &ResourceName,
+        precondition: Precondition,
+    ) -> Result<(Resource, ResourceRef, u64)>;
 
     /// Add an association between two resources.
     ///
@@ -294,6 +347,15 @@ where
         }
     }
 
+    /// Surface the stored object's version alongside the resource, so a caller can
+    /// pin a later CAS write to it (see [`ResourceStoreReader::get_versioned`]).
+    async fn get_versioned(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef, u64)> {
+        let uuid = self.resolve_ident(id).await?;
+        let object = self.store.get(&uuid).await?;
+        let version = object.version;
+        Ok((object.try_into()?, ResourceRef::Uuid(uuid), version))
+    }
+
     async fn list(
         &self,
         label: &ObjectLabel,
@@ -401,21 +463,68 @@ where
         Ok((created.try_into()?, id))
     }
 
-    async fn update(
+    async fn update_checked(
         &self,
         id: &ResourceIdent,
         resource: Resource,
-    ) -> Result<(Resource, ResourceRef)> {
+        precondition: Precondition,
+    ) -> Result<(Resource, ResourceRef, u64)> {
         let uuid = self.resolve_ident(id).await?;
         let object: Object = resource.try_into()?;
-        // `ResourceStore::update` carries no etag, so this is an unconditional
-        // overwrite (`Precondition::Any`); optimistic concurrency at this layer
-        // is a follow-up. Secrets are not threaded here (see `create`).
+        // `precondition` carries any optimistic-concurrency guard: `Version(v)`
+        // makes this a compare-and-swap (mismatch → `olai_store::Error::Conflict`),
+        // `Any` an unconditional overwrite. Secrets are not threaded here (they are
+        // sealed inline by the managed store on create; an update leaves them).
         let updated = self
             .store
-            .update(&uuid, object.properties, Precondition::Any, None)
+            .update(&uuid, object.properties, precondition, None)
             .await?;
-        Ok((updated.try_into()?, uuid.into()))
+        let version = updated.version;
+        Ok((updated.try_into()?, uuid.into(), version))
+    }
+
+    async fn rename(
+        &self,
+        id: &ResourceIdent,
+        new_name: &ResourceName,
+        precondition: Precondition,
+    ) -> Result<(Resource, ResourceRef, u64)> {
+        let uuid = self.resolve_ident(id).await?;
+        // The authoritative name lives in two places that must stay in sync: the
+        // object's `name` key (the store's lookup index) and the `name` field
+        // inside the serialized `properties` blob (what the typed `Resource`
+        // deserializes). olai-store's `rename` re-keys only the former, so we also
+        // patch the leaf name in `properties` and write both in one transaction.
+        let leaf = new_name
+            .path()
+            .last()
+            .cloned()
+            .ok_or_else(|| crate::Error::generic("rename target name is empty"))?;
+        let new_name = new_name.clone();
+        let renamed = self
+            .store
+            .transaction(Box::new(move |exec: &dyn StoreExec<ObjectLabel>| {
+                Box::pin(async move {
+                    // Re-key the object first so a later property write inside the
+                    // same tx observes the new name; the precondition guards this
+                    // read-modify-write against a concurrent mutation.
+                    let obj = exec.rename(&uuid, &new_name, precondition).await?;
+                    let mut props = obj
+                        .properties
+                        .clone()
+                        .unwrap_or_else(|| serde_json::Value::Object(Default::default()));
+                    if let serde_json::Value::Object(map) = &mut props {
+                        map.insert("name".into(), serde_json::Value::String(leaf));
+                    }
+                    // Unconditional here: the version was already asserted by the
+                    // rename above, and this is the same logical write.
+                    exec.update(&obj.id, Some(props), Precondition::Any, None)
+                        .await
+                })
+            }))
+            .await?;
+        let version = renamed.version;
+        Ok((renamed.try_into()?, uuid.into(), version))
     }
 
     async fn add_association(
@@ -535,6 +644,10 @@ impl<T: ResourceStoreReader> ResourceStoreReader for Arc<T> {
         T::get_with_secrets(self, id).await
     }
 
+    async fn get_versioned(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef, u64)> {
+        T::get_versioned(self, id).await
+    }
+
     async fn list(
         &self,
         label: &ObjectLabel,
@@ -564,12 +677,22 @@ impl<T: ResourceStore> ResourceStore for Arc<T> {
         T::replace_atomically(self, delete, create).await
     }
 
-    async fn update(
+    async fn update_checked(
         &self,
         id: &ResourceIdent,
         resource: Resource,
-    ) -> Result<(Resource, ResourceRef)> {
-        T::update(self, id, resource).await
+        precondition: Precondition,
+    ) -> Result<(Resource, ResourceRef, u64)> {
+        T::update_checked(self, id, resource, precondition).await
+    }
+
+    async fn rename(
+        &self,
+        id: &ResourceIdent,
+        new_name: &ResourceName,
+        precondition: Precondition,
+    ) -> Result<(Resource, ResourceRef, u64)> {
+        T::rename(self, id, new_name, precondition).await
     }
 
     async fn add_association(
@@ -636,6 +759,10 @@ impl<T: ProvidesResourceStore> ResourceStoreReader for T {
         self.store().get_with_secrets(id).await
     }
 
+    async fn get_versioned(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef, u64)> {
+        self.store().get_versioned(id).await
+    }
+
     async fn list(
         &self,
         label: &ObjectLabel,
@@ -667,12 +794,24 @@ impl<T: ProvidesResourceStore> ResourceStore for T {
         self.store().replace_atomically(delete, create).await
     }
 
-    async fn update(
+    async fn update_checked(
         &self,
         id: &ResourceIdent,
         resource: Resource,
-    ) -> Result<(Resource, ResourceRef)> {
-        self.store().update(id, resource).await
+        precondition: Precondition,
+    ) -> Result<(Resource, ResourceRef, u64)> {
+        self.store()
+            .update_checked(id, resource, precondition)
+            .await
+    }
+
+    async fn rename(
+        &self,
+        id: &ResourceIdent,
+        new_name: &ResourceName,
+        precondition: Precondition,
+    ) -> Result<(Resource, ResourceRef, u64)> {
+        self.store().rename(id, new_name, precondition).await
     }
 
     async fn add_association(
