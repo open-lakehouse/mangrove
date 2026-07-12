@@ -1511,23 +1511,23 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
             },
             ::olai_store::ResourceFieldDescriptor {
                 name: "azure_service_principal",
-                role: ::olai_store::FieldRole::Data,
+                role: ::olai_store::FieldRole::Sensitive,
             },
             ::olai_store::ResourceFieldDescriptor {
                 name: "azure_managed_identity",
-                role: ::olai_store::FieldRole::Data,
+                role: ::olai_store::FieldRole::Sensitive,
             },
             ::olai_store::ResourceFieldDescriptor {
                 name: "azure_storage_key",
-                role: ::olai_store::FieldRole::Data,
+                role: ::olai_store::FieldRole::Sensitive,
             },
             ::olai_store::ResourceFieldDescriptor {
                 name: "aws_iam_role",
-                role: ::olai_store::FieldRole::Data,
+                role: ::olai_store::FieldRole::Sensitive,
             },
             ::olai_store::ResourceFieldDescriptor {
                 name: "databricks_gcp_service_account",
-                role: ::olai_store::FieldRole::Data,
+                role: ::olai_store::FieldRole::Sensitive,
             },
         ],
         path_names: &["name"],
