@@ -380,6 +380,7 @@ impl TryFrom<super::agents::v0alpha1::Agent> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::Agent,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -420,6 +421,7 @@ impl TryFrom<super::agent_skills::v0alpha1::AgentSkill> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::AgentSkill,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -464,6 +466,7 @@ impl TryFrom<super::catalogs::v1::Catalog> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::Catalog,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -509,6 +512,7 @@ impl TryFrom<super::tables::v1::Column> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::Column,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -554,6 +558,7 @@ impl TryFrom<super::credentials::v1::Credential> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::Credential,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -600,6 +605,7 @@ impl TryFrom<super::external_locations::v1::ExternalLocation> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::ExternalLocation,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -645,6 +651,7 @@ impl TryFrom<super::functions::v1::Function> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::Function,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -690,6 +697,7 @@ impl TryFrom<super::policies::v1::PolicyInfo> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::PolicyInfo,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -735,6 +743,7 @@ impl TryFrom<super::providers::v1::Provider> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::Provider,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -780,6 +789,7 @@ impl TryFrom<super::recipients::v1::Recipient> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::Recipient,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -825,6 +835,7 @@ impl TryFrom<super::schemas::v1::Schema> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::Schema,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -870,6 +881,7 @@ impl TryFrom<super::shares::v1::Share> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::Share,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -910,6 +922,7 @@ impl TryFrom<super::staging_tables::v1::StagingTable> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::StagingTable,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -954,6 +967,7 @@ impl TryFrom<super::tables::v1::Table> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::Table,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -999,6 +1013,7 @@ impl TryFrom<super::tags::v1::TagPolicy> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::TagPolicy,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })
@@ -1039,6 +1054,7 @@ impl TryFrom<super::volumes::v1::Volume> for Object {
             name: obj.resource_name(),
             label: ObjectLabel::Volume,
             properties: Some(::serde_json::to_value(obj)?),
+            version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
         })

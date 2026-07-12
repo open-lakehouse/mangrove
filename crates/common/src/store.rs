@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-use olai_store::{AssociationStore, ObjectStore, ObjectStoreReader};
+use olai_store::{AssociationStore, EdgeQuery, ObjectStore, ObjectStoreReader, Precondition};
 use uuid::Uuid;
 
 use crate::models::{AssociationLabel, ObjectLabel, PropertyMap, Resource};
@@ -292,9 +292,18 @@ where
         // API request types carry no id field, so callers cannot force an id
         // through this path. Mirrors the Postgres backend's `create`.
         let supplied_id = (!object.id.is_nil()).then_some(object.id);
+        // Secrets still live in the backend's local secrets table for now, so no
+        // sensitive blob is threaded through the generic store here (see the
+        // sensitive-field adoption follow-up).
         let created = self
             .store
-            .create(object.label, &object.name, object.properties, supplied_id)
+            .create(
+                object.label,
+                &object.name,
+                object.properties,
+                supplied_id,
+                None,
+            )
             .await?;
         let id = ResourceRef::Uuid(created.id);
         Ok((created.try_into()?, id))
@@ -313,7 +322,13 @@ where
     ) -> Result<(Resource, ResourceRef)> {
         let uuid = self.resolve_ident(id).await?;
         let object: Object = resource.try_into()?;
-        let updated = self.store.update(&uuid, object.properties).await?;
+        // `ResourceStore::update` carries no etag, so this is an unconditional
+        // overwrite (`Precondition::Any`); optimistic concurrency at this layer
+        // is a follow-up. Secrets are not threaded here (see `create`).
+        let updated = self
+            .store
+            .update(&uuid, object.properties, Precondition::Any, None)
+            .await?;
         Ok((updated.try_into()?, uuid.into()))
     }
 
@@ -354,16 +369,11 @@ where
         page_token: Option<String>,
     ) -> Result<(Vec<ResourceIdent>, Option<String>)> {
         let resource_id = self.resolve_ident(resource).await?;
-        let target_obj_label = target_label.map(|r| *r.label());
-        let (associations, token) = olai_store::AssociationStoreReader::list(
-            &self.store,
-            resource_id,
-            label.as_ref(),
-            target_obj_label,
-            max_results,
-            page_token,
-        )
-        .await?;
+        let mut query = EdgeQuery::from(resource_id, label.as_ref()).page(max_results, page_token);
+        if let Some(target) = target_label {
+            query = query.target_label(*target.label());
+        }
+        let (associations, token) = self.store.query_edges(query).await?;
         let idents = associations
             .into_iter()
             .map(|assoc| assoc.to_label.to_ident(assoc.to_id))
@@ -380,16 +390,11 @@ where
         page_token: Option<String>,
     ) -> Result<(Vec<(ResourceIdent, Option<PropertyMap>)>, Option<String>)> {
         let resource_id = self.resolve_ident(resource).await?;
-        let target_obj_label = target_label.map(|r| *r.label());
-        let (associations, token) = olai_store::AssociationStoreReader::list(
-            &self.store,
-            resource_id,
-            label.as_ref(),
-            target_obj_label,
-            max_results,
-            page_token,
-        )
-        .await?;
+        let mut query = EdgeQuery::from(resource_id, label.as_ref()).page(max_results, page_token);
+        if let Some(target) = target_label {
+            query = query.target_label(*target.label());
+        }
+        let (associations, token) = self.store.query_edges(query).await?;
         let entries = associations
             .into_iter()
             .map(|assoc| {
