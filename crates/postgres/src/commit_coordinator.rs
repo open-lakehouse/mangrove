@@ -12,13 +12,29 @@
 //! (never-delete-highest backfill marker, unbackfilled cap, field validation,
 //! `latest_table_version` sentinels).
 
+use sqlx::PgPool;
 use unitycatalog_delta_api::coordinator::{
     CommitCoordinator, CommitError, CommitInfo, CommitResult, DEFAULT_MAX_UNBACKFILLED_COMMITS,
     validate_commit_info,
 };
 use uuid::Uuid;
 
-use crate::GraphStore;
+/// Postgres-backed Delta [`CommitCoordinator`] over the `delta_commits` table.
+///
+/// Holds its own clone of the shared [`PgPool`]; the object/association graph
+/// store ([`PgGraphStore`](crate::PgGraphStore)) is an independent handle on the
+/// same database.
+#[derive(Clone)]
+pub struct PgCommitCoordinator {
+    pool: PgPool,
+}
+
+impl PgCommitCoordinator {
+    /// Construct a coordinator over a connection pool.
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+}
 
 /// Convert epoch-millis (the wire representation) to a `timestamptz` value.
 fn millis_to_dt(millis: i64) -> CommitResult<chrono::DateTime<chrono::Utc>> {
@@ -58,7 +74,7 @@ struct VersionBounds {
     last: i64,
 }
 
-impl GraphStore {
+impl PgCommitCoordinator {
     /// Read the min/max ratified commit version for a table within a transaction.
     async fn commit_bounds(
         &self,
@@ -142,7 +158,7 @@ impl GraphStore {
 }
 
 #[async_trait::async_trait]
-impl CommitCoordinator for GraphStore {
+impl CommitCoordinator for PgCommitCoordinator {
     async fn commit(
         &self,
         table_id: &str,

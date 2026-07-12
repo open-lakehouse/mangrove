@@ -1,3 +1,4 @@
+pub use crate::commit_coordinator::PgCommitCoordinator;
 pub use crate::error::{Error, Result};
 pub use graph::*;
 

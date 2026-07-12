@@ -6,10 +6,9 @@
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 use unitycatalog_delta_api::coordinator::CommitInfo;
 use unitycatalog_delta_api::coordinator::{CommitCoordinator, CommitError};
-use unitycatalog_sqlite::SqliteStore;
+use unitycatalog_sqlite::{SqliteCommitCoordinator, connect_pool, unified_migrator};
 use uuid::Uuid;
 
 /// A temp-file SQLite path that cleans up its files on drop.
@@ -45,14 +44,10 @@ impl Drop for TempDb {
     }
 }
 
-async fn store(temp: &TempDb) -> SqliteStore {
-    let encryptor =
-        EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap());
-    let store = SqliteStore::connect(temp.path(), encryptor)
-        .await
-        .expect("connect");
-    store.migrate().await.expect("migrate");
-    store
+async fn store(temp: &TempDb) -> SqliteCommitCoordinator {
+    let pool = connect_pool(temp.path()).await.expect("connect");
+    unified_migrator().run(&pool).await.expect("migrate");
+    SqliteCommitCoordinator::new(pool)
 }
 
 /// A unique table id per call (the `uuid` crate's `v4` feature isn't enabled).

@@ -14,7 +14,7 @@ use olai_store::{
 };
 use unitycatalog_common::models::ObjectLabel;
 use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
-use unitycatalog_sqlite::SqliteStore;
+use unitycatalog_sqlite::{SqliteGraphStore, connect_graph, connect_pool, unified_migrator};
 
 /// A temp-file SQLite path that cleans up its files on drop.
 struct TempDb {
@@ -54,12 +54,10 @@ fn encryptor() -> EnvelopeEncryptor {
     EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap())
 }
 
-async fn store(temp: &TempDb) -> SqliteStore {
-    let store = SqliteStore::connect(temp.path(), encryptor())
-        .await
-        .expect("connect");
-    store.migrate().await.expect("migrate");
-    store
+async fn store(temp: &TempDb) -> SqliteGraphStore {
+    let pool = connect_pool(temp.path()).await.expect("connect");
+    unified_migrator().run(&pool).await.expect("migrate");
+    connect_graph(pool, encryptor())
 }
 
 fn name(parts: &[&str]) -> ResourceName {
