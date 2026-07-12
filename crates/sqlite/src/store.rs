@@ -2,10 +2,11 @@
 //!
 //! The object/association graph is now provided by the generic
 //! [`olai_store::SqlStore`] (the SQLite-backed backend of `olai-store`); this
-//! crate composes it with the two mangrove-specific concerns that ride the same
-//! database — the [`SecretManager`](unitycatalog_common::services::secrets::SecretManager)
-//! (`secrets` table) and the [`CommitCoordinator`](unitycatalog_delta_api::CommitCoordinator)
-//! (`delta_commits` table) — all sharing one [`SqlitePool`].
+//! crate composes it with the one mangrove-specific concern that rides the same
+//! database — the [`CommitCoordinator`](unitycatalog_delta_api::CommitCoordinator)
+//! (`delta_commits` table) — sharing one [`SqlitePool`]. Sensitive fields
+//! (credentials, tokens) are sealed inline on the object rows by the
+//! [`ManagedObjectStore`] layer rather than in a separate secret store.
 //!
 //! [`SqliteStore`] forwards the `olai_store` object/association traits to the
 //! inner `SqlStore`, so the blanket `ObjectStoreAdapter` in `unitycatalog-common`
@@ -26,15 +27,17 @@ use bytes::Bytes;
 use olai_store::filter::Filter;
 use olai_store::name::ResourceName;
 use olai_store::store::EdgeEndpoint;
+use olai_store::store::{StoreExec, StoreTx, Transactional};
 use olai_store::{
-    Association, AssociationStore, AssociationStoreReader, EdgeQuery, ObjectStore,
-    ObjectStoreReader, Precondition, SqlStore,
+    Association, AssociationStore, AssociationStoreReader, EdgeQuery, ManagedObjectStore,
+    ObjectStore, ObjectStoreReader, Precondition, ResourceRegistry, SecretObjectReader, SqlStore,
 };
+use unitycatalog_common::models::labels::RESOURCE_DESCRIPTORS;
 
 use crate::error::{Error, Result};
 
-/// The mangrove-local migrations (`secrets`, `delta_commits`) that ride the same
-/// database as the generic object/association schema.
+/// The mangrove-local migrations (`delta_commits`) that ride the same database
+/// as the generic object/association schema.
 ///
 /// These are versioned in a high range (0100+) so they never collide with
 /// `olai_store`'s object-graph migrations (0001+); [`unified_migrator`] merges
@@ -60,27 +63,29 @@ fn inverse_resolver(label: &str) -> Option<String> {
         .map(|inv| inv.to_string())
 }
 
-/// An embedded, file-based SQLite store for catalog metadata, secrets, and
-/// Delta catalog-managed commits.
+/// An embedded, file-based SQLite store for catalog metadata (with sensitive
+/// fields sealed inline) and Delta catalog-managed commits.
 #[derive(Clone)]
 pub struct SqliteStore {
-    /// Generic object/association graph store, sharing [`pool`](Self::pool).
-    store: SqlStore<ObjectLabel>,
-    /// Shared connection pool; used directly by the secrets and commit-coordinator
-    /// impls (see `secrets.rs`, `commit_coordinator.rs`).
+    /// Registry-aware object/association graph store that seals `Sensitive` fields
+    /// inline, over the generic [`SqlStore`], sharing [`pool`](Self::pool).
+    store: ManagedObjectStore<ObjectLabel, SqlStore<ObjectLabel>>,
+    /// Shared connection pool; used directly by the commit-coordinator impl
+    /// (see `commit_coordinator.rs`).
     pub(crate) pool: SqlitePool,
-    pub(crate) encryptor: EnvelopeEncryptor,
 }
 
 impl SqliteStore {
     /// Compose a store over an **already-migrated** pool.
     pub fn new(pool: SqlitePool, encryptor: EnvelopeEncryptor) -> Self {
-        let store = SqlStore::<ObjectLabel>::connect(pool.clone()).with_inverse(inverse_resolver);
-        Self {
-            store,
-            pool,
-            encryptor,
-        }
+        let inner = SqlStore::<ObjectLabel>::connect(pool.clone()).with_inverse(inverse_resolver);
+        // The managed layer strips + seals `FieldRole::Sensitive` fields (e.g. a
+        // credential's secret material) into the object row's inline encrypted blob,
+        // redacting them from ordinary reads. The registry is generated from the proto
+        // `debug_redact` annotations (see `RESOURCE_DESCRIPTORS`).
+        let registry = ResourceRegistry::from_static(RESOURCE_DESCRIPTORS);
+        let store = ManagedObjectStore::with_encryptor(inner, encryptor, registry);
+        Self { store, pool }
     }
 
     /// Open (creating if necessary) a SQLite database at `path`.
@@ -112,7 +117,7 @@ impl SqliteStore {
     }
 
     /// Apply both the generic object/association schema and the local
-    /// `secrets` / `delta_commits` schema.
+    /// `delta_commits` schema.
     pub async fn migrate(&self) -> Result<()> {
         unified_migrator()
             .run(&self.pool)
@@ -169,6 +174,13 @@ impl ObjectStoreReader<ObjectLabel> for SqliteStore {
 
     async fn get_sensitive(&self, id: &Uuid) -> olai_store::Result<Option<Bytes>> {
         self.store.get_sensitive(id).await
+    }
+}
+
+#[async_trait::async_trait]
+impl SecretObjectReader<ObjectLabel> for SqliteStore {
+    async fn get_with_secrets(&self, id: &Uuid) -> olai_store::Result<Object> {
+        self.store.get_with_secrets(id).await
     }
 }
 
@@ -250,5 +262,29 @@ impl AssociationStore<ObjectLabel> for SqliteStore {
 
     async fn remove(&self, from_id: Uuid, to_id: Uuid, label: &str) -> olai_store::Result<()> {
         self.store.remove(from_id, to_id, label).await
+    }
+}
+
+#[async_trait::async_trait]
+impl Transactional<ObjectLabel> for SqliteStore {
+    async fn transaction<'a, T>(
+        &'a self,
+        f: Box<
+            dyn for<'t> FnOnce(
+                    &'t dyn StoreExec<ObjectLabel>,
+                )
+                    -> futures::future::BoxFuture<'t, olai_store::Result<T>>
+                + Send
+                + 'a,
+        >,
+    ) -> olai_store::Result<T>
+    where
+        T: Send + 'a,
+    {
+        self.store.transaction(f).await
+    }
+
+    async fn begin(&self) -> olai_store::Result<Box<dyn StoreTx<ObjectLabel>>> {
+        self.store.begin().await
     }
 }

@@ -7,7 +7,6 @@
 
 use std::path::PathBuf;
 
-use bytes::Bytes;
 use olai_store::name::ResourceName;
 use olai_store::{
     AssociationStore, AssociationStoreReader, EdgeQuery, ObjectStore, ObjectStoreReader,
@@ -15,7 +14,6 @@ use olai_store::{
 };
 use unitycatalog_common::models::ObjectLabel;
 use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
-use unitycatalog_common::services::secrets::SecretManager;
 use unitycatalog_sqlite::SqliteStore;
 
 /// A temp-file SQLite path that cleans up its files on drop.
@@ -86,7 +84,15 @@ async fn create_get_by_id_and_name() {
     .unwrap();
     assert_eq!(created.label, ObjectLabel::Catalog);
     assert_eq!(created.name, name(&["main"]));
-    assert_eq!(created.properties, Some(props));
+    // The managed store injects the identifier (`id`) and managed (`created_at`)
+    // fields into the returned properties, so assert the data field survives rather
+    // than exact equality with the raw input.
+    let created_props = created.properties.as_ref().unwrap().as_object().unwrap();
+    assert_eq!(created_props["comment"], serde_json::json!("hi"));
+    assert_eq!(
+        created_props["id"],
+        serde_json::json!(created.id.to_string())
+    );
 
     let by_id = ObjectStoreReader::get(&s, &created.id).await.unwrap();
     assert_eq!(by_id.id, created.id);
@@ -131,7 +137,11 @@ async fn update_and_delete() {
     )
     .await
     .unwrap();
-    assert_eq!(updated.properties, Some(serde_json::json!({"k": "v"})));
+    // Data field survives; the managed store also injects id/created_at/updated_at.
+    assert_eq!(
+        updated.properties.as_ref().unwrap().as_object().unwrap()["k"],
+        serde_json::json!("v")
+    );
     assert!(updated.updated_at.is_some());
 
     ObjectStore::delete(&s, &created.id).await.unwrap();
@@ -297,31 +307,6 @@ async fn remove_association_removes_inverse() {
 }
 
 #[tokio::test]
-async fn secrets_round_trip() {
-    let temp = TempDb::new("secrets");
-    let s = store(&temp).await;
-
-    s.put_secret("token", Bytes::from_static(b"sekret"))
-        .await
-        .unwrap();
-    let got = s.get_secret("token").await.unwrap();
-    assert_eq!(got, Bytes::from_static(b"sekret"));
-
-    // Upsert overwrites.
-    s.put_secret("token", Bytes::from_static(b"rotated"))
-        .await
-        .unwrap();
-    assert_eq!(
-        s.get_secret("token").await.unwrap(),
-        Bytes::from_static(b"rotated")
-    );
-
-    s.delete_secret("token").await.unwrap();
-    assert!(s.get_secret("token").await.is_err());
-    assert!(s.delete_secret("token").await.is_err());
-}
-
-#[tokio::test]
 async fn data_persists_across_reopen() {
     let temp = TempDb::new("persist");
     let created_id = {
@@ -329,15 +314,13 @@ async fn data_persists_across_reopen() {
         let c = ObjectStore::create(&s, ObjectLabel::Catalog, &name(&["main"]), None, None, None)
             .await
             .unwrap();
-        s.put_secret("k", Bytes::from_static(b"v")).await.unwrap();
         c.id
     };
 
-    // Reopen the same file: the catalog and secret survive.
+    // Reopen the same file: the catalog survives.
     let s2 = store(&temp).await;
     let reread = ObjectStoreReader::get(&s2, &created_id).await.unwrap();
     assert_eq!(reread.name, name(&["main"]));
-    assert_eq!(s2.get_secret("k").await.unwrap(), Bytes::from_static(b"v"));
 }
 
 #[tokio::test]

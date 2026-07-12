@@ -25,13 +25,14 @@ unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api",
 async-trait = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
+futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["raw_value", "preserve_order"] }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 
 # crates.io dependencies (in alphabetical order)
-olai-store = { workspace = true, features = ["sqlite"] }
+olai-store = { workspace = true, features = ["sqlite", "encryption"] }
 sqlx = { workspace = true, features = [
   "sqlite",
   "chrono",
