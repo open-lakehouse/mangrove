@@ -166,6 +166,9 @@ pub struct Credential {
     #[prost(string, optional, tag="12")]
     pub full_name: ::core::option::Option<::prost::alloc::string::String>,
     /// The Azure service principal configuration.
+    ///
+    /// Sealed into the object's inline sensitive blob (envelope-encrypted, redacted
+    /// from ordinary reads) rather than stored in the searchable properties.
     #[prost(message, optional, tag="100")]
     pub azure_service_principal: ::core::option::Option<AzureServicePrincipal>,
     /// The Azure managed identity configuration.

@@ -1,6 +1,7 @@
 // @generated — do not edit by hand.
 #![allow(unexpected_cfgs)]
 #![allow(clippy::empty_docs)]
+#![allow(clippy::useless_borrows_in_formatting)]
 use std::collections::HashMap;
 pub mod labels;
 pub use labels::{ObjectLabel, Resource};
