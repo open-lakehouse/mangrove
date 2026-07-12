@@ -143,14 +143,17 @@ jobs:
       # --all-features turns on `integration-pg`, whose #[sqlx::test] commit-
       # coordinator tests provision a live database from DATABASE_URL — there is
       # no Postgres here, so exclude that binary. Those tests run (with a service
-      # container) in the dedicated integration_postgres job below.
+      # container) in the dedicated integration_postgres job below. Scope the
+      # exclusion to the postgres package: the sqlite crate has an identically
+      # named `commit_coordinator` binary whose tests use temp-file databases and
+      # need no service, so they must keep running here.
       - name: Test
         env:
           # journey replay reads this; a dummy value is fine for recorded runs.
           UC_INTEGRATION_STORAGE_ROOT: "s3://dummy"
           # Use the committed .sqlx cache so macros don't probe a live DB at build.
           SQLX_OFFLINE: "true"
-        run: cargo nextest run --workspace --all-features --profile ci -E 'not binary(commit_coordinator)'
+        run: cargo nextest run --workspace --all-features --profile ci -E 'not (package(olai-uc-postgres) and binary(commit_coordinator))'
 
       # nextest does not run doctests; the old `cargo test` did, so run them here
       # to keep doctest coverage. Runs even if nextest failed above.
@@ -219,15 +222,16 @@ jobs:
       # Doctest coverage is collected in its own `coverage_doc` job and uploaded
       # under a separate flag — splitting them keeps each job's single
       # instrumented workspace build within the runner's disk budget (running
-      # both in one job overran it: "No space left on device"). Exclude the
-      # commit_coordinator binary (live-DB #[sqlx::test]s); it reports separately
-      # from integration_postgres.
+      # both in one job overran it: "No space left on device"). Exclude only the
+      # postgres commit_coordinator binary (live-DB #[sqlx::test]s, covered by
+      # integration_postgres); the sqlite crate's identically named
+      # commit_coordinator tests use temp files and are covered here.
       - name: Collect coverage
         env:
           UC_INTEGRATION_STORAGE_ROOT: "s3://dummy"
           SQLX_OFFLINE: "true"
         run: |
-          cargo llvm-cov nextest --workspace --all-features --locked -E 'not binary(commit_coordinator)' --codecov --output-path codecov.json
+          cargo llvm-cov nextest --workspace --all-features --locked -E 'not (package(olai-uc-postgres) and binary(commit_coordinator))' --codecov --output-path codecov.json
 
       # Upload under the `unit` flag. codecov.yml keeps the status informational
       # so it can't block a PR, and fail_ci_if_error stays false so a flaky
@@ -292,48 +296,6 @@ jobs:
           flags: doctests
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
-
-  # Guard against drift in the embedded SQLite backend's committed .sqlx offline
-  # query cache. The crate uses compile-time-checked `sqlx::query!` macros; if a
-  # query changes without regenerating the cache (`just build-sqlx-sqlite`), the
-  # committed JSON goes stale and offline builds elsewhere validate against the
-  # wrong schema. `cargo sqlx prepare --check` recompiles the crate against a
-  # freshly-migrated SQLite file and fails if the cache is out of date. No
-  # service container needed — the database is a local file.
-  sqlx_sqlite_cache:
-    name: sqlx-sqlite-cache
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-
-      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
-        with:
-          toolchain: "1.96"
-
-      - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
-        with:
-          shared-key: ci
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-
-      - uses: taiki-e/install-action@8b3c737da4b541bf0fb5a3e0488ff20535badac9 # v2.82.1
-        with:
-          tool: sqlx-cli
-
-      # Create a fresh SQLite database, apply the migrations, then verify the
-      # committed cache matches the crate's queries against that live schema.
-      - name: Check SQLite .sqlx cache is in sync
-        env:
-          DATABASE_URL: sqlite:///tmp/uc-sqlite-ci.db
-          SQLX_OFFLINE: "false"
-        run: |
-          sqlx database create
-          sqlx migrate run --source crates/sqlite/migrations
-          cd crates/sqlite && cargo sqlx prepare --check -- --tests
 
   integration_oss_java:
     name: integration-oss-java

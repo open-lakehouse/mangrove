@@ -47,7 +47,7 @@ zeroize = { workspace = true }
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }
 futures = { version = "0.3", optional = true }
-olai-store = { workspace = true }
+olai-store = { workspace = true, features = ["encryption"] }
 
 # grpc server specific dependencies (in alphabetical order)
 tonic = { workspace = true, optional = true }
@@ -93,7 +93,7 @@ axum = ["dep:axum", "dep:axum-extra", "http"]
 
 sqlx = ["dep:sqlx", "olai-store/sqlx"]
 
-# storage abstraction traits (ResourceStore, SecretManager) implemented by backends
+# storage abstraction trait (ResourceStore) implemented by backends
 store = ["dep:futures"]
 
 # enable client implementation to interact with Unity REST APIs

@@ -10,9 +10,6 @@ pub enum Error {
     #[error(transparent)]
     Migration(#[from] sqlx::migrate::MigrateError),
 
-    #[error("Failed to decode page token: '{0}'")]
-    DecodePageToken(#[from] base64::DecodeError),
-
     #[error("Generic error: {0}")]
     Generic(String),
 
@@ -61,18 +58,30 @@ impl From<Error> for olai_store::Error {
         match e {
             Error::EntityNotFound(_) => olai_store::Error::NotFound,
             Error::AlreadyExists(_) => olai_store::Error::AlreadyExists,
-            Error::DecodePageToken(e) => olai_store::Error::InvalidArgument(e.to_string()),
             other => olai_store::Error::Generic(other.to_string()),
         }
     }
 }
+
+impl From<olai_store::Error> for Error {
+    fn from(e: olai_store::Error) -> Self {
+        match e {
+            olai_store::Error::NotFound => Error::EntityNotFound("not found".to_string()),
+            olai_store::Error::AlreadyExists => Error::AlreadyExists("already exists".to_string()),
+            olai_store::Error::InvalidArgument(m) => Error::Generic(m),
+            other => Error::Generic(other.to_string()),
+        }
+    }
+}
+
+// Note: the previous `DecodePageToken`/base64 variant was dropped when the
+// generic `olai_store::SqlStore` took over object/association pagination.
 
 impl From<Error> for CommonError {
     fn from(e: Error) -> Self {
         match e {
             Error::Connection(e) => CommonError::generic(e.to_string()),
             Error::Migration(e) => CommonError::generic(e.to_string()),
-            Error::DecodePageToken(e) => CommonError::InvalidArgument(e.to_string()),
             Error::Generic(e) => CommonError::Generic(e),
             Error::EntityNotFound(_) => CommonError::NotFound,
             Error::AlreadyExists(_) => CommonError::AlreadyExists,

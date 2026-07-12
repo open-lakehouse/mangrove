@@ -1,326 +1,123 @@
-//! Storage layer for managing objects and associations.
+//! Postgres storage layer.
 //!
-//! Lossely based on the data model applied in Meta's [TAO].
+//! The object/association graph is provided by the generic
+//! [`olai_store::PgStore`] (the native-Postgres backend of `olai-store`); this
+//! crate composes it with the one mangrove-specific concern that rides the same
+//! database — the [`CommitCoordinator`](unitycatalog_delta_api::CommitCoordinator)
+//! (`delta_commits` table) — sharing one [`PgPool`].
 //!
-//! [TAO]: https://www.usenix.org/system/files/conference/atc13/atc13-bronson.pdf
+//! [`GraphStore`](Store) wraps the `PgStore` in an
+//! [`olai_store::ManagedObjectStore`] so a resource's `FieldRole::Sensitive`
+//! fields (e.g. credential secrets) are sealed inline on the object row, and
+//! forwards the `olai_store` object/association traits to it, so the blanket
+//! `ObjectStoreAdapter` in `unitycatalog-common` lifts it to the high-level
+//! `ResourceStore` API. Inverse edges are wired from [`AssociationLabel::inverse`].
+
+use std::str::FromStr;
 
 use sqlx::PgPool;
 use sqlx::migrate::Migrator;
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use unitycatalog_common::services::encryption::EnvelopeEncryptor;
-use unitycatalog_common::{ResourceIdent, ResourceRef};
+use unitycatalog_common::{AssociationLabel, Object, ObjectLabel};
 use uuid::Uuid;
 
-use super::{Association, AssociationLabel, Object, ObjectLabel};
-use crate::constants::MAX_PAGE_SIZE;
-use crate::pagination::V1PaginateToken;
-use crate::resources::IdentRefs as _;
-use crate::{error::Result, pagination::PaginateToken};
+use bytes::Bytes;
+use olai_store::filter::Filter;
+use olai_store::name::ResourceName;
+use olai_store::store::EdgeEndpoint;
+use olai_store::store::{StoreExec, StoreTx, Transactional};
+use olai_store::{
+    Association, AssociationStore, AssociationStoreReader, EdgeQuery, ManagedObjectStore,
+    ObjectStore, ObjectStoreReader, PgStore, Precondition, ResourceRegistry, SecretObjectReader,
+};
+use unitycatalog_common::models::labels::RESOURCE_DESCRIPTORS;
 
-static MIGRATOR: Migrator = sqlx::migrate!();
+use crate::error::Result;
 
+/// The mangrove-local migrations (`delta_commits`) that ride the same database
+/// as the generic object/association schema.
+///
+/// These are versioned in a high range (0100+) so they never collide with
+/// `olai_store`'s object-graph migrations (0001+); [`unified_migrator`] merges
+/// the two sets into one ordered ledger.
+static LOCAL_MIGRATOR: Migrator = sqlx::migrate!();
+
+/// One [`Migrator`] over `olai_store`'s object-graph schema **and** the
+/// mangrove-local schema, sharing a single `_sqlx_migrations` ledger.
+fn unified_migrator() -> Migrator {
+    olai_store::pg_migrator_with(LOCAL_MIGRATOR.migrations.iter().cloned())
+}
+
+/// Map an [`AssociationLabel`] string to its inverse label string, for the
+/// generic store's inverse-edge resolver.
+fn inverse_resolver(label: &str) -> Option<String> {
+    AssociationLabel::from_str(label)
+        .ok()
+        .and_then(|l| l.inverse())
+        .map(|inv| inv.to_string())
+}
+
+/// A Postgres-backed store for catalog metadata and Delta catalog-managed commits.
 #[derive(Clone)]
 pub struct Store {
+    /// Registry-aware object/association graph store that seals `Sensitive`
+    /// fields inline, over the generic [`PgStore`], sharing [`pool`](Self::pool).
+    store: ManagedObjectStore<ObjectLabel, PgStore<ObjectLabel>>,
+    /// Shared connection pool; used directly by the commit-coordinator impl
+    /// (see `commit_coordinator.rs`).
     pub(crate) pool: PgPool,
-    pub(crate) encryptor: EnvelopeEncryptor,
 }
 
 impl Store {
+    /// Compose a store over an **already-migrated** pool.
     pub fn new(pool: PgPool, encryptor: EnvelopeEncryptor) -> Self {
-        Self { pool, encryptor }
+        let inner = PgStore::<ObjectLabel>::connect(pool.clone()).with_inverse(inverse_resolver);
+        // The managed layer strips + seals `FieldRole::Sensitive` fields (e.g. a
+        // credential's secret material) into the object row's inline encrypted blob,
+        // redacting them from ordinary reads. The registry is generated from the
+        // proto `debug_redact` annotations (see `RESOURCE_DESCRIPTORS`).
+        let registry = ResourceRegistry::from_static(RESOURCE_DESCRIPTORS);
+        let store = ManagedObjectStore::with_encryptor(inner, encryptor, registry);
+        Self { store, pool }
     }
 
+    /// Open a connection pool to the Postgres database at `url`.
     pub async fn connect(url: impl AsRef<str>, encryptor: EnvelopeEncryptor) -> Result<Self> {
         let options: PgConnectOptions = url.as_ref().parse()?;
-        let pool_options = PgPoolOptions::new().max_connections(96);
-        let pool = pool_options.connect_with(options).await?;
+        let pool = PgPoolOptions::new()
+            .max_connections(96)
+            .connect_with(options)
+            .await?;
         Ok(Self::new(pool, encryptor))
     }
 
+    /// Apply both the generic object/association schema and the local
+    /// `delta_commits` schema.
     pub async fn migrate(&self) -> Result<()> {
-        MIGRATOR.run(&self.pool).await?;
+        unified_migrator().run(&self.pool).await?;
         Ok(())
-    }
-
-    /// Convert a resource reference to a UUID.
-    ///
-    /// If the reference is a name, the corresponding object is fetched from the store.
-    /// to get the UUID. The object is returned as well in case it is needed later
-    /// to avoid an additional fetch.
-    ///
-    /// # Parameters
-    /// - `reference`: The reference to convert.
-    ///
-    /// # Returns
-    /// The UUID of the reference and the object if the reference is a name.
-    ///
-    /// # Errors
-    /// In case of an undefined reference, an error is returned.
-    pub async fn ident_to_uuid(&self, reference: &ResourceIdent) -> Result<(Uuid, Option<Object>)> {
-        let (label, ident) = reference.ident();
-        match ident {
-            ResourceRef::Uuid(id) => Ok((*id, None)),
-            ResourceRef::Name(name) => {
-                let object = self.get_object_by_name(label, name).await?;
-                Ok((object.id, Some(object)))
-            }
-            ResourceRef::Undefined => Err(crate::Error::entity_not_found("undefined")),
-        }
-    }
-
-    /// Add an object to the store.
-    ///
-    /// # Parameters
-    /// - `label`: The label of the object.
-    /// - `name`: The namespaced name of the object.
-    /// - `name`: The name of the object.
-    /// - `properties`: The properties of the object.
-    ///
-    /// # Returns
-    /// The object that was added to the store.
-    ///
-    /// # Errors
-    /// - [AlreadyExists](crate::Error::AlreadyExists): If an object with the
-    ///   same name already exists in the namespace
-    pub async fn add_object(
-        &self,
-        label: &ObjectLabel,
-        name: &[String],
-        properties: Option<serde_json::Value>,
-        id: Option<Uuid>,
-    ) -> Result<Object> {
-        let mut txn = self.pool.begin().await?;
-        let obj = add_object(label, name, properties, id, &mut txn).await?;
-        txn.commit().await?;
-        Ok(obj)
-    }
-
-    /// Get an object from the store.
-    ///
-    /// ## Parameters
-    /// - `id`: The globally unique identifier of the object.
-    ///
-    /// ## Returns
-    /// The object with the given identifier.
-    ///
-    /// ## Errors
-    /// - [EntityNotFound](crate::Error::EntityNotFound): If the object does not exist.
-    pub async fn get_object(&self, id: &Uuid) -> Result<Object> {
-        let mut conn = self.pool.acquire().await?;
-        let obj = get_object(id, &mut conn).await?;
-        Ok(obj)
-    }
-
-    /// Get an object from the store by name.
-    ///
-    /// The name of the object is unique within the namespace.
-    ///
-    /// ## Parameters
-    /// - `label`: The label of the object.
-    /// - `namespace`: The namespace of the object.
-    /// - `name`: The name of the object.
-    ///
-    /// ## Returns
-    /// The object with the given name.
-    ///
-    /// ## Errors
-    /// - [EntityNotFound](crate::Error::EntityNotFound): If the object does not exist.
-    pub async fn get_object_by_name(&self, label: &ObjectLabel, name: &[String]) -> Result<Object> {
-        let mut conn = self.pool.acquire().await?;
-        let obj = get_object_by_name(label, name, &mut conn).await?;
-        Ok(obj)
-    }
-
-    /// Update an object in the store.
-    ///
-    /// ## Parameters
-    /// - `id`: The globally unique identifier of the object.
-    /// - `properties`: The properties of the object.
-    ///
-    /// ## Returns
-    /// The updated object.
-    ///
-    /// ## Errors
-    /// - [EntityNotFound](crate::Error::EntityNotFound): If the object does not exist.
-    pub async fn update_object(
-        &self,
-        id: &Uuid,
-        new_label: impl Into<Option<&ObjectLabel>>,
-        new_name: impl Into<Option<&[String]>>,
-        properties: impl Into<Option<serde_json::Value>>,
-    ) -> Result<Object> {
-        let mut txn = self.pool.begin().await?;
-        let obj = update_object(id, new_label, new_name, properties, &mut txn).await?;
-        txn.commit().await?;
-        Ok(obj)
-    }
-
-    /// Delete an object from the store.
-    ///
-    /// ## Parameters
-    /// - `id`: The globally unique identifier of the object.
-    pub async fn delete_object(&self, id: &Uuid) -> Result<()> {
-        let mut txn = self.pool.begin().await?;
-        delete_object(id, &mut txn).await?;
-        Ok(txn.commit().await?)
-    }
-
-    /// List objects from the store.
-    ///
-    /// Returns a list of objects in the namespace. The list is paginated.
-    ///
-    /// ## Parameters
-    /// - `label`: The label of the objects.
-    /// - `namespace`: The namespace of the objects.
-    /// - `page_token`: The page token.
-    /// - `max_page_size`: The maximum page size.
-    ///
-    /// ## Returns
-    /// A tuple containing the objects in the namespace and an optional next page token.
-    pub async fn list_objects(
-        &self,
-        label: &ObjectLabel,
-        namespace: &[String],
-        page_token: Option<&str>,
-        max_page_size: Option<usize>,
-    ) -> Result<(Vec<Object>, Option<String>)> {
-        let max_page_size = usize::min(max_page_size.unwrap_or(MAX_PAGE_SIZE), MAX_PAGE_SIZE);
-        let token = page_token
-            .map(PaginateToken::<Uuid>::try_from)
-            .transpose()?;
-        let (_token_ts, token_id) = token
-            .as_ref()
-            .map(|PaginateToken::V1(V1PaginateToken { created_at, id })| (created_at, id))
-            .unzip();
-        let mut conn = self.pool.acquire().await?;
-        list_objects(label, namespace, max_page_size, token_id, &mut conn).await
-    }
-
-    /// Add an association to the store.
-    ///
-    /// Associations are directed edges between objects.
-    /// If an inverse association exists, it is automatically created.
-    ///
-    /// ## Parameters
-    /// - `from_id`: The identifier of the source object.
-    /// - `label`: The label of the association.
-    /// - `to_id`: The identifier of the target object.
-    /// - `properties`: The properties of the association.
-    ///
-    /// ## Returns
-    /// The association that was added to the store.
-    ///
-    /// ## Errors
-    /// - [EntityNotFound](crate::Error::EntityNotFound): If the source or target object does not exist.
-    /// - [AlreadyExists](crate::Error::AlreadyExists): If the association already exists.
-    pub async fn add_association(
-        &self,
-        from_id: &Uuid,
-        label: &AssociationLabel,
-        to_id: &Uuid,
-        properties: impl Into<Option<serde_json::Value>>,
-    ) -> Result<Association> {
-        let mut txn = self.pool.begin().await?;
-        let association = add_association(from_id, label, to_id, properties, &mut txn).await?;
-        txn.commit().await?;
-        Ok(association)
-    }
-
-    /// Delete an association from the store.
-    ///
-    /// If an inverse association exists, it is automatically deleted.
-    pub async fn delete_association(
-        &self,
-        from_id: &Uuid,
-        label: &AssociationLabel,
-        to_id: &Uuid,
-    ) -> Result<()> {
-        let mut txn = self.pool.begin().await?;
-        delete_association(from_id, label, to_id, &mut txn).await?;
-        txn.commit().await?;
-        Ok(())
-    }
-
-    /// List associations of a specific type from an object to a set of objects.
-    ///
-    /// ## Parameters
-    /// - `from_id`: The identifier of the source object.
-    /// - `label`: The label of the association.
-    /// - `to_ids`: The identifiers of the target objects.
-    ///
-    /// ## Returns
-    /// The associations from the source object to the target objects.
-    pub async fn get_associations(
-        &self,
-        from_id: &Uuid,
-        label: &AssociationLabel,
-        to_ids: &[Uuid],
-        page_token: Option<&str>,
-        max_page_size: Option<usize>,
-    ) -> Result<(Vec<Association>, Option<String>)> {
-        let max_page_size = usize::min(max_page_size.unwrap_or(MAX_PAGE_SIZE), MAX_PAGE_SIZE);
-        let token = page_token
-            .map(PaginateToken::<Uuid>::try_from)
-            .transpose()?;
-        let (_token_ts, token_id) = token
-            .as_ref()
-            .map(|PaginateToken::V1(V1PaginateToken { created_at, id })| (created_at, id))
-            .unzip();
-        let mut conn = self.pool.acquire().await?;
-        get_associations(from_id, label, to_ids, max_page_size, token_id, &mut conn).await
-    }
-
-    /// List associations of a specific type from an object to all objects.
-    pub async fn list_associations(
-        &self,
-        from_id: &Uuid,
-        label: &AssociationLabel,
-        target_label: Option<&ObjectLabel>,
-        page_token: Option<&str>,
-        max_page_size: Option<usize>,
-    ) -> Result<(Vec<Association>, Option<String>)> {
-        let max_page_size = usize::min(max_page_size.unwrap_or(MAX_PAGE_SIZE), MAX_PAGE_SIZE);
-        let token = page_token
-            .map(PaginateToken::<Uuid>::try_from)
-            .transpose()?;
-        let (_token_ts, token_id) = token
-            .as_ref()
-            .map(
-                |PaginateToken::V1(V1PaginateToken { created_at, id }): &PaginateToken<Uuid>| {
-                    (created_at, id)
-                },
-            )
-            .unzip();
-        let mut conn = self.pool.acquire().await?;
-        list_associations(
-            from_id,
-            label,
-            target_label,
-            max_page_size,
-            token_id,
-            &mut conn,
-        )
-        .await
     }
 }
 
-// --- ObjectStore<ObjectLabel> implementation ---
-
-use olai_store::EMPTY_RESOURCE_NAME;
-use olai_store::name::ResourceName;
+// --- olai_store trait forwarding -------------------------------------------
+//
+// Store delegates the generic object/association surface to the inner
+// `ManagedObjectStore`, so `ObjectStoreAdapter` (in unitycatalog-common) treats
+// it as a full backend.
 
 #[async_trait::async_trait]
-impl olai_store::ObjectStoreReader<ObjectLabel> for Store {
-    async fn get(&self, id: &Uuid) -> olai_store::Result<olai_store::Object<ObjectLabel>> {
-        Ok(self.get_object(id).await?)
+impl ObjectStoreReader<ObjectLabel> for Store {
+    async fn get(&self, id: &Uuid) -> olai_store::Result<Object> {
+        self.store.get(id).await
     }
 
     async fn get_by_name(
         &self,
         label: ObjectLabel,
         name: &ResourceName,
-    ) -> olai_store::Result<olai_store::Object<ObjectLabel>> {
-        Ok(self.get_object_by_name(&label, name).await?)
+    ) -> olai_store::Result<Object> {
+        self.store.get_by_name(label, name).await
     }
 
     async fn list(
@@ -329,85 +126,103 @@ impl olai_store::ObjectStoreReader<ObjectLabel> for Store {
         namespace: Option<&ResourceName>,
         max_results: Option<usize>,
         page_token: Option<String>,
-    ) -> olai_store::Result<(Vec<olai_store::Object<ObjectLabel>>, Option<String>)> {
-        let namespace = namespace.unwrap_or(&EMPTY_RESOURCE_NAME);
-        let (objects, token) = self
-            .list_objects(&label, namespace, page_token.as_deref(), max_results)
-            .await?;
-        Ok((objects, token))
+    ) -> olai_store::Result<(Vec<Object>, Option<String>)> {
+        self.store
+            .list(label, namespace, max_results, page_token)
+            .await
+    }
+
+    async fn search(
+        &self,
+        label: ObjectLabel,
+        namespace: Option<&ResourceName>,
+        filter: &Filter,
+        max_results: Option<usize>,
+        page_token: Option<String>,
+    ) -> olai_store::Result<(Vec<Object>, Option<String>)> {
+        self.store
+            .search(label, namespace, filter, max_results, page_token)
+            .await
+    }
+
+    async fn get_sensitive(&self, id: &Uuid) -> olai_store::Result<Option<Bytes>> {
+        self.store.get_sensitive(id).await
     }
 }
 
 #[async_trait::async_trait]
-impl olai_store::ObjectStore<ObjectLabel> for Store {
+impl SecretObjectReader<ObjectLabel> for Store {
+    async fn get_with_secrets(&self, id: &Uuid) -> olai_store::Result<Object> {
+        self.store.get_with_secrets(id).await
+    }
+}
+
+#[async_trait::async_trait]
+impl ObjectStore<ObjectLabel> for Store {
     async fn create(
         &self,
         label: ObjectLabel,
         name: &ResourceName,
         properties: Option<serde_json::Value>,
         id: Option<Uuid>,
-    ) -> olai_store::Result<olai_store::Object<ObjectLabel>> {
-        Ok(self.add_object(&label, name, properties, id).await?)
+        sensitive: Option<Bytes>,
+    ) -> olai_store::Result<Object> {
+        self.store
+            .create(label, name, properties, id, sensitive)
+            .await
     }
 
     async fn update(
         &self,
         id: &Uuid,
         properties: Option<serde_json::Value>,
-    ) -> olai_store::Result<olai_store::Object<ObjectLabel>> {
-        Ok(self
-            .update_object(id, None::<&ObjectLabel>, None::<&[String]>, properties)
-            .await?)
+        precondition: Precondition,
+        sensitive: Option<Bytes>,
+    ) -> olai_store::Result<Object> {
+        self.store
+            .update(id, properties, precondition, sensitive)
+            .await
+    }
+
+    async fn rename(
+        &self,
+        id: &Uuid,
+        new_name: &ResourceName,
+        precondition: Precondition,
+    ) -> olai_store::Result<Object> {
+        self.store.rename(id, new_name, precondition).await
     }
 
     async fn delete(&self, id: &Uuid) -> olai_store::Result<()> {
-        Ok(self.delete_object(id).await?)
+        self.store.delete(id).await
+    }
+
+    async fn set_sensitive(&self, id: &Uuid, sensitive: Bytes) -> olai_store::Result<()> {
+        self.store.set_sensitive(id, sensitive).await
     }
 }
 
-// --- AssociationStore<ObjectLabel> implementation ---
-
 #[async_trait::async_trait]
-impl olai_store::AssociationStoreReader<ObjectLabel> for Store {
-    async fn list(
+impl AssociationStoreReader<ObjectLabel> for Store {
+    async fn query_edges(
         &self,
-        from_id: Uuid,
+        query: EdgeQuery<'_, ObjectLabel>,
+    ) -> olai_store::Result<(Vec<Association<ObjectLabel>>, Option<String>)> {
+        self.store.query_edges(query).await
+    }
+
+    async fn count_edges(
+        &self,
+        endpoint: EdgeEndpoint,
         label: &str,
         target_label: Option<ObjectLabel>,
-        max_results: Option<usize>,
-        page_token: Option<String>,
-    ) -> olai_store::Result<(Vec<olai_store::Association<ObjectLabel>>, Option<String>)> {
-        let assoc_label: AssociationLabel = label.parse().map_err(|_| {
-            olai_store::Error::InvalidArgument(format!("Unknown association label: {label}"))
-        })?;
-        let (associations, token) = self
-            .list_associations(
-                &from_id,
-                &assoc_label,
-                target_label.as_ref(),
-                page_token.as_deref(),
-                max_results,
-            )
-            .await?;
-        let converted: Vec<olai_store::Association<ObjectLabel>> = associations
-            .into_iter()
-            .map(|a| olai_store::Association {
-                id: a.id,
-                from_id: a.from_id,
-                label: a.label.to_string(),
-                to_id: a.to_id,
-                to_label: a.to_label,
-                properties: a.properties,
-                created_at: a.created_at,
-                updated_at: a.updated_at,
-            })
-            .collect();
-        Ok((converted, token))
+    ) -> olai_store::Result<u64> {
+        self.store.count_edges(endpoint, label, target_label).await
     }
 }
 
 #[async_trait::async_trait]
-impl olai_store::AssociationStore<ObjectLabel> for Store {
+impl AssociationStore<ObjectLabel> for Store {
     async fn add(
         &self,
         from_id: Uuid,
@@ -415,426 +230,34 @@ impl olai_store::AssociationStore<ObjectLabel> for Store {
         label: &str,
         properties: Option<serde_json::Value>,
     ) -> olai_store::Result<()> {
-        let assoc_label: AssociationLabel = label.parse().map_err(|_| {
-            olai_store::Error::InvalidArgument(format!("Unknown association label: {label}"))
-        })?;
-        self.add_association(&from_id, &assoc_label, &to_id, properties)
-            .await?;
-        Ok(())
+        self.store.add(from_id, to_id, label, properties).await
     }
 
     async fn remove(&self, from_id: Uuid, to_id: Uuid, label: &str) -> olai_store::Result<()> {
-        let assoc_label: AssociationLabel = label.parse().map_err(|_| {
-            olai_store::Error::InvalidArgument(format!("Unknown association label: {label}"))
-        })?;
-        self.delete_association(&from_id, &assoc_label, &to_id)
-            .await?;
-        Ok(())
+        self.store.remove(from_id, to_id, label).await
     }
 }
 
-async fn list_associations(
-    from_id: &Uuid,
-    label: &AssociationLabel,
-    target_label: Option<&ObjectLabel>,
-    max_page_size: usize,
-    token_id: Option<&Uuid>,
-    conn: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
-) -> std::result::Result<(Vec<Association>, Option<String>), crate::Error> {
-    let assocs = sqlx::query_as!(
-        Association,
-        r#"
-                SELECT
-                    id,
-                    from_id,
-                    label AS "label: AssociationLabel",
-                    to_id,
-                    properties,
-                    created_at,
-                    updated_at,
-                    to_label as "to_label: ObjectLabel"
-                FROM associations
-                WHERE from_id = $1
-                  AND label = $2
-                  AND ( to_label = $3 OR $3 IS NULL )
-                  -- Pagination
-                  AND ( id < $4 OR $4 IS NULL )
-                ORDER BY id DESC
-                LIMIT $5
-                "#,
-        from_id,
-        label as &AssociationLabel,
-        target_label as Option<&ObjectLabel>,
-        token_id,
-        max_page_size as i64
-    )
-    .fetch_all(&mut **conn)
-    .await?;
-
-    let next = (assocs.len() == max_page_size)
-        .then(|| {
-            assocs.last().map(|a| {
-                PaginateToken::V1(V1PaginateToken {
-                    created_at: a.created_at,
-                    id: a.id,
-                })
-                .to_string()
-            })
-        })
-        .flatten();
-
-    Ok((assocs, next))
-}
-
-async fn add_object(
-    label: &ObjectLabel,
-    name: &[String],
-    properties: Option<serde_json::Value>,
-    id: Option<Uuid>,
-    txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> Result<Object, crate::Error> {
-    // A caller that pre-allocates an id (e.g. a managed volume or staging table
-    // embedding the id in its storage path) passes it here; `COALESCE` falls back
-    // to the column's `uuidv7()` default for the common id-less create.
-    let obj = sqlx::query_as!(
-        Object,
-        r#"
-                INSERT INTO objects ( id, label, name, properties )
-                VALUES ( COALESCE($1, uuidv7()), $2, $3, $4 )
-                RETURNING
-                    id,
-                    label AS "label: ObjectLabel",
-                    name,
-                    properties,
-                    created_at,
-                    updated_at
-                "#,
-        id,
-        label as &ObjectLabel,
-        name,
-        properties
-    )
-    .fetch_one(&mut **txn)
-    .await?;
-    Ok(obj)
-}
-
-async fn get_object(
-    id: &Uuid,
-    conn: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
-) -> Result<Object, crate::Error> {
-    let obj = sqlx::query_as!(
-        Object,
-        r#"
-                SELECT
-                    id,
-                    label AS "label: ObjectLabel",
-                    name,
-                    properties,
-                    created_at,
-                    updated_at
-                FROM objects
-                WHERE id = $1
-                "#,
-        id
-    )
-    .fetch_one(&mut **conn)
-    .await?;
-    Ok(obj)
-}
-
-async fn get_object_by_name(
-    label: &ObjectLabel,
-    name: &[String],
-    conn: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
-) -> Result<Object, crate::Error> {
-    let obj = sqlx::query_as!(
-        Object,
-        r#"
-                SELECT
-                    id,
-                    label AS "label: ObjectLabel",
-                    name,
-                    properties,
-                    created_at,
-                    updated_at
-                FROM objects
-                WHERE label = $1
-                  AND name = $2
-                "#,
-        label as &ObjectLabel,
-        name
-    )
-    .fetch_one(&mut **conn)
-    .await?;
-    Ok(obj)
-}
-
-async fn update_object(
-    id: &Uuid,
-    new_label: impl Into<Option<&ObjectLabel>>,
-    new_name: impl Into<Option<&[String]>>,
-    properties: impl Into<Option<serde_json::Value>>,
-    txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> Result<Object, crate::Error> {
-    let obj = sqlx::query_as!(
-        Object,
-        r#"
-                UPDATE objects
-                SET
-                    label = COALESCE($2, label),
-                    name = COALESCE($3, name),
-                    properties = COALESCE($4, properties)
-                WHERE id = $1
-                RETURNING
-                    id,
-                    label AS "label: ObjectLabel",
-                    name,
-                    properties,
-                    created_at,
-                    updated_at
-                "#,
-        id,
-        new_label.into() as Option<&ObjectLabel>,
-        new_name.into(),
-        properties.into()
-    )
-    .fetch_one(&mut **txn)
-    .await?;
-    Ok(obj)
-}
-
-async fn delete_object(
-    id: &Uuid,
-    txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> Result<(), crate::Error> {
-    sqlx::query!(
-        r#"
-                DELETE FROM associations
-                WHERE from_id = $1 OR to_id = $1
-                "#,
-        id
-    )
-    .execute(&mut **txn)
-    .await?;
-    sqlx::query!(
-        r#"
-                DELETE FROM objects
-                WHERE id = $1
-                "#,
-        id
-    )
-    .execute(&mut **txn)
-    .await?;
-    Ok(())
-}
-
-async fn list_objects(
-    label: &ObjectLabel,
-    namespace: &[String],
-    max_page_size: usize,
-    token_id: Option<&Uuid>,
-    conn: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
-) -> std::result::Result<(Vec<Object>, Option<String>), crate::Error> {
-    let objects = sqlx::query_as!(
-        Object,
-        r#"
-                SELECT
-                    id,
-                    label AS "label: ObjectLabel",
-                    name,
-                    properties,
-                    created_at,
-                    updated_at
-                FROM objects
-                WHERE label = $1
-                    AND ( $2 = 0 OR name[1:$2] = $3)
-                    AND ( id < $4 OR $4 IS NULL )
-                ORDER BY id DESC
-                LIMIT $5
-                "#,
-        label as &ObjectLabel,
-        namespace.len() as i32,
-        namespace,
-        token_id,
-        max_page_size as i64
-    )
-    .fetch_all(&mut **conn)
-    .await?;
-
-    let next = (objects.len() == max_page_size)
-        .then(|| {
-            objects.last().map(|o| {
-                PaginateToken::V1(V1PaginateToken {
-                    created_at: o.created_at,
-                    id: o.id,
-                })
-                .to_string()
-            })
-        })
-        .flatten();
-
-    Ok((objects, next))
-}
-
-async fn get_associations(
-    from_id: &Uuid,
-    label: &AssociationLabel,
-    to_ids: &[Uuid],
-    max_page_size: usize,
-    token_id: Option<&Uuid>,
-    conn: &mut sqlx::pool::PoolConnection<sqlx::Postgres>,
-) -> std::result::Result<(Vec<Association>, Option<String>), crate::Error> {
-    let assocs = sqlx::query_as!(
-        Association,
-        r#"
-                SELECT
-                    id,
-                    from_id,
-                    label AS "label: AssociationLabel",
-                    to_id,
-                    properties,
-                    created_at,
-                    updated_at,
-                    to_label as "to_label: ObjectLabel"
-                FROM associations
-                WHERE from_id = $1
-                  AND label = $2
-                  AND to_id = ANY($3)
-                  -- Pagination
-                  AND ( id < $4 OR $4 IS NULL )
-                ORDER BY id DESC
-                LIMIT $5
-                "#,
-        from_id,
-        label as &AssociationLabel,
-        &to_ids,
-        token_id,
-        max_page_size as i64
-    )
-    .fetch_all(&mut **conn)
-    .await?;
-
-    let next = (assocs.len() == max_page_size)
-        .then(|| {
-            assocs.last().map(|a| {
-                PaginateToken::V1(V1PaginateToken {
-                    created_at: a.created_at,
-                    id: a.id,
-                })
-                .to_string()
-            })
-        })
-        .flatten();
-
-    Ok((assocs, next))
-}
-
-pub async fn add_association(
-    from_id: &Uuid,
-    label: &AssociationLabel,
-    to_id: &Uuid,
-    properties: impl Into<Option<serde_json::Value>>,
-    txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> Result<Association> {
-    let properties = properties.into();
-    let to_label = sqlx::query!(
-        r#"
-            SELECT id, label AS "label: ObjectLabel"
-            FROM objects
-            WHERE id = $1 OR id = $2
-            "#,
-        from_id,
-        to_id
-    )
-    .fetch_all(&mut **txn)
-    .await?;
-
-    let id_map = to_label
-        .into_iter()
-        .map(|o| (o.id, o.label))
-        .collect::<std::collections::HashMap<_, _>>();
-    let to_label = id_map
-        .get(to_id)
-        .ok_or(crate::Error::entity_not_found("to_id"))?;
-    let from_label = id_map
-        .get(from_id)
-        .ok_or(crate::Error::entity_not_found("from_id"))?;
-
-    // Add the association.
-    let association = sqlx::query_as!(
-        Association,
-        r#"
-            INSERT INTO associations ( from_id, label, to_id, to_label, properties )
-            VALUES ( $1, $2, $3, $4, $5 )
-            RETURNING
-                id,
-                from_id,
-                label AS "label: AssociationLabel",
-                to_id,
-                to_label as "to_label: ObjectLabel",
-                properties,
-                created_at,
-                updated_at
-            "#,
-        from_id,
-        label as &AssociationLabel,
-        to_id,
-        to_label as &ObjectLabel,
-        properties.clone()
-    )
-    .fetch_one(&mut **txn)
-    .await?;
-
-    // Add the inverse association.
-    if let Some(inverse_label) = label.inverse() {
-        sqlx::query!(
-            r#"
-                INSERT INTO associations ( from_id, label, to_id, to_label, properties )
-                VALUES ( $1, $2, $3, $4, $5 )
-                "#,
-            to_id,
-            inverse_label as AssociationLabel,
-            from_id,
-            from_label as &ObjectLabel,
-            properties
-        )
-        .execute(&mut **txn)
-        .await?;
+#[async_trait::async_trait]
+impl Transactional<ObjectLabel> for Store {
+    async fn transaction<'a, T>(
+        &'a self,
+        f: Box<
+            dyn for<'t> FnOnce(
+                    &'t dyn StoreExec<ObjectLabel>,
+                )
+                    -> futures::future::BoxFuture<'t, olai_store::Result<T>>
+                + Send
+                + 'a,
+        >,
+    ) -> olai_store::Result<T>
+    where
+        T: Send + 'a,
+    {
+        self.store.transaction(f).await
     }
 
-    Ok(association)
-}
-
-async fn delete_association(
-    from_id: &Uuid,
-    label: &AssociationLabel,
-    to_id: &Uuid,
-    txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> Result<(), crate::error::Error> {
-    sqlx::query!(
-        r#"
-            DELETE FROM associations
-            WHERE from_id = $1 AND label = $2 AND to_id = $3
-            "#,
-        from_id,
-        label as &AssociationLabel,
-        to_id
-    )
-    .execute(&mut **txn)
-    .await?;
-    if let Some(inverse_label) = label.inverse() {
-        sqlx::query!(
-            r#"
-                DELETE FROM associations
-                WHERE from_id = $1 AND label = $2 AND to_id = $3
-                "#,
-            to_id,
-            inverse_label as AssociationLabel,
-            from_id
-        )
-        .execute(&mut **txn)
-        .await?;
-    };
-    Ok(())
+    async fn begin(&self) -> olai_store::Result<Box<dyn StoreTx<ObjectLabel>>> {
+        self.store.begin().await
+    }
 }

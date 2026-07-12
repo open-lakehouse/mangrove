@@ -8,7 +8,6 @@ use unitycatalog_common::ResourceIdent;
 use unitycatalog_common::metric_view::{MetricView, dependencies as metric_view_dependencies};
 use unitycatalog_common::models::ObjectLabel;
 use unitycatalog_common::models::ResourceName;
-use unitycatalog_common::models::staging_tables::v1::StagingTable;
 use unitycatalog_common::models::tables::v1::*;
 
 use super::staging_tables::find_staging_table_by_location;
@@ -237,19 +236,24 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
                 .read_snapshot(&location_url, &DataSourceFormat::Delta, None)
                 .await?;
 
-            // Mark the staging reservation committed.
+            // Consume the staging reservation and register the table in one atomic
+            // swap: the reservation is deleted and the table is created **at the same
+            // uuid** (the id was fixed at staging time and the Delta API protocol
+            // depends on it). The object store keys objects by a single uuid, so the
+            // StagingTable and the Table cannot coexist at that id — the reservation
+            // transitions into the table. Doing both in one transaction means a crash
+            // between them cannot leave the reservation gone without the table, and a
+            // concurrent reader sees either the staging row or the table row, never
+            // neither. A subsequent commit against the same location then fails at
+            // `find_staging_table_by_location` (gone), the correct already-committed
+            // behavior.
             let staging_ident = ResourceIdent::staging_table(ResourceName::new([
                 staging.catalog_name.as_str(),
                 staging.schema_name.as_str(),
                 staging.name.as_str(),
             ]));
-            let committed = StagingTable {
-                stage_committed: true,
-                ..staging.clone()
-            };
-            self.update(&staging_ident, committed.into()).await?;
 
-            Table {
+            let table = Table {
                 name: request.name,
                 catalog_name: request.catalog_name,
                 schema_name: request.schema_name,
@@ -267,7 +271,13 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
                         .partition_columns(),
                 )?,
                 ..Default::default()
-            }
+            };
+            // TODO: update the table with the current actor as owner
+            return Ok(self
+                .replace_atomically(&staging_ident, table.into())
+                .await?
+                .0
+                .try_into()?);
         } else if request.table_type == TableType::MetricView as i32 {
             // Metric view: a semantic layer with no storage of its own. The
             // definition (YAML) lives in `view_definition`; there is no Delta
@@ -461,7 +471,7 @@ mod tests {
             EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap());
         let store = Arc::new(InMemoryResourceStore::new(encryptor));
         let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
-        ServerHandler::try_new_tokio(policy, store.clone(), store).unwrap()
+        ServerHandler::try_new_tokio(policy, store).unwrap()
     }
 
     fn ctx() -> RequestContext {

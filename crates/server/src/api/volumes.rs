@@ -252,7 +252,7 @@ mod tests {
             EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap());
         let store = Arc::new(InMemoryResourceStore::new(encryptor));
         let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
-        ServerHandler::try_new_tokio(policy, store.clone(), store).unwrap()
+        ServerHandler::try_new_tokio(policy, store).unwrap()
     }
 
     fn ctx() -> RequestContext {

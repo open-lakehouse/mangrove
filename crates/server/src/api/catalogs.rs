@@ -278,7 +278,7 @@ mod tests {
             EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap());
         let store = Arc::new(InMemoryResourceStore::new(encryptor));
         let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
-        let mut h = ServerHandler::try_new_tokio(policy, store.clone(), store).unwrap();
+        let mut h = ServerHandler::try_new_tokio(policy, store).unwrap();
         if let Some(root) = allowed_root {
             h = h.with_local_storage_policy(LocalStoragePolicy::new([root]).unwrap());
         }

@@ -7,9 +7,9 @@
 //! It implements the generic [`olai_store::ObjectStore`] /
 //! [`olai_store::AssociationStore`] traits (over the project's `ObjectLabel`),
 //! which the blanket `ObjectStoreAdapter` in `unitycatalog-common` lifts to the
-//! high-level `ResourceStore` API, plus the `SecretManager` trait for sealed
-//! secrets at rest and the `CommitCoordinator` trait for durable Delta
-//! catalog-managed commits.
+//! high-level `ResourceStore` API. Sensitive fields (credentials, tokens) are
+//! sealed inline on the object rows by the `ManagedObjectStore` layer, and the
+//! `CommitCoordinator` trait provides durable Delta catalog-managed commits.
 //!
 //! ## Known gaps relative to the Postgres backend
 //!
@@ -22,8 +22,5 @@ pub use crate::error::{Error, Result};
 pub use crate::store::SqliteStore;
 
 mod commit_coordinator;
-mod constants;
 mod error;
-mod pagination;
-mod secrets;
 mod store;

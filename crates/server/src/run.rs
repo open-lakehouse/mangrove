@@ -53,7 +53,8 @@ use crate::api::tables::TableHandler;
 use crate::api::tag_policies::TagPolicyHandler;
 use crate::api::temporary_credentials::TemporaryCredentialHandler;
 use crate::api::volumes::VolumeHandler;
-use crate::config::{Backend, Config, PostgresBackendConfig, SqliteBackendConfig, UiConfig};
+use crate::config::PostgresBackendConfig;
+use crate::config::{Backend, Config, SqliteBackendConfig, UiConfig};
 use crate::policy::{ConstantPolicy, Policy};
 use crate::rest::{
     AnonymousAuthenticator, AuthenticationLayer, create_agent_skills_router, create_agents_router,
@@ -405,15 +406,16 @@ async fn connect_postgres(
             .map_err(|e| Error::Generic(format!("running migrations: {e}")))?;
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
-    // The Postgres store also implements `CommitCoordinator`, so Delta
-    // catalog-managed commits are persisted in the database rather than memory.
-    let handler = ServerHandler::try_new_tokio_with_coordinator(
-        policy.clone(),
-        store.clone(),
-        store.clone(),
-        store,
-    )
-    .map_err(|e| Error::Generic(e.to_string()))?;
+    // `GraphStore` implements the generic object/association stores (lifted to
+    // `ResourceStore` by `ObjectStoreAdapter`) and `CommitCoordinator`, but the
+    // adapter does not forward the latter — so the coordinator role is wired from
+    // the same shared store separately. Sensitive fields (credentials, tokens) are
+    // sealed inline on the stored resources rather than in a separate secret store.
+    // Delta catalog-managed commits are persisted in the database.
+    let resource_store = Arc::new(ObjectStoreAdapter::new(store.clone()));
+    let handler =
+        ServerHandler::try_new_tokio_with_coordinator(policy.clone(), resource_store, store)
+            .map_err(|e| Error::Generic(e.to_string()))?;
     Ok((handler, policy))
 }
 
@@ -439,19 +441,16 @@ async fn connect_sqlite(
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
     // `SqliteStore` implements the generic object/association stores (lifted to
-    // `ResourceStore` by `ObjectStoreAdapter`), `SecretManager`, and
-    // `CommitCoordinator`, but the adapter does not forward the latter two — so
-    // those roles are wired from the same shared store separately. Like the
-    // Postgres backend, Delta catalog-managed commits are persisted in the
-    // database rather than in memory.
+    // `ResourceStore` by `ObjectStoreAdapter`) and `CommitCoordinator`, but the
+    // adapter does not forward the latter — so the coordinator role is wired from
+    // the same shared store separately. Sensitive fields (credentials, tokens)
+    // are sealed inline on the stored resources rather than in a separate secret
+    // store. Like the Postgres backend, Delta catalog-managed commits are
+    // persisted in the database rather than in memory.
     let resource_store = Arc::new(ObjectStoreAdapter::new(store.clone()));
-    let handler = ServerHandler::try_new_tokio_with_coordinator(
-        policy.clone(),
-        resource_store,
-        store.clone(),
-        store,
-    )
-    .map_err(|e| Error::Generic(e.to_string()))?;
+    let handler =
+        ServerHandler::try_new_tokio_with_coordinator(policy.clone(), resource_store, store)
+            .map_err(|e| Error::Generic(e.to_string()))?;
     Ok((handler, policy))
 }
 

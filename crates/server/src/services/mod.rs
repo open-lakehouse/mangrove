@@ -6,7 +6,6 @@ use session::*;
 use unitycatalog_common::models::tables::v1::DataSourceFormat;
 
 use self::location::StorageLocationUrl;
-use self::secrets::{ProvidesSecretManager, SecretManager};
 use crate::Result;
 use crate::api::tables::{TableHandler, TableManager};
 use crate::api::volumes::VolumeHandler;
@@ -24,7 +23,6 @@ pub(crate) mod kernel;
 pub mod location;
 pub mod location_policy;
 pub(crate) mod object_store;
-pub mod secrets;
 mod session;
 mod sharing;
 
@@ -85,12 +83,10 @@ where
     pub fn try_new_tokio(
         policy: Arc<dyn Policy<Cx>>,
         store: Arc<dyn ResourceStore>,
-        secrets: Arc<dyn SecretManager>,
     ) -> Result<Self> {
         Self::try_new_tokio_with_coordinator(
             policy,
             store,
-            secrets,
             Arc::new(InMemoryCommitCoordinator::default()),
         )
     }
@@ -102,11 +98,10 @@ where
     pub fn try_new_tokio_with_coordinator(
         policy: Arc<dyn Policy<Cx>>,
         store: Arc<dyn ResourceStore>,
-        secrets: Arc<dyn SecretManager>,
         commit_coordinator: Arc<dyn CommitCoordinator>,
     ) -> Result<Self> {
         let handler = Arc::new(
-            ServerHandlerInner::new(policy.clone(), store.clone(), secrets.clone())
+            ServerHandlerInner::new(policy.clone(), store.clone())
                 .with_commit_coordinator(commit_coordinator),
         );
         let session = Arc::new(KernelSession::new(handler.clone())?);
@@ -167,7 +162,6 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
             policy: prev.policy.clone(),
             store: prev.store.clone(),
             object_store: prev.object_store.clone(),
-            secrets: prev.secrets.clone(),
             commit_coordinator: prev.commit_coordinator.clone(),
             local_storage_policy: policy.into(),
             managed_storage_root: prev.managed_storage_root.clone(),
@@ -187,7 +181,6 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
             policy: prev.policy.clone(),
             store: prev.store.clone(),
             object_store: prev.object_store.clone(),
-            secrets: prev.secrets.clone(),
             commit_coordinator: prev.commit_coordinator.clone(),
             local_storage_policy: prev.local_storage_policy.clone(),
             managed_storage_root: root.map(Into::into),
@@ -202,7 +195,6 @@ pub struct ServerHandlerInner<Cx> {
     policy: Arc<dyn Policy<Cx>>,
     store: Arc<dyn ResourceStore>,
     object_store: Option<Arc<dyn olai_store::ObjectStore<ObjectLabel>>>,
-    secrets: Arc<dyn SecretManager>,
     /// Delta catalog-managed commit coordinator (in-memory by default).
     commit_coordinator: Arc<dyn CommitCoordinator>,
     /// Allowlist governing which host paths may back a `file://` storage
@@ -215,16 +207,11 @@ pub struct ServerHandlerInner<Cx> {
 }
 
 impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
-    pub fn new(
-        policy: Arc<dyn Policy<Cx>>,
-        store: Arc<dyn ResourceStore>,
-        secrets: Arc<dyn SecretManager>,
-    ) -> Self {
+    pub fn new(policy: Arc<dyn Policy<Cx>>, store: Arc<dyn ResourceStore>) -> Self {
         Self {
             policy,
             store,
             object_store: None,
-            secrets,
             commit_coordinator: Arc::new(InMemoryCommitCoordinator::default()),
             // Deny all local (file://) storage until a policy is configured.
             local_storage_policy: Arc::new(LocalStoragePolicy::deny_all()),
@@ -355,18 +342,6 @@ impl<Cx: Send + Sync + 'static> ProvidesObjectStore for ServerHandlerInner<Cx> {
 impl<Cx: Send + Sync + 'static> ProvidesObjectStore for ServerHandler<Cx> {
     fn object_store(&self) -> &dyn olai_store::ObjectStore<ObjectLabel> {
         self.handler.object_store()
-    }
-}
-
-impl<Cx: Send + Sync + 'static> ProvidesSecretManager for ServerHandlerInner<Cx> {
-    fn secret_manager(&self) -> &dyn SecretManager {
-        self.secrets.as_ref()
-    }
-}
-
-impl<Cx: Send + Sync + 'static> ProvidesSecretManager for ServerHandler<Cx> {
-    fn secret_manager(&self) -> &dyn SecretManager {
-        self.handler.secrets.as_ref()
     }
 }
 

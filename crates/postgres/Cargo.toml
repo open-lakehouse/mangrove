@@ -25,18 +25,14 @@ unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api",
 async-trait = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
-itertools = { workspace = true }
-olai-http = { workspace = true }
+futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["raw_value", "preserve_order"] }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-url = { workspace = true }
 
 # crates.io dependencies (in alphabetical order)
-base64 = "0.22"
-olai-store = { workspace = true }
-paste = "1.0"
+olai-store = { workspace = true, features = ["postgres", "encryption"] }
 sqlx = { workspace = true, features = [
   "postgres",
   "chrono",
@@ -46,14 +42,14 @@ sqlx = { workspace = true, features = [
   "migrate",
   "macros",
 ] }
-uuid = { version = "1.8", features = ["serde"] }
+uuid = { version = "1.8", features = ["serde", "v7"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "parking_lot"] }
 
 [features]
 default = ["sqlx"]
-sqlx = ["unitycatalog-common/sqlx", "olai-store/sqlx"]
+sqlx = ["unitycatalog-common/sqlx", "olai-store/postgres"]
 
 # Postgres-backed integration tests. Require a live database (provisioned by
 # `#[sqlx::test]`); run with `DATABASE_URL` set, e.g. via `just build-sqlx`'s

@@ -371,7 +371,7 @@ mod tests {
             .await
             .unwrap();
         let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
-        ServerHandler::try_new_tokio(policy, store.clone(), store).unwrap()
+        ServerHandler::try_new_tokio(policy, store).unwrap()
     }
 
     fn ctx() -> RequestContext {

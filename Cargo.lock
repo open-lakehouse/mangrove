@@ -3674,19 +3674,24 @@ dependencies = [
 
 [[package]]
 name = "olai-store"
-version = "0.0.5"
+version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad48aaa4a2eb90e7d09445ad16f6969aaac9c220dee9d896064d060aa5521b37"
+checksum = "114a5f83c8734b7917c5ab4ddbda3a76b8facca507961e3bf8f8a576c9ad1bc6"
 dependencies = [
+ "aes-gcm",
  "async-trait",
+ "base64",
  "bytes",
  "chrono",
+ "futures",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror",
+ "tokio",
  "tracing",
  "uuid",
+ "zeroize",
 ]
 
 [[package]]
@@ -3845,22 +3850,18 @@ name = "olai-uc-postgres"
 version = "0.0.1"
 dependencies = [
  "async-trait",
- "base64",
  "bytes",
  "chrono",
- "itertools 0.14.0",
- "olai-http",
+ "futures",
  "olai-store",
  "olai-uc-common",
  "olai-uc-delta-api",
- "paste",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror",
  "tokio",
  "tracing",
- "url",
  "uuid",
 ]
 
@@ -3875,7 +3876,6 @@ dependencies = [
  "bytes",
  "chrono",
  "clap",
- "dashmap",
  "datafusion",
  "delta_kernel",
  "delta_kernel_default_engine",
@@ -3939,9 +3939,9 @@ name = "olai-uc-sqlite"
 version = "0.0.1"
 dependencies = [
  "async-trait",
- "base64",
  "bytes",
  "chrono",
+ "futures",
  "olai-store",
  "olai-uc-common",
  "olai-uc-delta-api",

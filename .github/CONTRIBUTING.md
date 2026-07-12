@@ -160,8 +160,8 @@ the crates.io proxy's 7-day age filter still hides a freshly published version â
 
 ```toml
 [patch.crates-io]
-olai-http  = { path = "../trestle/crates/olai-http" }
-olai-store = { path = "../trestle/crates/olai-store" }
+olai-http  = { path = "../trestle/crates/olai-http", version = "X.Y.Z" }
+olai-store = { path = "../trestle/crates/olai-store", version = "X.Y.Z" }
 ```
 
 Do **not** commit that block (CI has no `../trestle`, so it would fail). When you need a

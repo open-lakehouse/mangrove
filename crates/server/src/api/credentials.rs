@@ -1,19 +1,14 @@
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
 
 use unitycatalog_common::models::credentials::v1::{
-    AwsIamRoleConfig, AzureManagedIdentity, AzureServicePrincipal, AzureStorageKey,
-    CreateCredentialRequest, Credential, DatabricksGcpServiceAccount, DeleteCredentialRequest,
-    GetCredentialRequest, ListCredentialsRequest, ListCredentialsResponse, UpdateCredentialRequest,
+    CreateCredentialRequest, Credential, DeleteCredentialRequest, GetCredentialRequest,
+    ListCredentialsRequest, ListCredentialsResponse, UpdateCredentialRequest,
 };
-use unitycatalog_common::models::{
-    ObjectLabel, ResourceExt, ResourceIdent, ResourceName, ResourceRef,
-};
+use unitycatalog_common::models::{ObjectLabel, ResourceIdent, ResourceName, ResourceRef};
 
 use super::{RequestContext, SecuredAction};
 pub use crate::codegen::credentials::CredentialHandler;
 use crate::policy::{Permission, Policy, process_resources};
-use crate::services::secrets::SecretManager;
 use crate::store::ResourceStore;
 use crate::{Error, Result};
 
@@ -28,38 +23,21 @@ pub trait CredentialHandlerExt: Send + Sync + 'static {
     async fn get_credential_internal(&self, request: GetCredentialRequest) -> Result<Credential>;
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
-struct CredentialContainer {
-    pub azure_sp: Option<AzureServicePrincipal>,
-    pub azure_msi: Option<AzureManagedIdentity>,
-    pub azure_key: Option<AzureStorageKey>,
-    pub aws_iam_role: Option<AwsIamRoleConfig>,
-    pub gcp_service_account: Option<DatabricksGcpServiceAccount>,
-}
-
-impl CredentialContainer {
-    fn validate(&self) -> Result<()> {
-        if self.azure_sp.is_none()
-            && self.azure_msi.is_none()
-            && self.azure_key.is_none()
-            && self.aws_iam_role.is_none()
-            && self.gcp_service_account.is_none()
-        {
-            Err(Error::invalid_argument("No credentials provided"))
-        } else {
-            Ok(())
-        }
-    }
-
-    fn to_vec(&self) -> Result<Vec<u8>> {
-        Ok(serde_json::to_vec(self)?)
-    }
+/// Whether a credential carries at least one secret configuration.
+///
+/// The secret material lives directly on the `Credential`'s sensitive fields
+/// (sealed inline on the object row by the store's managed layer); a create/update
+/// must supply exactly one.
+fn has_secret(cred: &Credential) -> bool {
+    cred.azure_service_principal.is_some()
+        || cred.azure_managed_identity.is_some()
+        || cred.azure_storage_key.is_some()
+        || cred.aws_iam_role.is_some()
+        || cred.databricks_gcp_service_account.is_some()
 }
 
 #[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandler<RequestContext>
-    for T
-{
+impl<T: ResourceStore + Policy<RequestContext>> CredentialHandler<RequestContext> for T {
     #[tracing::instrument(skip(self, context))]
     async fn list_credentials(
         &self,
@@ -89,16 +67,9 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
     ) -> Result<Credential> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
-        let credential = CredentialContainer {
-            azure_msi: request.azure_managed_identity,
-            azure_sp: request.azure_service_principal,
-            azure_key: request.azure_storage_key,
-            aws_iam_role: request.aws_iam_role,
-            gcp_service_account: request.databricks_gcp_service_account,
-        };
-        credential.validate()?;
-        self.put_secret(&request.name, credential.to_vec()?.into())
-            .await?;
+        // The secret configs ride the Credential itself; the store's managed layer
+        // strips them out of the searchable properties and seals them into the
+        // object's inline encrypted blob, atomically with the row.
         let cred = Credential {
             name: request.name.clone(),
             full_name: Some(request.name),
@@ -109,15 +80,20 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
             id: None,
             created_at: None,
             updated_at: None,
-            azure_managed_identity: None,
-            azure_service_principal: None,
-            azure_storage_key: None,
-            aws_iam_role: None,
-            databricks_gcp_service_account: None,
+            azure_managed_identity: request.azure_managed_identity,
+            azure_service_principal: request.azure_service_principal,
+            azure_storage_key: request.azure_storage_key,
+            aws_iam_role: request.aws_iam_role,
+            databricks_gcp_service_account: request.databricks_gcp_service_account,
             owner: None,
             created_by: None,
             updated_by: None,
         };
+        if !has_secret(&cred) {
+            return Err(Error::invalid_argument("No credentials provided"));
+        }
+        // The create response is redacted (the store never returns sealed fields on
+        // an ordinary read), which matches the public API contract.
         Ok(self.create(cred.into()).await?.0.try_into()?)
     }
 
@@ -140,24 +116,10 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
     ) -> Result<Credential> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
-        let credential = CredentialContainer {
-            azure_msi: request.azure_managed_identity,
-            azure_sp: request.azure_service_principal,
-            azure_key: request.azure_storage_key,
-            aws_iam_role: request.aws_iam_role,
-            gcp_service_account: request.databricks_gcp_service_account,
-        };
-        credential.validate()?;
-        self.put_secret(&request.name, credential.to_vec()?.into())
-            .await?;
-        let curr = self
-            .get_credential(
-                GetCredentialRequest {
-                    name: request.name.clone(),
-                },
-                context.clone(),
-            )
-            .await?;
+        // `purpose` is immutable on update — carry it over from the stored row. A
+        // plain (redacted) get suffices: purpose is a non-sensitive Data field.
+        let ident = ResourceIdent::credential(ResourceName::new([request.name.as_str()]));
+        let curr: Credential = self.get(&ident).await?.0.try_into()?;
         let cred = Credential {
             name: request.name.clone(),
             full_name: Some(request.name),
@@ -168,20 +130,19 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
             id: None,
             created_at: None,
             updated_at: None,
-            azure_managed_identity: None,
-            azure_service_principal: None,
-            azure_storage_key: None,
-            aws_iam_role: None,
-            databricks_gcp_service_account: None,
+            azure_managed_identity: request.azure_managed_identity,
+            azure_service_principal: request.azure_service_principal,
+            azure_storage_key: request.azure_storage_key,
+            aws_iam_role: request.aws_iam_role,
+            databricks_gcp_service_account: request.databricks_gcp_service_account,
             owner: None,
             created_by: None,
             updated_by: None,
         };
-        Ok(self
-            .update(&curr.resource_ident(), cred.into())
-            .await?
-            .0
-            .try_into()?)
+        if !has_secret(&cred) {
+            return Err(Error::invalid_argument("No credentials provided"));
+        }
+        Ok(self.update(&ident, cred.into()).await?.0.try_into()?)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -192,35 +153,23 @@ impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandle
     ) -> Result<()> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
-        match self.delete_secret(&request.name).await {
-            // Delete the resource even if the secret is not found to allow cleanup
-            // when the secret is deleted manually.
-            Ok(_) | Err(unitycatalog_common::Error::NotFound) => {
-                Ok(self.delete(&request.resource()).await?)
-            }
-            Err(e) => Err(e.into()),
-        }
+        // The sealed secret blob rides the object row, so deleting the credential
+        // object drops it atomically — no separate secret cleanup.
+        Ok(self.delete(&request.resource()).await?)
     }
 }
 
 #[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext> + SecretManager> CredentialHandlerExt for T {
+impl<T: ResourceStore + Policy<RequestContext>> CredentialHandlerExt for T {
     async fn get_credential_internal(&self, request: GetCredentialRequest) -> Result<Credential> {
-        let mut cred: Credential = self.get(&request.resource()).await?.0.try_into()?;
-        let secret_data = self.get_secret(&cred.name).await?;
-        let secret: CredentialContainer = serde_json::from_slice(&secret_data)?;
-        if secret.azure_msi.is_some() {
-            cred.azure_managed_identity = secret.azure_msi;
-        } else if secret.azure_sp.is_some() {
-            cred.azure_service_principal = secret.azure_sp;
-        } else if secret.azure_key.is_some() {
-            cred.azure_storage_key = secret.azure_key;
-        } else if secret.aws_iam_role.is_some() {
-            cred.aws_iam_role = secret.aws_iam_role;
-        } else if secret.gcp_service_account.is_some() {
-            cred.databricks_gcp_service_account = secret.gcp_service_account;
-        }
-        Ok(cred)
+        // `get_with_secrets` decrypts the inline sealed fields back into the object's
+        // properties, so the Object -> Credential conversion hydrates the secret
+        // config directly — no manual field routing.
+        Ok(self
+            .get_with_secrets(&request.resource())
+            .await?
+            .0
+            .try_into()?)
     }
 }
 
@@ -266,7 +215,7 @@ impl SecuredAction for UpdateCredentialRequest {
 
 impl SecuredAction for DeleteCredentialRequest {
     fn resource(&self) -> ResourceIdent {
-        ResourceIdent::catalog(ResourceName::new([self.name.as_str()]))
+        ResourceIdent::credential(ResourceName::new([self.name.as_str()]))
     }
 
     fn permission(&self) -> &'static Permission {

@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-use olai_store::{AssociationStore, ObjectStore, ObjectStoreReader};
+use olai_store::store::{StoreExec, Transactional};
+use olai_store::{
+    AssociationStore, EdgeQuery, ObjectStore, ObjectStoreReader, Precondition, SecretObjectReader,
+};
 use uuid::Uuid;
 
 use crate::models::{AssociationLabel, ObjectLabel, PropertyMap, Resource};
@@ -39,6 +42,16 @@ pub trait ResourceStoreReader: Send + Sync + 'static {
     async fn get_many(&self, ids: &[ResourceIdent]) -> Result<Vec<(Resource, ResourceRef)>> {
         let futures = ids.iter().map(|id| self.get(id)).collect_vec();
         Ok(futures::future::try_join_all(futures).await?)
+    }
+
+    /// Get a resource with its sensitive fields decrypted and merged into the typed model.
+    ///
+    /// Ordinary [`get`](Self::get) redacts a resource's `Sensitive` fields; this returns the
+    /// unsealed view for the narrow internal callers that need the secret material (e.g.
+    /// credential vending). The default is the redacted `get`; a store backed by
+    /// `olai_store::ManagedObjectStore` overrides it to merge the sealed fields back in.
+    async fn get_with_secrets(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef)> {
+        self.get(id).await
     }
 
     /// List resources.
@@ -84,6 +97,35 @@ pub trait ResourceStore: ResourceStoreReader + Send + Sync + 'static {
     /// ## Arguments
     /// - `id`: The identifier of the resource to delete.
     async fn delete(&self, id: &ResourceIdent) -> Result<()>;
+
+    /// Atomically delete one resource and create another.
+    ///
+    /// Used by the managed-table commit flow, where a `StagingTable` reservation
+    /// must be replaced by a `Table` **at the same uuid** (the id is fixed at
+    /// staging time and the Delta API protocol depends on it). Because the object
+    /// store keys objects by a single uuid, the delete and the create cannot both
+    /// exist at that id: they must land in one atomic unit of work so a crash
+    /// between them cannot leave the reservation gone without the table, and
+    /// concurrent readers see either the old row or the new one, never neither.
+    ///
+    /// ## Arguments
+    /// - `delete`: The identifier of the resource to remove.
+    /// - `create`: The resource to create (carrying the adopted id).
+    ///
+    /// ## Returns
+    /// The created resource and its reference.
+    ///
+    /// The default implementation runs the two operations separately (delete then
+    /// create) so non-transactional stores still function; stores backed by a
+    /// transactional object store override it to run both in one transaction.
+    async fn replace_atomically(
+        &self,
+        delete: &ResourceIdent,
+        create: Resource,
+    ) -> Result<(Resource, ResourceRef)> {
+        self.delete(delete).await?;
+        self.create(create).await
+    }
 
     /// Update a resource.
     ///
@@ -240,7 +282,7 @@ where
 #[async_trait::async_trait]
 impl<S> ResourceStoreReader for ObjectStoreAdapter<S>
 where
-    S: ObjectStoreReader<ObjectLabel> + Send + Sync + 'static,
+    S: SecretObjectReader<ObjectLabel> + Send + Sync + 'static,
 {
     async fn get(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef)> {
         let (label, reference): (&ObjectLabel, &ResourceRef) = (id.as_ref(), id.as_ref());
@@ -277,12 +319,26 @@ where
             token,
         ))
     }
+
+    /// Override the redacting default: read the object with its sensitive fields decrypted
+    /// (via the inner store's [`SecretObjectReader`]) so the typed model is fully hydrated.
+    async fn get_with_secrets(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef)> {
+        let uuid = self.resolve_ident(id).await?;
+        let object = self.store.get_with_secrets(&uuid).await?;
+        Ok((object.try_into()?, ResourceRef::Uuid(uuid)))
+    }
 }
 
 #[async_trait::async_trait]
 impl<S> ResourceStore for ObjectStoreAdapter<S>
 where
-    S: ObjectStore<ObjectLabel> + AssociationStore<ObjectLabel> + Send + Sync + 'static,
+    S: ObjectStore<ObjectLabel>
+        + AssociationStore<ObjectLabel>
+        + SecretObjectReader<ObjectLabel>
+        + Transactional<ObjectLabel>
+        + Send
+        + Sync
+        + 'static,
 {
     async fn create(&self, resource: Resource) -> Result<(Resource, ResourceRef)> {
         let object: Object = resource.try_into()?;
@@ -292,9 +348,18 @@ where
         // API request types carry no id field, so callers cannot force an id
         // through this path. Mirrors the Postgres backend's `create`.
         let supplied_id = (!object.id.is_nil()).then_some(object.id);
+        // Secrets still live in the backend's local secrets table for now, so no
+        // sensitive blob is threaded through the generic store here (see the
+        // sensitive-field adoption follow-up).
         let created = self
             .store
-            .create(object.label, &object.name, object.properties, supplied_id)
+            .create(
+                object.label,
+                &object.name,
+                object.properties,
+                supplied_id,
+                None,
+            )
             .await?;
         let id = ResourceRef::Uuid(created.id);
         Ok((created.try_into()?, id))
@@ -306,6 +371,42 @@ where
         Ok(())
     }
 
+    /// Run the delete + create in one backend transaction so the two land atomically
+    /// (see the trait method's contract). The transaction closure operates on the raw
+    /// `StoreExec` surface, so the delete ident is resolved to a uuid *before* the
+    /// transaction begins and the create `Resource` is converted to an `Object` up front.
+    /// Neither `StagingTable` nor `Table` (the sole in-tree caller's resources) carries a
+    /// sensitive field, so bypassing the managed sealing layer inside the tx is sound.
+    async fn replace_atomically(
+        &self,
+        delete: &ResourceIdent,
+        create: Resource,
+    ) -> Result<(Resource, ResourceRef)> {
+        let del_uuid = self.resolve_ident(delete).await?;
+        let object: Object = create.try_into()?;
+        // A non-nil id means the caller pre-allocated it (here: the table adopting the
+        // staging reservation's id); mirrors `create`.
+        let supplied_id = (!object.id.is_nil()).then_some(object.id);
+        let created = self
+            .store
+            .transaction(Box::new(move |exec: &dyn StoreExec<ObjectLabel>| {
+                Box::pin(async move {
+                    exec.delete(&del_uuid).await?;
+                    exec.create(
+                        object.label,
+                        &object.name,
+                        object.properties,
+                        supplied_id,
+                        None,
+                    )
+                    .await
+                })
+            }))
+            .await?;
+        let id = ResourceRef::Uuid(created.id);
+        Ok((created.try_into()?, id))
+    }
+
     async fn update(
         &self,
         id: &ResourceIdent,
@@ -313,7 +414,13 @@ where
     ) -> Result<(Resource, ResourceRef)> {
         let uuid = self.resolve_ident(id).await?;
         let object: Object = resource.try_into()?;
-        let updated = self.store.update(&uuid, object.properties).await?;
+        // `ResourceStore::update` carries no etag, so this is an unconditional
+        // overwrite (`Precondition::Any`); optimistic concurrency at this layer
+        // is a follow-up. Secrets are not threaded here (see `create`).
+        let updated = self
+            .store
+            .update(&uuid, object.properties, Precondition::Any, None)
+            .await?;
         Ok((updated.try_into()?, uuid.into()))
     }
 
@@ -353,17 +460,9 @@ where
         max_results: Option<usize>,
         page_token: Option<String>,
     ) -> Result<(Vec<ResourceIdent>, Option<String>)> {
-        let resource_id = self.resolve_ident(resource).await?;
-        let target_obj_label = target_label.map(|r| *r.label());
-        let (associations, token) = olai_store::AssociationStoreReader::list(
-            &self.store,
-            resource_id,
-            label.as_ref(),
-            target_obj_label,
-            max_results,
-            page_token,
-        )
-        .await?;
+        let (associations, token) = self
+            .edge_query(resource, label, target_label, max_results, page_token)
+            .await?;
         let idents = associations
             .into_iter()
             .map(|assoc| assoc.to_label.to_ident(assoc.to_id))
@@ -379,17 +478,9 @@ where
         max_results: Option<usize>,
         page_token: Option<String>,
     ) -> Result<(Vec<(ResourceIdent, Option<PropertyMap>)>, Option<String>)> {
-        let resource_id = self.resolve_ident(resource).await?;
-        let target_obj_label = target_label.map(|r| *r.label());
-        let (associations, token) = olai_store::AssociationStoreReader::list(
-            &self.store,
-            resource_id,
-            label.as_ref(),
-            target_obj_label,
-            max_results,
-            page_token,
-        )
-        .await?;
+        let (associations, token) = self
+            .edge_query(resource, label, target_label, max_results, page_token)
+            .await?;
         let entries = associations
             .into_iter()
             .map(|assoc| {
@@ -401,6 +492,41 @@ where
     }
 }
 
+impl<S> ObjectStoreAdapter<S>
+where
+    S: AssociationStore<ObjectLabel> + ObjectStoreReader<ObjectLabel> + Send + Sync + 'static,
+{
+    /// Build and run the outgoing-edge query shared by `list_associations` and
+    /// `list_associations_with_properties`.
+    ///
+    /// The `target` ident restricts the far endpoint: its label always filters,
+    /// and when it carries a concrete reference (a name or uuid) it is resolved to
+    /// a `target_id` so a query addressed at one specific target does not fan out
+    /// to every object of the same label (e.g. selecting one tag among several).
+    async fn edge_query(
+        &self,
+        resource: &ResourceIdent,
+        label: &AssociationLabel,
+        target: Option<&ResourceIdent>,
+        max_results: Option<usize>,
+        page_token: Option<String>,
+    ) -> Result<(Vec<olai_store::Association<ObjectLabel>>, Option<String>)> {
+        let resource_id = self.resolve_ident(resource).await?;
+        let mut query = EdgeQuery::from(resource_id, label.as_ref()).page(max_results, page_token);
+        if let Some(target) = target {
+            query = query.target_label(*target.label());
+            // A concrete reference narrows to that one target; an `Undefined`
+            // reference is a label-only filter.
+            let reference: &ResourceRef = target.as_ref();
+            if !matches!(reference, ResourceRef::Undefined) {
+                let target_id = self.resolve_ident(target).await?;
+                query = query.target_id(target_id);
+            }
+        }
+        Ok(self.store.query_edges(query).await?)
+    }
+}
+
 #[async_trait::async_trait]
 impl<T: ResourceStoreReader> ResourceStoreReader for Arc<T> {
     async fn get(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef)> {
@@ -409,6 +535,10 @@ impl<T: ResourceStoreReader> ResourceStoreReader for Arc<T> {
 
     async fn get_many(&self, ids: &[ResourceIdent]) -> Result<Vec<(Resource, ResourceRef)>> {
         T::get_many(self, ids).await
+    }
+
+    async fn get_with_secrets(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef)> {
+        T::get_with_secrets(self, id).await
     }
 
     async fn list(
@@ -430,6 +560,14 @@ impl<T: ResourceStore> ResourceStore for Arc<T> {
 
     async fn delete(&self, id: &ResourceIdent) -> Result<()> {
         T::delete(self, id).await
+    }
+
+    async fn replace_atomically(
+        &self,
+        delete: &ResourceIdent,
+        create: Resource,
+    ) -> Result<(Resource, ResourceRef)> {
+        T::replace_atomically(self, delete, create).await
     }
 
     async fn update(
@@ -500,6 +638,10 @@ impl<T: ProvidesResourceStore> ResourceStoreReader for T {
         self.store().get_many(ids).await
     }
 
+    async fn get_with_secrets(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef)> {
+        self.store().get_with_secrets(id).await
+    }
+
     async fn list(
         &self,
         label: &ObjectLabel,
@@ -521,6 +663,14 @@ impl<T: ProvidesResourceStore> ResourceStore for T {
 
     async fn delete(&self, id: &ResourceIdent) -> Result<()> {
         self.store().delete(id).await
+    }
+
+    async fn replace_atomically(
+        &self,
+        delete: &ResourceIdent,
+        create: Resource,
+    ) -> Result<(Resource, ResourceRef)> {
+        self.store().replace_atomically(delete, create).await
     }
 
     async fn update(

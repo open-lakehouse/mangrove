@@ -387,7 +387,11 @@ class Credential:
     azure_managed_identity: Optional[AzureManagedIdentity]
     """The Azure managed identity configuration."""
     azure_service_principal: Optional[AzureServicePrincipal]
-    """The Azure service principal configuration."""
+    """
+    The Azure service principal configuration. Sealed into the object's inline sensitive blob
+    (envelope-encrypted, redacted from ordinary reads) rather than stored in the searchable
+    properties.
+    """
     azure_storage_key: Optional[AzureStorageKey]
     """The Azure storage key configuration."""
     comment: Optional[str]
