@@ -107,7 +107,23 @@ pub trait ResourceStore: ResourceStoreReader + Send + Sync + 'static {
     ///
     /// ## Returns
     /// The created resource.
-    async fn create(&self, resource: Resource) -> Result<(Resource, ResourceRef)>;
+    ///
+    /// Convenience for [`create_versioned`](Self::create_versioned), discarding
+    /// the created object's initial version.
+    async fn create(&self, resource: Resource) -> Result<(Resource, ResourceRef)> {
+        let (resource, reference, _version) = self.create_versioned(resource).await?;
+        Ok((resource, reference))
+    }
+
+    /// Create a resource, returning its initial store version alongside it.
+    ///
+    /// The `u64` is the store's monotonic per-object version at creation — the
+    /// same counter [`get_versioned`](ResourceStoreReader::get_versioned) reads and
+    /// [`update_checked`](Self::update_checked) asserts. Callers that turn the
+    /// version into an etag (e.g. the Delta `createTable` path) use this instead of
+    /// assuming a fresh object's version, so the etag stays correct even if the
+    /// store's initial version is ever nonzero.
+    async fn create_versioned(&self, resource: Resource) -> Result<(Resource, ResourceRef, u64)>;
 
     /// Delete a resource and all connected associations by its identifier.
     ///
@@ -138,14 +154,29 @@ pub trait ResourceStore: ResourceStoreReader + Send + Sync + 'static {
     /// ## Returns
     /// The created resource and its reference.
     ///
-    /// This is a required method with no default: every backend store is
-    /// transactional ([`olai_store::store::Transactional`]), so a non-atomic
-    /// delete-then-create fallback would be a silent correctness footgun.
+    /// Convenience for [`replace_atomically_versioned`](Self::replace_atomically_versioned),
+    /// discarding the created object's version.
     async fn replace_atomically(
         &self,
         delete: &ResourceIdent,
         create: Resource,
-    ) -> Result<(Resource, ResourceRef)>;
+    ) -> Result<(Resource, ResourceRef)> {
+        let (resource, reference, _version) =
+            self.replace_atomically_versioned(delete, create).await?;
+        Ok((resource, reference))
+    }
+
+    /// [`replace_atomically`](Self::replace_atomically), returning the created
+    /// object's store version alongside it (see [`create_versioned`](Self::create_versioned)).
+    ///
+    /// This is a required method with no default: every backend store is
+    /// transactional ([`olai_store::store::Transactional`]), so a non-atomic
+    /// delete-then-create fallback would be a silent correctness footgun.
+    async fn replace_atomically_versioned(
+        &self,
+        delete: &ResourceIdent,
+        create: Resource,
+    ) -> Result<(Resource, ResourceRef, u64)>;
 
     /// Update a resource unconditionally.
     ///
@@ -396,7 +427,7 @@ where
         + Sync
         + 'static,
 {
-    async fn create(&self, resource: Resource) -> Result<(Resource, ResourceRef)> {
+    async fn create_versioned(&self, resource: Resource) -> Result<(Resource, ResourceRef, u64)> {
         let object: Object = resource.try_into()?;
         // A non-nil id means the caller pre-allocated it (e.g. a managed table
         // adopting its staging reservation's id, or a managed volume embedding
@@ -418,7 +449,8 @@ where
             )
             .await?;
         let id = ResourceRef::Uuid(created.id);
-        Ok((created.try_into()?, id))
+        let version = created.version;
+        Ok((created.try_into()?, id, version))
     }
 
     async fn delete(&self, id: &ResourceIdent) -> Result<()> {
@@ -433,11 +465,11 @@ where
     /// transaction begins and the create `Resource` is converted to an `Object` up front.
     /// Neither `StagingTable` nor `Table` (the sole in-tree caller's resources) carries a
     /// sensitive field, so bypassing the managed sealing layer inside the tx is sound.
-    async fn replace_atomically(
+    async fn replace_atomically_versioned(
         &self,
         delete: &ResourceIdent,
         create: Resource,
-    ) -> Result<(Resource, ResourceRef)> {
+    ) -> Result<(Resource, ResourceRef, u64)> {
         let del_uuid = self.resolve_ident(delete).await?;
         let object: Object = create.try_into()?;
         // A non-nil id means the caller pre-allocated it (here: the table adopting the
@@ -460,7 +492,8 @@ where
             }))
             .await?;
         let id = ResourceRef::Uuid(created.id);
-        Ok((created.try_into()?, id))
+        let version = created.version;
+        Ok((created.try_into()?, id, version))
     }
 
     async fn update_checked(
@@ -661,20 +694,20 @@ impl<T: ResourceStoreReader> ResourceStoreReader for Arc<T> {
 
 #[async_trait::async_trait]
 impl<T: ResourceStore> ResourceStore for Arc<T> {
-    async fn create(&self, resource: Resource) -> Result<(Resource, ResourceRef)> {
-        T::create(self, resource).await
+    async fn create_versioned(&self, resource: Resource) -> Result<(Resource, ResourceRef, u64)> {
+        T::create_versioned(self, resource).await
     }
 
     async fn delete(&self, id: &ResourceIdent) -> Result<()> {
         T::delete(self, id).await
     }
 
-    async fn replace_atomically(
+    async fn replace_atomically_versioned(
         &self,
         delete: &ResourceIdent,
         create: Resource,
-    ) -> Result<(Resource, ResourceRef)> {
-        T::replace_atomically(self, delete, create).await
+    ) -> Result<(Resource, ResourceRef, u64)> {
+        T::replace_atomically_versioned(self, delete, create).await
     }
 
     async fn update_checked(
@@ -778,20 +811,22 @@ impl<T: ProvidesResourceStore> ResourceStoreReader for T {
 
 #[async_trait::async_trait]
 impl<T: ProvidesResourceStore> ResourceStore for T {
-    async fn create(&self, resource: Resource) -> Result<(Resource, ResourceRef)> {
-        self.store().create(resource).await
+    async fn create_versioned(&self, resource: Resource) -> Result<(Resource, ResourceRef, u64)> {
+        self.store().create_versioned(resource).await
     }
 
     async fn delete(&self, id: &ResourceIdent) -> Result<()> {
         self.store().delete(id).await
     }
 
-    async fn replace_atomically(
+    async fn replace_atomically_versioned(
         &self,
         delete: &ResourceIdent,
         create: Resource,
-    ) -> Result<(Resource, ResourceRef)> {
-        self.store().replace_atomically(delete, create).await
+    ) -> Result<(Resource, ResourceRef, u64)> {
+        self.store()
+            .replace_atomically_versioned(delete, create)
+            .await
     }
 
     async fn update_checked(

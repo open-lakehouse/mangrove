@@ -429,16 +429,23 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         // both cannot exist at that id, so `replace_atomically` consumes the
         // reservation and creates the table in one transaction — closing the
         // orphaned-reservation window. EXTERNAL tables have no reservation and are
-        // a plain create.
-        let stored: Table = match adopt_ident {
-            Some(ident) => self.replace_atomically(&ident, table.into()).await,
-            None => self.create(table.into()).await,
+        // a plain create. Take the version the store assigned the new row so the
+        // returned etag matches what a later `loadTable` reads, without assuming a
+        // fixed initial version.
+        let (resource, _, version) = match adopt_ident {
+            Some(ident) => {
+                self.replace_atomically_versioned(&ident, table.into())
+                    .await
+            }
+            None => self.create_versioned(table.into()).await,
         }
         .map_err(Error::from)
-        .and_then(|(r, _)| r.try_into().map_err(Error::from))
         .map_err(to_backend_err)?;
-        // A freshly created object starts at version 0.
-        Ok(table_to_resolved(stored, 0))
+        let stored: Table = resource
+            .try_into()
+            .map_err(Error::from)
+            .map_err(to_backend_err)?;
+        Ok(table_to_resolved(stored, version))
     }
 
     async fn update_table_row(
