@@ -27,8 +27,27 @@ pub enum Error {
     #[error("invalid url: {0}")]
     InvalidUrl(#[from] url::ParseError),
 
+    #[error("Conflict")]
+    Conflict,
+
     #[error(transparent)]
-    ResourceStore(#[from] olai_store::Error),
+    ResourceStore(olai_store::Error),
+}
+
+/// Flatten the store's common error variants onto the native ones so callers can
+/// match `Error::NotFound` / `Error::AlreadyExists` / `Error::Conflict` uniformly
+/// regardless of which backend raised them; anything else is wrapped verbatim.
+impl From<olai_store::Error> for Error {
+    fn from(e: olai_store::Error) -> Self {
+        match e {
+            olai_store::Error::NotFound => Error::NotFound,
+            olai_store::Error::AlreadyExists => Error::AlreadyExists,
+            olai_store::Error::Conflict => Error::Conflict,
+            olai_store::Error::InvalidArgument(msg) => Error::InvalidArgument(msg),
+            olai_store::Error::InvalidIdentifier(err) => Error::InvalidIdentifier(err),
+            other => Error::ResourceStore(other),
+        }
+    }
 }
 
 impl Error {
@@ -45,19 +64,16 @@ impl Error {
         match self {
             Error::NotFound => "RESOURCE_NOT_FOUND",
             Error::AlreadyExists => "RESOURCE_ALREADY_EXISTS",
+            Error::Conflict => "RESOURCE_CONFLICT",
             Error::InvalidArgument(_) => "INVALID_PARAMETER_VALUE",
             Error::InvalidIdentifier(_) => "INVALID_PARAMETER_VALUE",
             Error::InvalidTableLocation(_) => "INVALID_PARAMETER_VALUE",
             Error::InvalidUrl(_) => "INVALID_PARAMETER_VALUE",
             Error::SerDe(_) => "INTERNAL_ERROR",
             Error::Generic(_) => "INTERNAL_ERROR",
-            Error::ResourceStore(e) => match e {
-                olai_store::Error::NotFound => "RESOURCE_NOT_FOUND",
-                olai_store::Error::AlreadyExists => "ALREADY_EXISTS",
-                olai_store::Error::InvalidArgument(_) => "INVALID_PARAMETER_VALUE",
-                olai_store::Error::InvalidIdentifier(_) => "INVALID_PARAMETER_VALUE",
-                _ => "INTERNAL_ERROR",
-            },
+            // Common store variants are flattened onto the native ones by
+            // `From<olai_store::Error>`; only the residual (Generic/SerDe) reach here.
+            Error::ResourceStore(_) => "INTERNAL_ERROR",
         }
     }
 }
@@ -77,10 +93,12 @@ impl Error {
         const INVALID: &str = "Invalid argument provided in the request.";
         const NOT_FOUND: &str = "The requested resource does not exist.";
         const ALREADY_EXISTS: &str = "The resource already exists.";
+        const CONFLICT: &str = "The request conflicts with the current resource state.";
 
         match self {
             Error::NotFound => (StatusCode::NOT_FOUND, NOT_FOUND),
             Error::AlreadyExists => (StatusCode::CONFLICT, ALREADY_EXISTS),
+            Error::Conflict => (StatusCode::CONFLICT, CONFLICT),
             Error::InvalidArgument(msg) => {
                 tracing::error!("Invalid argument: {msg}");
                 (StatusCode::BAD_REQUEST, INVALID)
@@ -105,22 +123,12 @@ impl Error {
                 tracing::error!("Generic common error: {msg}");
                 (StatusCode::INTERNAL_SERVER_ERROR, INTERNAL)
             }
-            Error::ResourceStore(e) => match e {
-                olai_store::Error::NotFound => (StatusCode::NOT_FOUND, NOT_FOUND),
-                olai_store::Error::AlreadyExists => (StatusCode::CONFLICT, ALREADY_EXISTS),
-                olai_store::Error::InvalidArgument(msg) => {
-                    tracing::error!("Invalid argument: {msg}");
-                    (StatusCode::BAD_REQUEST, INVALID)
-                }
-                olai_store::Error::InvalidIdentifier(e) => {
-                    tracing::error!("Invalid identifier: {e}");
-                    (StatusCode::BAD_REQUEST, INVALID)
-                }
-                _ => {
-                    tracing::error!("Resource store error: {e}");
-                    (StatusCode::INTERNAL_SERVER_ERROR, INTERNAL)
-                }
-            },
+            // Common store variants are flattened onto the native ones by
+            // `From<olai_store::Error>`; only the residual (Generic/SerDe) reach here.
+            Error::ResourceStore(e) => {
+                tracing::error!("Resource store error: {e}");
+                (StatusCode::INTERNAL_SERVER_ERROR, INTERNAL)
+            }
         }
     }
 }

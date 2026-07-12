@@ -7,9 +7,10 @@
 //! - [`error`] — the crate-wide [`Error`] and [`Result`] types.
 //! - [`reference`](mod@reference) — the `uc://` URL scheme for addressing catalog
 //!   securables ([`UCReference`]).
-//! - [`store`] — storage-abstraction traits ([`ResourceStore`](store::ResourceStore),
-//!   `SecretManager`) implemented by backends (feature `store`).
-//! - [`services`] — envelope encryption and secret management (feature `store`).
+//! - [`store`] — the storage-abstraction trait ([`ResourceStore`](store::ResourceStore))
+//!   implemented by backends (feature `store`).
+//! - [`services`] — envelope encryption for sealing sensitive fields inline
+//!   (feature `store`).
 //! - [`metric_view`] — the single parser for Unity Catalog metric-view definitions
 //!   (feature `metric-view`).
 //!

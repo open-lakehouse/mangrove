@@ -39,7 +39,7 @@ unitycatalog-common = { package = "olai-uc-common", version = "0.0.1" }
 | `grpc`        |         | Generated tonic gRPC service code (`tonic` + `tonic-prost`).                 |
 | `metric-view` |         | Metric-view YAML parsing and SQL dependency extraction.                      |
 | `axum`        |         | `FromRequest` / `FromRequestParts` impls for request types.                  |
-| `store`       |         | Storage-abstraction traits (`ResourceStore`, `SecretManager`) and services.  |
+| `store`       |         | Storage-abstraction trait (`ResourceStore`) and services.                    |
 | `sqlx`        |         | `sqlx` trait derives on selected types for backends.                         |
 | `python`      |         | `pyclass` derives on generated messages (used by the Python bindings).       |
 | `node`        |         | `#[napi]` derives on generated enums (used by the Node bindings).            |
