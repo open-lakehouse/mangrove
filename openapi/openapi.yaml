@@ -3839,7 +3839,11 @@ components:
         azureServicePrincipal:
           allOf:
             - $ref: "#/components/schemas/AzureServicePrincipal"
-          description: The Azure service principal configuration.
+          description: |-
+            The Azure service principal configuration.
+
+             Sealed into the object's inline sensitive blob (envelope-encrypted, redacted
+             from ordinary reads) rather than stored in the searchable properties.
         azureManagedIdentity:
           allOf:
             - $ref: "#/components/schemas/AzureManagedIdentity"
