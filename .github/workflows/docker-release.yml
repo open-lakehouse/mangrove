@@ -1,7 +1,8 @@
 name: Release Docker Image
 
-# Build and publish the `hydrofoil` image (the `uc-server` Unity Catalog server
-# binary, with the bundled web UI baked in) to the GitHub Container Registry.
+# Build and publish the `mangrove` image (the `uc-server` binary — a lakehouse
+# catalog server, with the bundled web UI baked in) to the GitHub Container
+# Registry.
 # The matrix axis is the *platform* only, and one GHCR image is produced. We
 # publish to GHCR only (keyless GITHUB_TOKEN — no stored registry secret).
 #
@@ -46,7 +47,7 @@ concurrency:
 permissions: {}
 
 env:
-  IMAGE: ghcr.io/open-lakehouse/hydrofoil
+  IMAGE: ghcr.io/open-lakehouse/mangrove
 
 jobs:
   # Build each platform on its NATIVE runner and push BY DIGEST (no tags).
@@ -105,8 +106,8 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           labels: |
-            org.opencontainers.image.title=hydrofoil
-            org.opencontainers.image.description=Unity Catalog server (uc-server) with bundled web UI
+            org.opencontainers.image.title=mangrove
+            org.opencontainers.image.description=Mangrove — a lakehouse catalog server (Unity Catalog + Delta Sharing APIs) with bundled web UI
             org.opencontainers.image.vendor=open-lakehouse
             org.opencontainers.image.licenses=Apache-2.0
             org.opencontainers.image.source=https://github.com/open-lakehouse/mangrove
@@ -202,8 +203,8 @@ jobs:
           flavor: |
             latest=auto
           labels: |
-            org.opencontainers.image.title=hydrofoil
-            org.opencontainers.image.description=Unity Catalog server (uc-server) with bundled web UI
+            org.opencontainers.image.title=mangrove
+            org.opencontainers.image.description=Mangrove — a lakehouse catalog server (Unity Catalog + Delta Sharing APIs) with bundled web UI
             org.opencontainers.image.vendor=open-lakehouse
             org.opencontainers.image.licenses=Apache-2.0
             org.opencontainers.image.source=https://github.com/open-lakehouse/mangrove

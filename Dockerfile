@@ -66,8 +66,8 @@ RUN cargo build --release -p olai-uc-server --features bin --bin uc-server
 # gcr.io/distroless/cc-debian12:nonroot
 FROM gcr.io/distroless/cc-debian12@sha256:b0ae8e989418b458e0f25489bc3be523718938a2b70864cc0f6a00af1ddbd985 AS runtime
 
-LABEL org.opencontainers.image.title="hydrofoil" \
-      org.opencontainers.image.description="Unity Catalog server (uc-server) with bundled web UI" \
+LABEL org.opencontainers.image.title="mangrove" \
+      org.opencontainers.image.description="Mangrove — a lakehouse catalog server (Unity Catalog + Delta Sharing APIs) with bundled web UI" \
       org.opencontainers.image.source="https://github.com/open-lakehouse/mangrove" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.vendor="open-lakehouse"

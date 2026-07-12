@@ -28,7 +28,7 @@ name: Bootstrap publish (one-shot, DELETE AFTER USE)
 #     `cargo publish` rejects ANY git dependency, so these cannot go to crates.io
 #     until those upstream deps are published to the registry. They stay
 #     `release = false` in release-plz.toml as a standing git-dep block.
-#   * olai-uc-server — a deployable, shipped as the `hydrofoil` Docker image, not
+#   * olai-uc-server — a deployable, shipped as the `mangrove` Docker image, not
 #     a crates.io library (`git_only = true` in release-plz.toml).
 #   * olai-uc-cli — publishable, but intentionally held out of crates.io for now.
 #

@@ -184,12 +184,12 @@ here.
 | Tag                    | Builds & attaches                                  | Workflow                          |
 |------------------------|----------------------------------------------------|-----------------------------------|
 | every `olai-uc-*-v*`   | GitHub Release (changelog); crates.io publish for library crates | release-plz.yml     |
-| `olai-uc-server-v*`    | + `ghcr.io/open-lakehouse/hydrofoil` image (no crates.io publish) | release-plz.yml → docker-release.yml |
+| `olai-uc-server-v*`    | + `ghcr.io/open-lakehouse/mangrove` image (no crates.io publish) | release-plz.yml → docker-release.yml |
 
 **The server is a deployable, not a library.** `olai-uc-server` is `git_only = true` in
 `release-plz.toml` (and `publish = false` in its `Cargo.toml`): release-plz versions,
 changelogs, tags, and GitHub-releases it from git, but never `cargo publish`es it. Its
-`olai-uc-server-v<version>` tag is what triggers the `hydrofoil` Docker image build. Its
+`olai-uc-server-v<version>` tag is what triggers the `mangrove` Docker image build. Its
 bundled web UI lives in `node/` — outside the crate's packaged fileset — so a UI change is
 tied to the crate via `crates/server/ui.lock`; after editing anything under `node/`, run
 `just ui-fingerprint` and commit the updated lock (CI's `ui-fingerprint` job enforces this).

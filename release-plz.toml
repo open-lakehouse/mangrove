@@ -130,7 +130,7 @@ release = false
 name = "olai-uc-server"
 changelog_path = "crates/server/CHANGELOG.md"
 # The server is a DEPLOYABLE, not a crates.io library: it ships as the
-# `hydrofoil` Docker image, keyed off this crate's `olai-uc-server-v<version>`
+# `mangrove` Docker image, keyed off this crate's `olai-uc-server-v<version>`
 # git tag (see docker-release.yml). `git_only = true` versions/changelogs/tags
 # it from git (deriving the current version from the existing tag, not the
 # registry) and creates the tag + GitHub release — everything except

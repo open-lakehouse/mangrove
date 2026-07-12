@@ -8,7 +8,7 @@ name: Release-plz
 #
 # The server (`olai-uc-server`) is a DEPLOYABLE, not a crates.io library: it is
 # `git_only` in release-plz.toml (tagged from git, never published) and ships as
-# the `hydrofoil` container image instead. After the release job, the `docker`
+# the `mangrove` container image instead. After the release job, the `docker`
 # job builds + pushes it to GHCR via a reusable workflow (workflow_call), keyed
 # off the version release-plz just tagged. Running it in the SAME workflow keeps
 # the build explicitly gated on "the server was released this run" — no second
@@ -138,7 +138,7 @@ jobs:
           fi
           echo "server not released this run (no fresh ${tag}); skipping Docker."
 
-  # --- Build + push the server (hydrofoil) Docker image, iff it was released ---
+  # --- Build + push the server (mangrove) Docker image, iff it was released ---
   docker:
     name: Docker release
     needs: release-plz-release
