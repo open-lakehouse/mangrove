@@ -11,13 +11,29 @@
 //! Timestamps are stored as INTEGER epoch-millis — the same representation used
 //! on the wire — so no timezone conversion is needed.
 
+use sqlx::SqlitePool;
 use unitycatalog_delta_api::coordinator::{
     CommitCoordinator, CommitError, CommitInfo, CommitResult, DEFAULT_MAX_UNBACKFILLED_COMMITS,
     validate_commit_info,
 };
 use uuid::Uuid;
 
-use crate::SqliteStore;
+/// SQLite-backed Delta [`CommitCoordinator`] over the `delta_commits` table.
+///
+/// Holds its own clone of the shared [`SqlitePool`]; the object/association graph
+/// store ([`SqliteGraphStore`](crate::SqliteGraphStore)) is an independent handle
+/// on the same database.
+#[derive(Clone)]
+pub struct SqliteCommitCoordinator {
+    pool: SqlitePool,
+}
+
+impl SqliteCommitCoordinator {
+    /// Construct a coordinator over a connection pool.
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
 
 /// Parse and validate a `table_id` UUID, returning its raw bytes for storage.
 fn parse_table_id(table_id: &str) -> CommitResult<Vec<u8>> {
@@ -45,7 +61,7 @@ struct VersionBounds {
     last: i64,
 }
 
-impl SqliteStore {
+impl SqliteCommitCoordinator {
     /// Read the min/max ratified commit version for a table.
     async fn commit_bounds(
         conn: &mut sqlx::SqliteConnection,
@@ -215,7 +231,7 @@ impl SqliteStore {
 }
 
 #[async_trait::async_trait]
-impl CommitCoordinator for SqliteStore {
+impl CommitCoordinator for SqliteCommitCoordinator {
     async fn commit(
         &self,
         table_id: &str,

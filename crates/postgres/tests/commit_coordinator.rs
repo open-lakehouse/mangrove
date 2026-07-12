@@ -11,16 +11,13 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 use unitycatalog_delta_api::coordinator::CommitInfo;
 use unitycatalog_delta_api::coordinator::{CommitCoordinator, CommitError};
-use unitycatalog_postgres::GraphStore;
+use unitycatalog_postgres::PgCommitCoordinator;
 use uuid::Uuid;
 
-fn store(pool: sqlx::PgPool) -> GraphStore {
-    let encryptor =
-        EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap());
-    GraphStore::new(pool, encryptor)
+fn store(pool: sqlx::PgPool) -> PgCommitCoordinator {
+    PgCommitCoordinator::new(pool)
 }
 
 /// A unique table id per call (the `uuid` crate's `v4` feature isn't enabled).

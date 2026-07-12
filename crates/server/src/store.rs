@@ -4,6 +4,5 @@
 //! them without depending on this server crate. They are re-exported here to keep
 //! the historical `unitycatalog_server::store::*` paths working.
 pub use unitycatalog_common::store::{
-    ObjectStoreAdapter, ProvidesObjectStore, ProvidesResourceStore, ResourceStore,
-    ResourceStoreReader,
+    ObjectStoreAdapter, ProvidesResourceStore, ResourceStore, ResourceStoreReader,
 };

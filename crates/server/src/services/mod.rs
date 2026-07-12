@@ -10,8 +10,7 @@ use crate::Result;
 use crate::api::tables::{TableHandler, TableManager};
 use crate::api::volumes::VolumeHandler;
 use crate::policy::{Decision, Permission, Policy, ProvidesPolicy};
-use crate::store::{ProvidesObjectStore, ProvidesResourceStore, ResourceStore};
-use unitycatalog_common::ObjectLabel;
+use crate::store::{ProvidesResourceStore, ResourceStore};
 use unitycatalog_common::models::ResourceIdent;
 use unitycatalog_delta_api::coordinator::{
     CommitCoordinator, InMemoryCommitCoordinator, ProvidesCommitCoordinator,
@@ -161,7 +160,6 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
         let inner = ServerHandlerInner {
             policy: prev.policy.clone(),
             store: prev.store.clone(),
-            object_store: prev.object_store.clone(),
             commit_coordinator: prev.commit_coordinator.clone(),
             local_storage_policy: policy.into(),
             managed_storage_root: prev.managed_storage_root.clone(),
@@ -180,7 +178,6 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
         let inner = ServerHandlerInner {
             policy: prev.policy.clone(),
             store: prev.store.clone(),
-            object_store: prev.object_store.clone(),
             commit_coordinator: prev.commit_coordinator.clone(),
             local_storage_policy: prev.local_storage_policy.clone(),
             managed_storage_root: root.map(Into::into),
@@ -194,7 +191,6 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
 pub struct ServerHandlerInner<Cx> {
     policy: Arc<dyn Policy<Cx>>,
     store: Arc<dyn ResourceStore>,
-    object_store: Option<Arc<dyn olai_store::ObjectStore<ObjectLabel>>>,
     /// Delta catalog-managed commit coordinator (in-memory by default).
     commit_coordinator: Arc<dyn CommitCoordinator>,
     /// Allowlist governing which host paths may back a `file://` storage
@@ -211,7 +207,6 @@ impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
         Self {
             policy,
             store,
-            object_store: None,
             commit_coordinator: Arc::new(InMemoryCommitCoordinator::default()),
             // Deny all local (file://) storage until a policy is configured.
             local_storage_policy: Arc::new(LocalStoragePolicy::deny_all()),
@@ -240,18 +235,6 @@ impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
     /// custom unbackfilled cap).
     pub fn with_commit_coordinator(mut self, coordinator: Arc<dyn CommitCoordinator>) -> Self {
         self.commit_coordinator = coordinator;
-        self
-    }
-
-    /// Set the generic object store.
-    ///
-    /// When provided, the server exposes the untyped `ObjectStore<ObjectLabel>`
-    /// interface alongside the typed `ResourceStore` interface.
-    pub fn with_object_store(
-        mut self,
-        object_store: Arc<dyn olai_store::ObjectStore<ObjectLabel>>,
-    ) -> Self {
-        self.object_store = Some(object_store);
         self
     }
 }
@@ -327,21 +310,6 @@ impl<Cx: Send + Sync + 'static> ProvidesResourceStore for ServerHandlerInner<Cx>
 impl<Cx: Send + Sync + 'static> ProvidesResourceStore for ServerHandler<Cx> {
     fn store(&self) -> &dyn ResourceStore {
         self.handler.store.as_ref()
-    }
-}
-
-impl<Cx: Send + Sync + 'static> ProvidesObjectStore for ServerHandlerInner<Cx> {
-    fn object_store(&self) -> &dyn olai_store::ObjectStore<ObjectLabel> {
-        self.object_store
-            .as_ref()
-            .expect("ObjectStore not configured on ServerHandler")
-            .as_ref()
-    }
-}
-
-impl<Cx: Send + Sync + 'static> ProvidesObjectStore for ServerHandler<Cx> {
-    fn object_store(&self) -> &dyn olai_store::ObjectStore<ObjectLabel> {
-        self.handler.object_store()
     }
 }
 

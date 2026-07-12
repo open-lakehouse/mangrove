@@ -26,12 +26,13 @@ use unitycatalog_common::models::temporary_credentials::v1::{
     temporary_credential::Credentials,
 };
 use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
+use unitycatalog_common::store::Precondition;
 
 use unitycatalog_delta_api::authz::DeltaAction;
 use unitycatalog_delta_api::backend::{
-    BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, ResolvedTable, SchemaRef,
-    StagingReservation, TableRef, UpdateTableSpec, VendedCredential, VendedCredentialKind,
-    etag_of_parts,
+    BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, DeltaCapabilities,
+    ResolvedTable, SchemaRef, StagingReservation, TableRef, UpdateTableSpec, VendedCredential,
+    VendedCredentialKind,
 };
 use unitycatalog_delta_api::column::{
     Column as CrateColumn, ColumnTypeName as CrateColumnTypeName,
@@ -71,6 +72,9 @@ fn to_backend_err(e: Error) -> DeltaBackendError {
             "INVALID_PARAMETER_VALUE" => DeltaBackendError::InvalidArgument(e.to_string()),
             "PERMISSION_DENIED" => DeltaBackendError::PermissionDenied(e.to_string()),
             "COMMIT_VERSION_CONFLICT" => DeltaBackendError::CommitVersionConflict(e.to_string()),
+            // A store CAS mismatch (`Precondition::Version`) surfaces as a generic
+            // conflict; for the Delta write path that is an `assert-etag` failure.
+            "RESOURCE_CONFLICT" => DeltaBackendError::UpdateRequirementConflict(e.to_string()),
             "RESOURCE_EXHAUSTED" => DeltaBackendError::ResourceExhausted(e.to_string()),
             _ => DeltaBackendError::NotFoundGeneric(e.to_string()),
         },
@@ -89,6 +93,15 @@ fn to_backend_err(e: Error) -> DeltaBackendError {
         Error::NotImplemented(w) => DeltaBackendError::NotImplemented(w),
         _ => DeltaBackendError::Internal(e.to_string()),
     }
+}
+
+/// Parse the version out of an etag string produced by
+/// [`unitycatalog_delta_api::backend::etag_of`] (`etag-<version>`).
+///
+/// Returns `None` for a malformed etag, which the caller treats as an
+/// `assert-etag` conflict.
+fn parse_etag_version(etag: &str) -> Option<u64> {
+    etag.strip_prefix("etag-").and_then(|v| v.parse().ok())
 }
 
 // ===================================================================
@@ -162,9 +175,13 @@ fn to_delta_format(f: i32) -> Option<unitycatalog_delta_api::models::DeltaDataSo
 
 /// Map a stored [`Table`] into the crate's portable [`ResolvedTable`].
 ///
+/// `version` is the store's per-object version, which drives the etag and the
+/// `assert-etag` compare-and-swap; callers read it via
+/// [`ResourceStoreReader::get_versioned`].
+///
 /// View-like table types (views, metric views, …) map to `table_type: None`,
 /// which the shared handler rejects with the spec's "not a Delta table" 400.
-fn table_to_resolved(table: Table) -> ResolvedTable {
+fn table_to_resolved(table: Table, version: u64) -> ResolvedTable {
     let table_type = match TableType::try_from(table.table_type) {
         Ok(TableType::Managed) => Some(DeltaTableType::Managed),
         Ok(TableType::External) => Some(DeltaTableType::External),
@@ -179,6 +196,7 @@ fn table_to_resolved(table: Table) -> ResolvedTable {
         properties: table.properties.into_iter().collect(),
         created_at_ms: table.created_at,
         updated_at_ms: table.updated_at,
+        version,
     }
 }
 
@@ -252,6 +270,11 @@ impl ServerHandler<RequestContext> {
 
 #[async_trait]
 impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
+    fn capabilities(&self) -> DeltaCapabilities {
+        // The store provides a native, versioned rename, so advertise renameTable.
+        DeltaCapabilities { rename: true }
+    }
+
     async fn catalog_exists(&self, catalog: &str, _cx: &RequestContext) -> BackendResult<()> {
         let ident = ResourceIdent::catalog(ResourceName::new([catalog]));
         self.get(&ident)
@@ -278,7 +301,23 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         )
         .await
         .map_err(to_backend_err)?;
-        Ok(table_to_resolved(t))
+        // Read the store version behind the table's id so the etag reflects the
+        // current row (the `assert-etag` CAS keys on this same version).
+        let version = match t.table_id.as_deref() {
+            Some(id) => match uuid::Uuid::parse_str(id) {
+                Ok(uuid) => {
+                    let ident = ResourceIdent::Table(ResourceRef::Uuid(uuid));
+                    self.get_versioned(&ident)
+                        .await
+                        .map(|(_, _, v)| v)
+                        .map_err(Error::from)
+                        .map_err(to_backend_err)?
+                }
+                Err(_) => 0,
+            },
+            None => 0,
+        };
+        Ok(table_to_resolved(t, version))
     }
 
     async fn authorize(&self, action: DeltaAction<'_>, cx: &RequestContext) -> BackendResult<()> {
@@ -366,23 +405,9 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         spec: CreateTableSpec,
         _cx: &RequestContext,
     ) -> BackendResult<ResolvedTable> {
-        // Managed adoption: consume the reservation, then create the table adopting
-        // its id. The store keys objects by a single id PRIMARY KEY, so the staging
-        // object must be removed before the table can claim that id — the same
-        // ordering (and the same non-atomic window) as before the port collapsed
-        // finalize + create. `olai-store` has no cross-op transaction, so a failed
-        // `create` after the `delete` still orphans the reservation; truly closing
-        // this needs a transaction in olai-store (trestle follow-up:
-        // https://github.com/open-lakehouse/trestle/issues/75 — CAS update + txn).
-        // `StagingReservation` carries `name`, so the delete needs no re-read.
-        if let Some(reservation) = &spec.adopt_staging {
-            let ident =
-                ResourceIdent::staging_table(ResourceName::new([reservation.name.as_str()]));
-            self.delete(&ident)
-                .await
-                .map_err(Error::from)
-                .map_err(to_backend_err)?;
-        }
+        let adopt_ident = spec.adopt_staging.as_ref().map(|reservation| {
+            ResourceIdent::staging_table(ResourceName::new([reservation.name.as_str()]))
+        });
         let table = Table {
             name: spec.name,
             catalog_name: spec.at.catalog,
@@ -399,13 +424,28 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         // Persist directly via the store (the request is already validated); the
         // UC-REST create path re-reads the snapshot for the managed branch, which
         // the Delta API does not want.
-        let stored: Table = self
-            .create(table.into())
-            .await
+        //
+        // Managed adoption is a *relabel* (StagingTable → Table at the same id):
+        // both cannot exist at that id, so `replace_atomically` consumes the
+        // reservation and creates the table in one transaction — closing the
+        // orphaned-reservation window. EXTERNAL tables have no reservation and are
+        // a plain create. Take the version the store assigned the new row so the
+        // returned etag matches what a later `loadTable` reads, without assuming a
+        // fixed initial version.
+        let (resource, _, version) = match adopt_ident {
+            Some(ident) => {
+                self.replace_atomically_versioned(&ident, table.into())
+                    .await
+            }
+            None => self.create_versioned(table.into()).await,
+        }
+        .map_err(Error::from)
+        .map_err(to_backend_err)?;
+        let stored: Table = resource
+            .try_into()
             .map_err(Error::from)
-            .and_then(|(r, _)| r.try_into().map_err(Error::from))
             .map_err(to_backend_err)?;
-        Ok(table_to_resolved(stored))
+        Ok(table_to_resolved(stored, version))
     }
 
     async fn update_table_row(
@@ -417,25 +457,38 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             DeltaBackendError::InvalidArgument("table id is not a valid UUID".into())
         })?;
         let ident = ResourceIdent::Table(ResourceRef::Uuid(uuid));
-        let mut table: Table = self
-            .get(&ident)
+        // Read the row together with its version, so an `assert-etag` translates
+        // into a real compare-and-swap at write time.
+        let (resource, _, version) = self
+            .get_versioned(&ident)
             .await
             .map_err(Error::from)
-            .and_then(|(r, _)| r.try_into().map_err(Error::from))
             .map_err(to_backend_err)?;
-        // assert-etag compare-and-swap: `ResourceStore::update` (backed by
-        // `olai-store`) is an unconditional overwrite with no expected-version, so
-        // this is a *best-effort* check against the row we just read — it narrows
-        // but does not fully close the read-modify-write race. Truly closing it
-        // needs a conditional UPDATE in olai-store (trestle follow-up:
-        // https://github.com/open-lakehouse/trestle/issues/75 — CAS update + txn).
-        if let Some(expected) = &spec.expected_etag
-            && expected != &etag_of_parts(table.updated_at, table.table_id.as_deref())
-        {
-            return Err(DeltaBackendError::UpdateRequirementConflict(
-                "assert-etag failed: table has been modified".into(),
-            ));
-        }
+        let mut table: Table = resource
+            .try_into()
+            .map_err(Error::from)
+            .map_err(to_backend_err)?;
+        // assert-etag compare-and-swap: parse the expected etag back to the version
+        // it encodes and pass it as a `Precondition::Version` to the update below,
+        // so the store rejects the write atomically if the row advanced between
+        // this read and the write (closing the read-modify-write race). A malformed
+        // or non-matching etag fails fast here.
+        let precondition = match &spec.expected_etag {
+            Some(expected) => {
+                let expected_version = parse_etag_version(expected).ok_or_else(|| {
+                    DeltaBackendError::UpdateRequirementConflict(
+                        "assert-etag failed: table has been modified".into(),
+                    )
+                })?;
+                if expected_version != version {
+                    return Err(DeltaBackendError::UpdateRequirementConflict(
+                        "assert-etag failed: table has been modified".into(),
+                    ));
+                }
+                Precondition::Version(expected_version)
+            }
+            None => Precondition::Any,
+        };
         table.columns = spec.columns.into_iter().map(crate_column_to_uc).collect();
         table.properties = spec.properties.into_iter().collect();
         // `None` means "leave the stored comment unchanged" (see `UpdateTableSpec`):
@@ -443,13 +496,16 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         if let Some(comment) = spec.comment {
             table.comment = Some(comment);
         }
-        let updated: Table = self
-            .update(&ident, table.into())
+        let (updated_resource, _, new_version) = self
+            .update_checked(&ident, table.into(), precondition)
             .await
             .map_err(Error::from)
-            .and_then(|(r, _)| r.try_into().map_err(Error::from))
             .map_err(to_backend_err)?;
-        Ok(table_to_resolved(updated))
+        let updated: Table = updated_resource
+            .try_into()
+            .map_err(Error::from)
+            .map_err(to_backend_err)?;
+        Ok(table_to_resolved(updated, new_version))
     }
 
     async fn delete_table(&self, table: &TableRef, cx: &RequestContext) -> BackendResult<()> {
@@ -466,18 +522,25 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
 
     async fn rename_table(
         &self,
-        _from: &TableRef,
-        _to_name: &str,
+        from: &TableRef,
+        to_name: &str,
         _cx: &RequestContext,
     ) -> BackendResult<()> {
-        // Rename is not served yet: the `olai-store` `ObjectStore::update` trait this
-        // handler's store is reached through carries no name, so `ResourceStore::update`
-        // (crates/common/src/store.rs) forwards only properties and cannot re-key the
-        // object. A real rename needs an upstream trestle/`olai-store` change (add a name
-        // to `update`, or a dedicated `rename`) + regen + plumbing — tracked as a
-        // follow-up. Because the default `capabilities()` reports `rename: false`,
-        // `getConfig` does not advertise this endpoint, so clients never reach here.
-        Err(DeltaBackendError::NotImplemented("Delta API: renameTable"))
+        // A table's name is 3-part `[catalog, schema, table]`; a rename changes only
+        // the leaf, keeping catalog+schema. `ResourceStore::rename` re-keys the
+        // object and rewrites the leaf name inside its properties in one transaction,
+        // preserving the id, associations, and any secrets.
+        let from_ident = ResourceIdent::table(ResourceName::new([
+            from.catalog.as_str(),
+            from.schema.as_str(),
+            from.table.as_str(),
+        ]));
+        let new_name = ResourceName::new([from.catalog.as_str(), from.schema.as_str(), to_name]);
+        self.rename(&from_ident, &new_name, Precondition::Any)
+            .await
+            .map_err(Error::from)
+            .map_err(to_backend_err)?;
+        Ok(())
     }
 
     async fn allocate_staging(

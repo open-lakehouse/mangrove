@@ -31,8 +31,8 @@ use unitycatalog_common::services::encryption::EnvelopeEncryptor;
 use unitycatalog_common::store::ObjectStoreAdapter;
 use unitycatalog_common::{Error, Result};
 use unitycatalog_delta_api::DeltaApiHandler;
-use unitycatalog_postgres::GraphStore;
-use unitycatalog_sqlite::SqliteStore;
+use unitycatalog_postgres::PgCommitCoordinator;
+use unitycatalog_sqlite::SqliteCommitCoordinator;
 
 use crate::api::RequestContext;
 use crate::api::agent_skills::AgentSkillHandler;
@@ -185,12 +185,11 @@ pub async fn migrate(config: Config) -> Result<()> {
             let db_url = pg.connection_string().ok_or_else(|| {
                 Error::Generic("incomplete postgres backend configuration".into())
             })?;
-            let encryptor = migration_encryptor(&config)?;
-            let store = GraphStore::connect(&db_url, encryptor)
+            let pool = unitycatalog_postgres::connect_pool(&db_url)
                 .await
                 .map_err(|e| Error::Generic(format!("connecting to database: {e}")))?;
-            store
-                .migrate()
+            unitycatalog_postgres::unified_migrator()
+                .run(&pool)
                 .await
                 .map_err(|e| Error::Generic(format!("running migrations: {e}")))?;
         }
@@ -198,33 +197,17 @@ pub async fn migrate(config: Config) -> Result<()> {
             let path = cfg
                 .database_path()
                 .ok_or_else(|| Error::Generic("incomplete sqlite backend configuration".into()))?;
-            let encryptor = migration_encryptor(&config)?;
-            let store = SqliteStore::connect(&path, encryptor)
+            let pool = unitycatalog_sqlite::connect_pool(&path)
                 .await
                 .map_err(|e| Error::Generic(format!("opening sqlite database: {e}")))?;
-            store
-                .migrate()
+            unitycatalog_sqlite::unified_migrator()
+                .run(&pool)
                 .await
                 .map_err(|e| Error::Generic(format!("running migrations: {e}")))?;
         }
     }
     tracing::info!("migrations applied");
     Ok(())
-}
-
-/// Resolve an encryptor for the *migration* path only.
-///
-/// Schema migration never reads or writes secrets, so the KEK is irrelevant to
-/// it — the store type merely requires *an* encryptor to construct. When no
-/// `encryption` config is present (e.g. a minimal migrate-only config file) fall
-/// back to the dev KEK rather than failing; a real KEK is enforced by `serve`.
-fn migration_encryptor(config: &Config) -> Result<EnvelopeEncryptor> {
-    match config.encryption.as_ref() {
-        Some(enc) => enc.build_encryptor().map_err(Error::Generic),
-        None => crate::config::EncryptionConfig::dev_default()
-            .build_encryptor()
-            .map_err(Error::Generic),
-    }
 }
 
 /// The OpenAPI definitions mounted as Swagger UI, shared by the local and hybrid
@@ -394,27 +377,26 @@ async fn connect_postgres(
         .connection_string()
         .ok_or_else(|| Error::Generic("incomplete postgres backend configuration".into()))?;
 
-    let store = Arc::new(
-        GraphStore::connect(&db_url, encryptor)
-            .await
-            .map_err(|e| Error::Generic(format!("connecting to database: {e}")))?,
-    );
+    let pool = unitycatalog_postgres::connect_pool(&db_url)
+        .await
+        .map_err(|e| Error::Generic(format!("connecting to database: {e}")))?;
     if migrate {
-        store
-            .migrate()
+        unitycatalog_postgres::unified_migrator()
+            .run(&pool)
             .await
             .map_err(|e| Error::Generic(format!("running migrations: {e}")))?;
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
-    // `GraphStore` implements the generic object/association stores (lifted to
-    // `ResourceStore` by `ObjectStoreAdapter`) and `CommitCoordinator`, but the
-    // adapter does not forward the latter — so the coordinator role is wired from
-    // the same shared store separately. Sensitive fields (credentials, tokens) are
-    // sealed inline on the stored resources rather than in a separate secret store.
-    // Delta catalog-managed commits are persisted in the database.
-    let resource_store = Arc::new(ObjectStoreAdapter::new(store.clone()));
+    // The object/association graph store (lifted to `ResourceStore` by
+    // `ObjectStoreAdapter`) and the Delta `CommitCoordinator` are two independent
+    // handles on the same pool. Sensitive fields (credentials, tokens) are sealed
+    // inline on the stored resources rather than in a separate secret store; Delta
+    // catalog-managed commits are persisted in the `delta_commits` table.
+    let graph = unitycatalog_postgres::connect_graph(pool.clone(), encryptor);
+    let resource_store = Arc::new(ObjectStoreAdapter::new(graph));
+    let coordinator = Arc::new(PgCommitCoordinator::new(pool));
     let handler =
-        ServerHandler::try_new_tokio_with_coordinator(policy.clone(), resource_store, store)
+        ServerHandler::try_new_tokio_with_coordinator(policy.clone(), resource_store, coordinator)
             .map_err(|e| Error::Generic(e.to_string()))?;
     Ok((handler, policy))
 }
@@ -428,28 +410,27 @@ async fn connect_sqlite(
         .database_path()
         .ok_or_else(|| Error::Generic("incomplete sqlite backend configuration".into()))?;
 
-    let store = Arc::new(
-        SqliteStore::connect(&path, encryptor)
-            .await
-            .map_err(|e| Error::Generic(format!("opening sqlite database: {e}")))?,
-    );
+    let pool = unitycatalog_sqlite::connect_pool(&path)
+        .await
+        .map_err(|e| Error::Generic(format!("opening sqlite database: {e}")))?;
     if migrate {
-        store
-            .migrate()
+        unitycatalog_sqlite::unified_migrator()
+            .run(&pool)
             .await
             .map_err(|e| Error::Generic(format!("running migrations: {e}")))?;
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
-    // `SqliteStore` implements the generic object/association stores (lifted to
-    // `ResourceStore` by `ObjectStoreAdapter`) and `CommitCoordinator`, but the
-    // adapter does not forward the latter — so the coordinator role is wired from
-    // the same shared store separately. Sensitive fields (credentials, tokens)
-    // are sealed inline on the stored resources rather than in a separate secret
-    // store. Like the Postgres backend, Delta catalog-managed commits are
-    // persisted in the database rather than in memory.
-    let resource_store = Arc::new(ObjectStoreAdapter::new(store.clone()));
+    // The object/association graph store (lifted to `ResourceStore` by
+    // `ObjectStoreAdapter`) and the Delta `CommitCoordinator` are two independent
+    // handles on the same pool. Sensitive fields (credentials, tokens) are sealed
+    // inline on the stored resources rather than in a separate secret store; like
+    // the Postgres backend, Delta catalog-managed commits are persisted in the
+    // `delta_commits` table rather than in memory.
+    let graph = unitycatalog_sqlite::connect_graph(pool.clone(), encryptor);
+    let resource_store = Arc::new(ObjectStoreAdapter::new(graph));
+    let coordinator = Arc::new(SqliteCommitCoordinator::new(pool));
     let handler =
-        ServerHandler::try_new_tokio_with_coordinator(policy.clone(), resource_store, store)
+        ServerHandler::try_new_tokio_with_coordinator(policy.clone(), resource_store, coordinator)
             .map_err(|e| Error::Generic(e.to_string()))?;
     Ok((handler, policy))
 }
