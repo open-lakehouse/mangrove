@@ -233,12 +233,6 @@ pub trait ProvidesResourceStore: Send + Sync + 'static {
     fn store(&self) -> &dyn ResourceStore;
 }
 
-/// Provides access to the generic, untyped [`ObjectStore`] for code that wants
-/// to work at the `Object<ObjectLabel>` level rather than the typed `Resource` level.
-pub trait ProvidesObjectStore: Send + Sync + 'static {
-    fn object_store(&self) -> &dyn olai_store::ObjectStore<ObjectLabel>;
-}
-
 /// Adapter that implements [`ResourceStore`] for any store implementing
 /// the generic [`ObjectStore`] and [`AssociationStore`] traits.
 ///
