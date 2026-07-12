@@ -121,6 +121,7 @@ federation = ["proxy"]
 bin = [
   "axum",
   "proxy",
+  "dep:unitycatalog-postgres",
   "dep:unitycatalog-sqlite",
   "dep:base64",
   "dep:clap",
@@ -129,13 +130,6 @@ bin = [
   "dep:swagger-ui-dist",
   "dep:tower-http",
 ]
-
-# The Postgres storage backend. Temporarily split out of `bin` for the SqlStore
-# adoption spike: the hand-written Postgres backend has not yet been migrated to
-# the refactored olai-store API (its `sqlx::query_as!(Object)` cannot decode the
-# new u64 `version` from a Postgres BIGINT). Re-fold into `bin` once the Postgres
-# backend is migrated — see the migration plan follow-up.
-postgres = ["bin", "dep:unitycatalog-postgres"]
 
 # Gates the Azurite credential-vending integration test
 # (`tests/credential_vending_azurite.rs`). Requires a running Azurite blob

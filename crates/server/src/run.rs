@@ -31,7 +31,6 @@ use unitycatalog_common::services::encryption::EnvelopeEncryptor;
 use unitycatalog_common::store::ObjectStoreAdapter;
 use unitycatalog_common::{Error, Result};
 use unitycatalog_delta_api::DeltaApiHandler;
-#[cfg(feature = "postgres")]
 use unitycatalog_postgres::GraphStore;
 use unitycatalog_sqlite::SqliteStore;
 
@@ -54,7 +53,6 @@ use crate::api::tables::TableHandler;
 use crate::api::tag_policies::TagPolicyHandler;
 use crate::api::temporary_credentials::TemporaryCredentialHandler;
 use crate::api::volumes::VolumeHandler;
-#[cfg(feature = "postgres")]
 use crate::config::PostgresBackendConfig;
 use crate::config::{Backend, Config, SqliteBackendConfig, UiConfig};
 use crate::policy::{ConstantPolicy, Policy};
@@ -142,14 +140,7 @@ pub async fn serve(config: Config) -> Result<()> {
         tracing::info!("ephemeral in-memory backend: applying migrations at startup");
     }
     let (handler, policy) = match &config.backend {
-        #[cfg(feature = "postgres")]
         Backend::Postgres(pg) => connect_postgres(pg, encryptor, migrate_on_connect).await?,
-        #[cfg(not(feature = "postgres"))]
-        Backend::Postgres(_) => {
-            return Err(Error::Generic(
-                "postgres backend not compiled in (enable the `postgres` feature)".into(),
-            ));
-        }
         Backend::Sqlite(cfg) => connect_sqlite(cfg, encryptor, migrate_on_connect).await?,
     };
     let handler = handler
@@ -190,7 +181,6 @@ pub async fn serve(config: Config) -> Result<()> {
 /// The only schema-mutating path (see the module docs).
 pub async fn migrate(config: Config) -> Result<()> {
     match &config.backend {
-        #[cfg(feature = "postgres")]
         Backend::Postgres(pg) => {
             let db_url = pg.connection_string().ok_or_else(|| {
                 Error::Generic("incomplete postgres backend configuration".into())
@@ -203,12 +193,6 @@ pub async fn migrate(config: Config) -> Result<()> {
                 .migrate()
                 .await
                 .map_err(|e| Error::Generic(format!("running migrations: {e}")))?;
-        }
-        #[cfg(not(feature = "postgres"))]
-        Backend::Postgres(_) => {
-            return Err(Error::Generic(
-                "postgres backend not compiled in (enable the `postgres` feature)".into(),
-            ));
         }
         Backend::Sqlite(cfg) => {
             let path = cfg
@@ -401,7 +385,6 @@ pub(crate) async fn run(api_router: Router, ui: &UiConfig, host: &str, port: u16
     Ok(())
 }
 
-#[cfg(feature = "postgres")]
 async fn connect_postgres(
     pg: &PostgresBackendConfig,
     encryptor: EnvelopeEncryptor,
@@ -423,15 +406,16 @@ async fn connect_postgres(
             .map_err(|e| Error::Generic(format!("running migrations: {e}")))?;
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
-    // The Postgres store also implements `CommitCoordinator`, so Delta
-    // catalog-managed commits are persisted in the database rather than memory.
-    let handler = ServerHandler::try_new_tokio_with_coordinator(
-        policy.clone(),
-        store.clone(),
-        store.clone(),
-        store,
-    )
-    .map_err(|e| Error::Generic(e.to_string()))?;
+    // `GraphStore` implements the generic object/association stores (lifted to
+    // `ResourceStore` by `ObjectStoreAdapter`) and `CommitCoordinator`, but the
+    // adapter does not forward the latter — so the coordinator role is wired from
+    // the same shared store separately. Sensitive fields (credentials, tokens) are
+    // sealed inline on the stored resources rather than in a separate secret store.
+    // Delta catalog-managed commits are persisted in the database.
+    let resource_store = Arc::new(ObjectStoreAdapter::new(store.clone()));
+    let handler =
+        ServerHandler::try_new_tokio_with_coordinator(policy.clone(), resource_store, store)
+            .map_err(|e| Error::Generic(e.to_string()))?;
     Ok((handler, policy))
 }
 

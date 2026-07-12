@@ -357,7 +357,13 @@ ui-fingerprint-check:
 build-sqlx: _start_pg_sqlx
     # Wait for PostgreSQL to be ready
     sleep 1
-    # Run migrations to create tables
+    # `cargo sqlx prepare` recompiles this crate AND its dependencies live, so the
+    # generic `olai_store::PgStore` queries need the object/association schema
+    # present too. Apply olai-store's own Postgres migrations first (piped straight
+    # in, bypassing the `_sqlx_migrations` ledger so the two migration sources don't
+    # collide on it), then the mangrove-local `delta_commits` schema.
+    cat ../trestle/crates/olai-store/migrations/postgres/*.sql \
+        | docker exec -i unitycatalog-sqlx-pg psql -U postgres -d postgres -v ON_ERROR_STOP=1
     DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres cargo sqlx migrate run --source ./crates/postgres/migrations
     # Prepare the postgres crate's queries from its OWN directory (not
     # `--workspace`), so the cache lands in `crates/postgres/.sqlx/` and travels

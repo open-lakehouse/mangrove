@@ -11,12 +11,6 @@ pub enum Error {
     #[error(transparent)]
     Migration(#[from] sqlx::migrate::MigrateError),
 
-    #[error("Invalid Url: '{0}'")]
-    InvalidUrl(#[from] url::ParseError),
-
-    #[error("Failed to decode page token: '{0}'")]
-    DecodePageToken(#[from] base64::DecodeError),
-
     #[error("Generic error: {0}")]
     Generic(String),
 
@@ -64,8 +58,6 @@ impl From<Error> for olai_store::Error {
         match e {
             Error::EntityNotFound(_) => olai_store::Error::NotFound,
             Error::AlreadyExists(_) => olai_store::Error::AlreadyExists,
-            Error::InvalidUrl(e) => olai_store::Error::InvalidArgument(e.to_string()),
-            Error::DecodePageToken(e) => olai_store::Error::InvalidArgument(e.to_string()),
             other => olai_store::Error::Generic(other.to_string()),
         }
     }
@@ -76,8 +68,6 @@ impl From<Error> for CommonError {
         match e {
             Error::Connection(e) => CommonError::generic(e.to_string()),
             Error::Migration(e) => CommonError::generic(e.to_string()),
-            Error::InvalidUrl(e) => CommonError::InvalidArgument(e.to_string()),
-            Error::DecodePageToken(e) => CommonError::InvalidArgument(e.to_string()),
             Error::Generic(e) => CommonError::Generic(e),
             Error::EntityNotFound(_) => CommonError::NotFound,
             Error::AlreadyExists(_) => CommonError::AlreadyExists,

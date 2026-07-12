@@ -3847,22 +3847,18 @@ name = "olai-uc-postgres"
 version = "0.0.1"
 dependencies = [
  "async-trait",
- "base64",
  "bytes",
  "chrono",
- "itertools 0.14.0",
- "olai-http",
+ "futures",
  "olai-store",
  "olai-uc-common",
  "olai-uc-delta-api",
- "paste",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror",
  "tokio",
  "tracing",
- "url",
  "uuid",
 ]
 
