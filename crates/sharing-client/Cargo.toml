@@ -15,7 +15,7 @@ keywords.workspace = true
 name = "unitycatalog_sharing_client"
 
 [dependencies]
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2" }
 
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }

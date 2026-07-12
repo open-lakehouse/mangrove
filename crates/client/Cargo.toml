@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-client"
-version = "0.0.1"
+version = "0.0.2"
 description = "Async Rust client for the Unity Catalog REST API."
 edition.workspace = true
 license.workspace = true
@@ -15,8 +15,8 @@ keywords.workspace = true
 name = "unitycatalog_client"
 
 [dependencies]
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1" }
-unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.1" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2" }
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.2" }
 
 olai-http = { workspace = true }
 percent-encoding = "2.3"

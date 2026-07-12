@@ -16,8 +16,8 @@ path = "src/main.rs"
 
 [dependencies]
 # path dependencies (in alphabetical order)
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.1" }
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1", features = ["axum", "store"] }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.2" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2", features = ["axum", "store"] }
 
 # workspace dependencies (in alphabetical order)
 chrono = { workspace = true }

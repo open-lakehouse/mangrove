@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-object-store"
-version = "0.0.1"
+version = "0.0.2"
 description = "object_store implementation backed by Unity Catalog credential vending. Read and write data governed by UC volumes, tables, and external locations."
 categories = ["filesystem"]
 documentation = "https://docs.rs/olai-uc-object-store"
@@ -17,8 +17,8 @@ keywords.workspace = true
 name = "unitycatalog_object_store"
 
 [dependencies]
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.1", default-features = false }
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.1", default-features = false }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.2", default-features = false }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2", default-features = false }
 
 async-trait = { workspace = true }
 chrono = { workspace = true }
