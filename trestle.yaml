@@ -12,7 +12,13 @@ version: 1
 project:
   name: unitycatalog
 generate:
-  proto_lib: prost
+  proto_lib: buffa
+  # Serialize snake_case (proto) JSON field names on the wire — Unity Catalog
+  # requires snake_case bodies (e.g. `catalog_name`), which buffa can't emit
+  # natively (it hardcodes proto3-JSON camelCase). trestle post-processes the
+  # buffa output to swap the serde rename/alias so it emits snake_case while
+  # still accepting camelCase on read. Only valid under `proto_lib: buffa`.
+  json_field_names: proto
   descriptors: descriptors.bin
 
   servers:

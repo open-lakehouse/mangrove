@@ -12,6 +12,8 @@ crate-type = ["cdylib"]
 unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client" }
 unitycatalog-common = { package = "olai-uc-common", path = "../../crates/common", features = ["node"] }
 
+# Generated bindings encode models across the napi boundary via `buffa::Message`.
+buffa = { workspace = true }
 env_logger = { workspace = true }
 futures = { workspace = true }
 napi = { workspace = true }

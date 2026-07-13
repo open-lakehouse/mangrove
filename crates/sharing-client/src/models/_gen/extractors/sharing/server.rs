@@ -25,6 +25,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListSharesRequest {
         Ok(ListSharesRequest {
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -38,7 +39,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetShareRequest {
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(GetShareRequest { name })
+        Ok(GetShareRequest {
+            name,
+            ..Default::default()
+        })
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListSchemasRequest {
@@ -69,6 +73,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListSchemasRequest {
             share,
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -101,6 +106,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListTablesRequest {
             name,
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -132,6 +138,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListAllTablesRequest
             name,
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }

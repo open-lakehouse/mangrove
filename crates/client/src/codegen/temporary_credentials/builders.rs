@@ -21,7 +21,8 @@ impl GenerateTemporaryTableCredentialsBuilder {
     ) -> Self {
         let request = GenerateTemporaryTableCredentialsRequest {
             table_id: table_id.into(),
-            operation: operation as i32,
+            operation: buffa::EnumValue::Known(operation),
+            ..Default::default()
         };
         Self { client, request }
     }
@@ -50,7 +51,7 @@ impl GenerateTemporaryPathCredentialsBuilder {
     ) -> Self {
         let request = GenerateTemporaryPathCredentialsRequest {
             url: url.into(),
-            operation: operation as i32,
+            operation: buffa::EnumValue::Known(operation),
             ..Default::default()
         };
         Self { client, request }
@@ -87,7 +88,8 @@ impl GenerateTemporaryVolumeCredentialsBuilder {
     ) -> Self {
         let request = GenerateTemporaryVolumeCredentialsRequest {
             volume_id: volume_id.into(),
-            operation: operation as i32,
+            operation: buffa::EnumValue::Known(operation),
+            ..Default::default()
         };
         Self { client, request }
     }

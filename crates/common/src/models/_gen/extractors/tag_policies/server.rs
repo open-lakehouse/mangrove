@@ -25,6 +25,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListTagPoliciesReque
         Ok(ListTagPoliciesRequest {
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -51,7 +52,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetTagPolicyRequest 
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(GetTagPolicyRequest { tag_key })
+        Ok(GetTagPolicyRequest {
+            tag_key,
+            ..Default::default()
+        })
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateTagPolicyRequest {
@@ -75,6 +79,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateTagPolicyRequest {
             tag_key,
             tag_policy,
             update_mask,
+            ..Default::default()
         })
     }
 }
@@ -88,6 +93,9 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteTagPolicyReque
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteTagPolicyRequest { tag_key })
+        Ok(DeleteTagPolicyRequest {
+            tag_key,
+            ..Default::default()
+        })
     }
 }

@@ -73,6 +73,16 @@ napi = { version = "3.5", default-features = false, features = [
   "web_stream",
 ] }
 napi-derive = "3.5"
+# buffa proto runtime consumed by the generated models (replaces the prost +
+# prost-serde + tonic-prost model stack). Version tracks the
+# `buf.build/anthropics/buffa:v0.7.0` plugin pinned in buf.gen.yaml. NOTE: the
+# snake_case JSON wire-compat (see `json_field_names: proto` in trestle.yaml) is
+# a trestle post-emit rewrite of buffa's `#[serde(rename = "camelCase", ...)]` /
+# `serialize_entry("camelCase", ...)` output — a buffa release that changes that
+# emission shape would silently reintroduce camelCase, so keep this version and
+# the plugin version in lockstep and re-verify the wire fixtures on any bump.
+buffa = { version = "0.7", features = ["json"] }
+buffa-types = { version = "0.7" }
 object_store = { version = "0.13.2", features = ["azure", "aws", "gcp"] }
 olai-http = { version = "0.0.5" }
 olai-store = { version = "0.0.6" }
@@ -81,6 +91,10 @@ pbjson-types = "0.9"
 prost = { version = "0.14.1" }
 prost-types = { version = "0.14.1" }
 pyo3 = { version = "0.24", features = ["macros", "indexmap"] }
+# Bridges generated buffa models across the PyO3 boundary (serde <-> Python
+# objects) in the trestle-generated `models/_gen/pyo3_impls.rs`. Behind the
+# `python` feature on `common`.
+pythonize = { version = "0.24" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 serde_yml = { version = "0.0.12" }

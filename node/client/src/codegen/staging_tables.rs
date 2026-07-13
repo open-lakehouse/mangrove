@@ -1,9 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports, dead_code, clippy::all)]
 use crate::error::NapiErrorExt;
+use buffa::Message;
 use napi::bindgen_prelude::Buffer;
 use napi_derive::napi;
-use prost::Message;
 use std::collections::HashMap;
 use unitycatalog_client::StagingTableClient;
 use unitycatalog_common::models::staging_tables::v1::*;

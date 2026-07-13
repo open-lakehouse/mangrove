@@ -35,6 +35,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListPoliciesRequest 
             include_inherited,
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -59,6 +60,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreatePolicyRequest {
             on_securable_type,
             on_securable_fullname,
             policy_info,
+            ..Default::default()
         })
     }
 }
@@ -76,6 +78,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetPolicyRequest {
             on_securable_type,
             on_securable_fullname,
             name,
+            ..Default::default()
         })
     }
 }
@@ -102,6 +105,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdatePolicyRequest {
             name,
             policy_info,
             update_mask,
+            ..Default::default()
         })
     }
 }
@@ -119,6 +123,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeletePolicyRequest 
             on_securable_type,
             on_securable_fullname,
             name,
+            ..Default::default()
         })
     }
 }

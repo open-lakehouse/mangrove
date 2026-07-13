@@ -40,6 +40,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListTableSummariesRe
             max_results,
             page_token,
             include_manifest_capabilities,
+            ..Default::default()
         })
     }
 }
@@ -96,6 +97,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListTablesRequest {
             omit_username,
             include_browse,
             include_manifest_capabilities,
+            ..Default::default()
         })
     }
 }
@@ -145,6 +147,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetTableRequest {
             include_delta_metadata,
             include_browse,
             include_manifest_capabilities,
+            ..Default::default()
         })
     }
 }
@@ -159,7 +162,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetTableExistsReques
                 .extract::<axum::extract::Path<String>>()
                 .await
                 .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(GetTableExistsRequest { full_name })
+        Ok(GetTableExistsRequest {
+            full_name,
+            ..Default::default()
+        })
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteTableRequest {
@@ -173,6 +179,9 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteTableRequest {
                 .extract::<axum::extract::Path<String>>()
                 .await
                 .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteTableRequest { full_name })
+        Ok(DeleteTableRequest {
+            full_name,
+            ..Default::default()
+        })
     }
 }

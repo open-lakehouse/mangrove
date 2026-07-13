@@ -16,6 +16,9 @@ name = "datafusion_unitycatalog"
 
 [dependencies]
 async-trait = { workspace = true }
+# buffa runtime: lowering UC model types into DataFusion plans reads buffa
+# enum/message fields via buffa's accessors.
+buffa = { workspace = true }
 bytes = { workspace = true }
 dashmap = { workspace = true }
 datafusion = { workspace = true }

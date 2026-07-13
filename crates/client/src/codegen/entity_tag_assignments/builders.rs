@@ -59,7 +59,8 @@ impl CreateEntityTagAssignmentBuilder {
         tag_assignment: EntityTagAssignment,
     ) -> Self {
         let request = CreateEntityTagAssignmentRequest {
-            tag_assignment: Some(tag_assignment),
+            tag_assignment: buffa::MessageField::some(tag_assignment),
+            ..Default::default()
         };
         Self { client, request }
     }
@@ -91,6 +92,7 @@ impl GetEntityTagAssignmentBuilder {
             entity_type: entity_type.into(),
             entity_name: entity_name.into(),
             tag_key: tag_key.into(),
+            ..Default::default()
         };
         Self { client, request }
     }
@@ -123,7 +125,7 @@ impl UpdateEntityTagAssignmentBuilder {
             entity_type: entity_type.into(),
             entity_name: entity_name.into(),
             tag_key: tag_key.into(),
-            tag_assignment: Some(tag_assignment),
+            tag_assignment: buffa::MessageField::some(tag_assignment),
             ..Default::default()
         };
         Self { client, request }
@@ -161,6 +163,7 @@ impl DeleteEntityTagAssignmentBuilder {
             entity_type: entity_type.into(),
             entity_name: entity_name.into(),
             tag_key: tag_key.into(),
+            ..Default::default()
         };
         Self { client, request }
     }

@@ -71,7 +71,8 @@ impl CreatePolicyBuilder {
         let request = CreatePolicyRequest {
             on_securable_type: on_securable_type.into(),
             on_securable_fullname: on_securable_fullname.into(),
-            policy_info: Some(policy_info),
+            policy_info: buffa::MessageField::some(policy_info),
+            ..Default::default()
         };
         Self { client, request }
     }
@@ -103,6 +104,7 @@ impl GetPolicyBuilder {
             on_securable_type: on_securable_type.into(),
             on_securable_fullname: on_securable_fullname.into(),
             name: name.into(),
+            ..Default::default()
         };
         Self { client, request }
     }
@@ -135,7 +137,7 @@ impl UpdatePolicyBuilder {
             on_securable_type: on_securable_type.into(),
             on_securable_fullname: on_securable_fullname.into(),
             name: name.into(),
-            policy_info: Some(policy_info),
+            policy_info: buffa::MessageField::some(policy_info),
             ..Default::default()
         };
         Self { client, request }
@@ -173,6 +175,7 @@ impl DeletePolicyBuilder {
             on_securable_type: on_securable_type.into(),
             on_securable_fullname: on_securable_fullname.into(),
             name: name.into(),
+            ..Default::default()
         };
         Self { client, request }
     }

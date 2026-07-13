@@ -18,6 +18,8 @@ name = "unitycatalog_client"
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2" }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.2" }
 
+# Generated request builders wrap enum query params in `buffa::EnumValue::Known`.
+buffa = { workspace = true }
 olai-http = { workspace = true }
 percent-encoding = "2.3"
 reqwest = { workspace = true }

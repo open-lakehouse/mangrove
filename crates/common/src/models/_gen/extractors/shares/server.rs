@@ -25,6 +25,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListSharesRequest {
         Ok(ListSharesRequest {
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -65,6 +66,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetShareRequest {
         Ok(GetShareRequest {
             name,
             include_shared_data,
+            ..Default::default()
         })
     }
 }
@@ -92,6 +94,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateShareRequest {
             new_name,
             owner,
             comment,
+            ..Default::default()
         })
     }
 }
@@ -105,7 +108,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteShareRequest {
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteShareRequest { name })
+        Ok(DeleteShareRequest {
+            name,
+            ..Default::default()
+        })
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetPermissionsRequest {
@@ -136,6 +142,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetPermissionsReques
             name,
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -160,6 +167,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdatePermissionsRequest 
             name,
             changes,
             omit_permissions_list,
+            ..Default::default()
         })
     }
 }

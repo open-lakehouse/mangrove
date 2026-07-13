@@ -640,6 +640,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "borsh"
+version = "1.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f3f6da4992df95bbcd9af42a6c7dcb994498fc9048230405f3b36ff7cd3f145"
+dependencies = [
+ "bytes",
+ "cfg_aliases",
+]
+
+[[package]]
 name = "brotli"
 version = "8.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -658,6 +668,37 @@ checksum = "5962523e1b92ce1b5e793d9169b9943eece10d39f62550bc04bb605d75b94924"
 dependencies = [
  "alloc-no-stdlib",
  "alloc-stdlib",
+]
+
+[[package]]
+name = "buffa"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec95898e2ef31d6266042f21c398fa5ff8334d14d6b2ac5fb38b55448d94f595"
+dependencies = [
+ "base64",
+ "bytes",
+ "compact_str 0.9.1",
+ "ecow",
+ "hashbrown 0.15.5",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "smol_str",
+ "thiserror",
+]
+
+[[package]]
+name = "buffa-types"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5103995623b8e213abfa84b89feb98a0df84514607aafd52e6add9ca53c57d2e"
+dependencies = [
+ "buffa",
+ "bytes",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -874,6 +915,21 @@ dependencies = [
  "itoa",
  "rustversion",
  "ryu",
+ "static_assertions",
+]
+
+[[package]]
+name = "compact_str"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9dfdd1c2274d9aa354115b09dc9a901d6c5576818cdf70d14cae2bdb47df00ab"
+dependencies = [
+ "castaway",
+ "cfg-if",
+ "itoa",
+ "rustversion",
+ "ryu",
+ "serde",
  "static_assertions",
 ]
 
@@ -2171,6 +2227,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 
 [[package]]
+name = "ecow"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78e4f79b296fbaab6ce2e22d52cb4c7f010fe0ebe7a32e34fa25885fd797bd02"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "either"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2571,6 +2636,7 @@ dependencies = [
  "allocator-api2",
  "equivalent",
  "foldhash 0.1.5",
+ "serde",
 ]
 
 [[package]]
@@ -3675,8 +3741,6 @@ dependencies = [
 [[package]]
 name = "olai-store"
 version = "0.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "114a5f83c8734b7917c5ab4ddbda3a76b8facca507961e3bf8f8a576c9ad1bc6"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -3698,6 +3762,7 @@ dependencies = [
 name = "olai-uc-cli"
 version = "0.0.1"
 dependencies = [
+ "buffa",
  "chrono",
  "clap",
  "comfy-table",
@@ -3720,6 +3785,7 @@ dependencies = [
 name = "olai-uc-client"
 version = "0.0.2"
 dependencies = [
+ "buffa",
  "bytes",
  "chrono",
  "env_logger 0.10.2",
@@ -3753,6 +3819,8 @@ dependencies = [
  "async-trait",
  "axum",
  "axum-extra",
+ "buffa",
+ "buffa-types",
  "bytes",
  "chrono",
  "futures",
@@ -3768,6 +3836,7 @@ dependencies = [
  "percent-encoding",
  "prost",
  "pyo3",
+ "pythonize",
  "serde",
  "serde_json",
  "serde_yml",
@@ -3789,6 +3858,7 @@ name = "olai-uc-datafusion"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "buffa",
  "bytes",
  "dashmap",
  "datafusion",
@@ -3873,6 +3943,7 @@ dependencies = [
  "axum",
  "axum-extra",
  "base64",
+ "buffa",
  "bytes",
  "chrono",
  "clap",
@@ -3918,6 +3989,8 @@ version = "0.0.1"
 dependencies = [
  "axum",
  "axum-extra",
+ "buffa",
+ "buffa-types",
  "chrono",
  "delta_kernel",
  "futures",
@@ -4433,6 +4506,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pythonize"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5bcac0d0b71821f0d69e42654f1e15e5c94b85196446c4de9588951a2117e7b"
+dependencies = [
+ "pyo3",
+ "serde",
+]
+
+[[package]]
 name = "quick-xml"
 version = "0.37.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4613,7 +4696,7 @@ checksum = "eabd94c2f37801c20583fc49dd5cd6b0ba68c716787c2dd6ed18571e1e63117b"
 dependencies = [
  "bitflags",
  "cassowary",
- "compact_str",
+ "compact_str 0.8.2",
  "crossterm 0.28.1",
  "indoc",
  "instability",
@@ -5301,6 +5384,16 @@ version = "1.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ed6a63f02c8539c91a8685a86f4099661ba3da017932f6ebbea6de3f0fa7c90"
 dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "smol_str"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9676b89cd56310a87b93dec47b11af744f34d5fc9f367b829474eec0a891350d"
+dependencies = [
+ "borsh",
  "serde",
 ]
 
@@ -6197,6 +6290,7 @@ name = "unitycatalog-acceptance"
 version = "0.0.1"
 dependencies = [
  "async-trait",
+ "buffa",
  "chrono",
  "comfy-table",
  "console",
@@ -6254,6 +6348,7 @@ dependencies = [
 name = "unitycatalog_client"
 version = "0.0.0"
 dependencies = [
+ "buffa",
  "env_logger 0.11.10",
  "futures",
  "napi",

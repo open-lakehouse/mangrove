@@ -23,6 +23,9 @@ name = "unitycatalog_common"
 [dependencies]
 aes-gcm = { workspace = true }
 async-trait = { workspace = true }
+# buffa runtime consumed by the generated models (replaces the prost stack).
+buffa = { workspace = true }
+buffa-types = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
 itertools = { workspace = true }
@@ -62,8 +65,12 @@ sqlx = { workspace = true, optional = true, features = [
   "json",
 ] }
 
-# derive pyclass for generated messages
+# PyO3 boundary for generated models: trestle emits `Py*` wrapper `#[pyclass]`
+# types in `models/_gen/pyo3_impls.rs` that convert to/from the buffa models via
+# pythonize (buffa has no attribute opt, so `#[pyclass]` can't be injected onto
+# the models directly the way the old prost stack did).
 pyo3 = { workspace = true, optional = true }
+pythonize = { workspace = true, optional = true }
 
 # derive #[napi] for generated enums (used by node/client)
 napi-derive = { workspace = true, optional = true }
@@ -102,8 +109,8 @@ rest-client = ["dep:futures", "olai-http"]
 # exposes functionality that help testing cutom handler / router implementations.
 integration = ["http-body-util", "mime", "axum"]
 
-# derives pyclass for generated messages
-python = ["pyo3"]
+# PyO3 wrapper layer for generated messages (Py* types + pythonize bridges).
+python = ["pyo3", "pythonize"]
 
 # derives #[napi] for generated enums (used by node/client)
 node = ["napi-derive"]

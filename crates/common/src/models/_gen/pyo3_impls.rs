@@ -26,16 +26,16 @@ impl PyAgentSkillType {
 }
 impl ::core::convert::From<super::agent_skills::v0alpha1::AgentSkillType> for PyAgentSkillType {
     fn from(value: super::agent_skills::v0alpha1::AgentSkillType) -> Self {
-        PyAgentSkillType::__from_proto_i32(value as i32)
+        PyAgentSkillType::__from_proto_i32(
+            <super::agent_skills::v0alpha1::AgentSkillType as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyAgentSkillType> for super::agent_skills::v0alpha1::AgentSkillType {
     fn from(value: PyAgentSkillType) -> Self {
         let n = value.__to_proto_i32();
-        <super::agent_skills::v0alpha1::AgentSkillType as ::core::convert::TryFrom<i32>>::try_from(
-            n,
-        )
-        .unwrap_or_default()
+        <super::agent_skills::v0alpha1::AgentSkillType as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -74,13 +74,15 @@ impl PyInvocationProtocol {
 }
 impl ::core::convert::From<super::agents::v0alpha1::InvocationProtocol> for PyInvocationProtocol {
     fn from(value: super::agents::v0alpha1::InvocationProtocol) -> Self {
-        PyInvocationProtocol::__from_proto_i32(value as i32)
+        PyInvocationProtocol::__from_proto_i32(
+            <super::agents::v0alpha1::InvocationProtocol as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyInvocationProtocol> for super::agents::v0alpha1::InvocationProtocol {
     fn from(value: PyInvocationProtocol) -> Self {
         let n = value.__to_proto_i32();
-        <super::agents::v0alpha1::InvocationProtocol as ::core::convert::TryFrom<i32>>::try_from(n)
+        <super::agents::v0alpha1::InvocationProtocol as ::buffa::Enumeration>::from_i32(n)
             .unwrap_or_default()
     }
 }
@@ -114,14 +116,15 @@ impl PyCatalogType {
 }
 impl ::core::convert::From<super::catalogs::v1::CatalogType> for PyCatalogType {
     fn from(value: super::catalogs::v1::CatalogType) -> Self {
-        PyCatalogType::__from_proto_i32(value as i32)
+        PyCatalogType::__from_proto_i32(
+            <super::catalogs::v1::CatalogType as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyCatalogType> for super::catalogs::v1::CatalogType {
     fn from(value: PyCatalogType) -> Self {
         let n = value.__to_proto_i32();
-        <super::catalogs::v1::CatalogType as ::core::convert::TryFrom<i32>>::try_from(n)
-            .unwrap_or_default()
+        <super::catalogs::v1::CatalogType as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -151,14 +154,15 @@ impl PyPurpose {
 }
 impl ::core::convert::From<super::credentials::v1::Purpose> for PyPurpose {
     fn from(value: super::credentials::v1::Purpose) -> Self {
-        PyPurpose::__from_proto_i32(value as i32)
+        PyPurpose::__from_proto_i32(
+            <super::credentials::v1::Purpose as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyPurpose> for super::credentials::v1::Purpose {
     fn from(value: PyPurpose) -> Self {
         let n = value.__to_proto_i32();
-        <super::credentials::v1::Purpose as ::core::convert::TryFrom<i32>>::try_from(n)
-            .unwrap_or_default()
+        <super::credentials::v1::Purpose as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -190,7 +194,9 @@ impl ::core::convert::From<super::functions::v1::FunctionParameterType>
     for PyFunctionParameterType
 {
     fn from(value: super::functions::v1::FunctionParameterType) -> Self {
-        PyFunctionParameterType::__from_proto_i32(value as i32)
+        PyFunctionParameterType::__from_proto_i32(
+            <super::functions::v1::FunctionParameterType as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyFunctionParameterType>
@@ -198,7 +204,7 @@ impl ::core::convert::From<PyFunctionParameterType>
 {
     fn from(value: PyFunctionParameterType) -> Self {
         let n = value.__to_proto_i32();
-        <super::functions::v1::FunctionParameterType as ::core::convert::TryFrom<i32>>::try_from(n)
+        <super::functions::v1::FunctionParameterType as ::buffa::Enumeration>::from_i32(n)
             .unwrap_or_default()
     }
 }
@@ -226,13 +232,15 @@ impl PyParameterMode {
 }
 impl ::core::convert::From<super::functions::v1::ParameterMode> for PyParameterMode {
     fn from(value: super::functions::v1::ParameterMode) -> Self {
-        PyParameterMode::__from_proto_i32(value as i32)
+        PyParameterMode::__from_proto_i32(
+            <super::functions::v1::ParameterMode as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyParameterMode> for super::functions::v1::ParameterMode {
     fn from(value: PyParameterMode) -> Self {
         let n = value.__to_proto_i32();
-        <super::functions::v1::ParameterMode as ::core::convert::TryFrom<i32>>::try_from(n)
+        <super::functions::v1::ParameterMode as ::buffa::Enumeration>::from_i32(n)
             .unwrap_or_default()
     }
 }
@@ -260,13 +268,15 @@ impl PyParameterStyle {
 }
 impl ::core::convert::From<super::functions::v1::ParameterStyle> for PyParameterStyle {
     fn from(value: super::functions::v1::ParameterStyle) -> Self {
-        PyParameterStyle::__from_proto_i32(value as i32)
+        PyParameterStyle::__from_proto_i32(
+            <super::functions::v1::ParameterStyle as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyParameterStyle> for super::functions::v1::ParameterStyle {
     fn from(value: PyParameterStyle) -> Self {
         let n = value.__to_proto_i32();
-        <super::functions::v1::ParameterStyle as ::core::convert::TryFrom<i32>>::try_from(n)
+        <super::functions::v1::ParameterStyle as ::buffa::Enumeration>::from_i32(n)
             .unwrap_or_default()
     }
 }
@@ -297,14 +307,15 @@ impl PyRoutineBody {
 }
 impl ::core::convert::From<super::functions::v1::RoutineBody> for PyRoutineBody {
     fn from(value: super::functions::v1::RoutineBody) -> Self {
-        PyRoutineBody::__from_proto_i32(value as i32)
+        PyRoutineBody::__from_proto_i32(
+            <super::functions::v1::RoutineBody as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyRoutineBody> for super::functions::v1::RoutineBody {
     fn from(value: PyRoutineBody) -> Self {
         let n = value.__to_proto_i32();
-        <super::functions::v1::RoutineBody as ::core::convert::TryFrom<i32>>::try_from(n)
-            .unwrap_or_default()
+        <super::functions::v1::RoutineBody as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -331,13 +342,15 @@ impl PySecurityType {
 }
 impl ::core::convert::From<super::functions::v1::SecurityType> for PySecurityType {
     fn from(value: super::functions::v1::SecurityType) -> Self {
-        PySecurityType::__from_proto_i32(value as i32)
+        PySecurityType::__from_proto_i32(
+            <super::functions::v1::SecurityType as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PySecurityType> for super::functions::v1::SecurityType {
     fn from(value: PySecurityType) -> Self {
         let n = value.__to_proto_i32();
-        <super::functions::v1::SecurityType as ::core::convert::TryFrom<i32>>::try_from(n)
+        <super::functions::v1::SecurityType as ::buffa::Enumeration>::from_i32(n)
             .unwrap_or_default()
     }
 }
@@ -371,13 +384,15 @@ impl PySqlDataAccess {
 }
 impl ::core::convert::From<super::functions::v1::SqlDataAccess> for PySqlDataAccess {
     fn from(value: super::functions::v1::SqlDataAccess) -> Self {
-        PySqlDataAccess::__from_proto_i32(value as i32)
+        PySqlDataAccess::__from_proto_i32(
+            <super::functions::v1::SqlDataAccess as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PySqlDataAccess> for super::functions::v1::SqlDataAccess {
     fn from(value: PySqlDataAccess) -> Self {
         let n = value.__to_proto_i32();
-        <super::functions::v1::SqlDataAccess as ::core::convert::TryFrom<i32>>::try_from(n)
+        <super::functions::v1::SqlDataAccess as ::buffa::Enumeration>::from_i32(n)
             .unwrap_or_default()
     }
 }
@@ -408,14 +423,15 @@ impl PyPolicyType {
 }
 impl ::core::convert::From<super::policies::v1::PolicyType> for PyPolicyType {
     fn from(value: super::policies::v1::PolicyType) -> Self {
-        PyPolicyType::__from_proto_i32(value as i32)
+        PyPolicyType::__from_proto_i32(
+            <super::policies::v1::PolicyType as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyPolicyType> for super::policies::v1::PolicyType {
     fn from(value: PyPolicyType) -> Self {
         let n = value.__to_proto_i32();
-        <super::policies::v1::PolicyType as ::core::convert::TryFrom<i32>>::try_from(n)
-            .unwrap_or_default()
+        <super::policies::v1::PolicyType as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -447,7 +463,11 @@ impl ::core::convert::From<super::providers::v1::ProviderAuthenticationType>
     for PyProviderAuthenticationType
 {
     fn from(value: super::providers::v1::ProviderAuthenticationType) -> Self {
-        PyProviderAuthenticationType::__from_proto_i32(value as i32)
+        PyProviderAuthenticationType::__from_proto_i32(
+            <super::providers::v1::ProviderAuthenticationType as ::buffa::Enumeration>::to_i32(
+                &value,
+            ),
+        )
     }
 }
 impl ::core::convert::From<PyProviderAuthenticationType>
@@ -455,9 +475,7 @@ impl ::core::convert::From<PyProviderAuthenticationType>
 {
     fn from(value: PyProviderAuthenticationType) -> Self {
         let n = value.__to_proto_i32();
-        <super::providers::v1::ProviderAuthenticationType as ::core::convert::TryFrom<
-            i32,
-        >>::try_from(n)
+        <super::providers::v1::ProviderAuthenticationType as ::buffa::Enumeration>::from_i32(n)
             .unwrap_or_default()
     }
 }
@@ -488,13 +506,15 @@ impl PyAuthenticationType {
 }
 impl ::core::convert::From<super::recipients::v1::AuthenticationType> for PyAuthenticationType {
     fn from(value: super::recipients::v1::AuthenticationType) -> Self {
-        PyAuthenticationType::__from_proto_i32(value as i32)
+        PyAuthenticationType::__from_proto_i32(
+            <super::recipients::v1::AuthenticationType as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyAuthenticationType> for super::recipients::v1::AuthenticationType {
     fn from(value: PyAuthenticationType) -> Self {
         let n = value.__to_proto_i32();
-        <super::recipients::v1::AuthenticationType as ::core::convert::TryFrom<i32>>::try_from(n)
+        <super::recipients::v1::AuthenticationType as ::buffa::Enumeration>::from_i32(n)
             .unwrap_or_default()
     }
 }
@@ -528,14 +548,15 @@ impl PyAction {
 }
 impl ::core::convert::From<super::shares::v1::Action> for PyAction {
     fn from(value: super::shares::v1::Action) -> Self {
-        PyAction::__from_proto_i32(value as i32)
+        PyAction::__from_proto_i32(<super::shares::v1::Action as ::buffa::Enumeration>::to_i32(
+            &value,
+        ))
     }
 }
 impl ::core::convert::From<PyAction> for super::shares::v1::Action {
     fn from(value: PyAction) -> Self {
         let n = value.__to_proto_i32();
-        <super::shares::v1::Action as ::core::convert::TryFrom<i32>>::try_from(n)
-            .unwrap_or_default()
+        <super::shares::v1::Action as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -571,14 +592,15 @@ impl PyDataObjectType {
 }
 impl ::core::convert::From<super::shares::v1::DataObjectType> for PyDataObjectType {
     fn from(value: super::shares::v1::DataObjectType) -> Self {
-        PyDataObjectType::__from_proto_i32(value as i32)
+        PyDataObjectType::__from_proto_i32(
+            <super::shares::v1::DataObjectType as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyDataObjectType> for super::shares::v1::DataObjectType {
     fn from(value: PyDataObjectType) -> Self {
         let n = value.__to_proto_i32();
-        <super::shares::v1::DataObjectType as ::core::convert::TryFrom<i32>>::try_from(n)
-            .unwrap_or_default()
+        <super::shares::v1::DataObjectType as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -605,14 +627,15 @@ impl PyHistoryStatus {
 }
 impl ::core::convert::From<super::shares::v1::HistoryStatus> for PyHistoryStatus {
     fn from(value: super::shares::v1::HistoryStatus) -> Self {
-        PyHistoryStatus::__from_proto_i32(value as i32)
+        PyHistoryStatus::__from_proto_i32(
+            <super::shares::v1::HistoryStatus as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyHistoryStatus> for super::shares::v1::HistoryStatus {
     fn from(value: PyHistoryStatus) -> Self {
         let n = value.__to_proto_i32();
-        <super::shares::v1::HistoryStatus as ::core::convert::TryFrom<i32>>::try_from(n)
-            .unwrap_or_default()
+        <super::shares::v1::HistoryStatus as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -702,14 +725,15 @@ impl PyColumnTypeName {
 }
 impl ::core::convert::From<super::tables::v1::ColumnTypeName> for PyColumnTypeName {
     fn from(value: super::tables::v1::ColumnTypeName) -> Self {
-        PyColumnTypeName::__from_proto_i32(value as i32)
+        PyColumnTypeName::__from_proto_i32(
+            <super::tables::v1::ColumnTypeName as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyColumnTypeName> for super::tables::v1::ColumnTypeName {
     fn from(value: PyColumnTypeName) -> Self {
         let n = value.__to_proto_i32();
-        <super::tables::v1::ColumnTypeName as ::core::convert::TryFrom<i32>>::try_from(n)
-            .unwrap_or_default()
+        <super::tables::v1::ColumnTypeName as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -766,13 +790,15 @@ impl PyDataSourceFormat {
 }
 impl ::core::convert::From<super::tables::v1::DataSourceFormat> for PyDataSourceFormat {
     fn from(value: super::tables::v1::DataSourceFormat) -> Self {
-        PyDataSourceFormat::__from_proto_i32(value as i32)
+        PyDataSourceFormat::__from_proto_i32(
+            <super::tables::v1::DataSourceFormat as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyDataSourceFormat> for super::tables::v1::DataSourceFormat {
     fn from(value: PyDataSourceFormat) -> Self {
         let n = value.__to_proto_i32();
-        <super::tables::v1::DataSourceFormat as ::core::convert::TryFrom<i32>>::try_from(n)
+        <super::tables::v1::DataSourceFormat as ::buffa::Enumeration>::from_i32(n)
             .unwrap_or_default()
     }
 }
@@ -815,14 +841,15 @@ impl PyTableType {
 }
 impl ::core::convert::From<super::tables::v1::TableType> for PyTableType {
     fn from(value: super::tables::v1::TableType) -> Self {
-        PyTableType::__from_proto_i32(value as i32)
+        PyTableType::__from_proto_i32(
+            <super::tables::v1::TableType as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyTableType> for super::tables::v1::TableType {
     fn from(value: PyTableType) -> Self {
         let n = value.__to_proto_i32();
-        <super::tables::v1::TableType as ::core::convert::TryFrom<i32>>::try_from(n)
-            .unwrap_or_default()
+        <super::tables::v1::TableType as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -861,7 +888,11 @@ impl
     fn from(
         value: super::temporary_credentials::v1::generate_temporary_path_credentials_request::Operation,
     ) -> Self {
-        PyGenerateTemporaryPathCredentialsRequestOperation::__from_proto_i32(value as i32)
+        PyGenerateTemporaryPathCredentialsRequestOperation::__from_proto_i32(
+            <super::temporary_credentials::v1::generate_temporary_path_credentials_request::Operation as ::buffa::Enumeration>::to_i32(
+                &value,
+            ),
+        )
     }
 }
 impl ::core::convert::From<PyGenerateTemporaryPathCredentialsRequestOperation>
@@ -869,9 +900,9 @@ impl ::core::convert::From<PyGenerateTemporaryPathCredentialsRequestOperation>
 {
     fn from(value: PyGenerateTemporaryPathCredentialsRequestOperation) -> Self {
         let n = value.__to_proto_i32();
-        <super::temporary_credentials::v1::generate_temporary_path_credentials_request::Operation as ::core::convert::TryFrom<
-            i32,
-        >>::try_from(n)
+        <super::temporary_credentials::v1::generate_temporary_path_credentials_request::Operation as ::buffa::Enumeration>::from_i32(
+                n,
+            )
             .unwrap_or_default()
     }
 }
@@ -908,7 +939,11 @@ impl
     fn from(
         value: super::temporary_credentials::v1::generate_temporary_table_credentials_request::Operation,
     ) -> Self {
-        PyGenerateTemporaryTableCredentialsRequestOperation::__from_proto_i32(value as i32)
+        PyGenerateTemporaryTableCredentialsRequestOperation::__from_proto_i32(
+            <super::temporary_credentials::v1::generate_temporary_table_credentials_request::Operation as ::buffa::Enumeration>::to_i32(
+                &value,
+            ),
+        )
     }
 }
 impl ::core::convert::From<PyGenerateTemporaryTableCredentialsRequestOperation>
@@ -916,9 +951,9 @@ impl ::core::convert::From<PyGenerateTemporaryTableCredentialsRequestOperation>
 {
     fn from(value: PyGenerateTemporaryTableCredentialsRequestOperation) -> Self {
         let n = value.__to_proto_i32();
-        <super::temporary_credentials::v1::generate_temporary_table_credentials_request::Operation as ::core::convert::TryFrom<
-            i32,
-        >>::try_from(n)
+        <super::temporary_credentials::v1::generate_temporary_table_credentials_request::Operation as ::buffa::Enumeration>::from_i32(
+                n,
+            )
             .unwrap_or_default()
     }
 }
@@ -959,7 +994,11 @@ impl
     fn from(
         value: super::temporary_credentials::v1::generate_temporary_volume_credentials_request::Operation,
     ) -> Self {
-        PyGenerateTemporaryVolumeCredentialsRequestOperation::__from_proto_i32(value as i32)
+        PyGenerateTemporaryVolumeCredentialsRequestOperation::__from_proto_i32(
+            <super::temporary_credentials::v1::generate_temporary_volume_credentials_request::Operation as ::buffa::Enumeration>::to_i32(
+                &value,
+            ),
+        )
     }
 }
 impl ::core::convert::From<PyGenerateTemporaryVolumeCredentialsRequestOperation>
@@ -967,9 +1006,9 @@ impl ::core::convert::From<PyGenerateTemporaryVolumeCredentialsRequestOperation>
 {
     fn from(value: PyGenerateTemporaryVolumeCredentialsRequestOperation) -> Self {
         let n = value.__to_proto_i32();
-        <super::temporary_credentials::v1::generate_temporary_volume_credentials_request::Operation as ::core::convert::TryFrom<
-            i32,
-        >>::try_from(n)
+        <super::temporary_credentials::v1::generate_temporary_volume_credentials_request::Operation as ::buffa::Enumeration>::from_i32(
+                n,
+            )
             .unwrap_or_default()
     }
 }
@@ -1000,14 +1039,15 @@ impl PyVolumeType {
 }
 impl ::core::convert::From<super::volumes::v1::VolumeType> for PyVolumeType {
     fn from(value: super::volumes::v1::VolumeType) -> Self {
-        PyVolumeType::__from_proto_i32(value as i32)
+        PyVolumeType::__from_proto_i32(
+            <super::volumes::v1::VolumeType as ::buffa::Enumeration>::to_i32(&value),
+        )
     }
 }
 impl ::core::convert::From<PyVolumeType> for super::volumes::v1::VolumeType {
     fn from(value: PyVolumeType) -> Self {
         let n = value.__to_proto_i32();
-        <super::volumes::v1::VolumeType as ::core::convert::TryFrom<i32>>::try_from(n)
-            .unwrap_or_default()
+        <super::volumes::v1::VolumeType as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
     }
 }
 #[::pyo3::pyclass(name = "AgentSkill")]
@@ -1082,10 +1122,11 @@ impl PyAgentSkill {
             inner.agent_skill_id = value;
         }
         if let ::core::option::Option::Some(value) = agent_skill_type {
-            inner.agent_skill_type =
+            inner.agent_skill_type = ::buffa::EnumValue::Known(
                 <super::agent_skills::v0alpha1::AgentSkillType as ::core::convert::From<_>>::from(
                     value,
-                ) as i32;
+                ),
+            );
         }
         {
             let value = description;
@@ -1157,12 +1198,7 @@ impl PyAgentSkill {
     }
     #[getter]
     fn agent_skill_type(&self) -> PyAgentSkillType {
-        PyAgentSkillType::from(
-            <super::agent_skills::v0alpha1::AgentSkillType as ::core::convert::TryFrom<
-                i32,
-            >>::try_from(self.0.agent_skill_type)
-                .unwrap_or_default(),
-        )
+        PyAgentSkillType::from(self.0.agent_skill_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn description(&self) -> ::core::option::Option<::std::string::String> {
@@ -1236,9 +1272,11 @@ impl PyAgentSkill {
     }
     #[setter(agent_skill_type)]
     fn set_agent_skill_type(&mut self, value: PyAgentSkillType) {
-        self.0.agent_skill_type =
-            <super::agent_skills::v0alpha1::AgentSkillType as ::core::convert::From<_>>::from(value)
-                as i32;
+        self.0.agent_skill_type = ::buffa::EnumValue::Known(
+            <super::agent_skills::v0alpha1::AgentSkillType as ::core::convert::From<_>>::from(
+                value,
+            ),
+        );
     }
     #[setter(description)]
     fn set_description(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -1350,10 +1388,11 @@ impl PyCreateAgentSkillRequest {
             inner.name = value;
         }
         if let ::core::option::Option::Some(value) = agent_skill_type {
-            inner.agent_skill_type =
+            inner.agent_skill_type = ::buffa::EnumValue::Known(
                 <super::agent_skills::v0alpha1::AgentSkillType as ::core::convert::From<_>>::from(
                     value,
-                ) as i32;
+                ),
+            );
         }
         {
             let value = storage_location;
@@ -1393,12 +1432,7 @@ impl PyCreateAgentSkillRequest {
     }
     #[getter]
     fn agent_skill_type(&self) -> PyAgentSkillType {
-        PyAgentSkillType::from(
-            <super::agent_skills::v0alpha1::AgentSkillType as ::core::convert::TryFrom<
-                i32,
-            >>::try_from(self.0.agent_skill_type)
-                .unwrap_or_default(),
-        )
+        PyAgentSkillType::from(self.0.agent_skill_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn storage_location(&self) -> ::core::option::Option<::std::string::String> {
@@ -1440,9 +1474,11 @@ impl PyCreateAgentSkillRequest {
     }
     #[setter(agent_skill_type)]
     fn set_agent_skill_type(&mut self, value: PyAgentSkillType) {
-        self.0.agent_skill_type =
-            <super::agent_skills::v0alpha1::AgentSkillType as ::core::convert::From<_>>::from(value)
-                as i32;
+        self.0.agent_skill_type = ::buffa::EnumValue::Known(
+            <super::agent_skills::v0alpha1::AgentSkillType as ::core::convert::From<_>>::from(
+                value,
+            ),
+        );
     }
     #[setter(storage_location)]
     fn set_storage_location(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -1947,10 +1983,11 @@ impl PyAgent {
             inner.agent_id = value;
         }
         if let ::core::option::Option::Some(value) = invocation_protocol {
-            inner.invocation_protocol =
+            inner.invocation_protocol = ::buffa::EnumValue::Known(
                 <super::agents::v0alpha1::InvocationProtocol as ::core::convert::From<_>>::from(
                     value,
-                ) as i32;
+                ),
+            );
         }
         if let ::core::option::Option::Some(value) = endpoint {
             inner.endpoint = value;
@@ -2018,12 +2055,7 @@ impl PyAgent {
     }
     #[getter]
     fn invocation_protocol(&self) -> PyInvocationProtocol {
-        PyInvocationProtocol::from(
-            <super::agents::v0alpha1::InvocationProtocol as ::core::convert::TryFrom<
-                i32,
-            >>::try_from(self.0.invocation_protocol)
-                .unwrap_or_default(),
-        )
+        PyInvocationProtocol::from(self.0.invocation_protocol.as_known().unwrap_or_default())
     }
     #[getter]
     fn endpoint(&self) -> ::std::string::String {
@@ -2091,9 +2123,9 @@ impl PyAgent {
     }
     #[setter(invocation_protocol)]
     fn set_invocation_protocol(&mut self, value: PyInvocationProtocol) {
-        self.0.invocation_protocol =
-            <super::agents::v0alpha1::InvocationProtocol as ::core::convert::From<_>>::from(value)
-                as i32;
+        self.0.invocation_protocol = ::buffa::EnumValue::Known(
+            <super::agents::v0alpha1::InvocationProtocol as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(endpoint)]
     fn set_endpoint(&mut self, value: ::std::string::String) {
@@ -2199,10 +2231,11 @@ impl PyCreateAgentRequest {
             inner.name = value;
         }
         if let ::core::option::Option::Some(value) = invocation_protocol {
-            inner.invocation_protocol =
+            inner.invocation_protocol = ::buffa::EnumValue::Known(
                 <super::agents::v0alpha1::InvocationProtocol as ::core::convert::From<_>>::from(
                     value,
-                ) as i32;
+                ),
+            );
         }
         if let ::core::option::Option::Some(value) = endpoint {
             inner.endpoint = value;
@@ -2238,12 +2271,7 @@ impl PyCreateAgentRequest {
     }
     #[getter]
     fn invocation_protocol(&self) -> PyInvocationProtocol {
-        PyInvocationProtocol::from(
-            <super::agents::v0alpha1::InvocationProtocol as ::core::convert::TryFrom<
-                i32,
-            >>::try_from(self.0.invocation_protocol)
-                .unwrap_or_default(),
-        )
+        PyInvocationProtocol::from(self.0.invocation_protocol.as_known().unwrap_or_default())
     }
     #[getter]
     fn endpoint(&self) -> ::std::string::String {
@@ -2279,9 +2307,9 @@ impl PyCreateAgentRequest {
     }
     #[setter(invocation_protocol)]
     fn set_invocation_protocol(&mut self, value: PyInvocationProtocol) {
-        self.0.invocation_protocol =
-            <super::agents::v0alpha1::InvocationProtocol as ::core::convert::From<_>>::from(value)
-                as i32;
+        self.0.invocation_protocol = ::buffa::EnumValue::Known(
+            <super::agents::v0alpha1::InvocationProtocol as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(endpoint)]
     fn set_endpoint(&mut self, value: ::std::string::String) {
@@ -2618,8 +2646,11 @@ impl PyUpdateAgentRequest {
         {
             let value = invocation_protocol;
             inner.invocation_protocol = value.map(|e| {
-                <super::agents::v0alpha1::InvocationProtocol as ::core::convert::From<_>>::from(e)
-                    as i32
+                ::buffa::EnumValue::Known(
+                    <super::agents::v0alpha1::InvocationProtocol as ::core::convert::From<_>>::from(
+                        e,
+                    ),
+                )
             });
         }
         {
@@ -2659,12 +2690,8 @@ impl PyUpdateAgentRequest {
     fn invocation_protocol(&self) -> ::core::option::Option<PyInvocationProtocol> {
         self.0
             .invocation_protocol
-            .and_then(|v| {
-                <super::agents::v0alpha1::InvocationProtocol as ::core::convert::TryFrom<
-                    i32,
-                >>::try_from(v)
-                    .ok()
-            })
+            .as_ref()
+            .and_then(|e| e.as_known())
             .map(PyInvocationProtocol::from)
     }
     #[getter]
@@ -2702,8 +2729,9 @@ impl PyUpdateAgentRequest {
     #[setter(invocation_protocol)]
     fn set_invocation_protocol(&mut self, value: ::core::option::Option<PyInvocationProtocol>) {
         self.0.invocation_protocol = value.map(|e| {
-            <super::agents::v0alpha1::InvocationProtocol as ::core::convert::From<_>>::from(e)
-                as i32
+            ::buffa::EnumValue::Known(
+                <super::agents::v0alpha1::InvocationProtocol as ::core::convert::From<_>>::from(e),
+            )
         });
     }
     #[setter(endpoint)]
@@ -2826,7 +2854,9 @@ impl PyCatalog {
         {
             let value = catalog_type;
             inner.catalog_type = value.map(|e| {
-                <super::catalogs::v1::CatalogType as ::core::convert::From<_>>::from(e) as i32
+                ::buffa::EnumValue::Known(
+                    <super::catalogs::v1::CatalogType as ::core::convert::From<_>>::from(e),
+                )
             });
         }
         {
@@ -2893,10 +2923,8 @@ impl PyCatalog {
     fn catalog_type(&self) -> ::core::option::Option<PyCatalogType> {
         self.0
             .catalog_type
-            .and_then(|v| {
-                <super::catalogs::v1::CatalogType as ::core::convert::TryFrom<i32>>::try_from(v)
-                    .ok()
-            })
+            .as_ref()
+            .and_then(|e| e.as_known())
             .map(PyCatalogType::from)
     }
     #[getter]
@@ -2961,7 +2989,9 @@ impl PyCatalog {
     #[setter(catalog_type)]
     fn set_catalog_type(&mut self, value: ::core::option::Option<PyCatalogType>) {
         self.0.catalog_type = value.map(|e| {
-            <super::catalogs::v1::CatalogType as ::core::convert::From<_>>::from(e) as i32
+            ::buffa::EnumValue::Known(
+                <super::catalogs::v1::CatalogType as ::core::convert::From<_>>::from(e),
+            )
         });
     }
     #[setter(storage_location)]
@@ -3871,8 +3901,9 @@ impl PyCreateCredentialRequest {
             inner.name = value;
         }
         if let ::core::option::Option::Some(value) = purpose {
-            inner.purpose =
-                <super::credentials::v1::Purpose as ::core::convert::From<_>>::from(value) as i32;
+            inner.purpose = ::buffa::EnumValue::Known(
+                <super::credentials::v1::Purpose as ::core::convert::From<_>>::from(value),
+            );
         }
         {
             let value = comment;
@@ -3888,23 +3919,33 @@ impl PyCreateCredentialRequest {
         }
         {
             let value = azure_service_principal;
-            inner.azure_service_principal = value.map(|w| w.into());
+            inner.azure_service_principal = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = azure_managed_identity;
-            inner.azure_managed_identity = value.map(|w| w.into());
+            inner.azure_managed_identity = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = azure_storage_key;
-            inner.azure_storage_key = value.map(|w| w.into());
+            inner.azure_storage_key = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = aws_iam_role;
-            inner.aws_iam_role = value.map(|w| w.into());
+            inner.aws_iam_role = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = databricks_gcp_service_account;
-            inner.databricks_gcp_service_account = value.map(|w| w.into());
+            inner.databricks_gcp_service_account = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         Self(inner)
     }
@@ -3914,12 +3955,7 @@ impl PyCreateCredentialRequest {
     }
     #[getter]
     fn purpose(&self) -> PyPurpose {
-        PyPurpose::from(
-            <super::credentials::v1::Purpose as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.purpose,
-            )
-            .unwrap_or_default(),
-        )
+        PyPurpose::from(self.0.purpose.as_known().unwrap_or_default())
     }
     #[getter]
     fn comment(&self) -> ::core::option::Option<::std::string::String> {
@@ -3938,6 +3974,7 @@ impl PyCreateCredentialRequest {
         self.0
             .azure_service_principal
             .clone()
+            .into_option()
             .map(PyAzureServicePrincipal::from)
     }
     #[getter]
@@ -3945,6 +3982,7 @@ impl PyCreateCredentialRequest {
         self.0
             .azure_managed_identity
             .clone()
+            .into_option()
             .map(PyAzureManagedIdentity::from)
     }
     #[getter]
@@ -3952,11 +3990,16 @@ impl PyCreateCredentialRequest {
         self.0
             .azure_storage_key
             .clone()
+            .into_option()
             .map(PyAzureStorageKey::from)
     }
     #[getter]
     fn aws_iam_role(&self) -> ::core::option::Option<PyAwsIamRoleConfig> {
-        self.0.aws_iam_role.clone().map(PyAwsIamRoleConfig::from)
+        self.0
+            .aws_iam_role
+            .clone()
+            .into_option()
+            .map(PyAwsIamRoleConfig::from)
     }
     #[getter]
     fn databricks_gcp_service_account(
@@ -3965,6 +4008,7 @@ impl PyCreateCredentialRequest {
         self.0
             .databricks_gcp_service_account
             .clone()
+            .into_option()
             .map(PyDatabricksGcpServiceAccount::from)
     }
     #[setter(name)]
@@ -3974,7 +4018,9 @@ impl PyCreateCredentialRequest {
     #[setter(purpose)]
     fn set_purpose(&mut self, value: PyPurpose) {
         self.0.purpose =
-            <super::credentials::v1::Purpose as ::core::convert::From<_>>::from(value) as i32;
+            ::buffa::EnumValue::Known(<super::credentials::v1::Purpose as ::core::convert::From<
+                _,
+            >>::from(value));
     }
     #[setter(comment)]
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -3993,29 +4039,39 @@ impl PyCreateCredentialRequest {
         &mut self,
         value: ::core::option::Option<PyAzureServicePrincipal>,
     ) {
-        self.0.azure_service_principal = value.map(|w| w.into());
+        self.0.azure_service_principal = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(azure_managed_identity)]
     fn set_azure_managed_identity(
         &mut self,
         value: ::core::option::Option<PyAzureManagedIdentity>,
     ) {
-        self.0.azure_managed_identity = value.map(|w| w.into());
+        self.0.azure_managed_identity = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(azure_storage_key)]
     fn set_azure_storage_key(&mut self, value: ::core::option::Option<PyAzureStorageKey>) {
-        self.0.azure_storage_key = value.map(|w| w.into());
+        self.0.azure_storage_key = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(aws_iam_role)]
     fn set_aws_iam_role(&mut self, value: ::core::option::Option<PyAwsIamRoleConfig>) {
-        self.0.aws_iam_role = value.map(|w| w.into());
+        self.0.aws_iam_role = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(databricks_gcp_service_account)]
     fn set_databricks_gcp_service_account(
         &mut self,
         value: ::core::option::Option<PyDatabricksGcpServiceAccount>,
     ) {
-        self.0.databricks_gcp_service_account = value.map(|w| w.into());
+        self.0.databricks_gcp_service_account = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -4094,8 +4150,9 @@ impl PyCredential {
             inner.id = value;
         }
         if let ::core::option::Option::Some(value) = purpose {
-            inner.purpose =
-                <super::credentials::v1::Purpose as ::core::convert::From<_>>::from(value) as i32;
+            inner.purpose = ::buffa::EnumValue::Known(
+                <super::credentials::v1::Purpose as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = read_only {
             inner.read_only = value;
@@ -4133,23 +4190,33 @@ impl PyCredential {
         }
         {
             let value = azure_service_principal;
-            inner.azure_service_principal = value.map(|w| w.into());
+            inner.azure_service_principal = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = azure_managed_identity;
-            inner.azure_managed_identity = value.map(|w| w.into());
+            inner.azure_managed_identity = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = azure_storage_key;
-            inner.azure_storage_key = value.map(|w| w.into());
+            inner.azure_storage_key = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = aws_iam_role;
-            inner.aws_iam_role = value.map(|w| w.into());
+            inner.aws_iam_role = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = databricks_gcp_service_account;
-            inner.databricks_gcp_service_account = value.map(|w| w.into());
+            inner.databricks_gcp_service_account = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         Self(inner)
     }
@@ -4163,12 +4230,7 @@ impl PyCredential {
     }
     #[getter]
     fn purpose(&self) -> PyPurpose {
-        PyPurpose::from(
-            <super::credentials::v1::Purpose as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.purpose,
-            )
-            .unwrap_or_default(),
-        )
+        PyPurpose::from(self.0.purpose.as_known().unwrap_or_default())
     }
     #[getter]
     fn read_only(&self) -> bool {
@@ -4211,6 +4273,7 @@ impl PyCredential {
         self.0
             .azure_service_principal
             .clone()
+            .into_option()
             .map(PyAzureServicePrincipal::from)
     }
     #[getter]
@@ -4218,6 +4281,7 @@ impl PyCredential {
         self.0
             .azure_managed_identity
             .clone()
+            .into_option()
             .map(PyAzureManagedIdentity::from)
     }
     #[getter]
@@ -4225,11 +4289,16 @@ impl PyCredential {
         self.0
             .azure_storage_key
             .clone()
+            .into_option()
             .map(PyAzureStorageKey::from)
     }
     #[getter]
     fn aws_iam_role(&self) -> ::core::option::Option<PyAwsIamRoleConfig> {
-        self.0.aws_iam_role.clone().map(PyAwsIamRoleConfig::from)
+        self.0
+            .aws_iam_role
+            .clone()
+            .into_option()
+            .map(PyAwsIamRoleConfig::from)
     }
     #[getter]
     fn databricks_gcp_service_account(
@@ -4238,6 +4307,7 @@ impl PyCredential {
         self.0
             .databricks_gcp_service_account
             .clone()
+            .into_option()
             .map(PyDatabricksGcpServiceAccount::from)
     }
     #[setter(name)]
@@ -4251,7 +4321,9 @@ impl PyCredential {
     #[setter(purpose)]
     fn set_purpose(&mut self, value: PyPurpose) {
         self.0.purpose =
-            <super::credentials::v1::Purpose as ::core::convert::From<_>>::from(value) as i32;
+            ::buffa::EnumValue::Known(<super::credentials::v1::Purpose as ::core::convert::From<
+                _,
+            >>::from(value));
     }
     #[setter(read_only)]
     fn set_read_only(&mut self, value: bool) {
@@ -4294,29 +4366,39 @@ impl PyCredential {
         &mut self,
         value: ::core::option::Option<PyAzureServicePrincipal>,
     ) {
-        self.0.azure_service_principal = value.map(|w| w.into());
+        self.0.azure_service_principal = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(azure_managed_identity)]
     fn set_azure_managed_identity(
         &mut self,
         value: ::core::option::Option<PyAzureManagedIdentity>,
     ) {
-        self.0.azure_managed_identity = value.map(|w| w.into());
+        self.0.azure_managed_identity = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(azure_storage_key)]
     fn set_azure_storage_key(&mut self, value: ::core::option::Option<PyAzureStorageKey>) {
-        self.0.azure_storage_key = value.map(|w| w.into());
+        self.0.azure_storage_key = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(aws_iam_role)]
     fn set_aws_iam_role(&mut self, value: ::core::option::Option<PyAwsIamRoleConfig>) {
-        self.0.aws_iam_role = value.map(|w| w.into());
+        self.0.aws_iam_role = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(databricks_gcp_service_account)]
     fn set_databricks_gcp_service_account(
         &mut self,
         value: ::core::option::Option<PyDatabricksGcpServiceAccount>,
     ) {
-        self.0.databricks_gcp_service_account = value.map(|w| w.into());
+        self.0.databricks_gcp_service_account = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -4517,7 +4599,9 @@ impl PyListCredentialsRequest {
         {
             let value = purpose;
             inner.purpose = value.map(|e| {
-                <super::credentials::v1::Purpose as ::core::convert::From<_>>::from(e) as i32
+                ::buffa::EnumValue::Known(
+                    <super::credentials::v1::Purpose as ::core::convert::From<_>>::from(e),
+                )
             });
         }
         {
@@ -4534,9 +4618,8 @@ impl PyListCredentialsRequest {
     fn purpose(&self) -> ::core::option::Option<PyPurpose> {
         self.0
             .purpose
-            .and_then(|v| {
-                <super::credentials::v1::Purpose as ::core::convert::TryFrom<i32>>::try_from(v).ok()
-            })
+            .as_ref()
+            .and_then(|e| e.as_known())
             .map(PyPurpose::from)
     }
     #[getter]
@@ -4549,8 +4632,11 @@ impl PyListCredentialsRequest {
     }
     #[setter(purpose)]
     fn set_purpose(&mut self, value: ::core::option::Option<PyPurpose>) {
-        self.0.purpose = value
-            .map(|e| <super::credentials::v1::Purpose as ::core::convert::From<_>>::from(e) as i32);
+        self.0.purpose = value.map(|e| {
+            ::buffa::EnumValue::Known(<super::credentials::v1::Purpose as ::core::convert::From<
+                _,
+            >>::from(e))
+        });
     }
     #[setter(max_results)]
     fn set_max_results(&mut self, value: ::core::option::Option<i32>) {
@@ -4716,23 +4802,33 @@ impl PyUpdateCredentialRequest {
         }
         {
             let value = azure_service_principal;
-            inner.azure_service_principal = value.map(|w| w.into());
+            inner.azure_service_principal = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = azure_managed_identity;
-            inner.azure_managed_identity = value.map(|w| w.into());
+            inner.azure_managed_identity = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = azure_storage_key;
-            inner.azure_storage_key = value.map(|w| w.into());
+            inner.azure_storage_key = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = aws_iam_role;
-            inner.aws_iam_role = value.map(|w| w.into());
+            inner.aws_iam_role = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = databricks_gcp_service_account;
-            inner.databricks_gcp_service_account = value.map(|w| w.into());
+            inner.databricks_gcp_service_account = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         Self(inner)
     }
@@ -4769,6 +4865,7 @@ impl PyUpdateCredentialRequest {
         self.0
             .azure_service_principal
             .clone()
+            .into_option()
             .map(PyAzureServicePrincipal::from)
     }
     #[getter]
@@ -4776,6 +4873,7 @@ impl PyUpdateCredentialRequest {
         self.0
             .azure_managed_identity
             .clone()
+            .into_option()
             .map(PyAzureManagedIdentity::from)
     }
     #[getter]
@@ -4783,11 +4881,16 @@ impl PyUpdateCredentialRequest {
         self.0
             .azure_storage_key
             .clone()
+            .into_option()
             .map(PyAzureStorageKey::from)
     }
     #[getter]
     fn aws_iam_role(&self) -> ::core::option::Option<PyAwsIamRoleConfig> {
-        self.0.aws_iam_role.clone().map(PyAwsIamRoleConfig::from)
+        self.0
+            .aws_iam_role
+            .clone()
+            .into_option()
+            .map(PyAwsIamRoleConfig::from)
     }
     #[getter]
     fn databricks_gcp_service_account(
@@ -4796,6 +4899,7 @@ impl PyUpdateCredentialRequest {
         self.0
             .databricks_gcp_service_account
             .clone()
+            .into_option()
             .map(PyDatabricksGcpServiceAccount::from)
     }
     #[setter(name)]
@@ -4831,29 +4935,39 @@ impl PyUpdateCredentialRequest {
         &mut self,
         value: ::core::option::Option<PyAzureServicePrincipal>,
     ) {
-        self.0.azure_service_principal = value.map(|w| w.into());
+        self.0.azure_service_principal = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(azure_managed_identity)]
     fn set_azure_managed_identity(
         &mut self,
         value: ::core::option::Option<PyAzureManagedIdentity>,
     ) {
-        self.0.azure_managed_identity = value.map(|w| w.into());
+        self.0.azure_managed_identity = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(azure_storage_key)]
     fn set_azure_storage_key(&mut self, value: ::core::option::Option<PyAzureStorageKey>) {
-        self.0.azure_storage_key = value.map(|w| w.into());
+        self.0.azure_storage_key = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(aws_iam_role)]
     fn set_aws_iam_role(&mut self, value: ::core::option::Option<PyAwsIamRoleConfig>) {
-        self.0.aws_iam_role = value.map(|w| w.into());
+        self.0.aws_iam_role = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(databricks_gcp_service_account)]
     fn set_databricks_gcp_service_account(
         &mut self,
         value: ::core::option::Option<PyDatabricksGcpServiceAccount>,
     ) {
-        self.0.databricks_gcp_service_account = value.map(|w| w.into());
+        self.0.databricks_gcp_service_account = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -5686,32 +5800,35 @@ impl PyCreateFunctionRequest {
         }
         {
             let value = input_params;
-            inner.input_params = value.map(|w| w.into());
+            inner.input_params = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         if let ::core::option::Option::Some(value) = parameter_style {
-            inner.parameter_style =
-                <super::functions::v1::ParameterStyle as ::core::convert::From<_>>::from(value)
-                    as i32;
+            inner.parameter_style = ::buffa::EnumValue::Known(
+                <super::functions::v1::ParameterStyle as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = is_deterministic {
             inner.is_deterministic = value;
         }
         if let ::core::option::Option::Some(value) = sql_data_access {
-            inner.sql_data_access = <super::functions::v1::SqlDataAccess as ::core::convert::From<
-                _,
-            >>::from(value) as i32;
+            inner.sql_data_access = ::buffa::EnumValue::Known(
+                <super::functions::v1::SqlDataAccess as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = is_null_call {
             inner.is_null_call = value;
         }
         if let ::core::option::Option::Some(value) = security_type {
-            inner.security_type =
-                <super::functions::v1::SecurityType as ::core::convert::From<_>>::from(value)
-                    as i32;
+            inner.security_type = ::buffa::EnumValue::Known(
+                <super::functions::v1::SecurityType as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = routine_body {
-            inner.routine_body =
-                <super::functions::v1::RoutineBody as ::core::convert::From<_>>::from(value) as i32;
+            inner.routine_body = ::buffa::EnumValue::Known(
+                <super::functions::v1::RoutineBody as ::core::convert::From<_>>::from(value),
+            );
         }
         {
             let value = routine_definition;
@@ -5755,16 +5872,12 @@ impl PyCreateFunctionRequest {
         self.0
             .input_params
             .clone()
+            .into_option()
             .map(PyFunctionParameterInfos::from)
     }
     #[getter]
     fn parameter_style(&self) -> PyParameterStyle {
-        PyParameterStyle::from(
-            <super::functions::v1::ParameterStyle as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.parameter_style,
-            )
-            .unwrap_or_default(),
-        )
+        PyParameterStyle::from(self.0.parameter_style.as_known().unwrap_or_default())
     }
     #[getter]
     fn is_deterministic(&self) -> bool {
@@ -5772,12 +5885,7 @@ impl PyCreateFunctionRequest {
     }
     #[getter]
     fn sql_data_access(&self) -> PySqlDataAccess {
-        PySqlDataAccess::from(
-            <super::functions::v1::SqlDataAccess as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.sql_data_access,
-            )
-            .unwrap_or_default(),
-        )
+        PySqlDataAccess::from(self.0.sql_data_access.as_known().unwrap_or_default())
     }
     #[getter]
     fn is_null_call(&self) -> bool {
@@ -5785,21 +5893,11 @@ impl PyCreateFunctionRequest {
     }
     #[getter]
     fn security_type(&self) -> PySecurityType {
-        PySecurityType::from(
-            <super::functions::v1::SecurityType as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.security_type,
-            )
-            .unwrap_or_default(),
-        )
+        PySecurityType::from(self.0.security_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn routine_body(&self) -> PyRoutineBody {
-        PyRoutineBody::from(
-            <super::functions::v1::RoutineBody as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.routine_body,
-            )
-            .unwrap_or_default(),
-        )
+        PyRoutineBody::from(self.0.routine_body.as_known().unwrap_or_default())
     }
     #[getter]
     fn routine_definition(&self) -> ::core::option::Option<::std::string::String> {
@@ -5841,12 +5939,15 @@ impl PyCreateFunctionRequest {
     }
     #[setter(input_params)]
     fn set_input_params(&mut self, value: ::core::option::Option<PyFunctionParameterInfos>) {
-        self.0.input_params = value.map(|w| w.into());
+        self.0.input_params = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(parameter_style)]
     fn set_parameter_style(&mut self, value: PyParameterStyle) {
-        self.0.parameter_style =
-            <super::functions::v1::ParameterStyle as ::core::convert::From<_>>::from(value) as i32;
+        self.0.parameter_style = ::buffa::EnumValue::Known(
+            <super::functions::v1::ParameterStyle as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(is_deterministic)]
     fn set_is_deterministic(&mut self, value: bool) {
@@ -5854,8 +5955,9 @@ impl PyCreateFunctionRequest {
     }
     #[setter(sql_data_access)]
     fn set_sql_data_access(&mut self, value: PySqlDataAccess) {
-        self.0.sql_data_access =
-            <super::functions::v1::SqlDataAccess as ::core::convert::From<_>>::from(value) as i32;
+        self.0.sql_data_access = ::buffa::EnumValue::Known(
+            <super::functions::v1::SqlDataAccess as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(is_null_call)]
     fn set_is_null_call(&mut self, value: bool) {
@@ -5863,13 +5965,15 @@ impl PyCreateFunctionRequest {
     }
     #[setter(security_type)]
     fn set_security_type(&mut self, value: PySecurityType) {
-        self.0.security_type =
-            <super::functions::v1::SecurityType as ::core::convert::From<_>>::from(value) as i32;
+        self.0.security_type = ::buffa::EnumValue::Known(
+            <super::functions::v1::SecurityType as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(routine_body)]
     fn set_routine_body(&mut self, value: PyRoutineBody) {
-        self.0.routine_body =
-            <super::functions::v1::RoutineBody as ::core::convert::From<_>>::from(value) as i32;
+        self.0.routine_body = ::buffa::EnumValue::Known(
+            <super::functions::v1::RoutineBody as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(routine_definition)]
     fn set_routine_definition(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -6059,7 +6163,9 @@ impl PyFunction {
         }
         {
             let value = input_params;
-            inner.input_params = value.map(|w| w.into());
+            inner.input_params = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = return_params;
@@ -6078,33 +6184,34 @@ impl PyFunction {
             inner.routine_dependencies = value;
         }
         if let ::core::option::Option::Some(value) = parameter_style {
-            inner.parameter_style =
-                <super::functions::v1::ParameterStyle as ::core::convert::From<_>>::from(value)
-                    as i32;
+            inner.parameter_style = ::buffa::EnumValue::Known(
+                <super::functions::v1::ParameterStyle as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = is_deterministic {
             inner.is_deterministic = value;
         }
         if let ::core::option::Option::Some(value) = sql_data_access {
-            inner.sql_data_access = <super::functions::v1::SqlDataAccess as ::core::convert::From<
-                _,
-            >>::from(value) as i32;
+            inner.sql_data_access = ::buffa::EnumValue::Known(
+                <super::functions::v1::SqlDataAccess as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = is_null_call {
             inner.is_null_call = value;
         }
         if let ::core::option::Option::Some(value) = security_type {
-            inner.security_type =
-                <super::functions::v1::SecurityType as ::core::convert::From<_>>::from(value)
-                    as i32;
+            inner.security_type = ::buffa::EnumValue::Known(
+                <super::functions::v1::SecurityType as ::core::convert::From<_>>::from(value),
+            );
         }
         {
             let value = specific_name;
             inner.specific_name = value;
         }
         if let ::core::option::Option::Some(value) = routine_body {
-            inner.routine_body =
-                <super::functions::v1::RoutineBody as ::core::convert::From<_>>::from(value) as i32;
+            inner.routine_body = ::buffa::EnumValue::Known(
+                <super::functions::v1::RoutineBody as ::core::convert::From<_>>::from(value),
+            );
         }
         {
             let value = comment;
@@ -6168,6 +6275,7 @@ impl PyFunction {
         self.0
             .input_params
             .clone()
+            .into_option()
             .map(PyFunctionParameterInfos::from)
     }
     #[getter]
@@ -6188,12 +6296,7 @@ impl PyFunction {
     }
     #[getter]
     fn parameter_style(&self) -> PyParameterStyle {
-        PyParameterStyle::from(
-            <super::functions::v1::ParameterStyle as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.parameter_style,
-            )
-            .unwrap_or_default(),
-        )
+        PyParameterStyle::from(self.0.parameter_style.as_known().unwrap_or_default())
     }
     #[getter]
     fn is_deterministic(&self) -> bool {
@@ -6201,12 +6304,7 @@ impl PyFunction {
     }
     #[getter]
     fn sql_data_access(&self) -> PySqlDataAccess {
-        PySqlDataAccess::from(
-            <super::functions::v1::SqlDataAccess as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.sql_data_access,
-            )
-            .unwrap_or_default(),
-        )
+        PySqlDataAccess::from(self.0.sql_data_access.as_known().unwrap_or_default())
     }
     #[getter]
     fn is_null_call(&self) -> bool {
@@ -6214,12 +6312,7 @@ impl PyFunction {
     }
     #[getter]
     fn security_type(&self) -> PySecurityType {
-        PySecurityType::from(
-            <super::functions::v1::SecurityType as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.security_type,
-            )
-            .unwrap_or_default(),
-        )
+        PySecurityType::from(self.0.security_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn specific_name(&self) -> ::core::option::Option<::std::string::String> {
@@ -6227,12 +6320,7 @@ impl PyFunction {
     }
     #[getter]
     fn routine_body(&self) -> PyRoutineBody {
-        PyRoutineBody::from(
-            <super::functions::v1::RoutineBody as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.routine_body,
-            )
-            .unwrap_or_default(),
-        )
+        PyRoutineBody::from(self.0.routine_body.as_known().unwrap_or_default())
     }
     #[getter]
     fn comment(&self) -> ::core::option::Option<::std::string::String> {
@@ -6294,7 +6382,9 @@ impl PyFunction {
     }
     #[setter(input_params)]
     fn set_input_params(&mut self, value: ::core::option::Option<PyFunctionParameterInfos>) {
-        self.0.input_params = value.map(|w| w.into());
+        self.0.input_params = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(return_params)]
     fn set_return_params(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -6314,8 +6404,9 @@ impl PyFunction {
     }
     #[setter(parameter_style)]
     fn set_parameter_style(&mut self, value: PyParameterStyle) {
-        self.0.parameter_style =
-            <super::functions::v1::ParameterStyle as ::core::convert::From<_>>::from(value) as i32;
+        self.0.parameter_style = ::buffa::EnumValue::Known(
+            <super::functions::v1::ParameterStyle as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(is_deterministic)]
     fn set_is_deterministic(&mut self, value: bool) {
@@ -6323,8 +6414,9 @@ impl PyFunction {
     }
     #[setter(sql_data_access)]
     fn set_sql_data_access(&mut self, value: PySqlDataAccess) {
-        self.0.sql_data_access =
-            <super::functions::v1::SqlDataAccess as ::core::convert::From<_>>::from(value) as i32;
+        self.0.sql_data_access = ::buffa::EnumValue::Known(
+            <super::functions::v1::SqlDataAccess as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(is_null_call)]
     fn set_is_null_call(&mut self, value: bool) {
@@ -6332,8 +6424,9 @@ impl PyFunction {
     }
     #[setter(security_type)]
     fn set_security_type(&mut self, value: PySecurityType) {
-        self.0.security_type =
-            <super::functions::v1::SecurityType as ::core::convert::From<_>>::from(value) as i32;
+        self.0.security_type = ::buffa::EnumValue::Known(
+            <super::functions::v1::SecurityType as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(specific_name)]
     fn set_specific_name(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -6341,8 +6434,9 @@ impl PyFunction {
     }
     #[setter(routine_body)]
     fn set_routine_body(&mut self, value: PyRoutineBody) {
-        self.0.routine_body =
-            <super::functions::v1::RoutineBody as ::core::convert::From<_>>::from(value) as i32;
+        self.0.routine_body = ::buffa::EnumValue::Known(
+            <super::functions::v1::RoutineBody as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(comment)]
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -6446,8 +6540,9 @@ impl PyFunctionParameterInfo {
             inner.type_json = value;
         }
         if let ::core::option::Option::Some(value) = type_name {
-            inner.type_name =
-                <super::tables::v1::ColumnTypeName as ::core::convert::From<_>>::from(value) as i32;
+            inner.type_name = ::buffa::EnumValue::Known(
+                <super::tables::v1::ColumnTypeName as ::core::convert::From<_>>::from(value),
+            );
         }
         {
             let value = type_precision;
@@ -6466,15 +6561,16 @@ impl PyFunctionParameterInfo {
             inner.position = value;
         }
         if let ::core::option::Option::Some(value) = parameter_mode {
-            inner.parameter_mode = <super::functions::v1::ParameterMode as ::core::convert::From<
-                _,
-            >>::from(value) as i32;
+            inner.parameter_mode = ::buffa::EnumValue::Known(
+                <super::functions::v1::ParameterMode as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = parameter_type {
-            inner.parameter_type =
+            inner.parameter_type = ::buffa::EnumValue::Known(
                 <super::functions::v1::FunctionParameterType as ::core::convert::From<_>>::from(
                     value,
-                ) as i32;
+                ),
+            );
         }
         {
             let value = parameter_default;
@@ -6500,12 +6596,7 @@ impl PyFunctionParameterInfo {
     }
     #[getter]
     fn type_name(&self) -> PyColumnTypeName {
-        PyColumnTypeName::from(
-            <super::tables::v1::ColumnTypeName as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.type_name,
-            )
-            .unwrap_or_default(),
-        )
+        PyColumnTypeName::from(self.0.type_name.as_known().unwrap_or_default())
     }
     #[getter]
     fn type_precision(&self) -> ::core::option::Option<i32> {
@@ -6525,21 +6616,11 @@ impl PyFunctionParameterInfo {
     }
     #[getter]
     fn parameter_mode(&self) -> PyParameterMode {
-        PyParameterMode::from(
-            <super::functions::v1::ParameterMode as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.parameter_mode,
-            )
-            .unwrap_or_default(),
-        )
+        PyParameterMode::from(self.0.parameter_mode.as_known().unwrap_or_default())
     }
     #[getter]
     fn parameter_type(&self) -> PyFunctionParameterType {
-        PyFunctionParameterType::from(
-            <super::functions::v1::FunctionParameterType as ::core::convert::TryFrom<
-                i32,
-            >>::try_from(self.0.parameter_type)
-                .unwrap_or_default(),
-        )
+        PyFunctionParameterType::from(self.0.parameter_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn parameter_default(&self) -> ::core::option::Option<::std::string::String> {
@@ -6563,8 +6644,9 @@ impl PyFunctionParameterInfo {
     }
     #[setter(type_name)]
     fn set_type_name(&mut self, value: PyColumnTypeName) {
-        self.0.type_name =
-            <super::tables::v1::ColumnTypeName as ::core::convert::From<_>>::from(value) as i32;
+        self.0.type_name = ::buffa::EnumValue::Known(
+            <super::tables::v1::ColumnTypeName as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(type_precision)]
     fn set_type_precision(&mut self, value: ::core::option::Option<i32>) {
@@ -6584,14 +6666,15 @@ impl PyFunctionParameterInfo {
     }
     #[setter(parameter_mode)]
     fn set_parameter_mode(&mut self, value: PyParameterMode) {
-        self.0.parameter_mode =
-            <super::functions::v1::ParameterMode as ::core::convert::From<_>>::from(value) as i32;
+        self.0.parameter_mode = ::buffa::EnumValue::Known(
+            <super::functions::v1::ParameterMode as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(parameter_type)]
     fn set_parameter_type(&mut self, value: PyFunctionParameterType) {
-        self.0.parameter_type =
-            <super::functions::v1::FunctionParameterType as ::core::convert::From<_>>::from(value)
-                as i32;
+        self.0.parameter_type = ::buffa::EnumValue::Known(
+            <super::functions::v1::FunctionParameterType as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(parameter_default)]
     fn set_parameter_default(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -6969,7 +7052,9 @@ impl PyCreatePolicyRequest {
         }
         {
             let value = policy_info;
-            inner.policy_info = value.map(|w| w.into());
+            inner.policy_info = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         Self(inner)
     }
@@ -6983,7 +7068,11 @@ impl PyCreatePolicyRequest {
     }
     #[getter]
     fn policy_info(&self) -> ::core::option::Option<PyPolicyInfo> {
-        self.0.policy_info.clone().map(PyPolicyInfo::from)
+        self.0
+            .policy_info
+            .clone()
+            .into_option()
+            .map(PyPolicyInfo::from)
     }
     #[setter(on_securable_type)]
     fn set_on_securable_type(&mut self, value: ::std::string::String) {
@@ -6995,7 +7084,9 @@ impl PyCreatePolicyRequest {
     }
     #[setter(policy_info)]
     fn set_policy_info(&mut self, value: ::core::option::Option<PyPolicyInfo>) {
-        self.0.policy_info = value.map(|w| w.into());
+        self.0.policy_info = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -7507,8 +7598,9 @@ impl PyPolicyInfo {
             inner.on_securable_fullname = value;
         }
         if let ::core::option::Option::Some(value) = policy_type {
-            inner.policy_type =
-                <super::policies::v1::PolicyType as ::core::convert::From<_>>::from(value) as i32;
+            inner.policy_type = ::buffa::EnumValue::Known(
+                <super::policies::v1::PolicyType as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = to_principals {
             inner.to_principals = value;
@@ -7555,12 +7647,7 @@ impl PyPolicyInfo {
     }
     #[getter]
     fn policy_type(&self) -> PyPolicyType {
-        PyPolicyType::from(
-            <super::policies::v1::PolicyType as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.policy_type,
-            )
-            .unwrap_or_default(),
-        )
+        PyPolicyType::from(self.0.policy_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn to_principals(&self) -> ::std::vec::Vec<::std::string::String> {
@@ -7614,7 +7701,9 @@ impl PyPolicyInfo {
     #[setter(policy_type)]
     fn set_policy_type(&mut self, value: PyPolicyType) {
         self.0.policy_type =
-            <super::policies::v1::PolicyType as ::core::convert::From<_>>::from(value) as i32;
+            ::buffa::EnumValue::Known(<super::policies::v1::PolicyType as ::core::convert::From<
+                _,
+            >>::from(value));
     }
     #[setter(to_principals)]
     fn set_to_principals(&mut self, value: ::std::vec::Vec<::std::string::String>) {
@@ -7697,7 +7786,9 @@ impl PyUpdatePolicyRequest {
         }
         {
             let value = policy_info;
-            inner.policy_info = value.map(|w| w.into());
+            inner.policy_info = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = update_mask;
@@ -7719,7 +7810,11 @@ impl PyUpdatePolicyRequest {
     }
     #[getter]
     fn policy_info(&self) -> ::core::option::Option<PyPolicyInfo> {
-        self.0.policy_info.clone().map(PyPolicyInfo::from)
+        self.0
+            .policy_info
+            .clone()
+            .into_option()
+            .map(PyPolicyInfo::from)
     }
     #[getter]
     fn update_mask(&self) -> ::core::option::Option<::std::string::String> {
@@ -7739,7 +7834,9 @@ impl PyUpdatePolicyRequest {
     }
     #[setter(policy_info)]
     fn set_policy_info(&mut self, value: ::core::option::Option<PyPolicyInfo>) {
-        self.0.policy_info = value.map(|w| w.into());
+        self.0.policy_info = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(update_mask)]
     fn set_update_mask(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -7796,9 +7893,11 @@ impl PyCreateProviderRequest {
         }
         if let ::core::option::Option::Some(value) = authentication_type {
             inner.authentication_type =
-                <super::providers::v1::ProviderAuthenticationType as ::core::convert::From<_>>::from(
-                    value,
-                ) as i32;
+                ::buffa::EnumValue::Known(
+                    <super::providers::v1::ProviderAuthenticationType as ::core::convert::From<
+                        _,
+                    >>::from(value),
+                );
         }
         {
             let value = owner;
@@ -7824,10 +7923,7 @@ impl PyCreateProviderRequest {
     #[getter]
     fn authentication_type(&self) -> PyProviderAuthenticationType {
         PyProviderAuthenticationType::from(
-            <super::providers::v1::ProviderAuthenticationType as ::core::convert::TryFrom<
-                i32,
-            >>::try_from(self.0.authentication_type)
-                .unwrap_or_default(),
+            self.0.authentication_type.as_known().unwrap_or_default(),
         )
     }
     #[getter]
@@ -7854,10 +7950,11 @@ impl PyCreateProviderRequest {
     }
     #[setter(authentication_type)]
     fn set_authentication_type(&mut self, value: PyProviderAuthenticationType) {
-        self.0.authentication_type =
+        self.0.authentication_type = ::buffa::EnumValue::Known(
             <super::providers::v1::ProviderAuthenticationType as ::core::convert::From<_>>::from(
                 value,
-            ) as i32;
+            ),
+        );
     }
     #[setter(owner)]
     fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -8154,9 +8251,11 @@ impl PyProvider {
         }
         if let ::core::option::Option::Some(value) = authentication_type {
             inner.authentication_type =
-                <super::providers::v1::ProviderAuthenticationType as ::core::convert::From<_>>::from(
-                    value,
-                ) as i32;
+                ::buffa::EnumValue::Known(
+                    <super::providers::v1::ProviderAuthenticationType as ::core::convert::From<
+                        _,
+                    >>::from(value),
+                );
         }
         {
             let value = owner;
@@ -8202,10 +8301,7 @@ impl PyProvider {
     #[getter]
     fn authentication_type(&self) -> PyProviderAuthenticationType {
         PyProviderAuthenticationType::from(
-            <super::providers::v1::ProviderAuthenticationType as ::core::convert::TryFrom<
-                i32,
-            >>::try_from(self.0.authentication_type)
-                .unwrap_or_default(),
+            self.0.authentication_type.as_known().unwrap_or_default(),
         )
     }
     #[getter]
@@ -8252,10 +8348,11 @@ impl PyProvider {
     }
     #[setter(authentication_type)]
     fn set_authentication_type(&mut self, value: PyProviderAuthenticationType) {
-        self.0.authentication_type =
+        self.0.authentication_type = ::buffa::EnumValue::Known(
             <super::providers::v1::ProviderAuthenticationType as ::core::convert::From<_>>::from(
                 value,
-            ) as i32;
+            ),
+        );
     }
     #[setter(owner)]
     fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -8469,9 +8566,11 @@ impl PyCreateRecipientRequest {
             inner.name = value;
         }
         if let ::core::option::Option::Some(value) = authentication_type {
-            inner.authentication_type =
-                <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(value)
-                    as i32;
+            inner.authentication_type = ::buffa::EnumValue::Known(
+                <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(
+                    value,
+                ),
+            );
         }
         if let ::core::option::Option::Some(value) = owner {
             inner.owner = value;
@@ -8495,12 +8594,7 @@ impl PyCreateRecipientRequest {
     }
     #[getter]
     fn authentication_type(&self) -> PyAuthenticationType {
-        PyAuthenticationType::from(
-            <super::recipients::v1::AuthenticationType as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.authentication_type,
-            )
-            .unwrap_or_default(),
-        )
+        PyAuthenticationType::from(self.0.authentication_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn owner(&self) -> ::std::string::String {
@@ -8526,9 +8620,9 @@ impl PyCreateRecipientRequest {
     }
     #[setter(authentication_type)]
     fn set_authentication_type(&mut self, value: PyAuthenticationType) {
-        self.0.authentication_type =
-            <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(value)
-                as i32;
+        self.0.authentication_type = ::buffa::EnumValue::Known(
+            <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(owner)]
     fn set_owner(&mut self, value: ::std::string::String) {
@@ -8828,9 +8922,11 @@ impl PyRecipient {
             inner.name = value;
         }
         if let ::core::option::Option::Some(value) = authentication_type {
-            inner.authentication_type =
-                <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(value)
-                    as i32;
+            inner.authentication_type = ::buffa::EnumValue::Known(
+                <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(
+                    value,
+                ),
+            );
         }
         {
             let value = owner;
@@ -8874,12 +8970,7 @@ impl PyRecipient {
     }
     #[getter]
     fn authentication_type(&self) -> PyAuthenticationType {
-        PyAuthenticationType::from(
-            <super::recipients::v1::AuthenticationType as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.authentication_type,
-            )
-            .unwrap_or_default(),
-        )
+        PyAuthenticationType::from(self.0.authentication_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn owner(&self) -> ::core::option::Option<::std::string::String> {
@@ -8930,9 +9021,9 @@ impl PyRecipient {
     }
     #[setter(authentication_type)]
     fn set_authentication_type(&mut self, value: PyAuthenticationType) {
-        self.0.authentication_type =
-            <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(value)
-                as i32;
+        self.0.authentication_type = ::buffa::EnumValue::Known(
+            <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(owner)]
     fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -9995,8 +10086,9 @@ impl PyDataObject {
             inner.name = value;
         }
         if let ::core::option::Option::Some(value) = data_object_type {
-            inner.data_object_type =
-                <super::shares::v1::DataObjectType as ::core::convert::From<_>>::from(value) as i32;
+            inner.data_object_type = ::buffa::EnumValue::Known(
+                <super::shares::v1::DataObjectType as ::core::convert::From<_>>::from(value),
+            );
         }
         {
             let value = added_at;
@@ -10024,7 +10116,9 @@ impl PyDataObject {
         {
             let value = history_data_sharing_status;
             inner.history_data_sharing_status = value.map(|e| {
-                <super::shares::v1::HistoryStatus as ::core::convert::From<_>>::from(e) as i32
+                ::buffa::EnumValue::Known(
+                    <super::shares::v1::HistoryStatus as ::core::convert::From<_>>::from(e),
+                )
             });
         }
         {
@@ -10039,12 +10133,7 @@ impl PyDataObject {
     }
     #[getter]
     fn data_object_type(&self) -> PyDataObjectType {
-        PyDataObjectType::from(
-            <super::shares::v1::DataObjectType as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.data_object_type,
-            )
-            .unwrap_or_default(),
-        )
+        PyDataObjectType::from(self.0.data_object_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn added_at(&self) -> ::core::option::Option<i64> {
@@ -10074,10 +10163,8 @@ impl PyDataObject {
     fn history_data_sharing_status(&self) -> ::core::option::Option<PyHistoryStatus> {
         self.0
             .history_data_sharing_status
-            .and_then(|v| {
-                <super::shares::v1::HistoryStatus as ::core::convert::TryFrom<i32>>::try_from(v)
-                    .ok()
-            })
+            .as_ref()
+            .and_then(|e| e.as_known())
             .map(PyHistoryStatus::from)
     }
     #[getter]
@@ -10090,8 +10177,9 @@ impl PyDataObject {
     }
     #[setter(data_object_type)]
     fn set_data_object_type(&mut self, value: PyDataObjectType) {
-        self.0.data_object_type =
-            <super::shares::v1::DataObjectType as ::core::convert::From<_>>::from(value) as i32;
+        self.0.data_object_type = ::buffa::EnumValue::Known(
+            <super::shares::v1::DataObjectType as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(added_at)]
     fn set_added_at(&mut self, value: ::core::option::Option<i64>) {
@@ -10120,7 +10208,9 @@ impl PyDataObject {
     #[setter(history_data_sharing_status)]
     fn set_history_data_sharing_status(&mut self, value: ::core::option::Option<PyHistoryStatus>) {
         self.0.history_data_sharing_status = value.map(|e| {
-            <super::shares::v1::HistoryStatus as ::core::convert::From<_>>::from(e) as i32
+            ::buffa::EnumValue::Known(
+                <super::shares::v1::HistoryStatus as ::core::convert::From<_>>::from(e),
+            )
         });
     }
     #[setter(start_version)]
@@ -10160,32 +10250,41 @@ impl PyDataObjectUpdate {
             <super::shares::v1::DataObjectUpdate as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = action {
             inner.action =
-                <super::shares::v1::Action as ::core::convert::From<_>>::from(value) as i32;
+                ::buffa::EnumValue::Known(<super::shares::v1::Action as ::core::convert::From<
+                    _,
+                >>::from(value));
         }
         {
             let value = data_object;
-            inner.data_object = value.map(|w| w.into());
+            inner.data_object = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         Self(inner)
     }
     #[getter]
     fn action(&self) -> PyAction {
-        PyAction::from(
-            <super::shares::v1::Action as ::core::convert::TryFrom<i32>>::try_from(self.0.action)
-                .unwrap_or_default(),
-        )
+        PyAction::from(self.0.action.as_known().unwrap_or_default())
     }
     #[getter]
     fn data_object(&self) -> ::core::option::Option<PyDataObject> {
-        self.0.data_object.clone().map(PyDataObject::from)
+        self.0
+            .data_object
+            .clone()
+            .into_option()
+            .map(PyDataObject::from)
     }
     #[setter(action)]
     fn set_action(&mut self, value: PyAction) {
-        self.0.action = <super::shares::v1::Action as ::core::convert::From<_>>::from(value) as i32;
+        self.0.action = ::buffa::EnumValue::Known(
+            <super::shares::v1::Action as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(data_object)]
     fn set_data_object(&mut self, value: ::core::option::Option<PyDataObject>) {
-        self.0.data_object = value.map(|w| w.into());
+        self.0.data_object = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -11355,8 +11454,9 @@ impl PyColumn {
             inner.position = value;
         }
         if let ::core::option::Option::Some(value) = type_name {
-            inner.type_name =
-                <super::tables::v1::ColumnTypeName as ::core::convert::From<_>>::from(value) as i32;
+            inner.type_name = ::buffa::EnumValue::Known(
+                <super::tables::v1::ColumnTypeName as ::core::convert::From<_>>::from(value),
+            );
         }
         {
             let value = type_precision;
@@ -11406,12 +11506,7 @@ impl PyColumn {
     }
     #[getter]
     fn type_name(&self) -> PyColumnTypeName {
-        PyColumnTypeName::from(
-            <super::tables::v1::ColumnTypeName as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.type_name,
-            )
-            .unwrap_or_default(),
-        )
+        PyColumnTypeName::from(self.0.type_name.as_known().unwrap_or_default())
     }
     #[getter]
     fn type_precision(&self) -> ::core::option::Option<i32> {
@@ -11459,8 +11554,9 @@ impl PyColumn {
     }
     #[setter(type_name)]
     fn set_type_name(&mut self, value: PyColumnTypeName) {
-        self.0.type_name =
-            <super::tables::v1::ColumnTypeName as ::core::convert::From<_>>::from(value) as i32;
+        self.0.type_name = ::buffa::EnumValue::Known(
+            <super::tables::v1::ColumnTypeName as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(type_precision)]
     fn set_type_precision(&mut self, value: ::core::option::Option<i32>) {
@@ -11556,13 +11652,14 @@ impl PyCreateTableRequest {
             inner.catalog_name = value;
         }
         if let ::core::option::Option::Some(value) = table_type {
-            inner.table_type =
-                <super::tables::v1::TableType as ::core::convert::From<_>>::from(value) as i32;
+            inner.table_type = ::buffa::EnumValue::Known(
+                <super::tables::v1::TableType as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = data_source_format {
-            inner.data_source_format =
-                <super::tables::v1::DataSourceFormat as ::core::convert::From<_>>::from(value)
-                    as i32;
+            inner.data_source_format = ::buffa::EnumValue::Known(
+                <super::tables::v1::DataSourceFormat as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = columns {
             inner.columns = value.into_iter().map(::core::convert::Into::into).collect();
@@ -11584,7 +11681,9 @@ impl PyCreateTableRequest {
         }
         {
             let value = view_dependencies;
-            inner.view_dependencies = value.map(|w| w.into());
+            inner.view_dependencies = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         Self(inner)
     }
@@ -11602,21 +11701,11 @@ impl PyCreateTableRequest {
     }
     #[getter]
     fn table_type(&self) -> PyTableType {
-        PyTableType::from(
-            <super::tables::v1::TableType as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.table_type,
-            )
-            .unwrap_or_default(),
-        )
+        PyTableType::from(self.0.table_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn data_source_format(&self) -> PyDataSourceFormat {
-        PyDataSourceFormat::from(
-            <super::tables::v1::DataSourceFormat as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.data_source_format,
-            )
-            .unwrap_or_default(),
-        )
+        PyDataSourceFormat::from(self.0.data_source_format.as_known().unwrap_or_default())
     }
     #[getter]
     fn columns(&self) -> ::std::vec::Vec<PyColumn> {
@@ -11642,7 +11731,11 @@ impl PyCreateTableRequest {
     }
     #[getter]
     fn view_dependencies(&self) -> ::core::option::Option<PyDependencyList> {
-        self.0.view_dependencies.clone().map(PyDependencyList::from)
+        self.0
+            .view_dependencies
+            .clone()
+            .into_option()
+            .map(PyDependencyList::from)
     }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
@@ -11658,13 +11751,15 @@ impl PyCreateTableRequest {
     }
     #[setter(table_type)]
     fn set_table_type(&mut self, value: PyTableType) {
-        self.0.table_type =
-            <super::tables::v1::TableType as ::core::convert::From<_>>::from(value) as i32;
+        self.0.table_type = ::buffa::EnumValue::Known(
+            <super::tables::v1::TableType as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(data_source_format)]
     fn set_data_source_format(&mut self, value: PyDataSourceFormat) {
-        self.0.data_source_format =
-            <super::tables::v1::DataSourceFormat as ::core::convert::From<_>>::from(value) as i32;
+        self.0.data_source_format = ::buffa::EnumValue::Known(
+            <super::tables::v1::DataSourceFormat as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(columns)]
     fn set_columns(&mut self, value: ::std::vec::Vec<PyColumn>) {
@@ -11691,7 +11786,9 @@ impl PyCreateTableRequest {
     }
     #[setter(view_dependencies)]
     fn set_view_dependencies(&mut self, value: ::core::option::Option<PyDependencyList>) {
-        self.0.view_dependencies = value.map(|w| w.into());
+        self.0.view_dependencies = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -12514,13 +12611,14 @@ impl PyTable {
             inner.schema_name = value;
         }
         if let ::core::option::Option::Some(value) = table_type {
-            inner.table_type =
-                <super::tables::v1::TableType as ::core::convert::From<_>>::from(value) as i32;
+            inner.table_type = ::buffa::EnumValue::Known(
+                <super::tables::v1::TableType as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = data_source_format {
-            inner.data_source_format =
-                <super::tables::v1::DataSourceFormat as ::core::convert::From<_>>::from(value)
-                    as i32;
+            inner.data_source_format = ::buffa::EnumValue::Known(
+                <super::tables::v1::DataSourceFormat as ::core::convert::From<_>>::from(value),
+            );
         }
         if let ::core::option::Option::Some(value) = columns {
             inner.columns = value.into_iter().map(::core::convert::Into::into).collect();
@@ -12535,7 +12633,9 @@ impl PyTable {
         }
         {
             let value = view_dependencies;
-            inner.view_dependencies = value.map(|w| w.into());
+            inner.view_dependencies = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = owner;
@@ -12595,21 +12695,11 @@ impl PyTable {
     }
     #[getter]
     fn table_type(&self) -> PyTableType {
-        PyTableType::from(
-            <super::tables::v1::TableType as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.table_type,
-            )
-            .unwrap_or_default(),
-        )
+        PyTableType::from(self.0.table_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn data_source_format(&self) -> PyDataSourceFormat {
-        PyDataSourceFormat::from(
-            <super::tables::v1::DataSourceFormat as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.data_source_format,
-            )
-            .unwrap_or_default(),
-        )
+        PyDataSourceFormat::from(self.0.data_source_format.as_known().unwrap_or_default())
     }
     #[getter]
     fn columns(&self) -> ::std::vec::Vec<PyColumn> {
@@ -12625,7 +12715,11 @@ impl PyTable {
     }
     #[getter]
     fn view_dependencies(&self) -> ::core::option::Option<PyDependencyList> {
-        self.0.view_dependencies.clone().map(PyDependencyList::from)
+        self.0
+            .view_dependencies
+            .clone()
+            .into_option()
+            .map(PyDependencyList::from)
     }
     #[getter]
     fn owner(&self) -> ::core::option::Option<::std::string::String> {
@@ -12687,13 +12781,15 @@ impl PyTable {
     }
     #[setter(table_type)]
     fn set_table_type(&mut self, value: PyTableType) {
-        self.0.table_type =
-            <super::tables::v1::TableType as ::core::convert::From<_>>::from(value) as i32;
+        self.0.table_type = ::buffa::EnumValue::Known(
+            <super::tables::v1::TableType as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(data_source_format)]
     fn set_data_source_format(&mut self, value: PyDataSourceFormat) {
-        self.0.data_source_format =
-            <super::tables::v1::DataSourceFormat as ::core::convert::From<_>>::from(value) as i32;
+        self.0.data_source_format = ::buffa::EnumValue::Known(
+            <super::tables::v1::DataSourceFormat as ::core::convert::From<_>>::from(value),
+        );
     }
     #[setter(columns)]
     fn set_columns(&mut self, value: ::std::vec::Vec<PyColumn>) {
@@ -12709,7 +12805,9 @@ impl PyTable {
     }
     #[setter(view_dependencies)]
     fn set_view_dependencies(&mut self, value: ::core::option::Option<PyDependencyList>) {
-        self.0.view_dependencies = value.map(|w| w.into());
+        self.0.view_dependencies = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(owner)]
     fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -12835,8 +12933,9 @@ impl PyTableSummary {
             inner.full_name = value;
         }
         if let ::core::option::Option::Some(value) = table_type {
-            inner.table_type =
-                <super::tables::v1::TableType as ::core::convert::From<_>>::from(value) as i32;
+            inner.table_type = ::buffa::EnumValue::Known(
+                <super::tables::v1::TableType as ::core::convert::From<_>>::from(value),
+            );
         }
         Self(inner)
     }
@@ -12846,12 +12945,7 @@ impl PyTableSummary {
     }
     #[getter]
     fn table_type(&self) -> PyTableType {
-        PyTableType::from(
-            <super::tables::v1::TableType as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.table_type,
-            )
-            .unwrap_or_default(),
-        )
+        PyTableType::from(self.0.table_type.as_known().unwrap_or_default())
     }
     #[setter(full_name)]
     fn set_full_name(&mut self, value: ::std::string::String) {
@@ -12859,8 +12953,9 @@ impl PyTableSummary {
     }
     #[setter(table_type)]
     fn set_table_type(&mut self, value: PyTableType) {
-        self.0.table_type =
-            <super::tables::v1::TableType as ::core::convert::From<_>>::from(value) as i32;
+        self.0.table_type = ::buffa::EnumValue::Known(
+            <super::tables::v1::TableType as ::core::convert::From<_>>::from(value),
+        );
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -12893,7 +12988,9 @@ impl PyCreateEntityTagAssignmentRequest {
         let mut inner = <super::tags::v1::CreateEntityTagAssignmentRequest as ::core::default::Default>::default();
         {
             let value = tag_assignment;
-            inner.tag_assignment = value.map(|w| w.into());
+            inner.tag_assignment = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         Self(inner)
     }
@@ -12902,11 +12999,14 @@ impl PyCreateEntityTagAssignmentRequest {
         self.0
             .tag_assignment
             .clone()
+            .into_option()
             .map(PyEntityTagAssignment::from)
     }
     #[setter(tag_assignment)]
     fn set_tag_assignment(&mut self, value: ::core::option::Option<PyEntityTagAssignment>) {
-        self.0.tag_assignment = value.map(|w| w.into());
+        self.0.tag_assignment = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -12942,17 +13042,25 @@ impl PyCreateTagPolicyRequest {
             <super::tags::v1::CreateTagPolicyRequest as ::core::default::Default>::default();
         {
             let value = tag_policy;
-            inner.tag_policy = value.map(|w| w.into());
+            inner.tag_policy = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         Self(inner)
     }
     #[getter]
     fn tag_policy(&self) -> ::core::option::Option<PyTagPolicy> {
-        self.0.tag_policy.clone().map(PyTagPolicy::from)
+        self.0
+            .tag_policy
+            .clone()
+            .into_option()
+            .map(PyTagPolicy::from)
     }
     #[setter(tag_policy)]
     fn set_tag_policy(&mut self, value: ::core::option::Option<PyTagPolicy>) {
-        self.0.tag_policy = value.map(|w| w.into());
+        self.0.tag_policy = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -13712,7 +13820,9 @@ impl PyUpdateEntityTagAssignmentRequest {
         }
         {
             let value = tag_assignment;
-            inner.tag_assignment = value.map(|w| w.into());
+            inner.tag_assignment = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = update_mask;
@@ -13737,6 +13847,7 @@ impl PyUpdateEntityTagAssignmentRequest {
         self.0
             .tag_assignment
             .clone()
+            .into_option()
             .map(PyEntityTagAssignment::from)
     }
     #[getter]
@@ -13757,7 +13868,9 @@ impl PyUpdateEntityTagAssignmentRequest {
     }
     #[setter(tag_assignment)]
     fn set_tag_assignment(&mut self, value: ::core::option::Option<PyEntityTagAssignment>) {
-        self.0.tag_assignment = value.map(|w| w.into());
+        self.0.tag_assignment = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(update_mask)]
     fn set_update_mask(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -13804,7 +13917,9 @@ impl PyUpdateTagPolicyRequest {
         }
         {
             let value = tag_policy;
-            inner.tag_policy = value.map(|w| w.into());
+            inner.tag_policy = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = update_mask;
@@ -13818,7 +13933,11 @@ impl PyUpdateTagPolicyRequest {
     }
     #[getter]
     fn tag_policy(&self) -> ::core::option::Option<PyTagPolicy> {
-        self.0.tag_policy.clone().map(PyTagPolicy::from)
+        self.0
+            .tag_policy
+            .clone()
+            .into_option()
+            .map(PyTagPolicy::from)
     }
     #[getter]
     fn update_mask(&self) -> ::core::option::Option<::std::string::String> {
@@ -13830,7 +13949,9 @@ impl PyUpdateTagPolicyRequest {
     }
     #[setter(tag_policy)]
     fn set_tag_policy(&mut self, value: ::core::option::Option<PyTagPolicy>) {
-        self.0.tag_policy = value.map(|w| w.into());
+        self.0.tag_policy = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(update_mask)]
     fn set_update_mask(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -14129,9 +14250,11 @@ impl PyGenerateTemporaryPathCredentialsRequest {
             inner.url = value;
         }
         if let ::core::option::Option::Some(value) = operation {
-            inner.operation = <super::temporary_credentials::v1::generate_temporary_path_credentials_request::Operation as ::core::convert::From<
-                _,
-            >>::from(value) as i32;
+            inner.operation = ::buffa::EnumValue::Known(
+                <super::temporary_credentials::v1::generate_temporary_path_credentials_request::Operation as ::core::convert::From<
+                    _,
+                >>::from(value),
+            );
         }
         {
             let value = dry_run;
@@ -14146,10 +14269,7 @@ impl PyGenerateTemporaryPathCredentialsRequest {
     #[getter]
     fn operation(&self) -> PyGenerateTemporaryPathCredentialsRequestOperation {
         PyGenerateTemporaryPathCredentialsRequestOperation::from(
-            <super::temporary_credentials::v1::generate_temporary_path_credentials_request::Operation as ::core::convert::TryFrom<
-                i32,
-            >>::try_from(self.0.operation)
-                .unwrap_or_default(),
+            self.0.operation.as_known().unwrap_or_default(),
         )
     }
     #[getter]
@@ -14162,9 +14282,11 @@ impl PyGenerateTemporaryPathCredentialsRequest {
     }
     #[setter(operation)]
     fn set_operation(&mut self, value: PyGenerateTemporaryPathCredentialsRequestOperation) {
-        self.0.operation = <super::temporary_credentials::v1::generate_temporary_path_credentials_request::Operation as ::core::convert::From<
-            _,
-        >>::from(value) as i32;
+        self.0.operation = ::buffa::EnumValue::Known(
+            <super::temporary_credentials::v1::generate_temporary_path_credentials_request::Operation as ::core::convert::From<
+                _,
+            >>::from(value),
+        );
     }
     #[setter(dry_run)]
     fn set_dry_run(&mut self, value: ::core::option::Option<bool>) {
@@ -14213,9 +14335,11 @@ impl PyGenerateTemporaryTableCredentialsRequest {
             inner.table_id = value;
         }
         if let ::core::option::Option::Some(value) = operation {
-            inner.operation = <super::temporary_credentials::v1::generate_temporary_table_credentials_request::Operation as ::core::convert::From<
-                _,
-            >>::from(value) as i32;
+            inner.operation = ::buffa::EnumValue::Known(
+                <super::temporary_credentials::v1::generate_temporary_table_credentials_request::Operation as ::core::convert::From<
+                    _,
+                >>::from(value),
+            );
         }
         Self(inner)
     }
@@ -14226,10 +14350,7 @@ impl PyGenerateTemporaryTableCredentialsRequest {
     #[getter]
     fn operation(&self) -> PyGenerateTemporaryTableCredentialsRequestOperation {
         PyGenerateTemporaryTableCredentialsRequestOperation::from(
-            <super::temporary_credentials::v1::generate_temporary_table_credentials_request::Operation as ::core::convert::TryFrom<
-                i32,
-            >>::try_from(self.0.operation)
-                .unwrap_or_default(),
+            self.0.operation.as_known().unwrap_or_default(),
         )
     }
     #[setter(table_id)]
@@ -14238,9 +14359,11 @@ impl PyGenerateTemporaryTableCredentialsRequest {
     }
     #[setter(operation)]
     fn set_operation(&mut self, value: PyGenerateTemporaryTableCredentialsRequestOperation) {
-        self.0.operation = <super::temporary_credentials::v1::generate_temporary_table_credentials_request::Operation as ::core::convert::From<
-            _,
-        >>::from(value) as i32;
+        self.0.operation = ::buffa::EnumValue::Known(
+            <super::temporary_credentials::v1::generate_temporary_table_credentials_request::Operation as ::core::convert::From<
+                _,
+            >>::from(value),
+        );
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -14286,9 +14409,11 @@ impl PyGenerateTemporaryVolumeCredentialsRequest {
             inner.volume_id = value;
         }
         if let ::core::option::Option::Some(value) = operation {
-            inner.operation = <super::temporary_credentials::v1::generate_temporary_volume_credentials_request::Operation as ::core::convert::From<
-                _,
-            >>::from(value) as i32;
+            inner.operation = ::buffa::EnumValue::Known(
+                <super::temporary_credentials::v1::generate_temporary_volume_credentials_request::Operation as ::core::convert::From<
+                    _,
+                >>::from(value),
+            );
         }
         Self(inner)
     }
@@ -14299,10 +14424,7 @@ impl PyGenerateTemporaryVolumeCredentialsRequest {
     #[getter]
     fn operation(&self) -> PyGenerateTemporaryVolumeCredentialsRequestOperation {
         PyGenerateTemporaryVolumeCredentialsRequestOperation::from(
-            <super::temporary_credentials::v1::generate_temporary_volume_credentials_request::Operation as ::core::convert::TryFrom<
-                i32,
-            >>::try_from(self.0.operation)
-                .unwrap_or_default(),
+            self.0.operation.as_known().unwrap_or_default(),
         )
     }
     #[setter(volume_id)]
@@ -14311,9 +14433,11 @@ impl PyGenerateTemporaryVolumeCredentialsRequest {
     }
     #[setter(operation)]
     fn set_operation(&mut self, value: PyGenerateTemporaryVolumeCredentialsRequestOperation) {
-        self.0.operation = <super::temporary_credentials::v1::generate_temporary_volume_credentials_request::Operation as ::core::convert::From<
-            _,
-        >>::from(value) as i32;
+        self.0.operation = ::buffa::EnumValue::Known(
+            <super::temporary_credentials::v1::generate_temporary_volume_credentials_request::Operation as ::core::convert::From<
+                _,
+            >>::from(value),
+        );
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -14511,8 +14635,9 @@ impl PyCreateVolumeRequest {
             inner.name = value;
         }
         if let ::core::option::Option::Some(value) = volume_type {
-            inner.volume_type =
-                <super::volumes::v1::VolumeType as ::core::convert::From<_>>::from(value) as i32;
+            inner.volume_type = ::buffa::EnumValue::Known(
+                <super::volumes::v1::VolumeType as ::core::convert::From<_>>::from(value),
+            );
         }
         {
             let value = storage_location;
@@ -14538,12 +14663,7 @@ impl PyCreateVolumeRequest {
     }
     #[getter]
     fn volume_type(&self) -> PyVolumeType {
-        PyVolumeType::from(
-            <super::volumes::v1::VolumeType as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.volume_type,
-            )
-            .unwrap_or_default(),
-        )
+        PyVolumeType::from(self.0.volume_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn storage_location(&self) -> ::core::option::Option<::std::string::String> {
@@ -14568,7 +14688,9 @@ impl PyCreateVolumeRequest {
     #[setter(volume_type)]
     fn set_volume_type(&mut self, value: PyVolumeType) {
         self.0.volume_type =
-            <super::volumes::v1::VolumeType as ::core::convert::From<_>>::from(value) as i32;
+            ::buffa::EnumValue::Known(<super::volumes::v1::VolumeType as ::core::convert::From<
+                _,
+            >>::from(value));
     }
     #[setter(storage_location)]
     fn set_storage_location(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -14995,8 +15117,9 @@ impl PyVolume {
             inner.volume_id = value;
         }
         if let ::core::option::Option::Some(value) = volume_type {
-            inner.volume_type =
-                <super::volumes::v1::VolumeType as ::core::convert::From<_>>::from(value) as i32;
+            inner.volume_type = ::buffa::EnumValue::Known(
+                <super::volumes::v1::VolumeType as ::core::convert::From<_>>::from(value),
+            );
         }
         {
             let value = owner;
@@ -15058,12 +15181,7 @@ impl PyVolume {
     }
     #[getter]
     fn volume_type(&self) -> PyVolumeType {
-        PyVolumeType::from(
-            <super::volumes::v1::VolumeType as ::core::convert::TryFrom<i32>>::try_from(
-                self.0.volume_type,
-            )
-            .unwrap_or_default(),
-        )
+        PyVolumeType::from(self.0.volume_type.as_known().unwrap_or_default())
     }
     #[getter]
     fn owner(&self) -> ::core::option::Option<::std::string::String> {
@@ -15124,7 +15242,9 @@ impl PyVolume {
     #[setter(volume_type)]
     fn set_volume_type(&mut self, value: PyVolumeType) {
         self.0.volume_type =
-            <super::volumes::v1::VolumeType as ::core::convert::From<_>>::from(value) as i32;
+            ::buffa::EnumValue::Known(<super::volumes::v1::VolumeType as ::core::convert::From<
+                _,
+            >>::from(value));
     }
     #[setter(owner)]
     fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
