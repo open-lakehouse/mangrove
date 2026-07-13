@@ -11,9 +11,9 @@ rust-version.workspace = true
 homepage.workspace = true
 
 [dependencies]
-unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client" }
-unitycatalog-common = { package = "olai-uc-common", path = "../../crates/common" }
-unitycatalog-object-store = { package = "olai-uc-object-store", path = "../../crates/object-store" }
+unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client", version = "0.0.2" }
+unitycatalog-common = { package = "olai-uc-common", path = "../../crates/common", version = "0.0.2" }
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../../crates/object-store", version = "0.0.2" }
 futures = { workspace = true }
 object_store = { workspace = true }
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }

@@ -3808,7 +3808,6 @@ dependencies = [
  "tokio",
  "tokio-test",
  "tracing",
- "unitycatalog-acceptance",
  "url",
  "uuid",
 ]
