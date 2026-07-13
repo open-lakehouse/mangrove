@@ -40,13 +40,18 @@ keywords = [
 # engine (`DefaultEngineBuilder`) moved into its own `delta_kernel_default_engine`
 # crate in v0.25 — depend on it explicitly. Bump all four revs in lock-step; the
 # `delta-rs` and `delta-kernel-rs` revs must be a matched set.
-delta_kernel = { package = "delta_kernel", git = "https://github.com/roeap/delta-kernel-rs", rev = "530e94d241779dfc17eda242f554b24091e00d23", features = [
+# The `version =` on these git deps is required for `release-plz`'s
+# `cargo package` version-determination step: `cargo package` rejects any
+# dependency (git-sourced included) that lacks a version requirement. The
+# `git`+`rev` still governs the actual build; `version` only satisfies the
+# packaging check and matches each fork's declared version. See release-plz#2595.
+delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "530e94d241779dfc17eda242f554b24091e00d23", features = [
   "internal-api",
   "default-engine-base",
   "arrow-58",
 ] }
-delta_kernel_default_engine = { git = "https://github.com/roeap/delta-kernel-rs", rev = "530e94d241779dfc17eda242f554b24091e00d23", package = "delta_kernel_default_engine" }
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "ff862c293d31c954075f99f284f1353144ac1b31", features = [
+delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "530e94d241779dfc17eda242f554b24091e00d23", package = "delta_kernel_default_engine" }
+deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "f24c9f344d9ccb87958065fdf34659524328fafe", features = [
   "datafusion",
   "cloud",
 ] }

@@ -26,21 +26,27 @@ RUN cargo chef prepare --recipe-path recipe.json
 # node:22-bookworm-slim
 FROM node:22-bookworm-slim AS ui
 WORKDIR /ui
-# Fetch npm packages from the public registry by default (override NPM_REGISTRY
-# to build behind a mirror). Combined with npm's default
-# `replace-registry-host=npmjs`, this rewrites the host of the lockfile's
-# `resolved` URLs at fetch time, so a lockfile pinned to the internal mirror
-# (baked in by a local install) still resolves from a reachable registry.
-ARG NPM_REGISTRY=https://registry.npmjs.org/
-ENV npm_config_registry=${NPM_REGISTRY}
 # Lockfile + manifests first for a cacheable `npm ci` layer. The build needs the
 # whole npm workspace (root manifest + every node/* package the app imports).
 COPY package.json package-lock.json ./
 COPY node/ ./node/
+# The committed package-lock.json pins each tarball's `resolved` URL to whatever
+# registry it was generated against — for us some entries point at an internal
+# mirror (npm-proxy.cloud.databricks.com) that CI and other external builders
+# can't reach, so `npm ci` (which fetches the exact `resolved` URLs, ignoring
+# any `--registry`/`npm_config_registry` setting) hangs on the unreachable host
+# and fails with an ETIMEDOUT. Re-point the host to the target registry here;
+# the `integrity` hashes are unchanged (identical tarball content on any
+# mirror), so the lockfile's guarantees still hold. Defaults to the public
+# registry so CI works out of the box; override NPM_REGISTRY (and
+# NPM_REGISTRY_FROM, the host to replace) to build behind a different mirror.
+ARG NPM_REGISTRY=https://registry.npmjs.org
+ARG NPM_REGISTRY_FROM=https://npm-proxy.cloud.databricks.com
 # `--no-audit`/`--no-fund` drop the post-install network calls a reproducible
 # image build has no use for. The workspace packages are consumed as TS source
 # (their `exports` point at src/), so Vite transpiles them during the app build.
-RUN npm ci --no-audit --no-fund
+RUN sed -i "s#${NPM_REGISTRY_FROM}/#${NPM_REGISTRY}/#g" package-lock.json \
+    && npm ci --no-audit --no-fund
 # Build the app → node/app/dist. Vite `base: "./"` makes the asset URLs relative
 # so one image works under any server base-path without a rebuild.
 RUN npm run build --workspace @open-lakehouse/uc-app
