@@ -155,13 +155,19 @@ release = false
 [[package]]
 name = "unitycatalog-acceptance"
 # Internal test harness (`publish = false` in its Cargo.toml), never released to
-# crates.io and NOT a dependency of any released crate. Without `release = false`
-# release-plz still runs a verifying `cargo package` over it during the
-# workspace version-determination pass, which was failing the Release PR job
-# (its path deps trip `cargo package` manifest verification). Excluding it from
-# the release cycle removes that pass entirely — nothing depends on it, so it is
-# safe to skip.
+# crates.io and NOT a dependency of any released crate. Without excluding it,
+# release-plz runs a verifying `cargo package` over it during the workspace
+# version-determination pass, which was failing the Release PR job (its path
+# deps trip `cargo package` manifest verification).
+#
+# `publish = false` here is REQUIRED (not just `release = false`): release-plz
+# validates that its own `publish` setting matches the crate's Cargo.toml, and
+# the workspace-level `publish = true` above otherwise contradicts this crate's
+# `publish = false` ("has `publish = false` in Cargo.toml, but `publish = true`
+# in the release-plz configuration"). `release = false` additionally gates it
+# out of the version-bump/changelog/tag cycle. Same pairing the server uses.
 release = false
+publish = false
 
 # ---------------------------------------------------------------------------
 # Changelog rendering (git-cliff, embedded). Conventional-commit grouping.
