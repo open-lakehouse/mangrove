@@ -111,6 +111,8 @@ jobs:
             org.opencontainers.image.vendor=open-lakehouse
             org.opencontainers.image.licenses=Apache-2.0
             org.opencontainers.image.source=https://github.com/open-lakehouse/mangrove
+            org.opencontainers.image.version=${{ inputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
 
       # Build + push by digest only (no tags here — the merge job assembles the
       # multi-arch manifest list and applies the tags). Per-arch cache scope so
@@ -155,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write # gh release edit/upload to link + attach provenance
       packages: write
       id-token: write # cosign keyless signing
 
@@ -208,6 +210,8 @@ jobs:
             org.opencontainers.image.vendor=open-lakehouse
             org.opencontainers.image.licenses=Apache-2.0
             org.opencontainers.image.source=https://github.com/open-lakehouse/mangrove
+            org.opencontainers.image.version=${{ inputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
 
       # Create the manifest list referencing the per-arch digests, for each tag.
       # Index-level OCI annotations from metadata-action are applied here (they
@@ -247,3 +251,52 @@ jobs:
         run: |
           echo "$TAGS" | sed "s/:.*\$/@$DIGEST/" | sort -u | \
             xargs --no-run-if-empty cosign sign --yes
+
+      # Associate the GitHub Release (olai-uc-server-v<version>, already created by
+      # release-plz.yml) with the image we just pushed: append a package-version
+      # deep link to the notes and attach immutable provenance assets (the index
+      # digest pin + the per-arch SBOMs that were baked into the image). GHCR has
+      # no native package<->release binding, so this cross-reference is the link.
+      # Release-only: skipped on edge/PR builds where inputs.version is empty.
+      - name: Link and attach provenance to release
+        if: ${{ inputs.version != '' }}
+        env:
+          VERSION: ${{ inputs.version }}
+          DIGEST: ${{ steps.digest.outputs.index }}
+          IMAGE: ${{ env.IMAGE }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="olai-uc-server-v${VERSION}"
+
+          # Provenance files. The digest pin is authoritative and API-independent.
+          printf '%s@%s\n' "${IMAGE}:${VERSION}" "${DIGEST}" > "mangrove-${VERSION}.digest.txt"
+          docker buildx imagetools inspect "${IMAGE}:${VERSION}" \
+            --format '{{ json (index .SBOM "linux/amd64").SPDX }}' > "mangrove-${VERSION}.amd64.spdx.json"
+          docker buildx imagetools inspect "${IMAGE}:${VERSION}" \
+            --format '{{ json (index .SBOM "linux/arm64").SPDX }}' > "mangrove-${VERSION}.arm64.spdx.json"
+
+          # Deep link to the exact GHCR package version; fall back to the package
+          # page if the packages API has not indexed the new version yet.
+          vid=$(gh api "/orgs/open-lakehouse/packages/container/mangrove/versions" \
+            --jq ".[] | select(.metadata.container.tags[]? == \"${VERSION}\") | .id" | head -1 || true)
+          if [ -n "$vid" ]; then
+            url="https://github.com/open-lakehouse/mangrove/pkgs/container/mangrove/${vid}?tag=${VERSION}"
+          else
+            url="https://github.com/open-lakehouse/mangrove/pkgs/container/mangrove"
+          fi
+
+          # Idempotent on re-run (e.g. a workflow_dispatch rebuild): only append
+          # the pointer if the notes don't already carry a "Container image:" line.
+          body=$(gh release view "$tag" --json body -q .body)
+          line="**Container image:** \`${IMAGE}:${VERSION}\` (\`${DIGEST}\`) — [package version](${url})"
+          if printf '%s' "$body" | grep -qF '**Container image:**'; then
+            echo "Release notes already reference the container image — leaving notes unchanged."
+          else
+            printf '%s\n\n%s\n' "$body" "$line" | gh release edit "$tag" --notes-file -
+          fi
+
+          gh release upload "$tag" \
+            "mangrove-${VERSION}.digest.txt" \
+            "mangrove-${VERSION}.amd64.spdx.json" \
+            "mangrove-${VERSION}.arm64.spdx.json" --clobber
