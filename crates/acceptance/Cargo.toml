@@ -14,8 +14,8 @@ description = "Acceptance testing framework for Unity Catalog"
 
 [dependencies]
 # repository dependencies
-unitycatalog-client = { package = "olai-uc-client", path = "../client" }
-unitycatalog-common = { package = "olai-uc-common", path = "../common" }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.2" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2" }
 
 # workspace dependencies
 # buffa runtime: acceptance assertions construct/compare buffa model types.
