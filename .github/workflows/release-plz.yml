@@ -160,7 +160,12 @@ jobs:
     needs: release-plz-release
     if: ${{ needs.release-plz-release.outputs.server_version != '' }}
     permissions:
-      contents: read
+      # contents: write (not read) — the reusable workflow's `merge` job edits
+      # the GitHub Release + uploads provenance assets (added in #52). A called
+      # workflow's jobs may request at most what the caller grants, so `read`
+      # here fails the whole file at startup ("nested job 'merge' is requesting
+      # 'contents: write', but is only allowed 'contents: read'").
+      contents: write
       packages: write
       id-token: write
     uses: ./.github/workflows/docker-release.yml
