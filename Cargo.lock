@@ -3741,6 +3741,8 @@ dependencies = [
 [[package]]
 name = "olai-store"
 version = "0.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "114a5f83c8734b7917c5ab4ddbda3a76b8facca507961e3bf8f8a576c9ad1bc6"
 dependencies = [
  "aes-gcm",
  "async-trait",
