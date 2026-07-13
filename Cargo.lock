@@ -2209,12 +2209,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dotenv"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
-
-[[package]]
 name = "dotenvy"
 version = "0.15.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6290,28 +6284,14 @@ checksum = "7264e107f553ccae879d21fbea1d6724ac785e8c3bfc762137959b5802826ef3"
 name = "unitycatalog-acceptance"
 version = "0.0.1"
 dependencies = [
- "async-trait",
- "buffa",
  "chrono",
- "comfy-table",
- "console",
- "dotenv",
- "env_logger 0.10.2",
  "futures",
- "itertools 0.14.0",
- "log",
- "mockito",
  "olai-http",
  "olai-uc-client",
  "olai-uc-common",
- "reqwest 0.12.28",
- "rstest",
- "serde",
  "serde_json",
- "tempfile",
  "thiserror",
  "tokio",
- "tracing",
  "url",
  "uuid",
 ]
