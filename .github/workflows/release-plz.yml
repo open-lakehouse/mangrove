@@ -8,12 +8,17 @@ name: Release-plz
 #
 # The server (`olai-uc-server`) is a DEPLOYABLE, not a crates.io library: it is
 # `git_only` in release-plz.toml (tagged from git, never published) and ships as
-# the `mangrove` container image instead. After the release job, the `docker`
-# job builds + pushes it to GHCR via a reusable workflow (workflow_call), keyed
-# off the version release-plz just tagged. Running it in the SAME workflow keeps
-# the build explicitly gated on "the server was released this run" — no second
-# trigger to reason about, and the version is passed in directly rather than
-# re-derived from a tag event.
+# the `mangrove` container image instead. Its release path is a SEPARATE,
+# release-plz-INDEPENDENT chain of jobs in this same workflow: `server-release`
+# reads the server version from the manifest and creates the tag + GitHub Release
+# itself (not via release-plz), then the `docker` job (workflow_call) builds +
+# pushes the image to GHCR, gated on "the server was released this run". Keeping
+# `server-release` independent of `release-plz-release` (no `needs`) means the
+# Docker release does not fail when release-plz's crates.io path fails — which it
+# currently does, because the workspace still carries git-only forks
+# (delta_kernel / delta-rs / datafusion) that trip release-plz's verifying
+# `cargo package`. As those deps land on crates.io and the publish path goes
+# green, the two chains converge but stay independently triggerable.
 #
 # Bootstrap note: crates with `release = false` in release-plz.toml have not yet
 # had their one-time token bootstrap publish (.github/workflows/bootstrap-
@@ -87,11 +92,6 @@ jobs:
     permissions:
       contents: write # create tags + GitHub Releases
       id-token: write # crates.io OIDC publish
-    outputs:
-      # server version + tag IF this run released the server (tag was newly
-      # created), else empty — the Docker job keys off this.
-      server_version: ${{ steps.server.outputs.version }}
-      server_tag: ${{ steps.server.outputs.tag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -110,13 +110,39 @@ jobs:
         env:
           SQLX_OFFLINE: "true"
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-      # Tag + release the server ourselves. release-plz omits `git_only` packages
-      # from its `releases` output, so we cannot read the version from there. Read
-      # it from the manifest the Release PR already bumped, and if the
-      # `olai-uc-server-v<version>` tag does not exist yet, create it + a GitHub
-      # Release. Setting `version`/`tag` then fires the Docker job. When the tag
-      # already exists (e.g. a re-run, or a push that did not bump the server),
-      # the outputs stay empty and Docker is skipped — idempotent by design.
+
+  # --- Tag + GitHub Release for the DEPLOYABLE server, independent of crates.io ---
+  # The server (`olai-uc-server`) is not published to crates.io; it ships as the
+  # `mangrove` Docker image. Its tag+Release is created here from the manifest
+  # version — NOT via release-plz. This job is deliberately INDEPENDENT of
+  # `release-plz-release` (no `needs`): while the workspace still carries git-only
+  # forks (delta_kernel / delta-rs / datafusion), release-plz's crates.io path can
+  # fail its verifying `cargo package`, and the Docker release must not be held
+  # hostage to that. The two converge only once every dependency is on crates.io.
+  #
+  # release-plz omits `git_only` packages from its output, so we read the version
+  # from crates/server/Cargo.toml (the merged Release PR already bumped it) and, if
+  # the `olai-uc-server-v<version>` tag does not exist yet, create it + a GitHub
+  # Release. Setting `version`/`tag` fires the Docker job. When the tag already
+  # exists (a re-run, or a push that did not bump the server) the outputs stay
+  # empty and Docker is skipped — idempotent by design.
+  server-release:
+    name: Server release (tag)
+    if: ${{ github.repository == 'open-lakehouse/mangrove' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # create tags + GitHub Releases
+    outputs:
+      # server version + tag IF this run released the server (tag was newly
+      # created), else empty — the Docker job keys off this.
+      server_version: ${{ steps.server.outputs.version }}
+      server_tag: ${{ steps.server.outputs.tag }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - name: Tag + release server
         id: server
         env:
@@ -157,8 +183,8 @@ jobs:
   # --- Build + push the server (mangrove) Docker image, iff it was released ---
   docker:
     name: Docker release
-    needs: release-plz-release
-    if: ${{ needs.release-plz-release.outputs.server_version != '' }}
+    needs: server-release
+    if: ${{ needs.server-release.outputs.server_version != '' }}
     permissions:
       # contents: write (not read) — the reusable workflow's `merge` job edits
       # the GitHub Release + uploads provenance assets (added in #52). A called
@@ -170,5 +196,5 @@ jobs:
       id-token: write
     uses: ./.github/workflows/docker-release.yml
     with:
-      version: ${{ needs.release-plz-release.outputs.server_version }}
-      ref: ${{ needs.release-plz-release.outputs.server_tag }}
+      version: ${{ needs.server-release.outputs.server_version }}
+      ref: ${{ needs.server-release.outputs.server_tag }}
