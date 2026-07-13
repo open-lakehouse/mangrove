@@ -155,19 +155,27 @@ release = false
 [[package]]
 name = "unitycatalog-acceptance"
 # Internal test harness (`publish = false` in its Cargo.toml), never released to
-# crates.io and NOT a dependency of any released crate. Without excluding it,
-# release-plz runs a verifying `cargo package` over it during the workspace
-# version-determination pass, which was failing the Release PR job (its path
-# deps trip `cargo package` manifest verification).
+# crates.io and NOT a dependency of any released crate.
 #
-# `publish = false` here is REQUIRED (not just `release = false`): release-plz
-# validates that its own `publish` setting matches the crate's Cargo.toml, and
-# the workspace-level `publish = true` above otherwise contradicts this crate's
-# `publish = false` ("has `publish = false` in Cargo.toml, but `publish = true`
-# in the release-plz configuration"). `release = false` additionally gates it
-# out of the version-bump/changelog/tag cycle. Same pairing the server uses.
-release = false
+# `git_only = true` (matching the server) is what actually keeps it out of the
+# verifying `cargo package` failure. release-plz runs `cargo package` over the
+# whole workspace to determine the server's next version; for crates it treats
+# as crates.io-bound it rewrites the manifest (stripping the `path`, falling back
+# to the registry version) before verifying — and that rewrite drops the `path`
+# dep's `version`, so verification fails with "dependency `olai-uc-client` does
+# not specify a version" even though the source manifest DOES pin it (see the
+# #55 pins, which are correct but insufficient on their own). `git_only` marks
+# the crate as git-tag-only, so release-plz skips that crates.io-oriented rewrite
+# — the same reason `olai-uc-server` (also git_only + publish=false) packages
+# cleanly while acceptance did not.
+#
+# `publish = false` is the companion release-plz requires alongside `git_only`
+# (and matches the crate's Cargo.toml). Suppress the tag/release for this
+# internal crate — we only want the packaging behavior, not tag noise.
+git_only = true
 publish = false
+git_tag_enable = false
+git_release_enable = false
 
 # ---------------------------------------------------------------------------
 # Changelog rendering (git-cliff, embedded). Conventional-commit grouping.
