@@ -1,17 +1,24 @@
-# Minimal uc-server config for the conformance battery (`integration_oss_rust`
-# CI job and `just conformance-oss-rust`).
+# uc-server config for the conformance battery (`integration_oss_rust` CI job
+# and `just conformance-oss-rust`).
 #
-# Ephemeral in-memory SQLite backend (clean per run) and a local-storage
-# allowlist so `file://` managed catalogs/tables/volumes are accepted — the
-# server denies `file://` storage by default.
+# - Ephemeral in-memory SQLite backend, so every run starts from a clean catalog.
+# - A local-storage allowlist plus a metastore-level managed storage root: the
+#   server denies `file://` storage by default, and managed catalogs created
+#   without an explicit storage_root inherit `managed_storage_root` (which only
+#   needs to sit within an allowed root, not a registered external location).
+#   The conformance checks create catalogs without a storage_root on the OSS
+#   targets, so this is the path they exercise.
+#
+# NOTE: `allowed-roots` are host filesystem paths (not file:// URLs) and must
+# exist at startup (they are canonicalized). On Linux (CI) `/tmp/uc-test` works
+# directly; on macOS `/tmp` is a symlink to `/private/tmp`, so a local run needs
+# the canonical `/private/tmp/uc-test` in both this file and the storage root.
 backend:
   engine: sqlite
   path: ":memory:"
 
-# Allow the conformance storage root and its subpaths. Roots are host filesystem
-# paths (not file:// URLs) and must exist at startup (they are canonicalized).
-# The checks always pass an explicit `storage_root` on catalog create, so no
-# metastore-level managed_storage_root is needed.
 local_storage:
   allowed-roots:
     - "/tmp/uc-test"
+
+managed_storage_root: "file:///tmp/uc-test/"

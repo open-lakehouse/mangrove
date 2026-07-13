@@ -434,12 +434,18 @@ integration-oss-java:
 
 # Boots the local Rust server in the background (shutting it down on exit) and
 # runs the full conformance battery (`conformance_oss_rust`) against it.
+#
+# Uses dev/uc-rust-conformance.yaml. On macOS `/tmp` is a symlink, so the config
+# needs the canonical `/private/tmp/uc-test`; adjust the allowed root + storage
+# root there for a local run (CI runs on Linux where `/tmp/uc-test` is fine).
 [group('test')]
 conformance-oss-rust:
     #!/usr/bin/env bash
     set -euo pipefail
+    mkdir -p /tmp/uc-test
     cargo build -p olai-uc-server --features bin --bin uc-server
-    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- serve &
+    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- \
+        serve --config dev/uc-rust-conformance.yaml &
     server_pid=$!
     trap 'kill "$server_pid" 2>/dev/null || true' EXIT
     echo "⏳ Waiting for Rust server on http://localhost:8080 ..."
