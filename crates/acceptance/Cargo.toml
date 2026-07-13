@@ -18,6 +18,8 @@ unitycatalog-client = { package = "olai-uc-client", path = "../client" }
 unitycatalog-common = { package = "olai-uc-common", path = "../common" }
 
 # workspace dependencies
+# buffa runtime: acceptance assertions construct/compare buffa model types.
+buffa = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 olai-http = { workspace = true, features = ["recording"] }
 itertools = { workspace = true }

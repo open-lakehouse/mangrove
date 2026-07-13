@@ -35,6 +35,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListVolumesRequest {
             max_results,
             page_token,
             include_browse,
+            ..Default::default()
         })
     }
 }
@@ -73,6 +74,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetVolumeRequest {
         Ok(GetVolumeRequest {
             name,
             include_browse,
+            ..Default::default()
         })
     }
 }
@@ -98,6 +100,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateVolumeRequest {
             new_name,
             comment,
             owner,
+            ..Default::default()
         })
     }
 }
@@ -111,6 +114,9 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteVolumeRequest 
             .extract::<axum::extract::Path<String>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteVolumeRequest { name })
+        Ok(DeleteVolumeRequest {
+            name,
+            ..Default::default()
+        })
     }
 }

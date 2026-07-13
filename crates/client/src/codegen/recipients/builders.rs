@@ -82,7 +82,7 @@ impl CreateRecipientBuilder {
     ) -> Self {
         let request = CreateRecipientRequest {
             name: name.into(),
-            authentication_type: authentication_type as i32,
+            authentication_type: buffa::EnumValue::Known(authentication_type),
             owner: owner.into(),
             ..Default::default()
         };
@@ -133,7 +133,10 @@ impl GetRecipientBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `RecipientServiceClient`.
     pub(crate) fn new(client: RecipientServiceClient, name: impl Into<String>) -> Self {
-        let request = GetRecipientRequest { name: name.into() };
+        let request = GetRecipientRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }
@@ -216,7 +219,10 @@ impl DeleteRecipientBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `RecipientServiceClient`.
     pub(crate) fn new(client: RecipientServiceClient, name: impl Into<String>) -> Self {
-        let request = DeleteRecipientRequest { name: name.into() };
+        let request = DeleteRecipientRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }

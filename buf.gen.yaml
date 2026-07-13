@@ -10,32 +10,21 @@ managed:
     - file_option: go_package_prefix
       value: github.com/delta-incubator/delta-sharing-rs/go
 plugins:
-  - remote: buf.build/community/neoeinstein-prost:v0.5.0
+  # Model generation (buffa runtime). buffa emits its own `Message` impls plus
+  # native serde (JSON), so the historical prost + prost-serde + tonic plugin
+  # stack collapses to this single plugin. The prost `message_attribute` /
+  # `enum_attribute` `#[pyclass]` injection is gone — buffa has no attribute opt,
+  # so the PyO3 boundary is emitted by trestle as `Py*` wrappers in
+  # `models/_gen/pyo3_impls.rs` (see trestle.yaml). `json_field_names: proto` in
+  # trestle.yaml post-processes buffa's camelCase JSON names to snake_case for
+  # Unity Catalog wire-compat. Opts mirror trestle's canonical buffa buf.gen
+  # (`config/buf_gen.rs`): `json`, `file_per_package` — no `flat_output_dir`
+  # (prost-only).
+  - remote: buf.build/anthropics/buffa:v0.7.0
     out: crates/common/src/models/_gen
     opt:
-      # - bytes=.
-      - compile_well_known_types=true
-      # - extern_path=.google.protobuf=::pbjson_types
-      - file_descriptor_set=false
-      # Flat `<package>.rs` filenames (v0.5.0 defaults to a nested package-path
-      # tree); the generated `_gen/mod.rs` `include!`s the flat layout.
-      - flat_output_dir=true
-      - message_attribute=.unitycatalog=#[cfg_attr(feature = "python"\, ::pyo3::pyclass(get_all\, set_all))]
-      - enum_attribute=.unitycatalog=#[cfg_attr(feature = "python"\, ::pyo3::pyclass)]
-  - remote: buf.build/community/neoeinstein-prost-serde:v0.4.0
-    out: crates/common/src/models/_gen
-    opt:
-      # useful to build reusable extractors for axum
-      - ignore_unknown_fields=true
-      - preserve_proto_field_names=true
-      - flat_output_dir=true
-  - remote: buf.build/community/neoeinstein-tonic:v0.5.0
-    out: crates/common/src/models/_gen
-    opt:
-      - no_client=true
-      - extern_path=.google.protobuf=::pbjson_types
-      - no_include=true
-      - flat_output_dir=true
+      - json=true
+      - file_per_package=true
   - remote: buf.build/community/google-gnostic-openapi:v0.7.1
     out: openapi
   - remote: buf.build/bufbuild/es:v2.12.1

@@ -31,6 +31,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListSkillsRequest {
             schema,
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -62,6 +63,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListAllSkillsRequest
             share,
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -79,6 +81,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetSkillRequest {
             share,
             schema,
             name,
+            ..Default::default()
         })
     }
 }
@@ -97,6 +100,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for GenerateTemporarySkillCre
             share,
             schema,
             name,
+            ..Default::default()
         })
     }
 }

@@ -31,8 +31,7 @@ impl<
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
 
-        let volume_type =
-            VolumeType::try_from(request.volume_type).unwrap_or(VolumeType::Unspecified);
+        let volume_type = request.volume_type.as_known().unwrap_or_default();
 
         // Empty unless a managed volume allocates its id below. An empty
         // `volume_id` leaves id assignment to the store (UUID v7), matching every
@@ -40,7 +39,7 @@ impl<
         // it and the store persists the row under that same id.
         let mut volume_id = String::new();
         let storage_location = match volume_type {
-            VolumeType::External => {
+            VolumeType::EXTERNAL => {
                 // External volumes MUST have an explicit storage location that
                 // lives within a registered external location and does not
                 // overlap any existing table or volume.
@@ -54,7 +53,7 @@ impl<
                 validate_external_storage_location(self, &parsed).await?;
                 location
             }
-            VolumeType::Managed => {
+            VolumeType::MANAGED => {
                 // Managed volumes derive their storage location from the managed
                 // parent location resolved for the schema/catalog (schema →
                 // catalog → metastore), exactly like managed tables. That parent
@@ -74,7 +73,7 @@ impl<
                 volume_id = uuid::Uuid::now_v7().hyphenated().to_string();
                 child_location(&parent, "volumes", &volume_id)
             }
-            VolumeType::Unspecified => {
+            VolumeType::VOLUME_TYPE_UNSPECIFIED => {
                 return Err(Error::invalid_argument(
                     "volume_type must be specified (EXTERNAL or MANAGED)",
                 ));
@@ -121,6 +120,7 @@ impl<
         Ok(ListVolumesResponse {
             volumes: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -267,11 +267,12 @@ mod tests {
         h.create_credential(
             CreateCredentialRequest {
                 name: "cred".to_string(),
-                purpose: Purpose::Storage as i32,
+                purpose: Purpose::Storage.into(),
                 aws_iam_role: Some(AwsIamRoleConfig {
                     role_arn: "arn:aws:iam::123456789012:role/test".to_string(),
                     ..Default::default()
-                }),
+                })
+                .into(),
                 ..Default::default()
             },
             ctx(),
@@ -296,9 +297,10 @@ mod tests {
             catalog_name: "cat".to_string(),
             schema_name: "sch".to_string(),
             name: name.to_string(),
-            volume_type: VolumeType::External as i32,
+            volume_type: VolumeType::External.into(),
             storage_location: location.map(str::to_string),
             comment: None,
+            ..Default::default()
         }
     }
 
@@ -309,11 +311,12 @@ mod tests {
         h.create_credential(
             CreateCredentialRequest {
                 name: format!("{tag}-cred"),
-                purpose: Purpose::Storage as i32,
+                purpose: Purpose::Storage.into(),
                 aws_iam_role: Some(AwsIamRoleConfig {
                     role_arn: "arn:aws:iam::123456789012:role/test".to_string(),
                     ..Default::default()
-                }),
+                })
+                .into(),
                 ..Default::default()
             },
             ctx(),
@@ -366,9 +369,10 @@ mod tests {
             catalog_name: "cat".to_string(),
             schema_name: "sch".to_string(),
             name: name.to_string(),
-            volume_type: VolumeType::Managed as i32,
+            volume_type: VolumeType::Managed.into(),
             storage_location: None,
             comment: None,
+            ..Default::default()
         }
     }
 
@@ -495,6 +499,7 @@ mod tests {
         h.delete_volume(
             DeleteVolumeRequest {
                 name: "cat.sch.vol".to_string(),
+                ..Default::default()
             },
             ctx(),
         )

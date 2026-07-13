@@ -66,6 +66,7 @@ impl<T: ResourceStore + Policy<RequestContext>> TagPolicyHandler<RequestContext>
         Ok(ListTagPoliciesResponse {
             tag_policies: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -89,7 +90,7 @@ impl<T: ResourceStore + Policy<RequestContext>> TagPolicyHandler<RequestContext>
 
 impl SecuredAction for CreateTagPolicyRequest {
     fn resource(&self) -> ResourceIdent {
-        let tag_key = self.tag_policy.as_ref().map(|p| p.tag_key.as_str());
+        let tag_key = self.tag_policy.as_option().map(|p| p.tag_key.as_str());
         match tag_key {
             Some(key) => ResourceIdent::tag_policy(ResourceName::new([key])),
             None => ResourceIdent::tag_policy(ResourceRef::Undefined),
@@ -173,9 +174,11 @@ mod tests {
             values: vec![
                 Value {
                     name: "public".to_string(),
+                    ..Default::default()
                 },
                 Value {
                     name: "restricted".to_string(),
+                    ..Default::default()
                 },
             ],
             ..Default::default()
@@ -190,7 +193,8 @@ mod tests {
         let created = h
             .create_tag_policy(
                 CreateTagPolicyRequest {
-                    tag_policy: Some(policy("classification")),
+                    tag_policy: Some(policy("classification")).into(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -204,6 +208,7 @@ mod tests {
             .get_tag_policy(
                 GetTagPolicyRequest {
                     tag_key: "classification".to_string(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -225,13 +230,15 @@ mod tests {
         updated_policy.description = Some("updated".to_string());
         updated_policy.values = vec![Value {
             name: "public".to_string(),
+            ..Default::default()
         }];
         let updated = h
             .update_tag_policy(
                 UpdateTagPolicyRequest {
                     tag_key: "classification".to_string(),
-                    tag_policy: Some(updated_policy),
+                    tag_policy: Some(updated_policy).into(),
                     update_mask: None,
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -244,6 +251,7 @@ mod tests {
         h.delete_tag_policy(
             DeleteTagPolicyRequest {
                 tag_key: "classification".to_string(),
+                ..Default::default()
             },
             ctx(),
         )
@@ -255,6 +263,7 @@ mod tests {
             .get_tag_policy(
                 GetTagPolicyRequest {
                     tag_key: "classification".to_string(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -266,7 +275,13 @@ mod tests {
     async fn create_without_body_is_invalid() {
         let h = handler();
         let result = h
-            .create_tag_policy(CreateTagPolicyRequest { tag_policy: None }, ctx())
+            .create_tag_policy(
+                CreateTagPolicyRequest {
+                    tag_policy: None.into(),
+                    ..Default::default()
+                },
+                ctx(),
+            )
             .await;
         assert!(result.is_err(), "missing tag_policy must be rejected");
     }

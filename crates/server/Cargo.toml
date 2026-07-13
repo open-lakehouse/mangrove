@@ -36,6 +36,8 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
   "metric-view",
 ] }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.2" }
+# buffa runtime: generated handler glue constructs/matches buffa model types.
+buffa = { workspace = true }
 # The reconciled Delta-log TableProvider (log replay → scan-file rows) lives here
 # as the single shared implementation; the server serves it as the Delta Sharing
 # `query_table` response. `delta` gates the kernel-backed providers.

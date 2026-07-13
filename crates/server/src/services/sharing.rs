@@ -65,11 +65,10 @@ impl ServerHandler<RequestContext> {
     ) -> Result<StorageLocationUrl> {
         let share_ident = ResourceIdent::share(ResourceName::new([table_ref.share.as_str()]));
         let share_info: Share = self.get(&share_ident).await?.0.try_into()?;
-        let Some(table_object) = share_info
-            .objects
-            .iter()
-            .find(|o| o.shared_as() == format!("{}.{}", table_ref.schema, table_ref.table))
-        else {
+        let Some(table_object) = share_info.objects.iter().find(|o| {
+            o.shared_as.as_deref().unwrap_or_default()
+                == format!("{}.{}", table_ref.schema, table_ref.table)
+        }) else {
             return Err(Error::NotFound);
         };
 
@@ -110,11 +109,9 @@ impl ServerHandler<RequestContext> {
         let share_info: Share = self.get(&share_ident).await?.0.try_into()?;
         let shared_as = format!("{}.{}", volume_ref.schema, volume_ref.name);
         let Some(object) = share_info.objects.iter().find(|o| {
-            o.shared_as() == shared_as
-                && matches!(
-                    o.data_object_type(),
-                    DataObjectType::Volume | DataObjectType::AgentSkill
-                )
+            o.shared_as.as_deref().unwrap_or_default() == shared_as
+                && (o.data_object_type == DataObjectType::Volume
+                    || o.data_object_type == DataObjectType::AgentSkill)
         }) else {
             return Err(Error::NotFound);
         };
@@ -157,6 +154,7 @@ impl SharingQueryHandler for ServerHandler<RequestContext> {
             .await?;
         Ok(GetTableVersionResponse {
             version: snapshot.version() as i64,
+            ..Default::default()
         })
     }
 
@@ -214,29 +212,33 @@ impl SharingQueryHandler for ServerHandler<RequestContext> {
 fn to_sharing_credentials(cred: TemporaryCredential) -> Result<SharingTemporaryCredentials> {
     let credentials = match cred.credentials {
         Some(UcCredentials::AwsTempCredentials(c)) => Some(SharingCredentials::AwsTempCredentials(
-            SharingAwsCredentials {
+            Box::new(SharingAwsCredentials {
                 access_key_id: c.access_key_id,
                 secret_access_key: c.secret_access_key,
                 session_token: c.session_token,
-            },
+                ..Default::default()
+            }),
         )),
         Some(UcCredentials::AzureUserDelegationSas(c)) => Some(
-            SharingCredentials::AzureUserDelegationSas(SharingAzureUserDelegationSas {
+            SharingCredentials::AzureUserDelegationSas(Box::new(SharingAzureUserDelegationSas {
                 sas_token: c.sas_token,
-            }),
+                ..Default::default()
+            })),
         ),
-        Some(UcCredentials::GcpOauthToken(c)) => {
-            Some(SharingCredentials::GcpOauthToken(SharingGcpOauthToken {
+        Some(UcCredentials::GcpOauthToken(c)) => Some(SharingCredentials::GcpOauthToken(Box::new(
+            SharingGcpOauthToken {
                 oauth_token: c.oauth_token,
-            }))
-        }
-        Some(UcCredentials::R2TempCredentials(c)) => {
-            Some(SharingCredentials::R2Credentials(SharingR2Credentials {
+                ..Default::default()
+            },
+        ))),
+        Some(UcCredentials::R2TempCredentials(c)) => Some(SharingCredentials::R2Credentials(
+            Box::new(SharingR2Credentials {
                 access_key_id: c.access_key_id,
                 secret_access_key: c.secret_access_key,
                 session_token: c.session_token,
-            }))
-        }
+                ..Default::default()
+            }),
+        )),
         // Azure AD tokens have no Open Sharing equivalent; treat as unvendable.
         Some(UcCredentials::AzureAad(_)) | None => {
             return Err(Error::generic(
@@ -248,6 +250,7 @@ fn to_sharing_credentials(cred: TemporaryCredential) -> Result<SharingTemporaryC
         expiration_time: cred.expiration_time,
         url: Some(cred.url),
         credentials,
+        ..Default::default()
     })
 }
 
@@ -262,14 +265,15 @@ impl ServerHandler<RequestContext> {
         let request = SharesGetShareRequest {
             name: share.to_string(),
             include_shared_data: Some(true),
+            ..Default::default()
         };
         let share_info: Share = self.get(&request.resource()).await?.0.try_into()?;
         let items = share_info
             .objects
             .iter()
-            .filter(|o| o.data_object_type() == kind)
+            .filter(|o| o.data_object_type == kind)
             .filter_map(|o| {
-                let (schema, name) = o.shared_as().split_once('.')?;
+                let (schema, name) = o.shared_as.as_deref().unwrap_or_default().split_once('.')?;
                 Some((schema.to_string(), name.to_string()))
             })
             .collect();
@@ -285,6 +289,7 @@ impl ServerHandler<RequestContext> {
         let credential = self
             .get_credential_internal(GetCredentialRequest {
                 name: ext_loc.credential_name.clone(),
+                ..Default::default()
             })
             .await?;
         // Open Sharing only grants read access to shared assets.
@@ -319,6 +324,7 @@ impl SharingVolumeHandler for ServerHandler<RequestContext> {
         Ok(ListVolumesResponse {
             items,
             next_page_token: None,
+            ..Default::default()
         })
     }
 
@@ -344,6 +350,7 @@ impl SharingVolumeHandler for ServerHandler<RequestContext> {
         Ok(ListAllVolumesResponse {
             items,
             next_page_token: None,
+            ..Default::default()
         })
     }
 
@@ -409,6 +416,7 @@ impl SharingSkillHandler for ServerHandler<RequestContext> {
         Ok(ListSkillsResponse {
             items,
             next_page_token: None,
+            ..Default::default()
         })
     }
 
@@ -434,6 +442,7 @@ impl SharingSkillHandler for ServerHandler<RequestContext> {
         Ok(ListAllSkillsResponse {
             items,
             next_page_token: None,
+            ..Default::default()
         })
     }
 
@@ -486,19 +495,21 @@ mod tests {
             expiration_time: 1_700_000_000_000,
             url: "s3://bucket/prefix".to_string(),
             credentials,
+            ..Default::default()
         }
     }
 
     #[test]
     fn maps_aws_credentials_preserving_fields() {
-        let cred = uc_cred(Some(UcCredentials::AwsTempCredentials(
+        let cred = uc_cred(Some(UcCredentials::AwsTempCredentials(Box::new(
             AwsTemporaryCredentials {
                 access_key_id: "AKIA".to_string(),
                 secret_access_key: "secret".to_string(),
                 session_token: "token".to_string(),
                 access_point: String::new(),
+                ..Default::default()
             },
-        )));
+        ))));
         let out = to_sharing_credentials(cred).unwrap();
         assert_eq!(out.expiration_time, 1_700_000_000_000);
         assert_eq!(out.url.as_deref(), Some("s3://bucket/prefix"));
@@ -514,9 +525,12 @@ mod tests {
 
     #[test]
     fn maps_gcp_credentials() {
-        let cred = uc_cred(Some(UcCredentials::GcpOauthToken(GcpOauthToken {
-            oauth_token: "ya29".to_string(),
-        })));
+        let cred = uc_cred(Some(UcCredentials::GcpOauthToken(Box::new(
+            GcpOauthToken {
+                oauth_token: "ya29".to_string(),
+                ..Default::default()
+            },
+        ))));
         let out = to_sharing_credentials(cred).unwrap();
         assert!(matches!(
             out.credentials,
@@ -528,9 +542,10 @@ mod tests {
     fn azure_aad_and_missing_credentials_are_unsupported() {
         assert!(to_sharing_credentials(uc_cred(None)).is_err());
         assert!(
-            to_sharing_credentials(uc_cred(Some(UcCredentials::AzureAad(AzureAad {
+            to_sharing_credentials(uc_cred(Some(UcCredentials::AzureAad(Box::new(AzureAad {
                 aad_token: "aad".to_string(),
-            }))))
+                ..Default::default()
+            })))))
             .is_err()
         );
     }

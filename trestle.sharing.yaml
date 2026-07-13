@@ -12,7 +12,11 @@ version: 1
 project:
   name: unitycatalog-sharing
 generate:
-  proto_lib: prost
+  proto_lib: buffa
+  # snake_case JSON field names on the wire (see trestle.yaml for rationale).
+  # Must flip together with `proto_lib: buffa` — trestle rejects
+  # `json_field_names: proto` under prost.
+  json_field_names: proto
   descriptors: sharing-descriptors.bin
 
   servers:

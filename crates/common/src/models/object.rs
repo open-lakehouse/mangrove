@@ -142,6 +142,7 @@ impl From<Table> for TableSummary {
         TableSummary {
             table_type: table.table_type,
             full_name: table.full_name,
+            ..Default::default()
         }
     }
 }

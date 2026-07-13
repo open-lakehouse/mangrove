@@ -15,7 +15,7 @@ use super::model::MetricView;
 /// Returns `Ok(None)` for any non-metric-view table, `Err` if it is a metric
 /// view but its `view_definition` is missing or malformed.
 pub fn metric_view_of(table: &Table) -> Result<Option<MetricView>, MetricViewDetectError> {
-    if table.table_type != TableType::MetricView as i32 {
+    if table.table_type != TableType::MetricView {
         return Ok(None);
     }
 
@@ -49,7 +49,7 @@ mod tests {
             name: "orders_metrics".to_string(),
             catalog_name: "main".to_string(),
             schema_name: "sales".to_string(),
-            table_type: table_type as i32,
+            table_type: table_type.into(),
             view_definition: view_definition.map(str::to_string),
             properties: HashMap::new(),
             ..Default::default()

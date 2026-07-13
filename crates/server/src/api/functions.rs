@@ -33,6 +33,7 @@ impl<T: ResourceStore + Policy<RequestContext>> FunctionHandler<RequestContext> 
         Ok(ListFunctionsResponse {
             functions: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -55,7 +56,7 @@ impl<T: ResourceStore + Policy<RequestContext>> FunctionHandler<RequestContext> 
             full_name,
             data_type: request.data_type,
             full_data_type: request.full_data_type,
-            input_params: Some(request.input_params.unwrap_or_default()),
+            input_params: Some(request.input_params.into_option().unwrap_or_default()).into(),
             parameter_style: request.parameter_style,
             is_deterministic: request.is_deterministic,
             sql_data_access: request.sql_data_access,

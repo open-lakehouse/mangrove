@@ -4,22 +4,17 @@ use self::client::{
     PyUnityCatalogClient, PyVolumeClient,
 };
 use pyo3::prelude::*;
-use unitycatalog_common::models::catalogs::v1::{Catalog, CatalogType};
-use unitycatalog_common::models::credentials::v1::{
-    AzureManagedIdentity, AzureServicePrincipal, AzureStorageKey, Credential, Purpose,
+// The Python-visible model classes are the trestle-generated `Py*` wrapper
+// `#[pyclass]` types (each carries `#[pyclass(name = "…")]` so the Python name is
+// unchanged). buffa models are plain structs with no `#[pyclass]`, so unlike the
+// old prost stack we register the wrappers here, not the bare model types.
+use unitycatalog_common::models::{
+    PyAction, PyAzureManagedIdentity, PyAzureServicePrincipal, PyAzureStorageKey, PyCatalog,
+    PyCatalogType, PyColumn, PyColumnTypeName, PyCredential, PyDataObject, PyDataObjectType,
+    PyDataObjectUpdate, PyDataSourceFormat, PyExternalLocation, PyHistoryStatus, PyPurpose,
+    PyRecipient, PySchema, PyShare, PyTable, PyTableType, PyTagPolicy, PyTemporaryCredential,
+    PyValue, PyVolume, PyVolumeType,
 };
-use unitycatalog_common::models::external_locations::v1::ExternalLocation;
-use unitycatalog_common::models::recipients::v1::Recipient;
-use unitycatalog_common::models::schemas::v1::Schema;
-use unitycatalog_common::models::shares::v1::{
-    Action, DataObject, DataObjectType, DataObjectUpdate, HistoryStatus, Share,
-};
-use unitycatalog_common::models::tables::v1::{
-    Column, ColumnTypeName, DataSourceFormat, Table, TableType,
-};
-use unitycatalog_common::models::tags::v1::{TagPolicy, Value};
-use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
-use unitycatalog_common::models::volumes::v1::{Volume, VolumeType};
 
 mod client;
 mod codegen;
@@ -37,33 +32,34 @@ fn _client(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // exception types
     error::register_exceptions(m)?;
 
-    // objects and enums
-    m.add_class::<Catalog>()?;
-    m.add_class::<CatalogType>()?;
-    m.add_class::<Credential>()?;
-    m.add_class::<Purpose>()?;
-    m.add_class::<AzureManagedIdentity>()?;
-    m.add_class::<AzureServicePrincipal>()?;
-    m.add_class::<AzureStorageKey>()?;
-    m.add_class::<ExternalLocation>()?;
-    m.add_class::<Recipient>()?;
-    m.add_class::<Schema>()?;
-    m.add_class::<Share>()?;
-    m.add_class::<DataObject>()?;
-    m.add_class::<DataObjectUpdate>()?;
-    m.add_class::<DataObjectType>()?;
-    m.add_class::<HistoryStatus>()?;
-    m.add_class::<Action>()?;
-    m.add_class::<Table>()?;
-    m.add_class::<TableType>()?;
-    m.add_class::<Column>()?;
-    m.add_class::<ColumnTypeName>()?;
-    m.add_class::<DataSourceFormat>()?;
-    m.add_class::<TemporaryCredential>()?;
-    m.add_class::<Volume>()?;
-    m.add_class::<VolumeType>()?;
-    m.add_class::<TagPolicy>()?;
-    m.add_class::<Value>()?;
+    // objects and enums (generated Py* wrappers; Python names preserved via
+    // `#[pyclass(name = "…")]`)
+    m.add_class::<PyCatalog>()?;
+    m.add_class::<PyCatalogType>()?;
+    m.add_class::<PyCredential>()?;
+    m.add_class::<PyPurpose>()?;
+    m.add_class::<PyAzureManagedIdentity>()?;
+    m.add_class::<PyAzureServicePrincipal>()?;
+    m.add_class::<PyAzureStorageKey>()?;
+    m.add_class::<PyExternalLocation>()?;
+    m.add_class::<PyRecipient>()?;
+    m.add_class::<PySchema>()?;
+    m.add_class::<PyShare>()?;
+    m.add_class::<PyDataObject>()?;
+    m.add_class::<PyDataObjectUpdate>()?;
+    m.add_class::<PyDataObjectType>()?;
+    m.add_class::<PyHistoryStatus>()?;
+    m.add_class::<PyAction>()?;
+    m.add_class::<PyTable>()?;
+    m.add_class::<PyTableType>()?;
+    m.add_class::<PyColumn>()?;
+    m.add_class::<PyColumnTypeName>()?;
+    m.add_class::<PyDataSourceFormat>()?;
+    m.add_class::<PyTemporaryCredential>()?;
+    m.add_class::<PyVolume>()?;
+    m.add_class::<PyVolumeType>()?;
+    m.add_class::<PyTagPolicy>()?;
+    m.add_class::<PyValue>()?;
 
     // service clients
     m.add_class::<PyCatalogClient>()?;

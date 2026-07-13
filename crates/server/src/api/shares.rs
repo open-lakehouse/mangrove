@@ -62,6 +62,7 @@ impl<T: ResourceStore + Policy<RequestContext>> ShareHandler<RequestContext> for
         Ok(ListSharesResponse {
             shares: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -90,22 +91,22 @@ impl<T: ResourceStore + Policy<RequestContext>> ShareHandler<RequestContext> for
             .map(|d| (d.name.clone(), d))
             .collect();
         for update in request.updates.iter() {
-            match update.action() {
-                Action::Add => {
-                    if let Some(obj) = update.data_object.as_ref() {
+            match update.action.as_known().unwrap_or_default() {
+                Action::ADD => {
+                    if let Some(obj) = update.data_object.as_option() {
                         if data_objects.contains_key(&obj.name) {
                             return Err(Error::AlreadyExists);
                         }
                         data_objects.insert(obj.name.clone(), obj.clone());
                     }
                 }
-                Action::Remove => {
-                    if let Some(obj) = update.data_object.as_ref() {
+                Action::REMOVE => {
+                    if let Some(obj) = update.data_object.as_option() {
                         data_objects.remove(&obj.name);
                     }
                 }
-                Action::Update => {
-                    if let Some(obj) = update.data_object.as_ref() {
+                Action::UPDATE => {
+                    if let Some(obj) = update.data_object.as_option() {
                         if let Some(existing) = data_objects.get_mut(&obj.name) {
                             *existing = obj.clone();
                         } else {
@@ -113,7 +114,7 @@ impl<T: ResourceStore + Policy<RequestContext>> ShareHandler<RequestContext> for
                         }
                     }
                 }
-                Action::Unspecified => {
+                Action::ACTION_UNSPECIFIED => {
                     return Err(Error::InvalidArgument("Unspecified action".to_string()));
                 }
             }
@@ -156,6 +157,7 @@ impl<T: ResourceStore + Policy<RequestContext>> ShareHandler<RequestContext> for
         Ok(GetPermissionsResponse {
             privilege_assignments: vec![],
             next_page_token: None,
+            ..Default::default()
         })
     }
 
@@ -182,6 +184,7 @@ impl<T: ResourceStore + Policy<RequestContext>> ShareHandler<RequestContext> for
         // non-omit path should call get_permissions to build the real list.
         Ok(UpdatePermissionsResponse {
             privilege_assignments: vec![],
+            ..Default::default()
         })
     }
 }

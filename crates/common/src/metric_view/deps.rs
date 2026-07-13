@@ -54,12 +54,17 @@ pub fn dependencies(view: &MetricView) -> Result<DependencyList, DependencyError
     let dependencies = tables
         .into_iter()
         .map(|table_full_name| Dependency {
-            dependency: Some(dependency::Dependency::Table(TableDependency {
+            dependency: Some(dependency::Dependency::Table(Box::new(TableDependency {
                 table_full_name,
-            })),
+                ..Default::default()
+            }))),
+            ..Default::default()
         })
         .collect();
-    Ok(DependencyList { dependencies })
+    Ok(DependencyList {
+        dependencies,
+        ..Default::default()
+    })
 }
 
 /// Resolve a single metric-view `source` string into table dependencies,

@@ -99,6 +99,7 @@ impl GetSkillBuilder {
             share: share.into(),
             schema: schema.into(),
             name: name.into(),
+            ..Default::default()
         };
         Self { client, request }
     }
@@ -130,6 +131,7 @@ impl GenerateTemporarySkillCredentialsBuilder {
             share: share.into(),
             schema: schema.into(),
             name: name.into(),
+            ..Default::default()
         };
         Self { client, request }
     }

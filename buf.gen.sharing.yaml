@@ -6,22 +6,14 @@ managed:
     - file_option: go_package
       module: buf.build/googleapis/googleapis
 plugins:
-  - remote: buf.build/community/neoeinstein-prost:v0.5.0
+  # Model generation (buffa runtime) — see buf.gen.yaml for the full rationale.
+  # snake_case wire JSON comes from `json_field_names: proto` in
+  # trestle.sharing.yaml.
+  - remote: buf.build/anthropics/buffa:v0.7.0
     out: crates/sharing-client/src/models/_gen
     opt:
-      # - bytes=.
-      - compile_well_known_types=true
-      - file_descriptor_set=false
-      # Flat `<package>.rs` filenames (v0.5.0 defaults to a nested tree); the
-      # generated `_gen/mod.rs` `include!`s the flat layout.
-      - flat_output_dir=true
-  - remote: buf.build/community/neoeinstein-prost-serde:v0.4.0
-    out: crates/sharing-client/src/models/_gen
-    opt:
-      # useful to build reusable extractors for axum
-      - ignore_unknown_fields=true
-      - preserve_proto_field_names=true
-      - flat_output_dir=true
+      - json=true
+      - file_per_package=true
   - remote: buf.build/bufbuild/es:v2.12.1
     out: node/client/unitycatalog/codegen/models/gen
     opt:

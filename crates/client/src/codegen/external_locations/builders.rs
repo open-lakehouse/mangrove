@@ -130,7 +130,10 @@ impl GetExternalLocationBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `ExternalLocationServiceClient`.
     pub(crate) fn new(client: ExternalLocationServiceClient, name: impl Into<String>) -> Self {
-        let request = GetExternalLocationRequest { name: name.into() };
+        let request = GetExternalLocationRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }

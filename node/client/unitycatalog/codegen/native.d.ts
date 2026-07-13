@@ -36,6 +36,13 @@ export declare class NapiFunctionClient {
   delete(force?: boolean | undefined | null): Promise<void>
 }
 
+export declare class NapiPolicyClient {
+  createPolicy(policyInfo: Buffer): Promise<Buffer>
+  get(): Promise<Buffer>
+  update(policyInfo: Buffer, updateMask?: string | undefined | null): Promise<Buffer>
+  delete(): Promise<void>
+}
+
 export declare class NapiProviderClient {
   get(): Promise<Buffer>
   update(newName?: string | undefined | null, owner?: string | undefined | null, comment?: string | undefined | null, recipientProfileStr?: string | undefined | null, properties?: Record<string, string> | undefined | null): Promise<Buffer>
@@ -92,8 +99,6 @@ export declare class NapiUnityCatalogClient {
   listCredentials(purpose?: number | undefined | null, maxResults?: number | undefined | null): Promise<Array<Buffer>>
   listCredentialsStream(purpose?: number | undefined | null, maxResults?: number | undefined | null): ReadableStream<Buffer>
   createCredential(name: string, purpose: number, comment?: string | undefined | null, readOnly?: boolean | undefined | null, skipValidation?: boolean | undefined | null): Promise<Buffer>
-  commit(tableId: string, tableUri: string, latestBackfilledVersion?: number | undefined | null): Promise<void>
-  getCommits(tableId: string, tableUri: string, startVersion: number, endVersion?: number | undefined | null): Promise<Buffer>
   listEntityTagAssignments(entityType: string, entityName: string, maxResults?: number | undefined | null, pageToken?: string | undefined | null): Promise<Buffer>
   createEntityTagAssignment(tagAssignment: Buffer): Promise<Buffer>
   getEntityTagAssignment(entityType: string, entityName: string, tagKey: string): Promise<Buffer>
@@ -136,6 +141,7 @@ export declare class NapiUnityCatalogClient {
   credential(credentialName: string): NapiCredentialClient
   externalLocation(externalLocationName: string): NapiExternalLocationClient
   function(catalogName: string, schemaName: string, functionName: string): NapiFunctionClient
+  policy(policyName: string): NapiPolicyClient
   provider(providerName: string): NapiProviderClient
   recipient(recipientName: string): NapiRecipientClient
   schema(catalogName: string, schemaName: string): NapiSchemaClient

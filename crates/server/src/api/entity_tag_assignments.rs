@@ -72,6 +72,7 @@ impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<Reque
         self.check_required(&request, &context).await?;
         let assignment = request
             .tag_assignment
+            .into_option()
             .ok_or_else(|| crate::Error::invalid_argument("tag_assignment must be provided"))?;
         tracing::Span::current().record("resource_name", &assignment.entity_name);
 
@@ -127,6 +128,7 @@ impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<Reque
             entity_name: request.entity_name,
             tag_key: request.tag_key,
             tag_value: tag_value_from_props(props),
+            ..Default::default()
         })
     }
 
@@ -159,11 +161,13 @@ impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<Reque
                 entity_name: request.entity_name.clone(),
                 tag_key,
                 tag_value: tag_value_from_props(props),
+                ..Default::default()
             });
         }
         Ok(ListEntityTagAssignmentsResponse {
             tag_assignments,
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -177,6 +181,7 @@ impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<Reque
         self.check_required(&request, &context).await?;
         let assignment = request
             .tag_assignment
+            .into_option()
             .ok_or_else(|| crate::Error::invalid_argument("tag_assignment must be provided"))?;
         let entity = entity_ident(&request.entity_type, &request.entity_name)?;
         let tag = tag_ident(&request.tag_key);
@@ -202,6 +207,7 @@ impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<Reque
             entity_name: request.entity_name,
             tag_key: request.tag_key,
             tag_value: assignment.tag_value,
+            ..Default::default()
         })
     }
 }
@@ -226,7 +232,7 @@ async fn tag_key_for<S: ResourceStore>(store: &S, tag_ref: &ResourceIdent) -> Re
 // entity's metadata, so the caller needs the corresponding permission on the entity.
 impl SecuredAction for CreateEntityTagAssignmentRequest {
     fn resource(&self) -> ResourceIdent {
-        match self.tag_assignment.as_ref() {
+        match self.tag_assignment.as_option() {
             Some(a) => entity_ident(&a.entity_type, &a.entity_name)
                 .unwrap_or_else(|_| ResourceIdent::catalog(ResourceRef::Undefined)),
             None => ResourceIdent::catalog(ResourceRef::Undefined),
@@ -338,6 +344,7 @@ mod tests {
             entity_name: "cat".to_string(),
             tag_key: tag_key.to_string(),
             tag_value: tag_value.map(str::to_string),
+            ..Default::default()
         }
     }
 
@@ -348,7 +355,8 @@ mod tests {
         // assign two distinct tags to the same entity (exercises the multimap)
         h.create_entity_tag_assignment(
             CreateEntityTagAssignmentRequest {
-                tag_assignment: Some(assignment("pii", Some("true"))),
+                tag_assignment: Some(assignment("pii", Some("true"))).into(),
+                ..Default::default()
             },
             ctx(),
         )
@@ -356,7 +364,8 @@ mod tests {
         .unwrap();
         h.create_entity_tag_assignment(
             CreateEntityTagAssignmentRequest {
-                tag_assignment: Some(assignment("team", Some("data-eng"))),
+                tag_assignment: Some(assignment("team", Some("data-eng"))).into(),
+                ..Default::default()
             },
             ctx(),
         )
@@ -371,6 +380,7 @@ mod tests {
                     entity_name: "cat".to_string(),
                     max_results: None,
                     page_token: None,
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -395,6 +405,7 @@ mod tests {
                     entity_type: "catalogs".to_string(),
                     entity_name: "cat".to_string(),
                     tag_key: "pii".to_string(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -409,8 +420,9 @@ mod tests {
                     entity_type: "catalogs".to_string(),
                     entity_name: "cat".to_string(),
                     tag_key: "pii".to_string(),
-                    tag_assignment: Some(assignment("pii", Some("false"))),
+                    tag_assignment: Some(assignment("pii", Some("false"))).into(),
                     update_mask: None,
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -424,6 +436,7 @@ mod tests {
                     entity_type: "catalogs".to_string(),
                     entity_name: "cat".to_string(),
                     tag_key: "pii".to_string(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -437,6 +450,7 @@ mod tests {
                 entity_type: "catalogs".to_string(),
                 entity_name: "cat".to_string(),
                 tag_key: "pii".to_string(),
+                ..Default::default()
             },
             ctx(),
         )
@@ -449,6 +463,7 @@ mod tests {
                     entity_name: "cat".to_string(),
                     max_results: None,
                     page_token: None,
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -464,6 +479,7 @@ mod tests {
                     entity_type: "catalogs".to_string(),
                     entity_name: "cat".to_string(),
                     tag_key: "pii".to_string(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -479,7 +495,8 @@ mod tests {
         let result = h
             .create_entity_tag_assignment(
                 CreateEntityTagAssignmentRequest {
-                    tag_assignment: Some(bad),
+                    tag_assignment: Some(bad).into(),
+                    ..Default::default()
                 },
                 ctx(),
             )

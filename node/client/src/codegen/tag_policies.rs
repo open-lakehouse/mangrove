@@ -1,9 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports, dead_code, clippy::all)]
 use crate::error::NapiErrorExt;
+use buffa::Message;
 use napi::bindgen_prelude::Buffer;
 use napi_derive::napi;
-use prost::Message;
 use std::collections::HashMap;
 use unitycatalog_client::TagPolicyClient;
 use unitycatalog_common::models::tags::v1::*;
@@ -28,7 +28,7 @@ impl NapiTagPolicyClient {
         update_mask: Option<String>,
     ) -> napi::Result<Buffer> {
         let mut request = self.client.update(
-            <TagPolicy as prost::Message>::decode(tag_policy.as_ref()).map_err(|e| {
+            <TagPolicy as buffa::Message>::decode_from_slice(tag_policy.as_ref()).map_err(|e| {
                 napi::Error::new(
                     napi::Status::GenericFailure,
                     format!("invalid {} payload: {e}", stringify!(TagPolicy)),

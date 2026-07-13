@@ -165,7 +165,7 @@ impl TableManager for KernelSession {
         format: &DataSourceFormat,
         version: Option<Version>,
     ) -> Result<Arc<Snapshot>> {
-        if !matches!(format, DataSourceFormat::Delta) {
+        if *format != DataSourceFormat::Delta {
             return Err(Error::InvalidArgument(format!(
                 "unsupported data source format in kernel session: {format:?}"
             )));

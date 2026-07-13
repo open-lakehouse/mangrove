@@ -25,6 +25,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListCatalogsRequest 
         Ok(ListCatalogsRequest {
             max_results,
             page_token,
+            ..Default::default()
         })
     }
 }
@@ -63,6 +64,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetCatalogRequest {
         Ok(GetCatalogRequest {
             name,
             include_browse,
+            ..Default::default()
         })
     }
 }
@@ -90,6 +92,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateCatalogRequest {
             comment,
             properties,
             new_name,
+            ..Default::default()
         })
     }
 }
@@ -112,6 +115,10 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteCatalogRequest
             .extract::<axum_extra::extract::Query<QueryParams>>()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        Ok(DeleteCatalogRequest { name, force })
+        Ok(DeleteCatalogRequest {
+            name,
+            force,
+            ..Default::default()
+        })
     }
 }

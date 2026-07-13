@@ -105,12 +105,12 @@ impl CreateFunctionBuilder {
             schema_name: schema_name.into(),
             data_type: data_type.into(),
             full_data_type: full_data_type.into(),
-            parameter_style: parameter_style as i32,
+            parameter_style: buffa::EnumValue::Known(parameter_style),
             is_deterministic,
-            sql_data_access: sql_data_access as i32,
+            sql_data_access: buffa::EnumValue::Known(sql_data_access),
             is_null_call,
-            security_type: security_type as i32,
-            routine_body: routine_body as i32,
+            security_type: buffa::EnumValue::Known(security_type),
+            routine_body: buffa::EnumValue::Known(routine_body),
             ..Default::default()
         };
         Self { client, request }
@@ -120,7 +120,10 @@ impl CreateFunctionBuilder {
         mut self,
         input_params: impl Into<Option<FunctionParameterInfos>>,
     ) -> Self {
-        self.request.input_params = input_params.into();
+        self.request.input_params = {
+            let input_params: ::core::option::Option<_> = input_params.into();
+            buffa::MessageField::from(input_params)
+        };
         self
     }
     /// Function body.
@@ -176,7 +179,10 @@ impl GetFunctionBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `FunctionServiceClient`.
     pub(crate) fn new(client: FunctionServiceClient, name: impl Into<String>) -> Self {
-        let request = GetFunctionRequest { name: name.into() };
+        let request = GetFunctionRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }

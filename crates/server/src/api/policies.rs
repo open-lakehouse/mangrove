@@ -47,15 +47,17 @@ fn matches_securable(
 }
 
 fn validate_policy_shape(policy: &PolicyInfo) -> Result<()> {
-    let policy_type = PolicyType::try_from(policy.policy_type)
-        .map_err(|_| crate::Error::invalid_argument("unrecognized policy_type"))?;
+    let policy_type = policy
+        .policy_type
+        .as_known()
+        .ok_or_else(|| crate::Error::invalid_argument("unrecognized policy_type"))?;
     match policy_type {
-        PolicyType::ColumnMask if policy.match_columns.is_empty() => {
+        PolicyType::POLICY_TYPE_COLUMN_MASK if policy.match_columns.is_empty() => {
             Err(crate::Error::invalid_argument(
                 "column mask policies require at least one match_columns entry",
             ))
         }
-        PolicyType::RowFilter
+        PolicyType::POLICY_TYPE_ROW_FILTER
             if policy
                 .function
                 .as_ref()
@@ -69,7 +71,7 @@ fn validate_policy_shape(policy: &PolicyInfo) -> Result<()> {
                 "row filter policies require row_filter.function_name",
             ))
         }
-        PolicyType::Unspecified => Err(crate::Error::invalid_argument(
+        PolicyType::POLICY_TYPE_UNSPECIFIED => Err(crate::Error::invalid_argument(
             "policy_type must be POLICY_TYPE_ROW_FILTER or POLICY_TYPE_COLUMN_MASK",
         )),
         _ => Ok(()),
@@ -201,6 +203,7 @@ impl<T: ResourceStore + Policy<RequestContext>> PolicyHandler<RequestContext> fo
         Ok(ListPoliciesResponse {
             policies: page,
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -362,8 +365,8 @@ mod tests {
                     catalog_name: "cat".to_string(),
                     schema_name: "sch".to_string(),
                     full_name: "cat.sch.tbl".to_string(),
-                    table_type: TableType::Managed as i32,
-                    data_source_format: DataSourceFormat::Delta as i32,
+                    table_type: TableType::Managed.into(),
+                    data_source_format: DataSourceFormat::Delta.into(),
                     ..Default::default()
                 }
                 .into(),
@@ -389,12 +392,13 @@ mod tests {
             name: name.to_string(),
             on_securable_type: on_securable_type.to_string(),
             on_securable_fullname: on_securable_fullname.to_string(),
-            policy_type: PolicyType::RowFilter as i32,
+            policy_type: PolicyType::RowFilter.into(),
             to_principals: vec!["group:analysts".to_string()],
-            function: Some(Function::RowFilter(FunctionRef {
+            function: Some(Function::RowFilter(Box::new(FunctionRef {
                 function_name: "cat.sch.my_filter".to_string(),
                 using: vec![],
-            })),
+                ..Default::default()
+            }))),
             ..Default::default()
         }
     }
@@ -408,7 +412,8 @@ mod tests {
                 CreatePolicyRequest {
                     on_securable_type: "tables".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
-                    policy_info: Some(row_filter_policy("p1", "", "")),
+                    policy_info: Some(row_filter_policy("p1", "", "")).into(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -423,6 +428,7 @@ mod tests {
                     on_securable_type: "tables".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
                     name: "p1".to_string(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -438,6 +444,7 @@ mod tests {
                     include_inherited: None,
                     max_results: None,
                     page_token: None,
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -453,8 +460,9 @@ mod tests {
                     on_securable_type: "tables".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
                     name: "p1".to_string(),
-                    policy_info: Some(updated_policy),
+                    policy_info: Some(updated_policy).into(),
                     update_mask: None,
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -467,6 +475,7 @@ mod tests {
                 on_securable_type: "tables".to_string(),
                 on_securable_fullname: "cat.sch.tbl".to_string(),
                 name: "p1".to_string(),
+                ..Default::default()
             },
             ctx(),
         )
@@ -479,6 +488,7 @@ mod tests {
                     on_securable_type: "tables".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
                     name: "p1".to_string(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -494,7 +504,8 @@ mod tests {
             CreatePolicyRequest {
                 on_securable_type: "catalogs".to_string(),
                 on_securable_fullname: "cat".to_string(),
-                policy_info: Some(row_filter_policy("catalog_policy", "", "")),
+                policy_info: Some(row_filter_policy("catalog_policy", "", "")).into(),
+                ..Default::default()
             },
             ctx(),
         )
@@ -504,7 +515,8 @@ mod tests {
             CreatePolicyRequest {
                 on_securable_type: "schemas".to_string(),
                 on_securable_fullname: "cat.sch".to_string(),
-                policy_info: Some(row_filter_policy("schema_policy", "", "")),
+                policy_info: Some(row_filter_policy("schema_policy", "", "")).into(),
+                ..Default::default()
             },
             ctx(),
         )
@@ -514,7 +526,8 @@ mod tests {
             CreatePolicyRequest {
                 on_securable_type: "tables".to_string(),
                 on_securable_fullname: "cat.sch.tbl".to_string(),
-                policy_info: Some(row_filter_policy("table_policy", "", "")),
+                policy_info: Some(row_filter_policy("table_policy", "", "")).into(),
+                ..Default::default()
             },
             ctx(),
         )
@@ -529,6 +542,7 @@ mod tests {
                     include_inherited: None,
                     max_results: None,
                     page_token: None,
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -545,6 +559,7 @@ mod tests {
                     include_inherited: Some(true),
                     max_results: None,
                     page_token: None,
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -580,7 +595,8 @@ mod tests {
             CreatePolicyRequest {
                 on_securable_type: "tables".to_string(),
                 on_securable_fullname: "cat.sch.tbl".to_string(),
-                policy_info: Some(row_filter_policy("p1", "", "")),
+                policy_info: Some(row_filter_policy("p1", "", "")).into(),
+                ..Default::default()
             },
             ctx(),
         )
@@ -592,7 +608,8 @@ mod tests {
                 CreatePolicyRequest {
                     on_securable_type: "tables".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
-                    policy_info: Some(row_filter_policy("p1", "", "")),
+                    policy_info: Some(row_filter_policy("p1", "", "")).into(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -607,17 +624,19 @@ mod tests {
     async fn create_rejects_column_mask_without_match_columns() {
         let h = handler().await;
         let mut policy = row_filter_policy("bad_mask", "", "");
-        policy.policy_type = PolicyType::ColumnMask as i32;
-        policy.function = Some(Function::ColumnMask(FunctionRef {
+        policy.policy_type = PolicyType::ColumnMask.into();
+        policy.function = Some(Function::ColumnMask(Box::new(FunctionRef {
             function_name: "cat.sch.my_mask".to_string(),
             using: vec![],
-        }));
+            ..Default::default()
+        })));
         let result = h
             .create_policy(
                 CreatePolicyRequest {
                     on_securable_type: "tables".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
-                    policy_info: Some(policy),
+                    policy_info: Some(policy).into(),
+                    ..Default::default()
                 },
                 ctx(),
             )
@@ -637,6 +656,7 @@ mod tests {
                     on_securable_type: "tables".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
                     name: "does-not-exist".to_string(),
+                    ..Default::default()
                 },
                 ctx(),
             )

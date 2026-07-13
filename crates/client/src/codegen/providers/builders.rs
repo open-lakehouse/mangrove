@@ -81,7 +81,7 @@ impl CreateProviderBuilder {
     ) -> Self {
         let request = CreateProviderRequest {
             name: name.into(),
-            authentication_type: authentication_type as i32,
+            authentication_type: buffa::EnumValue::Known(authentication_type),
             ..Default::default()
         };
         Self { client, request }
@@ -137,7 +137,10 @@ impl GetProviderBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `ProviderServiceClient`.
     pub(crate) fn new(client: ProviderServiceClient, name: impl Into<String>) -> Self {
-        let request = GetProviderRequest { name: name.into() };
+        let request = GetProviderRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }
@@ -224,7 +227,10 @@ impl DeleteProviderBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `ProviderServiceClient`.
     pub(crate) fn new(client: ProviderServiceClient, name: impl Into<String>) -> Self {
-        let request = DeleteProviderRequest { name: name.into() };
+        let request = DeleteProviderRequest {
+            name: name.into(),
+            ..Default::default()
+        };
         Self { client, request }
     }
 }

@@ -20,6 +20,8 @@ unitycatalog-client = { package = "olai-uc-client", path = "../client", version 
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2", features = ["axum", "store"] }
 
 # workspace dependencies (in alphabetical order)
+# render model enum fields (EnumValue<E>) via buffa's Enumeration trait.
+buffa = { workspace = true }
 chrono = { workspace = true }
 olai-http = { workspace = true }
 serde = { workspace = true }

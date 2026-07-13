@@ -372,6 +372,7 @@ impl UnityObjectStoreFactory {
                 include_browse: Some(false),
                 include_delta_metadata: Some(false),
                 include_manifest_capabilities: Some(false),
+                ..Default::default()
             })
             .await
             .map_err(Error::from)?;
@@ -430,6 +431,7 @@ impl UnityObjectStoreFactory {
             .get_volume(&GetVolumeRequest {
                 name: name.to_string(),
                 include_browse: Some(false),
+                ..Default::default()
             })
             .await
             .map_err(Error::from)?;
@@ -1085,22 +1087,23 @@ mod tests {
     /// path, which also carries `/<account>/<container>`).
     #[tokio::test]
     async fn azurite_store_targets_emulator_and_roots_prefix() {
-        use unitycatalog_common::temporary_credentials::v1::{
-            AzureUserDelegationSas, temporary_credential::Credentials,
-        };
+        use unitycatalog_common::temporary_credentials::v1::AzureUserDelegationSas;
 
         let url = "http://127.0.0.1:10000/devstoreaccount1/mycontainer/tbl/data";
         let credential = TemporaryCredential {
             expiration_time: now_epoch_millis() + 3_600_000,
             url: url.to_string(),
-            credentials: Some(Credentials::AzureUserDelegationSas(
+            credentials: Some(
                 AzureUserDelegationSas {
                     // A minimal, well-formed SAS query string. `split_sas` parses it
                     // into query pairs; the emulator never sees it in this test.
                     sas_token: "sv=2021-08-06&ss=b&srt=co&sp=rl&se=2999-01-01T00:00:00Z&sig=AAAA"
                         .to_string(),
-                },
-            )),
+                    ..Default::default()
+                }
+                .into(),
+            ),
+            ..Default::default()
         };
 
         let factory = offline_factory().await;
