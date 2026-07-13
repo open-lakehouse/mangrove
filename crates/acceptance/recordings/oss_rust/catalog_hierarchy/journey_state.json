@@ -1,7 +1,0 @@
-{
-  "data": {
-    "schema_names": "[\"test_schema_1780172687\",\"analytics_schema_1780172687\",\"staging_schema_1780172687\"]",
-    "catalog_name": "hierarchy_catalog_1780172687",
-    "__storage_root": "file:///tmp/uc-test/"
-  }
-}

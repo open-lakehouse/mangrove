@@ -18,36 +18,13 @@ unitycatalog-client = { package = "olai-uc-client", path = "../client", version 
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2" }
 
 # workspace dependencies
-# buffa runtime: acceptance assertions construct/compare buffa model types.
-buffa = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
-olai-http = { workspace = true, features = ["recording"] }
-itertools = { workspace = true }
-reqwest = { workspace = true }
-serde = { workspace = true }
+futures = { workspace = true }
+olai-http = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
 url = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 
 # crates.io dependencies
-dotenv = "0.15.0"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
-futures = { workspace = true }
-async-trait = "0.1"
-console = "0.15"
-comfy-table = "7.1"
-
-# Testing and mocking
-mockito = "1.4"
-
-[dev-dependencies]
-env_logger = "0.10"
-log = "0.4"
-rstest = "0.18"
-tempfile = "3.1"
-
-[features]
-default = []
-integration = []
