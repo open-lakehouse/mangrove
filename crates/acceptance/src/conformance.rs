@@ -340,35 +340,35 @@ fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
         // path returns "managed tables require storage_location to be the
         // staging location". Affects every check that creates a managed table.
         (Target::OssRust, "managed_table_lifecycle") => {
-            Some("managed tables require the /delta/v1 staging flow (follow-up: #TODO)")
+            Some("managed tables require the /delta/v1 staging flow (follow-up: #62)")
         }
         (Target::OssRust, "share_lifecycle") => {
-            Some("creates a managed table; blocked on the staging flow (follow-up: #TODO)")
+            Some("creates a managed table; blocked on the staging flow (follow-up: #62)")
         }
         (Target::OssRust, "lakehouse_hierarchy") => {
-            Some("creates managed tables; blocked on the staging flow (follow-up: #TODO)")
+            Some("creates managed tables; blocked on the staging flow (follow-up: #62)")
         }
         // Temporary table credentials need a managed table, which needs the
         // staging flow — same root cause as managed_table_lifecycle.
         (Target::OssRust, "temporary_table_credentials") => {
-            Some("needs a managed table via the staging flow (follow-up: #TODO)")
+            Some("needs a managed table via the staging flow (follow-up: #62)")
         }
         // A row-filter policy requires a backing row_filter.function_name; wiring
         // a real function into the policy is deferred.
         (Target::OssRust, "policy_lifecycle") => {
-            Some("row-filter policy requires a backing function reference (follow-up: #TODO)")
+            Some("row-filter policy requires a backing function reference (follow-up: #63)")
         }
         // Temporary volume credentials return 404 on our server today.
         (Target::OssRust, "temporary_volume_credentials") => {
-            Some("temporary-volume-credentials returns 404 on our server (follow-up: #TODO)")
+            Some("temporary-volume-credentials returns 404 on our server (follow-up: #63)")
         }
         // Tag policy create returns 405 (method not allowed) on our server.
         (Target::OssRust, "tag_policy_lifecycle") => {
-            Some("tag-policies create returns 405 on our server (follow-up: #TODO)")
+            Some("tag-policies create returns 405 on our server (follow-up: #63)")
         }
         // Entity tag assignment returns 404 on our server today.
         (Target::OssRust, "entity_tag_assignment_lifecycle") => {
-            Some("entity-tag-assignments returns 404 on our server (follow-up: #TODO)")
+            Some("entity-tag-assignments returns 404 on our server (follow-up: #63)")
         }
         _ => None,
     }

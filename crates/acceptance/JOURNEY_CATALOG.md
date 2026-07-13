@@ -47,20 +47,19 @@ securable. Each check drives one securable's lifecycle against a live server; se
 
 These surfaces are *attempted* by the battery but currently fail against our
 `uc-server`; they are quarantined in `conformance::known_failing` so CI stays
-green, and each is a follow-up to fix. Replace the `#TODO` issue refs when the
-tickets are filed, and delete the quarantine entry once the surface passes (the
-run flags it as an unexpected pass if left behind).
+green, and each is tracked for a fix. Delete the quarantine entry once the
+surface passes (the run flags it as an unexpected pass if left behind).
 
-| Check | Symptom | Root cause |
-|---|---|---|
-| `managed_table_lifecycle` | 400 "managed tables require storage_location to be the staging location" | Managed tables must go through the `/delta/v1` staging flow, not a bare `create_table`. |
-| `share_lifecycle` | same as above | Creates a managed table as its fixture. |
-| `lakehouse_hierarchy` | same as above | Creates managed tables. |
-| `temporary_table_credentials` | same as above | Needs a managed table fixture. |
-| `temporary_volume_credentials` | 404 | `temporary-volume-credentials` not served. |
-| `tag_policy_lifecycle` | 405 | `tag-policies` create not served. |
-| `entity_tag_assignment_lifecycle` | 404 | `entity-tag-assignments` not served. |
-| `policy_lifecycle` | 400 "row filter policies require row_filter.function_name" | A valid ABAC policy needs a backing function; the check does not yet create/wire one. |
+| Check | Symptom | Root cause | Tracking |
+|---|---|---|---|
+| `managed_table_lifecycle` | 400 "managed tables require storage_location to be the staging location" | Managed tables must go through the `/delta/v1` staging flow, not a bare `create_table`. | #62 |
+| `share_lifecycle` | same as above | Creates a managed table as its fixture. | #62 |
+| `lakehouse_hierarchy` | same as above | Creates managed tables. | #62 |
+| `temporary_table_credentials` | same as above | Needs a managed table fixture. | #62 |
+| `temporary_volume_credentials` | 404 | `temporary-volume-credentials` not served. | #63 |
+| `tag_policy_lifecycle` | 405 | `tag-policies` create not served. | #63 |
+| `entity_tag_assignment_lifecycle` | 404 | `entity-tag-assignments` not served. | #63 |
+| `policy_lifecycle` | 400 "row filter policies require row_filter.function_name" | A valid ABAC policy needs a backing function; the check does not yet create/wire one. | #63 |
 
 ## Non-goals
 
