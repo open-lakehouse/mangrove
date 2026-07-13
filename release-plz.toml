@@ -152,6 +152,17 @@ changelog_path = "crates/cli/CHANGELOG.md"
 # held out of crates.io for now. Remove this line to release the `uc` CLI crate.
 release = false
 
+[[package]]
+name = "unitycatalog-acceptance"
+# Internal test harness (`publish = false` in its Cargo.toml), never released to
+# crates.io and NOT a dependency of any released crate. Without `release = false`
+# release-plz still runs a verifying `cargo package` over it during the
+# workspace version-determination pass, which was failing the Release PR job
+# (its path deps trip `cargo package` manifest verification). Excluding it from
+# the release cycle removes that pass entirely — nothing depends on it, so it is
+# safe to skip.
+release = false
+
 # ---------------------------------------------------------------------------
 # Changelog rendering (git-cliff, embedded). Conventional-commit grouping.
 # Because commits use crate scopes (feat(common): ...), each crate's changelog
