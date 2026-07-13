@@ -102,15 +102,16 @@ impl CreateFunctionStatement {
                     name: p.name.clone(),
                     type_text: p.data_type.to_string(),
                     position: Some(i as i32),
-                    parameter_mode: ParameterMode::In as i32,
+                    parameter_mode: ParameterMode::In.into(),
                     parameter_type:
                         unitycatalog_common::models::functions::v1::FunctionParameterType::Param
-                            as i32,
+                            .into(),
                     parameter_default: p.default.clone(),
                     comment: p.comment.clone(),
                     ..Default::default()
                 })
                 .collect(),
+            ..Default::default()
         };
 
         let info = client
@@ -267,13 +268,14 @@ mod tests {
                     name: p.name.clone(),
                     type_text: p.data_type.to_string(),
                     position: Some(i as i32),
-                    parameter_mode: ParameterMode::In as i32,
-                    parameter_type: FunctionParameterType::Param as i32,
+                    parameter_mode: ParameterMode::In.into(),
+                    parameter_type: FunctionParameterType::Param.into(),
                     parameter_default: p.default.clone(),
                     comment: p.comment.clone(),
                     ..Default::default()
                 })
                 .collect(),
+            ..Default::default()
         }
     }
 
@@ -286,8 +288,8 @@ mod tests {
         let x = &params.parameters[0];
         assert_eq!(x.name, "x");
         assert_eq!(x.position, Some(0));
-        assert_eq!(x.parameter_mode, ParameterMode::In as i32);
-        assert_eq!(x.parameter_type, FunctionParameterType::Param as i32);
+        assert_eq!(x.parameter_mode, ParameterMode::In);
+        assert_eq!(x.parameter_type, FunctionParameterType::Param);
         assert_eq!(x.parameter_default, None);
         assert_eq!(x.comment.as_deref(), Some("first"));
 

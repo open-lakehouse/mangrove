@@ -186,6 +186,7 @@ impl UserJourney for TableManagedLifecycleJourney {
             .tables_client()
             .get_table_exists(&GetTableExistsRequest {
                 full_name: full_name.clone(),
+                ..Default::default()
             })
             .await
             .map_err(|e| {

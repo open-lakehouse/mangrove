@@ -81,6 +81,7 @@ impl<T: ResourceStore + Policy<RequestContext>> RecipientHandler<RequestContext>
         Ok(ListRecipientsResponse {
             recipients: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
 

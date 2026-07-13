@@ -219,13 +219,17 @@ impl TableView for unitycatalog_common::Table {
     }
 
     fn row(&self) -> Vec<String> {
-        use unitycatalog_common::models::tables::v1::{DataSourceFormat, TableType};
-        let table_type = TableType::try_from(self.table_type)
-            .map(|t| t.as_str_name().to_string())
-            .unwrap_or_else(|_| NONE.into());
-        let format = DataSourceFormat::try_from(self.data_source_format)
-            .map(|f| f.as_str_name().to_string())
-            .unwrap_or_else(|_| NONE.into());
+        use buffa::Enumeration;
+        let table_type = self
+            .table_type
+            .as_known()
+            .map(|t| t.proto_name().to_string())
+            .unwrap_or_else(|| NONE.into());
+        let format = self
+            .data_source_format
+            .as_known()
+            .map(|f| f.proto_name().to_string())
+            .unwrap_or_else(|| NONE.into());
         vec![
             self.name.clone(),
             self.full_name.clone(),
@@ -242,10 +246,12 @@ impl TableView for unitycatalog_common::Volume {
     }
 
     fn row(&self) -> Vec<String> {
-        use unitycatalog_common::models::volumes::v1::VolumeType;
-        let volume_type = VolumeType::try_from(self.volume_type)
-            .map(|t| t.as_str_name().to_string())
-            .unwrap_or_else(|_| NONE.into());
+        use buffa::Enumeration;
+        let volume_type = self
+            .volume_type
+            .as_known()
+            .map(|t| t.proto_name().to_string())
+            .unwrap_or_else(|| NONE.into());
         vec![
             self.name.clone(),
             self.full_name.clone(),

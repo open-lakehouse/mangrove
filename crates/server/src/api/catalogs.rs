@@ -123,7 +123,7 @@ impl<
             storage_location,
             provider_name: request.provider_name,
             share_name: request.share_name,
-            catalog_type: Some(catalog_type as i32),
+            catalog_type: Some(catalog_type.into()),
             ..Default::default()
         };
         let info = self.create(resource.into()).await?.0.try_into()?;
@@ -176,6 +176,7 @@ impl<
         Ok(ListCatalogsResponse {
             catalogs: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -306,11 +307,12 @@ mod tests {
         h.create_credential(
             CreateCredentialRequest {
                 name: format!("{name}-cred"),
-                purpose: Purpose::Storage as i32,
+                purpose: Purpose::Storage.into(),
                 aws_iam_role: Some(AwsIamRoleConfig {
                     role_arn: "arn:aws:iam::123456789012:role/test".to_string(),
                     ..Default::default()
-                }),
+                })
+                .into(),
                 ..Default::default()
             },
             ctx(),
@@ -345,7 +347,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(cat.storage_root.as_deref(), Some("s3://bucket/cat"));
-        assert_eq!(cat.catalog_type, Some(CatalogType::ManagedCatalog as i32));
+        assert_eq!(cat.catalog_type, Some(CatalogType::ManagedCatalog.into()));
         // The managed storage location is materialized with the catalog id:
         // <root>/__unitystorage/catalogs/<id>.
         let id = cat.id.as_deref().expect("catalog should have an id");
@@ -412,7 +414,7 @@ mod tests {
         assert!(cat.storage_location.is_none());
         assert_eq!(
             cat.catalog_type,
-            Some(CatalogType::DeltasharingCatalog as i32)
+            Some(CatalogType::DeltasharingCatalog.into())
         );
     }
 

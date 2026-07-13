@@ -147,7 +147,7 @@ impl UserJourney for MetricViewLifecycleJourney {
         assert_eq!(view.name, self.view_name);
         assert_eq!(
             view.table_type,
-            TableType::MetricView as i32,
+            TableType::MetricView,
             "created table is not a METRIC_VIEW"
         );
         assert_eq!(
@@ -169,7 +169,7 @@ impl UserJourney for MetricViewLifecycleJourney {
         assert_eq!(fetched.name, self.view_name);
         assert_eq!(
             fetched.table_type,
-            TableType::MetricView as i32,
+            TableType::MetricView,
             "fetched table is not a METRIC_VIEW"
         );
         assert_eq!(
@@ -180,7 +180,7 @@ impl UserJourney for MetricViewLifecycleJourney {
         // A server that derives dependencies (uc-rs) populates `view_dependencies`
         // from the definition's `source`. Recordings predating that derivation may
         // omit the field, so assert only when it is present.
-        if let Some(deps) = fetched.view_dependencies.as_ref() {
+        if let Some(deps) = fetched.view_dependencies.as_option() {
             let names: Vec<_> = deps
                 .dependencies
                 .iter()

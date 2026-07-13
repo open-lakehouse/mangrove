@@ -124,6 +124,7 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
         Ok(ListTableSummariesResponse {
             tables: infos.into_iter().map(|r| r.into()).collect(),
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -153,6 +154,7 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
         Ok(ListTablesResponse {
             tables: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
 
@@ -164,11 +166,12 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
     ) -> Result<Table> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
-        let info = if request.table_type == TableType::External as i32 {
+        let info = if request.table_type == TableType::External {
             let Some(location) = request.storage_location.as_ref() else {
                 return Err(Error::invalid_argument("missing storage location"));
             };
             let location = StorageLocationUrl::parse(location)?;
+            let data_source_format = request.data_source_format.as_known().unwrap_or_default();
             // Validate the storage location before touching cloud storage so we
             // fail fast on a governance violation. The path must live inside a
             // registered external location and must not overlap any existing
@@ -176,7 +179,7 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
             // storage regions).
             validate_external_storage_location(self, &location).await?;
             let snapshot = self
-                .read_snapshot(&location, &request.data_source_format(), None)
+                .read_snapshot(&location, &data_source_format, None)
                 .await?;
             Table {
                 name: request.name,
@@ -196,16 +199,16 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
                 )?,
                 ..Default::default()
             }
-        } else if request.table_type == TableType::Managed as i32 {
+        } else if request.table_type == TableType::Managed {
             // Managed table: finalize a previously created staging table. The
             // client has written the initial Delta commit (`0.json`) at the
             // staging location; here we commit the staging reservation, adopt its
             // id as the table id, and register the table. The server never writes
             // the Delta log itself.
-            if request.data_source_format != DataSourceFormat::Delta as i32 {
+            if request.data_source_format != DataSourceFormat::Delta {
                 return Err(Error::invalid_argument(format!(
                     "managed tables must use the DELTA data source format, got {:?}",
-                    request.data_source_format()
+                    request.data_source_format
                 )));
             }
             let Some(location) = request.storage_location.as_ref() else {
@@ -278,7 +281,7 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
                 .await?
                 .0
                 .try_into()?);
-        } else if request.table_type == TableType::MetricView as i32 {
+        } else if request.table_type == TableType::MetricView {
             // Metric view: a semantic layer with no storage of its own. The
             // definition (YAML) lives in `view_definition`; there is no Delta
             // snapshot to read and no columns to derive here.
@@ -296,7 +299,7 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
             let view_dependencies = metric_view_dependencies(&view).map_err(|e| {
                 Error::invalid_argument(format!("cannot derive metric-view dependencies: {e}"))
             })?;
-            if let Some(supplied) = request.view_dependencies.as_ref()
+            if let Some(supplied) = request.view_dependencies.as_option()
                 && supplied != &view_dependencies
             {
                 return Err(Error::invalid_argument(
@@ -314,13 +317,13 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
                 properties: request.properties,
                 comment: request.comment,
                 view_definition: Some(view_definition.clone()),
-                view_dependencies: Some(view_dependencies),
+                view_dependencies: Some(view_dependencies).into(),
                 ..Default::default()
             }
         } else {
             return Err(Error::invalid_argument(format!(
                 "unsupported table type: {:?}",
-                request.table_type()
+                request.table_type
             )));
         };
         // TODO: update the table with the current actor as owner
@@ -345,9 +348,13 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
         tracing::Span::current().record("resource_name", &request.full_name);
         self.check_required(&request, &context).await?;
         match self.get(&request.resource()).await {
-            Ok(_) => Ok(GetTableExistsResponse { table_exists: true }),
+            Ok(_) => Ok(GetTableExistsResponse {
+                table_exists: true,
+                ..Default::default()
+            }),
             Err(unitycatalog_common::Error::NotFound) => Ok(GetTableExistsResponse {
                 table_exists: false,
+                ..Default::default()
             }),
             Err(e) => Err(e.into()),
         }
@@ -438,7 +445,7 @@ fn schema_to_columns(schema: &Schema, partition_columns: &[String]) -> Result<Ve
                 nullable: Some(f.nullable),
                 type_text: f.type_text(),
                 type_json: f.type_json()?,
-                type_name: f.type_name() as i32,
+                type_name: f.type_name().into(),
                 type_precision: f.type_precision(),
                 type_scale: f.type_scale(),
                 type_interval_type: None,
@@ -489,11 +496,12 @@ mod tests {
         h.create_credential(
             CreateCredentialRequest {
                 name: "cred".to_string(),
-                purpose: Purpose::Storage as i32,
+                purpose: Purpose::Storage.into(),
                 aws_iam_role: Some(AwsIamRoleConfig {
                     role_arn: "arn:aws:iam::123456789012:role/test".to_string(),
                     ..Default::default()
-                }),
+                })
+                .into(),
                 ..Default::default()
             },
             ctx(),
@@ -518,8 +526,8 @@ mod tests {
                     name: "t".to_string(),
                     schema_name: "sch".to_string(),
                     catalog_name: "cat".to_string(),
-                    table_type: TableType::External as i32,
-                    data_source_format: DataSourceFormat::Delta as i32,
+                    table_type: TableType::External.into(),
+                    data_source_format: DataSourceFormat::Delta.into(),
                     storage_location: Some("s3://bucket/other/tbl".to_string()),
                     ..Default::default()
                 },
@@ -540,8 +548,8 @@ mod tests {
                     name: "t".to_string(),
                     schema_name: "sch".to_string(),
                     catalog_name: "cat".to_string(),
-                    table_type: TableType::Managed as i32,
-                    data_source_format: DataSourceFormat::Parquet as i32,
+                    table_type: TableType::Managed.into(),
+                    data_source_format: DataSourceFormat::Parquet.into(),
                     storage_location: Some("s3://bucket/cat/__unitystorage/tables/x".to_string()),
                     ..Default::default()
                 },
@@ -562,8 +570,8 @@ mod tests {
                     name: "t".to_string(),
                     schema_name: "sch".to_string(),
                     catalog_name: "cat".to_string(),
-                    table_type: TableType::Managed as i32,
-                    data_source_format: DataSourceFormat::Delta as i32,
+                    table_type: TableType::Managed.into(),
+                    data_source_format: DataSourceFormat::Delta.into(),
                     storage_location: Some(
                         "s3://bucket/cat/__unitystorage/tables/unknown".to_string(),
                     ),
@@ -586,8 +594,8 @@ mod tests {
                     name: "t".to_string(),
                     schema_name: "sch".to_string(),
                     catalog_name: "cat".to_string(),
-                    table_type: TableType::Managed as i32,
-                    data_source_format: DataSourceFormat::Delta as i32,
+                    table_type: TableType::Managed.into(),
+                    data_source_format: DataSourceFormat::Delta.into(),
                     storage_location: None,
                     ..Default::default()
                 },
@@ -612,7 +620,7 @@ mod tests {
                     name: "orders_metrics".to_string(),
                     schema_name: "sch".to_string(),
                     catalog_name: "cat".to_string(),
-                    table_type: TableType::MetricView as i32,
+                    table_type: TableType::MetricView.into(),
                     view_definition: Some(METRIC_VIEW_YAML.to_string()),
                     ..Default::default()
                 },
@@ -620,11 +628,11 @@ mod tests {
             )
             .await
             .expect("create metric view");
-        assert_eq!(created.table_type, TableType::MetricView as i32);
+        assert_eq!(created.table_type, TableType::MetricView);
         assert_eq!(created.view_definition.as_deref(), Some(METRIC_VIEW_YAML));
         // Dependencies are derived from the definition's `source`.
         assert_eq!(
-            dep_names(created.view_dependencies.as_ref()),
+            dep_names(created.view_dependencies.as_option()),
             vec!["cat.sch.orders"]
         );
 
@@ -638,11 +646,11 @@ mod tests {
             )
             .await
             .expect("get metric view");
-        assert_eq!(fetched.table_type, TableType::MetricView as i32);
+        assert_eq!(fetched.table_type, TableType::MetricView);
         assert_eq!(fetched.view_definition.as_deref(), Some(METRIC_VIEW_YAML));
         // The derived dependencies round-trip through get.
         assert_eq!(
-            dep_names(fetched.view_dependencies.as_ref()),
+            dep_names(fetched.view_dependencies.as_option()),
             vec!["cat.sch.orders"]
         );
     }
@@ -666,7 +674,7 @@ mod tests {
             name: "orders_metrics".to_string(),
             schema_name: "sch".to_string(),
             catalog_name: "cat".to_string(),
-            table_type: TableType::MetricView as i32,
+            table_type: TableType::MetricView.into(),
             view_definition: Some(METRIC_VIEW_YAML.to_string()),
             ..Default::default()
         }
@@ -674,9 +682,11 @@ mod tests {
 
     fn table_dep(full_name: &str) -> Dependency {
         Dependency {
-            dependency: Some(dependency::Dependency::Table(TableDependency {
+            dependency: Some(dependency::Dependency::Table(Box::new(TableDependency {
                 table_full_name: full_name.to_string(),
-            })),
+                ..Default::default()
+            }))),
+            ..Default::default()
         }
     }
 
@@ -690,7 +700,9 @@ mod tests {
                 CreateTableRequest {
                     view_dependencies: Some(DependencyList {
                         dependencies: vec![table_dep("cat.sch.orders")],
-                    }),
+                        ..Default::default()
+                    })
+                    .into(),
                     ..metric_view_request()
                 },
                 ctx(),
@@ -698,7 +710,7 @@ mod tests {
             .await
             .expect("create metric view with matching deps");
         assert_eq!(
-            dep_names(created.view_dependencies.as_ref()),
+            dep_names(created.view_dependencies.as_option()),
             vec!["cat.sch.orders"]
         );
     }
@@ -713,7 +725,9 @@ mod tests {
                 CreateTableRequest {
                     view_dependencies: Some(DependencyList {
                         dependencies: vec![table_dep("cat.sch.something_else")],
-                    }),
+                        ..Default::default()
+                    })
+                    .into(),
                     ..metric_view_request()
                 },
                 ctx(),
@@ -751,7 +765,7 @@ mod tests {
                     name: "orders_metrics".to_string(),
                     schema_name: "sch".to_string(),
                     catalog_name: "cat".to_string(),
-                    table_type: TableType::MetricView as i32,
+                    table_type: TableType::MetricView.into(),
                     view_definition: None,
                     ..Default::default()
                 },

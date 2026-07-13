@@ -13,6 +13,7 @@
 //! preserved, exactly as the previous blanket `impl DeltaApiHandler for T` was.
 
 use async_trait::async_trait;
+use buffa::Enumeration;
 
 use unitycatalog_common::models::staging_tables::v1::{CreateStagingTableRequest, StagingTable};
 use unitycatalog_common::models::tables::v1::{
@@ -115,7 +116,7 @@ fn uc_column_to_crate(c: UcColumn) -> CrateColumn {
         type_text: c.type_text,
         type_json: c.type_json,
         position: c.position,
-        type_name: CrateColumnTypeName::from(c.type_name),
+        type_name: CrateColumnTypeName::from(c.type_name.to_i32()),
         comment: c.comment,
         nullable: c.nullable,
         partition_index: c.partition_index,
@@ -134,7 +135,7 @@ fn crate_column_to_uc(c: CrateColumn) -> UcColumn {
         type_text: c.type_text,
         type_json: c.type_json,
         position: c.position,
-        type_name: c.type_name as i32,
+        type_name: (c.type_name as i32).into(),
         comment: c.comment,
         nullable: c.nullable,
         partition_index: c.partition_index,
@@ -157,19 +158,19 @@ fn to_uc_table_type(t: DeltaTableType) -> TableType {
 /// the wire enum does not carry (`Unspecified`, unknown) map to `None`.
 fn to_delta_format(f: i32) -> Option<unitycatalog_delta_api::models::DeltaDataSourceFormat> {
     use unitycatalog_delta_api::models::DeltaDataSourceFormat as F;
-    match DataSourceFormat::try_from(f).ok()? {
-        DataSourceFormat::Delta => Some(F::Delta),
-        DataSourceFormat::Iceberg => Some(F::Iceberg),
-        DataSourceFormat::Hudi => Some(F::Hudi),
-        DataSourceFormat::Parquet => Some(F::Parquet),
-        DataSourceFormat::Csv => Some(F::Csv),
-        DataSourceFormat::Json => Some(F::Json),
-        DataSourceFormat::Orc => Some(F::Orc),
-        DataSourceFormat::Avro => Some(F::Avro),
-        DataSourceFormat::Text => Some(F::Text),
-        DataSourceFormat::UnityCatalog => Some(F::UnityCatalog),
-        DataSourceFormat::Deltasharing => Some(F::Deltasharing),
-        DataSourceFormat::Unspecified => None,
+    match DataSourceFormat::from_i32(f)? {
+        DataSourceFormat::DELTA => Some(F::Delta),
+        DataSourceFormat::ICEBERG => Some(F::Iceberg),
+        DataSourceFormat::HUDI => Some(F::Hudi),
+        DataSourceFormat::PARQUET => Some(F::Parquet),
+        DataSourceFormat::CSV => Some(F::Csv),
+        DataSourceFormat::JSON => Some(F::Json),
+        DataSourceFormat::ORC => Some(F::Orc),
+        DataSourceFormat::AVRO => Some(F::Avro),
+        DataSourceFormat::TEXT => Some(F::Text),
+        DataSourceFormat::UNITY_CATALOG => Some(F::UnityCatalog),
+        DataSourceFormat::DELTASHARING => Some(F::Deltasharing),
+        DataSourceFormat::DATA_SOURCE_FORMAT_UNSPECIFIED => None,
     }
 }
 
@@ -182,16 +183,16 @@ fn to_delta_format(f: i32) -> Option<unitycatalog_delta_api::models::DeltaDataSo
 /// View-like table types (views, metric views, …) map to `table_type: None`,
 /// which the shared handler rejects with the spec's "not a Delta table" 400.
 fn table_to_resolved(table: Table, version: u64) -> ResolvedTable {
-    let table_type = match TableType::try_from(table.table_type) {
-        Ok(TableType::Managed) => Some(DeltaTableType::Managed),
-        Ok(TableType::External) => Some(DeltaTableType::External),
+    let table_type = match table.table_type.as_known() {
+        Some(TableType::MANAGED) => Some(DeltaTableType::Managed),
+        Some(TableType::EXTERNAL) => Some(DeltaTableType::External),
         _ => None,
     };
     ResolvedTable {
         table_id: table.table_id,
         location: table.storage_location.unwrap_or_default(),
         table_type,
-        data_source_format: to_delta_format(table.data_source_format),
+        data_source_format: to_delta_format(table.data_source_format.to_i32()),
         columns: table.columns.into_iter().map(uc_column_to_crate).collect(),
         properties: table.properties.into_iter().collect(),
         created_at_ms: table.created_at,
@@ -296,6 +297,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
                 include_delta_metadata: None,
                 include_browse: None,
                 include_manifest_capabilities: None,
+                ..Default::default()
             },
             cx.clone(),
         )
@@ -333,8 +335,8 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
                     name: name.to_string(),
                     catalog_name: at.catalog.clone(),
                     schema_name: at.schema.clone(),
-                    table_type: to_uc_table_type(table_type) as i32,
-                    data_source_format: DataSourceFormat::Delta as i32,
+                    table_type: to_uc_table_type(table_type).into(),
+                    data_source_format: DataSourceFormat::Delta.into(),
                     ..Default::default()
                 };
                 self.check_required(&create_action, cx)
@@ -412,8 +414,8 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             name: spec.name,
             catalog_name: spec.at.catalog,
             schema_name: spec.at.schema,
-            table_type: to_uc_table_type(spec.table_type) as i32,
-            data_source_format: DataSourceFormat::Delta as i32,
+            table_type: to_uc_table_type(spec.table_type).into(),
+            data_source_format: DataSourceFormat::Delta.into(),
             columns: spec.columns.into_iter().map(crate_column_to_uc).collect(),
             storage_location: Some(spec.location),
             comment: spec.comment,
@@ -513,6 +515,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             self,
             DeleteTableRequest {
                 full_name: table.full_name(),
+                ..Default::default()
             },
             cx.clone(),
         )
@@ -555,6 +558,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
                 name: name.to_string(),
                 catalog_name: at.catalog.clone(),
                 schema_name: at.schema.clone(),
+                ..Default::default()
             },
             cx.clone(),
         )
@@ -596,7 +600,8 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             .generate_temporary_table_credentials(
                 GenerateTemporaryTableCredentialsRequest {
                     table_id: table_id.to_string(),
-                    operation: to_table_op(access),
+                    operation: to_table_op(access).into(),
+                    ..Default::default()
                 },
                 cx.clone(),
             )
@@ -616,8 +621,9 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             .generate_temporary_path_credentials(
                 GenerateTemporaryPathCredentialsRequest {
                     url: location.to_string(),
-                    operation: to_path_op(access),
+                    operation: to_path_op(access).into(),
                     dry_run: Some(false),
+                    ..Default::default()
                 },
                 cx.clone(),
             )

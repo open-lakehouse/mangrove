@@ -29,8 +29,6 @@ pub mod error;
 #[cfg(feature = "metric-view")]
 pub mod metric_view;
 pub mod models;
-#[cfg(feature = "python")]
-pub mod python;
 pub mod reference;
 #[cfg(feature = "store")]
 pub mod services;

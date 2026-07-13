@@ -253,7 +253,7 @@ mod tests {
         let store = test_store();
         let resource: unitycatalog_common::models::Resource = Provider {
             name: "acme".into(),
-            authentication_type: ProviderAuthenticationType::Token as i32,
+            authentication_type: ProviderAuthenticationType::Token.into(),
             comment: Some("inbound share from acme".into()),
             ..Default::default()
         }

@@ -76,11 +76,13 @@ async fn seed(h: &ServerHandler<RequestContext>) {
     h.create_credential(
         CreateCredentialRequest {
             name: "azurite_key".to_string(),
-            purpose: Purpose::Storage as i32,
+            purpose: Purpose::Storage.into(),
             azure_storage_key: Some(AzureStorageKey {
                 account_name: ACCOUNT.to_string(),
                 account_key: ACCOUNT_KEY.to_string(),
-            }),
+                ..Default::default()
+            })
+            .into(),
             // The emulator account is not reachable for online validation here;
             // we prove usability by actually performing blob I/O below.
             skip_validation: Some(true),
@@ -109,7 +111,7 @@ async fn vend_sas(h: &ServerHandler<RequestContext>, url: &str, operation: Opera
         .generate_temporary_path_credentials(
             GenerateTemporaryPathCredentialsRequest {
                 url: url.to_string(),
-                operation: operation as i32,
+                operation: operation.into(),
                 ..Default::default()
             },
             ctx(),

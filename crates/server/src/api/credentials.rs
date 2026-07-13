@@ -29,11 +29,11 @@ pub trait CredentialHandlerExt: Send + Sync + 'static {
 /// (sealed inline on the object row by the store's managed layer); a create/update
 /// must supply exactly one.
 fn has_secret(cred: &Credential) -> bool {
-    cred.azure_service_principal.is_some()
-        || cred.azure_managed_identity.is_some()
-        || cred.azure_storage_key.is_some()
-        || cred.aws_iam_role.is_some()
-        || cred.databricks_gcp_service_account.is_some()
+    cred.azure_service_principal.is_set()
+        || cred.azure_managed_identity.is_set()
+        || cred.azure_storage_key.is_set()
+        || cred.aws_iam_role.is_set()
+        || cred.databricks_gcp_service_account.is_set()
 }
 
 #[async_trait::async_trait]
@@ -57,6 +57,7 @@ impl<T: ResourceStore + Policy<RequestContext>> CredentialHandler<RequestContext
         Ok(ListCredentialsResponse {
             credentials: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
+            ..Default::default()
         })
     }
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -88,6 +89,7 @@ impl<T: ResourceStore + Policy<RequestContext>> CredentialHandler<RequestContext
             owner: None,
             created_by: None,
             updated_by: None,
+            ..Default::default()
         };
         if !has_secret(&cred) {
             return Err(Error::invalid_argument("No credentials provided"));
@@ -138,6 +140,7 @@ impl<T: ResourceStore + Policy<RequestContext>> CredentialHandler<RequestContext
             owner: None,
             created_by: None,
             updated_by: None,
+            ..Default::default()
         };
         if !has_secret(&cred) {
             return Err(Error::invalid_argument("No credentials provided"));
