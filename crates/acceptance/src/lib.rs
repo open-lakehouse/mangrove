@@ -3,9 +3,14 @@
 //! This crate provides a simplified framework for testing Unity Catalog workflows
 //! through user journeys written in Rust.
 
+pub mod checks;
+pub mod conformance;
+pub mod context;
 pub mod execution;
 pub mod journeys;
 pub mod reporting;
+
+pub use context::JourneyContext;
 
 // Re-export commonly used types for convenience
 pub use execution::{

@@ -8,7 +8,7 @@ name: unitycatalog-oss
 
 services:
   unitycatalog:
-    image: newfrontdocker/unitycatalog:v0.4.1
+    image: unitycatalog/unitycatalog:v0.5.0
     hostname: unitycatalog
     container_name: unitycatalog-oss
     ports:

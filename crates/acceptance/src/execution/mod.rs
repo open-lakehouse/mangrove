@@ -294,33 +294,9 @@ impl ImplementationProfile {
 // Journey context
 // ---------------------------------------------------------------------------
 
-/// Execution context handed to a journey's `setup`/`execute`/`cleanup`.
-///
-/// Bundles the [`UnityCatalogClient`] with the active implementation profile's
-/// `storage_root` so journeys can create catalogs with an explicit storage
-/// location (required by managed Databricks) without hardcoding a bucket.
-#[derive(Clone)]
-pub struct JourneyContext {
-    client: UnityCatalogClient,
-    /// Cloud/file storage root for the active profile (e.g. `s3://bucket/uc-test/`
-    /// for Databricks, `file:///tmp/uc-test/` for the OSS servers).
-    pub storage_root: String,
-}
-
-impl JourneyContext {
-    /// Create a new context for the given client and storage root.
-    pub fn new(client: UnityCatalogClient, storage_root: impl Into<String>) -> Self {
-        Self {
-            client,
-            storage_root: storage_root.into(),
-        }
-    }
-
-    /// The Unity Catalog client for the active profile.
-    pub fn client(&self) -> &UnityCatalogClient {
-        &self.client
-    }
-}
+// `JourneyContext` now lives in `crate::context`; re-exported here so existing
+// `crate::execution::JourneyContext` paths keep resolving during the transition.
+pub use crate::context::JourneyContext;
 
 // ---------------------------------------------------------------------------
 // UserJourney trait
