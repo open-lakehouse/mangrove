@@ -84,7 +84,7 @@ napi-derive = "3.5"
 buffa = { version = "0.7", features = ["json"] }
 buffa-types = { version = "0.7" }
 object_store = { version = "0.13.2", features = ["azure", "aws", "gcp"] }
-olai-http = { version = "0.0.5" }
+olai-http = { version = "0.0.6" }
 olai-store = { version = "0.0.6" }
 pbjson = { version = "0.9" }
 pbjson-types = "0.9"
