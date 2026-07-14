@@ -85,11 +85,9 @@ impl DeltaV1Client {
                 ("catalog", catalog),
                 ("protocol-versions", protocol_versions),
             ])
-            .send()
-            .await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_delta_error_response(response).await);
-        }
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_delta_send)?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -112,10 +110,13 @@ impl DeltaV1Client {
             encode_segment(catalog),
             encode_segment(schema),
         ))?;
-        let response = self.client.post(url).json(request).send().await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_delta_error_response(response).await);
-        }
+        let response = self
+            .client
+            .post(url)
+            .json(request)
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_delta_send)?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -138,10 +139,13 @@ impl DeltaV1Client {
             encode_segment(catalog),
             encode_segment(schema),
         ))?;
-        let response = self.client.post(url).json(request).send().await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_delta_error_response(response).await);
-        }
+        let response = self
+            .client
+            .post(url)
+            .json(request)
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_delta_send)?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -159,10 +163,12 @@ impl DeltaV1Client {
         table: &str,
     ) -> Result<DeltaLoadTableResponse> {
         let url = self.table_url(catalog, schema, table, "")?;
-        let response = self.client.get(url).send().await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_delta_error_response(response).await);
-        }
+        let response = self
+            .client
+            .get(url)
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_delta_send)?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -182,10 +188,13 @@ impl DeltaV1Client {
         request: &DeltaUpdateTableRequest,
     ) -> Result<DeltaLoadTableResponse> {
         let url = self.table_url(catalog, schema, table, "")?;
-        let response = self.client.post(url).json(request).send().await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_delta_error_response(response).await);
-        }
+        let response = self
+            .client
+            .post(url)
+            .json(request)
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_delta_send)?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -195,10 +204,11 @@ impl DeltaV1Client {
     /// The server responds `204 No Content` on success.
     pub async fn delete_table(&self, catalog: &str, schema: &str, table: &str) -> Result<()> {
         let url = self.table_url(catalog, schema, table, "")?;
-        let response = self.client.delete(url).send().await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_delta_error_response(response).await);
-        }
+        self.client
+            .delete(url)
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_delta_send)?;
         Ok(())
     }
 
@@ -210,14 +220,17 @@ impl DeltaV1Client {
     /// is mapped directly rather than parsed as a Delta error envelope.
     pub async fn table_exists(&self, catalog: &str, schema: &str, table: &str) -> Result<bool> {
         let url = self.table_url(catalog, schema, table, "")?;
-        let response = self.client.head(url).send().await?;
-        let status = response.status();
-        if status.is_success() {
-            Ok(true)
-        } else if status == reqwest::StatusCode::NOT_FOUND {
-            Ok(false)
-        } else {
-            Err(crate::error::parse_delta_error_response(response).await)
+        match self.client.head(url).send_raw().await {
+            // Any 2xx (the server responds 204) means the table exists.
+            Ok(_) => Ok(true),
+            // A 404 is the documented "does not exist" signal — a HEAD carries no
+            // body, so map it directly rather than parsing an error envelope.
+            Err(olai_http::SendRawError::Retry(ref e))
+                if e.status() == Some(reqwest::StatusCode::NOT_FOUND) =>
+            {
+                Ok(false)
+            }
+            Err(e) => Err(crate::Error::from_delta_send(e)),
         }
     }
 
@@ -234,10 +247,12 @@ impl DeltaV1Client {
         request: &DeltaRenameTableRequest,
     ) -> Result<()> {
         let url = self.table_url(catalog, schema, table, "/rename")?;
-        let response = self.client.post(url).json(request).send().await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_delta_error_response(response).await);
-        }
+        self.client
+            .post(url)
+            .json(request)
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_delta_send)?;
         Ok(())
     }
 
@@ -257,11 +272,9 @@ impl DeltaV1Client {
             .client
             .get(url)
             .query(&[("operation", operation_param(operation))])
-            .send()
-            .await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_delta_error_response(response).await);
-        }
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_delta_send)?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -280,10 +293,12 @@ impl DeltaV1Client {
             "staging-tables/{}/credentials",
             encode_segment(table_id),
         ))?;
-        let response = self.client.get(url).send().await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_delta_error_response(response).await);
-        }
+        let response = self
+            .client
+            .get(url)
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_delta_send)?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -306,11 +321,9 @@ impl DeltaV1Client {
                 ("location", location),
                 ("operation", operation_param(operation)),
             ])
-            .send()
-            .await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_delta_error_response(response).await);
-        }
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_delta_send)?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -328,10 +341,12 @@ impl DeltaV1Client {
         request: &DeltaReportMetricsRequest,
     ) -> Result<()> {
         let url = self.table_url(catalog, schema, table, "/metrics")?;
-        let response = self.client.post(url).json(request).send().await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_delta_error_response(response).await);
-        }
+        self.client
+            .post(url)
+            .json(request)
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_delta_send)?;
         Ok(())
     }
 

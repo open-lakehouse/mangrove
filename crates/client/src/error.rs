@@ -46,6 +46,38 @@ impl Error {
         Error::Generic(message.to_string())
     }
 
+    /// Map a failed `/delta/v1` request into a typed [`Error`].
+    ///
+    /// A request sent via [`olai_http::CloudRequestBuilder::send_raw`] fails with
+    /// a [`SendRawError`]: a signing failure carries no HTTP response and maps to
+    /// [`Error::ClientError`]; a request failure carrying an HTTP status + body
+    /// (a [`olai_http::RetryError`]) is parsed as a Delta error envelope via
+    /// [`parse_delta_error`]. A transport failure with no status also maps to
+    /// [`Error::ClientError`].
+    pub(crate) fn from_delta_send(err: olai_http::SendRawError) -> Self {
+        match err {
+            olai_http::SendRawError::Sign(e) => Error::ClientError { source: e },
+            olai_http::SendRawError::Retry(e) => match e.status() {
+                Some(status) => parse_delta_error(status.as_u16(), e.body().map(str::as_bytes)),
+                // No status: a transport/timeout failure, not an HTTP error body.
+                None => Error::ClientError { source: e.error() },
+            },
+        }
+    }
+
+    /// Map a failed UC API request into a typed [`Error`], mirroring
+    /// [`from_delta_send`](Self::from_delta_send) but parsing the UC API error
+    /// body (`{ error_code, message }`) via [`parse_error`].
+    pub(crate) fn from_api_send(err: olai_http::SendRawError) -> Self {
+        match err {
+            olai_http::SendRawError::Sign(e) => Error::ClientError { source: e },
+            olai_http::SendRawError::Retry(e) => match e.status() {
+                Some(status) => parse_error(status.as_u16(), e.body().map(str::as_bytes)),
+                None => Error::ClientError { source: e.error() },
+            },
+        }
+    }
+
     pub fn is_not_found(&self) -> bool {
         match self {
             Error::Api(UcApiError::NotFound { .. }) => true,
@@ -248,47 +280,61 @@ struct ApiErrorBody {
     message: String,
 }
 
-/// Read an error HTTP response, parse the UC API JSON body, and return a typed [`Error`].
+/// Parse a UC API error from its HTTP `status` and response `body`, returning a
+/// typed [`Error`]. Falls back to [`UcApiError::Other`] with the raw bytes when
+/// the body is not the expected `{ error_code, message }` JSON.
+pub(crate) fn parse_error(status: u16, body: Option<&[u8]>) -> Error {
+    let body = body.unwrap_or_default();
+    match serde_json::from_slice::<ApiErrorBody>(body) {
+        Ok(api_err) => {
+            UcApiError::from_api_response(status, &api_err.error_code, api_err.message).into()
+        }
+        Err(_) => UcApiError::Other {
+            status,
+            error_code: String::new(),
+            message: String::from_utf8_lossy(body).into_owned(),
+        }
+        .into(),
+    }
+}
+
+/// Read an error HTTP response, parse the UC API JSON body, and return a typed
+/// [`Error`]. Thin wrapper over [`parse_error`] retained for the generated
+/// resource clients (`codegen/**`), which hold a [`reqwest::Response`] because
+/// they still call `.send()` (a 2xx/non-2xx split, not `send_raw`).
 pub(crate) async fn parse_error_response(response: reqwest::Response) -> Error {
     let status = response.status().as_u16();
     match response.bytes().await {
-        Ok(body) => match serde_json::from_slice::<ApiErrorBody>(&body) {
-            Ok(api_err) => {
-                UcApiError::from_api_response(status, &api_err.error_code, api_err.message).into()
-            }
-            Err(_) => UcApiError::Other {
-                status,
-                error_code: String::new(),
-                message: String::from_utf8_lossy(&body).into_owned(),
-            }
-            .into(),
-        },
+        Ok(body) => parse_error(status, Some(&body)),
         Err(e) => Error::RequestError(e),
     }
 }
 
-/// Read an error HTTP response from a `/delta/v1` endpoint, parse the Delta API
-/// error envelope (`{ "error": { message, type, code, stack? } }`), and return a
-/// typed [`Error::Delta`].
+/// Parse a `/delta/v1` error from its HTTP `status` and response `body`, matching
+/// the Delta API error envelope (`{ "error": { message, type, code, stack? } }`)
+/// and returning a typed [`Error::Delta`].
 ///
 /// Falls back to [`UcApiError::Other`] when the body is not a recognizable Delta
 /// error envelope (e.g. a bare proxy 502 or a truncated body), preserving the raw
 /// bytes for diagnostics.
-pub(crate) async fn parse_delta_error_response(response: reqwest::Response) -> Error {
+///
+/// The caller passes `status` and `body` directly (rather than a
+/// [`reqwest::Response`]) because a failed `/delta/v1` request surfaces through
+/// [`olai_http::CloudRequestBuilder::send_raw`] as an
+/// [`olai_http::RetryError`], which has already consumed the response body and
+/// exposes it via [`olai_http::RetryError::status`]/[`body`](olai_http::RetryError::body).
+pub(crate) fn parse_delta_error(status: u16, body: Option<&[u8]>) -> Error {
     use unitycatalog_delta_api::models::DeltaErrorResponse;
 
-    let status = response.status().as_u16();
-    match response.bytes().await {
-        Ok(body) => match serde_json::from_slice::<DeltaErrorResponse>(&body) {
-            Ok(envelope) => Error::Delta(envelope.error),
-            Err(_) => UcApiError::Other {
-                status,
-                error_code: String::new(),
-                message: String::from_utf8_lossy(&body).into_owned(),
-            }
-            .into(),
-        },
-        Err(e) => Error::RequestError(e),
+    let body = body.unwrap_or_default();
+    match serde_json::from_slice::<DeltaErrorResponse>(body) {
+        Ok(envelope) => Error::Delta(envelope.error),
+        Err(_) => UcApiError::Other {
+            status,
+            error_code: String::new(),
+            message: String::from_utf8_lossy(body).into_owned(),
+        }
+        .into(),
     }
 }
 
@@ -353,13 +399,19 @@ mod tests {
         assert!(err.is_already_exists());
     }
 
-    #[tokio::test]
-    async fn test_parse_delta_error_not_found() {
-        let resp = make_response(
+    /// Parse a Delta error envelope directly from `(status, body)`, matching the
+    /// shape [`Error::from_delta_send`] feeds in after `send_raw` classifies a
+    /// non-2xx response.
+    fn delta_err(status: u16, body: &str) -> Error {
+        parse_delta_error(status, Some(body.as_bytes()))
+    }
+
+    #[test]
+    fn test_parse_delta_error_not_found() {
+        let err = delta_err(
             404,
             r#"{"error":{"message":"table 'x' not found","type":"NoSuchTableException","code":404}}"#,
         );
-        let err = parse_delta_error_response(resp).await;
         assert!(err.is_not_found());
         assert!(!err.is_already_exists());
         assert!(matches!(
@@ -368,131 +420,114 @@ mod tests {
         ));
     }
 
-    #[tokio::test]
-    async fn test_parse_delta_error_already_exists() {
-        let resp = make_response(
+    #[test]
+    fn test_parse_delta_error_already_exists() {
+        let err = delta_err(
             409,
             r#"{"error":{"message":"exists","type":"AlreadyExistsException","code":409}}"#,
         );
-        let err = parse_delta_error_response(resp).await;
         assert!(err.is_already_exists());
         assert!(!err.is_not_found());
     }
 
-    #[tokio::test]
-    async fn test_parse_delta_error_commit_conflict() {
-        let resp = make_response(
+    #[test]
+    fn test_parse_delta_error_commit_conflict() {
+        let err = delta_err(
             409,
             r#"{"error":{"message":"conflict","type":"CommitVersionConflictException","code":409}}"#,
         );
-        let err = parse_delta_error_response(resp).await;
         assert!(err.is_commit_conflict());
         assert!(!err.is_update_requirement_conflict());
         assert!(!err.is_already_exists());
     }
 
-    #[tokio::test]
-    async fn test_parse_delta_error_update_requirement_conflict() {
-        let resp = make_response(
+    #[test]
+    fn test_parse_delta_error_update_requirement_conflict() {
+        let err = delta_err(
             409,
             r#"{"error":{"message":"etag mismatch","type":"UpdateRequirementConflictException","code":409}}"#,
         );
-        let err = parse_delta_error_response(resp).await;
         assert!(err.is_update_requirement_conflict());
         assert!(!err.is_commit_conflict());
     }
 
-    #[tokio::test]
-    async fn test_parse_delta_error_resource_exhausted() {
+    #[test]
+    fn test_parse_delta_error_resource_exhausted() {
         for ty in ["ResourceExhaustedException", "TooManyRequestsException"] {
             let body = format!(r#"{{"error":{{"message":"slow down","type":"{ty}","code":429}}}}"#);
-            // make_response needs a 'static str; build the response inline instead.
-            let resp = http::Response::builder()
-                .status(429)
-                .header("content-type", "application/json")
-                .body(bytes::Bytes::from(body))
-                .map(reqwest::Response::from)
-                .unwrap();
-            let err = parse_delta_error_response(resp).await;
+            let err = delta_err(429, &body);
             assert!(err.is_resource_exhausted(), "type {ty} should be exhausted");
         }
     }
 
-    #[tokio::test]
-    async fn test_parse_delta_error_commit_state_unknown() {
-        let resp = make_response(
+    #[test]
+    fn test_parse_delta_error_commit_state_unknown() {
+        let err = delta_err(
             500,
             r#"{"error":{"message":"unknown","type":"CommitStateUnknownException","code":500}}"#,
         );
-        let err = parse_delta_error_response(resp).await;
         assert!(err.is_commit_state_unknown());
     }
 
-    #[tokio::test]
-    async fn test_parse_delta_error_with_stack() {
-        let resp = make_response(
+    #[test]
+    fn test_parse_delta_error_with_stack() {
+        let err = delta_err(
             500,
             r#"{"error":{"message":"boom","type":"InternalServerErrorException","code":500,"stack":["a","b"]}}"#,
         );
-        let err = parse_delta_error_response(resp).await;
         assert!(matches!(
             err,
             Error::Delta(ref m) if m.stack.as_deref() == Some(&["a".to_string(), "b".to_string()][..])
         ));
     }
 
-    #[tokio::test]
-    async fn test_parse_delta_error_non_envelope_body() {
-        let resp = make_response(502, "Bad Gateway");
-        let err = parse_delta_error_response(resp).await;
+    #[test]
+    fn test_parse_delta_error_non_envelope_body() {
+        let err = delta_err(502, "Bad Gateway");
         assert!(matches!(
             err,
             Error::Api(UcApiError::Other { status: 502, ref message, .. }) if message == "Bad Gateway"
         ));
     }
 
-    #[tokio::test]
-    async fn test_parse_delta_error_unsupported_table_format() {
+    #[test]
+    fn test_parse_delta_error_unsupported_table_format() {
         // A 400 with the typed envelope: the table is not Delta / not supported by
         // /delta/v1. Should trigger the legacy-API fallback but is not a not-found.
-        let resp = make_response(
+        let err = delta_err(
             400,
             r#"{"error":{"message":"not a delta table","type":"UnsupportedTableFormatException","code":400}}"#,
         );
-        let err = parse_delta_error_response(resp).await;
         assert!(err.is_unsupported_table_format());
         assert!(err.should_fall_back_to_legacy());
         assert!(!err.is_not_found());
         assert!(!err.is_route_missing());
     }
 
-    #[tokio::test]
-    async fn test_parse_delta_error_not_implemented() {
-        let resp = make_response(
+    #[test]
+    fn test_parse_delta_error_not_implemented() {
+        let err = delta_err(
             501,
             r#"{"error":{"message":"nope","type":"NotImplementedException","code":501}}"#,
         );
-        let err = parse_delta_error_response(resp).await;
         assert!(err.is_not_implemented());
         assert!(err.should_fall_back_to_legacy());
     }
 
-    #[tokio::test]
-    async fn test_route_missing_is_non_envelope_404() {
+    #[test]
+    fn test_route_missing_is_non_envelope_404() {
         // A 404 with no Delta error envelope = the /delta/v1 route is absent. This
         // must fall back to the legacy API, distinct from an enveloped
         // NoSuchTableException (a genuinely missing table), which must propagate.
-        let resp = make_response(404, "Not Found");
-        let err = parse_delta_error_response(resp).await;
+        let err = delta_err(404, "Not Found");
         assert!(err.is_route_missing());
         assert!(err.should_fall_back_to_legacy());
         // is_not_found also reports true for the missing route via the Api arm, but
         // the enveloped not-found below must NOT be treated as a missing route.
-        let enveloped = parse_delta_error_response(make_response(
+        let enveloped = delta_err(
             404,
             r#"{"error":{"message":"no table","type":"NoSuchTableException","code":404}}"#,
-        ))
-        .await;
+        );
         assert!(enveloped.is_not_found());
         assert!(!enveloped.is_route_missing());
         assert!(!enveloped.should_fall_back_to_legacy());
