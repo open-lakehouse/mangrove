@@ -56,6 +56,42 @@ pub async fn managed_table_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<(
                 "table missing from listing"
             );
 
+            // NOTE: `list_table_summaries` (GET /table-summaries) and `get_table_exists`
+            // (GET /tables/{full_name}/exists) are deliberately NOT exercised here — UC
+            // OSS Java v0.5.0 implements neither (its table surface is /staging-tables,
+            // /tables, /tables/{full_name}), so either call 404s and would make this
+            // portable baseline check fail against Java. Both are covered by the
+            // Rust-only `table_extended_reads` check.
+            Ok(())
+        },
+        || async {
+            let _ = ctx.client().table_from_full_name(&full_name).delete().await;
+            let _ = ctx.client().schema(&catalog, schema).delete().await;
+            let _ = ctx.client().catalog(&catalog).delete().await;
+        },
+    )
+    .await
+}
+
+/// Extended table read surfaces absent from UC OSS Java v0.5.0: `list_table_summaries`
+/// (GET /table-summaries) and `get_table_exists` (GET /tables/{full_name}/exists).
+///
+/// Kept separate from [`managed_table_lifecycle`] because v0.5.0 implements neither
+/// endpoint (see the note in that check); these are Rust-server / managed-Databricks
+/// surfaces only, so this check lives in `extended_checks`. It creates a managed table
+/// via the staging flow, then asserts the table surfaces in the schema's summaries and
+/// that the existence check reports it present.
+pub async fn table_extended_reads(ctx: &JourneyContext) -> AcceptanceResult<()> {
+    let catalog = unique("conf_txr_cat");
+    let schema = "s";
+    let table = "t";
+    let full_name = format!("{catalog}.{schema}.{table}");
+    with_cleanup(
+        || async {
+            ctx.create_catalog(&catalog).await?;
+            ctx.client().create_schema(schema, &catalog).await?;
+            managed_delta::create_commit_read(ctx.client(), &catalog, schema, table).await?;
+
             let summaries = ctx
                 .client()
                 .list_table_summaries(&catalog)

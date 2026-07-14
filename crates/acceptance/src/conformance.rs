@@ -291,6 +291,7 @@ pub fn extended_checks() -> Vec<Check> {
             "external_table_lifecycle",
             checks::table::external_table_lifecycle
         ),
+        check!("table_extended_reads", checks::table::table_extended_reads),
         check!(
             "temporary_table_credentials",
             checks::temp_creds::table_credentials
@@ -371,17 +372,12 @@ fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
 
         // --- OssJava (unitycatalog/unitycatalog:v0.5.0), from live runs 2026-07-14 ---
         // Pre-existing baseline gaps against the Java reference server (see #65).
-        // `managed_table_lifecycle` fails against the Java fixture on *both* Linux
-        // (CI) and macOS, for different reasons: on Linux a `/delta/v1` server call
-        // returns 404 (a createTable/loadTable managed-location mismatch — see #66),
-        // and on a local macOS run the client-side kernel read-back 404s because
-        // `/tmp` is a symlink to `/private/tmp` and `LocalFileSystem` canonicalizes
-        // it (see the caveat in `checks::managed_delta`). Quarantined until the
-        // Linux mismatch is root-caused; the native Rust-server target is unaffected
-        // and stays unquarantined.
-        (Target::OssJava, "managed_table_lifecycle") => Some(
-            "Java /delta/v1 managed-table flow 404s on Linux (location mismatch) and on macOS (/tmp symlink) (follow-up: #66)",
-        ),
+        // `managed_table_lifecycle` is NO LONGER quarantined here (#66): its `/delta/v1`
+        // staging flow + read-back works against Java v0.5.0 on both Linux and macOS.
+        // The prior 404 was `list_table_summaries` (GET /table-summaries), an endpoint
+        // v0.5.0 does not implement — that call now lives in the Rust-only
+        // `table_summaries` check, and the macOS read-back `/tmp` symlink artifact is
+        // fixed by canonicalizing the local location in `checks::managed_delta`.
         (Target::OssJava, "metric_view_lifecycle") => {
             Some("Java requires view_dependencies on create; we derive them (follow-up: #65)")
         }

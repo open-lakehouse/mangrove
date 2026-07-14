@@ -12,11 +12,13 @@
 //! [`LocalFileSystem`](object_store::local::LocalFileSystem). That keeps the check
 //! credential-free — no cloud identity, matching the local-managed recipe.
 //!
-//! **macOS local caveat:** the Java fixture vends `file:///tmp/uc-test/...`, but on
-//! macOS `/tmp` is a symlink to `/private/tmp` and `LocalFileSystem` canonicalizes on
-//! read, so the kernel read-back can 404 against a local Docker fixture. CI runs on
-//! Linux (where `/tmp` is real), and the native Rust-server target is unaffected, so
-//! this only bites a *local macOS* run against the Java Docker fixture.
+//! **Symlinked storage roots:** the Java fixture vends `file:///tmp/uc-test/...`, but
+//! on macOS `/tmp` is a symlink to `/private/tmp` and `LocalFileSystem` canonicalizes
+//! symlinks on read, so the physical writes and the kernel read-back must address the
+//! canonical path or the read 404s. [`canonicalize_file_location`] resolves this: the
+//! vended URL is sent verbatim to the server (createTable `location`), while a
+//! separate canonicalized `local_location` drives all local filesystem I/O. On Linux
+//! (real `/tmp`) the two are identical.
 //!
 //! The lifecycle (all via `/delta/v1/...`):
 //! 1. **createStagingTable** → table id + managed `location` + required protocol.
@@ -98,17 +100,20 @@ pub async fn create_commit_read(
             location.scheme()
         )));
     }
-    // Local filesystem store rooted at the OS root: the vended `file://` path is
-    // absolute and host-visible (bind-mounted 1:1 for the Java fixture; native for
-    // the Rust server), so we address files by their absolute path under `/`. All
-    // paths use the vended `location` verbatim — server-facing fields (createTable
-    // `location`) must match what the staging table was registered under, and the
-    // kernel resolves its log/data reads against the same URL, so the physical
-    // writes must line up with it too.
+    // Two views of the vended location:
+    //  * `location` — the URL exactly as the server vended it. Sent verbatim as the
+    //    createTable `location` so the server-side lookup keys match what the staging
+    //    reservation was registered under.
+    //  * `local_location` — the same path canonicalized for **local** filesystem I/O.
+    //    `object_store::LocalFileSystem` canonicalizes symlinks on read, so on hosts
+    //    where the storage root is reached through a symlink (macOS `/tmp` ->
+    //    `/private/tmp`) the physical writes and the kernel read-back must address the
+    //    canonical path, or the read 404s. On Linux/CI (no symlink) the two are equal.
+    let local_location = canonicalize_file_location(&location)?;
     let store: Arc<dyn ObjectStore> =
         Arc::new(LocalFileSystem::new().with_automatic_cleanup(false));
     let ctx = SessionContext::new();
-    register_routing_store(&ctx, &location, store.clone())?;
+    register_routing_store(&ctx, &local_location, store.clone())?;
 
     let arrow_schema = Arc::new(Schema::new(vec![
         Field::new("id", DataType::Int64, true),
@@ -127,7 +132,7 @@ pub async fn create_commit_read(
     let zero_json = build_zero_commit(&table_id, table, &protocol, &properties);
     store
         .put(
-            &log_path(&location, "00000000000000000000.json"),
+            &log_path(&local_location, "00000000000000000000.json"),
             PutPayload::from(zero_json.into_bytes()),
         )
         .await
@@ -171,7 +176,7 @@ pub async fn create_commit_read(
     let data_size = data_bytes.len() as i64;
     store
         .put(
-            &child_path(&location, data_file_name),
+            &child_path(&local_location, data_file_name),
             PutPayload::from(data_bytes),
         )
         .await
@@ -184,7 +189,7 @@ pub async fn create_commit_read(
     let commit_size = commit_json.len() as i64;
     store
         .put(
-            &staged_commit_path(&location, &commit_file_name),
+            &staged_commit_path(&local_location, &commit_file_name),
             PutPayload::from(commit_json.into_bytes()),
         )
         .await
@@ -224,9 +229,9 @@ pub async fn create_commit_read(
 
     let config = StorageConfig::default();
     let prefixed = config
-        .decorate_store(store.clone(), &location)
+        .decorate_store(store.clone(), &local_location)
         .map_err(|e| err(format!("decorate store: {e}")))?;
-    let log_store = default_logstore(Arc::from(prefixed), store.clone(), &location, &config);
+    let log_store = default_logstore(Arc::from(prefixed), store.clone(), &local_location, &config);
     let engine = DataFusionEngine::new_from_context(ctx.task_ctx());
     // The kernel snapshot builder reads the `_delta_log` synchronously via an
     // internal `block_on`. Against a real-IO store (LocalFileSystem here) that
@@ -235,7 +240,13 @@ pub async fn create_commit_read(
     // tasks off first so the nested block_on is allowed. Requires the
     // multi-thread runtime flavor (see the conformance test attributes).
     let snapshot = tokio::task::block_in_place(|| {
-        build_catalog_managed_snapshot(engine.as_ref(), &location, &commits, latest as i64, None)
+        build_catalog_managed_snapshot(
+            engine.as_ref(),
+            &local_location,
+            &commits,
+            latest as i64,
+            None,
+        )
     })
     .map_err(err)?;
 
@@ -408,6 +419,35 @@ fn child_path(location: &Url, rel: &str) -> Path {
         .trim_start_matches('/')
         .trim_end_matches('/');
     Path::from(format!("{base}/{rel}"))
+}
+
+/// Canonicalize a `file://` table location for local filesystem I/O.
+///
+/// `object_store::LocalFileSystem` canonicalizes symlinks when it reads, so on a host
+/// whose managed-storage root is reached through a symlink (notably macOS, where
+/// `/tmp` -> `/private/tmp`) the physical writes and the kernel read-back must address
+/// the canonical path — otherwise the read-back 404s against files written under the
+/// symlinked path. The table directory does not exist yet, so create it first, then
+/// canonicalize. On Linux/CI (no symlink) this is an identity transform.
+fn canonicalize_file_location(location: &Url) -> AcceptanceResult<Url> {
+    let dir = location
+        .to_file_path()
+        .map_err(|()| err(format!("location {location} is not a local file path")))?;
+    std::fs::create_dir_all(&dir)
+        .map_err(|e| err(format!("create managed table dir {}: {e}", dir.display())))?;
+    let canonical = std::fs::canonicalize(&dir)
+        .map_err(|e| err(format!("canonicalize {}: {e}", dir.display())))?;
+    let mut url = Url::from_directory_path(&canonical).map_err(|()| {
+        err(format!(
+            "canonical path {} is not a URL",
+            canonical.display()
+        ))
+    })?;
+    // `from_directory_path` already guarantees a trailing slash; keep it explicit.
+    if !url.path().ends_with('/') {
+        url.set_path(&format!("{}/", url.path()));
+    }
+    Ok(url)
 }
 
 fn write_parquet(batch: &RecordBatch) -> AcceptanceResult<Vec<u8>> {
