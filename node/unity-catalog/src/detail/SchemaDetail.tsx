@@ -20,10 +20,11 @@ import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { GROUPS, type GroupDef } from "../groups";
+import { SectionLabel } from "../SectionLabel";
 import { useCatalogSelection } from "../selection";
 import type { ObjectKind } from "../types";
 import { DetailStates } from "./DetailStates";
-import { Meta, MetaGrid, toEpochMillis } from "./Meta";
+import { formatTimestamp, Meta, MetaGrid, toEpochMillis } from "./Meta";
 
 // Minimal shape shared by every child list item we render in the table. The
 // per-kind list payloads are wider than this, but Name / Owner / Created are the
@@ -124,26 +125,36 @@ export function SchemaDetail({ fullName }: { fullName: string }) {
       </TabsContent>
 
       <TabsContent value="details">
-        <MetaGrid>
-          <Meta label="Owner" value={schema.owner} />
-          <Meta label="Catalog" value={schema.catalog_name} />
-          <Meta label="Storage root" value={schema.storage_root} wide mono />
-          {inheritsStorage ? (
+        <section className="space-y-3">
+          <SectionLabel>About this schema</SectionLabel>
+          <MetaGrid>
+            <Meta label="Owner" value={schema.owner} />
+            <Meta label="Catalog" value={schema.catalog_name} />
+            <Meta label="Schema ID" value={schema.schema_id} mono copyable />
+            {inheritsStorage ? (
+              <Meta
+                label="Storage"
+                value="Inherited from parent catalog"
+                wide
+              />
+            ) : (
+              <Meta
+                label="Storage root"
+                value={schema.storage_root}
+                wide
+                mono
+              />
+            )}
+            <Meta label="Created" value={formatTimestamp(schema.created_at)} />
+            <Meta label="Created by" value={schema.created_by} />
             <Meta
-              label="Storage location"
-              value="Inherited from parent catalog"
-              wide
+              label="Last updated"
+              value={formatTimestamp(schema.updated_at)}
             />
-          ) : (
-            <Meta
-              label="Storage location"
-              value={schema.storage_location}
-              wide
-              mono
-            />
-          )}
-          <Meta label="Comment" value={schema.comment} wide />
-        </MetaGrid>
+            <Meta label="Updated by" value={schema.updated_by} />
+            <Meta label="Comment" value={schema.comment} wide />
+          </MetaGrid>
+        </section>
       </TabsContent>
     </Tabs>
   );
