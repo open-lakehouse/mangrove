@@ -16,8 +16,8 @@ import { ExternalLocationDetail } from "./detail/ExternalLocationDetail";
 import { FunctionDetail } from "./detail/FunctionDetail";
 import { ModelDetail } from "./detail/ModelDetail";
 import { SchemaDetail } from "./detail/SchemaDetail";
-import { TableDetail, TableHeaderMeta } from "./detail/TableDetail";
-import { VolumeDetail, VolumeHeaderMeta } from "./detail/VolumeDetail";
+import { TableDetail } from "./detail/TableDetail";
+import { VolumeDetail } from "./detail/VolumeDetail";
 import type { AnyEditRequest } from "./dialog-types";
 import { useCatalogDialogs } from "./dialogs";
 import { kindIcon } from "./groups";
@@ -37,16 +37,12 @@ const EDITABLE: ReadonlySet<SelectableKind> = new Set<SelectableKind>([
 ]);
 
 function detailIcon(kind: SelectableKind): ReactNode {
-  if (kind === "catalog")
-    return <Database className="h-4 w-4 text-muted-foreground" />;
-  if (kind === "schema")
-    return <FolderTree className="h-4 w-4 text-muted-foreground" />;
-  if (kind === "credential")
-    return <KeyRound className="h-4 w-4 text-muted-foreground" />;
-  if (kind === "external_location")
-    return <Globe className="h-4 w-4 text-muted-foreground" />;
-  if (isObjectKind(kind))
-    return kindIcon(kind, "h-4 w-4 text-muted-foreground");
+  const cls = "h-5 w-5 shrink-0 text-muted-foreground";
+  if (kind === "catalog") return <Database className={cls} />;
+  if (kind === "schema") return <FolderTree className={cls} />;
+  if (kind === "credential") return <KeyRound className={cls} />;
+  if (kind === "external_location") return <Globe className={cls} />;
+  if (isObjectKind(kind)) return kindIcon(kind, cls);
   return null;
 }
 
@@ -68,19 +64,18 @@ export function DetailPane() {
 
   return (
     <div className="flex min-h-0 flex-col overflow-auto">
-      <div className={cn(PANE_HEADER_CLASS, "sticky top-0 z-10 bg-card px-6")}>
-        <div className="group flex min-w-0 items-center gap-2">
+      <div
+        className={cn(
+          PANE_HEADER_CLASS,
+          "sticky top-0 z-10 bg-background px-6",
+        )}
+      >
+        <div className="group flex min-w-0 items-center gap-2.5">
           {detailIcon(selection.kind)}
-          <span className="truncate font-mono text-sm font-medium">
+          <span className="truncate font-mono text-base font-semibold">
             {displayName}
           </span>
           {displayName && <CopyButton value={displayName} label="full name" />}
-          {selection.kind === "table" && (
-            <TableHeaderMeta fullName={selection.fullName} />
-          )}
-          {selection.kind === "volume" && (
-            <VolumeHeaderMeta fullName={selection.fullName} />
-          )}
         </div>
         <div className="flex items-center gap-1">
           {editable && (
@@ -121,7 +116,7 @@ export function DetailPane() {
           </Button>
         </div>
       </div>
-      <div className="px-6 py-4">
+      <div className="px-6 py-6">
         {selection.kind === "catalog" && (
           <CatalogDetail name={selection.fullName} />
         )}

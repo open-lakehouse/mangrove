@@ -1,5 +1,4 @@
 import {
-  Badge,
   Tabs,
   TabsContent,
   TabsList,
@@ -13,32 +12,7 @@ import { DetailStates } from "./DetailStates";
 import { FormatIcon } from "./FormatIcon";
 import { formatTimestamp, Meta, MetaGrid } from "./Meta";
 import { TablePreview } from "./TablePreview";
-
-// Header adornments for a table: its data-source-format icon + table-type pill,
-// rendered by DetailPane to the right of the name. Reads the same cached query
-// as the body (react-query dedupes by key), so mounting it here is free.
-export function TableHeaderMeta({ fullName }: { fullName: string }) {
-  const { data: table } = useTableDetail(fullName);
-  if (!table) return null;
-  return (
-    <>
-      {table.data_source_format && (
-        <FormatIcon
-          format={table.data_source_format}
-          className="h-5 w-5 shrink-0"
-        />
-      )}
-      {table.table_type && (
-        <Badge
-          variant={table.table_type === "MANAGED" ? "success" : "primary"}
-          className="shrink-0"
-        >
-          {table.table_type}
-        </Badge>
-      )}
-    </>
-  );
-}
+import { TypePill } from "./TypePill";
 
 export function TableDetail({ fullName }: { fullName: string }) {
   const { data: table, isLoading, error } = useTableDetail(fullName);
@@ -60,7 +34,7 @@ export function TableDetail({ fullName }: { fullName: string }) {
         <TabsTrigger value="details">Details</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="overview">
+      <TabsContent value="overview" className="space-y-6">
         {(table.owner || table.comment) && (
           <div className="space-y-1">
             {table.owner && (
@@ -76,7 +50,7 @@ export function TableDetail({ fullName }: { fullName: string }) {
           </div>
         )}
 
-        <div className="mt-6">
+        <div>
           <SectionLabel className="mb-2">Columns</SectionLabel>
           {table.columns && table.columns.length > 0 ? (
             <table className="w-full text-sm">
@@ -117,9 +91,24 @@ export function TableDetail({ fullName }: { fullName: string }) {
         <section className="space-y-3">
           <SectionLabel>About this table</SectionLabel>
           <MetaGrid>
+            <Meta label="Type">
+              <TypePill value={table.table_type} />
+            </Meta>
             <Meta label="Owner" value={table.owner} />
             <Meta label="Table ID" value={table.table_id} mono copyable />
-            <Meta label="Data source format" value={table.data_source_format} />
+            <Meta label="Data source format">
+              {table.data_source_format ? (
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <FormatIcon
+                    format={table.data_source_format}
+                    className="h-4 w-4 shrink-0"
+                  />
+                  <span className="truncate">{table.data_source_format}</span>
+                </span>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </Meta>
             {managed ? (
               <Meta
                 label="Storage location"

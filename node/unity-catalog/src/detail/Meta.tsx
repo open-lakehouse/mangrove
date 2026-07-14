@@ -1,4 +1,5 @@
 import { cn } from "@open-lakehouse/ui-kit";
+import type { ReactNode } from "react";
 
 import { CopyButton } from "../CopyButton";
 
@@ -11,29 +12,39 @@ export function Meta({
   mono,
   /** Show a subtle inline copy icon after the value (IDs, names, …). */
   copyable,
+  /** Custom value content (pill, icon+text, …). Overrides `value` rendering. */
+  children,
 }: {
   label: string;
   value?: string;
   wide?: boolean;
   mono?: boolean;
   copyable?: boolean;
+  children?: ReactNode;
 }) {
   return (
     <div className={cn("group min-w-0", wide && "col-span-full")}>
       <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
         {label}
       </dt>
-      <dd className="flex min-w-0 items-center gap-1.5" title={value}>
-        <span
-          className={cn(
-            "min-w-0",
-            wide ? "break-words" : "truncate",
-            mono && "break-all font-mono text-xs",
-          )}
-        >
-          {value || "—"}
-        </span>
-        {copyable && value && <CopyButton value={value} label={label} />}
+      <dd
+        className="flex min-w-0 items-center gap-1.5"
+        title={children ? undefined : value}
+      >
+        {children ?? (
+          <>
+            <span
+              className={cn(
+                "min-w-0",
+                wide ? "break-words" : "truncate",
+                mono && "break-all font-mono text-xs",
+              )}
+            >
+              {value || "—"}
+            </span>
+            {copyable && value && <CopyButton value={value} label={label} />}
+          </>
+        )}
       </dd>
     </div>
   );

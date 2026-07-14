@@ -1,25 +1,9 @@
-import { Badge } from "@open-lakehouse/ui-kit";
 import { useVolumeDetail } from "@open-lakehouse/unity-catalog-client";
 
 import { SectionLabel } from "../SectionLabel";
 import { DetailStates } from "./DetailStates";
 import { formatTimestamp, Meta, MetaGrid } from "./Meta";
-
-// Header adornment: the volume-type pill (MANAGED / EXTERNAL), rendered by
-// DetailPane to the right of the name. Reads the same cached query as the body
-// (react-query dedupes by key), so mounting it here is free.
-export function VolumeHeaderMeta({ fullName }: { fullName: string }) {
-  const { data: volume } = useVolumeDetail(fullName);
-  if (!volume?.volume_type) return null;
-  return (
-    <Badge
-      variant={volume.volume_type === "MANAGED" ? "success" : "primary"}
-      className="shrink-0"
-    >
-      {volume.volume_type}
-    </Badge>
-  );
-}
+import { TypePill } from "./TypePill";
 
 export function VolumeDetail({ fullName }: { fullName: string }) {
   const { data: volume, isLoading, error } = useVolumeDetail(fullName);
@@ -35,6 +19,9 @@ export function VolumeDetail({ fullName }: { fullName: string }) {
     <section className="space-y-3">
       <SectionLabel>About this volume</SectionLabel>
       <MetaGrid>
+        <Meta label="Type">
+          <TypePill value={volume.volume_type} />
+        </Meta>
         <Meta label="Owner" value={volume.owner} />
         <Meta label="Volume ID" value={volume.volume_id} mono copyable />
         {managed ? (
