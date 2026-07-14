@@ -90,8 +90,11 @@ pub struct DeltaStorageCredential {
     pub prefix: String,
     pub operation: DeltaCredentialOperation,
     pub config: DeltaStorageCredentialConfig,
-    /// Credential expiration time in epoch milliseconds.
-    pub expiration_time_ms: i64,
+    /// Credential expiration time in epoch milliseconds. `None` for credentials
+    /// that do not expire — the Unity Catalog reference server sends an explicit
+    /// `"expiration-time-ms": null` for local-filesystem (non-cloud) credentials.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expiration_time_ms: Option<i64>,
 }
 
 /// Response carrying temporary cloud storage credentials.

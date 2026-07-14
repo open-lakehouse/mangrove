@@ -909,6 +909,6 @@ fn to_storage_credential(
         prefix: prefix.to_string(),
         operation,
         config,
-        expiration_time_ms: creds.expiration_time_ms,
+        expiration_time_ms: Some(creds.expiration_time_ms),
     }
 }
