@@ -1850,9 +1850,10 @@ pub struct Credential {
     #[serde(
         rename = "full_name",
         alias = "fullName",
-        skip_serializing_if = "::core::option::Option::is_none"
+        with = "::buffa::json_helpers::proto_string",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
-    pub full_name: ::core::option::Option<::buffa::alloc::string::String>,
+    pub full_name: ::buffa::alloc::string::String,
     /// The Azure service principal configuration.
     ///
     /// Sealed into the object's inline sensitive blob (envelope-encrypted, redacted
@@ -2002,16 +2003,6 @@ impl Credential {
         self.updated_by = Some(value.into());
         self
     }
-    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
-    #[inline]
-    ///Sets [`Self::full_name`] to `Some(value)`, consuming and returning `self`.
-    pub fn with_full_name(
-        mut self,
-        value: impl Into<::buffa::alloc::string::String>,
-    ) -> Self {
-        self.full_name = Some(value.into());
-        self
-    }
 }
 impl ::buffa::DefaultInstance for Credential {
     fn default_instance() -> &'static Self {
@@ -2072,8 +2063,8 @@ impl ::buffa::Message for Credential {
         if self.used_for_managed_storage {
             size += 1u32 + ::buffa::types::BOOL_ENCODED_LEN as u32;
         }
-        if let Some(ref v) = self.full_name {
-            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if !self.full_name.is_empty() {
+            size += 1u32 + ::buffa::types::string_encoded_len(&self.full_name) as u32;
         }
         if self.azure_service_principal.is_set() {
             let __slot = __cache.reserve();
@@ -2201,13 +2192,13 @@ impl ::buffa::Message for Credential {
                 .encode(buf);
             ::buffa::types::encode_bool(self.used_for_managed_storage, buf);
         }
-        if let Some(ref v) = self.full_name {
+        if !self.full_name.is_empty() {
             ::buffa::encoding::Tag::new(
                     12u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
-            ::buffa::types::encode_string(v, buf);
+            ::buffa::types::encode_string(&self.full_name, buf);
         }
         if self.azure_service_principal.is_set() {
             ::buffa::encoding::Tag::new(
@@ -2410,12 +2401,7 @@ impl ::buffa::Message for Credential {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                ::buffa::types::merge_string(
-                    self
-                        .full_name
-                        .get_or_insert_with(::buffa::alloc::string::String::new),
-                    buf,
-                )?;
+                ::buffa::types::merge_string(&mut self.full_name, buf)?;
             }
             100u32 => {
                 if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
@@ -2506,7 +2492,7 @@ impl ::buffa::Message for Credential {
         self.updated_at = ::core::option::Option::None;
         self.updated_by = ::core::option::Option::None;
         self.used_for_managed_storage = false;
-        self.full_name = ::core::option::Option::None;
+        self.full_name.clear();
         self.azure_service_principal = ::buffa::MessageField::none();
         self.azure_managed_identity = ::buffa::MessageField::none();
         self.azure_storage_key = ::buffa::MessageField::none();
@@ -6907,7 +6893,7 @@ pub mod __buffa {
             /// The full name of the credential.
             ///
             /// Field 12: `full_name`
-            pub full_name: ::core::option::Option<&'a str>,
+            pub full_name: &'a str,
             /// The Azure service principal configuration.
             ///
             /// Sealed into the object's inline sensitive blob (envelope-encrypted, redacted
@@ -7125,7 +7111,7 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            view.full_name = Some(::buffa::types::borrow_str(&mut cur)?);
+                            view.full_name = ::buffa::types::borrow_str(&mut cur)?;
                         }
                         100u32 => {
                             if tag.wire_type()
@@ -7304,7 +7290,7 @@ pub mod __buffa {
                     updated_at: self.updated_at,
                     updated_by: self.updated_by.map(|s| s.to_string()),
                     used_for_managed_storage: self.used_for_managed_storage,
-                    full_name: self.full_name.map(|s| s.to_string()),
+                    full_name: self.full_name.to_string(),
                     azure_service_principal: match self
                         .azure_service_principal
                         .as_option()
@@ -7403,8 +7389,10 @@ pub mod __buffa {
                 if self.used_for_managed_storage {
                     size += 1u32 + ::buffa::types::BOOL_ENCODED_LEN as u32;
                 }
-                if let Some(ref v) = self.full_name {
-                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                if !self.full_name.is_empty() {
+                    size
+                        += 1u32
+                            + ::buffa::types::string_encoded_len(&self.full_name) as u32;
                 }
                 if self.azure_service_principal.is_set() {
                     let __slot = __cache.reserve();
@@ -7550,13 +7538,13 @@ pub mod __buffa {
                         .encode(buf);
                     ::buffa::types::encode_bool(self.used_for_managed_storage, buf);
                 }
-                if let Some(ref v) = self.full_name {
+                if !self.full_name.is_empty() {
                     ::buffa::encoding::Tag::new(
                             12u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
-                    ::buffa::types::encode_string(v, buf);
+                    ::buffa::types::encode_string(&self.full_name, buf);
                 }
                 if self.azure_service_principal.is_set() {
                     ::buffa::encoding::Tag::new(
@@ -7681,8 +7669,8 @@ pub mod __buffa {
                             &self.used_for_managed_storage,
                         )?;
                 }
-                if let ::core::option::Option::Some(__v) = self.full_name {
-                    __map.serialize_entry("full_name", __v)?;
+                if !::buffa::json_helpers::skip_if::is_empty_str(self.full_name) {
+                    __map.serialize_entry("full_name", self.full_name)?;
                 }
                 {
                     if let ::core::option::Option::Some(__v) = self
@@ -7912,7 +7900,7 @@ pub mod __buffa {
             ///
             /// Field 12: `full_name`
             #[must_use]
-            pub fn full_name(&self) -> ::core::option::Option<&'_ str> {
+            pub fn full_name(&self) -> &'_ str {
                 self.0.reborrow().full_name
             }
             /// The Azure service principal configuration.

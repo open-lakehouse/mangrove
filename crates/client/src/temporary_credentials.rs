@@ -214,10 +214,14 @@ impl TemporaryCredentialClient {
         request: &R,
     ) -> Result<TemporaryCredential> {
         let url = self.client.base_url.join(path)?;
-        let response = self.client.client.post(url).json(request).send().await?;
-        if !response.status().is_success() {
-            return Err(crate::error::parse_error_response(response).await);
-        }
+        let response = self
+            .client
+            .client
+            .post(url)
+            .json(request)
+            .send_raw()
+            .await
+            .map_err(crate::Error::from_api_send)?;
         let bytes = response.bytes().await?;
 
         // Drop any `credentials` oneof member whose value is null, so the

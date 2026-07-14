@@ -402,7 +402,7 @@ class Credential:
     """Username of credential creator."""
     databricks_gcp_service_account: Optional[DatabricksGcpServiceAccount]
     """The Databricks managed GCP service account configuration."""
-    full_name: Optional[str]
+    full_name: str
     """The full name of the credential."""
     id: Optional[str]
     """The unique identifier of the credential."""

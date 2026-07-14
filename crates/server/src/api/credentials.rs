@@ -73,7 +73,7 @@ impl<T: ResourceStore + Policy<RequestContext>> CredentialHandler<RequestContext
         // object's inline encrypted blob, atomically with the row.
         let cred = Credential {
             name: request.name.clone(),
-            full_name: Some(request.name),
+            full_name: request.name,
             comment: request.comment,
             purpose: request.purpose,
             read_only: request.read_only.unwrap_or(false),
@@ -124,7 +124,7 @@ impl<T: ResourceStore + Policy<RequestContext>> CredentialHandler<RequestContext
         let curr: Credential = self.get(&ident).await?.0.try_into()?;
         let cred = Credential {
             name: request.name.clone(),
-            full_name: Some(request.name),
+            full_name: request.name,
             comment: request.comment,
             purpose: curr.purpose,
             read_only: request.read_only.unwrap_or(false),

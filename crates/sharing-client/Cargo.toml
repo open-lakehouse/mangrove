@@ -15,9 +15,10 @@ keywords.workspace = true
 name = "unitycatalog_sharing_client"
 
 [dependencies]
+# local dependencies in alphabetical order
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2" }
 
-# buffa runtime consumed by the generated sharing models.
+# workspace dependencies in alphabetical order
 buffa = { workspace = true }
 buffa-types = { workspace = true }
 axum = { workspace = true, optional = true }

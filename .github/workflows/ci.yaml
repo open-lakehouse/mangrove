@@ -133,10 +133,10 @@ jobs:
         with:
           tool: cargo-nextest
 
-      # The recorded journey-replay suite (crates/acceptance/tests/journeys.rs
-      # `journey_tests`) runs here for free: it is a plain #[tokio::test] over the
-      # checked-in recordings under crates/acceptance/recordings/ and needs no
-      # services. The #[ignore]d object-store tests stay skipped by default.
+      # The acceptance crate's conformance tests are gated on a target URL env
+      # var and skip here (no server), so they are free no-ops; the live runs
+      # happen in the integration_oss_rust / integration_oss_java jobs below.
+      # The #[ignore]d object-store tests stay skipped by default.
       # --profile ci writes target/nextest/ci/junit.xml and runs every test
       # (fail-fast = false) so the report is complete even on failure.
       #
@@ -149,8 +149,6 @@ jobs:
       # need no service, so they must keep running here.
       - name: Test
         env:
-          # journey replay reads this; a dummy value is fine for recorded runs.
-          UC_INTEGRATION_STORAGE_ROOT: "s3://dummy"
           # Use the committed .sqlx cache so macros don't probe a live DB at build.
           SQLX_OFFLINE: "true"
         run: cargo nextest run --workspace --all-features --profile ci -E 'not (package(olai-uc-postgres) and binary(commit_coordinator))'
@@ -228,7 +226,6 @@ jobs:
       # commit_coordinator tests use temp files and are covered here.
       - name: Collect coverage
         env:
-          UC_INTEGRATION_STORAGE_ROOT: "s3://dummy"
           SQLX_OFFLINE: "true"
         run: |
           cargo llvm-cov nextest --workspace --all-features --locked -E 'not (package(olai-uc-postgres) and binary(commit_coordinator))' --codecov --output-path codecov.json
@@ -284,7 +281,6 @@ jobs:
 
       - name: Collect doctest coverage
         env:
-          UC_INTEGRATION_STORAGE_ROOT: "s3://dummy"
           SQLX_OFFLINE: "true"
         run: |
           cargo +nightly llvm-cov --doc --workspace --all-features --locked --codecov --output-path codecov-doc.json
@@ -325,17 +321,22 @@ jobs:
           tool: cargo-llvm-cov
 
       - name: Start Unity Catalog OSS (Java) server
-        run: docker compose -f dev/uc-oss.compose.yaml up -d --wait
+        # The managed-table storage root is bind-mounted 1:1 from the host, so the
+        # dir must exist before the container starts (see dev/uc-oss.compose.yaml).
+        run: |
+          mkdir -p /tmp/uc-test
+          docker compose -f dev/uc-oss.compose.yaml up -d --wait
 
-      # Run the live journeys under coverage instrumentation so the OSS-Java
-      # integration layer reports its own flag in Codecov.
-      - name: Run journey tests against UC OSS (Java)
+      # Run the portable baseline conformance battery against the Java OSS server
+      # under coverage instrumentation so the OSS-Java integration layer reports
+      # its own flag in Codecov. (Only the client is Rust here; the Java server's
+      # coverage is not captured.)
+      - name: Run conformance battery against UC OSS (Java)
         env:
-          UC_INTEGRATION_PROFILE: oss_java
-          UC_INTEGRATION_URL: http://localhost:8080
+          UC_OSS_JAVA_URL: http://localhost:8080
           SQLX_OFFLINE: "true"
         run: |
-          cargo llvm-cov --no-report --locked test -p unitycatalog-acceptance -- journey_tests_live --nocapture
+          cargo llvm-cov --no-report --locked test -p unitycatalog-acceptance -- conformance_oss_java --nocapture
           cargo llvm-cov report --codecov --output-path codecov.json
 
       - name: Upload to Codecov
@@ -354,6 +355,71 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose -f dev/uc-oss.compose.yaml down -v
+
+  integration_oss_rust:
+    name: integration-oss-rust
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: "1.97"
+          components: llvm-tools-preview
+
+      - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
+        with:
+          shared-key: coverage
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - uses: taiki-e/install-action@8b3c737da4b541bf0fb5a3e0488ff20535badac9 # v2.82.1
+        with:
+          tool: cargo-llvm-cov
+
+      # Run the full conformance battery against our OWN Rust uc-server, capturing
+      # coverage of acceptance + client + server in one report. Both the server
+      # binary and the test process are built under the same instrumentation
+      # (cargo llvm-cov show-env) and write profiles to a shared directory, so
+      # `report` merges cross-process coverage — unlike the OSS-Java job, which
+      # can only cover the Rust client. See `just conformance-oss-rust`.
+      - name: Run conformance battery against our uc-server (with coverage)
+        env:
+          SQLX_OFFLINE: "true"
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/uc-test
+          source <(cargo llvm-cov show-env --export-prefix)
+          cargo llvm-cov clean --workspace
+          # Build the server and the test binary under instrumentation.
+          cargo build -p olai-uc-server --features bin --bin uc-server
+          RUST_LOG=warn ./target/debug/uc-server serve --config dev/uc-rust-conformance.yaml &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          echo "⏳ Waiting for uc-server on http://localhost:8080 ..."
+          for _ in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:8080/api/2.1/unity-catalog/catalogs && break
+            sleep 1
+          done
+          UC_RUST_URL="http://localhost:8080" \
+            cargo test -p unitycatalog-acceptance --test conformance -- conformance_oss_rust --nocapture
+          kill "$server_pid" 2>/dev/null || true
+          # Give the server a moment to flush its coverage profile, then merge.
+          sleep 2
+          cargo llvm-cov report --codecov --output-path codecov.json
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        if: ${{ !cancelled() }}
+        with:
+          files: codecov.json
+          flags: integration-oss-rust
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   integration_postgres:
     name: integration-postgres

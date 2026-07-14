@@ -422,44 +422,33 @@ test-node-integration:
     npm run build -w @unitycatalog/client
     npm run test:integration -w @unitycatalog/client
 
-# run integration tests using mocked server responses
-[group('test')]
-integration:
-    UC_INTEGRATION_DIR="{{ justfile_directory() }}/crates/acceptance/recordings" \
-    UC_INTEGRATION_STORAGE_ROOT="$DATABRICKS_STORAGE_ROOT" \
-    UC_INTEGRATION_RECORD="false" \
-    cargo run --bin unitycatalog-acceptance
-
-# run journey tests live against the open-source Java Unity Catalog server.
-# Boots the server via docker compose, waits for its healthcheck, then runs
-# every OssJava-compatible journey. Tear down with:
+# Run the portable baseline conformance battery against the open-source Java
+# Unity Catalog server. Boots the server via docker compose, waits for its
+# healthcheck, then runs `conformance_oss_java`. Tear down with:
 # docker compose -f dev/uc-oss.compose.yaml down -v
 [group('test')]
 integration-oss-java:
+    # Managed tables land under file:///tmp/uc-test, bind-mounted 1:1 from the
+    # host (see dev/uc-oss.compose.yaml); start from a clean dir each run.
+    rm -rf /tmp/uc-test && mkdir -p /tmp/uc-test
     docker compose -f dev/uc-oss.compose.yaml up -d --wait
-    UC_INTEGRATION_PROFILE="oss_java" \
-    UC_INTEGRATION_URL="http://localhost:8080" \
-    cargo test -p unitycatalog-acceptance -- journey_tests_live --nocapture
-
-# Tear down afterwards with `docker compose -f dev/uc-oss.compose.yaml down -v`.
-# Boot the Java OSS server and record fixtures into crates/acceptance/recordings/oss_java/
-[group('test')]
-record-oss-java:
-    # docker compose -f dev/uc-oss.compose.yaml up -d --wait
-    UC_INTEGRATION_PROFILE="oss_java" \
-    UC_INTEGRATION_URL="http://localhost:9080" \
-    UC_INTEGRATION_RECORD="true" \
-    cargo test -p unitycatalog-acceptance -- journey_tests_live --nocapture
-    # docker compose -f dev/uc-oss.compose.yaml down -v
+    UC_OSS_JAVA_URL="http://localhost:8080" \
+    cargo test -p unitycatalog-acceptance -- conformance_oss_java --nocapture
 
 # Boots the local Rust server in the background (shutting it down on exit) and
-# records OssRust-compatible fixtures into crates/acceptance/recordings/oss_rust/
+# runs the full conformance battery (`conformance_oss_rust`) against it.
+#
+# Uses dev/uc-rust-conformance.yaml. On macOS `/tmp` is a symlink, so the config
+# needs the canonical `/private/tmp/uc-test`; adjust the allowed root + storage
+# root there for a local run (CI runs on Linux where `/tmp/uc-test` is fine).
 [group('test')]
-record-oss-rust:
+conformance-oss-rust:
     #!/usr/bin/env bash
     set -euo pipefail
+    mkdir -p /tmp/uc-test
     cargo build -p olai-uc-server --features bin --bin uc-server
-    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- serve &
+    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- \
+        serve --config dev/uc-rust-conformance.yaml &
     server_pid=$!
     trap 'kill "$server_pid" 2>/dev/null || true' EXIT
     echo "⏳ Waiting for Rust server on http://localhost:8080 ..."
@@ -469,10 +458,8 @@ record-oss-rust:
         fi
         sleep 1
     done
-    UC_INTEGRATION_PROFILE="oss_rust" \
-    UC_INTEGRATION_URL="http://localhost:8080" \
-    UC_INTEGRATION_RECORD="true" \
-    cargo test -p unitycatalog-acceptance -- journey_tests_live --nocapture
+    UC_RUST_URL="http://localhost:8080" \
+    cargo test -p unitycatalog-acceptance -- conformance_oss_rust --nocapture
 
 # run object-store integration tests against the docker `full` profile
 # (UC server + SeaweedFS + Postgres + Azurite). Marks the test crate's
