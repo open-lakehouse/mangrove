@@ -279,6 +279,12 @@ function GroupNode({
   const dialogs = useCatalogDialogs();
   const id = nodeId.group(catalog, schema, group.kind);
   const fullName = `${catalog}.${schema}`;
+  // Subscribe to the same list query the filter bar / expanded list use (shared
+  // cache key → one request, deduped). Surfaces the child count on the row once
+  // loaded; a trailing "+" marks an unfetched next page.
+  const { data, hasNextPage } = group.useList(catalog, schema);
+  const count =
+    data === undefined ? undefined : `${data.length}${hasNextPage ? "+" : ""}`;
   // A kind row is selected when its schema is shown on this kind's tab — so
   // clicking here and switching tabs in SchemaDetail cross-highlight.
   const selected =
@@ -292,6 +298,7 @@ function GroupNode({
         depth={2}
         icon={<group.Icon className="h-4 w-4 text-muted-foreground" />}
         label={group.title}
+        count={count}
         expandable
         open={isOpen(id)}
         selected={selected}

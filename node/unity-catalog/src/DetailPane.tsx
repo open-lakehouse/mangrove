@@ -16,7 +16,7 @@ import { FunctionDetail } from "./detail/FunctionDetail";
 import { ModelDetail } from "./detail/ModelDetail";
 import { SchemaDetail } from "./detail/SchemaDetail";
 import { TableDetail, TableHeaderMeta } from "./detail/TableDetail";
-import { VolumeDetail } from "./detail/VolumeDetail";
+import { VolumeDetail, VolumeHeaderMeta } from "./detail/VolumeDetail";
 import type { AnyEditRequest } from "./dialog-types";
 import { useCatalogDialogs } from "./dialogs";
 import { kindIcon } from "./groups";
@@ -74,6 +74,9 @@ export function DetailPane() {
           </span>
           {selection.kind === "table" && (
             <TableHeaderMeta fullName={selection.fullName} />
+          )}
+          {selection.kind === "volume" && (
+            <VolumeHeaderMeta fullName={selection.fullName} />
           )}
         </div>
         <div className="flex items-center gap-1">

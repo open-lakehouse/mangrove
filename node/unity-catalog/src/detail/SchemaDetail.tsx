@@ -1,4 +1,12 @@
-import { Button, cn, Input } from "@open-lakehouse/ui-kit";
+import {
+  Button,
+  cn,
+  Input,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@open-lakehouse/ui-kit";
 import {
   objectFullName,
   useFunctions,
@@ -9,7 +17,7 @@ import {
 } from "@open-lakehouse/unity-catalog-client";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { GROUPS, type GroupDef } from "../groups";
 import { useCatalogSelection } from "../selection";
@@ -65,6 +73,15 @@ export function SchemaDetail({ fullName }: { fullName: string }) {
   const [catalogName, schemaName] = fullName.split(".");
   const children = useSchemaChildren(catalogName, schemaName);
 
+  // Which top-level view is showing. Selecting a child kind from the tree (or a
+  // deep link) sets `schemaTab`, which should always surface the Overview list —
+  // so we snap back to it whenever that changes, while still letting the user
+  // toggle to Details manually.
+  const [view, setView] = useState<"overview" | "details">("overview");
+  useEffect(() => {
+    if (schemaTab) setView("overview");
+  }, [schemaTab]);
+
   if (!schema) return <DetailStates isLoading={isLoading} error={error} />;
 
   // The server only returns a schema's storage fields when it was created with
@@ -74,29 +91,16 @@ export function SchemaDetail({ fullName }: { fullName: string }) {
   const activeGroup = GROUPS.find((g) => g.kind === activeKind) ?? GROUPS[0];
 
   return (
-    <div className="space-y-6">
-      <MetaGrid>
-        <Meta label="Owner" value={schema.owner} />
-        <Meta label="Catalog" value={schema.catalog_name} />
-        <Meta label="Storage root" value={schema.storage_root} wide mono />
-        {inheritsStorage ? (
-          <Meta
-            label="Storage location"
-            value="Inherited from parent catalog"
-            wide
-          />
-        ) : (
-          <Meta
-            label="Storage location"
-            value={schema.storage_location}
-            wide
-            mono
-          />
-        )}
-        <Meta label="Comment" value={schema.comment} wide />
-      </MetaGrid>
+    <Tabs
+      value={view}
+      onValueChange={(v) => setView(v as "overview" | "details")}
+    >
+      <TabsList>
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="details">Details</TabsTrigger>
+      </TabsList>
 
-      <div className="space-y-3">
+      <TabsContent value="overview" className="space-y-3">
         {/* Filter bar: pick which child securable kind to list below. Counts
             read straight from the shared query results (no extra fetches). */}
         <div className="flex flex-wrap items-center gap-1 border-b pb-2">
@@ -117,8 +121,31 @@ export function SchemaDetail({ fullName }: { fullName: string }) {
           group={activeGroup}
           query={children[activeKind]}
         />
-      </div>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="details">
+        <MetaGrid>
+          <Meta label="Owner" value={schema.owner} />
+          <Meta label="Catalog" value={schema.catalog_name} />
+          <Meta label="Storage root" value={schema.storage_root} wide mono />
+          {inheritsStorage ? (
+            <Meta
+              label="Storage location"
+              value="Inherited from parent catalog"
+              wide
+            />
+          ) : (
+            <Meta
+              label="Storage location"
+              value={schema.storage_location}
+              wide
+              mono
+            />
+          )}
+          <Meta label="Comment" value={schema.comment} wide />
+        </MetaGrid>
+      </TabsContent>
+    </Tabs>
   );
 }
 

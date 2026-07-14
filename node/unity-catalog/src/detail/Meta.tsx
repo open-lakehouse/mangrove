@@ -36,3 +36,16 @@ export function MetaGrid({ children }: { children: React.ReactNode }) {
     </dl>
   );
 }
+
+// Epoch-millis → localized "Mar 05, 2026, 12:05 PM". Returns undefined for
+// missing/zero timestamps so <Meta> renders its "—" placeholder.
+export function formatTimestamp(ms?: number): string | undefined {
+  if (!ms) return undefined;
+  return new Date(ms).toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}

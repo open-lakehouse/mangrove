@@ -42,6 +42,7 @@ export { Separator } from "./separator";
 export { Toaster } from "./sonner";
 export { Switch, type SwitchProps } from "./switch";
 export { ThemeProvider, useTheme } from "./ThemeProvider";
+export { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 export { Textarea } from "./textarea";
 export {
   Tooltip,
