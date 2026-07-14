@@ -36,6 +36,11 @@ pub struct JourneyContext {
     pub storage_root: String,
     /// Whether managed catalogs must be created with an explicit `storage_root`.
     explicit_catalog_storage_root: bool,
+    /// Whether a managed volume's parent catalog needs a per-catalog `file://`
+    /// `storage_root`. Java v0.5.0 has no metastore-level managed root for
+    /// volumes, so the parent catalog must carry an explicit one; the Rust server
+    /// rejects a client-supplied `file://` root and works via the inherited root.
+    managed_volume_needs_catalog_storage_root: bool,
 }
 
 impl JourneyContext {
@@ -47,6 +52,7 @@ impl JourneyContext {
             client,
             storage_root: storage_root.into(),
             explicit_catalog_storage_root: false,
+            managed_volume_needs_catalog_storage_root: false,
         }
     }
 
@@ -54,6 +60,14 @@ impl JourneyContext {
     /// (managed Databricks) or inherit the server's managed root (OSS targets).
     pub fn with_explicit_catalog_storage_root(mut self, explicit: bool) -> Self {
         self.explicit_catalog_storage_root = explicit;
+        self
+    }
+
+    /// Set whether a managed volume's parent catalog needs a per-catalog `file://`
+    /// `storage_root` (Java v0.5.0) rather than inheriting the server's managed
+    /// root (Rust). See [`create_catalog_for_managed_volume`](Self::create_catalog_for_managed_volume).
+    pub fn with_managed_volume_needs_catalog_storage_root(mut self, needs: bool) -> Self {
+        self.managed_volume_needs_catalog_storage_root = needs;
         self
     }
 
@@ -117,5 +131,22 @@ impl JourneyContext {
             builder.await?;
         }
         Ok(())
+    }
+
+    /// Create a managed volume's parent catalog. On targets that need it (Java
+    /// v0.5.0) this supplies a per-catalog `file://` `storage_root` so the managed
+    /// volume has a managed location; otherwise it delegates to
+    /// [`create_catalog`](Self::create_catalog) (inherit the server's root).
+    pub async fn create_catalog_for_managed_volume(&self, name: &str) -> AcceptanceResult<()> {
+        if self.managed_volume_needs_catalog_storage_root {
+            let root = format!("{}/{name}", self.storage_root.trim_end_matches('/'));
+            self.client
+                .create_catalog(name)
+                .with_storage_root(root)
+                .await?;
+            Ok(())
+        } else {
+            self.create_catalog(name).await
+        }
     }
 }

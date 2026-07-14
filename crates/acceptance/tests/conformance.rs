@@ -50,7 +50,8 @@ async fn conformance_oss_java() {
         return;
     };
     let ctx = JourneyContext::live(&url, storage_root(DEFAULT_OSS_STORAGE_ROOT))
-        .expect("build oss_java context");
+        .expect("build oss_java context")
+        .with_managed_volume_needs_catalog_storage_root(true);
     let report = run(Target::OssJava, &ctx, baseline_checks()).await;
     assert!(
         report.no_unexpected_failures(),

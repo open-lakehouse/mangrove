@@ -14,7 +14,7 @@ pub async fn managed_volume_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<
     let volume = "v";
     with_cleanup(
         || async {
-            ctx.create_catalog(&catalog).await?;
+            ctx.create_catalog_for_managed_volume(&catalog).await?;
             ctx.client().create_schema(schema, &catalog).await?;
 
             let created = ctx
