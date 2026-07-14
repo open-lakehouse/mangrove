@@ -33,6 +33,10 @@ interface CatalogSearch {
   // useCatalogSelection(), which is pinned to `from: "/catalog"` — so the route
   // path and the `sel` search param must match exactly.
   sel?: string;
+  // For a selected schema, which child-kind tab is active (table/volume/...).
+  // Validated to a known kind inside the package; carried through here as a
+  // string, mirroring `sel`.
+  tab?: string;
 }
 
 const catalogRoute = createRoute({
@@ -41,6 +45,7 @@ const catalogRoute = createRoute({
   // Selection is URL-addressable so detail views are deep-linkable.
   validateSearch: (search: Record<string, unknown>): CatalogSearch => ({
     sel: typeof search.sel === "string" ? search.sel : undefined,
+    tab: typeof search.tab === "string" ? search.tab : undefined,
   }),
   // Warm the catalog list before the route component mounts.
   loader: ({ context }) => prefetchCatalogs(context.queryClient),

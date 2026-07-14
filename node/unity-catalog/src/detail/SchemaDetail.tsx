@@ -54,7 +54,10 @@ function useSchemaChildren(
 
 export function SchemaDetail({ fullName }: { fullName: string }) {
   const { data: schema, isLoading, error } = useSchemaDetail(fullName);
-  const [activeKind, setActiveKind] = useState<ObjectKind>("table");
+  // Active kind lives in the URL (`tab`), so the tree's kind rows, deep links,
+  // and this filter bar all drive the same state. Defaults to tables.
+  const { schemaTab, setSchemaTab } = useCatalogSelection();
+  const activeKind: ObjectKind = schemaTab ?? "table";
 
   // A schema's fullName is always `catalog.schema`; derive the list params from
   // it directly so children start loading in parallel with the schema detail
@@ -103,7 +106,7 @@ export function SchemaDetail({ fullName }: { fullName: string }) {
               group={group}
               query={children[group.kind]}
               active={group.kind === activeKind}
-              onSelect={() => setActiveKind(group.kind)}
+              onSelect={() => setSchemaTab(group.kind)}
             />
           ))}
         </div>

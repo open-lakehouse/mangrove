@@ -208,12 +208,16 @@ function SchemaNode({
   comment?: string;
 }) {
   const { isOpen, toggle } = useExpansion();
-  const { selection, select } = useCatalogSelection();
+  const { selection, schemaTab, select } = useCatalogSelection();
   const dialogs = useCatalogDialogs();
   const id = nodeId.schema(catalog, schema);
   const fullName = `${catalog}.${schema}`;
+  // The schema row itself is "selected" only when a schema is shown without a
+  // specific kind tab; selecting a kind row highlights that row instead.
   const selected =
-    selection?.kind === "schema" && selection.fullName === fullName;
+    selection?.kind === "schema" &&
+    selection.fullName === fullName &&
+    !schemaTab;
 
   return (
     <div>
@@ -271,8 +275,16 @@ function GroupNode({
   schema: string;
 }) {
   const { isOpen, toggle } = useExpansion();
+  const { selection, schemaTab, selectSchemaChild } = useCatalogSelection();
   const dialogs = useCatalogDialogs();
   const id = nodeId.group(catalog, schema, group.kind);
+  const fullName = `${catalog}.${schema}`;
+  // A kind row is selected when its schema is shown on this kind's tab — so
+  // clicking here and switching tabs in SchemaDetail cross-highlight.
+  const selected =
+    selection?.kind === "schema" &&
+    selection.fullName === fullName &&
+    schemaTab === group.kind;
 
   return (
     <div>
@@ -282,7 +294,9 @@ function GroupNode({
         label={group.title}
         expandable
         open={isOpen(id)}
+        selected={selected}
         onToggle={() => toggle(id)}
+        onSelect={() => selectSchemaChild(fullName, group.kind)}
         action={
           group.creatable ? (
             <CreateAction
