@@ -24,6 +24,7 @@ pub mod credential;
 pub mod cross;
 pub mod function;
 pub mod governance;
+pub mod managed_delta;
 pub mod sharing;
 pub mod table;
 pub mod temp_creds;

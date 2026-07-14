@@ -321,7 +321,11 @@ jobs:
           tool: cargo-llvm-cov
 
       - name: Start Unity Catalog OSS (Java) server
-        run: docker compose -f dev/uc-oss.compose.yaml up -d --wait
+        # The managed-table storage root is bind-mounted 1:1 from the host, so the
+        # dir must exist before the container starts (see dev/uc-oss.compose.yaml).
+        run: |
+          mkdir -p /tmp/uc-test
+          docker compose -f dev/uc-oss.compose.yaml up -d --wait
 
       # Run the portable baseline conformance battery against the Java OSS server
       # under coverage instrumentation so the OSS-Java integration layer reports

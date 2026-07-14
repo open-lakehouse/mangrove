@@ -335,23 +335,21 @@ pub fn extended_checks() -> Vec<Check> {
 fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
     match (target, check_name) {
         // --- OssRust (our server), seeded from live runs 2026-07-14 ---
-        // Managed tables must be created through the /delta/v1 staging flow
-        // (create staging table → commit), not a bare create_table. The bare
-        // path returns "managed tables require storage_location to be the
-        // staging location". Affects every check that creates a managed table.
-        (Target::OssRust, "managed_table_lifecycle") => {
-            Some("managed tables require the /delta/v1 staging flow (follow-up: #62)")
-        }
-        (Target::OssRust, "share_lifecycle") => {
-            Some("creates a managed table; blocked on the staging flow (follow-up: #62)")
-        }
-        (Target::OssRust, "lakehouse_hierarchy") => {
-            Some("creates managed tables; blocked on the staging flow (follow-up: #62)")
-        }
-        // Temporary table credentials need a managed table, which needs the
-        // staging flow — same root cause as managed_table_lifecycle.
+        // `managed_table_lifecycle` now drives the real /delta/v1 staging flow
+        // (createStagingTable → write log → createTable → commit → read back) via
+        // `checks::managed_delta`, so it is no longer quarantined. The checks
+        // below still create managed tables the *old* way (bare create_table) and
+        // remain quarantined until they adopt the same staging helper (#62).
+        (Target::OssRust, "share_lifecycle") => Some(
+            "creates a managed table via bare create_table; adopt the staging helper (follow-up: #62)",
+        ),
+        (Target::OssRust, "lakehouse_hierarchy") => Some(
+            "creates managed tables via bare create_table; adopt the staging helper (follow-up: #62)",
+        ),
+        // Temporary table credentials need a managed table created via the staging
+        // flow — same follow-up as the checks above.
         (Target::OssRust, "temporary_table_credentials") => {
-            Some("needs a managed table via the staging flow (follow-up: #62)")
+            Some("needs a managed table via the staging helper (follow-up: #62)")
         }
         // A row-filter policy requires a backing row_filter.function_name; wiring
         // a real function into the policy is deferred.
@@ -369,6 +367,23 @@ fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
         // Entity tag assignment returns 404 on our server today.
         (Target::OssRust, "entity_tag_assignment_lifecycle") => {
             Some("entity-tag-assignments returns 404 on our server (follow-up: #63)")
+        }
+
+        // --- OssJava (unitycatalog/unitycatalog:v0.5.0), from live runs 2026-07-14 ---
+        // Pre-existing baseline gaps against the Java reference server (see #65).
+        // `managed_table_lifecycle` is intentionally NOT quarantined: it passes on
+        // Linux (CI); a local macOS run fails only on the /tmp→/private/tmp symlink.
+        (Target::OssJava, "metric_view_lifecycle") => {
+            Some("Java requires view_dependencies on create; we derive them (follow-up: #65)")
+        }
+        (Target::OssJava, "managed_volume_lifecycle") => Some(
+            "Java volumes need a managed-location config beyond storage-root.tables (follow-up: #65)",
+        ),
+        (Target::OssJava, "function_lifecycle") => {
+            Some("Java returns 500 on POST /functions with our payload (follow-up: #65)")
+        }
+        (Target::OssJava, "function_update") => {
+            Some("Java returns 500 on POST /functions with our payload (follow-up: #65)")
         }
         _ => None,
     }

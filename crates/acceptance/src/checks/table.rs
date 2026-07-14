@@ -6,13 +6,20 @@ use unitycatalog_common::tables::v1::{
     DataSourceFormat, GetTableExistsRequest, TableType, dependency,
 };
 
-use super::{unique, with_cleanup};
+use super::{managed_delta, unique, with_cleanup};
 use crate::{AcceptanceResult, JourneyContext};
 
 const METRIC_VIEW_YAML: &str = "version: \"1.1\"\nsource: cat.sch.orders\n\
                                 measures:\n  - name: revenue\n    expr: SUM(price)\n";
 
-/// Managed Delta table: create → get → list → summaries → exists → delete.
+/// Managed Delta table, driven through the real `/delta/v1` staging flow:
+/// createStagingTable → write `_delta_log/0.json` → createTable → commit a data
+/// file → `SELECT *` (3 rows), then get → list → summaries → exists → delete.
+///
+/// Managed tables cannot be created with a bare `create_table` — the server
+/// requires the staging flow so the catalog owns the commit log. The write path is
+/// driven locally against the vended `file://` location (no cloud credentials); the
+/// check self-skips if the target vends non-`file://` storage.
 pub async fn managed_table_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()> {
     let catalog = unique("conf_mtbl_cat");
     let schema = "s";
@@ -23,18 +30,15 @@ pub async fn managed_table_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<(
             ctx.create_catalog(&catalog).await?;
             ctx.client().create_schema(schema, &catalog).await?;
 
-            let created = ctx
-                .client()
-                .create_table(
-                    table,
-                    schema,
-                    &catalog,
-                    TableType::Managed,
-                    DataSourceFormat::Delta,
-                )
-                .with_comment("conformance managed table".to_string())
-                .await?;
-            assert_eq!(created.name, table);
+            // Create + commit + read back one data file through the Delta staging
+            // flow. This both creates the managed table (registering it at v0) and
+            // proves the client can drive the catalog-managed write+read contract.
+            let rows =
+                managed_delta::create_commit_read(ctx.client(), &catalog, schema, table).await?;
+            assert_eq!(
+                rows, 3,
+                "expected 3 rows read back through the managed snapshot"
+            );
 
             let fetched = ctx.client().table_from_full_name(&full_name).get().await?;
             assert_eq!(fetched.name, table);

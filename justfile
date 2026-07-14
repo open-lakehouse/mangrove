@@ -428,6 +428,9 @@ test-node-integration:
 # docker compose -f dev/uc-oss.compose.yaml down -v
 [group('test')]
 integration-oss-java:
+    # Managed tables land under file:///tmp/uc-test, bind-mounted 1:1 from the
+    # host (see dev/uc-oss.compose.yaml); start from a clean dir each run.
+    rm -rf /tmp/uc-test && mkdir -p /tmp/uc-test
     docker compose -f dev/uc-oss.compose.yaml up -d --wait
     UC_OSS_JAVA_URL="http://localhost:8080" \
     cargo test -p unitycatalog-acceptance -- conformance_oss_java --nocapture

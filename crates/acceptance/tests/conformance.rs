@@ -17,7 +17,11 @@ fn storage_root(default: &str) -> String {
 }
 
 /// Full battery against our own Rust `uc-server`. The new default validation.
-#[tokio::test]
+// Multi-thread flavor: the managed-table check reads back through delta-rs, whose
+// kernel executor calls `block_on` internally — that panics on a current-thread
+// runtime ("Cannot start a runtime from within a runtime") but is fine when a
+// worker thread can block while others drive tasks.
+#[tokio::test(flavor = "multi_thread")]
 async fn conformance_oss_rust() {
     let Ok(url) = std::env::var("UC_RUST_URL") else {
         eprintln!("skipping conformance_oss_rust: UC_RUST_URL not set");
@@ -38,7 +42,8 @@ async fn conformance_oss_rust() {
 }
 
 /// Portable baseline against the open-source Java Unity Catalog server.
-#[tokio::test]
+// Multi-thread flavor — see `conformance_oss_rust`.
+#[tokio::test(flavor = "multi_thread")]
 async fn conformance_oss_java() {
     let Ok(url) = std::env::var("UC_OSS_JAVA_URL") else {
         eprintln!("skipping conformance_oss_java: UC_OSS_JAVA_URL not set");
@@ -60,7 +65,8 @@ async fn conformance_oss_java() {
 
 /// On-demand full battery against managed Databricks (the reference implementation).
 /// Never runs in CI — no fixtures, gated on real workspace credentials.
-#[tokio::test]
+// Multi-thread flavor — see `conformance_oss_rust`.
+#[tokio::test(flavor = "multi_thread")]
 async fn conformance_managed_databricks() {
     let (Ok(url), Ok(token)) = (
         std::env::var("UC_DATABRICKS_URL"),

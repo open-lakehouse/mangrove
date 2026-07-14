@@ -4,6 +4,11 @@
 #
 # The image is the same one used by the marimo playground (dev/ucp.compose.yaml).
 # See https://github.com/unitycatalog/unitycatalog for the upstream project.
+#
+# Managed tables land under file:///tmp/uc-test, bind-mounted 1:1 host<->container
+# so the vended file:// locations are host-writable (the acceptance battery drives
+# the Delta staging flow from the host). Create the host dir first — start clean
+# for a fresh catalog:  rm -rf /tmp/uc-test && mkdir -p /tmp/uc-test
 name: unitycatalog-oss
 
 services:
@@ -19,10 +24,14 @@ services:
         source: ./uc-oss/server.properties
         target: /home/unitycatalog/etc/conf/server.properties
         read_only: true
-      # Ephemeral data dir so every run starts from a clean catalog.
-      - type: volume
-        source: uc_oss_data
-        target: /home/unitycatalog/etc/data
+      # Managed-table storage root, bind-mounted 1:1 host<->container so the
+      # file:///tmp/uc-test locations UC vends during the Delta staging flow
+      # resolve unchanged on the host, where the acceptance battery writes the
+      # _delta_log + data files and reads them back. Must match
+      # `storage-root.tables` in uc-oss/server.properties.
+      - type: bind
+        source: /tmp/uc-test
+        target: /tmp/uc-test
     healthcheck:
       # The server is ready once it answers the catalogs list endpoint.
       # The image ships wget (not curl).
@@ -33,6 +42,3 @@ services:
       timeout: 5s
       retries: 30
       start_period: 20s
-
-volumes:
-  uc_oss_data:

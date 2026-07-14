@@ -6285,10 +6285,15 @@ name = "unitycatalog-acceptance"
 version = "0.0.1"
 dependencies = [
  "chrono",
+ "datafusion",
+ "deltalake-core",
  "futures",
+ "object_store",
  "olai-http",
  "olai-uc-client",
  "olai-uc-common",
+ "olai-uc-datafusion",
+ "olai-uc-delta-api",
  "serde_json",
  "thiserror",
  "tokio",

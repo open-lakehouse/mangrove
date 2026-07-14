@@ -16,10 +16,21 @@ description = "Acceptance testing framework for Unity Catalog"
 # repository dependencies
 unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.2" }
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2" }
+# Drives the managed-table Delta staging flow (createStagingTable -> commit ->
+# loadTable) and builds a catalog-managed kernel snapshot for the read-back, so
+# the managed_table_lifecycle check exercises the real /delta/v1 write+read path
+# rather than a bare create_table. Delta feature pulls in deltalake-core.
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.2" }
+datafusion-unitycatalog = { package = "olai-uc-datafusion", path = "../datafusion", version = "0.1.0", features = [
+  "delta",
+] }
 
 # workspace dependencies
 chrono = { workspace = true, features = ["serde"] }
+datafusion = { workspace = true }
+deltalake-core = { workspace = true }
 futures = { workspace = true }
+object_store = { workspace = true }
 olai-http = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
