@@ -368,6 +368,7 @@ impl TryFrom<Object> for super::agents::v0alpha1::Agent {
             .ok_or_else(|| Error::generic("expected properties"))?;
         let mut res: super::agents::v0alpha1::Agent = ::serde_json::from_value(props)?;
         res.agent_id = object.id.hyphenated().to_string();
+        res.full_name = res.qualified_name();
         Ok(res)
     }
 }
@@ -375,11 +376,16 @@ impl TryFrom<super::agents::v0alpha1::Agent> for Object {
     type Error = Error;
     fn try_from(obj: super::agents::v0alpha1::Agent) -> Result<Self, Self::Error> {
         let id = ::uuid::Uuid::parse_str(&obj.agent_id).unwrap_or_else(|_| ::uuid::Uuid::nil());
+        let name = obj.resource_name();
+        let mut properties = ::serde_json::to_value(obj)?;
+        if let ::serde_json::Value::Object(ref mut map) = properties {
+            map.remove("full_name");
+        }
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::Agent,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -408,6 +414,7 @@ impl TryFrom<Object> for super::agent_skills::v0alpha1::AgentSkill {
             .ok_or_else(|| Error::generic("expected properties"))?;
         let mut res: super::agent_skills::v0alpha1::AgentSkill = ::serde_json::from_value(props)?;
         res.agent_skill_id = object.id.hyphenated().to_string();
+        res.full_name = res.qualified_name();
         Ok(res)
     }
 }
@@ -416,11 +423,16 @@ impl TryFrom<super::agent_skills::v0alpha1::AgentSkill> for Object {
     fn try_from(obj: super::agent_skills::v0alpha1::AgentSkill) -> Result<Self, Self::Error> {
         let id =
             ::uuid::Uuid::parse_str(&obj.agent_skill_id).unwrap_or_else(|_| ::uuid::Uuid::nil());
+        let name = obj.resource_name();
+        let mut properties = ::serde_json::to_value(obj)?;
+        if let ::serde_json::Value::Object(ref mut map) = properties {
+            map.remove("full_name");
+        }
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::AgentSkill,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -461,11 +473,13 @@ impl TryFrom<super::catalogs::v1::Catalog> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let properties = ::serde_json::to_value(obj)?;
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::Catalog,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -507,11 +521,13 @@ impl TryFrom<super::tables::v1::Column> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let properties = ::serde_json::to_value(obj)?;
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::Column,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -541,6 +557,7 @@ impl TryFrom<Object> for super::credentials::v1::Credential {
             .ok_or_else(|| Error::generic("expected properties"))?;
         let mut res: super::credentials::v1::Credential = ::serde_json::from_value(props)?;
         res.id = Some(object.id.hyphenated().to_string());
+        res.full_name = res.qualified_name();
         Ok(res)
     }
 }
@@ -553,11 +570,16 @@ impl TryFrom<super::credentials::v1::Credential> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let mut properties = ::serde_json::to_value(obj)?;
+        if let ::serde_json::Value::Object(ref mut map) = properties {
+            map.remove("full_name");
+        }
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::Credential,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -600,11 +622,13 @@ impl TryFrom<super::external_locations::v1::ExternalLocation> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let properties = ::serde_json::to_value(obj)?;
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::ExternalLocation,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -634,6 +658,7 @@ impl TryFrom<Object> for super::functions::v1::Function {
             .ok_or_else(|| Error::generic("expected properties"))?;
         let mut res: super::functions::v1::Function = ::serde_json::from_value(props)?;
         res.function_id = Some(object.id.hyphenated().to_string());
+        res.full_name = res.qualified_name();
         Ok(res)
     }
 }
@@ -646,11 +671,16 @@ impl TryFrom<super::functions::v1::Function> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let mut properties = ::serde_json::to_value(obj)?;
+        if let ::serde_json::Value::Object(ref mut map) = properties {
+            map.remove("full_name");
+        }
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::Function,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -692,11 +722,13 @@ impl TryFrom<super::policies::v1::PolicyInfo> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let properties = ::serde_json::to_value(obj)?;
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::PolicyInfo,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -738,11 +770,13 @@ impl TryFrom<super::providers::v1::Provider> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let properties = ::serde_json::to_value(obj)?;
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::Provider,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -784,11 +818,13 @@ impl TryFrom<super::recipients::v1::Recipient> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let properties = ::serde_json::to_value(obj)?;
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::Recipient,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -818,6 +854,7 @@ impl TryFrom<Object> for super::schemas::v1::Schema {
             .ok_or_else(|| Error::generic("expected properties"))?;
         let mut res: super::schemas::v1::Schema = ::serde_json::from_value(props)?;
         res.schema_id = Some(object.id.hyphenated().to_string());
+        res.full_name = res.qualified_name();
         Ok(res)
     }
 }
@@ -830,11 +867,16 @@ impl TryFrom<super::schemas::v1::Schema> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let mut properties = ::serde_json::to_value(obj)?;
+        if let ::serde_json::Value::Object(ref mut map) = properties {
+            map.remove("full_name");
+        }
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::Schema,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -876,11 +918,13 @@ impl TryFrom<super::shares::v1::Share> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let properties = ::serde_json::to_value(obj)?;
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::Share,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -917,11 +961,13 @@ impl TryFrom<super::staging_tables::v1::StagingTable> for Object {
     type Error = Error;
     fn try_from(obj: super::staging_tables::v1::StagingTable) -> Result<Self, Self::Error> {
         let id = ::uuid::Uuid::parse_str(&obj.id).unwrap_or_else(|_| ::uuid::Uuid::nil());
+        let name = obj.resource_name();
+        let properties = ::serde_json::to_value(obj)?;
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::StagingTable,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -950,6 +996,7 @@ impl TryFrom<Object> for super::tables::v1::Table {
             .ok_or_else(|| Error::generic("expected properties"))?;
         let mut res: super::tables::v1::Table = ::serde_json::from_value(props)?;
         res.table_id = Some(object.id.hyphenated().to_string());
+        res.full_name = res.qualified_name();
         Ok(res)
     }
 }
@@ -962,11 +1009,16 @@ impl TryFrom<super::tables::v1::Table> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let mut properties = ::serde_json::to_value(obj)?;
+        if let ::serde_json::Value::Object(ref mut map) = properties {
+            map.remove("full_name");
+        }
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::Table,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -1008,11 +1060,13 @@ impl TryFrom<super::tags::v1::TagPolicy> for Object {
             .map(|id| ::uuid::Uuid::parse_str(id))
             .transpose()?
             .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let properties = ::serde_json::to_value(obj)?;
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::TagPolicy,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),
@@ -1042,6 +1096,7 @@ impl TryFrom<Object> for super::volumes::v1::Volume {
             .ok_or_else(|| Error::generic("expected properties"))?;
         let mut res: super::volumes::v1::Volume = ::serde_json::from_value(props)?;
         res.volume_id = object.id.hyphenated().to_string();
+        res.full_name = res.qualified_name();
         Ok(res)
     }
 }
@@ -1049,11 +1104,16 @@ impl TryFrom<super::volumes::v1::Volume> for Object {
     type Error = Error;
     fn try_from(obj: super::volumes::v1::Volume) -> Result<Self, Self::Error> {
         let id = ::uuid::Uuid::parse_str(&obj.volume_id).unwrap_or_else(|_| ::uuid::Uuid::nil());
+        let name = obj.resource_name();
+        let mut properties = ::serde_json::to_value(obj)?;
+        if let ::serde_json::Value::Object(ref mut map) = properties {
+            map.remove("full_name");
+        }
         Ok(Object {
             id,
-            name: obj.resource_name(),
+            name,
             label: ObjectLabel::Volume,
-            properties: Some(::serde_json::to_value(obj)?),
+            properties: Some(properties),
             version: 0,
             updated_at: None,
             created_at: chrono::Utc::now(),

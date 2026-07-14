@@ -3778,6 +3778,7 @@ components:
         - purpose
         - read_only
         - used_for_managed_storage
+        - full_name
       type: object
       properties:
         name:
@@ -4554,6 +4555,7 @@ components:
               - purpose
               - read_only
               - used_for_managed_storage
+              - full_name
             description: A credential used to access external data sources or services.
             title: Credential
           description: The credentials returned.

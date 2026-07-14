@@ -4184,8 +4184,7 @@ impl PyCredential {
         if let ::core::option::Option::Some(value) = used_for_managed_storage {
             inner.used_for_managed_storage = value;
         }
-        {
-            let value = full_name;
+        if let ::core::option::Option::Some(value) = full_name {
             inner.full_name = value;
         }
         {
@@ -4265,7 +4264,7 @@ impl PyCredential {
         self.0.used_for_managed_storage
     }
     #[getter]
-    fn full_name(&self) -> ::core::option::Option<::std::string::String> {
+    fn full_name(&self) -> ::std::string::String {
         self.0.full_name.clone()
     }
     #[getter]
@@ -4358,7 +4357,7 @@ impl PyCredential {
         self.0.used_for_managed_storage = value;
     }
     #[setter(full_name)]
-    fn set_full_name(&mut self, value: ::core::option::Option<::std::string::String>) {
+    fn set_full_name(&mut self, value: ::std::string::String) {
         self.0.full_name = value;
     }
     #[setter(azure_service_principal)]
