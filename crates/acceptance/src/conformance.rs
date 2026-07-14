@@ -378,18 +378,14 @@ fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
         // v0.5.0 does not implement — that call now lives in the Rust-only
         // `table_summaries` check, and the macOS read-back `/tmp` symlink artifact is
         // fixed by canonicalizing the local location in `checks::managed_delta`.
-        (Target::OssJava, "metric_view_lifecycle") => {
-            Some("Java requires view_dependencies on create; we derive them (follow-up: #65)")
-        }
-        (Target::OssJava, "managed_volume_lifecycle") => Some(
-            "Java volumes need a managed-location config beyond storage-root.tables (follow-up: #65)",
+        (Target::OssJava, "function_lifecycle") => Some(
+            "Java's POST /functions expects the body wrapped in a function_info envelope; \
+             our client/proto send it flat (body: \"*\") — wire-contract divergence (follow-up: #70)",
         ),
-        (Target::OssJava, "function_lifecycle") => {
-            Some("Java returns 500 on POST /functions with our payload (follow-up: #65)")
-        }
-        (Target::OssJava, "function_update") => {
-            Some("Java returns 500 on POST /functions with our payload (follow-up: #65)")
-        }
+        (Target::OssJava, "function_update") => Some(
+            "UC OSS v0.5.0 does not implement function update — PATCH /functions/{name} \
+             returns 405 (follow-up: #70)",
+        ),
         _ => None,
     }
 }
