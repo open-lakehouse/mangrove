@@ -3,7 +3,8 @@
 use futures::StreamExt;
 use unitycatalog_common::credentials::v1::Purpose;
 use unitycatalog_common::tables::v1::{
-    DataSourceFormat, GetTableExistsRequest, TableType, dependency,
+    DataSourceFormat, Dependency, DependencyList, GetTableExistsRequest, TableDependency,
+    TableType, dependency,
 };
 
 use super::{managed_delta, unique, with_cleanup};
@@ -145,6 +146,22 @@ pub async fn metric_view_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()>
                     DataSourceFormat::Delta,
                 )
                 .with_view_definition(Some(METRIC_VIEW_YAML.to_string()))
+                // Java rejects the create without dependencies (`view_dependencies is
+                // required for metric view`); supplying them matching the YAML `source:`
+                // is target-neutral (Java accepts and returns null, Rust echoes them).
+                .with_view_dependencies(Some(DependencyList {
+                    dependencies: vec![Dependency {
+                        dependency: Some(
+                            TableDependency {
+                                table_full_name: "cat.sch.orders".to_string(),
+                                ..Default::default()
+                            }
+                            .into(),
+                        ),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }))
                 .with_comment("conformance metric view".to_string())
                 .await?;
             assert_eq!(
@@ -165,7 +182,8 @@ pub async fn metric_view_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()>
                 Some(METRIC_VIEW_YAML),
                 "view_definition not preserved through get"
             );
-            // Only servers that derive dependencies populate this; assert when present.
+            // Servers that echo or derive dependencies populate this (Rust echoes the
+            // supplied deps; Java returns null); assert only when present.
             if let Some(deps) = fetched.view_dependencies.as_option() {
                 let names: Vec<_> = deps
                     .dependencies
