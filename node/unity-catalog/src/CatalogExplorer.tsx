@@ -60,7 +60,7 @@ function ExplorerLayout() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] flex-col">
+    <div className="flex h-full flex-col">
       <div
         ref={containerRef}
         className={cn(

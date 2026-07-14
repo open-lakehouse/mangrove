@@ -5,16 +5,18 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
-  Outlet,
   redirect,
 } from "@tanstack/react-router";
+import { AppShell } from "./AppShell";
 
 export interface RouterContext {
   queryClient: QueryClient;
 }
 
+// The root renders the app shell (global header + theme control) around the
+// routed content via its own <Outlet />.
 const rootRoute = createRootRouteWithContext<RouterContext>()({
-  component: Outlet,
+  component: AppShell,
 });
 
 // `/` has no content of its own — send the user straight to the catalog browser.
