@@ -883,8 +883,8 @@ pub struct FunctionParameterInfo {
     ///
     /// Field 2: `type_text`
     #[serde(
-        rename = "type_text",
-        alias = "typeText",
+        rename = "typeText",
+        alias = "type_text",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -893,8 +893,8 @@ pub struct FunctionParameterInfo {
     ///
     /// Field 3: `type_json`
     #[serde(
-        rename = "type_json",
-        alias = "typeJson",
+        rename = "typeJson",
+        alias = "type_json",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub type_json: ::core::option::Option<::buffa::alloc::string::String>,
@@ -902,8 +902,8 @@ pub struct FunctionParameterInfo {
     ///
     /// Field 4: `type_name`
     #[serde(
-        rename = "type_name",
-        alias = "typeName",
+        rename = "typeName",
+        alias = "type_name",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -912,8 +912,8 @@ pub struct FunctionParameterInfo {
     ///
     /// Field 5: `type_precision`
     #[serde(
-        rename = "type_precision",
-        alias = "typePrecision",
+        rename = "typePrecision",
+        alias = "type_precision",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -922,8 +922,8 @@ pub struct FunctionParameterInfo {
     ///
     /// Field 6: `type_scale`
     #[serde(
-        rename = "type_scale",
-        alias = "typeScale",
+        rename = "typeScale",
+        alias = "type_scale",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -932,8 +932,8 @@ pub struct FunctionParameterInfo {
     ///
     /// Field 7: `type_interval_type`
     #[serde(
-        rename = "type_interval_type",
-        alias = "typeIntervalType",
+        rename = "typeIntervalType",
+        alias = "type_interval_type",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub type_interval_type: ::core::option::Option<::buffa::alloc::string::String>,
@@ -950,8 +950,8 @@ pub struct FunctionParameterInfo {
     ///
     /// Field 9: `parameter_mode`
     #[serde(
-        rename = "parameter_mode",
-        alias = "parameterMode",
+        rename = "parameterMode",
+        alias = "parameter_mode",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -960,8 +960,8 @@ pub struct FunctionParameterInfo {
     ///
     /// Field 10: `parameter_type`
     #[serde(
-        rename = "parameter_type",
-        alias = "parameterType",
+        rename = "parameterType",
+        alias = "parameter_type",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -970,8 +970,8 @@ pub struct FunctionParameterInfo {
     ///
     /// Field 11: `parameter_default`
     #[serde(
-        rename = "parameter_default",
-        alias = "parameterDefault",
+        rename = "parameterDefault",
+        alias = "parameter_default",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub parameter_default: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1618,8 +1618,8 @@ pub struct Function {
     ///
     /// Field 2: `catalog_name`
     #[serde(
-        rename = "catalog_name",
-        alias = "catalogName",
+        rename = "catalogName",
+        alias = "catalog_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1628,8 +1628,8 @@ pub struct Function {
     ///
     /// Field 3: `schema_name`
     #[serde(
-        rename = "schema_name",
-        alias = "schemaName",
+        rename = "schemaName",
+        alias = "schema_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1640,8 +1640,8 @@ pub struct Function {
     ///
     /// Field 4: `full_name`
     #[serde(
-        rename = "full_name",
-        alias = "fullName",
+        rename = "fullName",
+        alias = "full_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1650,8 +1650,8 @@ pub struct Function {
     ///
     /// Field 5: `data_type`
     #[serde(
-        rename = "data_type",
-        alias = "dataType",
+        rename = "dataType",
+        alias = "data_type",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1660,8 +1660,8 @@ pub struct Function {
     ///
     /// Field 6: `full_data_type`
     #[serde(
-        rename = "full_data_type",
-        alias = "fullDataType",
+        rename = "fullDataType",
+        alias = "full_data_type",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1670,8 +1670,8 @@ pub struct Function {
     ///
     /// Field 7: `input_params`
     #[serde(
-        rename = "input_params",
-        alias = "inputParams",
+        rename = "inputParams",
+        alias = "input_params",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub input_params: ::buffa::MessageField<FunctionParameterInfos>,
@@ -1679,8 +1679,8 @@ pub struct Function {
     ///
     /// Field 8: `return_params`
     #[serde(
-        rename = "return_params",
-        alias = "returnParams",
+        rename = "returnParams",
+        alias = "return_params",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub return_params: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1688,8 +1688,8 @@ pub struct Function {
     ///
     /// Field 9: `routine_body_language`
     #[serde(
-        rename = "routine_body_language",
-        alias = "routineBodyLanguage",
+        rename = "routineBodyLanguage",
+        alias = "routine_body_language",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub routine_body_language: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1697,8 +1697,8 @@ pub struct Function {
     ///
     /// Field 10: `routine_definition`
     #[serde(
-        rename = "routine_definition",
-        alias = "routineDefinition",
+        rename = "routineDefinition",
+        alias = "routine_definition",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub routine_definition: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1706,8 +1706,8 @@ pub struct Function {
     ///
     /// Field 11: `routine_dependencies`
     #[serde(
-        rename = "routine_dependencies",
-        alias = "routineDependencies",
+        rename = "routineDependencies",
+        alias = "routine_dependencies",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub routine_dependencies: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1715,8 +1715,8 @@ pub struct Function {
     ///
     /// Field 12: `parameter_style`
     #[serde(
-        rename = "parameter_style",
-        alias = "parameterStyle",
+        rename = "parameterStyle",
+        alias = "parameter_style",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -1725,8 +1725,8 @@ pub struct Function {
     ///
     /// Field 13: `is_deterministic`
     #[serde(
-        rename = "is_deterministic",
-        alias = "isDeterministic",
+        rename = "isDeterministic",
+        alias = "is_deterministic",
         with = "::buffa::json_helpers::proto_bool",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_false"
     )]
@@ -1735,8 +1735,8 @@ pub struct Function {
     ///
     /// Field 14: `sql_data_access`
     #[serde(
-        rename = "sql_data_access",
-        alias = "sqlDataAccess",
+        rename = "sqlDataAccess",
+        alias = "sql_data_access",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -1745,8 +1745,8 @@ pub struct Function {
     ///
     /// Field 15: `is_null_call`
     #[serde(
-        rename = "is_null_call",
-        alias = "isNullCall",
+        rename = "isNullCall",
+        alias = "is_null_call",
         with = "::buffa::json_helpers::proto_bool",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_false"
     )]
@@ -1755,8 +1755,8 @@ pub struct Function {
     ///
     /// Field 16: `security_type`
     #[serde(
-        rename = "security_type",
-        alias = "securityType",
+        rename = "securityType",
+        alias = "security_type",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -1765,8 +1765,8 @@ pub struct Function {
     ///
     /// Field 17: `specific_name`
     #[serde(
-        rename = "specific_name",
-        alias = "specificName",
+        rename = "specificName",
+        alias = "specific_name",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub specific_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1774,8 +1774,8 @@ pub struct Function {
     ///
     /// Field 18: `routine_body`
     #[serde(
-        rename = "routine_body",
-        alias = "routineBody",
+        rename = "routineBody",
+        alias = "routine_body",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -1806,8 +1806,8 @@ pub struct Function {
     ///
     /// Field 22: `function_id`
     #[serde(
-        rename = "function_id",
-        alias = "functionId",
+        rename = "functionId",
+        alias = "function_id",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub function_id: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1815,8 +1815,8 @@ pub struct Function {
     ///
     /// Field 1000: `created_at`
     #[serde(
-        rename = "created_at",
-        alias = "createdAt",
+        rename = "createdAt",
+        alias = "created_at",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -1825,8 +1825,8 @@ pub struct Function {
     ///
     /// Field 1001: `created_by`
     #[serde(
-        rename = "created_by",
-        alias = "createdBy",
+        rename = "createdBy",
+        alias = "created_by",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1834,8 +1834,8 @@ pub struct Function {
     ///
     /// Field 1002: `updated_at`
     #[serde(
-        rename = "updated_at",
-        alias = "updatedAt",
+        rename = "updatedAt",
+        alias = "updated_at",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -1844,8 +1844,8 @@ pub struct Function {
     ///
     /// Field 1003: `updated_by`
     #[serde(
-        rename = "updated_by",
-        alias = "updatedBy",
+        rename = "updatedBy",
+        alias = "updated_by",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2817,8 +2817,8 @@ pub struct ListFunctionsRequest {
     ///
     /// Field 1: `catalog_name`
     #[serde(
-        rename = "catalog_name",
-        alias = "catalogName",
+        rename = "catalogName",
+        alias = "catalog_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2827,8 +2827,8 @@ pub struct ListFunctionsRequest {
     ///
     /// Field 2: `schema_name`
     #[serde(
-        rename = "schema_name",
-        alias = "schemaName",
+        rename = "schemaName",
+        alias = "schema_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2837,8 +2837,8 @@ pub struct ListFunctionsRequest {
     ///
     /// Field 3: `max_results`
     #[serde(
-        rename = "max_results",
-        alias = "maxResults",
+        rename = "maxResults",
+        alias = "max_results",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -2847,8 +2847,8 @@ pub struct ListFunctionsRequest {
     ///
     /// Field 4: `page_token`
     #[serde(
-        rename = "page_token",
-        alias = "pageToken",
+        rename = "pageToken",
+        alias = "page_token",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2856,8 +2856,8 @@ pub struct ListFunctionsRequest {
     ///
     /// Field 5: `include_browse`
     #[serde(
-        rename = "include_browse",
-        alias = "includeBrowse",
+        rename = "includeBrowse",
+        alias = "include_browse",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub include_browse: ::core::option::Option<bool>,
@@ -3126,8 +3126,8 @@ pub struct ListFunctionsResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "next_page_token",
-        alias = "nextPageToken",
+        rename = "nextPageToken",
+        alias = "next_page_token",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -3323,8 +3323,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 2: `catalog_name`
     #[serde(
-        rename = "catalog_name",
-        alias = "catalogName",
+        rename = "catalogName",
+        alias = "catalog_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -3333,8 +3333,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 3: `schema_name`
     #[serde(
-        rename = "schema_name",
-        alias = "schemaName",
+        rename = "schemaName",
+        alias = "schema_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -3343,8 +3343,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 4: `data_type`
     #[serde(
-        rename = "data_type",
-        alias = "dataType",
+        rename = "dataType",
+        alias = "data_type",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -3353,8 +3353,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 5: `full_data_type`
     #[serde(
-        rename = "full_data_type",
-        alias = "fullDataType",
+        rename = "fullDataType",
+        alias = "full_data_type",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -3363,8 +3363,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 6: `input_params`
     #[serde(
-        rename = "input_params",
-        alias = "inputParams",
+        rename = "inputParams",
+        alias = "input_params",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub input_params: ::buffa::MessageField<FunctionParameterInfos>,
@@ -3372,8 +3372,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 7: `parameter_style`
     #[serde(
-        rename = "parameter_style",
-        alias = "parameterStyle",
+        rename = "parameterStyle",
+        alias = "parameter_style",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -3382,8 +3382,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 8: `is_deterministic`
     #[serde(
-        rename = "is_deterministic",
-        alias = "isDeterministic",
+        rename = "isDeterministic",
+        alias = "is_deterministic",
         with = "::buffa::json_helpers::proto_bool",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_false"
     )]
@@ -3392,8 +3392,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 9: `sql_data_access`
     #[serde(
-        rename = "sql_data_access",
-        alias = "sqlDataAccess",
+        rename = "sqlDataAccess",
+        alias = "sql_data_access",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -3402,8 +3402,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 10: `is_null_call`
     #[serde(
-        rename = "is_null_call",
-        alias = "isNullCall",
+        rename = "isNullCall",
+        alias = "is_null_call",
         with = "::buffa::json_helpers::proto_bool",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_false"
     )]
@@ -3412,8 +3412,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 11: `security_type`
     #[serde(
-        rename = "security_type",
-        alias = "securityType",
+        rename = "securityType",
+        alias = "security_type",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -3422,8 +3422,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 12: `routine_body`
     #[serde(
-        rename = "routine_body",
-        alias = "routineBody",
+        rename = "routineBody",
+        alias = "routine_body",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -3432,8 +3432,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 13: `routine_definition`
     #[serde(
-        rename = "routine_definition",
-        alias = "routineDefinition",
+        rename = "routineDefinition",
+        alias = "routine_definition",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub routine_definition: ::core::option::Option<::buffa::alloc::string::String>,
@@ -3441,8 +3441,8 @@ pub struct CreateFunctionRequest {
     ///
     /// Field 14: `routine_body_language`
     #[serde(
-        rename = "routine_body_language",
-        alias = "routineBodyLanguage",
+        rename = "routineBodyLanguage",
+        alias = "routine_body_language",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub routine_body_language: ::core::option::Option<::buffa::alloc::string::String>,
@@ -5083,15 +5083,15 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.type_text) {
-                    __map.serialize_entry("type_text", self.type_text)?;
+                    __map.serialize_entry("typeText", self.type_text)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.type_json {
-                    __map.serialize_entry("type_json", __v)?;
+                    __map.serialize_entry("typeJson", __v)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.type_name,
                 ) {
-                    __map.serialize_entry("type_name", &self.type_name)?;
+                    __map.serialize_entry("typeName", &self.type_name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.type_precision {
                     struct _W(i32);
@@ -5103,7 +5103,7 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("type_precision", &_W(__v))?;
+                    __map.serialize_entry("typePrecision", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.type_scale {
                     struct _W(i32);
@@ -5115,10 +5115,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("type_scale", &_W(__v))?;
+                    __map.serialize_entry("typeScale", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.type_interval_type {
-                    __map.serialize_entry("type_interval_type", __v)?;
+                    __map.serialize_entry("typeIntervalType", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.position {
                     struct _W(i32);
@@ -5135,15 +5135,15 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.parameter_mode,
                 ) {
-                    __map.serialize_entry("parameter_mode", &self.parameter_mode)?;
+                    __map.serialize_entry("parameterMode", &self.parameter_mode)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.parameter_type,
                 ) {
-                    __map.serialize_entry("parameter_type", &self.parameter_type)?;
+                    __map.serialize_entry("parameterType", &self.parameter_type)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.parameter_default {
-                    __map.serialize_entry("parameter_default", __v)?;
+                    __map.serialize_entry("parameterDefault", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
@@ -6725,68 +6725,68 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalog_name", self.catalog_name)?;
+                    __map.serialize_entry("catalogName", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schema_name", self.schema_name)?;
+                    __map.serialize_entry("schemaName", self.schema_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.full_name) {
-                    __map.serialize_entry("full_name", self.full_name)?;
+                    __map.serialize_entry("fullName", self.full_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.data_type) {
-                    __map.serialize_entry("data_type", self.data_type)?;
+                    __map.serialize_entry("dataType", self.data_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.full_data_type) {
-                    __map.serialize_entry("full_data_type", self.full_data_type)?;
+                    __map.serialize_entry("fullDataType", self.full_data_type)?;
                 }
                 {
                     if let ::core::option::Option::Some(__v) = self
                         .input_params
                         .as_option()
                     {
-                        __map.serialize_entry("input_params", __v)?;
+                        __map.serialize_entry("inputParams", __v)?;
                     }
                 }
                 if let ::core::option::Option::Some(__v) = self.return_params {
-                    __map.serialize_entry("return_params", __v)?;
+                    __map.serialize_entry("returnParams", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.routine_body_language {
-                    __map.serialize_entry("routine_body_language", __v)?;
+                    __map.serialize_entry("routineBodyLanguage", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.routine_definition {
-                    __map.serialize_entry("routine_definition", __v)?;
+                    __map.serialize_entry("routineDefinition", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.routine_dependencies {
-                    __map.serialize_entry("routine_dependencies", __v)?;
+                    __map.serialize_entry("routineDependencies", __v)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.parameter_style,
                 ) {
-                    __map.serialize_entry("parameter_style", &self.parameter_style)?;
+                    __map.serialize_entry("parameterStyle", &self.parameter_style)?;
                 }
                 if self.is_deterministic {
-                    __map.serialize_entry("is_deterministic", &self.is_deterministic)?;
+                    __map.serialize_entry("isDeterministic", &self.is_deterministic)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.sql_data_access,
                 ) {
-                    __map.serialize_entry("sql_data_access", &self.sql_data_access)?;
+                    __map.serialize_entry("sqlDataAccess", &self.sql_data_access)?;
                 }
                 if self.is_null_call {
-                    __map.serialize_entry("is_null_call", &self.is_null_call)?;
+                    __map.serialize_entry("isNullCall", &self.is_null_call)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.security_type,
                 ) {
-                    __map.serialize_entry("security_type", &self.security_type)?;
+                    __map.serialize_entry("securityType", &self.security_type)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.specific_name {
-                    __map.serialize_entry("specific_name", __v)?;
+                    __map.serialize_entry("specificName", __v)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.routine_body,
                 ) {
-                    __map.serialize_entry("routine_body", &self.routine_body)?;
+                    __map.serialize_entry("routineBody", &self.routine_body)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
@@ -6815,7 +6815,7 @@ pub mod __buffa {
                     __map.serialize_entry("owner", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.function_id {
-                    __map.serialize_entry("function_id", __v)?;
+                    __map.serialize_entry("functionId", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_at {
                     struct _W(i64);
@@ -6827,10 +6827,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("created_at", &_W(__v))?;
+                    __map.serialize_entry("createdAt", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_by {
-                    __map.serialize_entry("created_by", __v)?;
+                    __map.serialize_entry("createdBy", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_at {
                     struct _W(i64);
@@ -6842,10 +6842,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updated_at", &_W(__v))?;
+                    __map.serialize_entry("updatedAt", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_by {
-                    __map.serialize_entry("updated_by", __v)?;
+                    __map.serialize_entry("updatedBy", __v)?;
                 }
                 __map.end()
             }
@@ -7448,10 +7448,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalog_name", self.catalog_name)?;
+                    __map.serialize_entry("catalogName", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schema_name", self.schema_name)?;
+                    __map.serialize_entry("schemaName", self.schema_name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.max_results {
                     struct _W(i32);
@@ -7463,13 +7463,13 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("max_results", &_W(__v))?;
+                    __map.serialize_entry("maxResults", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("page_token", __v)?;
+                    __map.serialize_entry("pageToken", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.include_browse {
-                    __map.serialize_entry("include_browse", &__v)?;
+                    __map.serialize_entry("includeBrowse", &__v)?;
                 }
                 __map.end()
             }
@@ -7856,7 +7856,7 @@ pub mod __buffa {
                     __map.serialize_entry("functions", &*self.functions)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("next_page_token", __v)?;
+                    __map.serialize_entry("nextPageToken", __v)?;
                 }
                 __map.end()
             }
@@ -8730,56 +8730,56 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalog_name", self.catalog_name)?;
+                    __map.serialize_entry("catalogName", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schema_name", self.schema_name)?;
+                    __map.serialize_entry("schemaName", self.schema_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.data_type) {
-                    __map.serialize_entry("data_type", self.data_type)?;
+                    __map.serialize_entry("dataType", self.data_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.full_data_type) {
-                    __map.serialize_entry("full_data_type", self.full_data_type)?;
+                    __map.serialize_entry("fullDataType", self.full_data_type)?;
                 }
                 {
                     if let ::core::option::Option::Some(__v) = self
                         .input_params
                         .as_option()
                     {
-                        __map.serialize_entry("input_params", __v)?;
+                        __map.serialize_entry("inputParams", __v)?;
                     }
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.parameter_style,
                 ) {
-                    __map.serialize_entry("parameter_style", &self.parameter_style)?;
+                    __map.serialize_entry("parameterStyle", &self.parameter_style)?;
                 }
                 if self.is_deterministic {
-                    __map.serialize_entry("is_deterministic", &self.is_deterministic)?;
+                    __map.serialize_entry("isDeterministic", &self.is_deterministic)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.sql_data_access,
                 ) {
-                    __map.serialize_entry("sql_data_access", &self.sql_data_access)?;
+                    __map.serialize_entry("sqlDataAccess", &self.sql_data_access)?;
                 }
                 if self.is_null_call {
-                    __map.serialize_entry("is_null_call", &self.is_null_call)?;
+                    __map.serialize_entry("isNullCall", &self.is_null_call)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.security_type,
                 ) {
-                    __map.serialize_entry("security_type", &self.security_type)?;
+                    __map.serialize_entry("securityType", &self.security_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.routine_body,
                 ) {
-                    __map.serialize_entry("routine_body", &self.routine_body)?;
+                    __map.serialize_entry("routineBody", &self.routine_body)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.routine_definition {
-                    __map.serialize_entry("routine_definition", __v)?;
+                    __map.serialize_entry("routineDefinition", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.routine_body_language {
-                    __map.serialize_entry("routine_body_language", __v)?;
+                    __map.serialize_entry("routineBodyLanguage", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;

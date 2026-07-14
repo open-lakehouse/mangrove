@@ -170,8 +170,8 @@ pub struct RecipientToken {
     ///
     /// Field 2: `created_at`
     #[serde(
-        rename = "created_at",
-        alias = "createdAt",
+        rename = "createdAt",
+        alias = "created_at",
         with = "::buffa::json_helpers::int64",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_zero_i64"
     )]
@@ -180,8 +180,8 @@ pub struct RecipientToken {
     ///
     /// Field 3: `created_by`
     #[serde(
-        rename = "created_by",
-        alias = "createdBy",
+        rename = "createdBy",
+        alias = "created_by",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -190,8 +190,8 @@ pub struct RecipientToken {
     ///
     /// Field 4: `activation_url`
     #[serde(
-        rename = "activation_url",
-        alias = "activationUrl",
+        rename = "activationUrl",
+        alias = "activation_url",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -200,8 +200,8 @@ pub struct RecipientToken {
     ///
     /// Field 5: `expiration_time`
     #[serde(
-        rename = "expiration_time",
-        alias = "expirationTime",
+        rename = "expirationTime",
+        alias = "expiration_time",
         with = "::buffa::json_helpers::int64",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_zero_i64"
     )]
@@ -210,8 +210,8 @@ pub struct RecipientToken {
     ///
     /// Field 6: `updated_at`
     #[serde(
-        rename = "updated_at",
-        alias = "updatedAt",
+        rename = "updatedAt",
+        alias = "updated_at",
         with = "::buffa::json_helpers::int64",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_zero_i64"
     )]
@@ -220,8 +220,8 @@ pub struct RecipientToken {
     ///
     /// Field 7: `updated_by`
     #[serde(
-        rename = "updated_by",
-        alias = "updatedBy",
+        rename = "updatedBy",
+        alias = "updated_by",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -506,8 +506,8 @@ pub struct Recipient {
     ///
     /// Field 2: `authentication_type`
     #[serde(
-        rename = "authentication_type",
-        alias = "authenticationType",
+        rename = "authenticationType",
+        alias = "authentication_type",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -538,8 +538,8 @@ pub struct Recipient {
     ///
     /// Field 7: `created_at`
     #[serde(
-        rename = "created_at",
-        alias = "createdAt",
+        rename = "createdAt",
+        alias = "created_at",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -548,8 +548,8 @@ pub struct Recipient {
     ///
     /// Field 8: `created_by`
     #[serde(
-        rename = "created_by",
-        alias = "createdBy",
+        rename = "createdBy",
+        alias = "created_by",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -566,8 +566,8 @@ pub struct Recipient {
     ///
     /// Field 10: `updated_at`
     #[serde(
-        rename = "updated_at",
-        alias = "updatedAt",
+        rename = "updatedAt",
+        alias = "updated_at",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -576,8 +576,8 @@ pub struct Recipient {
     ///
     /// Field 11: `updated_by`
     #[serde(
-        rename = "updated_by",
-        alias = "updatedBy",
+        rename = "updatedBy",
+        alias = "updated_by",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1111,8 +1111,8 @@ pub struct ListRecipientsRequest {
     ///
     /// Field 1: `max_results`
     #[serde(
-        rename = "max_results",
-        alias = "maxResults",
+        rename = "maxResults",
+        alias = "max_results",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -1121,8 +1121,8 @@ pub struct ListRecipientsRequest {
     ///
     /// Field 2: `page_token`
     #[serde(
-        rename = "page_token",
-        alias = "pageToken",
+        rename = "pageToken",
+        alias = "page_token",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1316,8 +1316,8 @@ pub struct ListRecipientsResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "next_page_token",
-        alias = "nextPageToken",
+        rename = "nextPageToken",
+        alias = "next_page_token",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1513,8 +1513,8 @@ pub struct CreateRecipientRequest {
     ///
     /// Field 2: `authentication_type`
     #[serde(
-        rename = "authentication_type",
-        alias = "authenticationType",
+        rename = "authenticationType",
+        alias = "authentication_type",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -1552,8 +1552,8 @@ pub struct CreateRecipientRequest {
     ///
     /// Field 6: `expiration_time`
     #[serde(
-        rename = "expiration_time",
-        alias = "expirationTime",
+        rename = "expirationTime",
+        alias = "expiration_time",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -2053,8 +2053,8 @@ pub struct UpdateRecipientRequest {
     ///
     /// Field 2: `new_name`
     #[serde(
-        rename = "new_name",
-        alias = "newName",
+        rename = "newName",
+        alias = "new_name",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub new_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2087,8 +2087,8 @@ pub struct UpdateRecipientRequest {
     ///
     /// Field 6: `expiration_time`
     #[serde(
-        rename = "expiration_time",
-        alias = "expirationTime",
+        rename = "expirationTime",
+        alias = "expiration_time",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -2956,13 +2956,13 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("created_at", &_W(self.created_at))?;
+                    __map.serialize_entry("createdAt", &_W(self.created_at))?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.created_by) {
-                    __map.serialize_entry("created_by", self.created_by)?;
+                    __map.serialize_entry("createdBy", self.created_by)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.activation_url) {
-                    __map.serialize_entry("activation_url", self.activation_url)?;
+                    __map.serialize_entry("activationUrl", self.activation_url)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_zero_i64(&self.expiration_time) {
                     struct _W(i64);
@@ -2974,7 +2974,7 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("expiration_time", &_W(self.expiration_time))?;
+                    __map.serialize_entry("expirationTime", &_W(self.expiration_time))?;
                 }
                 if !::buffa::json_helpers::skip_if::is_zero_i64(&self.updated_at) {
                     struct _W(i64);
@@ -2986,10 +2986,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updated_at", &_W(self.updated_at))?;
+                    __map.serialize_entry("updatedAt", &_W(self.updated_at))?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.updated_by) {
-                    __map.serialize_entry("updated_by", self.updated_by)?;
+                    __map.serialize_entry("updatedBy", self.updated_by)?;
                 }
                 __map.end()
             }
@@ -3760,10 +3760,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("created_at", &_W(__v))?;
+                    __map.serialize_entry("createdAt", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_by {
-                    __map.serialize_entry("created_by", __v)?;
+                    __map.serialize_entry("createdBy", __v)?;
                 }
                 if !self.tokens.is_empty() {
                     __map.serialize_entry("tokens", &*self.tokens)?;
@@ -3778,10 +3778,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updated_at", &_W(__v))?;
+                    __map.serialize_entry("updatedAt", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_by {
-                    __map.serialize_entry("updated_by", __v)?;
+                    __map.serialize_entry("updatedBy", __v)?;
                 }
                 __map.end()
             }
@@ -4193,10 +4193,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("max_results", &_W(__v))?;
+                    __map.serialize_entry("maxResults", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("page_token", __v)?;
+                    __map.serialize_entry("pageToken", __v)?;
                 }
                 __map.end()
             }
@@ -4563,7 +4563,7 @@ pub mod __buffa {
                     __map.serialize_entry("recipients", &*self.recipients)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("next_page_token", __v)?;
+                    __map.serialize_entry("nextPageToken", __v)?;
                 }
                 __map.end()
             }
@@ -5147,7 +5147,7 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("expiration_time", &_W(__v))?;
+                    __map.serialize_entry("expirationTime", &_W(__v))?;
                 }
                 __map.end()
             }
@@ -6008,7 +6008,7 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.new_name {
-                    __map.serialize_entry("new_name", __v)?;
+                    __map.serialize_entry("newName", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.owner {
                     __map.serialize_entry("owner", __v)?;
@@ -6046,7 +6046,7 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("expiration_time", &_W(__v))?;
+                    __map.serialize_entry("expirationTime", &_W(__v))?;
                 }
                 __map.end()
             }

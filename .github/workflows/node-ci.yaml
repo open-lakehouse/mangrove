@@ -9,13 +9,6 @@ on:
 env:
   SCCACHE_GHA_ENABLED: true
   RUSTC_WRAPPER: sccache
-  # Fetch npm packages from the public registry in CI. Local dev resolves through
-  # the internal mirror (npm-proxy.cloud.databricks.com) via the developer's own
-  # ~/.npmrc, which bakes mirror hosts into package-lock.json `resolved` URLs that
-  # GitHub runners can't reach. This env override + npm's default
-  # `replace-registry-host=npmjs` rewrites those hosts at fetch time, so CI works
-  # without a committed .npmrc (which would break local installs behind the proxy).
-  npm_config_registry: https://registry.npmjs.org/
 
 jobs:
   node-unit-tests:
@@ -33,13 +26,18 @@ jobs:
           toolchain: stable
           rustflags: ""
 
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
+          bun-version: 1.3.14
 
+      # bun.lock tarball URLs are generated against whatever registry `bun install`
+      # ran against. Databricks dev machines bake the internal mirror host into the
+      # lockfile; GitHub runners can't reach it, so rewrite to the public registry
+      # here (integrity hashes are unchanged — same tarball content).
       - name: Install dependencies
-        run: npm install
-        working-directory: node/client
+        run: |
+          sed -i 's#https://npm-proxy.cloud.databricks.com/#https://registry.npmjs.org/#g' bun.lock
+          bun install --frozen-lockfile
 
       - name: Build NAPI binding
         # Regenerate the TypeScript declarations (`--dts`) so a stale committed
@@ -50,11 +48,11 @@ jobs:
         # (`native.js`/`native.d.ts`) and binary sit beside `client.ts`.
         # `-- --locked` forwards to cargo so the NAPI build resolves strictly from
         # Cargo.lock and can never silently re-resolve a git dep to a drifted rev.
-        run: npx napi build --platform --release --output-dir unitycatalog/codegen --dts native.d.ts --js native.js -- --locked
+        run: bunx napi build --platform --release --output-dir unitycatalog/codegen --dts native.d.ts --js native.js -- --locked
         working-directory: node/client
 
       - name: Compile TypeScript
-        run: npm run tsc
+        run: bun run tsc
         working-directory: node/client
 
       - name: Copy .node artifact to dist
@@ -64,5 +62,5 @@ jobs:
         working-directory: node/client
 
       - name: Run unit tests
-        run: npm run test
+        run: bun run test
         working-directory: node/client

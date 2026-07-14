@@ -39,7 +39,7 @@ generate-openapi-sharing:
       openapi/sharing-query-paths.yaml \
       openapi/sharing.yaml
     rm -rf {{ justfile_directory() }}/openapi/sharing-gen
-    npx -y @redocly/cli bundle openapi/sharing.yaml > /dev/null
+    bunx @redocly/cli bundle openapi/sharing.yaml > /dev/null
 
 # Update the generated openapi spec with validation extracted from generated jsonschema.
 [group('codegen')]
@@ -51,9 +51,9 @@ generate-openapi:
       --descriptors {{ justfile_directory() }}/descriptors.bin
     rm -f {{ justfile_directory() }}/descriptors.bin
     rm -rf openapi/jsonschema
-    npx -y @redocly/cli bundle --remove-unused-components openapi/openapi.yaml > tmp.yaml
+    bunx @redocly/cli bundle --remove-unused-components openapi/openapi.yaml > tmp.yaml
     mv tmp.yaml openapi/openapi.yaml
-    npm run openapi
+    bun run openapi
 
 # generate rest server and client code with build crate.
 [group('codegen')]
@@ -226,7 +226,7 @@ rest-ui-wasm-seeded: ui-build-wasm
 # build the bundled single-page app into node/app/dist
 [group('build')]
 ui-build:
-    npm run build --workspace @open-lakehouse/uc-app
+    bun run --filter @open-lakehouse/uc-app build
 
 # one-time toolchain setup for the in-browser query engine (crates/query-wasm)
 [group('setup')]
@@ -250,19 +250,19 @@ build-query-wasm:
 # (default `ui-build` ships neither; see node/app/vite.config.ts)
 [group('build')]
 ui-build-wasm: build-query-wasm
-    VITE_ENABLE_WASM_QUERY=true VITE_ENABLE_PREVIEW=true npm run build --workspace @open-lakehouse/uc-app
+    VITE_ENABLE_WASM_QUERY=true VITE_ENABLE_PREVIEW=true bun run --filter @open-lakehouse/uc-app build
 
 docs:
-    npm run dev -w docs
+    bun run --filter docs dev
 
 # validate code examples type-check and docs build successfully
 [group('test')]
 validate-examples:
     cargo check -p unitycatalog-examples
     uvx ty check examples/python/
-    npm run build -w @unitycatalog/client
-    npx tsc --noEmit -p examples/typescript/tsconfig.json
-    npm run build -w docs
+    bun run --filter @unitycatalog/client build
+    bunx tsc --noEmit -p examples/typescript/tsconfig.json
+    bun run --filter docs build
 
 # build python bindings
 [group('build')]
@@ -302,7 +302,7 @@ build-py-server:
 # build node bindings
 [group('build')]
 build-node:
-    npm run build -w @unitycatalog/client
+    bun run --filter @unitycatalog/client build
 
 # build the server Docker image (mangrove): builds the bundled UI + the
 # `uc-server` binary and assembles the distroless runtime with the SPA at ./web.
@@ -414,13 +414,13 @@ _stop_pg_sqlx:
 
 [group('test')]
 test-node:
-    npm run test -w @unitycatalog/client
+    bun run --filter @unitycatalog/client test
 
 # run node integration tests (starts UC server automatically)
 [group('test')]
 test-node-integration:
-    npm run build -w @unitycatalog/client
-    npm run test:integration -w @unitycatalog/client
+    bun run --filter @unitycatalog/client build
+    bun run --filter @unitycatalog/client test:integration
 
 # Run the portable baseline conformance battery against the open-source Java
 # Unity Catalog server. Boots the server via docker compose, waits for its
@@ -500,14 +500,14 @@ record-managed:
 
 # lint nodejs bindings
 lint-node:
-    npm run lint -w @unitycatalog/client
+    bun run --filter @unitycatalog/client lint
 
 fix: fix-rust fix-node fix-py
     just fmt
 
 # fix nodejs bindings
 fix-node:
-    npm run lint-fix -w @unitycatalog/client
+    bun run --filter @unitycatalog/client lint-fix
 
 # fix rust code
 fix-rust:

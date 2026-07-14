@@ -36,8 +36,8 @@ pub struct StagingTable {
     ///
     /// Field 3: `schema_name`
     #[serde(
-        rename = "schema_name",
-        alias = "schemaName",
+        rename = "schemaName",
+        alias = "schema_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -46,8 +46,8 @@ pub struct StagingTable {
     ///
     /// Field 4: `catalog_name`
     #[serde(
-        rename = "catalog_name",
-        alias = "catalogName",
+        rename = "catalogName",
+        alias = "catalog_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -57,8 +57,8 @@ pub struct StagingTable {
     ///
     /// Field 5: `staging_location`
     #[serde(
-        rename = "staging_location",
-        alias = "stagingLocation",
+        rename = "stagingLocation",
+        alias = "staging_location",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -68,8 +68,8 @@ pub struct StagingTable {
     ///
     /// Field 6: `created_by`
     #[serde(
-        rename = "created_by",
-        alias = "createdBy",
+        rename = "createdBy",
+        alias = "created_by",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -77,8 +77,8 @@ pub struct StagingTable {
     ///
     /// Field 7: `stage_committed`
     #[serde(
-        rename = "stage_committed",
-        alias = "stageCommitted",
+        rename = "stageCommitted",
+        alias = "stage_committed",
         with = "::buffa::json_helpers::proto_bool",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_false"
     )]
@@ -87,8 +87,8 @@ pub struct StagingTable {
     ///
     /// Field 8: `created_at`
     #[serde(
-        rename = "created_at",
-        alias = "createdAt",
+        rename = "createdAt",
+        alias = "created_at",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -420,8 +420,8 @@ pub struct CreateStagingTableRequest {
     ///
     /// Field 2: `catalog_name`
     #[serde(
-        rename = "catalog_name",
-        alias = "catalogName",
+        rename = "catalogName",
+        alias = "catalog_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -430,8 +430,8 @@ pub struct CreateStagingTableRequest {
     ///
     /// Field 3: `schema_name`
     #[serde(
-        rename = "schema_name",
-        alias = "schemaName",
+        rename = "schemaName",
+        alias = "schema_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1006,19 +1006,19 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schema_name", self.schema_name)?;
+                    __map.serialize_entry("schemaName", self.schema_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalog_name", self.catalog_name)?;
+                    __map.serialize_entry("catalogName", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.staging_location) {
-                    __map.serialize_entry("staging_location", self.staging_location)?;
+                    __map.serialize_entry("stagingLocation", self.staging_location)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_by {
-                    __map.serialize_entry("created_by", __v)?;
+                    __map.serialize_entry("createdBy", __v)?;
                 }
                 if self.stage_committed {
-                    __map.serialize_entry("stage_committed", &self.stage_committed)?;
+                    __map.serialize_entry("stageCommitted", &self.stage_committed)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_at {
                     struct _W(i64);
@@ -1030,7 +1030,7 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("created_at", &_W(__v))?;
+                    __map.serialize_entry("createdAt", &_W(__v))?;
                 }
                 __map.end()
             }
@@ -1443,10 +1443,10 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalog_name", self.catalog_name)?;
+                    __map.serialize_entry("catalogName", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schema_name", self.schema_name)?;
+                    __map.serialize_entry("schemaName", self.schema_name)?;
                 }
                 __map.end()
             }

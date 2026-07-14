@@ -159,8 +159,8 @@ pub struct Volume {
     ///
     /// Field 2: `catalog_name`
     #[serde(
-        rename = "catalog_name",
-        alias = "catalogName",
+        rename = "catalogName",
+        alias = "catalog_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -169,8 +169,8 @@ pub struct Volume {
     ///
     /// Field 3: `schema_name`
     #[serde(
-        rename = "schema_name",
-        alias = "schemaName",
+        rename = "schemaName",
+        alias = "schema_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -179,8 +179,8 @@ pub struct Volume {
     ///
     /// Field 4: `full_name`
     #[serde(
-        rename = "full_name",
-        alias = "fullName",
+        rename = "fullName",
+        alias = "full_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -189,8 +189,8 @@ pub struct Volume {
     ///
     /// Field 5: `storage_location`
     #[serde(
-        rename = "storage_location",
-        alias = "storageLocation",
+        rename = "storageLocation",
+        alias = "storage_location",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -199,8 +199,8 @@ pub struct Volume {
     ///
     /// Field 6: `volume_id`
     #[serde(
-        rename = "volume_id",
-        alias = "volumeId",
+        rename = "volumeId",
+        alias = "volume_id",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -213,8 +213,8 @@ pub struct Volume {
     ///
     /// Field 7: `volume_type`
     #[serde(
-        rename = "volume_type",
-        alias = "volumeType",
+        rename = "volumeType",
+        alias = "volume_type",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -233,8 +233,8 @@ pub struct Volume {
     ///
     /// Field 1000: `created_at`
     #[serde(
-        rename = "created_at",
-        alias = "createdAt",
+        rename = "createdAt",
+        alias = "created_at",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -243,8 +243,8 @@ pub struct Volume {
     ///
     /// Field 1001: `created_by`
     #[serde(
-        rename = "created_by",
-        alias = "createdBy",
+        rename = "createdBy",
+        alias = "created_by",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -252,8 +252,8 @@ pub struct Volume {
     ///
     /// Field 1002: `updated_at`
     #[serde(
-        rename = "updated_at",
-        alias = "updatedAt",
+        rename = "updatedAt",
+        alias = "updated_at",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -262,8 +262,8 @@ pub struct Volume {
     ///
     /// Field 1003: `updated_by`
     #[serde(
-        rename = "updated_by",
-        alias = "updatedBy",
+        rename = "updatedBy",
+        alias = "updated_by",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -273,8 +273,8 @@ pub struct Volume {
     ///
     /// Field 1004: `browse_only`
     #[serde(
-        rename = "browse_only",
-        alias = "browseOnly",
+        rename = "browseOnly",
+        alias = "browse_only",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub browse_only: ::core::option::Option<bool>,
@@ -282,8 +282,8 @@ pub struct Volume {
     ///
     /// Field 1005: `metastore_id`
     #[serde(
-        rename = "metastore_id",
-        alias = "metastoreId",
+        rename = "metastoreId",
+        alias = "metastore_id",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub metastore_id: ::core::option::Option<::buffa::alloc::string::String>,
@@ -842,8 +842,8 @@ pub struct ListVolumesRequest {
     ///
     /// Field 1: `catalog_name`
     #[serde(
-        rename = "catalog_name",
-        alias = "catalogName",
+        rename = "catalogName",
+        alias = "catalog_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -852,8 +852,8 @@ pub struct ListVolumesRequest {
     ///
     /// Field 2: `schema_name`
     #[serde(
-        rename = "schema_name",
-        alias = "schemaName",
+        rename = "schemaName",
+        alias = "schema_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -862,8 +862,8 @@ pub struct ListVolumesRequest {
     ///
     /// Field 3: `max_results`
     #[serde(
-        rename = "max_results",
-        alias = "maxResults",
+        rename = "maxResults",
+        alias = "max_results",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -872,8 +872,8 @@ pub struct ListVolumesRequest {
     ///
     /// Field 4: `page_token`
     #[serde(
-        rename = "page_token",
-        alias = "pageToken",
+        rename = "pageToken",
+        alias = "page_token",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -881,8 +881,8 @@ pub struct ListVolumesRequest {
     ///
     /// Field 5: `include_browse`
     #[serde(
-        rename = "include_browse",
-        alias = "includeBrowse",
+        rename = "includeBrowse",
+        alias = "include_browse",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub include_browse: ::core::option::Option<bool>,
@@ -1154,8 +1154,8 @@ pub struct ListVolumesResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "next_page_token",
-        alias = "nextPageToken",
+        rename = "nextPageToken",
+        alias = "next_page_token",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1342,8 +1342,8 @@ pub struct CreateVolumeRequest {
     ///
     /// Field 1: `catalog_name`
     #[serde(
-        rename = "catalog_name",
-        alias = "catalogName",
+        rename = "catalogName",
+        alias = "catalog_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1352,8 +1352,8 @@ pub struct CreateVolumeRequest {
     ///
     /// Field 2: `schema_name`
     #[serde(
-        rename = "schema_name",
-        alias = "schemaName",
+        rename = "schemaName",
+        alias = "schema_name",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1375,8 +1375,8 @@ pub struct CreateVolumeRequest {
     ///
     /// Field 4: `volume_type`
     #[serde(
-        rename = "volume_type",
-        alias = "volumeType",
+        rename = "volumeType",
+        alias = "volume_type",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -1385,8 +1385,8 @@ pub struct CreateVolumeRequest {
     ///
     /// Field 5: `storage_location`
     #[serde(
-        rename = "storage_location",
-        alias = "storageLocation",
+        rename = "storageLocation",
+        alias = "storage_location",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub storage_location: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1688,8 +1688,8 @@ pub struct GetVolumeRequest {
     ///
     /// Field 1005: `include_browse`
     #[serde(
-        rename = "include_browse",
-        alias = "includeBrowse",
+        rename = "includeBrowse",
+        alias = "include_browse",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub include_browse: ::core::option::Option<bool>,
@@ -1867,8 +1867,8 @@ pub struct UpdateVolumeRequest {
     ///
     /// Field 2: `new_name`
     #[serde(
-        rename = "new_name",
-        alias = "newName",
+        rename = "newName",
+        alias = "new_name",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub new_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2856,24 +2856,24 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalog_name", self.catalog_name)?;
+                    __map.serialize_entry("catalogName", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schema_name", self.schema_name)?;
+                    __map.serialize_entry("schemaName", self.schema_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.full_name) {
-                    __map.serialize_entry("full_name", self.full_name)?;
+                    __map.serialize_entry("fullName", self.full_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.storage_location) {
-                    __map.serialize_entry("storage_location", self.storage_location)?;
+                    __map.serialize_entry("storageLocation", self.storage_location)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.volume_id) {
-                    __map.serialize_entry("volume_id", self.volume_id)?;
+                    __map.serialize_entry("volumeId", self.volume_id)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.volume_type,
                 ) {
-                    __map.serialize_entry("volume_type", &self.volume_type)?;
+                    __map.serialize_entry("volumeType", &self.volume_type)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.owner {
                     __map.serialize_entry("owner", __v)?;
@@ -2891,10 +2891,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("created_at", &_W(__v))?;
+                    __map.serialize_entry("createdAt", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_by {
-                    __map.serialize_entry("created_by", __v)?;
+                    __map.serialize_entry("createdBy", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_at {
                     struct _W(i64);
@@ -2906,16 +2906,16 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updated_at", &_W(__v))?;
+                    __map.serialize_entry("updatedAt", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_by {
-                    __map.serialize_entry("updated_by", __v)?;
+                    __map.serialize_entry("updatedBy", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.browse_only {
-                    __map.serialize_entry("browse_only", &__v)?;
+                    __map.serialize_entry("browseOnly", &__v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.metastore_id {
-                    __map.serialize_entry("metastore_id", __v)?;
+                    __map.serialize_entry("metastoreId", __v)?;
                 }
                 __map.end()
             }
@@ -3435,10 +3435,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalog_name", self.catalog_name)?;
+                    __map.serialize_entry("catalogName", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schema_name", self.schema_name)?;
+                    __map.serialize_entry("schemaName", self.schema_name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.max_results {
                     struct _W(i32);
@@ -3450,13 +3450,13 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("max_results", &_W(__v))?;
+                    __map.serialize_entry("maxResults", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("page_token", __v)?;
+                    __map.serialize_entry("pageToken", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.include_browse {
-                    __map.serialize_entry("include_browse", &__v)?;
+                    __map.serialize_entry("includeBrowse", &__v)?;
                 }
                 __map.end()
             }
@@ -3843,7 +3843,7 @@ pub mod __buffa {
                     __map.serialize_entry("volumes", &*self.volumes)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("next_page_token", __v)?;
+                    __map.serialize_entry("nextPageToken", __v)?;
                 }
                 __map.end()
             }
@@ -4318,10 +4318,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalog_name", self.catalog_name)?;
+                    __map.serialize_entry("catalogName", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schema_name", self.schema_name)?;
+                    __map.serialize_entry("schemaName", self.schema_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.name) {
                     __map.serialize_entry("name", self.name)?;
@@ -4329,10 +4329,10 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.volume_type,
                 ) {
-                    __map.serialize_entry("volume_type", &self.volume_type)?;
+                    __map.serialize_entry("volumeType", &self.volume_type)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.storage_location {
-                    __map.serialize_entry("storage_location", __v)?;
+                    __map.serialize_entry("storageLocation", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
@@ -4706,7 +4706,7 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.include_browse {
-                    __map.serialize_entry("include_browse", &__v)?;
+                    __map.serialize_entry("includeBrowse", &__v)?;
                 }
                 __map.end()
             }
@@ -5099,7 +5099,7 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.new_name {
-                    __map.serialize_entry("new_name", __v)?;
+                    __map.serialize_entry("newName", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;

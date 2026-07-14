@@ -17,7 +17,7 @@
 //   3. Output is checked in under unity-catalog/src/forms/schemas/ so the UI build needs
 //      no network access.
 //
-// Regenerate with `npm run gen:form-schemas` (or `just gen-forms`). Requires the
+// Regenerate with `bun run gen:form-schemas` (or `just gen-forms`). Requires the
 // `buf` CLI and network access to the BSR + GitHub.
 
 import { execFileSync } from "node:child_process";

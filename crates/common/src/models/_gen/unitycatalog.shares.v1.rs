@@ -336,8 +336,8 @@ pub struct DataObject {
     ///
     /// Field 2: `data_object_type`
     #[serde(
-        rename = "data_object_type",
-        alias = "dataObjectType",
+        rename = "dataObjectType",
+        alias = "data_object_type",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -346,8 +346,8 @@ pub struct DataObject {
     ///
     /// Field 3: `added_at`
     #[serde(
-        rename = "added_at",
-        alias = "addedAt",
+        rename = "addedAt",
+        alias = "added_at",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -356,8 +356,8 @@ pub struct DataObject {
     ///
     /// Field 4: `added_by`
     #[serde(
-        rename = "added_by",
-        alias = "addedBy",
+        rename = "addedBy",
+        alias = "added_by",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub added_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -374,8 +374,8 @@ pub struct DataObject {
     ///
     /// Field 6: `shared_as`
     #[serde(
-        rename = "shared_as",
-        alias = "sharedAs",
+        rename = "sharedAs",
+        alias = "shared_as",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub shared_as: ::core::option::Option<::buffa::alloc::string::String>,
@@ -392,8 +392,8 @@ pub struct DataObject {
     ///
     /// Field 8: `enable_cdf`
     #[serde(
-        rename = "enable_cdf",
-        alias = "enableCdf",
+        rename = "enableCdf",
+        alias = "enable_cdf",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub enable_cdf: ::core::option::Option<bool>,
@@ -401,8 +401,8 @@ pub struct DataObject {
     ///
     /// Field 9: `history_data_sharing_status`
     #[serde(
-        rename = "history_data_sharing_status",
-        alias = "historyDataSharingStatus",
+        rename = "historyDataSharingStatus",
+        alias = "history_data_sharing_status",
         with = "::buffa::json_helpers::opt_enum",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -419,8 +419,8 @@ pub struct DataObject {
     ///
     /// Field 10: `start_version`
     #[serde(
-        rename = "start_version",
-        alias = "startVersion",
+        rename = "startVersion",
+        alias = "start_version",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -876,8 +876,8 @@ pub struct Share {
     ///
     /// Field 4: `storage_location`
     #[serde(
-        rename = "storage_location",
-        alias = "storageLocation",
+        rename = "storageLocation",
+        alias = "storage_location",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub storage_location: ::core::option::Option<::buffa::alloc::string::String>,
@@ -885,8 +885,8 @@ pub struct Share {
     ///
     /// Field 5: `storage_root`
     #[serde(
-        rename = "storage_root",
-        alias = "storageRoot",
+        rename = "storageRoot",
+        alias = "storage_root",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub storage_root: ::core::option::Option<::buffa::alloc::string::String>,
@@ -894,8 +894,8 @@ pub struct Share {
     ///
     /// Field 7: `created_at`
     #[serde(
-        rename = "created_at",
-        alias = "createdAt",
+        rename = "createdAt",
+        alias = "created_at",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -904,8 +904,8 @@ pub struct Share {
     ///
     /// Field 8: `created_by`
     #[serde(
-        rename = "created_by",
-        alias = "createdBy",
+        rename = "createdBy",
+        alias = "created_by",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -913,8 +913,8 @@ pub struct Share {
     ///
     /// Field 9: `updated_at`
     #[serde(
-        rename = "updated_at",
-        alias = "updatedAt",
+        rename = "updatedAt",
+        alias = "updated_at",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -923,8 +923,8 @@ pub struct Share {
     ///
     /// Field 10: `updated_by`
     #[serde(
-        rename = "updated_by",
-        alias = "updatedBy",
+        rename = "updatedBy",
+        alias = "updated_by",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1937,8 +1937,8 @@ pub struct ListSharesRequest {
     ///
     /// Field 1: `max_results`
     #[serde(
-        rename = "max_results",
-        alias = "maxResults",
+        rename = "maxResults",
+        alias = "max_results",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -1947,8 +1947,8 @@ pub struct ListSharesRequest {
     ///
     /// Field 2: `page_token`
     #[serde(
-        rename = "page_token",
-        alias = "pageToken",
+        rename = "pageToken",
+        alias = "page_token",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2142,8 +2142,8 @@ pub struct ListSharesResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "next_page_token",
-        alias = "nextPageToken",
+        rename = "nextPageToken",
+        alias = "next_page_token",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2525,8 +2525,8 @@ pub struct GetShareRequest {
     ///
     /// Field 2: `include_shared_data`
     #[serde(
-        rename = "include_shared_data",
-        alias = "includeSharedData",
+        rename = "includeSharedData",
+        alias = "include_shared_data",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub include_shared_data: ::core::option::Option<bool>,
@@ -2705,8 +2705,8 @@ pub struct DataObjectUpdate {
     ///
     /// Field 2: `data_object`
     #[serde(
-        rename = "data_object",
-        alias = "dataObject",
+        rename = "dataObject",
+        alias = "data_object",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub data_object: ::buffa::MessageField<DataObject>,
@@ -2903,8 +2903,8 @@ pub struct UpdateShareRequest {
     ///
     /// Field 3: `new_name`
     #[serde(
-        rename = "new_name",
-        alias = "newName",
+        rename = "newName",
+        alias = "new_name",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub new_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -3345,8 +3345,8 @@ pub struct GetPermissionsRequest {
     ///
     /// Field 2: `max_results`
     #[serde(
-        rename = "max_results",
-        alias = "maxResults",
+        rename = "maxResults",
+        alias = "max_results",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -3355,8 +3355,8 @@ pub struct GetPermissionsRequest {
     ///
     /// Field 3: `page_token`
     #[serde(
-        rename = "page_token",
-        alias = "pageToken",
+        rename = "pageToken",
+        alias = "page_token",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -3564,8 +3564,8 @@ pub struct GetPermissionsResponse {
     ///
     /// Field 1: `privilege_assignments`
     #[serde(
-        rename = "privilege_assignments",
-        alias = "privilegeAssignments",
+        rename = "privilegeAssignments",
+        alias = "privilege_assignments",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -3574,8 +3574,8 @@ pub struct GetPermissionsResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "next_page_token",
-        alias = "nextPageToken",
+        rename = "nextPageToken",
+        alias = "next_page_token",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -3779,8 +3779,8 @@ pub struct UpdatePermissionsRequest {
     ///
     /// Field 3: `omit_permissions_list`
     #[serde(
-        rename = "omit_permissions_list",
-        alias = "omitPermissionsList",
+        rename = "omitPermissionsList",
+        alias = "omit_permissions_list",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub omit_permissions_list: ::core::option::Option<bool>,
@@ -3980,8 +3980,8 @@ pub struct UpdatePermissionsResponse {
     ///
     /// Field 1: `privilege_assignments`
     #[serde(
-        rename = "privilege_assignments",
-        alias = "privilegeAssignments",
+        rename = "privilegeAssignments",
+        alias = "privilege_assignments",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -4570,7 +4570,7 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.data_object_type,
                 ) {
-                    __map.serialize_entry("data_object_type", &self.data_object_type)?;
+                    __map.serialize_entry("dataObjectType", &self.data_object_type)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.added_at {
                     struct _W(i64);
@@ -4582,27 +4582,27 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("added_at", &_W(__v))?;
+                    __map.serialize_entry("addedAt", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.added_by {
-                    __map.serialize_entry("added_by", __v)?;
+                    __map.serialize_entry("addedBy", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.shared_as {
-                    __map.serialize_entry("shared_as", __v)?;
+                    __map.serialize_entry("sharedAs", __v)?;
                 }
                 if !self.partitions.is_empty() {
                     __map.serialize_entry("partitions", &*self.partitions)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.enable_cdf {
-                    __map.serialize_entry("enable_cdf", &__v)?;
+                    __map.serialize_entry("enableCdf", &__v)?;
                 }
                 if let ::core::option::Option::Some(ref __v) = self
                     .history_data_sharing_status
                 {
-                    __map.serialize_entry("history_data_sharing_status", __v)?;
+                    __map.serialize_entry("historyDataSharingStatus", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.start_version {
                     struct _W(i64);
@@ -4614,7 +4614,7 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("start_version", &_W(__v))?;
+                    __map.serialize_entry("startVersion", &_W(__v))?;
                 }
                 __map.end()
             }
@@ -5316,10 +5316,10 @@ pub mod __buffa {
                     __map.serialize_entry("comment", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.storage_location {
-                    __map.serialize_entry("storage_location", __v)?;
+                    __map.serialize_entry("storageLocation", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.storage_root {
-                    __map.serialize_entry("storage_root", __v)?;
+                    __map.serialize_entry("storageRoot", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_at {
                     struct _W(i64);
@@ -5331,10 +5331,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("created_at", &_W(__v))?;
+                    __map.serialize_entry("createdAt", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_by {
-                    __map.serialize_entry("created_by", __v)?;
+                    __map.serialize_entry("createdBy", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_at {
                     struct _W(i64);
@@ -5346,10 +5346,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updated_at", &_W(__v))?;
+                    __map.serialize_entry("updatedAt", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_by {
-                    __map.serialize_entry("updated_by", __v)?;
+                    __map.serialize_entry("updatedBy", __v)?;
                 }
                 __map.end()
             }
@@ -6479,10 +6479,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("max_results", &_W(__v))?;
+                    __map.serialize_entry("maxResults", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("page_token", __v)?;
+                    __map.serialize_entry("pageToken", __v)?;
                 }
                 __map.end()
             }
@@ -6845,7 +6845,7 @@ pub mod __buffa {
                     __map.serialize_entry("shares", &*self.shares)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("next_page_token", __v)?;
+                    __map.serialize_entry("nextPageToken", __v)?;
                 }
                 __map.end()
             }
@@ -7526,7 +7526,7 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.include_shared_data {
-                    __map.serialize_entry("include_shared_data", &__v)?;
+                    __map.serialize_entry("includeSharedData", &__v)?;
                 }
                 __map.end()
             }
@@ -7903,7 +7903,7 @@ pub mod __buffa {
                         .data_object
                         .as_option()
                     {
-                        __map.serialize_entry("data_object", __v)?;
+                        __map.serialize_entry("dataObject", __v)?;
                     }
                 }
                 __map.end()
@@ -8358,7 +8358,7 @@ pub mod __buffa {
                     __map.serialize_entry("updates", &*self.updates)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.new_name {
-                    __map.serialize_entry("new_name", __v)?;
+                    __map.serialize_entry("newName", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.owner {
                     __map.serialize_entry("owner", __v)?;
@@ -9069,10 +9069,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("max_results", &_W(__v))?;
+                    __map.serialize_entry("maxResults", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("page_token", __v)?;
+                    __map.serialize_entry("pageToken", __v)?;
                 }
                 __map.end()
             }
@@ -9450,7 +9450,7 @@ pub mod __buffa {
                         )?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("next_page_token", __v)?;
+                    __map.serialize_entry("nextPageToken", __v)?;
                 }
                 __map.end()
             }
@@ -9852,7 +9852,7 @@ pub mod __buffa {
                     __map.serialize_entry("changes", &*self.changes)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.omit_permissions_list {
-                    __map.serialize_entry("omit_permissions_list", &__v)?;
+                    __map.serialize_entry("omitPermissionsList", &__v)?;
                 }
                 __map.end()
             }

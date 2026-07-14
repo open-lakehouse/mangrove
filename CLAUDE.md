@@ -79,7 +79,7 @@ generation tooling — you only need it when changing proto or regenerating.
   adjacent to this repo (`just generate-code` / `generate-openapi` shell out to
   `../trestle/crates/trestle`). Without it, those targets fail with a
   "manifest path does not exist" error.
-- `buf` (proto compiler), `uv` (Python), and `npm`/`npx` (OpenAPI bundling).
+- `buf` (proto compiler), `uv` (Python), and `bun`/`bunx` (OpenAPI bundling).
 
 **Commands:** `just generate` runs the full pipeline; `just generate-proto`,
 `generate-code`, `generate-openapi`, and `generate-node` run individual stages.
@@ -142,6 +142,7 @@ Pre-commit hooks enforce formatting with Biome, Ruff, and typos checking.
 ## Tooling
 
 - **`uv`** - Python package manager; manages the `python/*` UV workspace
+- **`bun`** - JavaScript/TypeScript package manager for the npm workspaces
 - **Maturin** - Builds Python wheels from PyO3 Rust crates
 - **`buf`** - Protocol buffer compiler; config in `buf.yaml` / `buf.gen.yaml`
 - **NAPI** - Node.js native addon bindings for Rust
@@ -174,6 +175,23 @@ Repo-specific rules:
 - **Generated code in the same commit** as the change that produced it (run
   `just generate` after proto changes) so reviewers trace generation to output
   in one diff. Stage by name; never `git add -A`.
+
+### bun.lock proxy URLs
+
+Local Bun installs may bake a private npm registry/proxy URL into the resolution
+field of `bun.lock`. **Never open a PR with those URLs committed.**
+
+Before opening a PR that touches `bun.lock`:
+
+```bash
+bun run strip-lock-proxy
+bun run strip-lock-proxy:check
+```
+
+The pre-commit hook (`.githooks/pre-commit`) strips proxy URLs when `bun.lock` is
+staged, but still run the commands above before opening a PR. Full details:
+`.agents/rules/bun-clean-lock-rule.mdc` (also linked from
+`.cursor/rules/bun-clean-lock-rule.mdc` for Cursor).
 
 ### Quick pre-push check (mimics CI)
 

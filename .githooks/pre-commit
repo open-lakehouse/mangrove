@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+#
+# Repo pre-commit hook.
+#
+# 1. Delegates to any globally-configured hooks (e.g. the Databricks gitleaks
+#    secret scanner). A repo-local core.hooksPath overrides the global one, so
+#    we re-invoke the global hook here to avoid disabling it for this repo.
+# 2. Strips npm registry proxy URLs out of bun.lock so they never get committed.
+#
+set -e
+
+# --- 1) Run globally-configured hooks, if any -------------------------------
+global_hooks="$(git config --global core.hooksPath 2>/dev/null || true)"
+if [ -n "$global_hooks" ]; then
+  case "$global_hooks" in
+    "~"*) global_hooks="$HOME${global_hooks#\~}" ;;
+  esac
+  if [ -x "$global_hooks/pre-commit" ]; then
+    "$global_hooks/pre-commit" "$@" || exit $?
+  fi
+fi
+
+# --- 2) Strip proxy URLs from bun.lock when staged --------------------------
+if git diff --cached --name-only | grep -qx 'bun.lock'; then
+  if command -v bun >/dev/null 2>&1; then
+    bun run scripts/strip-bun-lock-proxy.ts
+    git add bun.lock
+  else
+    echo "pre-commit: 'bun' not found; skipping bun.lock proxy strip" >&2
+  fi
+fi

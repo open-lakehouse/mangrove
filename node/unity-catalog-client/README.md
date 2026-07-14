@@ -66,10 +66,10 @@ Import from the barrel — `@open-lakehouse/unity-catalog-client`:
 
 ## Codegen
 
-- `npm run gen:api` — regenerate `src/uc-api.d.ts` from
+- `bun run gen:api` — regenerate `src/uc-api.d.ts` from
   `openapi/unity-catalog.yaml` (the OSS-shaped UC REST spec) via
   `openapi-typescript`.
-- `npm run gen:form-schemas` — regenerate the RJSF form schemas from this repo's
+- `bun run gen:form-schemas` — regenerate the RJSF form schemas from this repo's
   UC proto. These are presentational assets, so the script writes them into the
   sibling `@open-lakehouse/unity-catalog` package's `src/forms/schemas/`.
 

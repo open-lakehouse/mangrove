@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: ""
+  title: ''
   version: 0.0.1
 tags:
   - name: AgentSkillsService
@@ -114,18 +114,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListAgentSkillsResponse"
+                $ref: '#/components/schemas/ListAgentSkillsResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - AgentSkillsService
@@ -134,21 +134,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateAgentSkillRequest"
+              $ref: '#/components/schemas/CreateAgentSkillRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentSkill"
+                $ref: '#/components/schemas/AgentSkill'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /agent-skills/{name}:
     get:
       tags:
@@ -169,18 +169,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentSkill"
+                $ref: '#/components/schemas/AgentSkill'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - AgentSkillsService
@@ -193,7 +193,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -201,7 +201,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - AgentSkillsService
@@ -217,21 +217,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateAgentSkillRequest"
+              $ref: '#/components/schemas/UpdateAgentSkillRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentSkill"
+                $ref: '#/components/schemas/AgentSkill'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /agents:
     get:
       tags:
@@ -268,18 +268,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListAgentsResponse"
+                $ref: '#/components/schemas/ListAgentsResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - AgentsService
@@ -288,21 +288,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateAgentRequest"
+              $ref: '#/components/schemas/CreateAgentRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Agent"
+                $ref: '#/components/schemas/Agent'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /agents/{name}:
     get:
       tags:
@@ -323,18 +323,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Agent"
+                $ref: '#/components/schemas/Agent'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - AgentsService
@@ -347,7 +347,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -355,7 +355,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - AgentsService
@@ -371,21 +371,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateAgentRequest"
+              $ref: '#/components/schemas/UpdateAgentRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Agent"
+                $ref: '#/components/schemas/Agent'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /catalogs:
     get:
       tags:
@@ -411,18 +411,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListCatalogsResponse"
+                $ref: '#/components/schemas/ListCatalogsResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - CatalogsService
@@ -436,21 +436,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateCatalogRequest"
+              $ref: '#/components/schemas/CreateCatalogRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Catalog"
+                $ref: '#/components/schemas/Catalog'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /catalogs/{name}:
     get:
       tags:
@@ -474,18 +474,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Catalog"
+                $ref: '#/components/schemas/Catalog'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - CatalogsService
@@ -508,7 +508,7 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -516,7 +516,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - CatalogsService
@@ -537,21 +537,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateCatalogRequest"
+              $ref: '#/components/schemas/UpdateCatalogRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Catalog"
+                $ref: '#/components/schemas/Catalog'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /credentials:
     get:
       tags:
@@ -576,18 +576,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListCredentialsResponse"
+                $ref: '#/components/schemas/ListCredentialsResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - CredentialsService
@@ -596,21 +596,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateCredentialRequest"
+              $ref: '#/components/schemas/CreateCredentialRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Credential"
+                $ref: '#/components/schemas/Credential'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /credentials/{name}:
     get:
       tags:
@@ -624,18 +624,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Credential"
+                $ref: '#/components/schemas/Credential'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - CredentialsService
@@ -648,7 +648,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -656,7 +656,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - CredentialsService
@@ -672,21 +672,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateCredentialRequest"
+              $ref: '#/components/schemas/UpdateCredentialRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Credential"
+                $ref: '#/components/schemas/Credential'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /entity-tag-assignments:
     post:
       tags:
@@ -700,21 +700,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateEntityTagAssignmentRequest"
+              $ref: '#/components/schemas/CreateEntityTagAssignmentRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityTagAssignment"
+                $ref: '#/components/schemas/EntityTagAssignment'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /entity-tag-assignments/{entityType}/{entityName}/tags:
     get:
       tags:
@@ -749,18 +749,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListEntityTagAssignmentsResponse"
+                $ref: '#/components/schemas/ListEntityTagAssignmentsResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /entity-tag-assignments/{entityType}/{entityName}/tags/{tagKey}:
     get:
       tags:
@@ -790,18 +790,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityTagAssignment"
+                $ref: '#/components/schemas/EntityTagAssignment'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - EntityTagAssignmentsService
@@ -830,7 +830,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -838,7 +838,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - EntityTagAssignmentsService
@@ -870,21 +870,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateEntityTagAssignmentRequest"
+              $ref: '#/components/schemas/UpdateEntityTagAssignmentRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityTagAssignment"
+                $ref: '#/components/schemas/EntityTagAssignment'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /external-locations:
     get:
       tags:
@@ -909,18 +909,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListExternalLocationsResponse"
+                $ref: '#/components/schemas/ListExternalLocationsResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - ExternalLocationsService
@@ -930,21 +930,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateExternalLocationRequest"
+              $ref: '#/components/schemas/CreateExternalLocationRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExternalLocation"
+                $ref: '#/components/schemas/ExternalLocation'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /external-locations/{name}:
     get:
       tags:
@@ -959,18 +959,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExternalLocation"
+                $ref: '#/components/schemas/ExternalLocation'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - ExternalLocationsService
@@ -989,7 +989,7 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -997,7 +997,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - ExternalLocationsService
@@ -1014,21 +1014,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateExternalLocationRequest"
+              $ref: '#/components/schemas/UpdateExternalLocationRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExternalLocation"
+                $ref: '#/components/schemas/ExternalLocation'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /functions:
     get:
       tags:
@@ -1069,18 +1069,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListFunctionsResponse"
+                $ref: '#/components/schemas/ListFunctionsResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - FunctionsService
@@ -1094,21 +1094,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateFunctionRequest"
+              $ref: '#/components/schemas/CreateFunctionRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Function"
+                $ref: '#/components/schemas/Function'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /functions/{name}:
     get:
       tags:
@@ -1123,23 +1123,23 @@ paths:
       parameters:
         - name: name
           in: path
-          description: "The fully-qualified name of the function (three-level name: catalog.schema.function)."
+          description: 'The fully-qualified name of the function (three-level name: catalog.schema.function).'
           required: true
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Function"
+                $ref: '#/components/schemas/Function'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - FunctionsService
@@ -1152,7 +1152,7 @@ paths:
       parameters:
         - name: name
           in: path
-          description: "The fully-qualified name of the function (three-level name: catalog.schema.function)."
+          description: 'The fully-qualified name of the function (three-level name: catalog.schema.function).'
           required: true
           schema:
             type: string
@@ -1162,7 +1162,7 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -1170,7 +1170,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - FunctionsService
@@ -1183,7 +1183,7 @@ paths:
       parameters:
         - name: name
           in: path
-          description: "The fully-qualified name of the function (three-level name: catalog.schema.function)."
+          description: 'The fully-qualified name of the function (three-level name: catalog.schema.function).'
           required: true
           schema:
             type: string
@@ -1191,21 +1191,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateFunctionRequest"
+              $ref: '#/components/schemas/UpdateFunctionRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Function"
+                $ref: '#/components/schemas/Function'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /policies/{onSecurableType}/{onSecurableFullname}:
     get:
       tags:
@@ -1253,18 +1253,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListPoliciesResponse"
+                $ref: '#/components/schemas/ListPoliciesResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - PoliciesService
@@ -1293,21 +1293,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PolicyInfo"
+              $ref: '#/components/schemas/PolicyInfo'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PolicyInfo"
+                $ref: '#/components/schemas/PolicyInfo'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /policies/{onSecurableType}/{onSecurableFullname}/{name}:
     get:
       tags:
@@ -1340,18 +1340,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PolicyInfo"
+                $ref: '#/components/schemas/PolicyInfo'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - PoliciesService
@@ -1383,7 +1383,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -1391,7 +1391,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - PoliciesService
@@ -1426,21 +1426,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdatePolicyRequest"
+              $ref: '#/components/schemas/UpdatePolicyRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PolicyInfo"
+                $ref: '#/components/schemas/PolicyInfo'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /providers:
     get:
       tags:
@@ -1460,18 +1460,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListProvidersResponse"
+                $ref: '#/components/schemas/ListProvidersResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - ProvidersService
@@ -1481,21 +1481,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateProviderRequest"
+              $ref: '#/components/schemas/CreateProviderRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Provider"
+                $ref: '#/components/schemas/Provider'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /providers/{name}:
     get:
       tags:
@@ -1510,18 +1510,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Provider"
+                $ref: '#/components/schemas/Provider'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - ProvidersService
@@ -1535,7 +1535,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -1543,7 +1543,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - ProvidersService
@@ -1560,21 +1560,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateProviderRequest"
+              $ref: '#/components/schemas/UpdateProviderRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Provider"
+                $ref: '#/components/schemas/Provider'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /recipients:
     get:
       tags:
@@ -1594,18 +1594,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListRecipientsResponse"
+                $ref: '#/components/schemas/ListRecipientsResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - RecipientsService
@@ -1615,21 +1615,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateRecipientRequest"
+              $ref: '#/components/schemas/CreateRecipientRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Recipient"
+                $ref: '#/components/schemas/Recipient'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /recipients/{name}:
     get:
       tags:
@@ -1644,18 +1644,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Recipient"
+                $ref: '#/components/schemas/Recipient'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - RecipientsService
@@ -1669,7 +1669,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -1677,7 +1677,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - RecipientsService
@@ -1694,21 +1694,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateRecipientRequest"
+              $ref: '#/components/schemas/UpdateRecipientRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Recipient"
+                $ref: '#/components/schemas/Recipient'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /schemas:
     get:
       tags:
@@ -1742,18 +1742,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListSchemasResponse"
+                $ref: '#/components/schemas/ListSchemasResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - SchemasService
@@ -1765,21 +1765,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateSchemaRequest"
+              $ref: '#/components/schemas/CreateSchemaRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Schema"
+                $ref: '#/components/schemas/Schema'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /schemas/{fullName}:
     get:
       tags:
@@ -1800,18 +1800,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Schema"
+                $ref: '#/components/schemas/Schema'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - SchemasService
@@ -1835,7 +1835,7 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -1843,7 +1843,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - SchemasService
@@ -1864,21 +1864,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateSchemaRequest"
+              $ref: '#/components/schemas/UpdateSchemaRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Schema"
+                $ref: '#/components/schemas/Schema'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /shares:
     get:
       tags:
@@ -1898,18 +1898,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListSharesResponse"
+                $ref: '#/components/schemas/ListSharesResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - SharesService
@@ -1919,21 +1919,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateShareRequest"
+              $ref: '#/components/schemas/CreateShareRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Share"
+                $ref: '#/components/schemas/Share'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /shares/{name}:
     get:
       tags:
@@ -1953,18 +1953,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Share"
+                $ref: '#/components/schemas/Share'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - SharesService
@@ -1978,7 +1978,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -1986,7 +1986,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - SharesService
@@ -2003,21 +2003,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateShareRequest"
+              $ref: '#/components/schemas/UpdateShareRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Share"
+                $ref: '#/components/schemas/Share'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /shares/{name}/permissions:
     get:
       tags:
@@ -2043,18 +2043,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetPermissionsResponse"
+                $ref: '#/components/schemas/GetPermissionsResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - SharesService
@@ -2071,21 +2071,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdatePermissionsRequest"
+              $ref: '#/components/schemas/UpdatePermissionsRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UpdatePermissionsResponse"
+                $ref: '#/components/schemas/UpdatePermissionsResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /staging-tables:
     post:
       tags:
@@ -2099,21 +2099,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateStagingTableRequest"
+              $ref: '#/components/schemas/CreateStagingTableRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/StagingTable"
+                $ref: '#/components/schemas/StagingTable'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /table-summaries:
     get:
       tags:
@@ -2160,18 +2160,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListTableSummariesResponse"
+                $ref: '#/components/schemas/ListTableSummariesResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /tables:
     get:
       tags:
@@ -2237,18 +2237,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListTablesResponse"
+                $ref: '#/components/schemas/ListTablesResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - TablesService
@@ -2258,21 +2258,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateTableRequest"
+              $ref: '#/components/schemas/CreateTableRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Table"
+                $ref: '#/components/schemas/Table'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /tables/{fullName}:
     get:
       tags:
@@ -2302,18 +2302,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Table"
+                $ref: '#/components/schemas/Table'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - TablesService
@@ -2327,7 +2327,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -2335,7 +2335,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /tables/{fullName}/exists:
     get:
       tags:
@@ -2350,18 +2350,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetTableExistsResponse"
+                $ref: '#/components/schemas/GetTableExistsResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /tag-policies:
     get:
       tags:
@@ -2385,18 +2385,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListTagPoliciesResponse"
+                $ref: '#/components/schemas/ListTagPoliciesResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - TagPoliciesService
@@ -2409,21 +2409,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateTagPolicyRequest"
+              $ref: '#/components/schemas/CreateTagPolicyRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TagPolicy"
+                $ref: '#/components/schemas/TagPolicy'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /tag-policies/{tagKey}:
     get:
       tags:
@@ -2441,18 +2441,18 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TagPolicy"
+                $ref: '#/components/schemas/TagPolicy'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - TagPoliciesService
@@ -2469,7 +2469,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -2477,7 +2477,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - TagPoliciesService
@@ -2497,21 +2497,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateTagPolicyRequest"
+              $ref: '#/components/schemas/UpdateTagPolicyRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TagPolicy"
+                $ref: '#/components/schemas/TagPolicy'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /temporary-path-credentials:
     post:
       tags:
@@ -2522,21 +2522,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GenerateTemporaryPathCredentialsRequest"
+              $ref: '#/components/schemas/GenerateTemporaryPathCredentialsRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TemporaryCredential"
+                $ref: '#/components/schemas/TemporaryCredential'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /temporary-table-credentials:
     post:
       tags:
@@ -2547,21 +2547,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GenerateTemporaryTableCredentialsRequest"
+              $ref: '#/components/schemas/GenerateTemporaryTableCredentialsRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TemporaryCredential"
+                $ref: '#/components/schemas/TemporaryCredential'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /temporary-volume-credentials:
     post:
       tags:
@@ -2577,21 +2577,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GenerateTemporaryVolumeCredentialsRequest"
+              $ref: '#/components/schemas/GenerateTemporaryVolumeCredentialsRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TemporaryCredential"
+                $ref: '#/components/schemas/TemporaryCredential'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /volumes:
     get:
       tags:
@@ -2626,18 +2626,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListVolumesResponse"
+                $ref: '#/components/schemas/ListVolumesResponse'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     post:
       tags:
         - VolumesService
@@ -2646,21 +2646,21 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateVolumeRequest"
+              $ref: '#/components/schemas/CreateVolumeRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Volume"
+                $ref: '#/components/schemas/Volume'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
   /volumes/{name}:
     get:
       tags:
@@ -2679,18 +2679,18 @@ paths:
           schema:
             type: boolean
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Volume"
+                $ref: '#/components/schemas/Volume'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     delete:
       tags:
         - VolumesService
@@ -2703,7 +2703,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        '200':
           description: OK
           content: {}
         default:
@@ -2711,7 +2711,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
     patch:
       tags:
         - VolumesService
@@ -2727,28 +2727,28 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateVolumeRequest"
+              $ref: '#/components/schemas/UpdateVolumeRequest'
         required: true
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Volume"
+                $ref: '#/components/schemas/Volume'
         default:
           description: Default error response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Status"
+                $ref: '#/components/schemas/Status'
 components:
   schemas:
     AdditionalPropertiesItem:
       type: object
       properties:
         schemaOrReference:
-          $ref: "#/components/schemas/SchemaOrReference"
+          $ref: '#/components/schemas/SchemaOrReference'
         boolean:
           type: boolean
     Agent:
@@ -2939,7 +2939,7 @@ components:
       type: object
       properties:
         value:
-          $ref: "#/components/schemas/GoogleProtobufAny"
+          $ref: '#/components/schemas/GoogleProtobufAny'
         yaml:
           type: string
     AwsIamRoleConfig:
@@ -3378,23 +3378,23 @@ components:
           description: Optional. Supplying true to this argument skips validation of the created set of credentials.
         azureServicePrincipal:
           allOf:
-            - $ref: "#/components/schemas/AzureServicePrincipal"
+            - $ref: '#/components/schemas/AzureServicePrincipal'
           description: The Azure service principal configuration.
         azureManagedIdentity:
           allOf:
-            - $ref: "#/components/schemas/AzureManagedIdentity"
+            - $ref: '#/components/schemas/AzureManagedIdentity'
           description: The Azure managed identity configuration.
         azureStorageKey:
           allOf:
-            - $ref: "#/components/schemas/AzureStorageKey"
+            - $ref: '#/components/schemas/AzureStorageKey'
           description: The Azure storage key configuration.
         awsIamRole:
           allOf:
-            - $ref: "#/components/schemas/AwsIamRoleConfig"
+            - $ref: '#/components/schemas/AwsIamRoleConfig'
           description: The AWS IAM role configuration.
         databricksGcpServiceAccount:
           allOf:
-            - $ref: "#/components/schemas/DatabricksGcpServiceAccount"
+            - $ref: '#/components/schemas/DatabricksGcpServiceAccount'
           description: The Databricks managed GCP service account configuration.
       description: Create a new credential.
       additionalProperties: false
@@ -3406,7 +3406,7 @@ components:
       properties:
         tagAssignment:
           allOf:
-            - $ref: "#/components/schemas/EntityTagAssignment"
+            - $ref: '#/components/schemas/EntityTagAssignment'
           description: The tag assignment to create.
       description: Create an entity tag assignment
       additionalProperties: false
@@ -3476,7 +3476,7 @@ components:
           description: Full data type specification as SQL/catalogString text.
         inputParams:
           allOf:
-            - $ref: "#/components/schemas/FunctionParameterInfos"
+            - $ref: '#/components/schemas/FunctionParameterInfos'
           description: The array of function parameter infos.
         parameterStyle:
           type: integer
@@ -3685,7 +3685,7 @@ components:
         columns:
           type: array
           items:
-            $ref: "#/components/schemas/Column"
+            $ref: '#/components/schemas/Column'
             additionalProperties: false
             required:
               - name
@@ -3713,12 +3713,12 @@ components:
              SQL for views, YAML for metric views. Required for METRIC_VIEW.
         viewDependencies:
           allOf:
-            - $ref: "#/components/schemas/DependencyList"
+            - $ref: '#/components/schemas/DependencyList'
           description: |-
             Tables and functions the view-like table reads. For metric views the server
              derives this from view_definition and rejects a supplied list that diverges
              from the derived set (the definition is the single source of truth).
-      description: "WARNING: this API is experimental and subject to change."
+      description: 'WARNING: this API is experimental and subject to change.'
       additionalProperties: false
       title: Create a table
     CreateTagPolicyRequest:
@@ -3728,7 +3728,7 @@ components:
       properties:
         tagPolicy:
           allOf:
-            - $ref: "#/components/schemas/TagPolicy"
+            - $ref: '#/components/schemas/TagPolicy'
           description: The tag policy to create.
       description: Create a new tag policy
       additionalProperties: false
@@ -3839,7 +3839,7 @@ components:
           description: The full name of the credential.
         azureServicePrincipal:
           allOf:
-            - $ref: "#/components/schemas/AzureServicePrincipal"
+            - $ref: '#/components/schemas/AzureServicePrincipal'
           description: |-
             The Azure service principal configuration.
 
@@ -3847,19 +3847,19 @@ components:
              from ordinary reads) rather than stored in the searchable properties.
         azureManagedIdentity:
           allOf:
-            - $ref: "#/components/schemas/AzureManagedIdentity"
+            - $ref: '#/components/schemas/AzureManagedIdentity'
           description: The Azure managed identity configuration.
         azureStorageKey:
           allOf:
-            - $ref: "#/components/schemas/AzureStorageKey"
+            - $ref: '#/components/schemas/AzureStorageKey'
           description: The Azure storage key configuration.
         awsIamRole:
           allOf:
-            - $ref: "#/components/schemas/AwsIamRoleConfig"
+            - $ref: '#/components/schemas/AwsIamRoleConfig'
           description: The AWS IAM role configuration.
         databricksGcpServiceAccount:
           allOf:
-            - $ref: "#/components/schemas/DatabricksGcpServiceAccount"
+            - $ref: '#/components/schemas/DatabricksGcpServiceAccount'
           description: The Databricks managed GCP service account configuration.
       description: A credential used to access external data sources or services.
       additionalProperties: false
@@ -3938,7 +3938,7 @@ components:
           title: Action
         dataObject:
           allOf:
-            - $ref: "#/components/schemas/DataObject"
+            - $ref: '#/components/schemas/DataObject'
           description: User-provided free-form text description.
       description: Data object update.
       additionalProperties: false
@@ -3972,14 +3972,14 @@ components:
       type: object
       properties:
         table:
-          $ref: "#/components/schemas/TableDependency"
+          $ref: '#/components/schemas/TableDependency'
           additionalProperties: false
           required:
             - table_full_name
           description: A table that a SQL object (such as a view or metric view) depends on.
           title: Table Dependency
         function:
-          $ref: "#/components/schemas/FunctionDependency"
+          $ref: '#/components/schemas/FunctionDependency'
           additionalProperties: false
           required:
             - function_full_name
@@ -3994,7 +3994,7 @@ components:
         dependencies:
           type: array
           items:
-            $ref: "#/components/schemas/Dependency"
+            $ref: '#/components/schemas/Dependency'
             additionalProperties: false
             description: A dependency of a SQL object. Exactly one of the fields must be set.
             title: Dependency
@@ -4008,11 +4008,11 @@ components:
         propertyName:
           type: string
         mapping:
-          $ref: "#/components/schemas/Strings"
+          $ref: '#/components/schemas/Strings'
         specificationExtension:
           type: array
           items:
-            $ref: "#/components/schemas/NamedAny"
+            $ref: '#/components/schemas/NamedAny'
       description: When request bodies or response payloads may be one of a number of different schemas, a `discriminator` object can be used to aid in serialization, deserialization, and validation.  The discriminator is a specific object in a schema which is used to inform the consumer of the specification of an alternative schema based on the value associated with it.  When using the discriminator, _inline_ schemas will not be considered.
     EntityTagAssignment:
       required:
@@ -4054,7 +4054,7 @@ components:
         specificationExtension:
           type: array
           items:
-            $ref: "#/components/schemas/NamedAny"
+            $ref: '#/components/schemas/NamedAny'
       description: Allows referencing an external resource for extended documentation.
     ExternalLocation:
       required:
@@ -4156,7 +4156,7 @@ components:
           description: Full data type specification as SQL/catalogString text.
         inputParams:
           allOf:
-            - $ref: "#/components/schemas/FunctionParameterInfos"
+            - $ref: '#/components/schemas/FunctionParameterInfos'
           description: The array of function parameter infos.
         returnParams:
           type: string
@@ -4316,7 +4316,7 @@ components:
         parameters:
           type: array
           items:
-            $ref: "#/components/schemas/FunctionParameterInfo"
+            $ref: '#/components/schemas/FunctionParameterInfo'
             additionalProperties: false
             required:
               - name
@@ -4341,7 +4341,7 @@ components:
         using:
           type: array
           items:
-            $ref: "#/components/schemas/FunctionArg"
+            $ref: '#/components/schemas/FunctionArg'
             additionalProperties: false
             description: An argument passed to a row-filter or column-mask function.
             title: Function Arg
@@ -4443,7 +4443,7 @@ components:
         privilegeAssignments:
           type: array
           items:
-            $ref: "#/components/schemas/PrivilegeAssignment"
+            $ref: '#/components/schemas/PrivilegeAssignment'
           description: The privileges assigned to each principal
         nextPageToken:
           type: string
@@ -4464,7 +4464,7 @@ components:
     GoogleProtobufAny:
       type: object
       properties:
-        "@type":
+        '@type':
           type: string
           description: The type of the serialized message.
       additionalProperties: true
@@ -4475,14 +4475,14 @@ components:
         schemaOrReference:
           type: array
           items:
-            $ref: "#/components/schemas/SchemaOrReference"
+            $ref: '#/components/schemas/SchemaOrReference'
     ListAgentSkillsResponse:
       type: object
       properties:
         agentSkills:
           type: array
           items:
-            $ref: "#/components/schemas/AgentSkill"
+            $ref: '#/components/schemas/AgentSkill'
           description: The agent skills returned.
         nextPageToken:
           type: string
@@ -4500,7 +4500,7 @@ components:
         agents:
           type: array
           items:
-            $ref: "#/components/schemas/Agent"
+            $ref: '#/components/schemas/Agent'
             additionalProperties: false
             required:
               - name
@@ -4529,7 +4529,7 @@ components:
         catalogs:
           type: array
           items:
-            $ref: "#/components/schemas/Catalog"
+            $ref: '#/components/schemas/Catalog'
             additionalProperties: false
             required:
               - name
@@ -4548,7 +4548,7 @@ components:
         credentials:
           type: array
           items:
-            $ref: "#/components/schemas/Credential"
+            $ref: '#/components/schemas/Credential'
             additionalProperties: false
             required:
               - name
@@ -4570,7 +4570,7 @@ components:
         tagAssignments:
           type: array
           items:
-            $ref: "#/components/schemas/EntityTagAssignment"
+            $ref: '#/components/schemas/EntityTagAssignment'
           description: The tag assignments returned.
         nextPageToken:
           type: string
@@ -4584,7 +4584,7 @@ components:
         externalLocations:
           type: array
           items:
-            $ref: "#/components/schemas/ExternalLocation"
+            $ref: '#/components/schemas/ExternalLocation'
           description: The external locations returned.
         nextPageToken:
           type: string
@@ -4598,7 +4598,7 @@ components:
         functions:
           type: array
           items:
-            $ref: "#/components/schemas/Function"
+            $ref: '#/components/schemas/Function'
             additionalProperties: false
             required:
               - name
@@ -4628,7 +4628,7 @@ components:
         policies:
           type: array
           items:
-            $ref: "#/components/schemas/PolicyInfo"
+            $ref: '#/components/schemas/PolicyInfo'
             additionalProperties: false
             required:
               - name
@@ -4653,7 +4653,7 @@ components:
         providers:
           type: array
           items:
-            $ref: "#/components/schemas/Provider"
+            $ref: '#/components/schemas/Provider'
             additionalProperties: false
             required:
               - name
@@ -4676,7 +4676,7 @@ components:
         recipients:
           type: array
           items:
-            $ref: "#/components/schemas/Recipient"
+            $ref: '#/components/schemas/Recipient'
             additionalProperties: false
             required:
               - name
@@ -4695,7 +4695,7 @@ components:
         schemas:
           type: array
           items:
-            $ref: "#/components/schemas/Schema"
+            $ref: '#/components/schemas/Schema'
             additionalProperties: false
             required:
               - name
@@ -4716,7 +4716,7 @@ components:
         shares:
           type: array
           items:
-            $ref: "#/components/schemas/Share"
+            $ref: '#/components/schemas/Share'
             additionalProperties: false
             required:
               - name
@@ -4734,7 +4734,7 @@ components:
         tables:
           type: array
           items:
-            $ref: "#/components/schemas/TableSummary"
+            $ref: '#/components/schemas/TableSummary'
             additionalProperties: false
             required:
               - full_name
@@ -4752,7 +4752,7 @@ components:
         tables:
           type: array
           items:
-            $ref: "#/components/schemas/Table"
+            $ref: '#/components/schemas/Table'
             additionalProperties: false
             required:
               - name
@@ -4775,7 +4775,7 @@ components:
         tagPolicies:
           type: array
           items:
-            $ref: "#/components/schemas/TagPolicy"
+            $ref: '#/components/schemas/TagPolicy'
           description: The tag policies returned.
         nextPageToken:
           type: string
@@ -4789,7 +4789,7 @@ components:
         volumes:
           type: array
           items:
-            $ref: "#/components/schemas/Volume"
+            $ref: '#/components/schemas/Volume'
             additionalProperties: false
             required:
               - name
@@ -4838,7 +4838,7 @@ components:
           description: Map key
         value:
           allOf:
-            - $ref: "#/components/schemas/Any"
+            - $ref: '#/components/schemas/Any'
           description: Mapped value
       description: Automatically-generated message used to represent maps of Any as ordered (name,value) pairs.
     NamedSchemaOrReference:
@@ -4849,7 +4849,7 @@ components:
           description: Map key
         value:
           allOf:
-            - $ref: "#/components/schemas/SchemaOrReference"
+            - $ref: '#/components/schemas/SchemaOrReference'
           description: Mapped value
       description: Automatically-generated message used to represent maps of SchemaOrReference as ordered (name,value) pairs.
     NamedString:
@@ -4928,17 +4928,17 @@ components:
         matchColumns:
           type: array
           items:
-            $ref: "#/components/schemas/MatchColumn"
+            $ref: '#/components/schemas/MatchColumn'
           description: |-
             The columns referenced by the row-filter or column-mask function, and the aliases
              they are bound to.
         rowFilter:
           allOf:
-            - $ref: "#/components/schemas/FunctionRef"
+            - $ref: '#/components/schemas/FunctionRef'
           description: The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
         columnMask:
           allOf:
-            - $ref: "#/components/schemas/FunctionRef"
+            - $ref: '#/components/schemas/FunctionRef'
           description: The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
         comment:
           type: string
@@ -4979,7 +4979,7 @@ components:
         additionalProperties:
           type: array
           items:
-            $ref: "#/components/schemas/NamedSchemaOrReference"
+            $ref: '#/components/schemas/NamedSchemaOrReference'
     Provider:
       required:
         - name
@@ -5093,7 +5093,7 @@ components:
           readOnly: true
           type: array
           items:
-            $ref: "#/components/schemas/RecipientToken"
+            $ref: '#/components/schemas/RecipientToken'
             additionalProperties: false
             required:
               - id
@@ -5171,17 +5171,17 @@ components:
         nullable:
           type: boolean
         discriminator:
-          $ref: "#/components/schemas/Discriminator"
+          $ref: '#/components/schemas/Discriminator'
         readOnly:
           type: boolean
         writeOnly:
           type: boolean
         xml:
-          $ref: "#/components/schemas/Xml"
+          $ref: '#/components/schemas/Xml'
         externalDocs:
-          $ref: "#/components/schemas/ExternalDocs"
+          $ref: '#/components/schemas/ExternalDocs'
         example:
-          $ref: "#/components/schemas/Any"
+          $ref: '#/components/schemas/Any'
         deprecated:
           type: boolean
         title:
@@ -5222,34 +5222,34 @@ components:
         enum:
           type: array
           items:
-            $ref: "#/components/schemas/Any"
+            $ref: '#/components/schemas/Any'
         type:
           type: string
         allOf:
           type: array
           items:
-            $ref: "#/components/schemas/SchemaOrReference"
+            $ref: '#/components/schemas/SchemaOrReference'
         oneOf:
           type: array
           items:
-            $ref: "#/components/schemas/SchemaOrReference"
+            $ref: '#/components/schemas/SchemaOrReference'
         anyOf:
           type: array
           items:
-            $ref: "#/components/schemas/SchemaOrReference"
+            $ref: '#/components/schemas/SchemaOrReference'
         not:
-          $ref: "#/components/schemas/Schema"
+          $ref: '#/components/schemas/Schema'
         items:
-          $ref: "#/components/schemas/ItemsItem"
+          $ref: '#/components/schemas/ItemsItem'
         properties:
-          $ref: "#/components/schemas/Properties"
+          $ref: '#/components/schemas/Properties'
           additionalProperties:
             type: string
           description: A map of key-value properties attached to the securable.
         additionalProperties:
-          $ref: "#/components/schemas/AdditionalPropertiesItem"
+          $ref: '#/components/schemas/AdditionalPropertiesItem'
         default:
-          $ref: "#/components/schemas/DefaultType"
+          $ref: '#/components/schemas/DefaultType'
         description:
           type: string
         format:
@@ -5257,7 +5257,7 @@ components:
         specificationExtension:
           type: array
           items:
-            $ref: "#/components/schemas/NamedAny"
+            $ref: '#/components/schemas/NamedAny'
       description: A schema is a namespace within a catalog that contains tables.
       additionalProperties: false
       required:
@@ -5269,9 +5269,9 @@ components:
       type: object
       properties:
         schema:
-          $ref: "#/components/schemas/Schema"
+          $ref: '#/components/schemas/Schema'
         reference:
-          $ref: "#/components/schemas/Reference"
+          $ref: '#/components/schemas/Reference'
     Share:
       required:
         - name
@@ -5290,7 +5290,7 @@ components:
         objects:
           type: array
           items:
-            $ref: "#/components/schemas/DataObject"
+            $ref: '#/components/schemas/DataObject'
             additionalProperties: false
             required:
               - name
@@ -5402,16 +5402,16 @@ components:
         details:
           type: array
           items:
-            $ref: "#/components/schemas/GoogleProtobufAny"
+            $ref: '#/components/schemas/GoogleProtobufAny'
           description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
-      description: "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors)."
+      description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
     Strings:
       type: object
       properties:
         additionalProperties:
           type: array
           items:
-            $ref: "#/components/schemas/NamedString"
+            $ref: '#/components/schemas/NamedString'
     Table:
       required:
         - name
@@ -5444,7 +5444,7 @@ components:
         columns:
           type: array
           items:
-            $ref: "#/components/schemas/Column"
+            $ref: '#/components/schemas/Column'
             additionalProperties: false
             required:
               - name
@@ -5464,7 +5464,7 @@ components:
              SQL for views, YAML for metric views.
         viewDependencies:
           allOf:
-            - $ref: "#/components/schemas/DependencyList"
+            - $ref: '#/components/schemas/DependencyList'
           description: |-
             Tables and functions the view-like table reads. For metric views this is
              derived from the view_definition by the server (the definition is the
@@ -5556,7 +5556,7 @@ components:
         values:
           type: array
           items:
-            $ref: "#/components/schemas/Value"
+            $ref: '#/components/schemas/Value'
             additionalProperties: false
             required:
               - name
@@ -5596,23 +5596,23 @@ components:
           pattern: ^(?:(?:[a-zA-Z][a-zA-Z\d+\-.]*):)?(?://(?:[A-Za-z0-9\-\.]+(?::\d+)?))?(/[^\?#]*)?(?:\?([^\#]*))?(?:\#(.*))?$
         azureUserDelegationSas:
           allOf:
-            - $ref: "#/components/schemas/AzureUserDelegationSas"
+            - $ref: '#/components/schemas/AzureUserDelegationSas'
           description: Credentials for Azure Blob Storage.
         azureAad:
           allOf:
-            - $ref: "#/components/schemas/AzureAad"
+            - $ref: '#/components/schemas/AzureAad'
           description: Credentials for Azure Active Directory.
         awsTempCredentials:
           allOf:
-            - $ref: "#/components/schemas/AwsTemporaryCredentials"
+            - $ref: '#/components/schemas/AwsTemporaryCredentials'
           description: Credentials for AWS S3.
         gcpOauthToken:
           allOf:
-            - $ref: "#/components/schemas/GcpOauthToken"
+            - $ref: '#/components/schemas/GcpOauthToken'
           description: Credentials for Google Cloud Storage.
         r2TempCredentials:
           allOf:
-            - $ref: "#/components/schemas/R2TemporaryCredentials"
+            - $ref: '#/components/schemas/R2TemporaryCredentials'
           description: Credentials for R2.
       description: The response to the GenerateTemporaryTableCredentialsRequest.
       additionalProperties: false
@@ -5733,23 +5733,23 @@ components:
              or dependent external locations and external tables (when purpose is STORAGE).
         azureServicePrincipal:
           allOf:
-            - $ref: "#/components/schemas/AzureServicePrincipal"
+            - $ref: '#/components/schemas/AzureServicePrincipal'
           description: The Azure service principal configuration.
         azureManagedIdentity:
           allOf:
-            - $ref: "#/components/schemas/AzureManagedIdentity"
+            - $ref: '#/components/schemas/AzureManagedIdentity'
           description: The Azure managed identity configuration.
         azureStorageKey:
           allOf:
-            - $ref: "#/components/schemas/AzureStorageKey"
+            - $ref: '#/components/schemas/AzureStorageKey'
           description: The Azure storage key configuration.
         awsIamRole:
           allOf:
-            - $ref: "#/components/schemas/AwsIamRoleConfig"
+            - $ref: '#/components/schemas/AwsIamRoleConfig'
           description: The AWS IAM role configuration.
         databricksGcpServiceAccount:
           allOf:
-            - $ref: "#/components/schemas/DatabricksGcpServiceAccount"
+            - $ref: '#/components/schemas/DatabricksGcpServiceAccount'
           description: The Databricks managed GCP service account configuration.
       description: Update a credential.
       additionalProperties: false
@@ -5770,7 +5770,7 @@ components:
           description: The key of the tag to update.
         tagAssignment:
           allOf:
-            - $ref: "#/components/schemas/EntityTagAssignment"
+            - $ref: '#/components/schemas/EntityTagAssignment'
           description: The tag assignment with the updated fields.
         updateMask:
           type: string
@@ -5827,7 +5827,7 @@ components:
         changes:
           type: array
           items:
-            $ref: "#/components/schemas/PermissionsChange"
+            $ref: '#/components/schemas/PermissionsChange'
             additionalProperties: false
             required:
               - principal
@@ -5844,7 +5844,7 @@ components:
         privilegeAssignments:
           type: array
           items:
-            $ref: "#/components/schemas/PrivilegeAssignment"
+            $ref: '#/components/schemas/PrivilegeAssignment'
           description: The privileges assigned to each principal
       additionalProperties: false
       title: Update Permissions Response
@@ -5864,7 +5864,7 @@ components:
           description: The fully qualified name of the securable the policy is defined on.
         policyInfo:
           allOf:
-            - $ref: "#/components/schemas/PolicyInfo"
+            - $ref: '#/components/schemas/PolicyInfo'
           description: The policy with the updated fields.
         updateMask:
           type: string
@@ -5959,7 +5959,7 @@ components:
         updates:
           type: array
           items:
-            $ref: "#/components/schemas/DataObjectUpdate"
+            $ref: '#/components/schemas/DataObjectUpdate'
             additionalProperties: false
             required:
               - action
@@ -5988,7 +5988,7 @@ components:
           description: The key of the governed tag to update.
         tagPolicy:
           allOf:
-            - $ref: "#/components/schemas/TagPolicy"
+            - $ref: '#/components/schemas/TagPolicy'
           description: The tag policy with the updated fields.
         updateMask:
           type: string
@@ -6118,5 +6118,5 @@ components:
         specificationExtension:
           type: array
           items:
-            $ref: "#/components/schemas/NamedAny"
+            $ref: '#/components/schemas/NamedAny'
       description: A metadata object that allows for more fine-tuned XML model definitions.  When using arrays, XML element names are *not* inferred (for singular/plural forms) and the `name` property SHOULD be used to add that information. See examples for expected behavior.
