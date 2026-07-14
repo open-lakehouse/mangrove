@@ -36,7 +36,7 @@ export function VolumeDetail({ fullName }: { fullName: string }) {
       <SectionLabel>About this volume</SectionLabel>
       <MetaGrid>
         <Meta label="Owner" value={volume.owner} />
-        <Meta label="Volume ID" value={volume.volume_id} mono />
+        <Meta label="Volume ID" value={volume.volume_id} mono copyable />
         {managed ? (
           <Meta
             label="Storage location"

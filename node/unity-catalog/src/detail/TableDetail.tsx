@@ -118,7 +118,7 @@ export function TableDetail({ fullName }: { fullName: string }) {
           <SectionLabel>About this table</SectionLabel>
           <MetaGrid>
             <Meta label="Owner" value={table.owner} />
-            <Meta label="Table ID" value={table.table_id} mono />
+            <Meta label="Table ID" value={table.table_id} mono copyable />
             <Meta label="Data source format" value={table.data_source_format} />
             {managed ? (
               <Meta

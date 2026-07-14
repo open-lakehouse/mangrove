@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { CopyButton } from "./CopyButton";
 import { CatalogDetail } from "./detail/CatalogDetail";
 import { CredentialDetail } from "./detail/CredentialDetail";
 import { ExternalLocationDetail } from "./detail/ExternalLocationDetail";
@@ -62,16 +63,18 @@ export function DetailPane() {
   }
 
   const { object } = splitFullName(selection.fullName);
+  const displayName = selection.fullName || object;
   const editable = EDITABLE.has(selection.kind);
 
   return (
     <div className="flex min-h-0 flex-col overflow-auto">
       <div className={cn(PANE_HEADER_CLASS, "sticky top-0 z-10 bg-card px-6")}>
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="group flex min-w-0 items-center gap-2">
           {detailIcon(selection.kind)}
           <span className="truncate font-mono text-sm font-medium">
-            {selection.fullName || object}
+            {displayName}
           </span>
+          {displayName && <CopyButton value={displayName} label="full name" />}
           {selection.kind === "table" && (
             <TableHeaderMeta fullName={selection.fullName} />
           )}

@@ -1,5 +1,7 @@
 import { cn } from "@open-lakehouse/ui-kit";
 
+import { CopyButton } from "../CopyButton";
+
 export function Meta({
   label,
   value,
@@ -7,25 +9,31 @@ export function Meta({
   wide,
   /** Render the value monospaced and break on any character (paths/URLs/ARNs). */
   mono,
+  /** Show a subtle inline copy icon after the value (IDs, names, …). */
+  copyable,
 }: {
   label: string;
   value?: string;
   wide?: boolean;
   mono?: boolean;
+  copyable?: boolean;
 }) {
   return (
-    <div className={cn("min-w-0", wide && "col-span-full")}>
+    <div className={cn("group min-w-0", wide && "col-span-full")}>
       <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
         {label}
       </dt>
-      <dd
-        className={cn(
-          wide ? "break-words" : "truncate",
-          mono && "break-all font-mono text-xs",
-        )}
-        title={value}
-      >
-        {value || "—"}
+      <dd className="flex min-w-0 items-center gap-1.5" title={value}>
+        <span
+          className={cn(
+            "min-w-0",
+            wide ? "break-words" : "truncate",
+            mono && "break-all font-mono text-xs",
+          )}
+        >
+          {value || "—"}
+        </span>
+        {copyable && value && <CopyButton value={value} label={label} />}
       </dd>
     </div>
   );
