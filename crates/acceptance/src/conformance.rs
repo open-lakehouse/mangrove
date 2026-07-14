@@ -371,8 +371,17 @@ fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
 
         // --- OssJava (unitycatalog/unitycatalog:v0.5.0), from live runs 2026-07-14 ---
         // Pre-existing baseline gaps against the Java reference server (see #65).
-        // `managed_table_lifecycle` is intentionally NOT quarantined: it passes on
-        // Linux (CI); a local macOS run fails only on the /tmp→/private/tmp symlink.
+        // `managed_table_lifecycle` fails against the Java fixture on *both* Linux
+        // (CI) and macOS, for different reasons: on Linux a `/delta/v1` server call
+        // returns 404 (a createTable/loadTable managed-location mismatch — see #66),
+        // and on a local macOS run the client-side kernel read-back 404s because
+        // `/tmp` is a symlink to `/private/tmp` and `LocalFileSystem` canonicalizes
+        // it (see the caveat in `checks::managed_delta`). Quarantined until the
+        // Linux mismatch is root-caused; the native Rust-server target is unaffected
+        // and stays unquarantined.
+        (Target::OssJava, "managed_table_lifecycle") => Some(
+            "Java /delta/v1 managed-table flow 404s on Linux (location mismatch) and on macOS (/tmp symlink) (follow-up: #66)",
+        ),
         (Target::OssJava, "metric_view_lifecycle") => {
             Some("Java requires view_dependencies on create; we derive them (follow-up: #65)")
         }
