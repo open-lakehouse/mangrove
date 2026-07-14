@@ -23,7 +23,7 @@ import { GROUPS, type GroupDef } from "../groups";
 import { useCatalogSelection } from "../selection";
 import type { ObjectKind } from "../types";
 import { DetailStates } from "./DetailStates";
-import { Meta, MetaGrid } from "./Meta";
+import { Meta, MetaGrid, toEpochMillis } from "./Meta";
 
 // Minimal shape shared by every child list item we render in the table. The
 // per-kind list payloads are wider than this, but Name / Owner / Created are the
@@ -278,9 +278,10 @@ function KindObjects({ group, query }: { group: GroupDef; query: ChildQuery }) {
   );
 }
 
-function formatCreated(ms?: number): string {
-  if (!ms) return "—";
-  return new Date(ms).toLocaleDateString(undefined, {
+function formatCreated(ms?: number | string | null): string {
+  const epoch = toEpochMillis(ms);
+  if (epoch === undefined) return "—";
+  return new Date(epoch).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "2-digit",

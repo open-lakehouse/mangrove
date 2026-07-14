@@ -58,11 +58,25 @@ export function MetaGrid({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Coerce an epoch-millis field to a usable number. Proto3 JSON encodes int64 as
+// a *quoted string* (e.g. "1709640300000"), so these fields arrive as strings at
+// runtime even though the generated TS types say `number` — and `new Date(str)`
+// on a bare epoch string yields "Invalid Date". Parse defensively and reject
+// missing / non-finite / non-positive values (caller shows "—").
+export function toEpochMillis(ms?: number | string | null): number | undefined {
+  if (ms === undefined || ms === null || ms === "") return undefined;
+  const n = typeof ms === "number" ? ms : Number(ms);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
 // Epoch-millis → localized "Mar 05, 2026, 12:05 PM". Returns undefined for
-// missing/zero timestamps so <Meta> renders its "—" placeholder.
-export function formatTimestamp(ms?: number): string | undefined {
-  if (!ms) return undefined;
-  return new Date(ms).toLocaleString(undefined, {
+// missing/invalid timestamps so <Meta> renders its "—" placeholder.
+export function formatTimestamp(
+  ms?: number | string | null,
+): string | undefined {
+  const epoch = toEpochMillis(ms);
+  if (epoch === undefined) return undefined;
+  return new Date(epoch).toLocaleString(undefined, {
     year: "numeric",
     month: "short",
     day: "2-digit",
