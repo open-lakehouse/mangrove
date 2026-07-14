@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
   useTheme,
 } from "@open-lakehouse/ui-kit";
-import { Outlet } from "@tanstack/react-router";
+import { Link, Outlet } from "@tanstack/react-router";
 import { Monitor, Moon, Sun } from "lucide-react";
 
 import { UnityCatalogIcon } from "./UnityCatalogIcon";
@@ -19,14 +19,19 @@ export function AppShell() {
   return (
     <div className="flex h-screen flex-col overflow-hidden">
       <header className="flex h-12 shrink-0 items-center justify-between border-b bg-card px-4">
-        <div className="flex items-center gap-2 text-foreground">
+        {/* Brand doubles as "home": always routes back to the catalog browser,
+            the one persistent way out of full-page routes like External Data. */}
+        <Link
+          to="/catalog"
+          className="flex items-center gap-2 text-foreground transition-colors hover:text-foreground/80"
+        >
           {/* Subtle, monochrome brand mark: muted so it reads as chrome, not a
               call-to-action, matching the console theme. */}
           <UnityCatalogIcon className="h-5 w-5 text-muted-foreground" />
           <span className="text-sm font-semibold tracking-tight">
             Unity Catalog
           </span>
-        </div>
+        </Link>
         <div className="flex items-center gap-1">
           <ThemeToggle />
         </div>

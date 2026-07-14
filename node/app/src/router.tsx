@@ -1,4 +1,8 @@
-import { CatalogExplorer } from "@open-lakehouse/unity-catalog";
+import {
+  CatalogExplorer,
+  ExternalDataPage,
+  type StorageKind,
+} from "@open-lakehouse/unity-catalog";
 import { prefetchCatalogs } from "@open-lakehouse/unity-catalog-client";
 import type { QueryClient } from "@tanstack/react-query";
 import {
@@ -6,6 +10,7 @@ import {
   createRoute,
   createRouter,
   redirect,
+  useNavigate,
 } from "@tanstack/react-router";
 import { AppShell } from "./AppShell";
 
@@ -52,7 +57,44 @@ const catalogRoute = createRoute({
   component: CatalogExplorer,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, catalogRoute]);
+// Metastore-level storage admin ("External Data"). The active securable kind is
+// URL-addressable so the sidebar cog can deep-link straight to a tab, and the
+// tab is shareable / survives reload.
+interface ExternalDataSearch {
+  kind: StorageKind;
+}
+
+const STORAGE_KINDS: StorageKind[] = ["external_location", "credential"];
+
+const externalDataRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "external-data",
+  validateSearch: (search: Record<string, unknown>): ExternalDataSearch => ({
+    kind: STORAGE_KINDS.includes(search.kind as StorageKind)
+      ? (search.kind as StorageKind)
+      : "external_location",
+  }),
+  component: ExternalDataRoute,
+});
+
+function ExternalDataRoute() {
+  const { kind } = externalDataRoute.useSearch();
+  const navigate = useNavigate();
+  return (
+    <ExternalDataPage
+      kind={kind}
+      onKindChange={(next) =>
+        navigate({ to: "/external-data", search: { kind: next } })
+      }
+    />
+  );
+}
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  catalogRoute,
+  externalDataRoute,
+]);
 
 export function createAppRouter(queryClient: QueryClient) {
   return createRouter({

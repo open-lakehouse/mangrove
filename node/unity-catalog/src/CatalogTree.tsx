@@ -14,6 +14,7 @@ import {
   useSchemas,
 } from "@open-lakehouse/unity-catalog-client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import {
   Database,
   FolderTree,
@@ -37,6 +38,7 @@ export function CatalogTree() {
   const queryClient = useQueryClient();
   const catalogs = useCatalogs();
   const dialogs = useCatalogDialogs();
+  const navigate = useNavigate();
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -56,18 +58,28 @@ export function CatalogTree() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Add storage securable</DropdownMenuLabel>
+              <DropdownMenuLabel>External data</DropdownMenuLabel>
               <DropdownMenuItem
-                onSelect={() => dialogs.create({ kind: "external_location" })}
+                onSelect={() =>
+                  navigate({
+                    to: "/external-data",
+                    search: { kind: "external_location" },
+                  })
+                }
               >
                 <Globe />
-                External location
+                External locations
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={() => dialogs.create({ kind: "credential" })}
+                onSelect={() =>
+                  navigate({
+                    to: "/external-data",
+                    search: { kind: "credential" },
+                  })
+                }
               >
                 <KeyRound />
-                Credential
+                Credentials
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
