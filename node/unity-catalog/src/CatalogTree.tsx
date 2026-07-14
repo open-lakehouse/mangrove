@@ -1,4 +1,12 @@
-import { Button } from "@open-lakehouse/ui-kit";
+import {
+  Button,
+  cn,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@open-lakehouse/ui-kit";
 import {
   objectFullName,
   prefetchSchemas,
@@ -6,10 +14,20 @@ import {
   useSchemas,
 } from "@open-lakehouse/unity-catalog-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Database, FolderTree, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  Database,
+  FolderTree,
+  Globe,
+  KeyRound,
+  Pencil,
+  Plus,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import { useCatalogDialogs } from "./dialogs";
 import { nodeId, useExpansion } from "./ExpansionContext";
 import { GROUPS, type GroupDef } from "./groups";
+import { PANE_HEADER_CLASS } from "./layout";
 import { RowMenu } from "./RowMenu";
 import { useCatalogSelection } from "./selection";
 import { CreateAction, ListStates, TreeRow } from "./TreeRow";
@@ -21,20 +39,56 @@ export function CatalogTree() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between border-b px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <div
+        className={cn(
+          PANE_HEADER_CLASS,
+          "px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
+        )}
+      >
         <span className="flex items-center gap-2">
           <Database className="h-4 w-4" />
           Catalogs
         </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-1.5 text-xs"
-          onClick={() => dialogs.create({ kind: "catalog" })}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          New
-        </Button>
+        <div className="flex items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                aria-label="Metastore settings"
+                title="Metastore settings"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Add storage securable</DropdownMenuLabel>
+              <DropdownMenuItem
+                onSelect={() => dialogs.create({ kind: "external_location" })}
+              >
+                <Globe />
+                External location
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => dialogs.create({ kind: "credential" })}
+              >
+                <KeyRound />
+                Credential
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            aria-label="New catalog"
+            title="New catalog"
+            onClick={() => dialogs.create({ kind: "catalog" })}
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-1">
         <ListStates

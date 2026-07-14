@@ -1,10 +1,10 @@
 // Storage-location picker for catalog/schema creation.
 //
-// Mirrors the database behavior: leaving it on "Managed" lets the securable
-// inherit its parent's managed storage, picking a defined external location
-// (optionally with a subpath under it) sets an explicit storage root covered by
-// that location, and "Custom location" allows entering a storage URL directly
-// (useful before any external locations are defined, or for ad-hoc roots).
+// Mirrors the database behavior: leaving it "Managed" lets the securable
+// inherit its parent's managed storage. Toggling managed off requires an
+// explicit storage root — either a defined external location (optionally with a
+// subpath under it) or a custom storage URL entered directly (useful before any
+// external locations are defined, or for ad-hoc roots).
 
 import {
   Input,
@@ -14,12 +14,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Switch,
 } from "@open-lakehouse/ui-kit";
 import { useExternalLocations } from "@open-lakehouse/unity-catalog-client";
 import { useId, useMemo, useState } from "react";
 
-// Radix Select can't use an empty-string value, so the modes need sentinels.
-const MANAGED = "__managed__";
+// Radix Select can't use an empty-string value, so the custom mode needs a sentinel.
 const CUSTOM = "__custom__";
 
 export function StorageLocationPicker({
@@ -29,11 +29,13 @@ export function StorageLocationPicker({
   onChange: (storageLocation: string | undefined) => void;
 }) {
   const locations = useExternalLocations();
-  const [mode, setMode] = useState(MANAGED);
+  const [managed, setManaged] = useState(true);
+  const [source, setSource] = useState(CUSTOM);
   const [subpath, setSubpath] = useState("");
   const [customUrl, setCustomUrl] = useState("");
 
-  const selectId = useId();
+  const managedId = useId();
+  const sourceId = useId();
   const subpathId = useId();
   const urlId = useId();
 
@@ -42,83 +44,107 @@ export function StorageLocationPicker({
     [locations.data],
   );
 
-  function compose(nextMode: string, sub: string, custom: string) {
-    if (nextMode === MANAGED) return undefined;
-    if (nextMode === CUSTOM) return custom.trim() || undefined;
-    const base = items.find((l) => l.name === nextMode)?.url;
+  function compose(
+    isManaged: boolean,
+    nextSource: string,
+    sub: string,
+    custom: string,
+  ) {
+    if (isManaged) return undefined;
+    if (nextSource === CUSTOM) return custom.trim() || undefined;
+    const base = items.find((l) => l.name === nextSource)?.url;
     if (!base) return undefined;
     const trimmedBase = base.replace(/\/+$/, "");
     const trimmedSub = sub.trim().replace(/^\/+/, "");
     return trimmedSub ? `${trimmedBase}/${trimmedSub}` : trimmedBase;
   }
 
-  function selectMode(next: string) {
-    setMode(next);
-    onChange(compose(next, subpath, customUrl));
+  function toggleManaged(next: boolean) {
+    setManaged(next);
+    onChange(compose(next, source, subpath, customUrl));
+  }
+
+  function selectSource(next: string) {
+    setSource(next);
+    onChange(compose(managed, next, subpath, customUrl));
   }
 
   function changeSubpath(sub: string) {
     setSubpath(sub);
-    onChange(compose(mode, sub, customUrl));
+    onChange(compose(managed, source, sub, customUrl));
   }
 
   function changeCustomUrl(url: string) {
     setCustomUrl(url);
-    onChange(compose(mode, subpath, url));
+    onChange(compose(managed, source, subpath, url));
   }
 
-  const composed = compose(mode, subpath, customUrl);
-  const isLocation = mode !== MANAGED && mode !== CUSTOM;
+  const composed = compose(managed, source, subpath, customUrl);
+  const isLocation = source !== CUSTOM;
 
   return (
     <div className="space-y-2 rounded-md border bg-muted/30 p-3">
-      <div className="space-y-1.5">
-        <Label htmlFor={selectId}>Storage location</Label>
-        <Select value={mode} onValueChange={selectMode}>
-          <SelectTrigger id={selectId}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={MANAGED}>
-              Managed (inherit from parent)
-            </SelectItem>
-            {items.map((location) => (
-              <SelectItem key={location.name} value={location.name ?? ""}>
-                {location.name}
-              </SelectItem>
-            ))}
-            <SelectItem value={CUSTOM}>
-              Custom location (enter a URL)
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">
-          Choose a defined external location, enter a storage URL, or keep it
-          managed to inherit from the parent.
-        </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-0.5">
+          <Label htmlFor={managedId}>Managed storage</Label>
+          <p className="text-xs text-muted-foreground">
+            Inherit managed storage from the parent.
+          </p>
+        </div>
+        <Switch
+          id={managedId}
+          checked={managed}
+          onCheckedChange={toggleManaged}
+        />
       </div>
 
-      {isLocation && (
-        <div className="space-y-1.5">
-          <Label htmlFor={subpathId}>Subpath (optional)</Label>
-          <Input
-            id={subpathId}
-            value={subpath}
-            onChange={(e) => changeSubpath(e.target.value)}
-            placeholder="subfolder/path"
-          />
-        </div>
-      )}
+      {!managed && (
+        <div className="space-y-2 border-t pt-2">
+          <div className="space-y-1.5">
+            <Label htmlFor={sourceId}>Storage location</Label>
+            <Select value={source} onValueChange={selectSource}>
+              <SelectTrigger id={sourceId}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {items.map((location) => (
+                  <SelectItem key={location.name} value={location.name ?? ""}>
+                    {location.name}
+                  </SelectItem>
+                ))}
+                <SelectItem value={CUSTOM}>
+                  Custom location (enter a URL)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Choose a defined external location or enter a storage URL.
+            </p>
+          </div>
 
-      {mode === CUSTOM && (
-        <div className="space-y-1.5">
-          <Label htmlFor={urlId}>Storage URL</Label>
-          <Input
-            id={urlId}
-            value={customUrl}
-            onChange={(e) => changeCustomUrl(e.target.value)}
-            placeholder="s3://bucket/path"
-          />
+          {isLocation && (
+            <div className="space-y-1.5">
+              <Label htmlFor={subpathId}>Subpath (optional)</Label>
+              <Input
+                id={subpathId}
+                value={subpath}
+                onChange={(e) => changeSubpath(e.target.value)}
+                placeholder="subfolder/path"
+              />
+            </div>
+          )}
+
+          {source === CUSTOM && (
+            <div className="space-y-1.5">
+              <Label htmlFor={urlId}>Storage URL</Label>
+              <Input
+                id={urlId}
+                value={customUrl}
+                onChange={(e) => changeCustomUrl(e.target.value)}
+                placeholder="s3://bucket/path"
+              />
+            </div>
+          )}
         </div>
       )}
 

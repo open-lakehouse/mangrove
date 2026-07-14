@@ -1,4 +1,4 @@
-import { Badge, Button } from "@open-lakehouse/ui-kit";
+import { Button, cn } from "@open-lakehouse/ui-kit";
 import {
   Database,
   FolderTree,
@@ -15,11 +15,12 @@ import { ExternalLocationDetail } from "./detail/ExternalLocationDetail";
 import { FunctionDetail } from "./detail/FunctionDetail";
 import { ModelDetail } from "./detail/ModelDetail";
 import { SchemaDetail } from "./detail/SchemaDetail";
-import { TableDetail } from "./detail/TableDetail";
+import { TableDetail, TableHeaderMeta } from "./detail/TableDetail";
 import { VolumeDetail } from "./detail/VolumeDetail";
 import type { AnyEditRequest } from "./dialog-types";
 import { useCatalogDialogs } from "./dialogs";
 import { kindIcon } from "./groups";
+import { PANE_HEADER_CLASS } from "./layout";
 import { useCatalogSelection } from "./selection";
 import { isObjectKind, type SelectableKind, splitFullName } from "./types";
 
@@ -65,13 +66,15 @@ export function DetailPane() {
 
   return (
     <div className="flex min-h-0 flex-col overflow-auto">
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-6 py-3">
+      <div className={cn(PANE_HEADER_CLASS, "sticky top-0 z-10 bg-card px-6")}>
         <div className="flex min-w-0 items-center gap-2">
           {detailIcon(selection.kind)}
           <span className="truncate font-mono text-sm font-medium">
             {selection.fullName || object}
           </span>
-          <Badge>{selection.kind}</Badge>
+          {selection.kind === "table" && (
+            <TableHeaderMeta fullName={selection.fullName} />
+          )}
         </div>
         <div className="flex items-center gap-1">
           {editable && (

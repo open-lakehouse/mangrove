@@ -40,6 +40,7 @@ export {
 } from "./select";
 export { Separator } from "./separator";
 export { Toaster } from "./sonner";
+export { Switch, type SwitchProps } from "./switch";
 export { ThemeProvider, useTheme } from "./ThemeProvider";
 export { Textarea } from "./textarea";
 export {

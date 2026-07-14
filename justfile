@@ -223,6 +223,88 @@ rest-ui-wasm-seeded: ui-build-wasm
     echo "[seed] (Ctrl-C to stop the server and clean up Azurite + ./web)"
     wait "$server_pid"
 
+# Run the Vite UI dev server (HMR) against a live, seeded backend — the fast
+# inner loop for UI work. Unlike the `rest-ui*` recipes (which build the SPA and
+# let uc-server serve it on one origin), this runs the Vite dev server on :3003
+# and proxies `/api` to uc-server on :8080 (see node/app/vite.config.ts), so
+# source edits hot-reload without a rebuild. No wasm — the default (non-preview)
+# UI build.
+#
+# Backend mirrors the seeded flow but persists: durable Postgres (started via
+# compose + migrated) plus Azurite-backed managed storage, seeded with the demo
+# catalog/schema (create tables via the UI). It skips the demo Delta-table
+# datagen `rest-ui-wasm-seeded` does — that only feeds the wasm query preview
+# and trips a delta-rs nested-runtime panic — so no `delta` feature build.
+#
+# On Ctrl-C it tears down gracefully: stops the UC server and the Azurite
+# container. The shared Postgres container is left running (stop it yourself with
+# `docker compose -f dev/compose.yaml stop postgres_uc_dev`).
+#
+# Requires Docker (Postgres + Azurite) and npm. No wasm toolchain needed.
+[group('dev')]
+ui-dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export AZURITE_BLOB_STORAGE_URL="http://127.0.0.1:10000"
+    export PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres PGDATABASE=postgres
+    compose_file="{{ justfile_directory() }}/dev/compose.yaml"
+    config="{{ justfile_directory() }}/dev/config-azurite-pg.yaml"
+
+    # Graceful shutdown: stop the background UC server (SIGTERM → it flushes via
+    # `with_graceful_shutdown`) and tear down the Azurite container the seed
+    # script started. Postgres is intentionally left running (it is the shared
+    # default-profile dev container). Idempotent guard since EXIT also fires
+    # after INT/TERM.
+    cleaned=""
+    cleanup() {
+        [ -n "$cleaned" ] && return
+        cleaned=1
+        echo ""
+        echo "[ui-dev] shutting down…"
+        if [ -n "${server_pid:-}" ] && kill -0 "$server_pid" 2>/dev/null; then
+            echo "[ui-dev]   stopping UC server (pid $server_pid)…"
+            kill -TERM "$server_pid" 2>/dev/null || true
+            for _ in $(seq 1 100); do
+                kill -0 "$server_pid" 2>/dev/null || break
+                sleep 0.1
+            done
+            kill -KILL "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+        fi
+        echo "[ui-dev]   tearing down Azurite (docker compose rm -sf azurite_uc_dev)…"
+        docker compose -f "$compose_file" --profile azurite rm -sfv azurite_uc_dev >/dev/null 2>&1 || true
+        echo "[ui-dev] done. (Postgres left running: docker compose -f dev/compose.yaml stop postgres_uc_dev)"
+    }
+    trap cleanup EXIT INT TERM
+
+    # Durable backend: start Postgres and migrate first — `serve` does not
+    # migrate a durable backend.
+    echo "[ui-dev] starting Postgres…"
+    docker compose -f "$compose_file" up -d --wait postgres_uc_dev
+    echo "[ui-dev] applying migrations…"
+    cargo run -p olai-uc-server --features bin --bin uc-server -- migrate -c "$config"
+
+    echo "[ui-dev] starting UC server (Postgres + Azurite) in the background…"
+    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- \
+        serve -c "$config" &
+    server_pid=$!
+
+    # Seed Azurite + UC (container, CORS, credential, external location, catalog,
+    # schema). The script starts the Azurite container and waits for the server's
+    # /catalogs to answer. Unlike `rest-ui-wasm-seeded`, we do NOT write the demo
+    # managed Delta table — that exists only to feed the in-browser wasm query
+    # preview (which this flow doesn't build), and its datagen example trips a
+    # delta-rs nested-runtime panic. The seeded catalog/schema is enough to
+    # exercise the UI; create tables through the UI itself as needed.
+    bash dev/scripts/seed-azurite.sh
+
+    echo ""
+    echo "[ui-dev] backend ready on http://localhost:8080 — starting Vite dev server…"
+    echo "[ui-dev] open the printed URL (http://localhost:3003); /api proxies to :8080"
+    echo "[ui-dev] (Ctrl-C to stop the dev server, UC server, and Azurite)"
+    # Foreground: Ctrl-C ends the dev server, then the EXIT trap cleans up.
+    npm run dev --workspace @open-lakehouse/uc-app
+
 # build the bundled single-page app into node/app/dist
 [group('build')]
 ui-build:
