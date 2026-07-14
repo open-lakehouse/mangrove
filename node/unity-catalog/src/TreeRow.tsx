@@ -79,7 +79,7 @@ export function TreeRow({
           <span className="min-w-0 flex-1 truncate font-medium">
             {label}
             {count !== undefined && (
-              <span className="ml-1 font-normal tabular-nums text-muted-foreground">
+              <span className="ml-1 font-mono text-xs tabular-nums text-muted-foreground">
                 ({count})
               </span>
             )}

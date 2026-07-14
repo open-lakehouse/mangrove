@@ -176,7 +176,7 @@ function KindTab({
     >
       <Icon className="h-4 w-4" />
       {group.title}
-      <span className="text-xs tabular-nums text-muted-foreground">
+      <span className="font-mono text-xs tabular-nums text-muted-foreground">
         {count}
         {query.hasNextPage ? "+" : ""}
       </span>

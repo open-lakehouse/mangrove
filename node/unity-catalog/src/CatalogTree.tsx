@@ -29,6 +29,7 @@ import { nodeId, useExpansion } from "./ExpansionContext";
 import { GROUPS, type GroupDef } from "./groups";
 import { PANE_HEADER_CLASS } from "./layout";
 import { RowMenu } from "./RowMenu";
+import { SectionLabel } from "./SectionLabel";
 import { useCatalogSelection } from "./selection";
 import { CreateAction, ListStates, TreeRow } from "./TreeRow";
 
@@ -39,16 +40,8 @@ export function CatalogTree() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div
-        className={cn(
-          PANE_HEADER_CLASS,
-          "px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
-        )}
-      >
-        <span className="flex items-center gap-2">
-          <Database className="h-4 w-4" />
-          Catalogs
-        </span>
+      <div className={cn(PANE_HEADER_CLASS, "px-3")}>
+        <SectionLabel>Catalogs</SectionLabel>
         <div className="flex items-center gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

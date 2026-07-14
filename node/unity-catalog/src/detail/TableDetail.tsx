@@ -6,9 +6,9 @@ import {
   TabsTrigger,
 } from "@open-lakehouse/ui-kit";
 import { useTableDetail } from "@open-lakehouse/unity-catalog-client";
-import { Columns3, Info } from "lucide-react";
 import { useState } from "react";
 
+import { SectionLabel } from "../SectionLabel";
 import { DetailStates } from "./DetailStates";
 import { FormatIcon } from "./FormatIcon";
 import { formatTimestamp, Meta, MetaGrid } from "./Meta";
@@ -77,10 +77,7 @@ export function TableDetail({ fullName }: { fullName: string }) {
         )}
 
         <div className="mt-6">
-          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            <Columns3 className="h-4 w-4" />
-            Columns
-          </div>
+          <SectionLabel className="mb-2">Columns</SectionLabel>
           {table.columns && table.columns.length > 0 ? (
             <table className="w-full text-sm">
               <thead>
@@ -118,10 +115,7 @@ export function TableDetail({ fullName }: { fullName: string }) {
 
       <TabsContent value="details">
         <section className="space-y-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            <Info className="h-4 w-4" />
-            About this table
-          </div>
+          <SectionLabel>About this table</SectionLabel>
           <MetaGrid>
             <Meta label="Owner" value={table.owner} />
             <Meta label="Table ID" value={table.table_id} mono />

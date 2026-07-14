@@ -1,7 +1,7 @@
 import { Badge } from "@open-lakehouse/ui-kit";
 import { useVolumeDetail } from "@open-lakehouse/unity-catalog-client";
-import { HardDrive } from "lucide-react";
 
+import { SectionLabel } from "../SectionLabel";
 import { DetailStates } from "./DetailStates";
 import { formatTimestamp, Meta, MetaGrid } from "./Meta";
 
@@ -33,10 +33,7 @@ export function VolumeDetail({ fullName }: { fullName: string }) {
 
   return (
     <section className="space-y-3">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        <HardDrive className="h-4 w-4" />
-        About this volume
-      </div>
+      <SectionLabel>About this volume</SectionLabel>
       <MetaGrid>
         <Meta label="Owner" value={volume.owner} />
         <Meta label="Volume ID" value={volume.volume_id} mono />

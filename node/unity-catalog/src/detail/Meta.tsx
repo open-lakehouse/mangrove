@@ -15,7 +15,9 @@ export function Meta({
 }) {
   return (
     <div className={cn("min-w-0", wide && "col-span-full")}>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
       <dd
         className={cn(
           wide ? "break-words" : "truncate",
