@@ -1,13 +1,5 @@
-import { Button, cn } from "@open-lakehouse/ui-kit";
-import {
-  Database,
-  FolderTree,
-  Globe,
-  KeyRound,
-  Pencil,
-  Trash2,
-  X,
-} from "lucide-react";
+import { cn } from "@open-lakehouse/ui-kit";
+import { Database, FolderTree, Globe, KeyRound } from "lucide-react";
 import type { ReactNode } from "react";
 import { CopyButton } from "./CopyButton";
 import { CatalogDetail } from "./detail/CatalogDetail";
@@ -18,23 +10,10 @@ import { ModelDetail } from "./detail/ModelDetail";
 import { SchemaDetail } from "./detail/SchemaDetail";
 import { TableDetail } from "./detail/TableDetail";
 import { VolumeDetail } from "./detail/VolumeDetail";
-import type { AnyEditRequest } from "./dialog-types";
-import { useCatalogDialogs } from "./dialogs";
 import { kindIcon } from "./groups";
 import { PANE_HEADER_CLASS } from "./layout";
 import { useCatalogSelection } from "./selection";
 import { isObjectKind, type SelectableKind, splitFullName } from "./types";
-
-// Catalogs / schemas / volumes / models / credentials / external locations
-// support PATCH; tables / functions don't.
-const EDITABLE: ReadonlySet<SelectableKind> = new Set<SelectableKind>([
-  "catalog",
-  "schema",
-  "volume",
-  "model",
-  "credential",
-  "external_location",
-]);
 
 function detailIcon(kind: SelectableKind): ReactNode {
   const cls = "h-5 w-5 shrink-0 text-muted-foreground";
@@ -47,8 +26,7 @@ function detailIcon(kind: SelectableKind): ReactNode {
 }
 
 export function DetailPane() {
-  const { selection, select } = useCatalogSelection();
-  const dialogs = useCatalogDialogs();
+  const { selection } = useCatalogSelection();
 
   if (!selection) {
     return (
@@ -60,7 +38,6 @@ export function DetailPane() {
 
   const { object } = splitFullName(selection.fullName);
   const displayName = selection.fullName || object;
-  const editable = EDITABLE.has(selection.kind);
 
   return (
     <div className="flex min-h-0 flex-col overflow-auto">
@@ -76,44 +53,6 @@ export function DetailPane() {
             {displayName}
           </span>
           {displayName && <CopyButton value={displayName} label="full name" />}
-        </div>
-        <div className="flex items-center gap-1">
-          {editable && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7"
-              onClick={() =>
-                dialogs.edit({
-                  kind: selection.kind,
-                  name: selection.fullName,
-                } as AnyEditRequest)
-              }
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-destructive hover:text-destructive"
-            onClick={() =>
-              dialogs.remove({ kind: selection.kind, name: selection.fullName })
-            }
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Delete
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            aria-label="Close"
-            onClick={() => select(undefined)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </div>
       </div>
       <div className="px-6 py-6">
