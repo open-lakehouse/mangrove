@@ -27,7 +27,10 @@ message GenerateTemporaryTableCredentialsRequest {
   // The operation performed against the table data, either READ or READ_WRITE.
   // If READ_WRITE is specified, the credentials returned will have write
   // permissions, otherwise, it will be read only.
-  Operation operation = 2 [(google.api.field_behavior) = REQUIRED];
+  Operation operation = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {not_in: [0]}
+  ];
 }
 
 // Generate a new set of credentials for a volume.
@@ -49,7 +52,10 @@ message GenerateTemporaryVolumeCredentialsRequest {
   // The operation performed against the volume data, either READ_VOLUME or
   // WRITE_VOLUME. If WRITE_VOLUME is specified, the credentials returned will
   // have write permissions, otherwise, it will be read only.
-  Operation operation = 2 [(google.api.field_behavior) = REQUIRED];
+  Operation operation = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {not_in: [0]}
+  ];
 }
 
 // Generate a new set of credentials for a path.
@@ -72,7 +78,10 @@ message GenerateTemporaryPathCredentialsRequest {
   string url = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The operation being performed on the path.
-  Operation operation = 2 [(google.api.field_behavior) = REQUIRED];
+  Operation operation = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {not_in: [0]}
+  ];
 
   // When set to true, the service will not validate that the generated
   // credentials can perform write operations, therefore no new paths will be
@@ -109,7 +118,10 @@ message GenerateTemporaryModelVersionCredentialsRequest {
   // READ_MODEL_VERSION or READ_WRITE_MODEL_VERSION. If READ_WRITE_MODEL_VERSION
   // is specified, the credentials returned will have write permissions,
   // otherwise, it will be read only.
-  Operation operation = 5 [(google.api.field_behavior) = REQUIRED];
+  Operation operation = 5 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {not_in: [0]}
+  ];
 }
 
 // Service for generating temporary credentials to access tables and storage paths.

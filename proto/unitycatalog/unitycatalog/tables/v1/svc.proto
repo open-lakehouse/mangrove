@@ -125,9 +125,15 @@ message CreateTableRequest {
     (google.api.field_behavior) = REQUIRED
   ];
 
-  TableType table_type = 4 [(google.api.field_behavior) = REQUIRED];
+  TableType table_type = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {not_in: [0]}
+  ];
 
-  DataSourceFormat data_source_format = 5 [(google.api.field_behavior) = REQUIRED];
+  DataSourceFormat data_source_format = 5 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {not_in: [0]}
+  ];
 
   // The array of Column definitions of the table's columns.
   repeated Column columns = 6;

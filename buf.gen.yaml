@@ -27,6 +27,13 @@ plugins:
       - file_per_package=true
   - remote: buf.build/community/google-gnostic-openapi:v0.7.1
     out: openapi
+    opt:
+      # Emit snake_case JSON field names and string-valued enums so the rendered
+      # OpenAPI matches the actual UC wire format (the serde layer serializes
+      # snake_case + string enum names). Defaults are naming=json (camelCase) and
+      # enum_type=integer, which drift the spec away from the wire.
+      - naming=proto
+      - enum_type=string
   - remote: buf.build/bufbuild/es:v2.12.1
     out: node/client/unitycatalog/codegen/models/gen
     opt:
