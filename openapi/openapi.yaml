@@ -31,6 +31,13 @@ tags:
        External locations define cloud storage paths accessible via storage credentials.
   - name: FunctionsService
     description: Manage User-Defined Functions (UDFs) in the service.
+  - name: ModelVersionsService
+    description: |-
+      Manage model versions in the service.
+
+       A model version belongs to a registered model and is identified by the model's
+       three-level name plus a server-assigned integer version. It carries its own
+       artifact storage location and READY/PENDING lifecycle.
   - name: PoliciesService
     description: Manage ABAC row-filter and column-mask policies bound to Unity Catalog securables.
   - name: ProvidersService
@@ -50,6 +57,12 @@ tags:
        activation link you can send to the recipient. The recipient follows the activation link to download
        the credential file, and then uses the credential file to establish a secure connection to receive
        the shared data. This sharing mode is called open sharing.
+  - name: RegisteredModelsService
+    description: |-
+      Manage registered models in the service.
+
+       A registered model is a securable in the three-level namespace
+       (catalog.schema.model) that groups a collection of model versions.
   - name: SchemasService
     description: |-
       A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.
@@ -1200,6 +1213,444 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Function"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /models:
+    get:
+      tags:
+        - RegisteredModelsService
+      description: |-
+        List registered models
+
+         List registered models within the specified parent catalog and schema. If
+         the caller is the metastore admin, all registered models are returned in the
+         response. Otherwise, the caller must have USE_CATALOG on the parent catalog
+         and USE_SCHEMA on the parent schema, and the model must either be owned by
+         the caller or the caller must have a privilege on the model.
+      operationId: ListRegisteredModels
+      parameters:
+        - name: catalogName
+          in: query
+          description: Name of parent catalog for models of interest.
+          schema:
+            type: string
+        - name: schemaName
+          in: query
+          description: Name of parent schema for models of interest.
+          schema:
+            type: string
+        - name: maxResults
+          in: query
+          description: The maximum number of results per page that should be returned.
+          schema:
+            type: integer
+            format: int32
+        - name: pageToken
+          in: query
+          description: Opaque pagination token to go to next page based on previous query.
+          schema:
+            type: string
+        - name: includeBrowse
+          in: query
+          description: |-
+            Whether to include registered models in the response for which the principal
+             can only access selective metadata for.
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListRegisteredModelsResponse"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+    post:
+      tags:
+        - RegisteredModelsService
+      description: |-
+        Create a registered model
+
+         Creates a new registered model. The caller must be a metastore admin or have
+         the CREATE_MODEL privilege on the parent catalog and schema.
+      operationId: CreateRegisteredModel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRegisteredModel"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisteredModel"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /models/versions:
+    post:
+      tags:
+        - ModelVersionsService
+      description: |-
+        Create a model version
+
+         Creates a new model version in PENDING_REGISTRATION status. The server
+         assigns the version number and a storage location for the artifacts. The
+         caller must be a metastore admin or the owner of the parent registered model.
+      operationId: CreateModelVersion
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateModelVersion"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelVersion"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /models/{fullName}:
+    get:
+      tags:
+        - RegisteredModelsService
+      description: |-
+        Get a registered model
+
+         Gets a registered model from within a parent catalog and schema. For the
+         fetch to succeed, the caller must be a metastore admin, the owner of the
+         registered model, or have a privilege on the registered model.
+      operationId: GetRegisteredModel
+      parameters:
+        - name: fullName
+          in: path
+          description: |-
+            The fully-qualified name of the registered model (three-level name:
+             catalog.schema.model).
+          required: true
+          schema:
+            type: string
+        - name: includeBrowse
+          in: query
+          description: |-
+            Whether to include registered models in the response for which the principal
+             can only access selective metadata for.
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisteredModel"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+    delete:
+      tags:
+        - RegisteredModelsService
+      description: |-
+        Delete a registered model
+
+         Deletes the registered model that matches the supplied name. For the deletion
+         to succeed, the caller must be the owner of the registered model.
+      operationId: DeleteRegisteredModel
+      parameters:
+        - name: fullName
+          in: path
+          description: |-
+            The fully-qualified name of the registered model (three-level name:
+             catalog.schema.model).
+          required: true
+          schema:
+            type: string
+        - name: force
+          in: query
+          description: Force deletion even if the registered model still has model versions.
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content: {}
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+    patch:
+      tags:
+        - RegisteredModelsService
+      description: |-
+        Update a registered model
+
+         Updates the registered model that matches the supplied name.
+      operationId: UpdateRegisteredModel
+      parameters:
+        - name: fullName
+          in: path
+          description: |-
+            The fully-qualified name of the registered model (three-level name:
+             catalog.schema.model).
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRegisteredModelRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisteredModel"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /models/{fullName}/versions:
+    get:
+      tags:
+        - ModelVersionsService
+      description: |-
+        List model versions
+
+         List the model versions of the specified registered model. If the caller is
+         the metastore admin, all model versions are returned. Otherwise, the caller
+         must have the appropriate privileges on the parent model.
+      operationId: ListModelVersions
+      parameters:
+        - name: fullName
+          in: path
+          description: |-
+            The full three-level name of the registered model (catalog.schema.model)
+             whose versions are being listed.
+          required: true
+          schema:
+            type: string
+        - name: maxResults
+          in: query
+          description: The maximum number of results per page that should be returned.
+          schema:
+            type: integer
+            format: int32
+        - name: pageToken
+          in: query
+          description: Opaque pagination token to go to next page based on previous query.
+          schema:
+            type: string
+        - name: includeBrowse
+          in: query
+          description: |-
+            Whether to include model versions in the response for which the principal can
+             only access selective metadata for.
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListModelVersionsResponse"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /models/{fullName}/versions/{version}:
+    get:
+      tags:
+        - ModelVersionsService
+      description: |-
+        Get a model version
+
+         Gets a model version by its parent model name and version number.
+      operationId: GetModelVersion
+      parameters:
+        - name: fullName
+          in: path
+          description: |-
+            The full three-level name of the parent registered model
+             (catalog.schema.model).
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          description: The integer version number of the model version.
+          required: true
+          schema:
+            type: string
+        - name: includeBrowse
+          in: query
+          description: |-
+            Whether to include model versions in the response for which the principal can
+             only access selective metadata for.
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelVersion"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+    delete:
+      tags:
+        - ModelVersionsService
+      description: |-
+        Delete a model version
+
+         Deletes the model version that matches the supplied name and version. For the
+         deletion to succeed, the caller must be the owner of the parent registered
+         model.
+      operationId: DeleteModelVersion
+      parameters:
+        - name: fullName
+          in: path
+          description: |-
+            The full three-level name of the parent registered model
+             (catalog.schema.model).
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          description: The integer version number of the model version.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content: {}
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+    patch:
+      tags:
+        - ModelVersionsService
+      description: |-
+        Update a model version
+
+         Updates the model version that matches the supplied name and version.
+      operationId: UpdateModelVersion
+      parameters:
+        - name: fullName
+          in: path
+          description: |-
+            The full three-level name of the parent registered model
+             (catalog.schema.model).
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          description: The integer version number of the model version.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateModelVersionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelVersion"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /models/{fullName}/versions/{version}/finalize:
+    patch:
+      tags:
+        - ModelVersionsService
+      description: |-
+        Finalize a model version
+
+         Transitions a model version to READY once all artifacts have been written to
+         its storage location.
+      operationId: FinalizeModelVersion
+      parameters:
+        - name: fullName
+          in: path
+          description: |-
+            The full three-level name of the parent registered model
+             (catalog.schema.model).
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          description: The integer version number of the model version to finalize.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinalizeModelVersionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelVersion"
         default:
           description: Default error response
           content:
@@ -2512,6 +2963,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
+  /temporary-model-version-credentials:
+    post:
+      tags:
+        - TemporaryCredentialsService
+      description: |-
+        Generate a new set of credentials for a model version.
+
+         The metastore must have the `external_access_enabled` flag set to true
+         (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+         privilege on the parent schema (granted by a catalog owner).
+      operationId: GenerateTemporaryModelVersionCredentials
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateTemporaryModelVersionCredentialsRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemporaryCredential"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
   /temporary-path-credentials:
     post:
       tags:
@@ -3519,6 +4000,39 @@ components:
          the Unity Catalog `POST /functions` wire contract.
       additionalProperties: false
       title: The payload for creating a new function.
+    CreateModelVersion:
+      required:
+        - model_name
+        - catalog_name
+        - schema_name
+        - source
+      type: object
+      properties:
+        modelName:
+          type: string
+          description: Name of the parent registered model, relative to parent schema.
+        catalogName:
+          type: string
+          description: Name of parent catalog.
+        schemaName:
+          type: string
+          description: Name of parent schema.
+        source:
+          type: string
+          description: |-
+            URI indicating the location of the source artifacts (e.g. an MLflow run
+             artifact path) used to create the model version.
+        runId:
+          type: string
+          description: The run id used by the ML package that generated this model.
+        comment:
+          type: string
+          description: User-provided free-form text description.
+      description: |-
+        Wrapped in the `model_version` envelope of a `CreateModelVersionRequest`,
+         matching the Unity Catalog `POST /models/versions` wire contract.
+      additionalProperties: false
+      title: The payload for creating a new model version.
     CreateProviderRequest:
       required:
         - name
@@ -3587,6 +4101,32 @@ components:
       description: Creates a new recipient
       additionalProperties: false
       title: Create Recipient Request
+    CreateRegisteredModel:
+      required:
+        - name
+        - catalog_name
+        - schema_name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of registered model, relative to parent schema.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        catalogName:
+          type: string
+          description: Name of parent catalog.
+        schemaName:
+          type: string
+          description: Name of parent schema.
+        comment:
+          type: string
+          description: User-provided free-form text description.
+      description: |-
+        Wrapped in the `model_info` envelope of a `CreateRegisteredModelRequest`,
+         matching the Unity Catalog `POST /models` wire contract.
+      additionalProperties: false
+      title: The payload for creating a new registered model.
     CreateSchemaRequest:
       required:
         - name
@@ -4116,6 +4656,20 @@ components:
           type: string
       additionalProperties: false
       title: External Location
+    FinalizeModelVersionRequest:
+      required: []
+      type: object
+      properties:
+        fullName:
+          type: string
+          description: |-
+            The full three-level name of the parent registered model
+             (catalog.schema.model).
+      description: |-
+        Transitions a model version from PENDING_REGISTRATION to READY once the client
+         has finished writing all artifacts to the version's storage location.
+      additionalProperties: false
+      title: Finalize a model version.
     Function:
       required:
         - name
@@ -4363,6 +4917,43 @@ components:
       required:
         - oauth_token
       title: Gcp Oauth Token
+    GenerateTemporaryModelVersionCredentialsRequest:
+      required:
+        - catalog_name
+        - schema_name
+        - model_name
+        - version
+        - operation
+      type: object
+      properties:
+        catalogName:
+          type: string
+          description: Name of parent catalog of the model version.
+        schemaName:
+          type: string
+          description: Name of parent schema of the model version.
+        modelName:
+          type: string
+          description: Name of the parent registered model.
+        version:
+          type: string
+          description: The integer version number of the model version.
+        operation:
+          type: integer
+          description: |-
+            The operation performed against the model version data, either
+             READ_MODEL_VERSION or READ_WRITE_MODEL_VERSION. If READ_WRITE_MODEL_VERSION
+             is specified, the credentials returned will have write permissions,
+             otherwise, it will be read only.
+          format: enum
+          enum:
+            - UNSPECIFIED
+            - READ_MODEL_VERSION
+            - READ_WRITE_MODEL_VERSION
+          title: Operation
+      description: Generate a new set of credentials for a model version.
+      additionalProperties: false
+      title: Generate Temporary Model Version Credentials Request
     GenerateTemporaryPathCredentialsRequest:
       required:
         - url
@@ -4624,6 +5215,20 @@ components:
       description: List functions response.
       additionalProperties: false
       title: List Functions Response
+    ListModelVersionsResponse:
+      type: object
+      properties:
+        modelVersions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModelVersion"
+          description: The model versions returned.
+        nextPageToken:
+          type: string
+          description: The next_page_token value to include in the next List request.
+      description: List model versions response.
+      additionalProperties: false
+      title: List Model Versions Response
     ListPoliciesResponse:
       type: object
       properties:
@@ -4691,6 +5296,20 @@ components:
       description: Response to list recipients.
       additionalProperties: false
       title: List Recipients Response
+    ListRegisteredModelsResponse:
+      type: object
+      properties:
+        registeredModels:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegisteredModel"
+          description: The registered models returned.
+        nextPageToken:
+          type: string
+          description: The next_page_token value to include in the next List request.
+      description: List registered models response.
+      additionalProperties: false
+      title: List Registered Models Response
     ListSchemasResponse:
       type: object
       properties:
@@ -4832,6 +5451,95 @@ components:
          row-filter or column-mask function invocation.
       additionalProperties: false
       title: Match Column
+    ModelVersion:
+      required:
+        - model_name
+        - catalog_name
+        - schema_name
+        - version
+        - source
+        - status
+      type: object
+      properties:
+        modelName:
+          type: string
+          description: Name of the parent registered model, relative to parent schema.
+        catalogName:
+          type: string
+          description: Name of parent catalog.
+        schemaName:
+          type: string
+          description: Name of parent schema.
+        version:
+          readOnly: true
+          type: string
+          description: |-
+            Integer model version number, used to reference the model version in API
+             requests. Assigned by the server, monotonically increasing per model.
+        source:
+          type: string
+          description: |-
+            URI indicating the location of the source artifacts used to create the model
+             version.
+        runId:
+          type: string
+          description: The run id used by the ML package that generated this model.
+        status:
+          readOnly: true
+          type: integer
+          description: Current status of the model version.
+          format: enum
+          enum:
+            - MODEL_VERSION_STATUS_UNSPECIFIED
+            - PENDING_REGISTRATION
+            - FAILED_REGISTRATION
+            - READY
+          title: Model Version Status
+        storageLocation:
+          readOnly: true
+          type: string
+          description: The storage location under which the model version's artifacts are stored.
+        comment:
+          type: string
+          description: User-provided free-form text description.
+        id:
+          readOnly: true
+          type: string
+          description: Unique identifier for the model version.
+        createdAt:
+          readOnly: true
+          type: string
+          description: Time at which this model version was created, in epoch milliseconds.
+        createdBy:
+          readOnly: true
+          type: string
+          description: Username of model version creator.
+        updatedAt:
+          readOnly: true
+          type: string
+          description: Time at which this model version was last updated, in epoch milliseconds.
+        updatedBy:
+          readOnly: true
+          type: string
+          description: Username of user who last modified the model version.
+        metastoreId:
+          readOnly: true
+          type: string
+          description: The unique identifier of the metastore.
+        browseOnly:
+          readOnly: true
+          type: boolean
+          description: |-
+            Indicates whether the principal is limited to retrieving metadata for the
+             associated object through the BROWSE privilege when include_browse is
+             enabled in the request.
+      description: |-
+        A version is identified by its parent model's three-level name plus an
+         integer `version` number assigned by the server. It carries its own artifact
+         storage location and moves through the PENDING_REGISTRATION -> READY lifecycle
+         via the finalize operation.
+      additionalProperties: false
+      title: A model version under a registered model.
     NamedAny:
       type: object
       properties:
@@ -5167,6 +5875,80 @@ components:
         description:
           type: string
       description: A simple object to allow referencing other components in the specification, internally and externally.  The Reference Object is defined by JSON Reference and follows the same structure, behavior and rules.   For this specification, reference resolution is accomplished as defined by the JSON Reference specification and not by the JSON Schema specification.
+    RegisteredModel:
+      required:
+        - name
+        - catalog_name
+        - schema_name
+        - full_name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of registered model, relative to parent schema.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        catalogName:
+          type: string
+          description: Name of parent catalog.
+        schemaName:
+          type: string
+          description: Name of parent schema.
+        fullName:
+          readOnly: true
+          type: string
+          description: |-
+            The three-level (fully qualified) name of the registered model.
+
+             Format: catalog_name.schema_name.model_name
+        storageLocation:
+          readOnly: true
+          type: string
+          description: The storage location under which model version data files are stored.
+        owner:
+          readOnly: true
+          type: string
+          description: Username of current owner of the registered model.
+        comment:
+          type: string
+          description: User-provided free-form text description.
+        id:
+          readOnly: true
+          type: string
+          description: Unique identifier for the registered model.
+        createdAt:
+          readOnly: true
+          type: string
+          description: Time at which this registered model was created, in epoch milliseconds.
+        createdBy:
+          readOnly: true
+          type: string
+          description: Username of registered model creator.
+        updatedAt:
+          readOnly: true
+          type: string
+          description: Time at which this registered model was last updated, in epoch milliseconds.
+        updatedBy:
+          readOnly: true
+          type: string
+          description: Username of user who last modified the registered model.
+        metastoreId:
+          readOnly: true
+          type: string
+          description: The unique identifier of the metastore.
+        browseOnly:
+          readOnly: true
+          type: boolean
+          description: |-
+            Indicates whether the principal is limited to retrieving metadata for the
+             associated object through the BROWSE privilege when include_browse is
+             enabled in the request.
+      description: |-
+        Registered models group a collection of model versions. Individual versions
+         carry their own artifact storage location and are created, finalized, and
+         governed independently.
+      additionalProperties: false
+      title: A registered model within the three-level namespace (catalog.schema.model).
     Schema:
       type: object
       properties:
@@ -5822,6 +6604,21 @@ components:
       description: Update a function
       additionalProperties: false
       title: Update Function Request
+    UpdateModelVersionRequest:
+      required: []
+      type: object
+      properties:
+        fullName:
+          type: string
+          description: |-
+            The full three-level name of the parent registered model
+             (catalog.schema.model).
+        comment:
+          type: string
+          description: User-provided free-form text description.
+      description: Update a model version.
+      additionalProperties: false
+      title: Update Model Version Request
     UpdatePermissionsRequest:
       required: []
       type: object
@@ -5930,6 +6727,27 @@ components:
       description: Update a recipient
       additionalProperties: false
       title: Update Recipient Request
+    UpdateRegisteredModelRequest:
+      required: []
+      type: object
+      properties:
+        fullName:
+          type: string
+          description: |-
+            The fully-qualified name of the registered model (three-level name:
+             catalog.schema.model).
+        newName:
+          type: string
+          description: New name for the registered model.
+        comment:
+          type: string
+          description: User-provided free-form text description.
+        owner:
+          type: string
+          description: Username of new owner of the registered model.
+      description: Update a registered model.
+      additionalProperties: false
+      title: Update Registered Model Request
     UpdateSchemaRequest:
       required: []
       type: object

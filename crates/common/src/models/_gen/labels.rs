@@ -10,9 +10,11 @@ pub enum Resource {
     Credential(super::credentials::v1::Credential),
     ExternalLocation(super::external_locations::v1::ExternalLocation),
     Function(super::functions::v1::Function),
+    ModelVersion(super::model_versions::v1::ModelVersion),
     PolicyInfo(super::policies::v1::PolicyInfo),
     Provider(super::providers::v1::Provider),
     Recipient(super::recipients::v1::Recipient),
+    RegisteredModel(super::registered_models::v1::RegisteredModel),
     Schema(super::schemas::v1::Schema),
     Share(super::shares::v1::Share),
     StagingTable(super::staging_tables::v1::StagingTable),
@@ -52,9 +54,11 @@ pub enum ObjectLabel {
     Credential,
     ExternalLocation,
     Function,
+    ModelVersion,
     PolicyInfo,
     Provider,
     Recipient,
+    RegisteredModel,
     Schema,
     Share,
     StagingTable,
@@ -73,9 +77,11 @@ impl Resource {
             Resource::Credential(_) => &ObjectLabel::Credential,
             Resource::ExternalLocation(_) => &ObjectLabel::ExternalLocation,
             Resource::Function(_) => &ObjectLabel::Function,
+            Resource::ModelVersion(_) => &ObjectLabel::ModelVersion,
             Resource::PolicyInfo(_) => &ObjectLabel::PolicyInfo,
             Resource::Provider(_) => &ObjectLabel::Provider,
             Resource::Recipient(_) => &ObjectLabel::Recipient,
+            Resource::RegisteredModel(_) => &ObjectLabel::RegisteredModel,
             Resource::Schema(_) => &ObjectLabel::Schema,
             Resource::Share(_) => &ObjectLabel::Share,
             Resource::StagingTable(_) => &ObjectLabel::StagingTable,
@@ -204,6 +210,23 @@ impl TryFrom<Resource> for super::functions::v1::Function {
         }
     }
 }
+impl From<super::model_versions::v1::ModelVersion> for Resource {
+    fn from(v: super::model_versions::v1::ModelVersion) -> Self {
+        Resource::ModelVersion(v)
+    }
+}
+impl TryFrom<Resource> for super::model_versions::v1::ModelVersion {
+    type Error = crate::Error;
+    fn try_from(r: Resource) -> Result<Self, Self::Error> {
+        match r {
+            Resource::ModelVersion(v) => Ok(v),
+            _ => Err(<crate::Error>::generic(concat!(
+                "Resource is not a ",
+                stringify!(ModelVersion)
+            ))),
+        }
+    }
+}
 impl From<super::policies::v1::PolicyInfo> for Resource {
     fn from(v: super::policies::v1::PolicyInfo) -> Self {
         Resource::PolicyInfo(v)
@@ -251,6 +274,23 @@ impl TryFrom<Resource> for super::recipients::v1::Recipient {
             _ => Err(<crate::Error>::generic(concat!(
                 "Resource is not a ",
                 stringify!(Recipient)
+            ))),
+        }
+    }
+}
+impl From<super::registered_models::v1::RegisteredModel> for Resource {
+    fn from(v: super::registered_models::v1::RegisteredModel) -> Self {
+        Resource::RegisteredModel(v)
+    }
+}
+impl TryFrom<Resource> for super::registered_models::v1::RegisteredModel {
+    type Error = crate::Error;
+    fn try_from(r: Resource) -> Result<Self, Self::Error> {
+        match r {
+            Resource::RegisteredModel(v) => Ok(v),
+            _ => Err(<crate::Error>::generic(concat!(
+                "Resource is not a ",
+                stringify!(RegisteredModel)
             ))),
         }
     }
@@ -702,6 +742,59 @@ impl ResourceExt for super::functions::v1::Function {
         (ObjectLabel::Function).to_ident(self.resource_ref())
     }
 }
+impl TryFrom<Object> for super::model_versions::v1::ModelVersion {
+    type Error = Error;
+    fn try_from(object: Object) -> Result<Self, Self::Error> {
+        let props = object
+            .properties
+            .ok_or_else(|| Error::generic("expected properties"))?;
+        let mut res: super::model_versions::v1::ModelVersion = ::serde_json::from_value(props)?;
+        res.id = Some(object.id.hyphenated().to_string());
+        Ok(res)
+    }
+}
+impl TryFrom<super::model_versions::v1::ModelVersion> for Object {
+    type Error = Error;
+    fn try_from(obj: super::model_versions::v1::ModelVersion) -> Result<Self, Self::Error> {
+        let id = obj
+            .id
+            .as_ref()
+            .map(|id| ::uuid::Uuid::parse_str(id))
+            .transpose()?
+            .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let properties = ::serde_json::to_value(obj)?;
+        Ok(Object {
+            id,
+            name,
+            label: ObjectLabel::ModelVersion,
+            properties: Some(properties),
+            version: 0,
+            updated_at: None,
+            created_at: chrono::Utc::now(),
+        })
+    }
+}
+impl ResourceExt for super::model_versions::v1::ModelVersion {
+    fn resource_name(&self) -> ResourceName {
+        ResourceName::new([
+            &self.catalog_name,
+            &self.schema_name,
+            &self.model_name,
+            &self.version.to_string(),
+        ])
+    }
+    fn resource_ref(&self) -> ResourceRef {
+        self.id
+            .as_ref()
+            .and_then(|id| ::uuid::Uuid::parse_str(id).ok())
+            .map(ResourceRef::Uuid)
+            .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
+    }
+    fn resource_ident(&self) -> ResourceIdent {
+        (ObjectLabel::ModelVersion).to_ident(self.resource_ref())
+    }
+}
 impl TryFrom<Object> for super::policies::v1::PolicyInfo {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -846,6 +939,59 @@ impl ResourceExt for super::recipients::v1::Recipient {
         (ObjectLabel::Recipient).to_ident(self.resource_ref())
     }
 }
+impl TryFrom<Object> for super::registered_models::v1::RegisteredModel {
+    type Error = Error;
+    fn try_from(object: Object) -> Result<Self, Self::Error> {
+        let props = object
+            .properties
+            .ok_or_else(|| Error::generic("expected properties"))?;
+        let mut res: super::registered_models::v1::RegisteredModel =
+            ::serde_json::from_value(props)?;
+        res.id = Some(object.id.hyphenated().to_string());
+        res.full_name = res.qualified_name();
+        Ok(res)
+    }
+}
+impl TryFrom<super::registered_models::v1::RegisteredModel> for Object {
+    type Error = Error;
+    fn try_from(obj: super::registered_models::v1::RegisteredModel) -> Result<Self, Self::Error> {
+        let id = obj
+            .id
+            .as_ref()
+            .map(|id| ::uuid::Uuid::parse_str(id))
+            .transpose()?
+            .unwrap_or_else(::uuid::Uuid::nil);
+        let name = obj.resource_name();
+        let mut properties = ::serde_json::to_value(obj)?;
+        if let ::serde_json::Value::Object(ref mut map) = properties {
+            map.remove("full_name");
+        }
+        Ok(Object {
+            id,
+            name,
+            label: ObjectLabel::RegisteredModel,
+            properties: Some(properties),
+            version: 0,
+            updated_at: None,
+            created_at: chrono::Utc::now(),
+        })
+    }
+}
+impl ResourceExt for super::registered_models::v1::RegisteredModel {
+    fn resource_name(&self) -> ResourceName {
+        ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
+    }
+    fn resource_ref(&self) -> ResourceRef {
+        self.id
+            .as_ref()
+            .and_then(|id| ::uuid::Uuid::parse_str(id).ok())
+            .map(ResourceRef::Uuid)
+            .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
+    }
+    fn resource_ident(&self) -> ResourceIdent {
+        (ObjectLabel::RegisteredModel).to_ident(self.resource_ref())
+    }
+}
 impl TryFrom<Object> for super::schemas::v1::Schema {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -976,7 +1122,7 @@ impl TryFrom<super::staging_tables::v1::StagingTable> for Object {
 }
 impl ResourceExt for super::staging_tables::v1::StagingTable {
     fn resource_name(&self) -> ResourceName {
-        ResourceName::new([&self.name])
+        ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
     }
     fn resource_ref(&self) -> ResourceRef {
         ::uuid::Uuid::parse_str(&self.id)
@@ -1176,6 +1322,15 @@ impl super::functions::v1::Function {
         format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
     }
 }
+impl super::model_versions::v1::ModelVersion {
+    /// Returns the fully-qualified dot-separated name computed from component fields.
+    pub fn qualified_name(&self) -> String {
+        format!(
+            "{}.{}.{}.{}",
+            self.catalog_name, self.schema_name, self.model_name, self.version
+        )
+    }
+}
 impl super::policies::v1::PolicyInfo {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
@@ -1194,6 +1349,12 @@ impl super::recipients::v1::Recipient {
         self.name.clone()
     }
 }
+impl super::registered_models::v1::RegisteredModel {
+    /// Returns the fully-qualified dot-separated name computed from component fields.
+    pub fn qualified_name(&self) -> String {
+        format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
+    }
+}
 impl super::schemas::v1::Schema {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
@@ -1209,7 +1370,7 @@ impl super::shares::v1::Share {
 impl super::staging_tables::v1::StagingTable {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
-        self.name.clone()
+        format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
     }
 }
 impl super::tables::v1::Table {
@@ -1764,6 +1925,77 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
         parent_label: Some(ObjectLabel::Catalog),
     },
     ::olai_store::ResourceTypeDescriptor {
+        label: ObjectLabel::ModelVersion,
+        fields: &[
+            ::olai_store::ResourceFieldDescriptor {
+                name: "model_name",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "catalog_name",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "schema_name",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "version",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "source",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "run_id",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "status",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "storage_location",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "comment",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "id",
+                role: ::olai_store::FieldRole::Identifier,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "created_at",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "created_by",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "updated_at",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "updated_by",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "metastore_id",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "browse_only",
+                role: ::olai_store::FieldRole::Data,
+            },
+        ],
+        path_names: &["catalog_name", "schema_name", "model_name", "version"],
+        parent_label: None,
+    },
+    ::olai_store::ResourceTypeDescriptor {
         label: ObjectLabel::PolicyInfo,
         fields: &[
             ::olai_store::ResourceFieldDescriptor {
@@ -1925,6 +2157,69 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
         parent_label: None,
     },
     ::olai_store::ResourceTypeDescriptor {
+        label: ObjectLabel::RegisteredModel,
+        fields: &[
+            ::olai_store::ResourceFieldDescriptor {
+                name: "name",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "catalog_name",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "schema_name",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "full_name",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "storage_location",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "owner",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "comment",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "id",
+                role: ::olai_store::FieldRole::Identifier,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "created_at",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "created_by",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "updated_at",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "updated_by",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "metastore_id",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "browse_only",
+                role: ::olai_store::FieldRole::Data,
+            },
+        ],
+        path_names: &["catalog_name", "schema_name", "name"],
+        parent_label: Some(ObjectLabel::Catalog),
+    },
+    ::olai_store::ResourceTypeDescriptor {
         label: ObjectLabel::Schema,
         fields: &[
             ::olai_store::ResourceFieldDescriptor {
@@ -2070,8 +2365,8 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
                 role: ::olai_store::FieldRole::Managed,
             },
         ],
-        path_names: &["name"],
-        parent_label: None,
+        path_names: &["catalog_name", "schema_name", "name"],
+        parent_label: Some(ObjectLabel::Schema),
     },
     ::olai_store::ResourceTypeDescriptor {
         label: ObjectLabel::Table,

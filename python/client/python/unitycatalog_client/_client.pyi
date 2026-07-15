@@ -438,6 +438,61 @@ class CreateFunction:
         sql_data_access: Optional[SqlDataAccess] = None,
     ) -> None: ...
 
+class CreateModelVersion:
+    """The payload for creating a new model version.
+
+    Wrapped in the `model_version` envelope of a `CreateModelVersionRequest`, matching the Unity Catalog
+    `POST /models/versions` wire contract."""
+
+    catalog_name: str
+    """Name of parent catalog."""
+    comment: Optional[str]
+    """User-provided free-form text description."""
+    model_name: str
+    """Name of the parent registered model, relative to parent schema."""
+    run_id: Optional[str]
+    """The run id used by the ML package that generated this model."""
+    schema_name: str
+    """Name of parent schema."""
+    source: str
+    """
+    URI indicating the location of the source artifacts (e.g. an MLflow run artifact path)
+    used to create the model version.
+    """
+
+    def __init__(
+        self,
+        catalog_name: Optional[str] = None,
+        comment: Optional[str] = None,
+        model_name: Optional[str] = None,
+        run_id: Optional[str] = None,
+        schema_name: Optional[str] = None,
+        source: Optional[str] = None,
+    ) -> None: ...
+
+class CreateRegisteredModel:
+    """The payload for creating a new registered model.
+
+    Wrapped in the `model_info` envelope of a `CreateRegisteredModelRequest`, matching the Unity Catalog
+    `POST /models` wire contract."""
+
+    catalog_name: str
+    """Name of parent catalog."""
+    comment: Optional[str]
+    """User-provided free-form text description."""
+    name: str
+    """Name of registered model, relative to parent schema."""
+    schema_name: str
+    """Name of parent schema."""
+
+    def __init__(
+        self,
+        catalog_name: Optional[str] = None,
+        comment: Optional[str] = None,
+        name: Optional[str] = None,
+        schema_name: Optional[str] = None,
+    ) -> None: ...
+
 class Credential:
     """A credential used to access external data sources or services."""
 
@@ -935,6 +990,72 @@ class MatchColumn:
 
     def __init__(self, alias: Optional[str] = None, condition: Optional[str] = None) -> None: ...
 
+class ModelVersion:
+    """A model version under a registered model.
+
+    A version is identified by its parent model's three-level name plus an integer `version` number
+    assigned by the server. It carries its own artifact storage location and moves through the
+    PENDING_REGISTRATION -> READY lifecycle via the finalize operation."""
+
+    browse_only: Optional[bool]
+    """
+    Indicates whether the principal is limited to retrieving metadata for the associated
+    object through the BROWSE privilege when include_browse is enabled in the request.
+    """
+    catalog_name: str
+    """Name of parent catalog."""
+    comment: Optional[str]
+    """User-provided free-form text description."""
+    created_at: Optional[int]
+    """Time at which this model version was created, in epoch milliseconds."""
+    created_by: Optional[str]
+    """Username of model version creator."""
+    id: Optional[str]
+    """Unique identifier for the model version."""
+    metastore_id: Optional[str]
+    """The unique identifier of the metastore."""
+    model_name: str
+    """Name of the parent registered model, relative to parent schema."""
+    run_id: Optional[str]
+    """The run id used by the ML package that generated this model."""
+    schema_name: str
+    """Name of parent schema."""
+    source: str
+    """URI indicating the location of the source artifacts used to create the model version."""
+    status: ModelVersionStatus
+    """Current status of the model version."""
+    storage_location: Optional[str]
+    """The storage location under which the model version's artifacts are stored."""
+    updated_at: Optional[int]
+    """Time at which this model version was last updated, in epoch milliseconds."""
+    updated_by: Optional[str]
+    """Username of user who last modified the model version."""
+    version: int
+    """
+    Integer model version number, used to reference the model version in API requests.
+    Assigned by the server, monotonically increasing per model.
+    """
+
+    def __init__(
+        self,
+        browse_only: Optional[bool] = None,
+        catalog_name: Optional[str] = None,
+        comment: Optional[str] = None,
+        created_at: Optional[int] = None,
+        created_by: Optional[str] = None,
+        id: Optional[str] = None,
+        metastore_id: Optional[str] = None,
+        model_name: Optional[str] = None,
+        run_id: Optional[str] = None,
+        schema_name: Optional[str] = None,
+        source: Optional[str] = None,
+        status: Optional[ModelVersionStatus] = None,
+        storage_location: Optional[str] = None,
+        updated_at: Optional[int] = None,
+        updated_by: Optional[str] = None,
+        version: Optional[int] = None,
+    ) -> None: ...
+
 class PermissionsChange:
     add: List[str]
     """The set of privileges to add."""
@@ -1153,6 +1274,65 @@ class RecipientToken:
         created_by: Optional[str] = None,
         expiration_time: Optional[int] = None,
         id: Optional[str] = None,
+        updated_at: Optional[int] = None,
+        updated_by: Optional[str] = None,
+    ) -> None: ...
+
+class RegisteredModel:
+    """A registered model within the three-level namespace (catalog.schema.model).
+
+    Registered models group a collection of model versions. Individual versions carry their own artifact
+    storage location and are created, finalized, and governed independently."""
+
+    browse_only: Optional[bool]
+    """
+    Indicates whether the principal is limited to retrieving metadata for the associated
+    object through the BROWSE privilege when include_browse is enabled in the request.
+    """
+    catalog_name: str
+    """Name of parent catalog."""
+    comment: Optional[str]
+    """User-provided free-form text description."""
+    created_at: Optional[int]
+    """Time at which this registered model was created, in epoch milliseconds."""
+    created_by: Optional[str]
+    """Username of registered model creator."""
+    full_name: str
+    """
+    The three-level (fully qualified) name of the registered model. Format:
+    catalog_name.schema_name.model_name
+    """
+    id: Optional[str]
+    """Unique identifier for the registered model."""
+    metastore_id: Optional[str]
+    """The unique identifier of the metastore."""
+    name: str
+    """Name of registered model, relative to parent schema."""
+    owner: Optional[str]
+    """Username of current owner of the registered model."""
+    schema_name: str
+    """Name of parent schema."""
+    storage_location: Optional[str]
+    """The storage location under which model version data files are stored."""
+    updated_at: Optional[int]
+    """Time at which this registered model was last updated, in epoch milliseconds."""
+    updated_by: Optional[str]
+    """Username of user who last modified the registered model."""
+
+    def __init__(
+        self,
+        browse_only: Optional[bool] = None,
+        catalog_name: Optional[str] = None,
+        comment: Optional[str] = None,
+        created_at: Optional[int] = None,
+        created_by: Optional[str] = None,
+        full_name: Optional[str] = None,
+        id: Optional[str] = None,
+        metastore_id: Optional[str] = None,
+        name: Optional[str] = None,
+        owner: Optional[str] = None,
+        schema_name: Optional[str] = None,
+        storage_location: Optional[str] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
     ) -> None: ...
@@ -1625,6 +1805,14 @@ class FunctionParameterType(enum.Enum):
     PARAM = "PARAM"
     """A named parameter (default)."""
 
+class GenerateTemporaryModelVersionCredentialsRequestOperation(enum.Enum):
+    READ_MODEL_VERSION = "READ_MODEL_VERSION"
+    """The operation is read only."""
+    READ_WRITE_MODEL_VERSION = "READ_WRITE_MODEL_VERSION"
+    """The operation is read and write."""
+    UNSPECIFIED = "UNSPECIFIED"
+    """The operation is not specified."""
+
 class GenerateTemporaryPathCredentialsRequestOperation(enum.Enum):
     PATH_CREATE_TABLE = "PATH_CREATE_TABLE"
     """The operation creates a table at the path."""
@@ -1671,6 +1859,20 @@ class InvocationProtocol(enum.Enum):
     """OpenAI-compatible chat completions endpoint."""
     REST = "REST"
     """Minimal REST baseline (`POST {endpoint}/invoke`)."""
+
+class ModelVersionStatus(enum.Enum):
+    """The status of a model version, reflecting the lifecycle of its artifacts in external storage."""
+
+    FAILED_REGISTRATION = "FAILED_REGISTRATION"
+    """The client failed to write all model artifacts to external storage."""
+    MODEL_VERSION_STATUS_UNSPECIFIED = "MODEL_VERSION_STATUS_UNSPECIFIED"
+    """The status is not specified."""
+    PENDING_REGISTRATION = "PENDING_REGISTRATION"
+    """The client has not yet completely written all model artifacts to external storage. This is the
+    initial status assigned on creation."""
+    READY = "READY"
+    """The client successfully wrote all model artifacts to external storage and the version has been
+    finalized."""
 
 class ParameterMode(enum.Enum):
     """The mode of the function parameter."""
@@ -1911,6 +2113,9 @@ class CatalogClient:
     def function(
         self, catalog_name: str, schema_name: str, function_name: str
     ) -> FunctionClient: ...
+    def registered_model(
+        self, catalog_name: str, schema_name: str, registered_model_name: str
+    ) -> RegisteredModelClient: ...
     def schema(self, catalog_name: str, schema_name: str) -> SchemaClient: ...
     def table(self, catalog_name: str, schema_name: str, table_name: str) -> TableClient: ...
     def volume(self, catalog_name: str, schema_name: str, volume_name: str) -> VolumeClient: ...
@@ -2227,6 +2432,70 @@ class RecipientClient:
         """
         ...
 
+class RegisteredModelClient:
+    def delete(self, force: Optional[bool] = None) -> None:
+        """
+        Delete a registered model
+
+        Deletes the registered model that matches the supplied name. For the deletion to succeed, the caller
+        must be the owner of the registered model.
+
+
+        Args:
+            force: Force deletion even if the registered model still has model versions.
+
+
+        Returns:
+            None
+        """
+        ...
+    def get(self, include_browse: Optional[bool] = None) -> RegisteredModel:
+        """
+        Get a registered model
+
+        Gets a registered model from within a parent catalog and schema. For the fetch to succeed, the
+        caller must be a metastore admin, the owner of the registered model, or have a privilege on the
+        registered model.
+
+
+        Args:
+            include_browse: Whether to include registered models in the response for which the principal can
+                            only access selective metadata for.
+
+
+        Returns:
+            A registered model within the three-level namespace (catalog.schema.model). Registered
+            models
+            group a collection of model versions. Individual versions carry their own artifact storage
+            location and are created, finalized, and governed independently.
+        """
+        ...
+    def update(
+        self,
+        new_name: Optional[str] = None,
+        comment: Optional[str] = None,
+        owner: Optional[str] = None,
+    ) -> RegisteredModel:
+        """
+        Update a registered model
+
+        Updates the registered model that matches the supplied name.
+
+
+        Args:
+            new_name: New name for the registered model.
+            comment: User-provided free-form text description.
+            owner: Username of new owner of the registered model.
+
+
+        Returns:
+            A registered model within the three-level namespace (catalog.schema.model). Registered
+            models
+            group a collection of model versions. Individual versions carry their own artifact storage
+            location and are created, finalized, and governed independently.
+        """
+        ...
+
 class SchemaClient:
     def delete(self, force: Optional[bool] = None) -> None:
         """
@@ -2284,6 +2553,9 @@ class SchemaClient:
     def function(
         self, catalog_name: str, schema_name: str, function_name: str
     ) -> FunctionClient: ...
+    def registered_model(
+        self, catalog_name: str, schema_name: str, registered_model_name: str
+    ) -> RegisteredModelClient: ...
     def table(self, catalog_name: str, schema_name: str, table_name: str) -> TableClient: ...
     def volume(self, catalog_name: str, schema_name: str, volume_name: str) -> VolumeClient: ...
 
@@ -2662,6 +2934,29 @@ class UnityCatalogClient:
             A User-Defined Function (UDF) registered under a catalog + schema hierarchy.
         """
         ...
+    def create_model_version(self, model_version: CreateModelVersion) -> ModelVersion:
+        """
+        Create a model version
+
+        Creates a new model version in PENDING_REGISTRATION status. The server assigns the version number
+        and a storage location for the artifacts. The caller must be a metastore admin or the owner of the
+        parent registered model.
+
+
+        Args:
+            model_version: The model version to create.
+
+
+        Returns:
+            A model version under a registered model. A version is identified by its parent
+            model's three-
+            level name plus an integer `version` number assigned by the server. It carries its own
+            artifact
+            storage location and moves through the PENDING_REGISTRATION -> READY lifecycle via the
+            finalize
+            operation.
+        """
+        ...
     def create_provider(
         self,
         name: str,
@@ -2718,6 +3013,25 @@ class UnityCatalogClient:
 
         Returns:
             The requested resource
+        """
+        ...
+    def create_registered_model(self, model_info: CreateRegisteredModel) -> RegisteredModel:
+        """
+        Create a registered model
+
+        Creates a new registered model. The caller must be a metastore admin or have the CREATE_MODEL
+        privilege on the parent catalog and schema.
+
+
+        Args:
+            model_info: The registered model to create.
+
+
+        Returns:
+            A registered model within the three-level namespace (catalog.schema.model). Registered
+            models
+            group a collection of model versions. Individual versions carry their own artifact storage
+            location and are created, finalized, and governed independently.
         """
         ...
     def create_schema(
@@ -2880,6 +3194,64 @@ class UnityCatalogClient:
             The requested resource
         """
         ...
+    def delete_model_version(self, full_name: str, version: int) -> None:
+        """
+        Delete a model version
+
+        Deletes the model version that matches the supplied name and version. For the deletion to succeed,
+        the caller must be the owner of the parent registered model.
+
+
+        Returns:
+            None
+        """
+        ...
+    def finalize_model_version(self, full_name: str, version: int) -> ModelVersion:
+        """
+        Finalize a model version
+
+        Transitions a model version to READY once all artifacts have been written to its storage location.
+
+
+        Returns:
+            A model version under a registered model. A version is identified by its parent
+            model's three-
+            level name plus an integer `version` number assigned by the server. It carries its own
+            artifact
+            storage location and moves through the PENDING_REGISTRATION -> READY lifecycle via the
+            finalize
+            operation.
+        """
+        ...
+    def generate_temporary_model_version_credentials(
+        self,
+        catalog_name: str,
+        schema_name: str,
+        model_name: str,
+        version: int,
+        operation: GenerateTemporaryModelVersionCredentialsRequestOperation,
+    ) -> TemporaryCredential:
+        """
+        Generate a new set of credentials for a model version.
+
+        The metastore must have the `external_access_enabled` flag set to true (default false). The caller
+        must have the `EXTERNAL_USE_SCHEMA` privilege on the parent schema (granted by a catalog owner).
+
+
+        Args:
+            catalog_name: Name of parent catalog of the model version.
+            schema_name: Name of parent schema of the model version.
+            model_name: Name of the parent registered model.
+            version: The integer version number of the model version.
+            operation: The operation performed against the model version data, either READ_MODEL_VERSION or
+                       READ_WRITE_MODEL_VERSION. If READ_WRITE_MODEL_VERSION is specified, the credentials
+                       returned will have write permissions, otherwise, it will be read only.
+
+
+        Returns:
+            The response to the GenerateTemporaryTableCredentialsRequest.
+        """
+        ...
     def generate_temporary_path_credentials(
         self,
         url: str,
@@ -2958,6 +3330,30 @@ class UnityCatalogClient:
             is intentionally NOT a `google.api.resource`: assignments are stored as associations between
             the
             entity and its tag, not as standalone objects.
+        """
+        ...
+    def get_model_version(
+        self, full_name: str, version: int, include_browse: Optional[bool] = None
+    ) -> ModelVersion:
+        """
+        Get a model version
+
+        Gets a model version by its parent model name and version number.
+
+
+        Args:
+            include_browse: Whether to include model versions in the response for which the principal can
+                            only access selective metadata for.
+
+
+        Returns:
+            A model version under a registered model. A version is identified by its parent
+            model's three-
+            level name plus an integer `version` number assigned by the server. It carries its own
+            artifact
+            storage location and moves through the PENDING_REGISTRATION -> READY lifecycle via the
+            finalize
+            operation.
         """
         ...
     def list_agent_skills(
@@ -3104,6 +3500,30 @@ class UnityCatalogClient:
             List of The functions returned.
         """
         ...
+    def list_model_versions(
+        self,
+        full_name: str,
+        max_results: Optional[int] = None,
+        include_browse: Optional[bool] = None,
+    ) -> List[ModelVersion]:
+        """
+        List model versions
+
+        List the model versions of the specified registered model. If the caller is the metastore admin,
+        all model versions are returned. Otherwise, the caller must have the appropriate privileges on the
+        parent model.
+
+
+        Args:
+            max_results: The maximum number of results per page that should be returned.
+            include_browse: Whether to include model versions in the response for which the principal can
+                            only access selective metadata for.
+
+
+        Returns:
+            List of The model versions returned.
+        """
+        ...
     def list_providers(self, max_results: Optional[int] = None) -> List[Provider]:
         """
         List providers.
@@ -3128,6 +3548,34 @@ class UnityCatalogClient:
 
         Returns:
             List of List of recipients.
+        """
+        ...
+    def list_registered_models(
+        self,
+        catalog_name: Optional[str] = None,
+        schema_name: Optional[str] = None,
+        max_results: Optional[int] = None,
+        include_browse: Optional[bool] = None,
+    ) -> List[RegisteredModel]:
+        """
+        List registered models
+
+        List registered models within the specified parent catalog and schema. If the caller is the
+        metastore admin, all registered models are returned in the response. Otherwise, the caller must have
+        USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema, and the model must either be
+        owned by the caller or the caller must have a privilege on the model.
+
+
+        Args:
+            catalog_name: Name of parent catalog for models of interest.
+            schema_name: Name of parent schema for models of interest.
+            max_results: The maximum number of results per page that should be returned.
+            include_browse: Whether to include registered models in the response for which the principal can
+                            only access selective metadata for.
+
+
+        Returns:
+            List of The registered models returned.
         """
         ...
     def list_schemas(
@@ -3275,6 +3723,29 @@ class UnityCatalogClient:
             entity and its tag, not as standalone objects.
         """
         ...
+    def update_model_version(
+        self, full_name: str, version: int, comment: Optional[str] = None
+    ) -> ModelVersion:
+        """
+        Update a model version
+
+        Updates the model version that matches the supplied name and version.
+
+
+        Args:
+            comment: User-provided free-form text description.
+
+
+        Returns:
+            A model version under a registered model. A version is identified by its parent
+            model's three-
+            level name plus an integer `version` number assigned by the server. It carries its own
+            artifact
+            storage location and moves through the PENDING_REGISTRATION -> READY lifecycle via the
+            finalize
+            operation.
+        """
+        ...
     def agent(self, catalog_name: str, schema_name: str, agent_name: str) -> AgentClient: ...
     def agent_skill(
         self, catalog_name: str, schema_name: str, agent_skill_name: str
@@ -3285,9 +3756,13 @@ class UnityCatalogClient:
     def function(
         self, catalog_name: str, schema_name: str, function_name: str
     ) -> FunctionClient: ...
+    def model_version(self, model_version_name: str) -> ModelVersionClient: ...
     def policy(self, policy_name: str) -> PolicyClient: ...
     def provider(self, provider_name: str) -> ProviderClient: ...
     def recipient(self, recipient_name: str) -> RecipientClient: ...
+    def registered_model(
+        self, catalog_name: str, schema_name: str, registered_model_name: str
+    ) -> RegisteredModelClient: ...
     def schema(self, catalog_name: str, schema_name: str) -> SchemaClient: ...
     def share(self, share_name: str) -> ShareClient: ...
     def staging_table(self, staging_table_name: str) -> StagingTableClient: ...
@@ -3429,4 +3904,19 @@ class TemporaryCredentialClient:
         dry_run: bool | None = None,
     ) -> tuple[TemporaryCredential, str]:
         """Vend a temporary credential for an arbitrary cloud URL."""
+        ...
+
+    def temporary_model_version_credential(
+        self,
+        full_name: str,
+        version: int,
+        operation: Literal["read", "read_write", "write"],
+    ) -> TemporaryCredential:
+        """Vend a temporary credential for a Unity Catalog model version.
+
+        ``full_name`` is the three-level ``catalog.schema.model`` name of the
+        parent registered model and ``version`` its integer version number.
+        Server support requires the metastore's ``external_access_enabled``
+        flag and the caller's ``EXTERNAL_USE_SCHEMA`` privilege.
+        """
         ...

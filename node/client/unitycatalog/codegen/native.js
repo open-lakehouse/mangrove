@@ -585,6 +585,7 @@ module.exports.NapiFunctionClient = nativeBinding.NapiFunctionClient
 module.exports.NapiPolicyClient = nativeBinding.NapiPolicyClient
 module.exports.NapiProviderClient = nativeBinding.NapiProviderClient
 module.exports.NapiRecipientClient = nativeBinding.NapiRecipientClient
+module.exports.NapiRegisteredModelClient = nativeBinding.NapiRegisteredModelClient
 module.exports.NapiSchemaClient = nativeBinding.NapiSchemaClient
 module.exports.NapiShareClient = nativeBinding.NapiShareClient
 module.exports.NapiStagingTableClient = nativeBinding.NapiStagingTableClient

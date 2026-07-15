@@ -41,4 +41,14 @@ pub trait TemporaryCredentialHandler<Cx = crate::api::RequestContext>:
         request: GenerateTemporaryVolumeCredentialsRequest,
         context: Cx,
     ) -> Result<TemporaryCredential>;
+    /// Generate a new set of credentials for a model version.
+    ///
+    /// The metastore must have the `external_access_enabled` flag set to true
+    /// (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+    /// privilege on the parent schema (granted by a catalog owner).
+    async fn generate_temporary_model_version_credentials(
+        &self,
+        request: GenerateTemporaryModelVersionCredentialsRequest,
+        context: Cx,
+    ) -> Result<TemporaryCredential>;
 }
