@@ -203,8 +203,8 @@ pub struct Catalog {
     ///
     /// Field 6: `storage_root`
     #[serde(
-        rename = "storageRoot",
-        alias = "storage_root",
+        rename = "storage_root",
+        alias = "storageRoot",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub storage_root: ::core::option::Option<::buffa::alloc::string::String>,
@@ -214,8 +214,8 @@ pub struct Catalog {
     ///
     /// Field 7: `provider_name`
     #[serde(
-        rename = "providerName",
-        alias = "provider_name",
+        rename = "provider_name",
+        alias = "providerName",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub provider_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -223,8 +223,8 @@ pub struct Catalog {
     ///
     /// Field 8: `share_name`
     #[serde(
-        rename = "shareName",
-        alias = "share_name",
+        rename = "share_name",
+        alias = "shareName",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub share_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -232,8 +232,8 @@ pub struct Catalog {
     ///
     /// Field 9: `catalog_type`
     #[serde(
-        rename = "catalogType",
-        alias = "catalog_type",
+        rename = "catalog_type",
+        alias = "catalogType",
         with = "::buffa::json_helpers::opt_enum",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -247,8 +247,8 @@ pub struct Catalog {
     ///
     /// Field 10: `storage_location`
     #[serde(
-        rename = "storageLocation",
-        alias = "storage_location",
+        rename = "storage_location",
+        alias = "storageLocation",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub storage_location: ::core::option::Option<::buffa::alloc::string::String>,
@@ -256,8 +256,8 @@ pub struct Catalog {
     ///
     /// Field 1000: `created_at`
     #[serde(
-        rename = "createdAt",
-        alias = "created_at",
+        rename = "created_at",
+        alias = "createdAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -266,8 +266,8 @@ pub struct Catalog {
     ///
     /// Field 1001: `created_by`
     #[serde(
-        rename = "createdBy",
-        alias = "created_by",
+        rename = "created_by",
+        alias = "createdBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -275,8 +275,8 @@ pub struct Catalog {
     ///
     /// Field 1002: `updated_at`
     #[serde(
-        rename = "updatedAt",
-        alias = "updated_at",
+        rename = "updated_at",
+        alias = "updatedAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -285,8 +285,8 @@ pub struct Catalog {
     ///
     /// Field 1003: `updated_by`
     #[serde(
-        rename = "updatedBy",
-        alias = "updated_by",
+        rename = "updated_by",
+        alias = "updatedBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -296,8 +296,8 @@ pub struct Catalog {
     ///
     /// Field 1004: `browse_only`
     #[serde(
-        rename = "browseOnly",
-        alias = "browse_only",
+        rename = "browse_only",
+        alias = "browseOnly",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub browse_only: ::core::option::Option<bool>,
@@ -985,8 +985,8 @@ pub struct ListCatalogsRequest {
     ///
     /// Field 2: `max_results`
     #[serde(
-        rename = "maxResults",
-        alias = "max_results",
+        rename = "max_results",
+        alias = "maxResults",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -995,8 +995,8 @@ pub struct ListCatalogsRequest {
     ///
     /// Field 3: `page_token`
     #[serde(
-        rename = "pageToken",
-        alias = "page_token",
+        rename = "page_token",
+        alias = "pageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1190,8 +1190,8 @@ pub struct ListCatalogsResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "nextPageToken",
-        alias = "next_page_token",
+        rename = "next_page_token",
+        alias = "nextPageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1404,8 +1404,8 @@ pub struct CreateCatalogRequest {
     ///
     /// Field 4: `storage_root`
     #[serde(
-        rename = "storageRoot",
-        alias = "storage_root",
+        rename = "storage_root",
+        alias = "storageRoot",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub storage_root: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1415,8 +1415,8 @@ pub struct CreateCatalogRequest {
     ///
     /// Field 5: `provider_name`
     #[serde(
-        rename = "providerName",
-        alias = "provider_name",
+        rename = "provider_name",
+        alias = "providerName",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub provider_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1424,8 +1424,8 @@ pub struct CreateCatalogRequest {
     ///
     /// Field 6: `share_name`
     #[serde(
-        rename = "shareName",
-        alias = "share_name",
+        rename = "share_name",
+        alias = "shareName",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub share_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1820,8 +1820,8 @@ pub struct GetCatalogRequest {
     ///
     /// Field 2: `include_browse`
     #[serde(
-        rename = "includeBrowse",
-        alias = "include_browse",
+        rename = "include_browse",
+        alias = "includeBrowse",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub include_browse: ::core::option::Option<bool>,
@@ -2025,8 +2025,8 @@ pub struct UpdateCatalogRequest {
     ///
     /// Field 5: `new_name`
     #[serde(
-        rename = "newName",
-        alias = "new_name",
+        rename = "new_name",
+        alias = "newName",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub new_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -3227,19 +3227,19 @@ pub mod __buffa {
                     __map.serialize_entry("properties", &_WM(&self.properties))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.storage_root {
-                    __map.serialize_entry("storageRoot", __v)?;
+                    __map.serialize_entry("storage_root", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.provider_name {
-                    __map.serialize_entry("providerName", __v)?;
+                    __map.serialize_entry("provider_name", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.share_name {
-                    __map.serialize_entry("shareName", __v)?;
+                    __map.serialize_entry("share_name", __v)?;
                 }
                 if let ::core::option::Option::Some(ref __v) = self.catalog_type {
-                    __map.serialize_entry("catalogType", __v)?;
+                    __map.serialize_entry("catalog_type", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.storage_location {
-                    __map.serialize_entry("storageLocation", __v)?;
+                    __map.serialize_entry("storage_location", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_at {
                     struct _W(i64);
@@ -3251,10 +3251,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("createdAt", &_W(__v))?;
+                    __map.serialize_entry("created_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_by {
-                    __map.serialize_entry("createdBy", __v)?;
+                    __map.serialize_entry("created_by", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_at {
                     struct _W(i64);
@@ -3266,13 +3266,13 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updatedAt", &_W(__v))?;
+                    __map.serialize_entry("updated_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_by {
-                    __map.serialize_entry("updatedBy", __v)?;
+                    __map.serialize_entry("updated_by", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.browse_only {
-                    __map.serialize_entry("browseOnly", &__v)?;
+                    __map.serialize_entry("browse_only", &__v)?;
                 }
                 __map.end()
             }
@@ -3716,10 +3716,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("maxResults", &_W(__v))?;
+                    __map.serialize_entry("max_results", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("pageToken", __v)?;
+                    __map.serialize_entry("page_token", __v)?;
                 }
                 __map.end()
             }
@@ -4084,7 +4084,7 @@ pub mod __buffa {
                     __map.serialize_entry("catalogs", &*self.catalogs)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("nextPageToken", __v)?;
+                    __map.serialize_entry("next_page_token", __v)?;
                 }
                 __map.end()
             }
@@ -4640,13 +4640,13 @@ pub mod __buffa {
                     __map.serialize_entry("properties", &_WM(&self.properties))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.storage_root {
-                    __map.serialize_entry("storageRoot", __v)?;
+                    __map.serialize_entry("storage_root", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.provider_name {
-                    __map.serialize_entry("providerName", __v)?;
+                    __map.serialize_entry("provider_name", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.share_name {
-                    __map.serialize_entry("shareName", __v)?;
+                    __map.serialize_entry("share_name", __v)?;
                 }
                 __map.end()
             }
@@ -5017,7 +5017,7 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.include_browse {
-                    __map.serialize_entry("includeBrowse", &__v)?;
+                    __map.serialize_entry("include_browse", &__v)?;
                 }
                 __map.end()
             }
@@ -5535,7 +5535,7 @@ pub mod __buffa {
                     __map.serialize_entry("properties", &_WM(&self.properties))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.new_name {
-                    __map.serialize_entry("newName", __v)?;
+                    __map.serialize_entry("new_name", __v)?;
                 }
                 __map.end()
             }

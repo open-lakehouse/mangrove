@@ -172,8 +172,8 @@ pub struct AgentSkill {
     ///
     /// Field 2: `catalog_name`
     #[serde(
-        rename = "catalogName",
-        alias = "catalog_name",
+        rename = "catalog_name",
+        alias = "catalogName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -182,8 +182,8 @@ pub struct AgentSkill {
     ///
     /// Field 3: `schema_name`
     #[serde(
-        rename = "schemaName",
-        alias = "schema_name",
+        rename = "schema_name",
+        alias = "schemaName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -192,8 +192,8 @@ pub struct AgentSkill {
     ///
     /// Field 4: `full_name`
     #[serde(
-        rename = "fullName",
-        alias = "full_name",
+        rename = "full_name",
+        alias = "fullName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -203,8 +203,8 @@ pub struct AgentSkill {
     ///
     /// Field 5: `storage_location`
     #[serde(
-        rename = "storageLocation",
-        alias = "storage_location",
+        rename = "storage_location",
+        alias = "storageLocation",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -213,8 +213,8 @@ pub struct AgentSkill {
     ///
     /// Field 6: `agent_skill_id`
     #[serde(
-        rename = "agentSkillId",
-        alias = "agent_skill_id",
+        rename = "agent_skill_id",
+        alias = "agentSkillId",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -223,8 +223,8 @@ pub struct AgentSkill {
     ///
     /// Field 7: `agent_skill_type`
     #[serde(
-        rename = "agentSkillType",
-        alias = "agent_skill_type",
+        rename = "agent_skill_type",
+        alias = "agentSkillType",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -248,8 +248,8 @@ pub struct AgentSkill {
     ///
     /// Field 10: `allowed_tools`
     #[serde(
-        rename = "allowedTools",
-        alias = "allowed_tools",
+        rename = "allowed_tools",
+        alias = "allowedTools",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -280,8 +280,8 @@ pub struct AgentSkill {
     ///
     /// Field 1000: `created_at`
     #[serde(
-        rename = "createdAt",
-        alias = "created_at",
+        rename = "created_at",
+        alias = "createdAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -290,8 +290,8 @@ pub struct AgentSkill {
     ///
     /// Field 1001: `created_by`
     #[serde(
-        rename = "createdBy",
-        alias = "created_by",
+        rename = "created_by",
+        alias = "createdBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -299,8 +299,8 @@ pub struct AgentSkill {
     ///
     /// Field 1002: `updated_at`
     #[serde(
-        rename = "updatedAt",
-        alias = "updated_at",
+        rename = "updated_at",
+        alias = "updatedAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -309,8 +309,8 @@ pub struct AgentSkill {
     ///
     /// Field 1003: `updated_by`
     #[serde(
-        rename = "updatedBy",
-        alias = "updated_by",
+        rename = "updated_by",
+        alias = "updatedBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -318,8 +318,8 @@ pub struct AgentSkill {
     ///
     /// Field 1004: `metastore_id`
     #[serde(
-        rename = "metastoreId",
-        alias = "metastore_id",
+        rename = "metastore_id",
+        alias = "metastoreId",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub metastore_id: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1043,8 +1043,8 @@ pub struct ListAgentSkillsRequest {
     ///
     /// Field 1: `catalog_name`
     #[serde(
-        rename = "catalogName",
-        alias = "catalog_name",
+        rename = "catalog_name",
+        alias = "catalogName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1053,8 +1053,8 @@ pub struct ListAgentSkillsRequest {
     ///
     /// Field 2: `schema_name`
     #[serde(
-        rename = "schemaName",
-        alias = "schema_name",
+        rename = "schema_name",
+        alias = "schemaName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1063,8 +1063,8 @@ pub struct ListAgentSkillsRequest {
     ///
     /// Field 3: `max_results`
     #[serde(
-        rename = "maxResults",
-        alias = "max_results",
+        rename = "max_results",
+        alias = "maxResults",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -1073,8 +1073,8 @@ pub struct ListAgentSkillsRequest {
     ///
     /// Field 4: `page_token`
     #[serde(
-        rename = "pageToken",
-        alias = "page_token",
+        rename = "page_token",
+        alias = "pageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1083,8 +1083,8 @@ pub struct ListAgentSkillsRequest {
     ///
     /// Field 5: `include_browse`
     #[serde(
-        rename = "includeBrowse",
-        alias = "include_browse",
+        rename = "include_browse",
+        alias = "includeBrowse",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub include_browse: ::core::option::Option<bool>,
@@ -1344,8 +1344,8 @@ pub struct ListAgentSkillsResponse {
     ///
     /// Field 1: `agent_skills`
     #[serde(
-        rename = "agentSkills",
-        alias = "agent_skills",
+        rename = "agent_skills",
+        alias = "agentSkills",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -1357,8 +1357,8 @@ pub struct ListAgentSkillsResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "nextPageToken",
-        alias = "next_page_token",
+        rename = "next_page_token",
+        alias = "nextPageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1545,8 +1545,8 @@ pub struct CreateAgentSkillRequest {
     ///
     /// Field 1: `catalog_name`
     #[serde(
-        rename = "catalogName",
-        alias = "catalog_name",
+        rename = "catalog_name",
+        alias = "catalogName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1555,8 +1555,8 @@ pub struct CreateAgentSkillRequest {
     ///
     /// Field 2: `schema_name`
     #[serde(
-        rename = "schemaName",
-        alias = "schema_name",
+        rename = "schema_name",
+        alias = "schemaName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1574,8 +1574,8 @@ pub struct CreateAgentSkillRequest {
     ///
     /// Field 4: `agent_skill_type`
     #[serde(
-        rename = "agentSkillType",
-        alias = "agent_skill_type",
+        rename = "agent_skill_type",
+        alias = "agentSkillType",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -1586,8 +1586,8 @@ pub struct CreateAgentSkillRequest {
     ///
     /// Field 5: `storage_location`
     #[serde(
-        rename = "storageLocation",
-        alias = "storage_location",
+        rename = "storage_location",
+        alias = "storageLocation",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub storage_location: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1608,8 +1608,8 @@ pub struct CreateAgentSkillRequest {
     ///
     /// Field 8: `allowed_tools`
     #[serde(
-        rename = "allowedTools",
-        alias = "allowed_tools",
+        rename = "allowed_tools",
+        alias = "allowedTools",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -2117,8 +2117,8 @@ pub struct GetAgentSkillRequest {
     ///
     /// Field 1005: `include_browse`
     #[serde(
-        rename = "includeBrowse",
-        alias = "include_browse",
+        rename = "include_browse",
+        alias = "includeBrowse",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub include_browse: ::core::option::Option<bool>,
@@ -2296,8 +2296,8 @@ pub struct UpdateAgentSkillRequest {
     ///
     /// Field 2: `new_name`
     #[serde(
-        rename = "newName",
-        alias = "new_name",
+        rename = "new_name",
+        alias = "newName",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub new_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2313,8 +2313,8 @@ pub struct UpdateAgentSkillRequest {
     ///
     /// Field 4: `allowed_tools`
     #[serde(
-        rename = "allowedTools",
-        alias = "allowed_tools",
+        rename = "allowed_tools",
+        alias = "allowedTools",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -3526,24 +3526,24 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalogName", self.catalog_name)?;
+                    __map.serialize_entry("catalog_name", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schemaName", self.schema_name)?;
+                    __map.serialize_entry("schema_name", self.schema_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.full_name) {
-                    __map.serialize_entry("fullName", self.full_name)?;
+                    __map.serialize_entry("full_name", self.full_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.storage_location) {
-                    __map.serialize_entry("storageLocation", self.storage_location)?;
+                    __map.serialize_entry("storage_location", self.storage_location)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.agent_skill_id) {
-                    __map.serialize_entry("agentSkillId", self.agent_skill_id)?;
+                    __map.serialize_entry("agent_skill_id", self.agent_skill_id)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.agent_skill_type,
                 ) {
-                    __map.serialize_entry("agentSkillType", &self.agent_skill_type)?;
+                    __map.serialize_entry("agent_skill_type", &self.agent_skill_type)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.description {
                     __map.serialize_entry("description", __v)?;
@@ -3552,7 +3552,7 @@ pub mod __buffa {
                     __map.serialize_entry("license", __v)?;
                 }
                 if !self.allowed_tools.is_empty() {
-                    __map.serialize_entry("allowedTools", &*self.allowed_tools)?;
+                    __map.serialize_entry("allowed_tools", &*self.allowed_tools)?;
                 }
                 if !self.metadata.is_empty() {
                     struct _WM<'__a, '__x>(
@@ -3590,10 +3590,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("createdAt", &_W(__v))?;
+                    __map.serialize_entry("created_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_by {
-                    __map.serialize_entry("createdBy", __v)?;
+                    __map.serialize_entry("created_by", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_at {
                     struct _W(i64);
@@ -3605,13 +3605,13 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updatedAt", &_W(__v))?;
+                    __map.serialize_entry("updated_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_by {
-                    __map.serialize_entry("updatedBy", __v)?;
+                    __map.serialize_entry("updated_by", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.metastore_id {
-                    __map.serialize_entry("metastoreId", __v)?;
+                    __map.serialize_entry("metastore_id", __v)?;
                 }
                 __map.end()
             }
@@ -4157,10 +4157,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalogName", self.catalog_name)?;
+                    __map.serialize_entry("catalog_name", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schemaName", self.schema_name)?;
+                    __map.serialize_entry("schema_name", self.schema_name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.max_results {
                     struct _W(i32);
@@ -4172,13 +4172,13 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("maxResults", &_W(__v))?;
+                    __map.serialize_entry("max_results", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("pageToken", __v)?;
+                    __map.serialize_entry("page_token", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.include_browse {
-                    __map.serialize_entry("includeBrowse", &__v)?;
+                    __map.serialize_entry("include_browse", &__v)?;
                 }
                 __map.end()
             }
@@ -4569,10 +4569,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !self.agent_skills.is_empty() {
-                    __map.serialize_entry("agentSkills", &*self.agent_skills)?;
+                    __map.serialize_entry("agent_skills", &*self.agent_skills)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("nextPageToken", __v)?;
+                    __map.serialize_entry("next_page_token", __v)?;
                 }
                 __map.end()
             }
@@ -5237,10 +5237,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalogName", self.catalog_name)?;
+                    __map.serialize_entry("catalog_name", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schemaName", self.schema_name)?;
+                    __map.serialize_entry("schema_name", self.schema_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.name) {
                     __map.serialize_entry("name", self.name)?;
@@ -5248,10 +5248,10 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.agent_skill_type,
                 ) {
-                    __map.serialize_entry("agentSkillType", &self.agent_skill_type)?;
+                    __map.serialize_entry("agent_skill_type", &self.agent_skill_type)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.storage_location {
-                    __map.serialize_entry("storageLocation", __v)?;
+                    __map.serialize_entry("storage_location", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.description {
                     __map.serialize_entry("description", __v)?;
@@ -5260,7 +5260,7 @@ pub mod __buffa {
                     __map.serialize_entry("license", __v)?;
                 }
                 if !self.allowed_tools.is_empty() {
-                    __map.serialize_entry("allowedTools", &*self.allowed_tools)?;
+                    __map.serialize_entry("allowed_tools", &*self.allowed_tools)?;
                 }
                 if !self.metadata.is_empty() {
                     struct _WM<'__a, '__x>(
@@ -5689,7 +5689,7 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.include_browse {
-                    __map.serialize_entry("includeBrowse", &__v)?;
+                    __map.serialize_entry("include_browse", &__v)?;
                 }
                 __map.end()
             }
@@ -6149,13 +6149,13 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.new_name {
-                    __map.serialize_entry("newName", __v)?;
+                    __map.serialize_entry("new_name", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.description {
                     __map.serialize_entry("description", __v)?;
                 }
                 if !self.allowed_tools.is_empty() {
-                    __map.serialize_entry("allowedTools", &*self.allowed_tools)?;
+                    __map.serialize_entry("allowed_tools", &*self.allowed_tools)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;

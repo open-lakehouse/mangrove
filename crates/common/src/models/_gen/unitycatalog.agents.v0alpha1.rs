@@ -196,8 +196,8 @@ pub struct Agent {
     ///
     /// Field 2: `catalog_name`
     #[serde(
-        rename = "catalogName",
-        alias = "catalog_name",
+        rename = "catalog_name",
+        alias = "catalogName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -206,8 +206,8 @@ pub struct Agent {
     ///
     /// Field 3: `schema_name`
     #[serde(
-        rename = "schemaName",
-        alias = "schema_name",
+        rename = "schema_name",
+        alias = "schemaName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -216,8 +216,8 @@ pub struct Agent {
     ///
     /// Field 4: `full_name`
     #[serde(
-        rename = "fullName",
-        alias = "full_name",
+        rename = "full_name",
+        alias = "fullName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -226,8 +226,8 @@ pub struct Agent {
     ///
     /// Field 5: `agent_id`
     #[serde(
-        rename = "agentId",
-        alias = "agent_id",
+        rename = "agent_id",
+        alias = "agentId",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -236,8 +236,8 @@ pub struct Agent {
     ///
     /// Field 6: `invocation_protocol`
     #[serde(
-        rename = "invocationProtocol",
-        alias = "invocation_protocol",
+        rename = "invocation_protocol",
+        alias = "invocationProtocol",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -276,8 +276,8 @@ pub struct Agent {
     ///
     /// Field 10: `input_schema`
     #[serde(
-        rename = "inputSchema",
-        alias = "input_schema",
+        rename = "input_schema",
+        alias = "inputSchema",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub input_schema: ::core::option::Option<::buffa::alloc::string::String>,
@@ -295,8 +295,8 @@ pub struct Agent {
     ///
     /// Field 1000: `created_at`
     #[serde(
-        rename = "createdAt",
-        alias = "created_at",
+        rename = "created_at",
+        alias = "createdAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -305,8 +305,8 @@ pub struct Agent {
     ///
     /// Field 1001: `created_by`
     #[serde(
-        rename = "createdBy",
-        alias = "created_by",
+        rename = "created_by",
+        alias = "createdBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -314,8 +314,8 @@ pub struct Agent {
     ///
     /// Field 1002: `updated_at`
     #[serde(
-        rename = "updatedAt",
-        alias = "updated_at",
+        rename = "updated_at",
+        alias = "updatedAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -324,8 +324,8 @@ pub struct Agent {
     ///
     /// Field 1003: `updated_by`
     #[serde(
-        rename = "updatedBy",
-        alias = "updated_by",
+        rename = "updated_by",
+        alias = "updatedBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -333,8 +333,8 @@ pub struct Agent {
     ///
     /// Field 1004: `metastore_id`
     #[serde(
-        rename = "metastoreId",
-        alias = "metastore_id",
+        rename = "metastore_id",
+        alias = "metastoreId",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub metastore_id: ::core::option::Option<::buffa::alloc::string::String>,
@@ -961,8 +961,8 @@ pub struct ListAgentsRequest {
     ///
     /// Field 1: `catalog_name`
     #[serde(
-        rename = "catalogName",
-        alias = "catalog_name",
+        rename = "catalog_name",
+        alias = "catalogName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -971,8 +971,8 @@ pub struct ListAgentsRequest {
     ///
     /// Field 2: `schema_name`
     #[serde(
-        rename = "schemaName",
-        alias = "schema_name",
+        rename = "schema_name",
+        alias = "schemaName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -981,8 +981,8 @@ pub struct ListAgentsRequest {
     ///
     /// Field 3: `max_results`
     #[serde(
-        rename = "maxResults",
-        alias = "max_results",
+        rename = "max_results",
+        alias = "maxResults",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -991,8 +991,8 @@ pub struct ListAgentsRequest {
     ///
     /// Field 4: `page_token`
     #[serde(
-        rename = "pageToken",
-        alias = "page_token",
+        rename = "page_token",
+        alias = "pageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1001,8 +1001,8 @@ pub struct ListAgentsRequest {
     ///
     /// Field 5: `include_browse`
     #[serde(
-        rename = "includeBrowse",
-        alias = "include_browse",
+        rename = "include_browse",
+        alias = "includeBrowse",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub include_browse: ::core::option::Option<bool>,
@@ -1274,8 +1274,8 @@ pub struct ListAgentsResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "nextPageToken",
-        alias = "next_page_token",
+        rename = "next_page_token",
+        alias = "nextPageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1462,8 +1462,8 @@ pub struct CreateAgentRequest {
     ///
     /// Field 1: `catalog_name`
     #[serde(
-        rename = "catalogName",
-        alias = "catalog_name",
+        rename = "catalog_name",
+        alias = "catalogName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1472,8 +1472,8 @@ pub struct CreateAgentRequest {
     ///
     /// Field 2: `schema_name`
     #[serde(
-        rename = "schemaName",
-        alias = "schema_name",
+        rename = "schema_name",
+        alias = "schemaName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1491,8 +1491,8 @@ pub struct CreateAgentRequest {
     ///
     /// Field 4: `invocation_protocol`
     #[serde(
-        rename = "invocationProtocol",
-        alias = "invocation_protocol",
+        rename = "invocation_protocol",
+        alias = "invocationProtocol",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -1527,8 +1527,8 @@ pub struct CreateAgentRequest {
     ///
     /// Field 8: `input_schema`
     #[serde(
-        rename = "inputSchema",
-        alias = "input_schema",
+        rename = "input_schema",
+        alias = "inputSchema",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub input_schema: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1915,8 +1915,8 @@ pub struct GetAgentRequest {
     ///
     /// Field 1005: `include_browse`
     #[serde(
-        rename = "includeBrowse",
-        alias = "include_browse",
+        rename = "include_browse",
+        alias = "includeBrowse",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub include_browse: ::core::option::Option<bool>,
@@ -2094,8 +2094,8 @@ pub struct UpdateAgentRequest {
     ///
     /// Field 2: `new_name`
     #[serde(
-        rename = "newName",
-        alias = "new_name",
+        rename = "new_name",
+        alias = "newName",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub new_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2103,8 +2103,8 @@ pub struct UpdateAgentRequest {
     ///
     /// Field 3: `invocation_protocol`
     #[serde(
-        rename = "invocationProtocol",
-        alias = "invocation_protocol",
+        rename = "invocation_protocol",
+        alias = "invocationProtocol",
         with = "::buffa::json_helpers::opt_enum",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -2140,8 +2140,8 @@ pub struct UpdateAgentRequest {
     ///
     /// Field 7: `input_schema`
     #[serde(
-        rename = "inputSchema",
-        alias = "input_schema",
+        rename = "input_schema",
+        alias = "inputSchema",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub input_schema: ::core::option::Option<::buffa::alloc::string::String>,
@@ -3361,16 +3361,16 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalogName", self.catalog_name)?;
+                    __map.serialize_entry("catalog_name", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schemaName", self.schema_name)?;
+                    __map.serialize_entry("schema_name", self.schema_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.full_name) {
-                    __map.serialize_entry("fullName", self.full_name)?;
+                    __map.serialize_entry("full_name", self.full_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.agent_id) {
-                    __map.serialize_entry("agentId", self.agent_id)?;
+                    __map.serialize_entry("agent_id", self.agent_id)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.invocation_protocol,
@@ -3391,7 +3391,7 @@ pub mod __buffa {
                     __map.serialize_entry("capabilities", &*self.capabilities)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.input_schema {
-                    __map.serialize_entry("inputSchema", __v)?;
+                    __map.serialize_entry("input_schema", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.owner {
                     __map.serialize_entry("owner", __v)?;
@@ -3409,10 +3409,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("createdAt", &_W(__v))?;
+                    __map.serialize_entry("created_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_by {
-                    __map.serialize_entry("createdBy", __v)?;
+                    __map.serialize_entry("created_by", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_at {
                     struct _W(i64);
@@ -3424,13 +3424,13 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updatedAt", &_W(__v))?;
+                    __map.serialize_entry("updated_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_by {
-                    __map.serialize_entry("updatedBy", __v)?;
+                    __map.serialize_entry("updated_by", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.metastore_id {
-                    __map.serialize_entry("metastoreId", __v)?;
+                    __map.serialize_entry("metastore_id", __v)?;
                 }
                 __map.end()
             }
@@ -3963,10 +3963,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalogName", self.catalog_name)?;
+                    __map.serialize_entry("catalog_name", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schemaName", self.schema_name)?;
+                    __map.serialize_entry("schema_name", self.schema_name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.max_results {
                     struct _W(i32);
@@ -3978,13 +3978,13 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("maxResults", &_W(__v))?;
+                    __map.serialize_entry("max_results", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("pageToken", __v)?;
+                    __map.serialize_entry("page_token", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.include_browse {
-                    __map.serialize_entry("includeBrowse", &__v)?;
+                    __map.serialize_entry("include_browse", &__v)?;
                 }
                 __map.end()
             }
@@ -4372,7 +4372,7 @@ pub mod __buffa {
                     __map.serialize_entry("agents", &*self.agents)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("nextPageToken", __v)?;
+                    __map.serialize_entry("next_page_token", __v)?;
                 }
                 __map.end()
             }
@@ -4933,10 +4933,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalogName", self.catalog_name)?;
+                    __map.serialize_entry("catalog_name", self.catalog_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schemaName", self.schema_name)?;
+                    __map.serialize_entry("schema_name", self.schema_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.name) {
                     __map.serialize_entry("name", self.name)?;
@@ -4960,7 +4960,7 @@ pub mod __buffa {
                     __map.serialize_entry("capabilities", &*self.capabilities)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.input_schema {
-                    __map.serialize_entry("inputSchema", __v)?;
+                    __map.serialize_entry("input_schema", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
@@ -5352,7 +5352,7 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.include_browse {
-                    __map.serialize_entry("includeBrowse", &__v)?;
+                    __map.serialize_entry("include_browse", &__v)?;
                 }
                 __map.end()
             }
@@ -5899,10 +5899,10 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.new_name {
-                    __map.serialize_entry("newName", __v)?;
+                    __map.serialize_entry("new_name", __v)?;
                 }
                 if let ::core::option::Option::Some(ref __v) = self.invocation_protocol {
-                    __map.serialize_entry("invocationProtocol", __v)?;
+                    __map.serialize_entry("invocation_protocol", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.endpoint {
                     __map.serialize_entry("endpoint", __v)?;
@@ -5914,7 +5914,7 @@ pub mod __buffa {
                     __map.serialize_entry("capabilities", &*self.capabilities)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.input_schema {
-                    __map.serialize_entry("inputSchema", __v)?;
+                    __map.serialize_entry("input_schema", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;

@@ -154,8 +154,8 @@ pub struct AzureServicePrincipal {
     ///
     /// Field 1: `directory_id`
     #[serde(
-        rename = "directoryId",
-        alias = "directory_id",
+        rename = "directory_id",
+        alias = "directoryId",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -164,8 +164,8 @@ pub struct AzureServicePrincipal {
     ///
     /// Field 2: `application_id`
     #[serde(
-        rename = "applicationId",
-        alias = "application_id",
+        rename = "application_id",
+        alias = "applicationId",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -541,8 +541,8 @@ pub struct AzureManagedIdentity {
     ///
     /// Field 1: `access_connector_id`
     #[serde(
-        rename = "accessConnectorId",
-        alias = "access_connector_id",
+        rename = "access_connector_id",
+        alias = "accessConnectorId",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -551,8 +551,8 @@ pub struct AzureManagedIdentity {
     ///
     /// Field 2: `credential_id`
     #[serde(
-        rename = "credentialId",
-        alias = "credential_id",
+        rename = "credential_id",
+        alias = "credentialId",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub credential_id: ::core::option::Option<::buffa::alloc::string::String>,
@@ -566,8 +566,8 @@ pub struct AzureManagedIdentity {
     ///
     /// Field 3: `managed_identity_id`
     #[serde(
-        rename = "managedIdentityId",
-        alias = "managed_identity_id",
+        rename = "managed_identity_id",
+        alias = "managedIdentityId",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub managed_identity_id: ::core::option::Option<::buffa::alloc::string::String>,
@@ -787,8 +787,8 @@ pub struct AzureStorageKey {
     ///
     /// Field 1: `account_name`
     #[serde(
-        rename = "accountName",
-        alias = "account_name",
+        rename = "account_name",
+        alias = "accountName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -797,8 +797,8 @@ pub struct AzureStorageKey {
     ///
     /// Field 2: `account_key`
     #[serde(
-        rename = "accountKey",
-        alias = "account_key",
+        rename = "account_key",
+        alias = "accountKey",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -965,8 +965,8 @@ pub struct AwsIamRoleConfig {
     ///
     /// Field 1: `role_arn`
     #[serde(
-        rename = "roleArn",
-        alias = "role_arn",
+        rename = "role_arn",
+        alias = "roleArn",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -984,8 +984,8 @@ pub struct AwsIamRoleConfig {
     ///
     /// Field 3: `access_key_id`
     #[serde(
-        rename = "accessKeyId",
-        alias = "access_key_id",
+        rename = "access_key_id",
+        alias = "accessKeyId",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub access_key_id: ::core::option::Option<::buffa::alloc::string::String>,
@@ -993,8 +993,8 @@ pub struct AwsIamRoleConfig {
     ///
     /// Field 4: `secret_access_key`
     #[serde(
-        rename = "secretAccessKey",
-        alias = "secret_access_key",
+        rename = "secret_access_key",
+        alias = "secretAccessKey",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub secret_access_key: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1003,8 +1003,8 @@ pub struct AwsIamRoleConfig {
     ///
     /// Field 5: `session_token`
     #[serde(
-        rename = "sessionToken",
-        alias = "session_token",
+        rename = "session_token",
+        alias = "sessionToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub session_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1295,8 +1295,8 @@ pub struct AwsIamRole {
     ///
     /// Field 1: `external_id`
     #[serde(
-        rename = "externalId",
-        alias = "external_id",
+        rename = "external_id",
+        alias = "externalId",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1305,8 +1305,8 @@ pub struct AwsIamRole {
     ///
     /// Field 2: `role_arn`
     #[serde(
-        rename = "roleArn",
-        alias = "role_arn",
+        rename = "role_arn",
+        alias = "roleArn",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1316,8 +1316,8 @@ pub struct AwsIamRole {
     ///
     /// Field 3: `unity_catalog_iam_arn`
     #[serde(
-        rename = "unityCatalogIamArn",
-        alias = "unity_catalog_iam_arn",
+        rename = "unity_catalog_iam_arn",
+        alias = "unityCatalogIamArn",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1506,8 +1506,8 @@ pub struct DatabricksGcpServiceAccount {
     ///
     /// Field 1: `credential_id`
     #[serde(
-        rename = "credentialId",
-        alias = "credential_id",
+        rename = "credential_id",
+        alias = "credentialId",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub credential_id: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1520,8 +1520,8 @@ pub struct DatabricksGcpServiceAccount {
     ///
     /// Field 3: `private_key_id`
     #[serde(
-        rename = "privateKeyId",
-        alias = "private_key_id",
+        rename = "private_key_id",
+        alias = "privateKeyId",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub private_key_id: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1778,8 +1778,8 @@ pub struct Credential {
     ///
     /// Field 4: `read_only`
     #[serde(
-        rename = "readOnly",
-        alias = "read_only",
+        rename = "read_only",
+        alias = "readOnly",
         with = "::buffa::json_helpers::proto_bool",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_false"
     )]
@@ -1798,8 +1798,8 @@ pub struct Credential {
     ///
     /// Field 7: `created_at`
     #[serde(
-        rename = "createdAt",
-        alias = "created_at",
+        rename = "created_at",
+        alias = "createdAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -1808,8 +1808,8 @@ pub struct Credential {
     ///
     /// Field 8: `created_by`
     #[serde(
-        rename = "createdBy",
-        alias = "created_by",
+        rename = "created_by",
+        alias = "createdBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1817,8 +1817,8 @@ pub struct Credential {
     ///
     /// Field 9: `updated_at`
     #[serde(
-        rename = "updatedAt",
-        alias = "updated_at",
+        rename = "updated_at",
+        alias = "updatedAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -1827,8 +1827,8 @@ pub struct Credential {
     ///
     /// Field 10: `updated_by`
     #[serde(
-        rename = "updatedBy",
-        alias = "updated_by",
+        rename = "updated_by",
+        alias = "updatedBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1838,8 +1838,8 @@ pub struct Credential {
     ///
     /// Field 11: `used_for_managed_storage`
     #[serde(
-        rename = "usedForManagedStorage",
-        alias = "used_for_managed_storage",
+        rename = "used_for_managed_storage",
+        alias = "usedForManagedStorage",
         with = "::buffa::json_helpers::proto_bool",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_false"
     )]
@@ -1848,8 +1848,8 @@ pub struct Credential {
     ///
     /// Field 12: `full_name`
     #[serde(
-        rename = "fullName",
-        alias = "full_name",
+        rename = "full_name",
+        alias = "fullName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1861,8 +1861,8 @@ pub struct Credential {
     ///
     /// Field 100: `azure_service_principal`
     #[serde(
-        rename = "azureServicePrincipal",
-        alias = "azure_service_principal",
+        rename = "azure_service_principal",
+        alias = "azureServicePrincipal",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub azure_service_principal: ::buffa::MessageField<AzureServicePrincipal>,
@@ -1870,8 +1870,8 @@ pub struct Credential {
     ///
     /// Field 101: `azure_managed_identity`
     #[serde(
-        rename = "azureManagedIdentity",
-        alias = "azure_managed_identity",
+        rename = "azure_managed_identity",
+        alias = "azureManagedIdentity",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub azure_managed_identity: ::buffa::MessageField<AzureManagedIdentity>,
@@ -1879,8 +1879,8 @@ pub struct Credential {
     ///
     /// Field 102: `azure_storage_key`
     #[serde(
-        rename = "azureStorageKey",
-        alias = "azure_storage_key",
+        rename = "azure_storage_key",
+        alias = "azureStorageKey",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub azure_storage_key: ::buffa::MessageField<AzureStorageKey>,
@@ -1888,8 +1888,8 @@ pub struct Credential {
     ///
     /// Field 103: `aws_iam_role`
     #[serde(
-        rename = "awsIamRole",
-        alias = "aws_iam_role",
+        rename = "aws_iam_role",
+        alias = "awsIamRole",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub aws_iam_role: ::buffa::MessageField<AwsIamRoleConfig>,
@@ -1897,8 +1897,8 @@ pub struct Credential {
     ///
     /// Field 104: `databricks_gcp_service_account`
     #[serde(
-        rename = "databricksGcpServiceAccount",
-        alias = "databricks_gcp_service_account",
+        rename = "databricks_gcp_service_account",
+        alias = "databricksGcpServiceAccount",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub databricks_gcp_service_account: ::buffa::MessageField<
@@ -2547,8 +2547,8 @@ pub struct ListCredentialsRequest {
     ///
     /// Field 2: `max_results`
     #[serde(
-        rename = "maxResults",
-        alias = "max_results",
+        rename = "max_results",
+        alias = "maxResults",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -2557,8 +2557,8 @@ pub struct ListCredentialsRequest {
     ///
     /// Field 3: `page_token`
     #[serde(
-        rename = "pageToken",
-        alias = "page_token",
+        rename = "page_token",
+        alias = "pageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2783,8 +2783,8 @@ pub struct ListCredentialsResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "nextPageToken",
-        alias = "next_page_token",
+        rename = "next_page_token",
+        alias = "nextPageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2994,8 +2994,8 @@ pub struct CreateCredentialRequest {
     ///
     /// Field 4: `read_only`
     #[serde(
-        rename = "readOnly",
-        alias = "read_only",
+        rename = "read_only",
+        alias = "readOnly",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub read_only: ::core::option::Option<bool>,
@@ -3003,8 +3003,8 @@ pub struct CreateCredentialRequest {
     ///
     /// Field 5: `skip_validation`
     #[serde(
-        rename = "skipValidation",
-        alias = "skip_validation",
+        rename = "skip_validation",
+        alias = "skipValidation",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub skip_validation: ::core::option::Option<bool>,
@@ -3012,8 +3012,8 @@ pub struct CreateCredentialRequest {
     ///
     /// Field 100: `azure_service_principal`
     #[serde(
-        rename = "azureServicePrincipal",
-        alias = "azure_service_principal",
+        rename = "azure_service_principal",
+        alias = "azureServicePrincipal",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub azure_service_principal: ::buffa::MessageField<AzureServicePrincipal>,
@@ -3021,8 +3021,8 @@ pub struct CreateCredentialRequest {
     ///
     /// Field 101: `azure_managed_identity`
     #[serde(
-        rename = "azureManagedIdentity",
-        alias = "azure_managed_identity",
+        rename = "azure_managed_identity",
+        alias = "azureManagedIdentity",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub azure_managed_identity: ::buffa::MessageField<AzureManagedIdentity>,
@@ -3030,8 +3030,8 @@ pub struct CreateCredentialRequest {
     ///
     /// Field 102: `azure_storage_key`
     #[serde(
-        rename = "azureStorageKey",
-        alias = "azure_storage_key",
+        rename = "azure_storage_key",
+        alias = "azureStorageKey",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub azure_storage_key: ::buffa::MessageField<AzureStorageKey>,
@@ -3039,8 +3039,8 @@ pub struct CreateCredentialRequest {
     ///
     /// Field 103: `aws_iam_role`
     #[serde(
-        rename = "awsIamRole",
-        alias = "aws_iam_role",
+        rename = "aws_iam_role",
+        alias = "awsIamRole",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub aws_iam_role: ::buffa::MessageField<AwsIamRoleConfig>,
@@ -3048,8 +3048,8 @@ pub struct CreateCredentialRequest {
     ///
     /// Field 104: `databricks_gcp_service_account`
     #[serde(
-        rename = "databricksGcpServiceAccount",
-        alias = "databricks_gcp_service_account",
+        rename = "databricks_gcp_service_account",
+        alias = "databricksGcpServiceAccount",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub databricks_gcp_service_account: ::buffa::MessageField<
@@ -3629,8 +3629,8 @@ pub struct UpdateCredentialRequest {
     ///
     /// Field 2: `new_name`
     #[serde(
-        rename = "newName",
-        alias = "new_name",
+        rename = "new_name",
+        alias = "newName",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub new_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -3643,8 +3643,8 @@ pub struct UpdateCredentialRequest {
     ///
     /// Field 4: `read_only`
     #[serde(
-        rename = "readOnly",
-        alias = "read_only",
+        rename = "read_only",
+        alias = "readOnly",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub read_only: ::core::option::Option<bool>,
@@ -3657,8 +3657,8 @@ pub struct UpdateCredentialRequest {
     ///
     /// Field 6: `skip_validation`
     #[serde(
-        rename = "skipValidation",
-        alias = "skip_validation",
+        rename = "skip_validation",
+        alias = "skipValidation",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub skip_validation: ::core::option::Option<bool>,
@@ -3672,8 +3672,8 @@ pub struct UpdateCredentialRequest {
     ///
     /// Field 100: `azure_service_principal`
     #[serde(
-        rename = "azureServicePrincipal",
-        alias = "azure_service_principal",
+        rename = "azure_service_principal",
+        alias = "azureServicePrincipal",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub azure_service_principal: ::buffa::MessageField<AzureServicePrincipal>,
@@ -3681,8 +3681,8 @@ pub struct UpdateCredentialRequest {
     ///
     /// Field 101: `azure_managed_identity`
     #[serde(
-        rename = "azureManagedIdentity",
-        alias = "azure_managed_identity",
+        rename = "azure_managed_identity",
+        alias = "azureManagedIdentity",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub azure_managed_identity: ::buffa::MessageField<AzureManagedIdentity>,
@@ -3690,8 +3690,8 @@ pub struct UpdateCredentialRequest {
     ///
     /// Field 102: `azure_storage_key`
     #[serde(
-        rename = "azureStorageKey",
-        alias = "azure_storage_key",
+        rename = "azure_storage_key",
+        alias = "azureStorageKey",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub azure_storage_key: ::buffa::MessageField<AzureStorageKey>,
@@ -3699,8 +3699,8 @@ pub struct UpdateCredentialRequest {
     ///
     /// Field 103: `aws_iam_role`
     #[serde(
-        rename = "awsIamRole",
-        alias = "aws_iam_role",
+        rename = "aws_iam_role",
+        alias = "awsIamRole",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub aws_iam_role: ::buffa::MessageField<AwsIamRoleConfig>,
@@ -3708,8 +3708,8 @@ pub struct UpdateCredentialRequest {
     ///
     /// Field 104: `databricks_gcp_service_account`
     #[serde(
-        rename = "databricksGcpServiceAccount",
-        alias = "databricks_gcp_service_account",
+        rename = "databricks_gcp_service_account",
+        alias = "databricksGcpServiceAccount",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub databricks_gcp_service_account: ::buffa::MessageField<
@@ -4646,22 +4646,22 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.directory_id) {
-                    __map.serialize_entry("directoryId", self.directory_id)?;
+                    __map.serialize_entry("directory_id", self.directory_id)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.application_id) {
-                    __map.serialize_entry("applicationId", self.application_id)?;
+                    __map.serialize_entry("application_id", self.application_id)?;
                 }
                 if let ::core::option::Option::Some(ref __ov) = self.credential {
                     match __ov {
                         super::super::__buffa::view::oneof::azure_service_principal::Credential::ClientSecret(
                             v,
                         ) => {
-                            __map.serialize_entry("clientSecret", v)?;
+                            __map.serialize_entry("client_secret", v)?;
                         }
                         super::super::__buffa::view::oneof::azure_service_principal::Credential::FederatedTokenFile(
                             v,
                         ) => {
-                            __map.serialize_entry("federatedTokenFile", v)?;
+                            __map.serialize_entry("federated_token_file", v)?;
                         }
                     }
                 }
@@ -5062,13 +5062,13 @@ pub mod __buffa {
                     self.access_connector_id,
                 ) {
                     __map
-                        .serialize_entry("accessConnectorId", self.access_connector_id)?;
+                        .serialize_entry("access_connector_id", self.access_connector_id)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.credential_id {
-                    __map.serialize_entry("credentialId", __v)?;
+                    __map.serialize_entry("credential_id", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.managed_identity_id {
-                    __map.serialize_entry("managedIdentityId", __v)?;
+                    __map.serialize_entry("managed_identity_id", __v)?;
                 }
                 __map.end()
             }
@@ -5427,10 +5427,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.account_name) {
-                    __map.serialize_entry("accountName", self.account_name)?;
+                    __map.serialize_entry("account_name", self.account_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.account_key) {
-                    __map.serialize_entry("accountKey", self.account_key)?;
+                    __map.serialize_entry("account_key", self.account_key)?;
                 }
                 __map.end()
             }
@@ -5866,19 +5866,19 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.role_arn) {
-                    __map.serialize_entry("roleArn", self.role_arn)?;
+                    __map.serialize_entry("role_arn", self.role_arn)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.region {
                     __map.serialize_entry("region", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.access_key_id {
-                    __map.serialize_entry("accessKeyId", __v)?;
+                    __map.serialize_entry("access_key_id", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.secret_access_key {
-                    __map.serialize_entry("secretAccessKey", __v)?;
+                    __map.serialize_entry("secret_access_key", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.session_token {
-                    __map.serialize_entry("sessionToken", __v)?;
+                    __map.serialize_entry("session_token", __v)?;
                 }
                 __map.end()
             }
@@ -6279,10 +6279,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.external_id) {
-                    __map.serialize_entry("externalId", self.external_id)?;
+                    __map.serialize_entry("external_id", self.external_id)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.role_arn) {
-                    __map.serialize_entry("roleArn", self.role_arn)?;
+                    __map.serialize_entry("role_arn", self.role_arn)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.unity_catalog_iam_arn,
@@ -6662,13 +6662,13 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if let ::core::option::Option::Some(__v) = self.credential_id {
-                    __map.serialize_entry("credentialId", __v)?;
+                    __map.serialize_entry("credential_id", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.email {
                     __map.serialize_entry("email", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.private_key_id {
-                    __map.serialize_entry("privateKeyId", __v)?;
+                    __map.serialize_entry("private_key_id", __v)?;
                 }
                 __map.end()
             }
@@ -7624,7 +7624,7 @@ pub mod __buffa {
                     __map.serialize_entry("purpose", &self.purpose)?;
                 }
                 if self.read_only {
-                    __map.serialize_entry("readOnly", &self.read_only)?;
+                    __map.serialize_entry("read_only", &self.read_only)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
@@ -7642,10 +7642,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("createdAt", &_W(__v))?;
+                    __map.serialize_entry("created_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_by {
-                    __map.serialize_entry("createdBy", __v)?;
+                    __map.serialize_entry("created_by", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_at {
                     struct _W(i64);
@@ -7657,10 +7657,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updatedAt", &_W(__v))?;
+                    __map.serialize_entry("updated_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_by {
-                    __map.serialize_entry("updatedBy", __v)?;
+                    __map.serialize_entry("updated_by", __v)?;
                 }
                 if self.used_for_managed_storage {
                     __map
@@ -7670,14 +7670,14 @@ pub mod __buffa {
                         )?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.full_name) {
-                    __map.serialize_entry("fullName", self.full_name)?;
+                    __map.serialize_entry("full_name", self.full_name)?;
                 }
                 {
                     if let ::core::option::Option::Some(__v) = self
                         .azure_service_principal
                         .as_option()
                     {
-                        __map.serialize_entry("azureServicePrincipal", __v)?;
+                        __map.serialize_entry("azure_service_principal", __v)?;
                     }
                 }
                 {
@@ -7685,7 +7685,7 @@ pub mod __buffa {
                         .azure_managed_identity
                         .as_option()
                     {
-                        __map.serialize_entry("azureManagedIdentity", __v)?;
+                        __map.serialize_entry("azure_managed_identity", __v)?;
                     }
                 }
                 {
@@ -7693,7 +7693,7 @@ pub mod __buffa {
                         .azure_storage_key
                         .as_option()
                     {
-                        __map.serialize_entry("azureStorageKey", __v)?;
+                        __map.serialize_entry("azure_storage_key", __v)?;
                     }
                 }
                 {
@@ -7701,7 +7701,7 @@ pub mod __buffa {
                         .aws_iam_role
                         .as_option()
                     {
-                        __map.serialize_entry("awsIamRole", __v)?;
+                        __map.serialize_entry("aws_iam_role", __v)?;
                     }
                 }
                 {
@@ -7709,7 +7709,7 @@ pub mod __buffa {
                         .databricks_gcp_service_account
                         .as_option()
                     {
-                        __map.serialize_entry("databricksGcpServiceAccount", __v)?;
+                        __map.serialize_entry("databricks_gcp_service_account", __v)?;
                     }
                 }
                 __map.end()
@@ -8220,10 +8220,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("maxResults", &_W(__v))?;
+                    __map.serialize_entry("max_results", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("pageToken", __v)?;
+                    __map.serialize_entry("page_token", __v)?;
                 }
                 __map.end()
             }
@@ -8600,7 +8600,7 @@ pub mod __buffa {
                     __map.serialize_entry("credentials", &*self.credentials)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("nextPageToken", __v)?;
+                    __map.serialize_entry("next_page_token", __v)?;
                 }
                 __map.end()
             }
@@ -9343,17 +9343,17 @@ pub mod __buffa {
                     __map.serialize_entry("comment", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.read_only {
-                    __map.serialize_entry("readOnly", &__v)?;
+                    __map.serialize_entry("read_only", &__v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.skip_validation {
-                    __map.serialize_entry("skipValidation", &__v)?;
+                    __map.serialize_entry("skip_validation", &__v)?;
                 }
                 {
                     if let ::core::option::Option::Some(__v) = self
                         .azure_service_principal
                         .as_option()
                     {
-                        __map.serialize_entry("azureServicePrincipal", __v)?;
+                        __map.serialize_entry("azure_service_principal", __v)?;
                     }
                 }
                 {
@@ -9361,7 +9361,7 @@ pub mod __buffa {
                         .azure_managed_identity
                         .as_option()
                     {
-                        __map.serialize_entry("azureManagedIdentity", __v)?;
+                        __map.serialize_entry("azure_managed_identity", __v)?;
                     }
                 }
                 {
@@ -9369,7 +9369,7 @@ pub mod __buffa {
                         .azure_storage_key
                         .as_option()
                     {
-                        __map.serialize_entry("azureStorageKey", __v)?;
+                        __map.serialize_entry("azure_storage_key", __v)?;
                     }
                 }
                 {
@@ -9377,7 +9377,7 @@ pub mod __buffa {
                         .aws_iam_role
                         .as_option()
                     {
-                        __map.serialize_entry("awsIamRole", __v)?;
+                        __map.serialize_entry("aws_iam_role", __v)?;
                     }
                 }
                 {
@@ -9385,7 +9385,7 @@ pub mod __buffa {
                         .databricks_gcp_service_account
                         .as_option()
                     {
-                        __map.serialize_entry("databricksGcpServiceAccount", __v)?;
+                        __map.serialize_entry("databricks_gcp_service_account", __v)?;
                     }
                 }
                 __map.end()
@@ -10544,19 +10544,19 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.new_name {
-                    __map.serialize_entry("newName", __v)?;
+                    __map.serialize_entry("new_name", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.read_only {
-                    __map.serialize_entry("readOnly", &__v)?;
+                    __map.serialize_entry("read_only", &__v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.owner {
                     __map.serialize_entry("owner", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.skip_validation {
-                    __map.serialize_entry("skipValidation", &__v)?;
+                    __map.serialize_entry("skip_validation", &__v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.force {
                     __map.serialize_entry("force", &__v)?;
@@ -10566,7 +10566,7 @@ pub mod __buffa {
                         .azure_service_principal
                         .as_option()
                     {
-                        __map.serialize_entry("azureServicePrincipal", __v)?;
+                        __map.serialize_entry("azure_service_principal", __v)?;
                     }
                 }
                 {
@@ -10574,7 +10574,7 @@ pub mod __buffa {
                         .azure_managed_identity
                         .as_option()
                     {
-                        __map.serialize_entry("azureManagedIdentity", __v)?;
+                        __map.serialize_entry("azure_managed_identity", __v)?;
                     }
                 }
                 {
@@ -10582,7 +10582,7 @@ pub mod __buffa {
                         .azure_storage_key
                         .as_option()
                     {
-                        __map.serialize_entry("azureStorageKey", __v)?;
+                        __map.serialize_entry("azure_storage_key", __v)?;
                     }
                 }
                 {
@@ -10590,7 +10590,7 @@ pub mod __buffa {
                         .aws_iam_role
                         .as_option()
                     {
-                        __map.serialize_entry("awsIamRole", __v)?;
+                        __map.serialize_entry("aws_iam_role", __v)?;
                     }
                 }
                 {
@@ -10598,7 +10598,7 @@ pub mod __buffa {
                         .databricks_gcp_service_account
                         .as_option()
                     {
-                        __map.serialize_entry("databricksGcpServiceAccount", __v)?;
+                        __map.serialize_entry("databricks_gcp_service_account", __v)?;
                     }
                 }
                 __map.end()
@@ -11193,10 +11193,10 @@ pub mod __buffa {
                     let mut map = s.serialize_map(Some(1))?;
                     match self {
                         Self::ClientSecret(v) => {
-                            map.serialize_entry("clientSecret", v)?;
+                            map.serialize_entry("client_secret", v)?;
                         }
                         Self::FederatedTokenFile(v) => {
-                            map.serialize_entry("federatedTokenFile", v)?;
+                            map.serialize_entry("federated_token_file", v)?;
                         }
                     }
                     map.end()

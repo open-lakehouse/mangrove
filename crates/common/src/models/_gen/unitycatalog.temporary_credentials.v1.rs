@@ -8,8 +8,8 @@ pub struct AzureUserDelegationSas {
     ///
     /// Field 1: `sas_token`
     #[serde(
-        rename = "sasToken",
-        alias = "sas_token",
+        rename = "sas_token",
+        alias = "sasToken",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -148,8 +148,8 @@ pub struct AzureAad {
     ///
     /// Field 1: `aad_token`
     #[serde(
-        rename = "aadToken",
-        alias = "aad_token",
+        rename = "aad_token",
+        alias = "aadToken",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -286,8 +286,8 @@ pub struct R2TemporaryCredentials {
     ///
     /// Field 1: `access_key_id`
     #[serde(
-        rename = "accessKeyId",
-        alias = "access_key_id",
+        rename = "access_key_id",
+        alias = "accessKeyId",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -296,8 +296,8 @@ pub struct R2TemporaryCredentials {
     ///
     /// Field 2: `secret_access_key`
     #[serde(
-        rename = "secretAccessKey",
-        alias = "secret_access_key",
+        rename = "secret_access_key",
+        alias = "secretAccessKey",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -306,8 +306,8 @@ pub struct R2TemporaryCredentials {
     ///
     /// Field 3: `session_token`
     #[serde(
-        rename = "sessionToken",
-        alias = "session_token",
+        rename = "session_token",
+        alias = "sessionToken",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -496,8 +496,8 @@ pub struct GcpOauthToken {
     ///
     /// Field 1: `oauth_token`
     #[serde(
-        rename = "oauthToken",
-        alias = "oauth_token",
+        rename = "oauth_token",
+        alias = "oauthToken",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -634,8 +634,8 @@ pub struct AwsTemporaryCredentials {
     ///
     /// Field 1: `access_key_id`
     #[serde(
-        rename = "accessKeyId",
-        alias = "access_key_id",
+        rename = "access_key_id",
+        alias = "accessKeyId",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -644,8 +644,8 @@ pub struct AwsTemporaryCredentials {
     ///
     /// Field 2: `access_point`
     #[serde(
-        rename = "accessPoint",
-        alias = "access_point",
+        rename = "access_point",
+        alias = "accessPoint",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -654,8 +654,8 @@ pub struct AwsTemporaryCredentials {
     ///
     /// Field 3: `secret_access_key`
     #[serde(
-        rename = "secretAccessKey",
-        alias = "secret_access_key",
+        rename = "secret_access_key",
+        alias = "secretAccessKey",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -664,8 +664,8 @@ pub struct AwsTemporaryCredentials {
     ///
     /// Field 4: `session_token`
     #[serde(
-        rename = "sessionToken",
-        alias = "session_token",
+        rename = "session_token",
+        alias = "sessionToken",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -879,8 +879,8 @@ pub struct TemporaryCredential {
     ///
     /// Field 1: `expiration_time`
     #[serde(
-        rename = "expirationTime",
-        alias = "expiration_time",
+        rename = "expiration_time",
+        alias = "expirationTime",
         with = "::buffa::json_helpers::int64",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_zero_i64"
     )]
@@ -1510,8 +1510,8 @@ pub struct GenerateTemporaryTableCredentialsRequest {
     ///
     /// Field 1: `table_id`
     #[serde(
-        rename = "tableId",
-        alias = "table_id",
+        rename = "table_id",
+        alias = "tableId",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1845,8 +1845,8 @@ pub struct GenerateTemporaryVolumeCredentialsRequest {
     ///
     /// Field 1: `volume_id`
     #[serde(
-        rename = "volumeId",
-        alias = "volume_id",
+        rename = "volume_id",
+        alias = "volumeId",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2202,8 +2202,8 @@ pub struct GenerateTemporaryPathCredentialsRequest {
     ///
     /// Field 3: `dry_run`
     #[serde(
-        rename = "dryRun",
-        alias = "dry_run",
+        rename = "dry_run",
+        alias = "dryRun",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub dry_run: ::core::option::Option<bool>,
@@ -3173,7 +3173,7 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.sas_token) {
-                    __map.serialize_entry("sasToken", self.sas_token)?;
+                    __map.serialize_entry("sas_token", self.sas_token)?;
                 }
                 __map.end()
             }
@@ -3480,7 +3480,7 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.aad_token) {
-                    __map.serialize_entry("aadToken", self.aad_token)?;
+                    __map.serialize_entry("aad_token", self.aad_token)?;
                 }
                 __map.end()
             }
@@ -3842,15 +3842,15 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.access_key_id) {
-                    __map.serialize_entry("accessKeyId", self.access_key_id)?;
+                    __map.serialize_entry("access_key_id", self.access_key_id)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.secret_access_key,
                 ) {
-                    __map.serialize_entry("secretAccessKey", self.secret_access_key)?;
+                    __map.serialize_entry("secret_access_key", self.secret_access_key)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.session_token) {
-                    __map.serialize_entry("sessionToken", self.session_token)?;
+                    __map.serialize_entry("session_token", self.session_token)?;
                 }
                 __map.end()
             }
@@ -4172,7 +4172,7 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.oauth_token) {
-                    __map.serialize_entry("oauthToken", self.oauth_token)?;
+                    __map.serialize_entry("oauth_token", self.oauth_token)?;
                 }
                 __map.end()
             }
@@ -4567,18 +4567,18 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.access_key_id) {
-                    __map.serialize_entry("accessKeyId", self.access_key_id)?;
+                    __map.serialize_entry("access_key_id", self.access_key_id)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.access_point) {
-                    __map.serialize_entry("accessPoint", self.access_point)?;
+                    __map.serialize_entry("access_point", self.access_point)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.secret_access_key,
                 ) {
-                    __map.serialize_entry("secretAccessKey", self.secret_access_key)?;
+                    __map.serialize_entry("secret_access_key", self.secret_access_key)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.session_token) {
-                    __map.serialize_entry("sessionToken", self.session_token)?;
+                    __map.serialize_entry("session_token", self.session_token)?;
                 }
                 __map.end()
             }
@@ -5299,7 +5299,7 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("expirationTime", &_W(self.expiration_time))?;
+                    __map.serialize_entry("expiration_time", &_W(self.expiration_time))?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.url) {
                     __map.serialize_entry("url", self.url)?;
@@ -5309,27 +5309,27 @@ pub mod __buffa {
                         super::super::__buffa::view::oneof::temporary_credential::Credentials::AzureUserDelegationSas(
                             v,
                         ) => {
-                            __map.serialize_entry("azureUserDelegationSas", v)?;
+                            __map.serialize_entry("azure_user_delegation_sas", v)?;
                         }
                         super::super::__buffa::view::oneof::temporary_credential::Credentials::AzureAad(
                             v,
                         ) => {
-                            __map.serialize_entry("azureAad", v)?;
+                            __map.serialize_entry("azure_aad", v)?;
                         }
                         super::super::__buffa::view::oneof::temporary_credential::Credentials::AwsTempCredentials(
                             v,
                         ) => {
-                            __map.serialize_entry("awsTempCredentials", v)?;
+                            __map.serialize_entry("aws_temp_credentials", v)?;
                         }
                         super::super::__buffa::view::oneof::temporary_credential::Credentials::GcpOauthToken(
                             v,
                         ) => {
-                            __map.serialize_entry("gcpOauthToken", v)?;
+                            __map.serialize_entry("gcp_oauth_token", v)?;
                         }
                         super::super::__buffa::view::oneof::temporary_credential::Credentials::R2TempCredentials(
                             v,
                         ) => {
-                            __map.serialize_entry("r2TempCredentials", v)?;
+                            __map.serialize_entry("r2_temp_credentials", v)?;
                         }
                     }
                 }
@@ -5697,7 +5697,7 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.table_id) {
-                    __map.serialize_entry("tableId", self.table_id)?;
+                    __map.serialize_entry("table_id", self.table_id)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.operation,
@@ -6082,7 +6082,7 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.volume_id) {
-                    __map.serialize_entry("volumeId", self.volume_id)?;
+                    __map.serialize_entry("volume_id", self.volume_id)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.operation,
@@ -6501,7 +6501,7 @@ pub mod __buffa {
                     __map.serialize_entry("operation", &self.operation)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.dry_run {
-                    __map.serialize_entry("dryRun", &__v)?;
+                    __map.serialize_entry("dry_run", &__v)?;
                 }
                 __map.end()
             }
@@ -7358,19 +7358,19 @@ pub mod __buffa {
                     let mut map = s.serialize_map(Some(1))?;
                     match self {
                         Self::AzureUserDelegationSas(v) => {
-                            map.serialize_entry("azureUserDelegationSas", v)?;
+                            map.serialize_entry("azure_user_delegation_sas", v)?;
                         }
                         Self::AzureAad(v) => {
-                            map.serialize_entry("azureAad", v)?;
+                            map.serialize_entry("azure_aad", v)?;
                         }
                         Self::AwsTempCredentials(v) => {
-                            map.serialize_entry("awsTempCredentials", v)?;
+                            map.serialize_entry("aws_temp_credentials", v)?;
                         }
                         Self::GcpOauthToken(v) => {
-                            map.serialize_entry("gcpOauthToken", v)?;
+                            map.serialize_entry("gcp_oauth_token", v)?;
                         }
                         Self::R2TempCredentials(v) => {
-                            map.serialize_entry("r2TempCredentials", v)?;
+                            map.serialize_entry("r2_temp_credentials", v)?;
                         }
                     }
                     map.end()

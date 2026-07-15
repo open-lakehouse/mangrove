@@ -17,8 +17,8 @@ pub struct EntityTagAssignment {
     ///
     /// Field 1: `entity_type`
     #[serde(
-        rename = "entityType",
-        alias = "entity_type",
+        rename = "entity_type",
+        alias = "entityType",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -27,8 +27,8 @@ pub struct EntityTagAssignment {
     ///
     /// Field 2: `entity_name`
     #[serde(
-        rename = "entityName",
-        alias = "entity_name",
+        rename = "entity_name",
+        alias = "entityName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -37,8 +37,8 @@ pub struct EntityTagAssignment {
     ///
     /// Field 3: `tag_key`
     #[serde(
-        rename = "tagKey",
-        alias = "tag_key",
+        rename = "tag_key",
+        alias = "tagKey",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -47,8 +47,8 @@ pub struct EntityTagAssignment {
     ///
     /// Field 4: `tag_value`
     #[serde(
-        rename = "tagValue",
-        alias = "tag_value",
+        rename = "tag_value",
+        alias = "tagValue",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub tag_value: ::core::option::Option<::buffa::alloc::string::String>,
@@ -415,8 +415,8 @@ pub struct TagPolicy {
     ///
     /// Field 1: `tag_key`
     #[serde(
-        rename = "tagKey",
-        alias = "tag_key",
+        rename = "tag_key",
+        alias = "tagKey",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -449,8 +449,8 @@ pub struct TagPolicy {
     ///
     /// Field 1000: `created_at`
     #[serde(
-        rename = "createdAt",
-        alias = "created_at",
+        rename = "created_at",
+        alias = "createdAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -459,8 +459,8 @@ pub struct TagPolicy {
     ///
     /// Field 1002: `updated_at`
     #[serde(
-        rename = "updatedAt",
-        alias = "updated_at",
+        rename = "updated_at",
+        alias = "updatedAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -762,8 +762,8 @@ pub struct ListTagPoliciesRequest {
     ///
     /// Field 1: `max_results`
     #[serde(
-        rename = "maxResults",
-        alias = "max_results",
+        rename = "max_results",
+        alias = "maxResults",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -772,8 +772,8 @@ pub struct ListTagPoliciesRequest {
     ///
     /// Field 2: `page_token`
     #[serde(
-        rename = "pageToken",
-        alias = "page_token",
+        rename = "page_token",
+        alias = "pageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -958,8 +958,8 @@ pub struct ListTagPoliciesResponse {
     ///
     /// Field 1: `tag_policies`
     #[serde(
-        rename = "tagPolicies",
-        alias = "tag_policies",
+        rename = "tag_policies",
+        alias = "tagPolicies",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -968,8 +968,8 @@ pub struct ListTagPoliciesResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "nextPageToken",
-        alias = "next_page_token",
+        rename = "next_page_token",
+        alias = "nextPageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1156,8 +1156,8 @@ pub struct CreateTagPolicyRequest {
     ///
     /// Field 1: `tag_policy`
     #[serde(
-        rename = "tagPolicy",
-        alias = "tag_policy",
+        rename = "tag_policy",
+        alias = "tagPolicy",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub tag_policy: ::buffa::MessageField<TagPolicy>,
@@ -1306,8 +1306,8 @@ pub struct GetTagPolicyRequest {
     ///
     /// Field 1: `tag_key`
     #[serde(
-        rename = "tagKey",
-        alias = "tag_key",
+        rename = "tag_key",
+        alias = "tagKey",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1445,8 +1445,8 @@ pub struct UpdateTagPolicyRequest {
     ///
     /// Field 1: `tag_key`
     #[serde(
-        rename = "tagKey",
-        alias = "tag_key",
+        rename = "tag_key",
+        alias = "tagKey",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1455,8 +1455,8 @@ pub struct UpdateTagPolicyRequest {
     ///
     /// Field 2: `tag_policy`
     #[serde(
-        rename = "tagPolicy",
-        alias = "tag_policy",
+        rename = "tag_policy",
+        alias = "tagPolicy",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub tag_policy: ::buffa::MessageField<TagPolicy>,
@@ -1464,8 +1464,8 @@ pub struct UpdateTagPolicyRequest {
     ///
     /// Field 3: `update_mask`
     #[serde(
-        rename = "updateMask",
-        alias = "update_mask",
+        rename = "update_mask",
+        alias = "updateMask",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub update_mask: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1677,8 +1677,8 @@ pub struct DeleteTagPolicyRequest {
     ///
     /// Field 1: `tag_key`
     #[serde(
-        rename = "tagKey",
-        alias = "tag_key",
+        rename = "tag_key",
+        alias = "tagKey",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1816,8 +1816,8 @@ pub struct ListEntityTagAssignmentsRequest {
     ///
     /// Field 1: `entity_type`
     #[serde(
-        rename = "entityType",
-        alias = "entity_type",
+        rename = "entity_type",
+        alias = "entityType",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1826,8 +1826,8 @@ pub struct ListEntityTagAssignmentsRequest {
     ///
     /// Field 2: `entity_name`
     #[serde(
-        rename = "entityName",
-        alias = "entity_name",
+        rename = "entity_name",
+        alias = "entityName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1836,8 +1836,8 @@ pub struct ListEntityTagAssignmentsRequest {
     ///
     /// Field 3: `max_results`
     #[serde(
-        rename = "maxResults",
-        alias = "max_results",
+        rename = "max_results",
+        alias = "maxResults",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -1846,8 +1846,8 @@ pub struct ListEntityTagAssignmentsRequest {
     ///
     /// Field 4: `page_token`
     #[serde(
-        rename = "pageToken",
-        alias = "page_token",
+        rename = "page_token",
+        alias = "pageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2078,8 +2078,8 @@ pub struct ListEntityTagAssignmentsResponse {
     ///
     /// Field 1: `tag_assignments`
     #[serde(
-        rename = "tagAssignments",
-        alias = "tag_assignments",
+        rename = "tag_assignments",
+        alias = "tagAssignments",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -2088,8 +2088,8 @@ pub struct ListEntityTagAssignmentsResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "nextPageToken",
-        alias = "next_page_token",
+        rename = "next_page_token",
+        alias = "nextPageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2276,8 +2276,8 @@ pub struct CreateEntityTagAssignmentRequest {
     ///
     /// Field 1: `tag_assignment`
     #[serde(
-        rename = "tagAssignment",
-        alias = "tag_assignment",
+        rename = "tag_assignment",
+        alias = "tagAssignment",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub tag_assignment: ::buffa::MessageField<EntityTagAssignment>,
@@ -2426,8 +2426,8 @@ pub struct GetEntityTagAssignmentRequest {
     ///
     /// Field 1: `entity_type`
     #[serde(
-        rename = "entityType",
-        alias = "entity_type",
+        rename = "entity_type",
+        alias = "entityType",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2436,8 +2436,8 @@ pub struct GetEntityTagAssignmentRequest {
     ///
     /// Field 2: `entity_name`
     #[serde(
-        rename = "entityName",
-        alias = "entity_name",
+        rename = "entity_name",
+        alias = "entityName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2446,8 +2446,8 @@ pub struct GetEntityTagAssignmentRequest {
     ///
     /// Field 3: `tag_key`
     #[serde(
-        rename = "tagKey",
-        alias = "tag_key",
+        rename = "tag_key",
+        alias = "tagKey",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2633,8 +2633,8 @@ pub struct UpdateEntityTagAssignmentRequest {
     ///
     /// Field 1: `entity_type`
     #[serde(
-        rename = "entityType",
-        alias = "entity_type",
+        rename = "entity_type",
+        alias = "entityType",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2643,8 +2643,8 @@ pub struct UpdateEntityTagAssignmentRequest {
     ///
     /// Field 2: `entity_name`
     #[serde(
-        rename = "entityName",
-        alias = "entity_name",
+        rename = "entity_name",
+        alias = "entityName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2653,8 +2653,8 @@ pub struct UpdateEntityTagAssignmentRequest {
     ///
     /// Field 3: `tag_key`
     #[serde(
-        rename = "tagKey",
-        alias = "tag_key",
+        rename = "tag_key",
+        alias = "tagKey",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2663,8 +2663,8 @@ pub struct UpdateEntityTagAssignmentRequest {
     ///
     /// Field 4: `tag_assignment`
     #[serde(
-        rename = "tagAssignment",
-        alias = "tag_assignment",
+        rename = "tag_assignment",
+        alias = "tagAssignment",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub tag_assignment: ::buffa::MessageField<EntityTagAssignment>,
@@ -2672,8 +2672,8 @@ pub struct UpdateEntityTagAssignmentRequest {
     ///
     /// Field 5: `update_mask`
     #[serde(
-        rename = "updateMask",
-        alias = "update_mask",
+        rename = "update_mask",
+        alias = "updateMask",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub update_mask: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2931,8 +2931,8 @@ pub struct DeleteEntityTagAssignmentRequest {
     ///
     /// Field 1: `entity_type`
     #[serde(
-        rename = "entityType",
-        alias = "entity_type",
+        rename = "entity_type",
+        alias = "entityType",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2941,8 +2941,8 @@ pub struct DeleteEntityTagAssignmentRequest {
     ///
     /// Field 2: `entity_name`
     #[serde(
-        rename = "entityName",
-        alias = "entity_name",
+        rename = "entity_name",
+        alias = "entityName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2951,8 +2951,8 @@ pub struct DeleteEntityTagAssignmentRequest {
     ///
     /// Field 3: `tag_key`
     #[serde(
-        rename = "tagKey",
-        alias = "tag_key",
+        rename = "tag_key",
+        alias = "tagKey",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -3401,16 +3401,16 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.entity_type) {
-                    __map.serialize_entry("entityType", self.entity_type)?;
+                    __map.serialize_entry("entity_type", self.entity_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.entity_name) {
-                    __map.serialize_entry("entityName", self.entity_name)?;
+                    __map.serialize_entry("entity_name", self.entity_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.tag_key) {
-                    __map.serialize_entry("tagKey", self.tag_key)?;
+                    __map.serialize_entry("tag_key", self.tag_key)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.tag_value {
-                    __map.serialize_entry("tagValue", __v)?;
+                    __map.serialize_entry("tag_value", __v)?;
                 }
                 __map.end()
             }
@@ -4202,7 +4202,7 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.tag_key) {
-                    __map.serialize_entry("tagKey", self.tag_key)?;
+                    __map.serialize_entry("tag_key", self.tag_key)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.description {
                     __map.serialize_entry("description", __v)?;
@@ -4223,7 +4223,7 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("createdAt", &_W(__v))?;
+                    __map.serialize_entry("created_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_at {
                     struct _W(i64);
@@ -4235,7 +4235,7 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updatedAt", &_W(__v))?;
+                    __map.serialize_entry("updated_at", &_W(__v))?;
                 }
                 __map.end()
             }
@@ -4609,10 +4609,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("maxResults", &_W(__v))?;
+                    __map.serialize_entry("max_results", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("pageToken", __v)?;
+                    __map.serialize_entry("page_token", __v)?;
                 }
                 __map.end()
             }
@@ -4978,10 +4978,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !self.tag_policies.is_empty() {
-                    __map.serialize_entry("tagPolicies", &*self.tag_policies)?;
+                    __map.serialize_entry("tag_policies", &*self.tag_policies)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("nextPageToken", __v)?;
+                    __map.serialize_entry("next_page_token", __v)?;
                 }
                 __map.end()
             }
@@ -5334,7 +5334,7 @@ pub mod __buffa {
                         .tag_policy
                         .as_option()
                     {
-                        __map.serialize_entry("tagPolicy", __v)?;
+                        __map.serialize_entry("tag_policy", __v)?;
                     }
                 }
                 __map.end()
@@ -5647,7 +5647,7 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.tag_key) {
-                    __map.serialize_entry("tagKey", self.tag_key)?;
+                    __map.serialize_entry("tag_key", self.tag_key)?;
                 }
                 __map.end()
             }
@@ -6038,18 +6038,18 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.tag_key) {
-                    __map.serialize_entry("tagKey", self.tag_key)?;
+                    __map.serialize_entry("tag_key", self.tag_key)?;
                 }
                 {
                     if let ::core::option::Option::Some(__v) = self
                         .tag_policy
                         .as_option()
                     {
-                        __map.serialize_entry("tagPolicy", __v)?;
+                        __map.serialize_entry("tag_policy", __v)?;
                     }
                 }
                 if let ::core::option::Option::Some(__v) = self.update_mask {
-                    __map.serialize_entry("updateMask", __v)?;
+                    __map.serialize_entry("update_mask", __v)?;
                 }
                 __map.end()
             }
@@ -6375,7 +6375,7 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.tag_key) {
-                    __map.serialize_entry("tagKey", self.tag_key)?;
+                    __map.serialize_entry("tag_key", self.tag_key)?;
                 }
                 __map.end()
             }
@@ -6773,10 +6773,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.entity_type) {
-                    __map.serialize_entry("entityType", self.entity_type)?;
+                    __map.serialize_entry("entity_type", self.entity_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.entity_name) {
-                    __map.serialize_entry("entityName", self.entity_name)?;
+                    __map.serialize_entry("entity_name", self.entity_name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.max_results {
                     struct _W(i32);
@@ -6788,10 +6788,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("maxResults", &_W(__v))?;
+                    __map.serialize_entry("max_results", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("pageToken", __v)?;
+                    __map.serialize_entry("page_token", __v)?;
                 }
                 __map.end()
             }
@@ -7180,10 +7180,10 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !self.tag_assignments.is_empty() {
-                    __map.serialize_entry("tagAssignments", &*self.tag_assignments)?;
+                    __map.serialize_entry("tag_assignments", &*self.tag_assignments)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("nextPageToken", __v)?;
+                    __map.serialize_entry("next_page_token", __v)?;
                 }
                 __map.end()
             }
@@ -7543,7 +7543,7 @@ pub mod __buffa {
                         .tag_assignment
                         .as_option()
                     {
-                        __map.serialize_entry("tagAssignment", __v)?;
+                        __map.serialize_entry("tag_assignment", __v)?;
                     }
                 }
                 __map.end()
@@ -7925,13 +7925,13 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.entity_type) {
-                    __map.serialize_entry("entityType", self.entity_type)?;
+                    __map.serialize_entry("entity_type", self.entity_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.entity_name) {
-                    __map.serialize_entry("entityName", self.entity_name)?;
+                    __map.serialize_entry("entity_name", self.entity_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.tag_key) {
-                    __map.serialize_entry("tagKey", self.tag_key)?;
+                    __map.serialize_entry("tag_key", self.tag_key)?;
                 }
                 __map.end()
             }
@@ -8410,24 +8410,24 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.entity_type) {
-                    __map.serialize_entry("entityType", self.entity_type)?;
+                    __map.serialize_entry("entity_type", self.entity_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.entity_name) {
-                    __map.serialize_entry("entityName", self.entity_name)?;
+                    __map.serialize_entry("entity_name", self.entity_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.tag_key) {
-                    __map.serialize_entry("tagKey", self.tag_key)?;
+                    __map.serialize_entry("tag_key", self.tag_key)?;
                 }
                 {
                     if let ::core::option::Option::Some(__v) = self
                         .tag_assignment
                         .as_option()
                     {
-                        __map.serialize_entry("tagAssignment", __v)?;
+                        __map.serialize_entry("tag_assignment", __v)?;
                     }
                 }
                 if let ::core::option::Option::Some(__v) = self.update_mask {
-                    __map.serialize_entry("updateMask", __v)?;
+                    __map.serialize_entry("update_mask", __v)?;
                 }
                 __map.end()
             }
@@ -8838,13 +8838,13 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.entity_type) {
-                    __map.serialize_entry("entityType", self.entity_type)?;
+                    __map.serialize_entry("entity_type", self.entity_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.entity_name) {
-                    __map.serialize_entry("entityName", self.entity_name)?;
+                    __map.serialize_entry("entity_name", self.entity_name)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.tag_key) {
-                    __map.serialize_entry("tagKey", self.tag_key)?;
+                    __map.serialize_entry("tag_key", self.tag_key)?;
                 }
                 __map.end()
             }

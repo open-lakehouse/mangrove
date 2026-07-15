@@ -190,8 +190,8 @@ pub struct Provider {
     ///
     /// Field 2: `authentication_type`
     #[serde(
-        rename = "authenticationType",
-        alias = "authentication_type",
+        rename = "authentication_type",
+        alias = "authenticationType",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -211,8 +211,8 @@ pub struct Provider {
     ///
     /// Field 5: `recipient_profile_str`
     #[serde(
-        rename = "recipientProfileStr",
-        alias = "recipient_profile_str",
+        rename = "recipient_profile_str",
+        alias = "recipientProfileStr",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub recipient_profile_str: ::core::option::Option<::buffa::alloc::string::String>,
@@ -232,8 +232,8 @@ pub struct Provider {
     ///
     /// Field 7: `created_at`
     #[serde(
-        rename = "createdAt",
-        alias = "created_at",
+        rename = "created_at",
+        alias = "createdAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -242,8 +242,8 @@ pub struct Provider {
     ///
     /// Field 8: `created_by`
     #[serde(
-        rename = "createdBy",
-        alias = "created_by",
+        rename = "created_by",
+        alias = "createdBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -251,8 +251,8 @@ pub struct Provider {
     ///
     /// Field 9: `updated_at`
     #[serde(
-        rename = "updatedAt",
-        alias = "updated_at",
+        rename = "updated_at",
+        alias = "updatedAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -261,8 +261,8 @@ pub struct Provider {
     ///
     /// Field 10: `updated_by`
     #[serde(
-        rename = "updatedBy",
-        alias = "updated_by",
+        rename = "updated_by",
+        alias = "updatedBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -803,8 +803,8 @@ pub struct ListProvidersRequest {
     ///
     /// Field 1: `max_results`
     #[serde(
-        rename = "maxResults",
-        alias = "max_results",
+        rename = "max_results",
+        alias = "maxResults",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -813,8 +813,8 @@ pub struct ListProvidersRequest {
     ///
     /// Field 2: `page_token`
     #[serde(
-        rename = "pageToken",
-        alias = "page_token",
+        rename = "page_token",
+        alias = "pageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1008,8 +1008,8 @@ pub struct ListProvidersResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "nextPageToken",
-        alias = "next_page_token",
+        rename = "next_page_token",
+        alias = "nextPageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1205,8 +1205,8 @@ pub struct CreateProviderRequest {
     ///
     /// Field 2: `authentication_type`
     #[serde(
-        rename = "authenticationType",
-        alias = "authentication_type",
+        rename = "authentication_type",
+        alias = "authenticationType",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -1226,8 +1226,8 @@ pub struct CreateProviderRequest {
     ///
     /// Field 5: `recipient_profile_str`
     #[serde(
-        rename = "recipientProfileStr",
-        alias = "recipient_profile_str",
+        rename = "recipient_profile_str",
+        alias = "recipientProfileStr",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub recipient_profile_str: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1760,8 +1760,8 @@ pub struct UpdateProviderRequest {
     ///
     /// Field 2: `new_name`
     #[serde(
-        rename = "newName",
-        alias = "new_name",
+        rename = "new_name",
+        alias = "newName",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub new_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1780,8 +1780,8 @@ pub struct UpdateProviderRequest {
     ///
     /// Field 5: `recipient_profile_str`
     #[serde(
-        rename = "recipientProfileStr",
-        alias = "recipient_profile_str",
+        rename = "recipient_profile_str",
+        alias = "recipientProfileStr",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub recipient_profile_str: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2870,7 +2870,7 @@ pub mod __buffa {
                     __map.serialize_entry("comment", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.recipient_profile_str {
-                    __map.serialize_entry("recipientProfileStr", __v)?;
+                    __map.serialize_entry("recipient_profile_str", __v)?;
                 }
                 if !self.properties.is_empty() {
                     struct _WM<'__a, '__x>(
@@ -2902,10 +2902,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("createdAt", &_W(__v))?;
+                    __map.serialize_entry("created_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_by {
-                    __map.serialize_entry("createdBy", __v)?;
+                    __map.serialize_entry("created_by", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_at {
                     struct _W(i64);
@@ -2917,10 +2917,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updatedAt", &_W(__v))?;
+                    __map.serialize_entry("updated_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_by {
-                    __map.serialize_entry("updatedBy", __v)?;
+                    __map.serialize_entry("updated_by", __v)?;
                 }
                 __map.end()
             }
@@ -3328,10 +3328,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("maxResults", &_W(__v))?;
+                    __map.serialize_entry("max_results", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("pageToken", __v)?;
+                    __map.serialize_entry("page_token", __v)?;
                 }
                 __map.end()
             }
@@ -3697,7 +3697,7 @@ pub mod __buffa {
                     __map.serialize_entry("providers", &*self.providers)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("nextPageToken", __v)?;
+                    __map.serialize_entry("next_page_token", __v)?;
                 }
                 __map.end()
             }
@@ -4251,7 +4251,7 @@ pub mod __buffa {
                     __map.serialize_entry("comment", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.recipient_profile_str {
-                    __map.serialize_entry("recipientProfileStr", __v)?;
+                    __map.serialize_entry("recipient_profile_str", __v)?;
                 }
                 if !self.properties.is_empty() {
                     struct _WM<'__a, '__x>(
@@ -5131,7 +5131,7 @@ pub mod __buffa {
                     __map.serialize_entry("name", self.name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.new_name {
-                    __map.serialize_entry("newName", __v)?;
+                    __map.serialize_entry("new_name", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.owner {
                     __map.serialize_entry("owner", __v)?;
@@ -5140,7 +5140,7 @@ pub mod __buffa {
                     __map.serialize_entry("comment", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.recipient_profile_str {
-                    __map.serialize_entry("recipientProfileStr", __v)?;
+                    __map.serialize_entry("recipient_profile_str", __v)?;
                 }
                 if !self.properties.is_empty() {
                     struct _WM<'__a, '__x>(

@@ -594,8 +594,8 @@ pub struct FunctionRef {
     ///
     /// Field 1: `function_name`
     #[serde(
-        rename = "functionName",
-        alias = "function_name",
+        rename = "function_name",
+        alias = "functionName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -796,8 +796,8 @@ pub struct PolicyInfo {
     ///
     /// Field 3: `on_securable_type`
     #[serde(
-        rename = "onSecurableType",
-        alias = "on_securable_type",
+        rename = "on_securable_type",
+        alias = "onSecurableType",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -806,8 +806,8 @@ pub struct PolicyInfo {
     ///
     /// Field 4: `on_securable_fullname`
     #[serde(
-        rename = "onSecurableFullname",
-        alias = "on_securable_fullname",
+        rename = "on_securable_fullname",
+        alias = "onSecurableFullname",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -816,8 +816,8 @@ pub struct PolicyInfo {
     ///
     /// Field 5: `policy_type`
     #[serde(
-        rename = "policyType",
-        alias = "policy_type",
+        rename = "policy_type",
+        alias = "policyType",
         with = "::buffa::json_helpers::proto_enum",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
@@ -826,8 +826,8 @@ pub struct PolicyInfo {
     ///
     /// Field 6: `to_principals`
     #[serde(
-        rename = "toPrincipals",
-        alias = "to_principals",
+        rename = "to_principals",
+        alias = "toPrincipals",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -836,8 +836,8 @@ pub struct PolicyInfo {
     ///
     /// Field 7: `except_principals`
     #[serde(
-        rename = "exceptPrincipals",
-        alias = "except_principals",
+        rename = "except_principals",
+        alias = "exceptPrincipals",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -847,8 +847,8 @@ pub struct PolicyInfo {
     ///
     /// Field 8: `when_condition`
     #[serde(
-        rename = "whenCondition",
-        alias = "when_condition",
+        rename = "when_condition",
+        alias = "whenCondition",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub when_condition: ::core::option::Option<::buffa::alloc::string::String>,
@@ -857,8 +857,8 @@ pub struct PolicyInfo {
     ///
     /// Field 9: `match_columns`
     #[serde(
-        rename = "matchColumns",
-        alias = "match_columns",
+        rename = "match_columns",
+        alias = "matchColumns",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -872,8 +872,8 @@ pub struct PolicyInfo {
     ///
     /// Field 13: `created_at`
     #[serde(
-        rename = "createdAt",
-        alias = "created_at",
+        rename = "created_at",
+        alias = "createdAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -882,8 +882,8 @@ pub struct PolicyInfo {
     ///
     /// Field 14: `updated_at`
     #[serde(
-        rename = "updatedAt",
-        alias = "updated_at",
+        rename = "updated_at",
+        alias = "updatedAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -1799,8 +1799,8 @@ pub struct ListPoliciesRequest {
     ///
     /// Field 1: `on_securable_type`
     #[serde(
-        rename = "onSecurableType",
-        alias = "on_securable_type",
+        rename = "on_securable_type",
+        alias = "onSecurableType",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1809,8 +1809,8 @@ pub struct ListPoliciesRequest {
     ///
     /// Field 2: `on_securable_fullname`
     #[serde(
-        rename = "onSecurableFullname",
-        alias = "on_securable_fullname",
+        rename = "on_securable_fullname",
+        alias = "onSecurableFullname",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1822,8 +1822,8 @@ pub struct ListPoliciesRequest {
     ///
     /// Field 3: `include_inherited`
     #[serde(
-        rename = "includeInherited",
-        alias = "include_inherited",
+        rename = "include_inherited",
+        alias = "includeInherited",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub include_inherited: ::core::option::Option<bool>,
@@ -1831,8 +1831,8 @@ pub struct ListPoliciesRequest {
     ///
     /// Field 4: `max_results`
     #[serde(
-        rename = "maxResults",
-        alias = "max_results",
+        rename = "max_results",
+        alias = "maxResults",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -1841,8 +1841,8 @@ pub struct ListPoliciesRequest {
     ///
     /// Field 5: `page_token`
     #[serde(
-        rename = "pageToken",
-        alias = "page_token",
+        rename = "page_token",
+        alias = "pageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2116,8 +2116,8 @@ pub struct ListPoliciesResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "nextPageToken",
-        alias = "next_page_token",
+        rename = "next_page_token",
+        alias = "nextPageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -2306,8 +2306,8 @@ pub struct CreatePolicyRequest {
     ///
     /// Field 1: `on_securable_type`
     #[serde(
-        rename = "onSecurableType",
-        alias = "on_securable_type",
+        rename = "on_securable_type",
+        alias = "onSecurableType",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2316,8 +2316,8 @@ pub struct CreatePolicyRequest {
     ///
     /// Field 2: `on_securable_fullname`
     #[serde(
-        rename = "onSecurableFullname",
-        alias = "on_securable_fullname",
+        rename = "on_securable_fullname",
+        alias = "onSecurableFullname",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2326,8 +2326,8 @@ pub struct CreatePolicyRequest {
     ///
     /// Field 3: `policy_info`
     #[serde(
-        rename = "policyInfo",
-        alias = "policy_info",
+        rename = "policy_info",
+        alias = "policyInfo",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub policy_info: ::buffa::MessageField<PolicyInfo>,
@@ -2529,8 +2529,8 @@ pub struct GetPolicyRequest {
     ///
     /// Field 1: `on_securable_type`
     #[serde(
-        rename = "onSecurableType",
-        alias = "on_securable_type",
+        rename = "on_securable_type",
+        alias = "onSecurableType",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2539,8 +2539,8 @@ pub struct GetPolicyRequest {
     ///
     /// Field 2: `on_securable_fullname`
     #[serde(
-        rename = "onSecurableFullname",
-        alias = "on_securable_fullname",
+        rename = "on_securable_fullname",
+        alias = "onSecurableFullname",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2742,8 +2742,8 @@ pub struct UpdatePolicyRequest {
     ///
     /// Field 1: `on_securable_type`
     #[serde(
-        rename = "onSecurableType",
-        alias = "on_securable_type",
+        rename = "on_securable_type",
+        alias = "onSecurableType",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2752,8 +2752,8 @@ pub struct UpdatePolicyRequest {
     ///
     /// Field 2: `on_securable_fullname`
     #[serde(
-        rename = "onSecurableFullname",
-        alias = "on_securable_fullname",
+        rename = "on_securable_fullname",
+        alias = "onSecurableFullname",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -2771,8 +2771,8 @@ pub struct UpdatePolicyRequest {
     ///
     /// Field 4: `policy_info`
     #[serde(
-        rename = "policyInfo",
-        alias = "policy_info",
+        rename = "policy_info",
+        alias = "policyInfo",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub policy_info: ::buffa::MessageField<PolicyInfo>,
@@ -2780,8 +2780,8 @@ pub struct UpdatePolicyRequest {
     ///
     /// Field 5: `update_mask`
     #[serde(
-        rename = "updateMask",
-        alias = "update_mask",
+        rename = "update_mask",
+        alias = "updateMask",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub update_mask: ::core::option::Option<::buffa::alloc::string::String>,
@@ -3046,8 +3046,8 @@ pub struct DeletePolicyRequest {
     ///
     /// Field 1: `on_securable_type`
     #[serde(
-        rename = "onSecurableType",
-        alias = "on_securable_type",
+        rename = "on_securable_type",
+        alias = "onSecurableType",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -3056,8 +3056,8 @@ pub struct DeletePolicyRequest {
     ///
     /// Field 2: `on_securable_fullname`
     #[serde(
-        rename = "onSecurableFullname",
-        alias = "on_securable_fullname",
+        rename = "on_securable_fullname",
+        alias = "onSecurableFullname",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -4188,7 +4188,7 @@ pub mod __buffa {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.function_name) {
-                    __map.serialize_entry("functionName", self.function_name)?;
+                    __map.serialize_entry("function_name", self.function_name)?;
                 }
                 if !self.using.is_empty() {
                     __map.serialize_entry("using", &*self.using)?;
@@ -5025,7 +5025,7 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_type,
                 ) {
-                    __map.serialize_entry("onSecurableType", self.on_securable_type)?;
+                    __map.serialize_entry("on_securable_type", self.on_securable_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_fullname,
@@ -5039,19 +5039,19 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.policy_type,
                 ) {
-                    __map.serialize_entry("policyType", &self.policy_type)?;
+                    __map.serialize_entry("policy_type", &self.policy_type)?;
                 }
                 if !self.to_principals.is_empty() {
-                    __map.serialize_entry("toPrincipals", &*self.to_principals)?;
+                    __map.serialize_entry("to_principals", &*self.to_principals)?;
                 }
                 if !self.except_principals.is_empty() {
-                    __map.serialize_entry("exceptPrincipals", &*self.except_principals)?;
+                    __map.serialize_entry("except_principals", &*self.except_principals)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.when_condition {
-                    __map.serialize_entry("whenCondition", __v)?;
+                    __map.serialize_entry("when_condition", __v)?;
                 }
                 if !self.match_columns.is_empty() {
-                    __map.serialize_entry("matchColumns", &*self.match_columns)?;
+                    __map.serialize_entry("match_columns", &*self.match_columns)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
@@ -5066,7 +5066,7 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("createdAt", &_W(__v))?;
+                    __map.serialize_entry("created_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_at {
                     struct _W(i64);
@@ -5078,19 +5078,19 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updatedAt", &_W(__v))?;
+                    __map.serialize_entry("updated_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(ref __ov) = self.function {
                     match __ov {
                         super::super::__buffa::view::oneof::policy_info::Function::RowFilter(
                             v,
                         ) => {
-                            __map.serialize_entry("rowFilter", v)?;
+                            __map.serialize_entry("row_filter", v)?;
                         }
                         super::super::__buffa::view::oneof::policy_info::Function::ColumnMask(
                             v,
                         ) => {
-                            __map.serialize_entry("columnMask", v)?;
+                            __map.serialize_entry("column_mask", v)?;
                         }
                     }
                 }
@@ -5615,7 +5615,7 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_type,
                 ) {
-                    __map.serialize_entry("onSecurableType", self.on_securable_type)?;
+                    __map.serialize_entry("on_securable_type", self.on_securable_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_fullname,
@@ -5627,7 +5627,7 @@ pub mod __buffa {
                         )?;
                 }
                 if let ::core::option::Option::Some(__v) = self.include_inherited {
-                    __map.serialize_entry("includeInherited", &__v)?;
+                    __map.serialize_entry("include_inherited", &__v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.max_results {
                     struct _W(i32);
@@ -5639,10 +5639,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("maxResults", &_W(__v))?;
+                    __map.serialize_entry("max_results", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("pageToken", __v)?;
+                    __map.serialize_entry("page_token", __v)?;
                 }
                 __map.end()
             }
@@ -6033,7 +6033,7 @@ pub mod __buffa {
                     __map.serialize_entry("policies", &*self.policies)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("nextPageToken", __v)?;
+                    __map.serialize_entry("next_page_token", __v)?;
                 }
                 __map.end()
             }
@@ -6448,7 +6448,7 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_type,
                 ) {
-                    __map.serialize_entry("onSecurableType", self.on_securable_type)?;
+                    __map.serialize_entry("on_securable_type", self.on_securable_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_fullname,
@@ -6464,7 +6464,7 @@ pub mod __buffa {
                         .policy_info
                         .as_option()
                     {
-                        __map.serialize_entry("policyInfo", __v)?;
+                        __map.serialize_entry("policy_info", __v)?;
                     }
                 }
                 __map.end()
@@ -6858,7 +6858,7 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_type,
                 ) {
-                    __map.serialize_entry("onSecurableType", self.on_securable_type)?;
+                    __map.serialize_entry("on_securable_type", self.on_securable_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_fullname,
@@ -7344,7 +7344,7 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_type,
                 ) {
-                    __map.serialize_entry("onSecurableType", self.on_securable_type)?;
+                    __map.serialize_entry("on_securable_type", self.on_securable_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_fullname,
@@ -7363,11 +7363,11 @@ pub mod __buffa {
                         .policy_info
                         .as_option()
                     {
-                        __map.serialize_entry("policyInfo", __v)?;
+                        __map.serialize_entry("policy_info", __v)?;
                     }
                 }
                 if let ::core::option::Option::Some(__v) = self.update_mask {
-                    __map.serialize_entry("updateMask", __v)?;
+                    __map.serialize_entry("update_mask", __v)?;
                 }
                 __map.end()
             }
@@ -7774,7 +7774,7 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_type,
                 ) {
-                    __map.serialize_entry("onSecurableType", self.on_securable_type)?;
+                    __map.serialize_entry("on_securable_type", self.on_securable_type)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_fullname,
@@ -8033,10 +8033,10 @@ pub mod __buffa {
                     let mut map = s.serialize_map(Some(1))?;
                     match self {
                         Self::RowFilter(v) => {
-                            map.serialize_entry("rowFilter", v)?;
+                            map.serialize_entry("row_filter", v)?;
                         }
                         Self::ColumnMask(v) => {
-                            map.serialize_entry("columnMask", v)?;
+                            map.serialize_entry("column_mask", v)?;
                         }
                     }
                     map.end()

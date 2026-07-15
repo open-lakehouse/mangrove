@@ -26,8 +26,8 @@ pub struct ExternalLocation {
     ///
     /// Field 3: `credential_name`
     #[serde(
-        rename = "credentialName",
-        alias = "credential_name",
+        rename = "credential_name",
+        alias = "credentialName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -36,8 +36,8 @@ pub struct ExternalLocation {
     ///
     /// Field 4: `read_only`
     #[serde(
-        rename = "readOnly",
-        alias = "read_only",
+        rename = "read_only",
+        alias = "readOnly",
         with = "::buffa::json_helpers::proto_bool",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_false"
     )]
@@ -59,8 +59,8 @@ pub struct ExternalLocation {
     ///
     /// Field 8: `credential_id`
     #[serde(
-        rename = "credentialId",
-        alias = "credential_id",
+        rename = "credential_id",
+        alias = "credentialId",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -69,8 +69,8 @@ pub struct ExternalLocation {
     ///
     /// Field 9: `created_at`
     #[serde(
-        rename = "createdAt",
-        alias = "created_at",
+        rename = "created_at",
+        alias = "createdAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -79,8 +79,8 @@ pub struct ExternalLocation {
     ///
     /// Field 10: `created_by`
     #[serde(
-        rename = "createdBy",
-        alias = "created_by",
+        rename = "created_by",
+        alias = "createdBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -88,8 +88,8 @@ pub struct ExternalLocation {
     ///
     /// Field 11: `updated_at`
     #[serde(
-        rename = "updatedAt",
-        alias = "updated_at",
+        rename = "updated_at",
+        alias = "updatedAt",
         with = "::buffa::json_helpers::opt_int64",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -98,8 +98,8 @@ pub struct ExternalLocation {
     ///
     /// Field 12: `updated_by`
     #[serde(
-        rename = "updatedBy",
-        alias = "updated_by",
+        rename = "updated_by",
+        alias = "updatedBy",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
@@ -108,15 +108,15 @@ pub struct ExternalLocation {
     ///
     /// Field 13: `browse_only`
     #[serde(
-        rename = "browseOnly",
-        alias = "browse_only",
+        rename = "browse_only",
+        alias = "browseOnly",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub browse_only: ::core::option::Option<bool>,
     /// Field 100: `external_location_id`
     #[serde(
-        rename = "externalLocationId",
-        alias = "external_location_id",
+        rename = "external_location_id",
+        alias = "externalLocationId",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub external_location_id: ::core::option::Option<::buffa::alloc::string::String>,
@@ -622,8 +622,8 @@ pub struct ListExternalLocationsRequest {
     ///
     /// Field 2: `max_results`
     #[serde(
-        rename = "maxResults",
-        alias = "max_results",
+        rename = "max_results",
+        alias = "maxResults",
         with = "::buffa::json_helpers::opt_int32",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
@@ -632,8 +632,8 @@ pub struct ListExternalLocationsRequest {
     ///
     /// Field 3: `page_token`
     #[serde(
-        rename = "pageToken",
-        alias = "page_token",
+        rename = "page_token",
+        alias = "pageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -641,8 +641,8 @@ pub struct ListExternalLocationsRequest {
     ///
     /// Field 4: `include_browse`
     #[serde(
-        rename = "includeBrowse",
-        alias = "include_browse",
+        rename = "include_browse",
+        alias = "includeBrowse",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub include_browse: ::core::option::Option<bool>,
@@ -856,8 +856,8 @@ pub struct ListExternalLocationsResponse {
     ///
     /// Field 1: `external_locations`
     #[serde(
-        rename = "externalLocations",
-        alias = "external_locations",
+        rename = "external_locations",
+        alias = "externalLocations",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
@@ -866,8 +866,8 @@ pub struct ListExternalLocationsResponse {
     ///
     /// Field 2: `next_page_token`
     #[serde(
-        rename = "nextPageToken",
-        alias = "next_page_token",
+        rename = "next_page_token",
+        alias = "nextPageToken",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub next_page_token: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1072,8 +1072,8 @@ pub struct CreateExternalLocationRequest {
     ///
     /// Field 3: `credential_name`
     #[serde(
-        rename = "credentialName",
-        alias = "credential_name",
+        rename = "credential_name",
+        alias = "credentialName",
         with = "::buffa::json_helpers::proto_string",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
@@ -1082,8 +1082,8 @@ pub struct CreateExternalLocationRequest {
     ///
     /// Field 4: `read_only`
     #[serde(
-        rename = "readOnly",
-        alias = "read_only",
+        rename = "read_only",
+        alias = "readOnly",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub read_only: ::core::option::Option<bool>,
@@ -1096,8 +1096,8 @@ pub struct CreateExternalLocationRequest {
     ///
     /// Field 6: `skip_validation`
     #[serde(
-        rename = "skipValidation",
-        alias = "skip_validation",
+        rename = "skip_validation",
+        alias = "skipValidation",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub skip_validation: ::core::option::Option<bool>,
@@ -1532,8 +1532,8 @@ pub struct UpdateExternalLocationRequest {
     ///
     /// Field 3: `credential_name`
     #[serde(
-        rename = "credentialName",
-        alias = "credential_name",
+        rename = "credential_name",
+        alias = "credentialName",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub credential_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1541,8 +1541,8 @@ pub struct UpdateExternalLocationRequest {
     ///
     /// Field 4: `read_only`
     #[serde(
-        rename = "readOnly",
-        alias = "read_only",
+        rename = "read_only",
+        alias = "readOnly",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub read_only: ::core::option::Option<bool>,
@@ -1560,8 +1560,8 @@ pub struct UpdateExternalLocationRequest {
     ///
     /// Field 7: `new_name`
     #[serde(
-        rename = "newName",
-        alias = "new_name",
+        rename = "new_name",
+        alias = "newName",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub new_name: ::core::option::Option<::buffa::alloc::string::String>,
@@ -1574,8 +1574,8 @@ pub struct UpdateExternalLocationRequest {
     ///
     /// Field 9: `skip_validation`
     #[serde(
-        rename = "skipValidation",
-        alias = "skip_validation",
+        rename = "skip_validation",
+        alias = "skipValidation",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub skip_validation: ::core::option::Option<bool>,
@@ -2678,10 +2678,10 @@ pub mod __buffa {
                     __map.serialize_entry("url", self.url)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.credential_name) {
-                    __map.serialize_entry("credentialName", self.credential_name)?;
+                    __map.serialize_entry("credential_name", self.credential_name)?;
                 }
                 if self.read_only {
-                    __map.serialize_entry("readOnly", &self.read_only)?;
+                    __map.serialize_entry("read_only", &self.read_only)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
@@ -2690,7 +2690,7 @@ pub mod __buffa {
                     __map.serialize_entry("owner", __v)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.credential_id) {
-                    __map.serialize_entry("credentialId", self.credential_id)?;
+                    __map.serialize_entry("credential_id", self.credential_id)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_at {
                     struct _W(i64);
@@ -2702,10 +2702,10 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("createdAt", &_W(__v))?;
+                    __map.serialize_entry("created_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_by {
-                    __map.serialize_entry("createdBy", __v)?;
+                    __map.serialize_entry("created_by", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_at {
                     struct _W(i64);
@@ -2717,16 +2717,16 @@ pub mod __buffa {
                             ::buffa::json_helpers::int64::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("updatedAt", &_W(__v))?;
+                    __map.serialize_entry("updated_at", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.updated_by {
-                    __map.serialize_entry("updatedBy", __v)?;
+                    __map.serialize_entry("updated_by", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.browse_only {
-                    __map.serialize_entry("browseOnly", &__v)?;
+                    __map.serialize_entry("browse_only", &__v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.external_location_id {
-                    __map.serialize_entry("externalLocationId", __v)?;
+                    __map.serialize_entry("external_location_id", __v)?;
                 }
                 __map.end()
             }
@@ -3179,13 +3179,13 @@ pub mod __buffa {
                             ::buffa::json_helpers::int32::serialize(&self.0, __s)
                         }
                     }
-                    __map.serialize_entry("maxResults", &_W(__v))?;
+                    __map.serialize_entry("max_results", &_W(__v))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.page_token {
-                    __map.serialize_entry("pageToken", __v)?;
+                    __map.serialize_entry("page_token", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.include_browse {
-                    __map.serialize_entry("includeBrowse", &__v)?;
+                    __map.serialize_entry("include_browse", &__v)?;
                 }
                 __map.end()
             }
@@ -3571,7 +3571,7 @@ pub mod __buffa {
                         )?;
                 }
                 if let ::core::option::Option::Some(__v) = self.next_page_token {
-                    __map.serialize_entry("nextPageToken", __v)?;
+                    __map.serialize_entry("next_page_token", __v)?;
                 }
                 __map.end()
             }
@@ -4044,16 +4044,16 @@ pub mod __buffa {
                     __map.serialize_entry("url", self.url)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.credential_name) {
-                    __map.serialize_entry("credentialName", self.credential_name)?;
+                    __map.serialize_entry("credential_name", self.credential_name)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.read_only {
-                    __map.serialize_entry("readOnly", &__v)?;
+                    __map.serialize_entry("read_only", &__v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.skip_validation {
-                    __map.serialize_entry("skipValidation", &__v)?;
+                    __map.serialize_entry("skip_validation", &__v)?;
                 }
                 __map.end()
             }
@@ -4940,10 +4940,10 @@ pub mod __buffa {
                     __map.serialize_entry("url", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.credential_name {
-                    __map.serialize_entry("credentialName", __v)?;
+                    __map.serialize_entry("credential_name", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.read_only {
-                    __map.serialize_entry("readOnly", &__v)?;
+                    __map.serialize_entry("read_only", &__v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.owner {
                     __map.serialize_entry("owner", __v)?;
@@ -4952,13 +4952,13 @@ pub mod __buffa {
                     __map.serialize_entry("comment", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.new_name {
-                    __map.serialize_entry("newName", __v)?;
+                    __map.serialize_entry("new_name", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.force {
                     __map.serialize_entry("force", &__v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.skip_validation {
-                    __map.serialize_entry("skipValidation", &__v)?;
+                    __map.serialize_entry("skip_validation", &__v)?;
                 }
                 __map.end()
             }
