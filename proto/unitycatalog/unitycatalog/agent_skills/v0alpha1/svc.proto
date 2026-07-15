@@ -80,7 +80,10 @@ message CreateAgentSkillRequest {
   ];
 
   // How the storage location is provisioned (external or managed).
-  AgentSkillType agent_skill_type = 4 [(google.api.field_behavior) = REQUIRED];
+  AgentSkillType agent_skill_type = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {not_in: [0]}
+  ];
 
   // The storage location of the skill directory on the cloud.
   //

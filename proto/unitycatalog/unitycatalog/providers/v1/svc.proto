@@ -40,7 +40,10 @@ message CreateProviderRequest {
   ];
 
   // The delta sharing authentication type.
-  ProviderAuthenticationType authentication_type = 2 [(google.api.field_behavior) = REQUIRED];
+  ProviderAuthenticationType authentication_type = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {not_in: [0]}
+  ];
 
   // Username of the provider owner.
   optional string owner = 3 [(google.api.field_behavior) = OPTIONAL];
