@@ -28,6 +28,7 @@ export { CatalogExplorer } from "./CatalogExplorer";
 export { Meta, MetaGrid } from "./detail/Meta";
 // Dialog orchestration the environment manager mounts around catalog actions.
 export { CatalogDialogsProvider } from "./dialogs";
+export { ExternalDataPage } from "./ExternalDataPage";
 // The host feeds the environment scope id (namespaces per-env tree expansion).
 export { EnvironmentScopeProvider } from "./env-seam";
 export { StorageLocationPicker } from "./storage/StorageLocationPicker";

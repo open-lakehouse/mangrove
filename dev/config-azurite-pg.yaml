@@ -1,0 +1,38 @@
+# Dev server config for the UI dev-server flow (`just ui-dev`): a durable
+# Postgres backend paired with Azurite-backed managed storage. It combines the
+# Postgres backend of dev/config.yaml with the `azurite://` managed storage root
+# of dev/config-azurite.yaml, so catalog metadata survives restarts while
+# managed tables land in the browser-reachable Azurite emulator.
+#
+# Pairs with `dev/scripts/seed-azurite.sh` (starts Azurite, creates the
+# `lakehouse` container + CORS rule, seeds the storage credential + external
+# location the vending path requires — config alone does not vend).
+#
+# NOTE: `serve` does not migrate a durable backend — run `uc-server migrate -c
+# dev/config-azurite-pg.yaml` once before `serve` (the `ui-dev` recipe does this).
+host: 0.0.0.0
+port: 8080
+
+# Durable Postgres backend. Connection fields resolve from environment variables
+# (see `ConfigValue::Environment`) so the same file works on the host and inside
+# Compose.
+backend:
+  engine: postgres
+  host: { env: PGHOST }
+  port: { env: PGPORT }
+  user: { env: PGUSER }
+  password: { env: PGPASSWORD }
+  database: { env: PGDATABASE }
+
+# Dev-only KEK (the value `EncryptionConfig::dev_default` ships) so the stored
+# azure_storage_key credential can be sealed at rest. Do NOT use in production.
+encryption:
+  active:
+    id: dev
+    key: "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+
+# Metastore-level managed storage root. A managed catalog created without its own
+# storage_root inherits this. The `azurite://<container>` scheme keeps the vended
+# table location browser-reachable (see crates/query-wasm/src/creds.rs). Do not
+# use a host-style URL here.
+managed_storage_root: "azurite://lakehouse"

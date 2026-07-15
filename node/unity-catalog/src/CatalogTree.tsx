@@ -1,4 +1,12 @@
-import { Button } from "@open-lakehouse/ui-kit";
+import {
+  Button,
+  cn,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@open-lakehouse/ui-kit";
 import {
   objectFullName,
   prefetchSchemas,
@@ -6,11 +14,26 @@ import {
   useSchemas,
 } from "@open-lakehouse/unity-catalog-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { Database, FolderTree, Pencil, Plus, Trash2 } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  Boxes,
+  Database,
+  FolderTree,
+  Globe,
+  HardDrive,
+  KeyRound,
+  Pencil,
+  Plus,
+  Settings,
+  Trash2,
+} from "lucide-react";
+import type { ReactNode } from "react";
 import { useCatalogDialogs } from "./dialogs";
 import { nodeId, useExpansion } from "./ExpansionContext";
 import { GROUPS, type GroupDef } from "./groups";
+import { PANE_HEADER_CLASS } from "./layout";
 import { RowMenu } from "./RowMenu";
+import { SectionLabel } from "./SectionLabel";
 import { useCatalogSelection } from "./selection";
 import { CreateAction, ListStates, TreeRow } from "./TreeRow";
 
@@ -18,23 +41,77 @@ export function CatalogTree() {
   const queryClient = useQueryClient();
   const catalogs = useCatalogs();
   const dialogs = useCatalogDialogs();
+  const navigate = useNavigate();
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between border-b px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        <span className="flex items-center gap-2">
-          <Database className="h-4 w-4" />
-          Catalogs
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-1.5 text-xs"
-          onClick={() => dialogs.create({ kind: "catalog" })}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          New
-        </Button>
+      <div className={cn(PANE_HEADER_CLASS, "px-3")}>
+        <SectionLabel>Catalogs</SectionLabel>
+        <div className="flex items-center gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                aria-label="Metastore settings"
+                title="Metastore settings"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>External data</DropdownMenuLabel>
+              <DropdownMenuItem
+                onSelect={() =>
+                  navigate({
+                    to: "/external-data",
+                    search: { kind: "external_location" },
+                  })
+                }
+              >
+                <Globe />
+                External locations
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() =>
+                  navigate({
+                    to: "/external-data",
+                    search: { kind: "credential" },
+                  })
+                }
+              >
+                <KeyRound />
+                Credentials
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <CreateDropdown
+            label="Create"
+            items={[
+              {
+                label: "Catalog",
+                icon: <Database />,
+                onSelect: () => dialogs.create({ kind: "catalog" }),
+              },
+              {
+                label: "Schema",
+                icon: <FolderTree />,
+                onSelect: () => dialogs.create({ kind: "schema" }),
+              },
+              {
+                label: "Volume",
+                icon: <HardDrive />,
+                onSelect: () => dialogs.create({ kind: "volume" }),
+              },
+              {
+                label: "Registered model",
+                icon: <Boxes />,
+                onSelect: () => dialogs.create({ kind: "model" }),
+              },
+            ]}
+          />
+        </div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-1">
         <ListStates
@@ -154,12 +231,16 @@ function SchemaNode({
   comment?: string;
 }) {
   const { isOpen, toggle } = useExpansion();
-  const { selection, select } = useCatalogSelection();
+  const { selection, schemaTab, select } = useCatalogSelection();
   const dialogs = useCatalogDialogs();
   const id = nodeId.schema(catalog, schema);
   const fullName = `${catalog}.${schema}`;
+  // The schema row itself is "selected" only when a schema is shown without a
+  // specific kind tab; selecting a kind row highlights that row instead.
   const selected =
-    selection?.kind === "schema" && selection.fullName === fullName;
+    selection?.kind === "schema" &&
+    selection.fullName === fullName &&
+    !schemaTab;
 
   return (
     <div>
@@ -173,25 +254,44 @@ function SchemaNode({
         onToggle={() => toggle(id)}
         onSelect={() => select({ kind: "schema", fullName })}
         action={
-          <RowMenu
-            label={`Schema ${schema} actions`}
-            items={[
-              {
-                label: "Edit",
-                icon: <Pencil />,
-                onSelect: () =>
-                  dialogs.edit({ kind: "schema", name: fullName, comment }),
-              },
-              {
-                label: "Delete",
-                icon: <Trash2 />,
-                variant: "destructive",
-                separatorBefore: true,
-                onSelect: () =>
-                  dialogs.remove({ kind: "schema", name: fullName }),
-              },
-            ]}
-          />
+          <>
+            <CreateDropdown
+              label="Create in schema"
+              items={[
+                {
+                  label: "Volume",
+                  icon: <HardDrive />,
+                  onSelect: () =>
+                    dialogs.create({ kind: "volume", catalog, schema }),
+                },
+                {
+                  label: "Registered model",
+                  icon: <Boxes />,
+                  onSelect: () =>
+                    dialogs.create({ kind: "model", catalog, schema }),
+                },
+              ]}
+            />
+            <RowMenu
+              label={`Schema ${schema} actions`}
+              items={[
+                {
+                  label: "Edit",
+                  icon: <Pencil />,
+                  onSelect: () =>
+                    dialogs.edit({ kind: "schema", name: fullName, comment }),
+                },
+                {
+                  label: "Delete",
+                  icon: <Trash2 />,
+                  variant: "destructive",
+                  separatorBefore: true,
+                  onSelect: () =>
+                    dialogs.remove({ kind: "schema", name: fullName }),
+                },
+              ]}
+            />
+          </>
         }
       />
       {isOpen(id) &&
@@ -217,8 +317,29 @@ function GroupNode({
   schema: string;
 }) {
   const { isOpen, toggle } = useExpansion();
+  const { selection, schemaTab, selectSchemaChild } = useCatalogSelection();
   const dialogs = useCatalogDialogs();
   const id = nodeId.group(catalog, schema, group.kind);
+  const fullName = `${catalog}.${schema}`;
+  // Subscribe to the same list query the filter bar / expanded list use (shared
+  // cache key → one request, deduped). Surfaces the child count on the row once
+  // loaded; a trailing "+" marks an unfetched next page.
+  const query = group.useList(catalog, schema);
+  const { data, hasNextPage, isLoading } = query;
+  const count =
+    data === undefined ? undefined : `${data.length}${hasNextPage ? "+" : ""}`;
+
+  // Hide empty kind containers once loaded; schema-level create still offers
+  // volume/model when these rows are omitted.
+  if (!isLoading && data !== undefined && data.length === 0 && !hasNextPage) {
+    return null;
+  }
+  // A kind row is selected when its schema is shown on this kind's tab — so
+  // clicking here and switching tabs in SchemaDetail cross-highlight.
+  const selected =
+    selection?.kind === "schema" &&
+    selection.fullName === fullName &&
+    schemaTab === group.kind;
 
   return (
     <div>
@@ -226,9 +347,12 @@ function GroupNode({
         depth={2}
         icon={<group.Icon className="h-4 w-4 text-muted-foreground" />}
         label={group.title}
+        count={count}
         expandable
         open={isOpen(id)}
+        selected={selected}
         onToggle={() => toggle(id)}
+        onSelect={() => selectSchemaChild(fullName, group.kind)}
         action={
           group.creatable ? (
             <CreateAction
@@ -321,5 +445,38 @@ function ObjectList({
         );
       })}
     </ListStates>
+  );
+}
+
+function CreateDropdown({
+  label,
+  items,
+}: {
+  label: string;
+  items: { label: string; icon?: ReactNode; onSelect: () => void }[];
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0"
+          aria-label={label}
+          title={label}
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Create</DropdownMenuLabel>
+        {items.map((item) => (
+          <DropdownMenuItem key={item.label} onSelect={item.onSelect}>
+            {item.icon}
+            {item.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

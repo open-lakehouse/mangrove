@@ -19,25 +19,29 @@ import {
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
-import type { CreateRequest } from "./dialog-types";
+import { CatalogSchemaPicker } from "./CatalogSchemaPicker";
+import { useRevealCreated } from "./create-reconcile";
+import type { CatalogCreateRequest } from "./dialog-types";
 import { SchemaForm } from "./forms/SchemaForm";
 import { cloneSchema, formSchemas } from "./forms/schemas";
 import { StorageLocationPicker } from "./storage/StorageLocationPicker";
 
-export type { CreateRequest };
-
-const TITLES: Record<CreateRequest["kind"], string> = {
+const TITLES: Record<CatalogCreateRequest["kind"], string> = {
   catalog: "New catalog",
   schema: "New schema",
   volume: "New volume",
   model: "New registered model",
 };
 
+// The kind is always known when a create dialog opens (chosen from a dropdown or
+// implied by a tree location). Parent catalog/schema may still be missing, so
+// the securable form is shown immediately with an inline picker; the Create
+// button stays disabled until any required parent context is chosen.
 export function CreateEntityDialog({
   request,
   onClose,
 }: {
-  request: CreateRequest;
+  request: CatalogCreateRequest;
   onClose: () => void;
 }) {
   if (request.kind === "catalog" || request.kind === "schema") {
@@ -82,15 +86,19 @@ function NamespaceCreateDialog({
   request,
   onClose,
 }: {
-  request: Extract<CreateRequest, { kind: "catalog" | "schema" }>;
+  request: Extract<CatalogCreateRequest, { kind: "catalog" | "schema" }>;
   onClose: () => void;
 }) {
   const createCatalog = useCreateCatalog();
   const createSchema = useCreateSchema();
+  const reveal = useRevealCreated();
 
-  const [formData, setFormData] = useState<NamespaceFormData>(() =>
-    request.kind === "schema" ? { catalog_name: request.catalog } : {},
+  const isSchema = request.kind === "schema";
+
+  const [catalog, setCatalog] = useState(() =>
+    isSchema ? (request.catalog ?? "") : "",
   );
+  const [formData, setFormData] = useState<NamespaceFormData>({});
   const [storageRoot, setStorageRoot] = useState<string>();
 
   const schema = useMemo(
@@ -104,11 +112,20 @@ function NamespaceCreateDialog({
   );
 
   const pending = createCatalog.isPending || createSchema.isPending;
+  const canSubmit = !isSchema || !!catalog;
 
   function submit(data: NamespaceFormData) {
+    if (isSchema && !catalog) return;
+
     const handlers = {
       onSuccess: () => {
-        toast.success(`Created ${request.kind} "${data.name}"`);
+        const createdName = data.name ?? "";
+        toast.success(`Created ${request.kind} "${createdName}"`);
+        if (request.kind === "catalog") {
+          reveal({ kind: "catalog", name: createdName });
+        } else {
+          reveal({ kind: "schema", name: createdName, catalog });
+        }
         onClose();
       },
       onError: (error: unknown) => toast.error(parseUcError(error)),
@@ -132,7 +149,7 @@ function NamespaceCreateDialog({
       {
         body: {
           name: data.name ?? "",
-          catalog_name: request.catalog,
+          catalog_name: catalog,
           comment: data.comment || undefined,
           storage_root: storageRoot,
         },
@@ -148,13 +165,7 @@ function NamespaceCreateDialog({
           <DialogTitle>{TITLES[request.kind]}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3 px-5 py-4">
-          {request.kind === "schema" && (
-            <p className="text-xs text-muted-foreground">
-              In <span className="font-mono">{request.catalog}</span>
-            </p>
-          )}
-
+        <div className="space-y-4 px-5 py-4">
           <SchemaForm<NamespaceFormData>
             id={NAMESPACE_FORM_ID}
             schema={schema}
@@ -166,6 +177,17 @@ function NamespaceCreateDialog({
           />
 
           <StorageLocationPicker onChange={setStorageRoot} />
+
+          {isSchema && (
+            <CatalogSchemaPicker
+              catalog={catalog}
+              schema=""
+              onCatalogChange={setCatalog}
+              onSchemaChange={() => {}}
+              requireCatalog
+              requireSchema={false}
+            />
+          )}
         </div>
 
         <DialogFooter>
@@ -176,7 +198,7 @@ function NamespaceCreateDialog({
             type="submit"
             form={NAMESPACE_FORM_ID}
             size="sm"
-            disabled={pending}
+            disabled={pending || !canSubmit}
           >
             {pending ? "Creating…" : "Create"}
           </Button>
@@ -190,16 +212,19 @@ function LeafCreateDialog({
   request,
   onClose,
 }: {
-  request: Extract<CreateRequest, { kind: "volume" | "model" }>;
+  request: Extract<CatalogCreateRequest, { kind: "volume" | "model" }>;
   onClose: () => void;
 }) {
   const createVolume = useCreateVolume();
   const createModel = useCreateRegisteredModel();
+  const reveal = useRevealCreated();
 
   const [name, setName] = useState("");
   const [comment, setComment] = useState("");
   const [volumeType, setVolumeType] = useState<VolumeType>("MANAGED");
   const [storageLocation, setStorageLocation] = useState("");
+  const [catalog, setCatalog] = useState(request.catalog ?? "");
+  const [schema, setSchema] = useState(request.schema ?? "");
 
   const nameId = useId();
   const volumeTypeId = useId();
@@ -207,14 +232,16 @@ function LeafCreateDialog({
   const commentId = useId();
 
   const pending = createVolume.isPending || createModel.isPending;
+  const canSubmit = !!name.trim() && !!catalog && !!schema;
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!name.trim()) return;
+    if (!canSubmit) return;
 
     const handlers = {
       onSuccess: () => {
         toast.success(`Created ${request.kind} "${name}"`);
+        reveal({ kind: request.kind, name, catalog, schema });
         onClose();
       },
       onError: (error: unknown) => toast.error(parseUcError(error)),
@@ -225,8 +252,8 @@ function LeafCreateDialog({
         {
           body: {
             name,
-            catalog_name: request.catalog,
-            schema_name: request.schema,
+            catalog_name: catalog,
+            schema_name: schema,
             volume_type: volumeType,
             comment: comment || undefined,
             storage_location:
@@ -240,8 +267,8 @@ function LeafCreateDialog({
         {
           body: {
             name,
-            catalog_name: request.catalog,
-            schema_name: request.schema,
+            catalog_name: catalog,
+            schema_name: schema,
             comment: comment || undefined,
           },
         },
@@ -249,8 +276,6 @@ function LeafCreateDialog({
       );
     }
   }
-
-  const parent = `${request.catalog}.${request.schema}`;
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -260,11 +285,7 @@ function LeafCreateDialog({
             <DialogTitle>{TITLES[request.kind]}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3 px-5 py-4">
-            <p className="text-xs text-muted-foreground">
-              In <span className="font-mono">{parent}</span>
-            </p>
-
+          <div className="space-y-4 px-5 py-4">
             <div className="space-y-1">
               <Label htmlFor={nameId}>Name</Label>
               <Input
@@ -315,13 +336,22 @@ function LeafCreateDialog({
                 placeholder="Description"
               />
             </div>
+
+            <CatalogSchemaPicker
+              catalog={catalog}
+              schema={schema}
+              onCatalogChange={setCatalog}
+              onSchemaChange={setSchema}
+              requireCatalog
+              requireSchema
+            />
           </div>
 
           <DialogFooter>
             <Button type="button" variant="ghost" size="sm" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" size="sm" disabled={pending || !name.trim()}>
+            <Button type="submit" size="sm" disabled={pending || !canSubmit}>
               {pending ? "Creating…" : "Create"}
             </Button>
           </DialogFooter>
