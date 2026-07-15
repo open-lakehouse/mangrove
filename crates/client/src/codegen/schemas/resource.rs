@@ -178,32 +178,14 @@ impl SchemaClient {
     /// Create a `function` within this resource.
     pub fn create_function(
         &self,
-        name: impl Into<String>,
-        data_type: impl Into<String>,
-        full_data_type: impl Into<String>,
-        parameter_style: ParameterStyle,
-        is_deterministic: bool,
-        sql_data_access: SqlDataAccess,
-        is_null_call: bool,
-        security_type: SecurityType,
-        routine_body: RoutineBody,
+        function_info: CreateFunction,
     ) -> crate::codegen::functions::CreateFunctionBuilder {
         crate::codegen::functions::CreateFunctionBuilder::new(
             crate::codegen::functions::FunctionServiceClient::new(
                 self.client.client.clone(),
                 self.client.base_url.clone(),
             ),
-            name,
-            &self.catalog_name,
-            &self.schema_name,
-            data_type,
-            full_data_type,
-            parameter_style,
-            is_deterministic,
-            sql_data_access,
-            is_null_call,
-            security_type,
-            routine_body,
+            function_info,
         )
     }
     /// List `function` resources within this resource.

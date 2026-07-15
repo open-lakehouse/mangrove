@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file unitycatalog/functions/v1/models.proto.
  */
 export const file_unitycatalog_functions_v1_models: GenFile = /*@__PURE__*/
-  fileDesc("CiZ1bml0eWNhdGFsb2cvZnVuY3Rpb25zL3YxL21vZGVscy5wcm90bxIZdW5pdHljYXRhbG9nLmZ1bmN0aW9ucy52MSLtBAoVRnVuY3Rpb25QYXJhbWV0ZXJJbmZvEhEKBG5hbWUYASABKAlCA+BBAhIWCgl0eXBlX3RleHQYAiABKAlCA+BBAhIbCgl0eXBlX2pzb24YAyABKAlCA+BBAUgAiAEBEj4KCXR5cGVfbmFtZRgEIAEoDjImLnVuaXR5Y2F0YWxvZy50YWJsZXMudjEuQ29sdW1uVHlwZU5hbWVCA+BBARIgCg50eXBlX3ByZWNpc2lvbhgFIAEoBUID4EEBSAGIAQESHAoKdHlwZV9zY2FsZRgGIAEoBUID4EEBSAKIAQESJAoSdHlwZV9pbnRlcnZhbF90eXBlGAcgASgJQgPgQQFIA4gBARIaCghwb3NpdGlvbhgIIAEoBUID4EEBSASIAQESRQoOcGFyYW1ldGVyX21vZGUYCSABKA4yKC51bml0eWNhdGFsb2cuZnVuY3Rpb25zLnYxLlBhcmFtZXRlck1vZGVCA+BBAhJNCg5wYXJhbWV0ZXJfdHlwZRgKIAEoDjIwLnVuaXR5Y2F0YWxvZy5mdW5jdGlvbnMudjEuRnVuY3Rpb25QYXJhbWV0ZXJUeXBlQgPgQQISIwoRcGFyYW1ldGVyX2RlZmF1bHQYCyABKAlCA+BBAUgFiAEBEhkKB2NvbW1lbnQYDCABKAlCA+BBAUgGiAEBQgwKCl90eXBlX2pzb25CEQoPX3R5cGVfcHJlY2lzaW9uQg0KC190eXBlX3NjYWxlQhUKE190eXBlX2ludGVydmFsX3R5cGVCCwoJX3Bvc2l0aW9uQhQKEl9wYXJhbWV0ZXJfZGVmYXVsdEIKCghfY29tbWVudCJeChZGdW5jdGlvblBhcmFtZXRlckluZm9zEkQKCnBhcmFtZXRlcnMYASADKAsyMC51bml0eWNhdGFsb2cuZnVuY3Rpb25zLnYxLkZ1bmN0aW9uUGFyYW1ldGVySW5mbyLBDAoIRnVuY3Rpb24SMwoEbmFtZRgBIAEoCUIl4EECukgfch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBI7CgxjYXRhbG9nX25hbWUYAiABKAlCJeBBArpIH3IdEAMyGV5bYS16XVswLTlhLXpfXSpbMC05YS16XSQSOgoLc2NoZW1hX25hbWUYAyABKAlCJeBBArpIH3IdEAMyGV5bYS16XVswLTlhLXpfXSpbMC05YS16XSQSaAoJZnVsbF9uYW1lGAQgASgJQlXgQQO6SE9yTTJLXlthLXpdWzAtOWEtel9dKlswLTlhLXpdXC5bYS16XVswLTlhLXpfXSpbMC05YS16XVwuW2Etel1bMC05YS16X10qWzAtOWEtel0kEhYKCWRhdGFfdHlwZRgFIAEoCUID4EECEhsKDmZ1bGxfZGF0YV90eXBlGAYgASgJQgPgQQISUQoMaW5wdXRfcGFyYW1zGAcgASgLMjEudW5pdHljYXRhbG9nLmZ1bmN0aW9ucy52MS5GdW5jdGlvblBhcmFtZXRlckluZm9zQgPgQQFIAIgBARIfCg1yZXR1cm5fcGFyYW1zGAggASgJQgPgQQFIAYgBARInChVyb3V0aW5lX2JvZHlfbGFuZ3VhZ2UYCSABKAlCA+BBAUgCiAEBEiQKEnJvdXRpbmVfZGVmaW5pdGlvbhgKIAEoCUID4EEBSAOIAQESJgoUcm91dGluZV9kZXBlbmRlbmNpZXMYCyABKAlCA+BBAUgEiAEBEkcKD3BhcmFtZXRlcl9zdHlsZRgMIAEoDjIpLnVuaXR5Y2F0YWxvZy5mdW5jdGlvbnMudjEuUGFyYW1ldGVyU3R5bGVCA+BBAhIdChBpc19kZXRlcm1pbmlzdGljGA0gASgIQgPgQQISRgoPc3FsX2RhdGFfYWNjZXNzGA4gASgOMigudW5pdHljYXRhbG9nLmZ1bmN0aW9ucy52MS5TcWxEYXRhQWNjZXNzQgPgQQISGQoMaXNfbnVsbF9jYWxsGA8gASgIQgPgQQISQwoNc2VjdXJpdHlfdHlwZRgQIAEoDjInLnVuaXR5Y2F0YWxvZy5mdW5jdGlvbnMudjEuU2VjdXJpdHlUeXBlQgPgQQISHwoNc3BlY2lmaWNfbmFtZRgRIAEoCUID4EEBSAWIAQESQQoMcm91dGluZV9ib2R5GBIgASgOMiYudW5pdHljYXRhbG9nLmZ1bmN0aW9ucy52MS5Sb3V0aW5lQm9keUID4EECEhkKB2NvbW1lbnQYEyABKAlCA+BBAUgGiAEBEkcKCnByb3BlcnRpZXMYFCADKAsyMy51bml0eWNhdGFsb2cuZnVuY3Rpb25zLnYxLkZ1bmN0aW9uLlByb3BlcnRpZXNFbnRyeRIXCgVvd25lchgVIAEoCUID4EEBSAeIAQESIAoLZnVuY3Rpb25faWQYFiABKAlCBuBBA+BBCEgIiAEBEiQKCmNyZWF0ZWRfYXQY6AcgASgDQgrgQQO6SAQiAiAASAmIAQESHQoKY3JlYXRlZF9ieRjpByABKAlCA+BBA0gKiAEBEh0KCnVwZGF0ZWRfYXQY6gcgASgDQgPgQQNIC4gBARIdCgp1cGRhdGVkX2J5GOsHIAEoCUID4EEDSAyIAQEaMQoPUHJvcGVydGllc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6U+pBUAoYdW5pdHljYXRhbG9nLmlvL0Z1bmN0aW9uEhRmdW5jdGlvbnMve2Z1bmN0aW9ufRoJZnVsbF9uYW1lKglmdW5jdGlvbnMyCGZ1bmN0aW9uQg8KDV9pbnB1dF9wYXJhbXNCEAoOX3JldHVybl9wYXJhbXNCGAoWX3JvdXRpbmVfYm9keV9sYW5ndWFnZUIVChNfcm91dGluZV9kZWZpbml0aW9uQhcKFV9yb3V0aW5lX2RlcGVuZGVuY2llc0IQCg5fc3BlY2lmaWNfbmFtZUIKCghfY29tbWVudEIICgZfb3duZXJCDgoMX2Z1bmN0aW9uX2lkQg0KC19jcmVhdGVkX2F0Qg0KC19jcmVhdGVkX2J5Qg0KC191cGRhdGVkX2F0Qg0KC191cGRhdGVkX2J5KkIKC1JvdXRpbmVCb2R5EhwKGFJPVVRJTkVfQk9EWV9VTlNQRUNJRklFRBAAEgcKA1NRTBABEgwKCEVYVEVSTkFMEAIqOAoOUGFyYW1ldGVyU3R5bGUSHwobUEFSQU1FVEVSX1NUWUxFX1VOU1BFQ0lGSUVEEAASBQoBUxABKjoKDFNlY3VyaXR5VHlwZRIdChlTRUNVUklUWV9UWVBFX1VOU1BFQ0lGSUVEEAASCwoHREVGSU5FUhABKmIKDVNxbERhdGFBY2Nlc3MSHwobU1FMX0RBVEFfQUNDRVNTX1VOU1BFQ0lGSUVEEAASEAoMQ09OVEFJTlNfU1FMEAESEgoOUkVBRFNfU1FMX0RBVEEQAhIKCgZOT19TUUwQAyo3Cg1QYXJhbWV0ZXJNb2RlEh4KGlBBUkFNRVRFUl9NT0RFX1VOU1BFQ0lGSUVEEAASBgoCSU4QASpXChVGdW5jdGlvblBhcmFtZXRlclR5cGUSJwojRlVOQ1RJT05fUEFSQU1FVEVSX1RZUEVfVU5TUEVDSUZJRUQQABIKCgZDT0xVTU4QARIJCgVQQVJBTRACQogCCh1jb20udW5pdHljYXRhbG9nLmZ1bmN0aW9ucy52MUILTW9kZWxzUHJvdG9QAVpUZ2l0aHViLmNvbS9kZWx0YS1pbmN1YmF0b3IvZGVsdGEtc2hhcmluZy1ycy9nby91bml0eWNhdGFsb2cvZnVuY3Rpb25zL3YxO2Z1bmN0aW9uc3YxogIDVUZYqgIZVW5pdHljYXRhbG9nLkZ1bmN0aW9ucy5WMcoCGVVuaXR5Y2F0YWxvZ1xGdW5jdGlvbnNcVjHiAiVVbml0eWNhdGFsb2dcRnVuY3Rpb25zXFYxXEdQQk1ldGFkYXRh6gIbVW5pdHljYXRhbG9nOjpGdW5jdGlvbnM6OlYxYgZwcm90bzM", [file_buf_validate_validate, file_google_api_field_behavior, file_google_api_resource, file_unitycatalog_tables_v1_models]);
+  fileDesc("CiZ1bml0eWNhdGFsb2cvZnVuY3Rpb25zL3YxL21vZGVscy5wcm90bxIZdW5pdHljYXRhbG9nLmZ1bmN0aW9ucy52MSLtBAoVRnVuY3Rpb25QYXJhbWV0ZXJJbmZvEhEKBG5hbWUYASABKAlCA+BBAhIWCgl0eXBlX3RleHQYAiABKAlCA+BBAhIbCgl0eXBlX2pzb24YAyABKAlCA+BBAUgAiAEBEj4KCXR5cGVfbmFtZRgEIAEoDjImLnVuaXR5Y2F0YWxvZy50YWJsZXMudjEuQ29sdW1uVHlwZU5hbWVCA+BBARIgCg50eXBlX3ByZWNpc2lvbhgFIAEoBUID4EEBSAGIAQESHAoKdHlwZV9zY2FsZRgGIAEoBUID4EEBSAKIAQESJAoSdHlwZV9pbnRlcnZhbF90eXBlGAcgASgJQgPgQQFIA4gBARIaCghwb3NpdGlvbhgIIAEoBUID4EEBSASIAQESRQoOcGFyYW1ldGVyX21vZGUYCSABKA4yKC51bml0eWNhdGFsb2cuZnVuY3Rpb25zLnYxLlBhcmFtZXRlck1vZGVCA+BBAhJNCg5wYXJhbWV0ZXJfdHlwZRgKIAEoDjIwLnVuaXR5Y2F0YWxvZy5mdW5jdGlvbnMudjEuRnVuY3Rpb25QYXJhbWV0ZXJUeXBlQgPgQQISIwoRcGFyYW1ldGVyX2RlZmF1bHQYCyABKAlCA+BBAUgFiAEBEhkKB2NvbW1lbnQYDCABKAlCA+BBAUgGiAEBQgwKCl90eXBlX2pzb25CEQoPX3R5cGVfcHJlY2lzaW9uQg0KC190eXBlX3NjYWxlQhUKE190eXBlX2ludGVydmFsX3R5cGVCCwoJX3Bvc2l0aW9uQhQKEl9wYXJhbWV0ZXJfZGVmYXVsdEIKCghfY29tbWVudCJeChZGdW5jdGlvblBhcmFtZXRlckluZm9zEkQKCnBhcmFtZXRlcnMYASADKAsyMC51bml0eWNhdGFsb2cuZnVuY3Rpb25zLnYxLkZ1bmN0aW9uUGFyYW1ldGVySW5mbyLPBwoOQ3JlYXRlRnVuY3Rpb24SNgoEbmFtZRgBIAEoCUIo4EECukgiyAEBch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBI+CgxjYXRhbG9nX25hbWUYAiABKAlCKOBBArpIIsgBAXIdEAMyGV5bYS16XVswLTlhLXpfXSpbMC05YS16XSQSPQoLc2NoZW1hX25hbWUYAyABKAlCKOBBArpIIsgBAXIdEAMyGV5bYS16XVswLTlhLXpfXSpbMC05YS16XSQSHAoJZGF0YV90eXBlGAQgASgJQgngQQK6SAPIAQESIQoOZnVsbF9kYXRhX3R5cGUYBSABKAlCCeBBArpIA8gBARJRCgxpbnB1dF9wYXJhbXMYBiABKAsyMS51bml0eWNhdGFsb2cuZnVuY3Rpb25zLnYxLkZ1bmN0aW9uUGFyYW1ldGVySW5mb3NCA+BBAUgAiAEBEkIKD3BhcmFtZXRlcl9zdHlsZRgHIAEoDjIpLnVuaXR5Y2F0YWxvZy5mdW5jdGlvbnMudjEuUGFyYW1ldGVyU3R5bGUSGAoQaXNfZGV0ZXJtaW5pc3RpYxgIIAEoCBJBCg9zcWxfZGF0YV9hY2Nlc3MYCSABKA4yKC51bml0eWNhdGFsb2cuZnVuY3Rpb25zLnYxLlNxbERhdGFBY2Nlc3MSFAoMaXNfbnVsbF9jYWxsGAogASgIEj4KDXNlY3VyaXR5X3R5cGUYCyABKA4yJy51bml0eWNhdGFsb2cuZnVuY3Rpb25zLnYxLlNlY3VyaXR5VHlwZRI8Cgxyb3V0aW5lX2JvZHkYDCABKA4yJi51bml0eWNhdGFsb2cuZnVuY3Rpb25zLnYxLlJvdXRpbmVCb2R5EiQKEnJvdXRpbmVfZGVmaW5pdGlvbhgNIAEoCUID4EEBSAGIAQESJwoVcm91dGluZV9ib2R5X2xhbmd1YWdlGA4gASgJQgPgQQFIAogBARIZCgdjb21tZW50GA8gASgJQgPgQQFIA4gBARJSCgpwcm9wZXJ0aWVzGBAgAygLMjkudW5pdHljYXRhbG9nLmZ1bmN0aW9ucy52MS5DcmVhdGVGdW5jdGlvbi5Qcm9wZXJ0aWVzRW50cnlCA+BBARoxCg9Qcm9wZXJ0aWVzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4AUIPCg1faW5wdXRfcGFyYW1zQhUKE19yb3V0aW5lX2RlZmluaXRpb25CGAoWX3JvdXRpbmVfYm9keV9sYW5ndWFnZUIKCghfY29tbWVudCLBDAoIRnVuY3Rpb24SMwoEbmFtZRgBIAEoCUIl4EECukgfch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBI7CgxjYXRhbG9nX25hbWUYAiABKAlCJeBBArpIH3IdEAMyGV5bYS16XVswLTlhLXpfXSpbMC05YS16XSQSOgoLc2NoZW1hX25hbWUYAyABKAlCJeBBArpIH3IdEAMyGV5bYS16XVswLTlhLXpfXSpbMC05YS16XSQSaAoJZnVsbF9uYW1lGAQgASgJQlXgQQO6SE9yTTJLXlthLXpdWzAtOWEtel9dKlswLTlhLXpdXC5bYS16XVswLTlhLXpfXSpbMC05YS16XVwuW2Etel1bMC05YS16X10qWzAtOWEtel0kEhYKCWRhdGFfdHlwZRgFIAEoCUID4EECEhsKDmZ1bGxfZGF0YV90eXBlGAYgASgJQgPgQQISUQoMaW5wdXRfcGFyYW1zGAcgASgLMjEudW5pdHljYXRhbG9nLmZ1bmN0aW9ucy52MS5GdW5jdGlvblBhcmFtZXRlckluZm9zQgPgQQFIAIgBARIfCg1yZXR1cm5fcGFyYW1zGAggASgJQgPgQQFIAYgBARInChVyb3V0aW5lX2JvZHlfbGFuZ3VhZ2UYCSABKAlCA+BBAUgCiAEBEiQKEnJvdXRpbmVfZGVmaW5pdGlvbhgKIAEoCUID4EEBSAOIAQESJgoUcm91dGluZV9kZXBlbmRlbmNpZXMYCyABKAlCA+BBAUgEiAEBEkcKD3BhcmFtZXRlcl9zdHlsZRgMIAEoDjIpLnVuaXR5Y2F0YWxvZy5mdW5jdGlvbnMudjEuUGFyYW1ldGVyU3R5bGVCA+BBAhIdChBpc19kZXRlcm1pbmlzdGljGA0gASgIQgPgQQISRgoPc3FsX2RhdGFfYWNjZXNzGA4gASgOMigudW5pdHljYXRhbG9nLmZ1bmN0aW9ucy52MS5TcWxEYXRhQWNjZXNzQgPgQQISGQoMaXNfbnVsbF9jYWxsGA8gASgIQgPgQQISQwoNc2VjdXJpdHlfdHlwZRgQIAEoDjInLnVuaXR5Y2F0YWxvZy5mdW5jdGlvbnMudjEuU2VjdXJpdHlUeXBlQgPgQQISHwoNc3BlY2lmaWNfbmFtZRgRIAEoCUID4EEBSAWIAQESQQoMcm91dGluZV9ib2R5GBIgASgOMiYudW5pdHljYXRhbG9nLmZ1bmN0aW9ucy52MS5Sb3V0aW5lQm9keUID4EECEhkKB2NvbW1lbnQYEyABKAlCA+BBAUgGiAEBEkcKCnByb3BlcnRpZXMYFCADKAsyMy51bml0eWNhdGFsb2cuZnVuY3Rpb25zLnYxLkZ1bmN0aW9uLlByb3BlcnRpZXNFbnRyeRIXCgVvd25lchgVIAEoCUID4EEBSAeIAQESIAoLZnVuY3Rpb25faWQYFiABKAlCBuBBA+BBCEgIiAEBEiQKCmNyZWF0ZWRfYXQY6AcgASgDQgrgQQO6SAQiAiAASAmIAQESHQoKY3JlYXRlZF9ieRjpByABKAlCA+BBA0gKiAEBEh0KCnVwZGF0ZWRfYXQY6gcgASgDQgPgQQNIC4gBARIdCgp1cGRhdGVkX2J5GOsHIAEoCUID4EEDSAyIAQEaMQoPUHJvcGVydGllc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6U+pBUAoYdW5pdHljYXRhbG9nLmlvL0Z1bmN0aW9uEhRmdW5jdGlvbnMve2Z1bmN0aW9ufRoJZnVsbF9uYW1lKglmdW5jdGlvbnMyCGZ1bmN0aW9uQg8KDV9pbnB1dF9wYXJhbXNCEAoOX3JldHVybl9wYXJhbXNCGAoWX3JvdXRpbmVfYm9keV9sYW5ndWFnZUIVChNfcm91dGluZV9kZWZpbml0aW9uQhcKFV9yb3V0aW5lX2RlcGVuZGVuY2llc0IQCg5fc3BlY2lmaWNfbmFtZUIKCghfY29tbWVudEIICgZfb3duZXJCDgoMX2Z1bmN0aW9uX2lkQg0KC19jcmVhdGVkX2F0Qg0KC19jcmVhdGVkX2J5Qg0KC191cGRhdGVkX2F0Qg0KC191cGRhdGVkX2J5KkIKC1JvdXRpbmVCb2R5EhwKGFJPVVRJTkVfQk9EWV9VTlNQRUNJRklFRBAAEgcKA1NRTBABEgwKCEVYVEVSTkFMEAIqOAoOUGFyYW1ldGVyU3R5bGUSHwobUEFSQU1FVEVSX1NUWUxFX1VOU1BFQ0lGSUVEEAASBQoBUxABKjoKDFNlY3VyaXR5VHlwZRIdChlTRUNVUklUWV9UWVBFX1VOU1BFQ0lGSUVEEAASCwoHREVGSU5FUhABKmIKDVNxbERhdGFBY2Nlc3MSHwobU1FMX0RBVEFfQUNDRVNTX1VOU1BFQ0lGSUVEEAASEAoMQ09OVEFJTlNfU1FMEAESEgoOUkVBRFNfU1FMX0RBVEEQAhIKCgZOT19TUUwQAyo3Cg1QYXJhbWV0ZXJNb2RlEh4KGlBBUkFNRVRFUl9NT0RFX1VOU1BFQ0lGSUVEEAASBgoCSU4QASpXChVGdW5jdGlvblBhcmFtZXRlclR5cGUSJwojRlVOQ1RJT05fUEFSQU1FVEVSX1RZUEVfVU5TUEVDSUZJRUQQABIKCgZDT0xVTU4QARIJCgVQQVJBTRACQogCCh1jb20udW5pdHljYXRhbG9nLmZ1bmN0aW9ucy52MUILTW9kZWxzUHJvdG9QAVpUZ2l0aHViLmNvbS9kZWx0YS1pbmN1YmF0b3IvZGVsdGEtc2hhcmluZy1ycy9nby91bml0eWNhdGFsb2cvZnVuY3Rpb25zL3YxO2Z1bmN0aW9uc3YxogIDVUZYqgIZVW5pdHljYXRhbG9nLkZ1bmN0aW9ucy5WMcoCGVVuaXR5Y2F0YWxvZ1xGdW5jdGlvbnNcVjHiAiVVbml0eWNhdGFsb2dcRnVuY3Rpb25zXFYxXEdQQk1ldGFkYXRh6gIbVW5pdHljYXRhbG9nOjpGdW5jdGlvbnM6OlYxYgZwcm90bzM", [file_buf_validate_validate, file_google_api_field_behavior, file_google_api_resource, file_unitycatalog_tables_v1_models]);
 
 /**
  * Information about a single function parameter.
@@ -135,6 +135,135 @@ export type FunctionParameterInfos = Message<"unitycatalog.functions.v1.Function
  */
 export const FunctionParameterInfosSchema: GenMessage<FunctionParameterInfos> = /*@__PURE__*/
   messageDesc(file_unitycatalog_functions_v1_models, 1);
+
+/**
+ * The payload for creating a new function.
+ *
+ * Wrapped in the `function_info` envelope of a `CreateFunctionRequest`, matching
+ * the Unity Catalog `POST /functions` wire contract.
+ *
+ * @generated from message unitycatalog.functions.v1.CreateFunction
+ */
+export type CreateFunction = Message<"unitycatalog.functions.v1.CreateFunction"> & {
+  /**
+   * Name of function, relative to parent schema.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * Name of parent catalog.
+   *
+   * @generated from field: string catalog_name = 2;
+   */
+  catalogName: string;
+
+  /**
+   * Name of parent schema.
+   *
+   * @generated from field: string schema_name = 3;
+   */
+  schemaName: string;
+
+  /**
+   * Full data type specification of the return type of the function.
+   *
+   * @generated from field: string data_type = 4;
+   */
+  dataType: string;
+
+  /**
+   * Full data type specification as SQL/catalogString text.
+   *
+   * @generated from field: string full_data_type = 5;
+   */
+  fullDataType: string;
+
+  /**
+   * The array of function parameter infos.
+   *
+   * @generated from field: optional unitycatalog.functions.v1.FunctionParameterInfos input_params = 6;
+   */
+  inputParams?: FunctionParameterInfos | undefined;
+
+  /**
+   * The parameter-passing style.
+   *
+   * @generated from field: unitycatalog.functions.v1.ParameterStyle parameter_style = 7;
+   */
+  parameterStyle: ParameterStyle;
+
+  /**
+   * Indicates whether the function is deterministic.
+   *
+   * @generated from field: bool is_deterministic = 8;
+   */
+  isDeterministic: boolean;
+
+  /**
+   * SQL data access information.
+   *
+   * @generated from field: unitycatalog.functions.v1.SqlDataAccess sql_data_access = 9;
+   */
+  sqlDataAccess: SqlDataAccess;
+
+  /**
+   * Indicates whether the function is null-calling.
+   *
+   * @generated from field: bool is_null_call = 10;
+   */
+  isNullCall: boolean;
+
+  /**
+   * The security type of the function.
+   *
+   * @generated from field: unitycatalog.functions.v1.SecurityType security_type = 11;
+   */
+  securityType: SecurityType;
+
+  /**
+   * The routine body.
+   *
+   * @generated from field: unitycatalog.functions.v1.RoutineBody routine_body = 12;
+   */
+  routineBody: RoutineBody;
+
+  /**
+   * Function body.
+   *
+   * @generated from field: optional string routine_definition = 13;
+   */
+  routineDefinition?: string | undefined;
+
+  /**
+   * The language of the function routine body.
+   *
+   * @generated from field: optional string routine_body_language = 14;
+   */
+  routineBodyLanguage?: string | undefined;
+
+  /**
+   * User-provided free-form text description.
+   *
+   * @generated from field: optional string comment = 15;
+   */
+  comment?: string | undefined;
+
+  /**
+   * A map of key-value properties attached to the securable.
+   *
+   * @generated from field: map<string, string> properties = 16;
+   */
+  properties: { [key: string]: string };
+};
+
+/**
+ * Describes the message unitycatalog.functions.v1.CreateFunction.
+ * Use `create(CreateFunctionSchema)` to create a new message.
+ */
+export const CreateFunctionSchema: GenMessage<CreateFunction> = /*@__PURE__*/
+  messageDesc(file_unitycatalog_functions_v1_models, 2);
 
 /**
  * A User-Defined Function (UDF) registered under a catalog + schema hierarchy.
@@ -332,7 +461,7 @@ export type Function = Message<"unitycatalog.functions.v1.Function"> & {
  * Use `create(FunctionSchema)` to create a new message.
  */
 export const FunctionSchema: GenMessage<Function> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_functions_v1_models, 2);
+  messageDesc(file_unitycatalog_functions_v1_models, 3);
 
 /**
  * Determines whether the function body is interpreted as SQL or as an external function.

@@ -1094,7 +1094,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateFunctionRequest"
+              $ref: "#/components/schemas/CreateFunction"
         required: true
       responses:
         "200":
@@ -3442,7 +3442,7 @@ components:
       description: Create a new external location
       additionalProperties: false
       title: Create External Location Request
-    CreateFunctionRequest:
+    CreateFunction:
       required:
         - name
         - catalog_name
@@ -3514,9 +3514,11 @@ components:
           additionalProperties:
             type: string
           description: A map of key-value properties attached to the securable.
-      description: Create a new function
+      description: |-
+        Wrapped in the `function_info` envelope of a `CreateFunctionRequest`, matching
+         the Unity Catalog `POST /functions` wire contract.
       additionalProperties: false
-      title: Create Function Request
+      title: The payload for creating a new function.
     CreateProviderRequest:
       required:
         - name

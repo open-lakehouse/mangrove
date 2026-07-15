@@ -5733,12 +5733,12 @@ impl ::core::convert::From<PyUpdateExternalLocationRequest>
         value.0
     }
 }
-#[::pyo3::pyclass(name = "CreateFunctionRequest")]
+#[::pyo3::pyclass(name = "CreateFunction")]
 #[derive(Clone, Debug)]
-pub struct PyCreateFunctionRequest(pub super::functions::v1::CreateFunctionRequest);
+pub struct PyCreateFunction(pub super::functions::v1::CreateFunction);
 #[allow(clippy::too_many_arguments, clippy::useless_conversion)]
 #[::pyo3::pymethods]
-impl PyCreateFunctionRequest {
+impl PyCreateFunction {
     #[new]
     #[pyo3(
         signature = (
@@ -5781,7 +5781,7 @@ impl PyCreateFunctionRequest {
         >,
     ) -> Self {
         let mut inner =
-            <super::functions::v1::CreateFunctionRequest as ::core::default::Default>::default();
+            <super::functions::v1::CreateFunction as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
             inner.name = value;
         }
@@ -5992,6 +5992,56 @@ impl PyCreateFunctionRequest {
         value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
     ) {
         self.0.properties = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::functions::v1::CreateFunction> for PyCreateFunction {
+    fn from(value: super::functions::v1::CreateFunction) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyCreateFunction> for super::functions::v1::CreateFunction {
+    fn from(value: PyCreateFunction) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "CreateFunctionRequest")]
+#[derive(Clone, Debug)]
+pub struct PyCreateFunctionRequest(pub super::functions::v1::CreateFunctionRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyCreateFunctionRequest {
+    #[new]
+    #[pyo3(signature = (function_info = None))]
+    fn new(function_info: ::core::option::Option<PyCreateFunction>) -> Self {
+        let mut inner =
+            <super::functions::v1::CreateFunctionRequest as ::core::default::Default>::default();
+        {
+            let value = function_info;
+            inner.function_info = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn function_info(&self) -> ::core::option::Option<PyCreateFunction> {
+        self.0
+            .function_info
+            .clone()
+            .into_option()
+            .map(PyCreateFunction::from)
+    }
+    #[setter(function_info)]
+    fn set_function_info(&mut self, value: ::core::option::Option<PyCreateFunction>) {
+        self.0.function_info = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)

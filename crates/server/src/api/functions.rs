@@ -43,30 +43,33 @@ impl<T: ResourceStore + Policy<RequestContext>> FunctionHandler<RequestContext> 
         request: CreateFunctionRequest,
         context: RequestContext,
     ) -> Result<Function> {
-        tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
+        let function_info = request
+            .function_info
+            .ok_or_else(|| crate::Error::invalid_argument("function_info must be provided"))?;
+        tracing::Span::current().record("resource_name", &function_info.name);
         let full_name = format!(
             "{}.{}.{}",
-            request.catalog_name, request.schema_name, request.name
+            function_info.catalog_name, function_info.schema_name, function_info.name
         );
         let resource = Function {
-            name: request.name,
-            catalog_name: request.catalog_name,
-            schema_name: request.schema_name,
+            name: function_info.name,
+            catalog_name: function_info.catalog_name,
+            schema_name: function_info.schema_name,
             full_name,
-            data_type: request.data_type,
-            full_data_type: request.full_data_type,
-            input_params: Some(request.input_params.into_option().unwrap_or_default()).into(),
-            parameter_style: request.parameter_style,
-            is_deterministic: request.is_deterministic,
-            sql_data_access: request.sql_data_access,
-            is_null_call: request.is_null_call,
-            security_type: request.security_type,
-            routine_body: request.routine_body,
-            routine_definition: request.routine_definition,
-            routine_body_language: request.routine_body_language,
-            comment: request.comment,
-            properties: request.properties,
+            data_type: function_info.data_type,
+            full_data_type: function_info.full_data_type,
+            input_params: Some(function_info.input_params.into_option().unwrap_or_default()).into(),
+            parameter_style: function_info.parameter_style,
+            is_deterministic: function_info.is_deterministic,
+            sql_data_access: function_info.sql_data_access,
+            is_null_call: function_info.is_null_call,
+            security_type: function_info.security_type,
+            routine_body: function_info.routine_body,
+            routine_definition: function_info.routine_definition,
+            routine_body_language: function_info.routine_body_language,
+            comment: function_info.comment,
+            properties: function_info.properties,
             ..Default::default()
         };
         Ok(self.create(resource.into()).await?.0.try_into()?)
@@ -113,10 +116,11 @@ impl<T: ResourceStore + Policy<RequestContext>> FunctionHandler<RequestContext> 
 
 impl SecuredAction for CreateFunctionRequest {
     fn resource(&self) -> ResourceIdent {
+        let info = self.function_info.as_option();
         ResourceIdent::function(ResourceName::new([
-            self.catalog_name.as_str(),
-            self.schema_name.as_str(),
-            self.name.as_str(),
+            info.map(|i| i.catalog_name.as_str()).unwrap_or_default(),
+            info.map(|i| i.schema_name.as_str()).unwrap_or_default(),
+            info.map(|i| i.name.as_str()).unwrap_or_default(),
         ]))
     }
 

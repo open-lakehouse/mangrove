@@ -516,49 +516,18 @@ impl NapiUnityCatalogClient {
     #[napi(catch_unwind)]
     pub async fn create_function(
         &self,
-        name: String,
-        catalog_name: String,
-        schema_name: String,
-        data_type: String,
-        full_data_type: String,
-        parameter_style: i32,
-        is_deterministic: bool,
-        sql_data_access: i32,
-        is_null_call: bool,
-        security_type: i32,
-        routine_body: i32,
-        routine_definition: Option<String>,
-        routine_body_language: Option<String>,
-        comment: Option<String>,
-        properties: Option<HashMap<String, String>>,
+        function_info: napi::bindgen_prelude::Buffer,
     ) -> napi::Result<Buffer> {
         let mut request = self.client.create_function(
-            name,
-            catalog_name,
-            schema_name,
-            data_type,
-            full_data_type,
-            <ParameterStyle as buffa::Enumeration>::from_i32(parameter_style).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-            is_deterministic,
-            <SqlDataAccess as buffa::Enumeration>::from_i32(sql_data_access).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-            is_null_call,
-            <SecurityType as buffa::Enumeration>::from_i32(security_type).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-            <RoutineBody as buffa::Enumeration>::from_i32(routine_body).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
+            <CreateFunction as buffa::Message>::decode_from_slice(function_info.as_ref()).map_err(
+                |e| {
+                    napi::Error::new(
+                        napi::Status::GenericFailure,
+                        format!("invalid {} payload: {e}", stringify!(CreateFunction)),
+                    )
+                },
+            )?,
         );
-        request = request.with_routine_definition(routine_definition);
-        request = request.with_routine_body_language(routine_body_language);
-        request = request.with_comment(comment);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))

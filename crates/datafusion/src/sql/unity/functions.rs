@@ -3,8 +3,8 @@ use datafusion::common::{DataFusionError, Result};
 use datafusion::sql::sqlparser::ast::{DataType as SqlDataType, ObjectName};
 use unitycatalog_client::UnityCatalogClient;
 use unitycatalog_common::models::functions::v1::{
-    FunctionParameterInfo, FunctionParameterInfos, ParameterMode, ParameterStyle, RoutineBody,
-    SecurityType, SqlDataAccess,
+    CreateFunction, FunctionParameterInfo, FunctionParameterInfos, ParameterMode, ParameterStyle,
+    RoutineBody, SecurityType, SqlDataAccess,
 };
 
 use crate::sql::unity::{create_response_to_batch, drop_response_to_batch};
@@ -114,25 +114,29 @@ impl CreateFunctionStatement {
             ..Default::default()
         };
 
+        let mut function_info = CreateFunction::new(
+            func,
+            catalog,
+            schema,
+            data_type_text.clone(),
+            data_type_text,
+            ParameterStyle::S,
+            self.deterministic,
+            self.data_access.into(),
+            // Null-calling is not a writable DDL clause; default to false.
+            false,
+            SecurityType::Definer,
+            RoutineBody::Sql,
+        )
+        .with_input_params(Some(params))
+        .with_routine_definition(self.routine_definition.clone())
+        .with_routine_body_language("SQL");
+        if let Some(comment) = self.comment.clone() {
+            function_info = function_info.with_comment(comment);
+        }
+
         let info = client
-            .create_function(
-                func,
-                catalog,
-                schema,
-                data_type_text.clone(),
-                data_type_text,
-                ParameterStyle::S,
-                self.deterministic,
-                self.data_access.into(),
-                // Null-calling is not a writable DDL clause; default to false.
-                false,
-                SecurityType::Definer,
-                RoutineBody::Sql,
-            )
-            .with_input_params(Some(params))
-            .with_routine_definition(Some(self.routine_definition.clone()))
-            .with_routine_body_language(Some("SQL".to_string()))
-            .with_comment(self.comment.clone())
+            .create_function(function_info)
             .await
             .map_err(|e| DataFusionError::External(Box::new(e)))?;
 
