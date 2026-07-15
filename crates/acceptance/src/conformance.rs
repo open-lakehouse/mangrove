@@ -378,10 +378,9 @@ fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
         // v0.5.0 does not implement — that call now lives in the Rust-only
         // `table_summaries` check, and the macOS read-back `/tmp` symlink artifact is
         // fixed by canonicalizing the local location in `checks::managed_delta`.
-        (Target::OssJava, "function_lifecycle") => Some(
-            "Java's POST /functions expects the body wrapped in a function_info envelope; \
-             our client/proto send it flat (body: \"*\") — wire-contract divergence (follow-up: #70)",
-        ),
+        // `function_lifecycle` is NO LONGER quarantined here (#70): POST /functions now
+        // wraps the payload in a `function_info` envelope (proto `body: "function_info"`),
+        // matching UC OSS Java v0.5.0 and the Databricks SDK.
         (Target::OssJava, "function_update") => Some(
             "UC OSS v0.5.0 does not implement function update — PATCH /functions/{name} \
              returns 405 (follow-up: #70)",

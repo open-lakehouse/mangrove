@@ -85,80 +85,12 @@ pub struct CreateFunctionBuilder {
 impl CreateFunctionBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `FunctionServiceClient`.
-    pub(crate) fn new(
-        client: FunctionServiceClient,
-        name: impl Into<String>,
-        catalog_name: impl Into<String>,
-        schema_name: impl Into<String>,
-        data_type: impl Into<String>,
-        full_data_type: impl Into<String>,
-        parameter_style: ParameterStyle,
-        is_deterministic: bool,
-        sql_data_access: SqlDataAccess,
-        is_null_call: bool,
-        security_type: SecurityType,
-        routine_body: RoutineBody,
-    ) -> Self {
+    pub(crate) fn new(client: FunctionServiceClient, function_info: CreateFunction) -> Self {
         let request = CreateFunctionRequest {
-            name: name.into(),
-            catalog_name: catalog_name.into(),
-            schema_name: schema_name.into(),
-            data_type: data_type.into(),
-            full_data_type: full_data_type.into(),
-            parameter_style: buffa::EnumValue::Known(parameter_style),
-            is_deterministic,
-            sql_data_access: buffa::EnumValue::Known(sql_data_access),
-            is_null_call,
-            security_type: buffa::EnumValue::Known(security_type),
-            routine_body: buffa::EnumValue::Known(routine_body),
+            function_info: buffa::MessageField::some(function_info),
             ..Default::default()
         };
         Self { client, request }
-    }
-    /// The array of function parameter infos.
-    pub fn with_input_params(
-        mut self,
-        input_params: impl Into<Option<FunctionParameterInfos>>,
-    ) -> Self {
-        self.request.input_params = {
-            let input_params: ::core::option::Option<_> = input_params.into();
-            buffa::MessageField::from(input_params)
-        };
-        self
-    }
-    /// Function body.
-    pub fn with_routine_definition(
-        mut self,
-        routine_definition: impl Into<Option<String>>,
-    ) -> Self {
-        self.request.routine_definition = routine_definition.into();
-        self
-    }
-    /// The language of the function routine body.
-    pub fn with_routine_body_language(
-        mut self,
-        routine_body_language: impl Into<Option<String>>,
-    ) -> Self {
-        self.request.routine_body_language = routine_body_language.into();
-        self
-    }
-    /// User-provided free-form text description.
-    pub fn with_comment(mut self, comment: impl Into<Option<String>>) -> Self {
-        self.request.comment = comment.into();
-        self
-    }
-    /// A map of key-value properties attached to the securable.
-    pub fn with_properties<I, K, V>(mut self, properties: I) -> Self
-    where
-        I: IntoIterator<Item = (K, V)>,
-        K: Into<String>,
-        V: Into<String>,
-    {
-        self.request.properties = properties
-            .into_iter()
-            .map(|(k, v)| (k.into(), v.into()))
-            .collect();
-        self
     }
 }
 impl IntoFuture for CreateFunctionBuilder {

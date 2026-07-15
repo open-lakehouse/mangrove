@@ -379,6 +379,65 @@ class Column:
         type_text: Optional[str] = None,
     ) -> None: ...
 
+class CreateFunction:
+    """The payload for creating a new function.
+
+    Wrapped in the `function_info` envelope of a `CreateFunctionRequest`, matching the Unity Catalog
+    `POST /functions` wire contract."""
+
+    catalog_name: str
+    """Name of parent catalog."""
+    comment: Optional[str]
+    """User-provided free-form text description."""
+    data_type: str
+    """Full data type specification of the return type of the function."""
+    full_data_type: str
+    """Full data type specification as SQL/catalogString text."""
+    input_params: Optional[FunctionParameterInfos]
+    """The array of function parameter infos."""
+    is_deterministic: bool
+    """Indicates whether the function is deterministic."""
+    is_null_call: bool
+    """Indicates whether the function is null-calling."""
+    name: str
+    """Name of function, relative to parent schema."""
+    parameter_style: ParameterStyle
+    """The parameter-passing style."""
+    properties: Dict[str, str]
+    """A map of key-value properties attached to the securable."""
+    routine_body: RoutineBody
+    """The routine body."""
+    routine_body_language: Optional[str]
+    """The language of the function routine body."""
+    routine_definition: Optional[str]
+    """Function body."""
+    schema_name: str
+    """Name of parent schema."""
+    security_type: SecurityType
+    """The security type of the function."""
+    sql_data_access: SqlDataAccess
+    """SQL data access information."""
+
+    def __init__(
+        self,
+        catalog_name: Optional[str] = None,
+        comment: Optional[str] = None,
+        data_type: Optional[str] = None,
+        full_data_type: Optional[str] = None,
+        input_params: Optional[FunctionParameterInfos] = None,
+        is_deterministic: Optional[bool] = None,
+        is_null_call: Optional[bool] = None,
+        name: Optional[str] = None,
+        parameter_style: Optional[ParameterStyle] = None,
+        properties: Optional[Dict[str, str]] = None,
+        routine_body: Optional[RoutineBody] = None,
+        routine_body_language: Optional[str] = None,
+        routine_definition: Optional[str] = None,
+        schema_name: Optional[str] = None,
+        security_type: Optional[SecurityType] = None,
+        sql_data_access: Optional[SqlDataAccess] = None,
+    ) -> None: ...
+
 class Credential:
     """A credential used to access external data sources or services."""
 
@@ -2587,25 +2646,7 @@ class UnityCatalogClient:
             The requested resource
         """
         ...
-    def create_function(
-        self,
-        name: str,
-        catalog_name: str,
-        schema_name: str,
-        data_type: str,
-        full_data_type: str,
-        parameter_style: ParameterStyle,
-        is_deterministic: bool,
-        sql_data_access: SqlDataAccess,
-        is_null_call: bool,
-        security_type: SecurityType,
-        routine_body: RoutineBody,
-        input_params: Optional[FunctionParameterInfos] = None,
-        routine_definition: Optional[str] = None,
-        routine_body_language: Optional[str] = None,
-        comment: Optional[str] = None,
-        properties: Optional[Dict[str, str]] = None,
-    ) -> Function:
+    def create_function(self, function_info: CreateFunction) -> Function:
         """
         Create a function
 
@@ -2614,22 +2655,7 @@ class UnityCatalogClient:
 
 
         Args:
-            name: Name of function, relative to parent schema.
-            catalog_name: Name of parent catalog.
-            schema_name: Name of parent schema.
-            data_type: Full data type specification of the return type of the function.
-            full_data_type: Full data type specification as SQL/catalogString text.
-            parameter_style: The parameter-passing style.
-            is_deterministic: Indicates whether the function is deterministic.
-            sql_data_access: SQL data access information.
-            is_null_call: Indicates whether the function is null-calling.
-            security_type: The security type of the function.
-            routine_body: The routine body.
-            input_params: The array of function parameter infos.
-            routine_definition: Function body.
-            routine_body_language: The language of the function routine body.
-            comment: User-provided free-form text description.
-            properties: A map of key-value properties attached to the securable.
+            function_info: The function to create.
 
 
         Returns:

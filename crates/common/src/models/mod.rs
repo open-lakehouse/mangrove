@@ -1,6 +1,7 @@
 mod _gen;
 mod association;
 mod error;
+mod functions_ext;
 mod object;
 mod resources;
 

@@ -591,47 +591,14 @@ impl UnityCatalogClient {
     ///
     /// # Arguments
     ///
-    /// * `name` - Name of function, relative to parent schema.
-    /// * `catalog_name` - Name of parent catalog.
-    /// * `schema_name` - Name of parent schema.
-    /// * `data_type` - Full data type specification of the return type of the function.
-    /// * `full_data_type` - Full data type specification as SQL/catalogString text.
-    /// * `parameter_style` - The parameter-passing style.
-    /// * `is_deterministic` - Indicates whether the function is deterministic.
-    /// * `sql_data_access` - SQL data access information.
-    /// * `is_null_call` - Indicates whether the function is null-calling.
-    /// * `security_type` - The security type of the function.
-    /// * `routine_body` - The routine body.
-    pub fn create_function(
-        &self,
-        name: impl Into<String>,
-        catalog_name: impl Into<String>,
-        schema_name: impl Into<String>,
-        data_type: impl Into<String>,
-        full_data_type: impl Into<String>,
-        parameter_style: ParameterStyle,
-        is_deterministic: bool,
-        sql_data_access: SqlDataAccess,
-        is_null_call: bool,
-        security_type: SecurityType,
-        routine_body: RoutineBody,
-    ) -> CreateFunctionBuilder {
+    /// * `function_info` - The function to create.
+    pub fn create_function(&self, function_info: CreateFunction) -> CreateFunctionBuilder {
         CreateFunctionBuilder::new(
             crate::codegen::functions::FunctionServiceClient::new(
                 self.client.clone(),
                 self.base_url.clone(),
             ),
-            name,
-            catalog_name,
-            schema_name,
-            data_type,
-            full_data_type,
-            parameter_style,
-            is_deterministic,
-            sql_data_access,
-            is_null_call,
-            security_type,
-            routine_body,
+            function_info,
         )
     }
     /// Access the `function` resource scoped to the given name.

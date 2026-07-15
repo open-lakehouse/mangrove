@@ -7,6 +7,8 @@ import {
   AgentSkillSchema,
   type Catalog,
   CatalogSchema,
+  type CreateFunction,
+  CreateFunctionSchema,
   type Credential,
   CredentialSchema,
   type EntityTagAssignment,
@@ -389,17 +391,6 @@ export interface ListFunctionsOptions {
   pageToken?: string;
   /** Whether to include functions in the response for which the principal can only access selective metadata for. */
   includeBrowse?: boolean;
-}
-
-export interface CreateFunctionOptions {
-  /** Function body. */
-  routineDefinition?: string;
-  /** The language of the function routine body. */
-  routineBodyLanguage?: string;
-  /** User-provided free-form text description. */
-  comment?: string;
-  /** A map of key-value properties attached to the securable. */
-  properties?: Record<string, string>;
 }
 
 export interface UpdateFunctionOptions {
@@ -1966,41 +1957,12 @@ export class UnityCatalogClient {
    * Creates a new function. The caller must be a metastore admin or have the CREATE_FUNCTION
    * privilege on the parent catalog and schema.
    */
-  async createFunction(
-    name: string,
-    catalogName: string,
-    schemaName: string,
-    dataType: string,
-    fullDataType: string,
-    parameterStyle: number,
-    isDeterministic: boolean,
-    sqlDataAccess: number,
-    isNullCall: boolean,
-    securityType: number,
-    routineBody: number,
-    options?: CreateFunctionOptions,
-  ): Promise<Function$> {
-    const { routineDefinition, routineBodyLanguage, comment, properties } =
-      options || {};
+  async createFunction(functionInfo: CreateFunction): Promise<Function$> {
     try {
       return fromBinary(
         FunctionSchema,
         await this.inner.createFunction(
-          name,
-          catalogName,
-          schemaName,
-          dataType,
-          fullDataType,
-          parameterStyle,
-          isDeterministic,
-          sqlDataAccess,
-          isNullCall,
-          securityType,
-          routineBody,
-          routineDefinition,
-          routineBodyLanguage,
-          comment,
-          properties,
+          Buffer.from(toBinary(CreateFunctionSchema, functionInfo)),
         ),
       );
     } catch (e) {

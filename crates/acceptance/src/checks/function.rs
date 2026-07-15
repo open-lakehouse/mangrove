@@ -3,7 +3,7 @@
 
 use futures::StreamExt;
 use unitycatalog_common::models::functions::v1::{
-    ParameterStyle, RoutineBody, SecurityType, SqlDataAccess,
+    CreateFunction, ParameterStyle, RoutineBody, SecurityType, SqlDataAccess,
 };
 
 use super::{unique, with_cleanup};
@@ -22,20 +22,22 @@ pub async fn function_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()> {
             let created = ctx
                 .client()
                 .create_function(
-                    function,
-                    &catalog,
-                    schema,
-                    "INT",
-                    "INT",
-                    ParameterStyle::S,
-                    true,
-                    SqlDataAccess::ContainsSql,
-                    true,
-                    SecurityType::Definer,
-                    RoutineBody::Sql,
+                    CreateFunction::new(
+                        function,
+                        &catalog,
+                        schema,
+                        "INT",
+                        "INT",
+                        ParameterStyle::S,
+                        true,
+                        SqlDataAccess::ContainsSql,
+                        true,
+                        SecurityType::Definer,
+                        RoutineBody::Sql,
+                    )
+                    .with_routine_definition("SELECT 42".to_string())
+                    .with_comment("conformance UDF".to_string()),
                 )
-                .with_routine_definition("SELECT 42".to_string())
-                .with_comment("conformance UDF".to_string())
                 .await?;
             assert_eq!(created.name, function);
 
@@ -85,19 +87,21 @@ pub async fn function_update(ctx: &JourneyContext) -> AcceptanceResult<()> {
             ctx.client().create_schema(schema, &catalog).await?;
             ctx.client()
                 .create_function(
-                    function,
-                    &catalog,
-                    schema,
-                    "INT",
-                    "INT",
-                    ParameterStyle::S,
-                    true,
-                    SqlDataAccess::ContainsSql,
-                    true,
-                    SecurityType::Definer,
-                    RoutineBody::Sql,
+                    CreateFunction::new(
+                        function,
+                        &catalog,
+                        schema,
+                        "INT",
+                        "INT",
+                        ParameterStyle::S,
+                        true,
+                        SqlDataAccess::ContainsSql,
+                        true,
+                        SecurityType::Definer,
+                        RoutineBody::Sql,
+                    )
+                    .with_routine_definition("SELECT 1".to_string()),
                 )
-                .with_routine_definition("SELECT 1".to_string())
                 .await?;
 
             let updated = ctx

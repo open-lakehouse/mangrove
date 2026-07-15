@@ -536,66 +536,13 @@ impl PyUnityCatalogClient {
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyFunction::from).collect())
         })
     }
-    #[pyo3(
-        signature = (
-            name,
-            catalog_name,
-            schema_name,
-            data_type,
-            full_data_type,
-            parameter_style,
-            is_deterministic,
-            sql_data_access,
-            is_null_call,
-            security_type,
-            routine_body,
-            input_params = None,
-            routine_definition = None,
-            routine_body_language = None,
-            comment = None,
-            properties = None
-        )
-    )]
+    #[pyo3(signature = (function_info))]
     pub fn create_function(
         &self,
         py: Python,
-        name: String,
-        catalog_name: String,
-        schema_name: String,
-        data_type: String,
-        full_data_type: String,
-        parameter_style: PyParameterStyle,
-        is_deterministic: bool,
-        sql_data_access: PySqlDataAccess,
-        is_null_call: bool,
-        security_type: PySecurityType,
-        routine_body: PyRoutineBody,
-        input_params: ::core::option::Option<PyFunctionParameterInfos>,
-        routine_definition: Option<String>,
-        routine_body_language: Option<String>,
-        comment: Option<String>,
-        properties: Option<HashMap<String, String>>,
+        function_info: PyCreateFunction,
     ) -> PyUnityCatalogResult<PyFunction> {
-        let mut request = self.client.create_function(
-            name,
-            catalog_name,
-            schema_name,
-            data_type,
-            full_data_type,
-            parameter_style.into(),
-            is_deterministic,
-            sql_data_access.into(),
-            is_null_call,
-            security_type.into(),
-            routine_body.into(),
-        );
-        request = request.with_input_params(input_params.map(::core::convert::Into::into));
-        request = request.with_routine_definition(routine_definition);
-        request = request.with_routine_body_language(routine_body_language);
-        request = request.with_comment(comment);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
+        let request = self.client.create_function(function_info.into());
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
             #[allow(clippy::let_unit_value)]
