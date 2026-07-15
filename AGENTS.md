@@ -111,7 +111,79 @@ bun run strip-lock-proxy:check
 
 - Strip logic is host-agnostic — clear any `http(s)` registry tarball URL in the resolution slot, leaving `""`.
 - Only the resolution field is modified; names, versions, dependency maps, and integrity hashes are untouched.
-- A pre-commit hook (`.githooks/pre-commit`) strips proxy URLs when `bun.lock` is staged. Activate once per clone: `bun run setup-hooks`.
+- Enforced by the pre-commit hook when `bun.lock` is staged (see **Git hooks** below).
+
+### 4. UI fingerprint
+
+**File:** [`.agents/rules/ui-fingerprint-rule.mdc`](.agents/rules/ui-fingerprint-rule.mdc)
+
+After editing anything under `node/`, regenerate `crates/server/ui.lock` before opening a PR:
+
+```bash
+just ui-fingerprint
+just ui-fingerprint-check   # same check CI runs
+```
+
+The pre-commit hook regenerates `ui.lock` when `node/` files are staged and runs
+`ui-fingerprint-check` before the commit completes (see **Git hooks** below).
+
+### 5. Cargo.lock and trestle
+
+**File:** [`.agents/rules/cargo-lock-trestle-rule.mdc`](.agents/rules/cargo-lock-trestle-rule.mdc)
+
+CI resolves `olai-http` / `olai-store` from crates.io. Local `just configure-trestle-deps`
+patches from `../trestle` must not alter committed `Cargo.lock`.
+
+Before any PR that touches `Cargo.lock`:
+
+```bash
+bun run cargo-lock-trestle:check
+```
+
+If it fails after building with local patches: `git checkout main -- Cargo.lock`.
+
+Enforced by the pre-commit hook when `Cargo.lock` is staged (see **Git hooks** below).
+
+### Git hooks (`setup-hooks`)
+
+The repo ships a **local pre-commit hook** at [`.githooks/pre-commit`](.githooks/pre-commit) that
+automates several PR hygiene checks. Git does not run it until you point `core.hooksPath` at
+`.githooks` for this clone.
+
+**Activate once per clone:**
+
+```bash
+bun run setup-hooks
+```
+
+That runs `git config core.hooksPath .githooks` (repo-local config only — not global). Verify:
+
+```bash
+git config --get core.hooksPath   # should print: .githooks
+```
+
+**What `pre-commit` does** (in order):
+
+| Step | When | Action |
+|------|------|--------|
+| 1 | Always | Re-invokes any **global** `pre-commit` hook first (e.g. Databricks gitleaks), so enabling repo hooks does not disable corporate scanners |
+| 2 | `bun.lock` staged | Strips private npm proxy URLs from the resolution field and re-stages the file |
+| 3 | `node/` or `crates/server/ui.lock` staged | Regenerates `ui.lock` when `node/` changes are staged; runs `just ui-fingerprint-check` |
+| 4 | `Cargo.lock` staged | Verifies `olai-http` / `olai-store` still have crates.io `source` + `checksum` lines |
+
+**Prerequisites on PATH:** `bun` (step 2), `just` (step 3). If a tool is missing, that step is
+skipped with a warning — run the manual checks below before opening a PR.
+
+**Manual pre-PR checks** (same gates CI enforces; run even if hooks are not installed):
+
+```bash
+bun run strip-lock-proxy:check
+just ui-fingerprint-check
+bun run cargo-lock-trestle:check
+```
+
+Hooks are a safety net, not a substitute for the checks above when committing outside git
+(e.g. `git commit --no-verify`) or when staged files do not trigger a given step.
 
 ---
 
@@ -142,6 +214,7 @@ inputs and regenerate with `just generate`; commit generated output in the same 
 | `just fmt` | Format all code |
 | `cargo nextest run --workspace --all-features` | Run Rust test suite |
 | `bun run test:coverage` | TypeScript tests with LCOV coverage |
+| `bun run setup-hooks` | Enable repo pre-commit hooks (once per clone) |
 
 ### Pre-push check (mimics CI)
 

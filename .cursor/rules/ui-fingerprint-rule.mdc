@@ -1,0 +1,46 @@
+---
+description: After editing node/, regenerate crates/server/ui.lock before opening a PR.
+alwaysApply: true
+---
+
+# UI Fingerprint (`crates/server/ui.lock`)
+
+The bundled UI lives under `node/`, outside the `olai-uc-server` crate tree.
+`crates/server/ui.lock` fingerprints every tracked file under `node/` so release-plz
+ties UI changes to the server crate and triggers a Docker image rebuild.
+
+## Before Creating Any PR
+
+If you changed anything under `node/`, regenerate and commit the lock:
+
+```bash
+just ui-fingerprint
+```
+
+Verify locally (same check CI runs):
+
+```bash
+just ui-fingerprint-check
+```
+
+## What Not To Do
+
+- **Never hand-edit** `crates/server/ui.lock`.
+- Do not open a PR with `node/` changes and a stale `ui.lock` — CI's
+  `ui-fingerprint` job will fail.
+
+## Pre-commit Hook
+
+When any staged file is under `node/` or `crates/server/ui.lock` is staged, the
+repo pre-commit hook (`.githooks/pre-commit`):
+
+1. Regenerates `ui.lock` when `node/` files are staged.
+2. Runs `just ui-fingerprint-check` and aborts the commit if the lock is still stale.
+
+Activate once per clone:
+
+```bash
+bun run setup-hooks   # git config core.hooksPath .githooks
+```
+
+The hook is a safety net — still run `just ui-fingerprint-check` before opening a PR.

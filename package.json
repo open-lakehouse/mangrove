@@ -16,8 +16,10 @@
   "scripts": {
     "openapi": "prettier --write openapi/openapi.yaml",
     "lint-fix": "biome check --write && biome format --write .",
+    "setup-hooks": "git config core.hooksPath .githooks",
     "strip-lock-proxy": "bun run scripts/strip-bun-lock-proxy.ts",
     "strip-lock-proxy:check": "bun run scripts/strip-bun-lock-proxy.ts --check",
+    "cargo-lock-trestle:check": "bash scripts/check-cargo-lock-trestle.sh",
     "test:coverage": "bun test --coverage --coverage-reporter=lcov"
   },
   "dependencies": {

@@ -6,6 +6,8 @@
 #    secret scanner). A repo-local core.hooksPath overrides the global one, so
 #    we re-invoke the global hook here to avoid disabling it for this repo.
 # 2. Strips npm registry proxy URLs out of bun.lock so they never get committed.
+# 3. Regenerates crates/server/ui.lock when node/ UI files are staged.
+# 4. Verifies Cargo.lock trestle crates still list crates.io registry entries.
 #
 set -e
 
@@ -27,5 +29,30 @@ if git diff --cached --name-only | grep -qx 'bun.lock'; then
     git add bun.lock
   else
     echo "pre-commit: 'bun' not found; skipping bun.lock proxy strip" >&2
+  fi
+fi
+
+# --- 3) Keep UI fingerprint in sync when node/ or ui.lock is staged ---------
+STAGED=$(git diff --cached --name-only)
+if echo "$STAGED" | grep -qE '^(node/|crates/server/ui\.lock)'; then
+  if command -v just >/dev/null 2>&1; then
+    if echo "$STAGED" | grep -q '^node/'; then
+      just ui-fingerprint
+      git add crates/server/ui.lock
+    fi
+    if ! just ui-fingerprint-check; then
+      echo "pre-commit: crates/server/ui.lock is out of sync with node/." >&2
+      echo "  Run: just ui-fingerprint" >&2
+      exit 1
+    fi
+  else
+    echo "pre-commit: 'just' not found; skipping ui-fingerprint check" >&2
+  fi
+fi
+
+# --- 4) Cargo.lock must list olai-http/olai-store from crates.io when staged ----
+if git diff --cached --name-only | grep -qx 'Cargo.lock'; then
+  if ! bash scripts/check-cargo-lock-trestle.sh; then
+    exit 1
   fi
 fi
