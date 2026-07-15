@@ -1,8 +1,8 @@
 use crate::api::{
     AgentHandler, AgentSkillHandler, CatalogHandler, CredentialHandler, EntityTagAssignmentHandler,
-    ExternalLocationHandler, FunctionHandler, PolicyHandler, ProviderHandler, RecipientHandler,
-    SchemaHandler, ShareHandler, StagingTableHandler, TableHandler, TagPolicyHandler,
-    TemporaryCredentialHandler, VolumeHandler,
+    ExternalLocationHandler, FunctionHandler, ModelVersionHandler, PolicyHandler, ProviderHandler,
+    RecipientHandler, RegisteredModelHandler, SchemaHandler, ShareHandler, StagingTableHandler,
+    TableHandler, TagPolicyHandler, TemporaryCredentialHandler, VolumeHandler,
 };
 use axum::routing::{delete, get, patch, post};
 
@@ -189,6 +189,64 @@ where
         .route(
             "/temporary-volume-credentials",
             post(generate_temporary_volume_credentials::<T, Cx>),
+        )
+        .route(
+            "/temporary-model-version-credentials",
+            post(generate_temporary_model_version_credentials::<T, Cx>),
+        )
+        .with_state(handler)
+}
+
+pub fn create_registered_models_router<T, Cx>(handler: T) -> axum::Router
+where
+    T: RegisteredModelHandler<Cx> + Clone,
+    Cx: axum::extract::FromRequestParts<T> + Send + 'static,
+{
+    use crate::codegen::registered_models::server::*;
+
+    axum::Router::new()
+        .route("/models", get(list_registered_models::<T, Cx>))
+        .route("/models", post(create_registered_model::<T, Cx>))
+        .route("/models/{full_name}", get(get_registered_model::<T, Cx>))
+        .route(
+            "/models/{full_name}",
+            patch(update_registered_model::<T, Cx>),
+        )
+        .route(
+            "/models/{full_name}",
+            delete(delete_registered_model::<T, Cx>),
+        )
+        .with_state(handler)
+}
+
+pub fn create_model_versions_router<T, Cx>(handler: T) -> axum::Router
+where
+    T: ModelVersionHandler<Cx> + Clone,
+    Cx: axum::extract::FromRequestParts<T> + Send + 'static,
+{
+    use crate::codegen::model_versions::server::*;
+
+    axum::Router::new()
+        .route("/models/versions", post(create_model_version::<T, Cx>))
+        .route(
+            "/models/{full_name}/versions",
+            get(list_model_versions::<T, Cx>),
+        )
+        .route(
+            "/models/{full_name}/versions/{version}",
+            get(get_model_version::<T, Cx>),
+        )
+        .route(
+            "/models/{full_name}/versions/{version}",
+            patch(update_model_version::<T, Cx>),
+        )
+        .route(
+            "/models/{full_name}/versions/{version}",
+            delete(delete_model_version::<T, Cx>),
+        )
+        .route(
+            "/models/{full_name}/versions/{version}/finalize",
+            patch(finalize_model_version::<T, Cx>),
         )
         .with_state(handler)
 }

@@ -1,8 +1,9 @@
 use unitycatalog_common::models::credentials::v1::GetCredentialRequest;
+use unitycatalog_common::models::model_versions::v1::ModelVersion;
 use unitycatalog_common::models::tables::v1::Table;
 use unitycatalog_common::models::temporary_credentials::v1::*;
 use unitycatalog_common::models::volumes::v1::Volume;
-use unitycatalog_common::models::{ResourceIdent, ResourceRef};
+use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 
 use super::RequestContext;
 use crate::api::CredentialHandler;
@@ -50,8 +51,9 @@ fn to_vend_operation(operation: i32) -> VendOperation {
         }
         Some(PathOp::PATH_READ | PathOp::UNSPECIFIED) | None => {}
     }
-    // The table (READ_WRITE = 2) and volume (WRITE_VOLUME = 2) write operations
-    // share the same value, so either enum resolves write access identically.
+    // The table (READ_WRITE = 2), volume (WRITE_VOLUME = 2), and model-version
+    // (READ_WRITE_MODEL_VERSION = 2) write operations all share the same numeric
+    // value, so any of these enums resolves write access identically.
     match (TableOp::from_i32(operation), VolumeOp::from_i32(operation)) {
         (Some(TableOp::READ_WRITE), _) | (_, Some(VolumeOp::WRITE_VOLUME)) => {
             VendOperation::ReadWrite
@@ -133,6 +135,50 @@ impl<
         let (resource, _) = self.get(&volume_ident).await?;
         let volume: Volume = resource.try_into()?;
         let location = volume.storage_location;
+        let storage_url = StorageLocationUrl::parse(&location)?;
+        let ext_loc = find_external_location_for_url(&storage_url, self).await?;
+        let credential = self
+            .get_credential_internal(GetCredentialRequest {
+                name: ext_loc.credential_name.clone(),
+                ..Default::default()
+            })
+            .await?;
+        vend_credential(&credential, &location, operation).await
+    }
+
+    /// Generate temporary credentials for a model version.
+    ///
+    /// Resolves the model version by its `(catalog, schema, model, version)`
+    /// composite name, authorizes the requested operation against the concrete
+    /// version, then vends credentials scoped to the version's storage location —
+    /// mirroring
+    /// [`generate_temporary_volume_credentials`](Self::generate_temporary_volume_credentials).
+    ///
+    /// See: <https://docs.databricks.com/api/workspace/temporarymodelversioncredentials/generatetemporarymodelversioncredentials>
+    #[tracing::instrument(skip(self, context))]
+    async fn generate_temporary_model_version_credentials(
+        &self,
+        request: GenerateTemporaryModelVersionCredentialsRequest,
+        context: RequestContext,
+    ) -> Result<TemporaryCredential> {
+        let operation = to_vend_operation(request.operation.to_i32());
+        // The model version is keyed by the composite name that
+        // `ModelVersion::resource_name` produces.
+        let ident = ResourceIdent::model_version(ResourceName::new([
+            request.catalog_name.clone(),
+            request.schema_name.clone(),
+            request.model_name.clone(),
+            request.version.to_string(),
+        ]));
+        // Authorize against the concrete model version and the operation actually
+        // requested, rather than the unscoped `SecuredAction` default.
+        self.authorize_checked(&ident, &required_permission(operation), &context)
+            .await?;
+        let (resource, _) = self.get(&ident).await?;
+        let model_version: ModelVersion = resource.try_into()?;
+        let location = model_version.storage_location.ok_or_else(|| {
+            Error::invalid_argument("model version does not have a storage location")
+        })?;
         let storage_url = StorageLocationUrl::parse(&location)?;
         let ext_loc = find_external_location_for_url(&storage_url, self).await?;
         let credential = self
