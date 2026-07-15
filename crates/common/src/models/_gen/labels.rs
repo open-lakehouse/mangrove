@@ -1122,7 +1122,7 @@ impl TryFrom<super::staging_tables::v1::StagingTable> for Object {
 }
 impl ResourceExt for super::staging_tables::v1::StagingTable {
     fn resource_name(&self) -> ResourceName {
-        ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
+        ResourceName::new([&self.name])
     }
     fn resource_ref(&self) -> ResourceRef {
         ::uuid::Uuid::parse_str(&self.id)
@@ -1370,7 +1370,7 @@ impl super::shares::v1::Share {
 impl super::staging_tables::v1::StagingTable {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
-        format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
+        self.name.clone()
     }
 }
 impl super::tables::v1::Table {
@@ -2365,8 +2365,8 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
                 role: ::olai_store::FieldRole::Managed,
             },
         ],
-        path_names: &["catalog_name", "schema_name", "name"],
-        parent_label: Some(ObjectLabel::Schema),
+        path_names: &["name"],
+        parent_label: None,
     },
     ::olai_store::ResourceTypeDescriptor {
         label: ObjectLabel::Table,

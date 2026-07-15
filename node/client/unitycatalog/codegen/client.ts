@@ -1058,61 +1058,6 @@ export class FunctionClient {
   }
 }
 
-export class ModelVersionClient {
-  private readonly inner: NativeModelVersionClient;
-
-  /** @internal */
-  constructor(inner: NativeModelVersionClient) {
-    this.inner = inner;
-  }
-
-  /**
-   * Get a model version
-   *
-   * Gets a model version by its parent model name and version number.
-   */
-  async get(options?: GetModelVersionOptions): Promise<ModelVersion> {
-    const { includeBrowse } = options || {};
-    try {
-      return fromBinary(
-        ModelVersionSchema,
-        await this.inner.get(includeBrowse),
-      );
-    } catch (e) {
-      throw parseNativeError(e);
-    }
-  }
-
-  /**
-   * Update a model version
-   *
-   * Updates the model version that matches the supplied name and version.
-   */
-  async update(options?: UpdateModelVersionOptions): Promise<ModelVersion> {
-    const { comment } = options || {};
-    try {
-      return fromBinary(ModelVersionSchema, await this.inner.update(comment));
-    } catch (e) {
-      throw parseNativeError(e);
-    }
-  }
-
-  /**
-   * Delete a model version
-   *
-   * Deletes the model version that matches the supplied name and version. For the
-   * deletion to succeed, the caller must be the owner of the parent registered
-   * model.
-   */
-  async delete(): Promise<void> {
-    try {
-      await this.inner.delete();
-    } catch (e) {
-      throw parseNativeError(e);
-    }
-  }
-}
-
 export class PolicyClient {
   private readonly inner: NativePolicyClient;
 
