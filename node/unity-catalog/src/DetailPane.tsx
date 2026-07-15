@@ -1,6 +1,6 @@
-import { cn } from "@open-lakehouse/ui-kit";
 import { Database, FolderTree, Globe, KeyRound } from "lucide-react";
 import type { ReactNode } from "react";
+import { Breadcrumbs, type Crumb } from "./Breadcrumbs";
 import { CopyButton } from "./CopyButton";
 import { CatalogDetail } from "./detail/CatalogDetail";
 import { CredentialDetail } from "./detail/CredentialDetail";
@@ -11,7 +11,6 @@ import { SchemaDetail } from "./detail/SchemaDetail";
 import { TableDetail } from "./detail/TableDetail";
 import { VolumeDetail } from "./detail/VolumeDetail";
 import { kindIcon } from "./groups";
-import { PANE_HEADER_CLASS } from "./layout";
 import { useCatalogSelection } from "./selection";
 import { isObjectKind, type SelectableKind, splitFullName } from "./types";
 
@@ -26,7 +25,7 @@ function detailIcon(kind: SelectableKind): ReactNode {
 }
 
 export function DetailPane() {
-  const { selection } = useCatalogSelection();
+  const { selection, select } = useCatalogSelection();
 
   if (!selection) {
     return (
@@ -36,23 +35,41 @@ export function DetailPane() {
     );
   }
 
-  const { object } = splitFullName(selection.fullName);
-  const displayName = selection.fullName || object;
+  const { catalog, schema, object } = splitFullName(selection.fullName);
+  // Title shows the object's short (leaf) name — the parent path lives in the
+  // breadcrumb above it, Databricks-style.
+  const shortName = object ?? schema ?? catalog ?? selection.fullName;
+
+  // Ancestors that lead to the selection, each selecting that node in the tree.
+  // The metastore-level securables (catalog / credential / external location)
+  // sit directly under the explorer root, so they get no extra crumbs.
+  const crumbs: Crumb[] = [
+    { label: "Catalog Explorer", onClick: () => select(undefined) },
+  ];
+  if (catalog && schema) {
+    crumbs.push({
+      label: catalog,
+      onClick: () => select({ kind: "catalog", fullName: catalog }),
+    });
+  }
+  if (catalog && schema && object) {
+    crumbs.push({
+      label: schema,
+      onClick: () =>
+        select({ kind: "schema", fullName: `${catalog}.${schema}` }),
+    });
+  }
 
   return (
     <div className="flex min-h-0 flex-col overflow-auto">
-      <div
-        className={cn(
-          PANE_HEADER_CLASS,
-          "sticky top-0 z-10 bg-background px-6",
-        )}
-      >
-        <div className="group flex min-w-0 items-center gap-2.5">
+      <div className="sticky top-0 z-10 shrink-0 bg-background px-6 pt-3 pb-2">
+        <Breadcrumbs items={crumbs} />
+        <div className="group mt-1.5 flex min-w-0 items-center gap-2.5">
           {detailIcon(selection.kind)}
-          <span className="truncate font-mono text-base font-semibold">
-            {displayName}
+          <span className="truncate font-mono text-lg font-semibold">
+            {shortName}
           </span>
-          {displayName && <CopyButton value={displayName} label="full name" />}
+          <CopyButton value={selection.fullName} label="full name" />
         </div>
       </div>
       <div className="px-6 py-6">

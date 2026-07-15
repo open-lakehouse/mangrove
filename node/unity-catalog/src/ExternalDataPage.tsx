@@ -18,6 +18,7 @@ import {
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { Globe, KeyRound, type LucideIcon } from "lucide-react";
 
+import { Breadcrumbs } from "./Breadcrumbs";
 import { CatalogDialogsProvider } from "./dialogs";
 import { StorageTable } from "./storage/StorageTable";
 import { STORAGE_KINDS, type StorageKind } from "./types";
@@ -60,8 +61,13 @@ export function ExternalDataPage({
   return (
     <CatalogDialogsProvider>
       <div className="flex h-full min-h-0 flex-col">
-        <div className="shrink-0 px-6 pt-4">
-          <h1 className="font-mono text-base font-semibold">External Data</h1>
+        <div className="shrink-0 px-6 pt-3">
+          <Breadcrumbs
+            items={[{ label: "Catalog Explorer", to: "/catalog" }]}
+          />
+          <h1 className="mt-1.5 font-mono text-lg font-semibold">
+            External Data
+          </h1>
         </div>
 
         <Tabs
