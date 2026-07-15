@@ -2,9 +2,11 @@ use olai_http::CloudClient;
 use reqwest::IntoUrl;
 use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
 use unitycatalog_common::{
+    model_versions::v1::GetModelVersionRequest,
     models::temporary_credentials::v1::{
-        GenerateTemporaryPathCredentialsRequest, GenerateTemporaryTableCredentialsRequest,
-        GenerateTemporaryVolumeCredentialsRequest,
+        GenerateTemporaryModelVersionCredentialsRequest, GenerateTemporaryPathCredentialsRequest,
+        GenerateTemporaryTableCredentialsRequest, GenerateTemporaryVolumeCredentialsRequest,
+        generate_temporary_model_version_credentials_request::Operation as MvOperation,
         generate_temporary_path_credentials_request::Operation as PthOperation,
         generate_temporary_table_credentials_request::Operation as TblOperation,
         generate_temporary_volume_credentials_request::Operation as VolOperation,
@@ -160,6 +162,33 @@ impl From<VolumeOperation> for VolOperation {
         match operation {
             VolumeOperation::Read => VolOperation::ReadVolume,
             VolumeOperation::ReadWrite => VolOperation::WriteVolume,
+        }
+    }
+}
+
+/// The kind of access requested for a model version.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ModelVersionOperation {
+    /// Read-only access.
+    Read,
+    /// Read and write access.
+    ReadWrite,
+}
+
+impl From<ModelVersionOperation> for i32 {
+    fn from(operation: ModelVersionOperation) -> Self {
+        match operation {
+            ModelVersionOperation::Read => MvOperation::ReadModelVersion as i32,
+            ModelVersionOperation::ReadWrite => MvOperation::ReadWriteModelVersion as i32,
+        }
+    }
+}
+
+impl From<ModelVersionOperation> for MvOperation {
+    fn from(operation: ModelVersionOperation) -> Self {
+        match operation {
+            ModelVersionOperation::Read => MvOperation::ReadModelVersion,
+            ModelVersionOperation::ReadWrite => MvOperation::ReadWriteModelVersion,
         }
     }
 }
@@ -377,6 +406,66 @@ impl TemporaryCredentialClient {
             .await?;
         backfill_credential_url(&mut credential, storage_location);
         Ok((credential, uuid))
+    }
+
+    /// Gets a temporary credential for reading or writing to a model version.
+    ///
+    /// # Arguments
+    ///
+    /// * `full_name`: The three-level (`catalog.schema.model`) name of the parent
+    ///   registered model.
+    /// * `version`: The integer version number of the model version.
+    /// * `operation`: Whether the credentials should grant read-only or read-write
+    ///   access.
+    ///
+    /// The Unity Catalog metastore must have `external_access_enabled = true` and
+    /// the caller must hold `EXTERNAL_USE_SCHEMA` on the parent schema.
+    pub async fn temporary_model_version_credential(
+        &self,
+        full_name: impl Into<String>,
+        version: i64,
+        operation: ModelVersionOperation,
+    ) -> Result<TemporaryCredential> {
+        let full_name = full_name.into();
+        let [catalog_name, schema_name, model_name] =
+            <[String; 3]>::try_from(full_name.split('.').map(str::to_string).collect::<Vec<_>>())
+                .map_err(|_| {
+                unitycatalog_common::Error::invalid_argument(
+                    "full_name must be a three-level catalog.schema.model name",
+                )
+            })?;
+
+        // Resolve the version's storage location so we can backfill the credential
+        // `url` if the server omits it (mirroring the table/volume paths).
+        let mv_client = crate::codegen::model_versions::ModelVersionServiceClient::new(
+            self.client.client.clone(),
+            self.client.base_url.clone(),
+        );
+        let storage_location = mv_client
+            .get_model_version(&GetModelVersionRequest {
+                full_name: full_name.clone(),
+                version,
+                ..Default::default()
+            })
+            .await
+            .ok()
+            .and_then(|mv| mv.storage_location);
+
+        let mut credential = self
+            .post_credential(
+                "temporary-model-version-credentials",
+                &GenerateTemporaryModelVersionCredentialsRequest {
+                    catalog_name,
+                    schema_name,
+                    model_name,
+                    version,
+                    operation: MvOperation::from(operation).into(),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        backfill_credential_url(&mut credential, storage_location);
+        Ok(credential)
     }
 }
 

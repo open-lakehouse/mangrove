@@ -134,3 +134,18 @@ class TemporaryCredentialClient:
     ) -> tuple[TemporaryCredential, str]:
         """Vend a temporary credential for an arbitrary cloud URL."""
         ...
+
+    def temporary_model_version_credential(
+        self,
+        full_name: str,
+        version: int,
+        operation: Literal["read", "read_write", "write"],
+    ) -> TemporaryCredential:
+        """Vend a temporary credential for a Unity Catalog model version.
+
+        ``full_name`` is the three-level ``catalog.schema.model`` name of the
+        parent registered model and ``version`` its integer version number.
+        Server support requires the metastore's ``external_access_enabled``
+        flag and the caller's ``EXTERNAL_USE_SCHEMA`` privilege.
+        """
+        ...
