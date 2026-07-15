@@ -393,6 +393,24 @@ fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
             "UC OSS v0.5.0 does not implement function update — PATCH /functions/{name} \
              returns 405 (follow-up: #70)",
         ),
+        // The models API on UC OSS v0.5.0 reads the create payload *flat*
+        // (`{"name": …}`), but our client sends the request envelope
+        // (`{"model_info": {…}}`) because the codegen doesn't honor the proto
+        // `body: "model_info"` mapping — so Java sees an empty name and 400s with
+        // "Name cannot be empty". (Unlike functions, whose v0.5.0 API *requires*
+        // the `function_info` envelope — the reference server is not uniform.)
+        // Both checks pass against our Rust server; see the wire-format table in
+        // the follow-up.
+        (Target::OssJava, "registered_model_lifecycle") => Some(
+            "models create wants a flat body but the client sends the `model_info` \
+             envelope (codegen ignores `body:` mapping) — 400 \"Name cannot be empty\" \
+             (follow-up: #77)",
+        ),
+        (Target::OssJava, "model_version_lifecycle") => Some(
+            "model-version create wants a flat body but the client sends the \
+             `model_version` envelope (codegen ignores `body:` mapping) — 400 \
+             \"Name cannot be empty\" (follow-up: #77)",
+        ),
         _ => None,
     }
 }
