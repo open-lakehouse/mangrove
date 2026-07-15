@@ -80,6 +80,38 @@ message GenerateTemporaryPathCredentialsRequest {
   optional bool dry_run = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
+// Generate a new set of credentials for a model version.
+message GenerateTemporaryModelVersionCredentialsRequest {
+  enum Operation {
+    // The operation is not specified.
+    UNSPECIFIED = 0;
+
+    // The operation is read only.
+    READ_MODEL_VERSION = 1;
+
+    // The operation is read and write.
+    READ_WRITE_MODEL_VERSION = 2;
+  }
+
+  // Name of parent catalog of the model version.
+  string catalog_name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Name of parent schema of the model version.
+  string schema_name = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Name of the parent registered model.
+  string model_name = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // The integer version number of the model version.
+  int64 version = 4 [(google.api.field_behavior) = REQUIRED];
+
+  // The operation performed against the model version data, either
+  // READ_MODEL_VERSION or READ_WRITE_MODEL_VERSION. If READ_WRITE_MODEL_VERSION
+  // is specified, the credentials returned will have write permissions,
+  // otherwise, it will be read only.
+  Operation operation = 5 [(google.api.field_behavior) = REQUIRED];
+}
+
 // Service for generating temporary credentials to access tables and storage paths.
 // Credentials are short-lived and scoped to a specific operation (read or read/write).
 service TemporaryCredentialsService {
@@ -112,5 +144,18 @@ service TemporaryCredentialsService {
       body: "*"
     };
     option (gnostic.openapi.v3.operation) = {operation_id: "GenerateTemporaryVolumeCredentials"};
+  }
+
+  // Generate a new set of credentials for a model version.
+  //
+  // The metastore must have the `external_access_enabled` flag set to true
+  // (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+  // privilege on the parent schema (granted by a catalog owner).
+  rpc GenerateTemporaryModelVersionCredentials(GenerateTemporaryModelVersionCredentialsRequest) returns (TemporaryCredential) {
+    option (google.api.http) = {
+      post: "/temporary-model-version-credentials"
+      body: "*"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "GenerateTemporaryModelVersionCredentials"};
   }
 }

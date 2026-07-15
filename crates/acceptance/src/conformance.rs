@@ -267,6 +267,14 @@ pub fn baseline_checks() -> Vec<Check> {
         ),
         check!("function_lifecycle", checks::function::function_lifecycle),
         check!("function_update", checks::function::function_update),
+        check!(
+            "registered_model_lifecycle",
+            checks::registered_model::registered_model_lifecycle
+        ),
+        check!(
+            "model_version_lifecycle",
+            checks::registered_model::model_version_lifecycle
+        ),
     ]
 }
 
@@ -378,13 +386,30 @@ fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
         // v0.5.0 does not implement — that call now lives in the Rust-only
         // `table_summaries` check, and the macOS read-back `/tmp` symlink artifact is
         // fixed by canonicalizing the local location in `checks::managed_delta`.
-        (Target::OssJava, "function_lifecycle") => Some(
-            "Java's POST /functions expects the body wrapped in a function_info envelope; \
-             our client/proto send it flat (body: \"*\") — wire-contract divergence (follow-up: #70)",
-        ),
+        // `function_lifecycle` is NO LONGER quarantined here (#70): POST /functions now
+        // wraps the payload in a `function_info` envelope (proto `body: "function_info"`),
+        // matching UC OSS Java v0.5.0 and the Databricks SDK.
         (Target::OssJava, "function_update") => Some(
             "UC OSS v0.5.0 does not implement function update — PATCH /functions/{name} \
              returns 405 (follow-up: #70)",
+        ),
+        // The models API on UC OSS v0.5.0 reads the create payload *flat*
+        // (`{"name": …}`), but our client sends the request envelope
+        // (`{"model_info": {…}}`) because the codegen doesn't honor the proto
+        // `body: "model_info"` mapping — so Java sees an empty name and 400s with
+        // "Name cannot be empty". (Unlike functions, whose v0.5.0 API *requires*
+        // the `function_info` envelope — the reference server is not uniform.)
+        // Both checks pass against our Rust server; see the wire-format table in
+        // the follow-up.
+        (Target::OssJava, "registered_model_lifecycle") => Some(
+            "models create wants a flat body but the client sends the `model_info` \
+             envelope (codegen ignores `body:` mapping) — 400 \"Name cannot be empty\" \
+             (follow-up: #77)",
+        ),
+        (Target::OssJava, "model_version_lifecycle") => Some(
+            "model-version create wants a flat body but the client sends the \
+             `model_version` envelope (codegen ignores `body:` mapping) — 400 \
+             \"Name cannot be empty\" (follow-up: #77)",
         ),
         _ => None,
     }

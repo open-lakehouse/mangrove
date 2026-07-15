@@ -66,7 +66,8 @@ surface passes (the run flags it as an unexpected pass if left behind).
 Resources UC OSS implements but our server does not, and which the battery
 deliberately does **not** cover:
 
-- **RegisteredModels / ModelVersions** — not implemented (deferred, #148).
+- **RegisteredModels / ModelVersions** — implemented (`registered_model_lifecycle`,
+  `model_version_lifecycle`), incl. `/temporary-model-version-credentials`.
 - **General Grants/Permissions** (`/permissions/{securable_type}/{full_name}`) —
   only share-scoped permissions exist today (deferred, #29).
 - **Metastore summary** (`/metastore_summary`) — not implemented (deferred, #149).

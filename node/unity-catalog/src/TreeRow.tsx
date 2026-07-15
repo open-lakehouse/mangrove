@@ -12,6 +12,7 @@ export function TreeRow({
   depth,
   icon,
   label,
+  count,
   expandable,
   open,
   selected,
@@ -23,6 +24,8 @@ export function TreeRow({
   depth: number;
   icon: ReactNode;
   label?: string;
+  /** Optional trailing count (e.g. child object count), shown muted. */
+  count?: string;
   expandable?: boolean;
   open?: boolean;
   selected?: boolean;
@@ -73,7 +76,14 @@ export function TreeRow({
           className="flex min-w-0 flex-1 items-center gap-1.5 px-1 py-1.5 text-left text-sm"
         >
           {icon}
-          <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
+          <span className="min-w-0 flex-1 truncate font-medium">
+            {label}
+            {count !== undefined && (
+              <span className="ml-1 font-mono text-xs tabular-nums text-muted-foreground">
+                ({count})
+              </span>
+            )}
+          </span>
         </button>
       </div>
       {action && (

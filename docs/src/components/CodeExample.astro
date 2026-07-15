@@ -15,6 +15,7 @@
 import { Code, TabItem, Tabs } from "@astrojs/starlight/components";
 import pyCatalogs from "../../../examples/python/catalogs.py?raw";
 import pyObjectStore from "../../../examples/python/object_store.py?raw";
+import pyRegisteredModels from "../../../examples/python/registered_models.py?raw";
 import pySchemas from "../../../examples/python/schemas.py?raw";
 import pyTables from "../../../examples/python/tables.py?raw";
 import pyTagPolicies from "../../../examples/python/tag_policies.py?raw";
@@ -22,11 +23,13 @@ import pyVolumes from "../../../examples/python/volumes.py?raw";
 // Vite ?raw imports — resolved at build time, proper HMR in dev
 import rustCatalogs from "../../../examples/rust/src/catalogs.rs?raw";
 import rustObjectStore from "../../../examples/rust/src/object_store.rs?raw";
+import rustRegisteredModels from "../../../examples/rust/src/registered_models.rs?raw";
 import rustSchemas from "../../../examples/rust/src/schemas.rs?raw";
 import rustTables from "../../../examples/rust/src/tables.rs?raw";
 import rustTagPolicies from "../../../examples/rust/src/tag_policies.rs?raw";
 import rustVolumes from "../../../examples/rust/src/volumes.rs?raw";
 import tsCatalogs from "../../../examples/typescript/examples/catalogs.ts?raw";
+import tsRegisteredModels from "../../../examples/typescript/examples/registered_models.ts?raw";
 import tsSchemas from "../../../examples/typescript/examples/schemas.ts?raw";
 import tsTables from "../../../examples/typescript/examples/tables.ts?raw";
 import tsTagPolicies from "../../../examples/typescript/examples/tag_policies.ts?raw";
@@ -93,6 +96,7 @@ function buildRegistry(): Map<string, SnippetEntry> {
     [
       ["catalogs.rs", rustCatalogs],
       ["object_store.rs", rustObjectStore],
+      ["registered_models.rs", rustRegisteredModels],
       ["schemas.rs", rustSchemas],
       ["tables.rs", rustTables],
       ["tag_policies.rs", rustTagPolicies],
@@ -104,6 +108,7 @@ function buildRegistry(): Map<string, SnippetEntry> {
     [
       ["catalogs.py", pyCatalogs],
       ["object_store.py", pyObjectStore],
+      ["registered_models.py", pyRegisteredModels],
       ["schemas.py", pySchemas],
       ["tables.py", pyTables],
       ["tag_policies.py", pyTagPolicies],
@@ -114,6 +119,7 @@ function buildRegistry(): Map<string, SnippetEntry> {
   add(
     [
       ["catalogs.ts", tsCatalogs],
+      ["registered_models.ts", tsRegisteredModels],
       ["schemas.ts", tsSchemas],
       ["tables.ts", tsTables],
       ["tag_policies.ts", tsTagPolicies],

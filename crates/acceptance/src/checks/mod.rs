@@ -25,6 +25,7 @@ pub mod cross;
 pub mod function;
 pub mod governance;
 pub mod managed_delta;
+pub mod registered_model;
 pub mod sharing;
 pub mod table;
 pub mod temp_creds;

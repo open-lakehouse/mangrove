@@ -55,74 +55,11 @@ message ListFunctionsResponse {
 
 // Create a new function
 message CreateFunctionRequest {
-  // Name of function, relative to parent schema.
-  string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+  // The function to create.
+  CreateFunction function_info = 1 [
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
-
-  // Name of parent catalog.
-  string catalog_name = 2 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
-    (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
-  ];
-
-  // Name of parent schema.
-  string schema_name = 3 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
-    (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
-  ];
-
-  // Full data type specification of the return type of the function.
-  string data_type = 4 [
-    (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
-  ];
-
-  // Full data type specification as SQL/catalogString text.
-  string full_data_type = 5 [
-    (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
-  ];
-
-  // The array of function parameter infos.
-  optional FunctionParameterInfos input_params = 6 [(google.api.field_behavior) = OPTIONAL];
-
-  // The parameter-passing style.
-  ParameterStyle parameter_style = 7;
-
-  // Indicates whether the function is deterministic.
-  bool is_deterministic = 8;
-
-  // SQL data access information.
-  SqlDataAccess sql_data_access = 9;
-
-  // Indicates whether the function is null-calling.
-  bool is_null_call = 10;
-
-  // The security type of the function.
-  SecurityType security_type = 11;
-
-  // The routine body.
-  RoutineBody routine_body = 12;
-
-  // Function body.
-  optional string routine_definition = 13 [(google.api.field_behavior) = OPTIONAL];
-
-  // The language of the function routine body.
-  optional string routine_body_language = 14 [(google.api.field_behavior) = OPTIONAL];
-
-  // User-provided free-form text description.
-  optional string comment = 15 [(google.api.field_behavior) = OPTIONAL];
-
-  // A map of key-value properties attached to the securable.
-  map<string, string> properties = 16 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Get a function
@@ -184,7 +121,7 @@ service FunctionsService {
   rpc CreateFunction(CreateFunctionRequest) returns (Function) {
     option (google.api.http) = {
       post: "/functions"
-      body: "*"
+      body: "function_info"
     };
     option (gnostic.openapi.v3.operation) = {operation_id: "CreateFunction"};
   }

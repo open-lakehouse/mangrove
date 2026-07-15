@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "openapi": "prettier --write openapi/openapi.yaml",
-    "lint-fix": "biome check --write && biome format --write ."
+    "lint-fix": "biome check --write && biome format --write .",
+    "test:coverage": "bun test --coverage --coverage-reporter=lcov"
   },
   "dependencies": {
     "eslint": "^10.0.2",

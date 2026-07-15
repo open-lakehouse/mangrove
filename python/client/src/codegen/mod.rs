@@ -19,6 +19,8 @@ pub mod providers;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod recipients;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
+pub mod registered_models;
+#[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod schemas;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod shares;
@@ -39,6 +41,7 @@ use crate::codegen::functions::PyFunctionClient;
 use crate::codegen::policies::PyPolicyClient;
 use crate::codegen::providers::PyProviderClient;
 use crate::codegen::recipients::PyRecipientClient;
+use crate::codegen::registered_models::PyRegisteredModelClient;
 use crate::codegen::schemas::PySchemaClient;
 use crate::codegen::shares::PyShareClient;
 use crate::codegen::staging_tables::PyStagingTableClient;
@@ -57,9 +60,11 @@ use unitycatalog_common::models::catalogs::v1::*;
 use unitycatalog_common::models::credentials::v1::*;
 use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
+use unitycatalog_common::models::model_versions::v1::*;
 use unitycatalog_common::models::policies::v1::*;
 use unitycatalog_common::models::providers::v1::*;
 use unitycatalog_common::models::recipients::v1::*;
+use unitycatalog_common::models::registered_models::v1::*;
 use unitycatalog_common::models::schemas::v1::*;
 use unitycatalog_common::models::shares::v1::*;
 use unitycatalog_common::models::staging_tables::v1::*;
@@ -536,71 +541,113 @@ impl PyUnityCatalogClient {
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyFunction::from).collect())
         })
     }
-    #[pyo3(
-        signature = (
-            name,
-            catalog_name,
-            schema_name,
-            data_type,
-            full_data_type,
-            parameter_style,
-            is_deterministic,
-            sql_data_access,
-            is_null_call,
-            security_type,
-            routine_body,
-            input_params = None,
-            routine_definition = None,
-            routine_body_language = None,
-            comment = None,
-            properties = None
-        )
-    )]
+    #[pyo3(signature = (function_info))]
     pub fn create_function(
         &self,
         py: Python,
-        name: String,
-        catalog_name: String,
-        schema_name: String,
-        data_type: String,
-        full_data_type: String,
-        parameter_style: PyParameterStyle,
-        is_deterministic: bool,
-        sql_data_access: PySqlDataAccess,
-        is_null_call: bool,
-        security_type: PySecurityType,
-        routine_body: PyRoutineBody,
-        input_params: ::core::option::Option<PyFunctionParameterInfos>,
-        routine_definition: Option<String>,
-        routine_body_language: Option<String>,
-        comment: Option<String>,
-        properties: Option<HashMap<String, String>>,
+        function_info: PyCreateFunction,
     ) -> PyUnityCatalogResult<PyFunction> {
-        let mut request = self.client.create_function(
-            name,
-            catalog_name,
-            schema_name,
-            data_type,
-            full_data_type,
-            parameter_style.into(),
-            is_deterministic,
-            sql_data_access.into(),
-            is_null_call,
-            security_type.into(),
-            routine_body.into(),
-        );
-        request = request.with_input_params(input_params.map(::core::convert::Into::into));
-        request = request.with_routine_definition(routine_definition);
-        request = request.with_routine_body_language(routine_body_language);
-        request = request.with_comment(comment);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
+        let request = self.client.create_function(function_info.into());
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyFunction::from(result))
+        })
+    }
+    #[pyo3(signature = (full_name, max_results = None, include_browse = None))]
+    pub fn list_model_versions(
+        &self,
+        py: Python,
+        full_name: String,
+        max_results: Option<i32>,
+        include_browse: Option<bool>,
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyModelVersion>> {
+        let mut request = self.client.list_model_versions(full_name);
+        request = request.with_max_results(max_results);
+        request = request.with_include_browse(include_browse);
+        let runtime = get_runtime(py)?;
+        py.allow_threads(|| {
+            let result: ::std::vec::Vec<_> =
+                runtime.block_on(async move { request.into_stream().try_collect().await })?;
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyModelVersion::from).collect())
+        })
+    }
+    #[pyo3(signature = (model_version))]
+    pub fn create_model_version(
+        &self,
+        py: Python,
+        model_version: PyCreateModelVersion,
+    ) -> PyUnityCatalogResult<PyModelVersion> {
+        let request = self.client.create_model_version(model_version.into());
+        let runtime = get_runtime(py)?;
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
+        })
+    }
+    #[pyo3(signature = (full_name, version, include_browse = None))]
+    pub fn get_model_version(
+        &self,
+        py: Python,
+        full_name: String,
+        version: i64,
+        include_browse: Option<bool>,
+    ) -> PyUnityCatalogResult<PyModelVersion> {
+        let mut request = self.client.get_model_version(full_name, version);
+        request = request.with_include_browse(include_browse);
+        let runtime = get_runtime(py)?;
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
+        })
+    }
+    #[pyo3(signature = (full_name, version, comment = None))]
+    pub fn update_model_version(
+        &self,
+        py: Python,
+        full_name: String,
+        version: i64,
+        comment: Option<String>,
+    ) -> PyUnityCatalogResult<PyModelVersion> {
+        let mut request = self.client.update_model_version(full_name, version);
+        request = request.with_comment(comment);
+        let runtime = get_runtime(py)?;
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
+        })
+    }
+    #[pyo3(signature = (full_name, version))]
+    pub fn delete_model_version(
+        &self,
+        py: Python,
+        full_name: String,
+        version: i64,
+    ) -> PyUnityCatalogResult<()> {
+        let request = self.client.delete_model_version(full_name, version);
+        let runtime = get_runtime(py)?;
+        py.allow_threads(|| {
+            runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(())
+        })
+    }
+    #[pyo3(signature = (full_name, version))]
+    pub fn finalize_model_version(
+        &self,
+        py: Python,
+        full_name: String,
+        version: i64,
+    ) -> PyUnityCatalogResult<PyModelVersion> {
+        let request = self.client.finalize_model_version(full_name, version);
+        let runtime = get_runtime(py)?;
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
         })
     }
     #[pyo3(signature = (max_results = None))]
@@ -702,6 +749,48 @@ impl PyUnityCatalogClient {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
+        })
+    }
+    #[pyo3(
+        signature = (
+            catalog_name = None,
+            schema_name = None,
+            max_results = None,
+            include_browse = None
+        )
+    )]
+    pub fn list_registered_models(
+        &self,
+        py: Python,
+        catalog_name: Option<String>,
+        schema_name: Option<String>,
+        max_results: Option<i32>,
+        include_browse: Option<bool>,
+    ) -> PyUnityCatalogResult<::std::vec::Vec<PyRegisteredModel>> {
+        let mut request = self.client.list_registered_models();
+        request = request.with_catalog_name(catalog_name);
+        request = request.with_schema_name(schema_name);
+        request = request.with_max_results(max_results);
+        request = request.with_include_browse(include_browse);
+        let runtime = get_runtime(py)?;
+        py.allow_threads(|| {
+            let result: ::std::vec::Vec<_> =
+                runtime.block_on(async move { request.into_stream().try_collect().await })?;
+            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyRegisteredModel::from).collect())
+        })
+    }
+    #[pyo3(signature = (model_info))]
+    pub fn create_registered_model(
+        &self,
+        py: Python,
+        model_info: PyCreateRegisteredModel,
+    ) -> PyUnityCatalogResult<PyRegisteredModel> {
+        let request = self.client.create_registered_model(model_info.into());
+        let runtime = get_runtime(py)?;
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyRegisteredModel::from(result))
         })
     }
     #[pyo3(signature = (catalog_name, max_results = None, include_browse = None))]
@@ -985,6 +1074,30 @@ impl PyUnityCatalogClient {
             Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
         })
     }
+    #[pyo3(signature = (catalog_name, schema_name, model_name, version, operation))]
+    pub fn generate_temporary_model_version_credentials(
+        &self,
+        py: Python,
+        catalog_name: String,
+        schema_name: String,
+        model_name: String,
+        version: i64,
+        operation: PyGenerateTemporaryModelVersionCredentialsRequestOperation,
+    ) -> PyUnityCatalogResult<PyTemporaryCredential> {
+        let request = self.client.generate_temporary_model_version_credentials(
+            catalog_name,
+            schema_name,
+            model_name,
+            version,
+            operation.into(),
+        );
+        let runtime = get_runtime(py)?;
+        py.allow_threads(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
+        })
+    }
     #[pyo3(
         signature = (
             catalog_name,
@@ -1104,6 +1217,17 @@ impl PyUnityCatalogClient {
     pub fn recipient(&self, recipient_name: String) -> PyRecipientClient {
         PyRecipientClient {
             client: self.client.recipient(recipient_name),
+        }
+    }
+    pub fn registered_model(
+        &self,
+        catalog_name: String,
+        schema_name: String,
+        registered_model_name: String,
+    ) -> PyRegisteredModelClient {
+        let full_name = format!("{}.{}.{}", catalog_name, schema_name, registered_model_name);
+        PyRegisteredModelClient {
+            client: self.client.registered_model_from_full_name(full_name),
         }
     }
     pub fn schema(&self, catalog_name: String, schema_name: String) -> PySchemaClient {

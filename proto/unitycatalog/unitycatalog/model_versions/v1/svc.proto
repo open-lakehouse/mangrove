@@ -1,0 +1,214 @@
+syntax = "proto3";
+
+package unitycatalog.model_versions.v1;
+
+import "buf/validate/validate.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "unitycatalog/model_versions/v1/models.proto";
+
+// List model versions of a registered model.
+message ListModelVersionsRequest {
+  // The full three-level name of the registered model (catalog.schema.model)
+  // whose versions are being listed.
+  string full_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "unitycatalog.io/RegisteredModel"}
+  ];
+
+  // The maximum number of results per page that should be returned.
+  optional int32 max_results = 2 [
+    (buf.validate.field).int32 = {
+      gt: 0
+      lte: 1000
+    },
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // Opaque pagination token to go to next page based on previous query.
+  optional string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Whether to include model versions in the response for which the principal can
+  // only access selective metadata for.
+  optional bool include_browse = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// List model versions response.
+message ListModelVersionsResponse {
+  // The model versions returned.
+  repeated ModelVersion model_versions = 1;
+
+  // The next_page_token value to include in the next List request.
+  optional string next_page_token = 2;
+}
+
+// Create a new model version.
+message CreateModelVersionRequest {
+  // The model version to create.
+  CreateModelVersion model_version = 1 [
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+// Get a model version.
+message GetModelVersionRequest {
+  // The full three-level name of the parent registered model
+  // (catalog.schema.model).
+  string full_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "unitycatalog.io/RegisteredModel"}
+  ];
+
+  // The integer version number of the model version.
+  int64 version = 2 [
+    (buf.validate.field).int64.gt = 0,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Whether to include model versions in the response for which the principal can
+  // only access selective metadata for.
+  optional bool include_browse = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Update a model version.
+message UpdateModelVersionRequest {
+  // The full three-level name of the parent registered model
+  // (catalog.schema.model).
+  string full_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "unitycatalog.io/RegisteredModel"}
+  ];
+
+  // The integer version number of the model version.
+  int64 version = 2 [
+    (buf.validate.field).int64.gt = 0,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // User-provided free-form text description.
+  optional string comment = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Delete a model version.
+message DeleteModelVersionRequest {
+  // The full three-level name of the parent registered model
+  // (catalog.schema.model).
+  string full_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "unitycatalog.io/RegisteredModel"}
+  ];
+
+  // The integer version number of the model version.
+  int64 version = 2 [
+    (buf.validate.field).int64.gt = 0,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+// Finalize a model version.
+//
+// Transitions a model version from PENDING_REGISTRATION to READY once the client
+// has finished writing all artifacts to the version's storage location.
+message FinalizeModelVersionRequest {
+  // The full three-level name of the parent registered model
+  // (catalog.schema.model).
+  string full_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "unitycatalog.io/RegisteredModel"}
+  ];
+
+  // The integer version number of the model version to finalize.
+  int64 version = 2 [
+    (buf.validate.field).int64.gt = 0,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+// Manage model versions in the service.
+//
+// A model version belongs to a registered model and is identified by the model's
+// three-level name plus a server-assigned integer version. It carries its own
+// artifact storage location and READY/PENDING lifecycle.
+service ModelVersionsService {
+  // List model versions
+  //
+  // List the model versions of the specified registered model. If the caller is
+  // the metastore admin, all model versions are returned. Otherwise, the caller
+  // must have the appropriate privileges on the parent model.
+  rpc ListModelVersions(ListModelVersionsRequest) returns (ListModelVersionsResponse) {
+    option (google.api.http) = {get: "/models/{full_name}/versions"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "ListModelVersions"};
+  }
+
+  // Create a model version
+  //
+  // Creates a new model version in PENDING_REGISTRATION status. The server
+  // assigns the version number and a storage location for the artifacts. The
+  // caller must be a metastore admin or the owner of the parent registered model.
+  rpc CreateModelVersion(CreateModelVersionRequest) returns (ModelVersion) {
+    option (google.api.http) = {
+      post: "/models/versions"
+      body: "model_version"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "CreateModelVersion"};
+  }
+
+  // Get a model version
+  //
+  // Gets a model version by its parent model name and version number.
+  rpc GetModelVersion(GetModelVersionRequest) returns (ModelVersion) {
+    option (google.api.http) = {get: "/models/{full_name}/versions/{version}"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "GetModelVersion"};
+  }
+
+  // Update a model version
+  //
+  // Updates the model version that matches the supplied name and version.
+  rpc UpdateModelVersion(UpdateModelVersionRequest) returns (ModelVersion) {
+    option (google.api.http) = {
+      patch: "/models/{full_name}/versions/{version}"
+      body: "*"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "UpdateModelVersion"};
+  }
+
+  // Delete a model version
+  //
+  // Deletes the model version that matches the supplied name and version. For the
+  // deletion to succeed, the caller must be the owner of the parent registered
+  // model.
+  rpc DeleteModelVersion(DeleteModelVersionRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/models/{full_name}/versions/{version}"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "DeleteModelVersion"};
+  }
+
+  // Finalize a model version
+  //
+  // Transitions a model version to READY once all artifacts have been written to
+  // its storage location.
+  rpc FinalizeModelVersion(FinalizeModelVersionRequest) returns (ModelVersion) {
+    option (google.api.http) = {
+      patch: "/models/{full_name}/versions/{version}/finalize"
+      body: "*"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "FinalizeModelVersion"};
+  }
+}

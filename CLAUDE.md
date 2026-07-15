@@ -1,5 +1,8 @@
 # Repository Guidelines
 
+For always-applied agent rules (branching, testing, bun.lock hygiene), see
+[`AGENTS.md`](AGENTS.md) and [`.agents/rules/`](.agents/rules/).
+
 ## Project Structure & Module Organization
 
 The project follows a multi-crate Rust workspace architecture with language bindings:
@@ -28,7 +31,8 @@ The project follows a multi-crate Rust workspace architecture with language bind
 
 We use [`just`](https://just.systems/) as the primary task runner. Key commands:
 
-**Code generation** (requires the `../trestle` sibling checkout — see [Code generation](#code-generation)):
+**Code generation** (requires the `trestle` CLI and a local trestle source checkout — see [Code generation](#code-generation)):
+- `just configure-trestle-deps` - Patch `olai-http` / `olai-store` from local trestle (run once per clone behind a crates.io proxy)
 - `just generate` - Run complete code generation pipeline
 - `just generate-code` - Run REST server/client code generation
 - `just generate-proto` - Run code generation pipeline for Protocol Buffers
@@ -74,11 +78,36 @@ Much of the code is generated from the proto definitions in `proto/`. The fast
 edit/check loop (`cargo check`, `cargo test`) does **not** require any of the
 generation tooling — you only need it when changing proto or regenerating.
 
-**Prerequisites (only needed to run `just generate*`):**
-- The codegen tool lives in a **sibling `../trestle` checkout** — clone it
-  adjacent to this repo (`just generate-code` / `generate-openapi` shell out to
-  `../trestle/crates/trestle`). Without it, those targets fail with a
-  "manifest path does not exist" error.
+**Prerequisites (only needed to run `just generate*` or build behind a crates.io proxy):**
+
+- **`trestle` CLI** on `PATH` — used by `just generate-openapi`, `just generate-code`,
+  and related recipes. Install via Homebrew:
+
+  ```bash
+  brew install open-lakehouse/tap/trestle
+  ```
+
+  Verify with `trestle --version`. The release binary is sufficient for codegen;
+  it does not ship the `olai-http` / `olai-store` library crates.
+
+- **Trestle source checkout** — clone [`trestle`](https://github.com/open-lakehouse/trestle)
+  adjacent to this repo as `../trestle` (or set `TRESTLE_ROOT` to another path).
+  The checkout provides:
+  - `olai-http` / `olai-store` crates (patched into Cargo when crates.io or a
+    corporate proxy cannot resolve the published versions)
+  - bundled SQL migrations referenced by `just build-sqlx`
+  - proto fixtures under `crates/olai-codegen` and `crates/trestle-codegen`
+
+  When building locally behind a crates.io age/proxy filter, run once per clone:
+
+  ```bash
+  just configure-trestle-deps
+  ```
+
+  This writes a gitignored `.cargo/config.toml` with `[patch.crates-io]` path
+  overrides — CI is unaffected and continues to resolve from crates.io. See
+  `.github/CONTRIBUTING.md` for the rationale.
+
 - `buf` (proto compiler), `uv` (Python), and `bun`/`bunx` (OpenAPI bundling).
 
 **Commands:** `just generate` runs the full pipeline; `just generate-proto`,
@@ -141,6 +170,8 @@ Pre-commit hooks enforce formatting with Biome, Ruff, and typos checking.
 
 ## Tooling
 
+- **`trestle`** - Proto-driven codegen CLI (`brew install open-lakehouse/tap/trestle`);
+  required for `just generate*` and local `olai-http` / `olai-store` path patches
 - **`uv`** - Python package manager; manages the `python/*` UV workspace
 - **`bun`** - JavaScript/TypeScript package manager for the npm workspaces
 - **Maturin** - Builds Python wheels from PyO3 Rust crates

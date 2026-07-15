@@ -18,10 +18,10 @@ import { DeleteEntityDialog } from "./DeleteEntityDialog";
 import type {
   AnyCreateRequest,
   AnyEditRequest,
-  CreateRequest,
   DeleteRequest,
   EditRequest,
 } from "./dialog-types";
+import { isCatalogCreateRequest } from "./dialog-types";
 import { EditEntityDialog } from "./EditEntityDialog";
 import { CredentialDialog } from "./storage/CredentialDialog";
 import { ExternalLocationDialog } from "./storage/ExternalLocationDialog";
@@ -29,6 +29,7 @@ import { ExternalLocationDialog } from "./storage/ExternalLocationDialog";
 export type {
   AnyCreateRequest,
   AnyEditRequest,
+  CatalogCreateRequest,
   CreateRequest,
   DeletableKind,
   DeleteRequest,
@@ -75,14 +76,9 @@ export function CatalogDialogsProvider({ children }: { children: ReactNode }) {
       {createReq?.kind === "external_location" && (
         <ExternalLocationDialog mode="create" onClose={closeCreate} />
       )}
-      {createReq &&
-        createReq.kind !== "credential" &&
-        createReq.kind !== "external_location" && (
-          <CreateEntityDialog
-            request={createReq as CreateRequest}
-            onClose={closeCreate}
-          />
-        )}
+      {createReq && isCatalogCreateRequest(createReq) && (
+        <CreateEntityDialog request={createReq} onClose={closeCreate} />
+      )}
 
       {editReq?.kind === "credential" && (
         <CredentialDialog mode="edit" name={editReq.name} onClose={closeEdit} />

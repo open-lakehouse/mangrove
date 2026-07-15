@@ -36,6 +36,9 @@ ffi/examples/read-table/build
 # Dependency directories
 node_modules/
 
+# Bun test coverage output (lcov.info for Codecov upload)
+coverage/
+
 .claude/worktrees/
 
 web/

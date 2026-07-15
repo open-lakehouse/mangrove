@@ -35,7 +35,7 @@ export function TablePreview({
   if (!svc.supports({ format, tableType })) return null;
 
   return (
-    <div className="mt-6">
+    <div>
       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <Table2 className="h-4 w-4" />
         Data preview

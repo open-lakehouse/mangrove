@@ -6,7 +6,13 @@
 // through this hook so the encoding stays in one place.
 import { useNavigate, useSearch } from "@tanstack/react-router";
 
-import { SELECTABLE_KINDS, type SelectableKind, type Selection } from "./types";
+import {
+  OBJECT_KINDS,
+  type ObjectKind,
+  SELECTABLE_KINDS,
+  type SelectableKind,
+  type Selection,
+} from "./types";
 
 /** Route id the selection lives on (see routeTree.tsx `validateSearch`). */
 const FROM = "/catalog";
@@ -27,23 +33,64 @@ export function decodeSelection(
   return { kind, fullName };
 }
 
+/** Validate the raw `tab` search param down to a known object kind. */
+function decodeSchemaTab(raw: string | undefined): ObjectKind | undefined {
+  return OBJECT_KINDS.includes(raw as ObjectKind)
+    ? (raw as ObjectKind)
+    : undefined;
+}
+
 export function useCatalogSelection() {
   const raw = useSearch({ from: FROM, select: (s) => s.sel });
+  // Which child-kind tab a selected schema opens on. Lives alongside `sel` so a
+  // schema view is deep-linkable to a specific kind (Tables/Volumes/...), and so
+  // the tree's kind rows and SchemaDetail's filter bar stay in sync.
+  const rawTab = useSearch({ from: FROM, select: (s) => s.tab });
   const navigate = useNavigate({ from: FROM });
   const selection = decodeSelection(raw);
+  const schemaTab = decodeSchemaTab(rawTab);
 
+  // `prev` is the route's full search object; typed via the app's router
+  // registration (annotated here so the package also type-checks standalone,
+  // where no route is registered).
   function select(next: Selection | undefined) {
     navigate({
-      // `prev` is the route's full search object; typed via the app's router
-      // registration (annotated here so the package also type-checks standalone,
-      // where no route is registered).
+      // A normal selection clears any schema tab: the tab only scopes a schema
+      // view, and a fresh selection should open schemas on their default kind.
       search: (prev: Record<string, unknown>) => ({
         ...prev,
         sel: next ? encodeSelection(next) : undefined,
+        tab: undefined,
       }),
       replace: true,
     });
   }
 
-  return { selection, select } as const;
+  /** Select a schema and open it on a specific child-kind tab (tree kind rows). */
+  function selectSchemaChild(schemaFullName: string, kind: ObjectKind) {
+    navigate({
+      search: (prev: Record<string, unknown>) => ({
+        ...prev,
+        sel: encodeSelection({ kind: "schema", fullName: schemaFullName }),
+        tab: kind,
+      }),
+      replace: true,
+    });
+  }
+
+  /** Change only the active schema tab (SchemaDetail's filter bar). */
+  function setSchemaTab(kind: ObjectKind) {
+    navigate({
+      search: (prev: Record<string, unknown>) => ({ ...prev, tab: kind }),
+      replace: true,
+    });
+  }
+
+  return {
+    selection,
+    schemaTab,
+    select,
+    selectSchemaChild,
+    setSchemaTab,
+  } as const;
 }

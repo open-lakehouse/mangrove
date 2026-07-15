@@ -9,6 +9,7 @@ pub mod functions;
 pub mod policies;
 pub mod providers;
 pub mod recipients;
+pub mod registered_models;
 pub mod schemas;
 pub mod shares;
 pub mod staging_tables;
@@ -24,6 +25,7 @@ use crate::codegen::functions::NapiFunctionClient;
 use crate::codegen::policies::NapiPolicyClient;
 use crate::codegen::providers::NapiProviderClient;
 use crate::codegen::recipients::NapiRecipientClient;
+use crate::codegen::registered_models::NapiRegisteredModelClient;
 use crate::codegen::schemas::NapiSchemaClient;
 use crate::codegen::shares::NapiShareClient;
 use crate::codegen::staging_tables::NapiStagingTableClient;
@@ -45,9 +47,11 @@ use unitycatalog_common::models::catalogs::v1::*;
 use unitycatalog_common::models::credentials::v1::*;
 use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
+use unitycatalog_common::models::model_versions::v1::*;
 use unitycatalog_common::models::policies::v1::*;
 use unitycatalog_common::models::providers::v1::*;
 use unitycatalog_common::models::recipients::v1::*;
+use unitycatalog_common::models::registered_models::v1::*;
 use unitycatalog_common::models::schemas::v1::*;
 use unitycatalog_common::models::shares::v1::*;
 use unitycatalog_common::models::staging_tables::v1::*;
@@ -516,49 +520,118 @@ impl NapiUnityCatalogClient {
     #[napi(catch_unwind)]
     pub async fn create_function(
         &self,
-        name: String,
-        catalog_name: String,
-        schema_name: String,
-        data_type: String,
-        full_data_type: String,
-        parameter_style: i32,
-        is_deterministic: bool,
-        sql_data_access: i32,
-        is_null_call: bool,
-        security_type: i32,
-        routine_body: i32,
-        routine_definition: Option<String>,
-        routine_body_language: Option<String>,
-        comment: Option<String>,
-        properties: Option<HashMap<String, String>>,
+        function_info: napi::bindgen_prelude::Buffer,
     ) -> napi::Result<Buffer> {
         let mut request = self.client.create_function(
-            name,
-            catalog_name,
-            schema_name,
-            data_type,
-            full_data_type,
-            <ParameterStyle as buffa::Enumeration>::from_i32(parameter_style).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-            is_deterministic,
-            <SqlDataAccess as buffa::Enumeration>::from_i32(sql_data_access).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-            is_null_call,
-            <SecurityType as buffa::Enumeration>::from_i32(security_type).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-            <RoutineBody as buffa::Enumeration>::from_i32(routine_body).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
+            <CreateFunction as buffa::Message>::decode_from_slice(function_info.as_ref()).map_err(
+                |e| {
+                    napi::Error::new(
+                        napi::Status::GenericFailure,
+                        format!("invalid {} payload: {e}", stringify!(CreateFunction)),
+                    )
+                },
+            )?,
         );
-        request = request.with_routine_definition(routine_definition);
-        request = request.with_routine_body_language(routine_body_language);
+        request
+            .await
+            .map(|item| Buffer::from(item.encode_to_vec()))
+            .default_error()
+    }
+    #[napi(catch_unwind)]
+    pub async fn list_model_versions(
+        &self,
+        full_name: String,
+        max_results: Option<i32>,
+        include_browse: Option<bool>,
+    ) -> napi::Result<Vec<Buffer>> {
+        let mut request = self.client.list_model_versions(full_name);
+        request = request.with_max_results(max_results);
+        request = request.with_include_browse(include_browse);
+        request
+            .into_stream()
+            .map_ok(|item| Buffer::from(item.encode_to_vec()))
+            .try_collect::<Vec<_>>()
+            .await
+            .default_error()
+    }
+    #[napi(catch_unwind)]
+    pub fn list_model_versions_stream(
+        &self,
+        env: Env,
+        full_name: String,
+        max_results: Option<i32>,
+        include_browse: Option<bool>,
+    ) -> napi::Result<ReadableStream<'_, Buffer>> {
+        let mut request = self.client.list_model_versions(full_name);
+        request = request.with_max_results(max_results);
+        request = request.with_include_browse(include_browse);
+        ReadableStream::new(
+            &env,
+            request.into_stream().map(|item| {
+                item.map(|v| Buffer::from(v.encode_to_vec()))
+                    .map_err(|e| crate::error::convert_error(&e))
+            }),
+        )
+    }
+    #[napi(catch_unwind)]
+    pub async fn create_model_version(
+        &self,
+        model_version: napi::bindgen_prelude::Buffer,
+    ) -> napi::Result<Buffer> {
+        let mut request = self.client.create_model_version(
+            <CreateModelVersion as buffa::Message>::decode_from_slice(model_version.as_ref())
+                .map_err(|e| {
+                    napi::Error::new(
+                        napi::Status::GenericFailure,
+                        format!("invalid {} payload: {e}", stringify!(CreateModelVersion)),
+                    )
+                })?,
+        );
+        request
+            .await
+            .map(|item| Buffer::from(item.encode_to_vec()))
+            .default_error()
+    }
+    #[napi(catch_unwind)]
+    pub async fn get_model_version(
+        &self,
+        full_name: String,
+        version: i64,
+        include_browse: Option<bool>,
+    ) -> napi::Result<Buffer> {
+        let mut request = self.client.get_model_version(full_name, version);
+        request = request.with_include_browse(include_browse);
+        request
+            .await
+            .map(|item| Buffer::from(item.encode_to_vec()))
+            .default_error()
+    }
+    #[napi(catch_unwind)]
+    pub async fn update_model_version(
+        &self,
+        full_name: String,
+        version: i64,
+        comment: Option<String>,
+    ) -> napi::Result<Buffer> {
+        let mut request = self.client.update_model_version(full_name, version);
         request = request.with_comment(comment);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
+        request
+            .await
+            .map(|item| Buffer::from(item.encode_to_vec()))
+            .default_error()
+    }
+    #[napi(catch_unwind)]
+    pub async fn delete_model_version(&self, full_name: String, version: i64) -> napi::Result<()> {
+        let mut request = self.client.delete_model_version(full_name, version);
+        request.await.default_error()
+    }
+    #[napi(catch_unwind)]
+    pub async fn finalize_model_version(
+        &self,
+        full_name: String,
+        version: i64,
+    ) -> napi::Result<Buffer> {
+        let mut request = self.client.finalize_model_version(full_name, version);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
@@ -668,6 +741,67 @@ impl NapiUnityCatalogClient {
             request = request.with_properties(properties);
         }
         request = request.with_expiration_time(expiration_time);
+        request
+            .await
+            .map(|item| Buffer::from(item.encode_to_vec()))
+            .default_error()
+    }
+    #[napi(catch_unwind)]
+    pub async fn list_registered_models(
+        &self,
+        catalog_name: Option<String>,
+        schema_name: Option<String>,
+        max_results: Option<i32>,
+        include_browse: Option<bool>,
+    ) -> napi::Result<Vec<Buffer>> {
+        let mut request = self.client.list_registered_models();
+        request = request.with_catalog_name(catalog_name);
+        request = request.with_schema_name(schema_name);
+        request = request.with_max_results(max_results);
+        request = request.with_include_browse(include_browse);
+        request
+            .into_stream()
+            .map_ok(|item| Buffer::from(item.encode_to_vec()))
+            .try_collect::<Vec<_>>()
+            .await
+            .default_error()
+    }
+    #[napi(catch_unwind)]
+    pub fn list_registered_models_stream(
+        &self,
+        env: Env,
+        catalog_name: Option<String>,
+        schema_name: Option<String>,
+        max_results: Option<i32>,
+        include_browse: Option<bool>,
+    ) -> napi::Result<ReadableStream<'_, Buffer>> {
+        let mut request = self.client.list_registered_models();
+        request = request.with_catalog_name(catalog_name);
+        request = request.with_schema_name(schema_name);
+        request = request.with_max_results(max_results);
+        request = request.with_include_browse(include_browse);
+        ReadableStream::new(
+            &env,
+            request.into_stream().map(|item| {
+                item.map(|v| Buffer::from(v.encode_to_vec()))
+                    .map_err(|e| crate::error::convert_error(&e))
+            }),
+        )
+    }
+    #[napi(catch_unwind)]
+    pub async fn create_registered_model(
+        &self,
+        model_info: napi::bindgen_prelude::Buffer,
+    ) -> napi::Result<Buffer> {
+        let mut request = self.client.create_registered_model(
+            <CreateRegisteredModel as buffa::Message>::decode_from_slice(model_info.as_ref())
+                .map_err(|e| {
+                    napi::Error::new(
+                        napi::Status::GenericFailure,
+                        format!("invalid {} payload: {e}", stringify!(CreateRegisteredModel)),
+                    )
+                })?,
+        );
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
@@ -994,6 +1128,35 @@ impl NapiUnityCatalogClient {
             .default_error()
     }
     #[napi(catch_unwind)]
+    pub async fn generate_temporary_model_version_credentials(
+        &self,
+        catalog_name: String,
+        schema_name: String,
+        model_name: String,
+        version: i64,
+        operation: i32,
+    ) -> napi::Result<Buffer> {
+        let mut request = self
+            .client
+            .generate_temporary_model_version_credentials(
+                catalog_name,
+                schema_name,
+                model_name,
+                version,
+                <generate_temporary_model_version_credentials_request::Operation as buffa::Enumeration>::from_i32(
+                        operation,
+                    )
+                    .ok_or_else(|| napi::Error::new(
+                        napi::Status::GenericFailure,
+                        "invalid enum value",
+                    ))?,
+            );
+        request
+            .await
+            .map(|item| Buffer::from(item.encode_to_vec()))
+            .default_error()
+    }
+    #[napi(catch_unwind)]
     pub async fn list_volumes(
         &self,
         catalog_name: String,
@@ -1126,6 +1289,18 @@ impl NapiUnityCatalogClient {
     pub fn recipient(&self, recipient_name: String) -> NapiRecipientClient {
         NapiRecipientClient {
             client: self.client.recipient(recipient_name),
+        }
+    }
+    #[napi]
+    pub fn registered_model(
+        &self,
+        catalog_name: String,
+        schema_name: String,
+        registered_model_name: String,
+    ) -> NapiRegisteredModelClient {
+        let full_name = format!("{}.{}.{}", catalog_name, schema_name, registered_model_name);
+        NapiRegisteredModelClient {
+            client: self.client.registered_model_from_full_name(full_name),
         }
     }
     #[napi]

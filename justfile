@@ -2,6 +2,14 @@ mod dev 'dev/justfile'
 
 set dotenv-load
 
+# Patch olai-http / olai-store from the local trestle checkout (.cargo/config.toml,
+# gitignored). Run once per clone when crates.io or a corporate proxy cannot resolve
+# the published versions. Requires `trestle` on PATH and a source checkout (../trestle
+# or TRESTLE_ROOT).
+[group('dev')]
+configure-trestle-deps:
+    {{ justfile_directory() }}/dev/scripts/configure-trestle-deps.sh
+
 # Show available commands
 _default:
     @just --list --justfile {{ justfile() }}
@@ -46,7 +54,7 @@ generate-openapi-sharing:
 generate-openapi:
     buf generate --template '{"version":"v2","plugins":[{"remote":"buf.build/bufbuild/protoschema-jsonschema:v0.6.0","opt": ["target=proto-strict-bundle"], "out":"openapi/jsonschema"}]}' proto
     buf build --output {{ justfile_directory() }}/descriptors.bin proto/unitycatalog
-    cargo run --manifest-path ../trestle/crates/trestle/Cargo.toml --bin trestle -- enrich-openapi \
+    trestle enrich-openapi \
       --jsonschema-dir openapi/jsonschema \
       --descriptors {{ justfile_directory() }}/descriptors.bin
     rm -f {{ justfile_directory() }}/descriptors.bin
@@ -59,7 +67,7 @@ generate-openapi:
 [group('codegen')]
 generate-code:
     buf build --output {{ justfile_directory() }}/descriptors.bin proto/unitycatalog
-    cargo run --manifest-path ../trestle/crates/trestle/Cargo.toml --bin trestle -- generate --config trestle.yaml \
+    trestle generate --config trestle.yaml \
       --descriptors {{ justfile_directory() }}/descriptors.bin
     rm {{ justfile_directory() }}/descriptors.bin
     just fmt
@@ -92,7 +100,7 @@ generate-code:
 [group('codegen')]
 generate-code-sharing:
     buf build --output {{ justfile_directory() }}/sharing-descriptors.bin proto/sharing
-    cargo run --manifest-path ../trestle/crates/trestle/Cargo.toml --bin trestle -- generate --config trestle.sharing.yaml \
+    trestle generate --config trestle.sharing.yaml \
       --descriptors {{ justfile_directory() }}/sharing-descriptors.bin
     rm {{ justfile_directory() }}/sharing-descriptors.bin
     just fmt
@@ -117,9 +125,12 @@ generate-query-contract:
 # Regenerate proto-gen test fixture descriptors from proto/ source files.
 [group('codegen')]
 generate-proto-gen-fixtures:
-    buf dep update ../trestle/crates/trestle-codegen/proto
-    buf build --output {{ justfile_directory() }}/../trestle/crates/olai-codegen/proto/example.bin \
-      ../trestle/crates/olai-codegen/proto/
+    #!/usr/bin/env bash
+    set -euo pipefail
+    trestle_root="$({{ justfile_directory() }}/dev/scripts/trestle-root.sh)"
+    buf dep update "$trestle_root/crates/trestle-codegen/proto"
+    buf build --output "$trestle_root/crates/olai-codegen/proto/example.bin" \
+      "$trestle_root/crates/olai-codegen/proto/"
 
 # run the development REST server (ephemeral in-memory SQLite; auto-migrated)
 [group('dev')]
@@ -222,6 +233,88 @@ rest-ui-wasm-seeded: ui-build-wasm
     echo "[seed] ready — open http://localhost:8080 and browse to demo.default.orders"
     echo "[seed] (Ctrl-C to stop the server and clean up Azurite + ./web)"
     wait "$server_pid"
+
+# Run the Vite UI dev server (HMR) against a live, seeded backend — the fast
+# inner loop for UI work. Unlike the `rest-ui*` recipes (which build the SPA and
+# let uc-server serve it on one origin), this runs the Vite dev server on :3003
+# and proxies `/api` to uc-server on :8080 (see node/app/vite.config.ts), so
+# source edits hot-reload without a rebuild. No wasm — the default (non-preview)
+# UI build.
+#
+# Backend mirrors the seeded flow but persists: durable Postgres (started via
+# compose + migrated) plus Azurite-backed managed storage, seeded with the demo
+# catalog/schema (create tables via the UI). It skips the demo Delta-table
+# datagen `rest-ui-wasm-seeded` does — that only feeds the wasm query preview
+# and trips a delta-rs nested-runtime panic — so no `delta` feature build.
+#
+# On Ctrl-C it tears down gracefully: stops the UC server and the Azurite
+# container. The shared Postgres container is left running (stop it yourself with
+# `docker compose -f dev/compose.yaml stop postgres_uc_dev`).
+#
+# Requires Docker (Postgres + Azurite) and npm. No wasm toolchain needed.
+[group('dev')]
+ui-dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export AZURITE_BLOB_STORAGE_URL="http://127.0.0.1:10000"
+    export PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres PGDATABASE=postgres
+    compose_file="{{ justfile_directory() }}/dev/compose.yaml"
+    config="{{ justfile_directory() }}/dev/config-azurite-pg.yaml"
+
+    # Graceful shutdown: stop the background UC server (SIGTERM → it flushes via
+    # `with_graceful_shutdown`) and tear down the Azurite container the seed
+    # script started. Postgres is intentionally left running (it is the shared
+    # default-profile dev container). Idempotent guard since EXIT also fires
+    # after INT/TERM.
+    cleaned=""
+    cleanup() {
+        [ -n "$cleaned" ] && return
+        cleaned=1
+        echo ""
+        echo "[ui-dev] shutting down…"
+        if [ -n "${server_pid:-}" ] && kill -0 "$server_pid" 2>/dev/null; then
+            echo "[ui-dev]   stopping UC server (pid $server_pid)…"
+            kill -TERM "$server_pid" 2>/dev/null || true
+            for _ in $(seq 1 100); do
+                kill -0 "$server_pid" 2>/dev/null || break
+                sleep 0.1
+            done
+            kill -KILL "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+        fi
+        echo "[ui-dev]   tearing down Azurite (docker compose rm -sf azurite_uc_dev)…"
+        docker compose -f "$compose_file" --profile azurite rm -sfv azurite_uc_dev >/dev/null 2>&1 || true
+        echo "[ui-dev] done. (Postgres left running: docker compose -f dev/compose.yaml stop postgres_uc_dev)"
+    }
+    trap cleanup EXIT INT TERM
+
+    # Durable backend: start Postgres and migrate first — `serve` does not
+    # migrate a durable backend.
+    echo "[ui-dev] starting Postgres…"
+    docker compose -f "$compose_file" up -d --wait postgres_uc_dev
+    echo "[ui-dev] applying migrations…"
+    cargo run -p olai-uc-server --features bin --bin uc-server -- migrate -c "$config"
+
+    echo "[ui-dev] starting UC server (Postgres + Azurite) in the background…"
+    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- \
+        serve -c "$config" &
+    server_pid=$!
+
+    # Seed Azurite + UC (container, CORS, credential, external location, catalog,
+    # schema). The script starts the Azurite container and waits for the server's
+    # /catalogs to answer. Unlike `rest-ui-wasm-seeded`, we do NOT write the demo
+    # managed Delta table — that exists only to feed the in-browser wasm query
+    # preview (which this flow doesn't build), and its datagen example trips a
+    # delta-rs nested-runtime panic. The seeded catalog/schema is enough to
+    # exercise the UI; create tables through the UI itself as needed.
+    bash dev/scripts/seed-azurite.sh
+
+    echo ""
+    echo "[ui-dev] backend ready on http://localhost:8080 — starting Vite dev server…"
+    echo "[ui-dev] open the printed URL (http://localhost:3003); /api proxies to :8080"
+    echo "[ui-dev] (Ctrl-C to stop the dev server, UC server, and Azurite)"
+    # Foreground: Ctrl-C ends the dev server, then the EXIT trap cleans up.
+    npm run dev --workspace @open-lakehouse/uc-app
 
 # build the bundled single-page app into node/app/dist
 [group('build')]
@@ -362,7 +455,7 @@ build-sqlx: _start_pg_sqlx
     # present too. Apply olai-store's own Postgres migrations first (piped straight
     # in, bypassing the `_sqlx_migrations` ledger so the two migration sources don't
     # collide on it), then the mangrove-local `delta_commits` schema.
-    cat ../trestle/crates/olai-store/migrations/postgres/*.sql \
+    cat "$(bash {{ justfile_directory() }}/dev/scripts/trestle-root.sh)/crates/olai-store/migrations/postgres"/*.sql \
         | docker exec -i unitycatalog-sqlx-pg psql -U postgres -d postgres -v ON_ERROR_STOP=1
     DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres cargo sqlx migrate run --source ./crates/postgres/migrations
     # Prepare the postgres crate's queries from its OWN directory (not

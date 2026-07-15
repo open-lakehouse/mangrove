@@ -19,6 +19,12 @@ export type TableInfo = Schemas["TableInfo"];
 /** A single column of a table. */
 export type ColumnInfo = Schemas["ColumnInfo"];
 
+/** Managed vs external (and view) table discriminator. */
+export type TableType = Schemas["TableType"];
+
+/** A table's underlying data-source format (DELTA, PARQUET, CSV, …). */
+export type DataSourceFormat = Schemas["DataSourceFormat"];
+
 /** A Unity Catalog volume (schema-level), managed or external storage. */
 export type VolumeInfo = Schemas["VolumeInfo"];
 

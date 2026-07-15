@@ -103,3 +103,43 @@ impl IntoFuture for GenerateTemporaryVolumeCredentialsBuilder {
         Box::pin(async move { client.generate_temporary_volume_credentials(&request).await })
     }
 }
+/// Builder for temporary model version credentials
+pub struct GenerateTemporaryModelVersionCredentialsBuilder {
+    client: TemporaryCredentialClient,
+    request: GenerateTemporaryModelVersionCredentialsRequest,
+}
+impl GenerateTemporaryModelVersionCredentialsBuilder {
+    /// Create a new builder instance.
+    /// Obtain via the corresponding method on `TemporaryCredentialClient`.
+    pub(crate) fn new(
+        client: TemporaryCredentialClient,
+        catalog_name: impl Into<String>,
+        schema_name: impl Into<String>,
+        model_name: impl Into<String>,
+        version: i64,
+        operation: generate_temporary_model_version_credentials_request::Operation,
+    ) -> Self {
+        let request = GenerateTemporaryModelVersionCredentialsRequest {
+            catalog_name: catalog_name.into(),
+            schema_name: schema_name.into(),
+            model_name: model_name.into(),
+            version,
+            operation: buffa::EnumValue::Known(operation),
+            ..Default::default()
+        };
+        Self { client, request }
+    }
+}
+impl IntoFuture for GenerateTemporaryModelVersionCredentialsBuilder {
+    type Output = Result<TemporaryCredential>;
+    type IntoFuture = BoxFut<'static, Self::Output>;
+    fn into_future(self) -> Self::IntoFuture {
+        let client = self.client;
+        let request = self.request;
+        Box::pin(async move {
+            client
+                .generate_temporary_model_version_credentials(&request)
+                .await
+        })
+    }
+}
