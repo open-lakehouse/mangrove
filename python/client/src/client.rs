@@ -1,8 +1,8 @@
 use olai_http::CloudClient;
 use pyo3::prelude::*;
 use unitycatalog_client::{
-    PathOperation, TableOperation, TableReference, TemporaryCredentialClient, VolumeOperation,
-    VolumeReference,
+    ModelVersionOperation, PathOperation, TableOperation, TableReference,
+    TemporaryCredentialClient, VolumeOperation, VolumeReference,
 };
 // Return the generated `#[pyclass]` wrapper — the bare buffa `TemporaryCredential`
 // model is not a Python object.
@@ -143,6 +143,42 @@ impl PyTemporaryCredentialClient {
             let (credential, url) =
                 runtime.block_on(self.client.temporary_path_credential(path, op, dry_run))?;
             Ok::<_, PyUnityCatalogError>((PyTemporaryCredential::from(credential), url.to_string()))
+        })
+    }
+
+    /// Vend a temporary credential for a Unity Catalog model version.
+    ///
+    /// `full_name` is the three-level `catalog.schema.model` name of the parent
+    /// registered model; `version` is its integer version number. Server support
+    /// requires the metastore's `external_access_enabled` flag and the caller's
+    /// `EXTERNAL_USE_SCHEMA` privilege.
+    #[pyo3(signature = (full_name, version, operation))]
+    pub fn temporary_model_version_credential(
+        &self,
+        py: Python,
+        full_name: String,
+        version: i64,
+        operation: String,
+    ) -> PyUnityCatalogResult<PyTemporaryCredential> {
+        let op = match operation.to_ascii_lowercase().as_str() {
+            "read" => ModelVersionOperation::Read,
+            "read_write" | "write" => ModelVersionOperation::ReadWrite,
+            _ => {
+                return Err(PyUnityCatalogError::from(
+                    unitycatalog_common::error::Error::invalid_argument(format!(
+                        "Invalid operation: {}. Must be 'read' or 'read_write'",
+                        operation
+                    )),
+                ));
+            }
+        };
+        let runtime = get_runtime(py)?;
+        py.allow_threads(|| {
+            let credential = runtime.block_on(
+                self.client
+                    .temporary_model_version_credential(full_name, version, op),
+            )?;
+            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(credential))
         })
     }
 }

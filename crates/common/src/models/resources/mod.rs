@@ -25,6 +25,8 @@ pub enum ResourceIdent {
     TagPolicy(ResourceRef),
     StagingTable(ResourceRef),
     PolicyInfo(ResourceRef),
+    RegisteredModel(ResourceRef),
+    ModelVersion(ResourceRef),
 }
 
 impl ResourceIdent {
@@ -99,6 +101,14 @@ impl ResourceIdent {
     pub fn policy_info(name: impl Into<ResourceRef>) -> Self {
         Self::PolicyInfo(name.into())
     }
+
+    pub fn registered_model(name: impl Into<ResourceRef>) -> Self {
+        Self::RegisteredModel(name.into())
+    }
+
+    pub fn model_version(name: impl Into<ResourceRef>) -> Self {
+        Self::ModelVersion(name.into())
+    }
 }
 
 impl std::fmt::Display for ResourceIdent {
@@ -120,6 +130,8 @@ impl std::fmt::Display for ResourceIdent {
             ResourceIdent::TagPolicy(r) => write!(f, "tag_policy:{}", r),
             ResourceIdent::StagingTable(r) => write!(f, "staging_table:{}", r),
             ResourceIdent::PolicyInfo(r) => write!(f, "policy_info:{}", r),
+            ResourceIdent::RegisteredModel(r) => write!(f, "registered_model:{}", r),
+            ResourceIdent::ModelVersion(r) => write!(f, "model_version:{}", r),
         }
     }
 }
@@ -143,6 +155,8 @@ impl AsRef<ResourceRef> for ResourceIdent {
             ResourceIdent::TagPolicy(r) => r,
             ResourceIdent::StagingTable(r) => r,
             ResourceIdent::PolicyInfo(r) => r,
+            ResourceIdent::RegisteredModel(r) => r,
+            ResourceIdent::ModelVersion(r) => r,
         }
     }
 }
@@ -166,6 +180,8 @@ impl AsRef<ObjectLabel> for ResourceIdent {
             ResourceIdent::TagPolicy(_) => &ObjectLabel::TagPolicy,
             ResourceIdent::StagingTable(_) => &ObjectLabel::StagingTable,
             ResourceIdent::PolicyInfo(_) => &ObjectLabel::PolicyInfo,
+            ResourceIdent::RegisteredModel(_) => &ObjectLabel::RegisteredModel,
+            ResourceIdent::ModelVersion(_) => &ObjectLabel::ModelVersion,
         }
     }
 }
@@ -189,6 +205,8 @@ impl From<ResourceIdent> for ResourceRef {
             ResourceIdent::TagPolicy(r) => r,
             ResourceIdent::StagingTable(r) => r,
             ResourceIdent::PolicyInfo(r) => r,
+            ResourceIdent::RegisteredModel(r) => r,
+            ResourceIdent::ModelVersion(r) => r,
         }
     }
 }
@@ -252,6 +270,8 @@ impl ObjectLabel {
             ObjectLabel::TagPolicy => ResourceIdent::tag_policy(id),
             ObjectLabel::StagingTable => ResourceIdent::staging_table(id),
             ObjectLabel::PolicyInfo => ResourceIdent::policy_info(id),
+            ObjectLabel::RegisteredModel => ResourceIdent::registered_model(id),
+            ObjectLabel::ModelVersion => ResourceIdent::model_version(id),
         }
     }
 }

@@ -42,9 +42,11 @@ use crate::api::credentials::CredentialHandler;
 use crate::api::entity_tag_assignments::EntityTagAssignmentHandler;
 use crate::api::external_locations::ExternalLocationHandler;
 use crate::api::functions::FunctionHandler;
+use crate::api::model_versions::ModelVersionHandler;
 use crate::api::policies::PolicyHandler;
 use crate::api::providers::ProviderHandler;
 use crate::api::recipients::RecipientHandler;
+use crate::api::registered_models::RegisteredModelHandler;
 use crate::api::schemas::SchemaHandler;
 use crate::api::shares::ShareHandler;
 use crate::api::sharing::{SharingHandler, SharingQueryHandler};
@@ -60,8 +62,9 @@ use crate::rest::{
     AnonymousAuthenticator, AuthenticationLayer, create_agent_skills_router, create_agents_router,
     create_catalogs_router, create_credentials_router, create_delta_router,
     create_entity_tag_assignments_router, create_external_locations_router,
-    create_functions_router, create_open_sharing_router, create_policies_router,
-    create_providers_router, create_recipients_router, create_schemas_router, create_shares_router,
+    create_functions_router, create_model_versions_router, create_open_sharing_router,
+    create_policies_router, create_providers_router, create_recipients_router,
+    create_registered_models_router, create_schemas_router, create_shares_router,
     create_sharing_router, create_staging_tables_router, create_tables_router,
     create_tag_policies_router, create_temporary_credentials_router, create_volumes_router,
 };
@@ -266,6 +269,8 @@ where
         + TagPolicyHandler<Cx>
         + EntityTagAssignmentHandler<Cx>
         + PolicyHandler<Cx>
+        + RegisteredModelHandler<Cx>
+        + ModelVersionHandler<Cx>
         + TemporaryCredentialHandler<Cx>
         + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
@@ -281,6 +286,8 @@ where
         .merge(create_external_locations_router(handler.clone()))
         .merge(create_temporary_credentials_router(handler.clone()))
         .merge(create_functions_router(handler.clone()))
+        .merge(create_registered_models_router(handler.clone()))
+        .merge(create_model_versions_router(handler.clone()))
         .merge(create_recipients_router(handler.clone()))
         .merge(create_providers_router(handler.clone()))
         .merge(create_shares_router(handler.clone()))

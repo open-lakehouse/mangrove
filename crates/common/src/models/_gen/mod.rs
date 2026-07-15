@@ -15,11 +15,13 @@ pub use catalogs::v1::Catalog;
 pub use credentials::v1::Credential;
 pub use external_locations::v1::ExternalLocation;
 pub use functions::v1::Function;
+pub use model_versions::v1::ModelVersion;
 pub use policies::v1::PolicyInfo;
 pub use providers::v1::Provider;
 #[cfg(feature = "python")]
 pub use pyo3_impls::*;
 pub use recipients::v1::Recipient;
+pub use registered_models::v1::RegisteredModel;
 pub use schemas::v1::Schema;
 pub use shares::v1::Share;
 pub use staging_tables::v1::StagingTable;
@@ -58,6 +60,11 @@ pub mod functions {
         include!("./unitycatalog.functions.v1.rs");
     }
 }
+pub mod model_versions {
+    pub mod v1 {
+        include!("./unitycatalog.model_versions.v1.rs");
+    }
+}
 pub mod policies {
     pub mod v1 {
         include!("./unitycatalog.policies.v1.rs");
@@ -71,6 +78,11 @@ pub mod providers {
 pub mod recipients {
     pub mod v1 {
         include!("./unitycatalog.recipients.v1.rs");
+    }
+}
+pub mod registered_models {
+    pub mod v1 {
+        include!("./unitycatalog.registered_models.v1.rs");
     }
 }
 pub mod schemas {

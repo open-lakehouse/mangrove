@@ -42,6 +42,7 @@ pub use codegen::functions::FunctionClient;
 pub use codegen::policies::PolicyClient;
 pub use codegen::providers::ProviderClient;
 pub use codegen::recipients::RecipientClient;
+pub use codegen::registered_models::RegisteredModelClient;
 pub use codegen::schemas::SchemaClient;
 pub use codegen::shares::ShareClient;
 pub use codegen::staging_tables::StagingTableClient;

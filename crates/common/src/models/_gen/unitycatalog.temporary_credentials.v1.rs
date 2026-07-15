@@ -2560,6 +2560,446 @@ pub mod generate_temporary_path_credentials_request {
         }
     }
 }
+/// Generate a new set of credentials for a model version.
+#[derive(Clone, PartialEq, Default)]
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[serde(default)]
+pub struct GenerateTemporaryModelVersionCredentialsRequest {
+    /// Name of parent catalog of the model version.
+    ///
+    /// Field 1: `catalog_name`
+    #[serde(
+        rename = "catalog_name",
+        alias = "catalogName",
+        with = "::buffa::json_helpers::proto_string",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
+    )]
+    pub catalog_name: ::buffa::alloc::string::String,
+    /// Name of parent schema of the model version.
+    ///
+    /// Field 2: `schema_name`
+    #[serde(
+        rename = "schema_name",
+        alias = "schemaName",
+        with = "::buffa::json_helpers::proto_string",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
+    )]
+    pub schema_name: ::buffa::alloc::string::String,
+    /// Name of the parent registered model.
+    ///
+    /// Field 3: `model_name`
+    #[serde(
+        rename = "model_name",
+        alias = "modelName",
+        with = "::buffa::json_helpers::proto_string",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
+    )]
+    pub model_name: ::buffa::alloc::string::String,
+    /// The integer version number of the model version.
+    ///
+    /// Field 4: `version`
+    #[serde(
+        rename = "version",
+        with = "::buffa::json_helpers::int64",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_zero_i64"
+    )]
+    pub version: i64,
+    /// The operation performed against the model version data, either
+    /// READ_MODEL_VERSION or READ_WRITE_MODEL_VERSION. If READ_WRITE_MODEL_VERSION
+    /// is specified, the credentials returned will have write permissions,
+    /// otherwise, it will be read only.
+    ///
+    /// Field 5: `operation`
+    #[serde(
+        rename = "operation",
+        with = "::buffa::json_helpers::proto_enum",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
+    )]
+    pub operation: ::buffa::EnumValue<
+        generate_temporary_model_version_credentials_request::Operation,
+    >,
+    #[serde(skip)]
+    #[doc(hidden)]
+    pub __buffa_unknown_fields: ::buffa::UnknownFields,
+}
+impl ::core::fmt::Debug for GenerateTemporaryModelVersionCredentialsRequest {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("GenerateTemporaryModelVersionCredentialsRequest")
+            .field("catalog_name", &self.catalog_name)
+            .field("schema_name", &self.schema_name)
+            .field("model_name", &self.model_name)
+            .field("version", &self.version)
+            .field("operation", &self.operation)
+            .finish()
+    }
+}
+impl GenerateTemporaryModelVersionCredentialsRequest {
+    /// Protobuf type URL for this message, for use with `Any::pack` and
+    /// `Any::unpack_if`.
+    ///
+    /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
+    pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest";
+}
+impl ::buffa::DefaultInstance for GenerateTemporaryModelVersionCredentialsRequest {
+    fn default_instance() -> &'static Self {
+        static VALUE: ::buffa::__private::OnceBox<
+            GenerateTemporaryModelVersionCredentialsRequest,
+        > = ::buffa::__private::OnceBox::new();
+        VALUE.get_or_init(|| ::buffa::alloc::boxed::Box::new(Self::default()))
+    }
+}
+impl ::buffa::MessageName for GenerateTemporaryModelVersionCredentialsRequest {
+    const PACKAGE: &'static str = "unitycatalog.temporary_credentials.v1";
+    const NAME: &'static str = "GenerateTemporaryModelVersionCredentialsRequest";
+    const FULL_NAME: &'static str = "unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest";
+    const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest";
+}
+impl ::buffa::Message for GenerateTemporaryModelVersionCredentialsRequest {
+    /// Returns the total encoded size in bytes.
+    ///
+    /// The result is a `u32`; the protobuf specification requires all
+    /// messages to fit within 2 GiB (2,147,483,647 bytes), so a
+    /// compliant message will never overflow this type.
+    #[allow(clippy::let_and_return)]
+    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u32;
+        if !self.catalog_name.is_empty() {
+            size += 1u32 + ::buffa::types::string_encoded_len(&self.catalog_name) as u32;
+        }
+        if !self.schema_name.is_empty() {
+            size += 1u32 + ::buffa::types::string_encoded_len(&self.schema_name) as u32;
+        }
+        if !self.model_name.is_empty() {
+            size += 1u32 + ::buffa::types::string_encoded_len(&self.model_name) as u32;
+        }
+        if self.version != 0i64 {
+            size += 1u32 + ::buffa::types::int64_encoded_len(self.version) as u32;
+        }
+        {
+            let val = self.operation.to_i32();
+            if val != 0 {
+                size += 1u32 + ::buffa::types::int32_encoded_len(val) as u32;
+            }
+        }
+        size += self.__buffa_unknown_fields.encoded_len() as u32;
+        size
+    }
+    fn write_to(
+        &self,
+        _cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::bytes::BufMut,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if !self.catalog_name.is_empty() {
+            ::buffa::encoding::Tag::new(
+                    1u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(&self.catalog_name, buf);
+        }
+        if !self.schema_name.is_empty() {
+            ::buffa::encoding::Tag::new(
+                    2u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(&self.schema_name, buf);
+        }
+        if !self.model_name.is_empty() {
+            ::buffa::encoding::Tag::new(
+                    3u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(&self.model_name, buf);
+        }
+        if self.version != 0i64 {
+            ::buffa::encoding::Tag::new(4u32, ::buffa::encoding::WireType::Varint)
+                .encode(buf);
+            ::buffa::types::encode_int64(self.version, buf);
+        }
+        {
+            let val = self.operation.to_i32();
+            if val != 0 {
+                ::buffa::encoding::Tag::new(5u32, ::buffa::encoding::WireType::Varint)
+                    .encode(buf);
+                ::buffa::types::encode_int32(val, buf);
+            }
+        }
+        self.__buffa_unknown_fields.write_to(buf);
+    }
+    fn merge_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        buf: &mut impl ::buffa::bytes::Buf,
+        depth: u32,
+    ) -> ::core::result::Result<(), ::buffa::DecodeError> {
+        #[allow(unused_imports)]
+        use ::buffa::bytes::Buf as _;
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        match tag.field_number() {
+            1u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 1u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(&mut self.catalog_name, buf)?;
+            }
+            2u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 2u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(&mut self.schema_name, buf)?;
+            }
+            3u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 3u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(&mut self.model_name, buf)?;
+            }
+            4u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 4u32,
+                        expected: 0u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.version = ::buffa::types::decode_int64(buf)?;
+            }
+            5u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 5u32,
+                        expected: 0u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.operation = ::buffa::EnumValue::from(
+                    ::buffa::types::decode_int32(buf)?,
+                );
+            }
+            _ => {
+                self.__buffa_unknown_fields
+                    .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
+            }
+        }
+        ::core::result::Result::Ok(())
+    }
+    fn clear(&mut self) {
+        self.catalog_name.clear();
+        self.schema_name.clear();
+        self.model_name.clear();
+        self.version = 0i64;
+        self.operation = ::buffa::EnumValue::from(0);
+        self.__buffa_unknown_fields.clear();
+    }
+}
+impl ::buffa::ExtensionSet for GenerateTemporaryModelVersionCredentialsRequest {
+    const PROTO_FQN: &'static str = "unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest";
+    fn unknown_fields(&self) -> &::buffa::UnknownFields {
+        &self.__buffa_unknown_fields
+    }
+    fn unknown_fields_mut(&mut self) -> &mut ::buffa::UnknownFields {
+        &mut self.__buffa_unknown_fields
+    }
+}
+impl ::buffa::json_helpers::ProtoElemJson
+for GenerateTemporaryModelVersionCredentialsRequest {
+    fn serialize_proto_json<S: ::serde::Serializer>(
+        v: &Self,
+        s: S,
+    ) -> ::core::result::Result<S::Ok, S::Error> {
+        ::serde::Serialize::serialize(v, s)
+    }
+    fn deserialize_proto_json<'de, D: ::serde::Deserializer<'de>>(
+        d: D,
+    ) -> ::core::result::Result<Self, D::Error> {
+        <Self as ::serde::Deserialize>::deserialize(d)
+    }
+}
+#[doc(hidden)]
+pub const __GENERATE_TEMPORARY_MODEL_VERSION_CREDENTIALS_REQUEST_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = ::buffa::type_registry::JsonAnyEntry {
+    type_url: "type.googleapis.com/unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest",
+    to_json: ::buffa::type_registry::any_to_json::<
+        GenerateTemporaryModelVersionCredentialsRequest,
+    >,
+    from_json: ::buffa::type_registry::any_from_json::<
+        GenerateTemporaryModelVersionCredentialsRequest,
+    >,
+    is_wkt: false,
+};
+pub mod generate_temporary_model_version_credentials_request {
+    #[allow(unused_imports)]
+    use super::*;
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    #[repr(i32)]
+    pub enum Operation {
+        /// The operation is not specified.
+        UNSPECIFIED = 0i32,
+        /// The operation is read only.
+        READ_MODEL_VERSION = 1i32,
+        /// The operation is read and write.
+        READ_WRITE_MODEL_VERSION = 2i32,
+    }
+    impl Operation {
+        ///Idiomatic alias for [`Self::UNSPECIFIED`]; `Debug` prints the variant name.
+        #[allow(non_upper_case_globals)]
+        pub const Unspecified: Self = Self::UNSPECIFIED;
+        ///Idiomatic alias for [`Self::READ_MODEL_VERSION`]; `Debug` prints the variant name.
+        #[allow(non_upper_case_globals)]
+        pub const ReadModelVersion: Self = Self::READ_MODEL_VERSION;
+        ///Idiomatic alias for [`Self::READ_WRITE_MODEL_VERSION`]; `Debug` prints the variant name.
+        #[allow(non_upper_case_globals)]
+        pub const ReadWriteModelVersion: Self = Self::READ_WRITE_MODEL_VERSION;
+    }
+    impl ::core::default::Default for Operation {
+        fn default() -> Self {
+            Self::UNSPECIFIED
+        }
+    }
+    impl ::serde::Serialize for Operation {
+        fn serialize<S: ::serde::Serializer>(
+            &self,
+            s: S,
+        ) -> ::core::result::Result<S::Ok, S::Error> {
+            s.serialize_str(::buffa::Enumeration::proto_name(self))
+        }
+    }
+    impl<'de> ::serde::Deserialize<'de> for Operation {
+        fn deserialize<D: ::serde::Deserializer<'de>>(
+            d: D,
+        ) -> ::core::result::Result<Self, D::Error> {
+            struct _V;
+            impl ::serde::de::Visitor<'_> for _V {
+                type Value = Operation;
+                fn expecting(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.write_str(
+                        concat!("a string, integer, or null for ", stringify!(Operation)),
+                    )
+                }
+                fn visit_str<E: ::serde::de::Error>(
+                    self,
+                    v: &str,
+                ) -> ::core::result::Result<Operation, E> {
+                    <Operation as ::buffa::Enumeration>::from_proto_name(v)
+                        .ok_or_else(|| { ::serde::de::Error::unknown_variant(v, &[]) })
+                }
+                fn visit_i64<E: ::serde::de::Error>(
+                    self,
+                    v: i64,
+                ) -> ::core::result::Result<Operation, E> {
+                    let v32 = i32::try_from(v)
+                        .map_err(|_| {
+                            ::serde::de::Error::custom(
+                                ::buffa::alloc::format!("enum value {v} out of i32 range"),
+                            )
+                        })?;
+                    <Operation as ::buffa::Enumeration>::from_i32(v32)
+                        .ok_or_else(|| {
+                            ::serde::de::Error::custom(
+                                ::buffa::alloc::format!("unknown enum value {v32}"),
+                            )
+                        })
+                }
+                fn visit_u64<E: ::serde::de::Error>(
+                    self,
+                    v: u64,
+                ) -> ::core::result::Result<Operation, E> {
+                    let v32 = i32::try_from(v)
+                        .map_err(|_| {
+                            ::serde::de::Error::custom(
+                                ::buffa::alloc::format!("enum value {v} out of i32 range"),
+                            )
+                        })?;
+                    <Operation as ::buffa::Enumeration>::from_i32(v32)
+                        .ok_or_else(|| {
+                            ::serde::de::Error::custom(
+                                ::buffa::alloc::format!("unknown enum value {v32}"),
+                            )
+                        })
+                }
+                fn visit_unit<E: ::serde::de::Error>(
+                    self,
+                ) -> ::core::result::Result<Operation, E> {
+                    ::core::result::Result::Ok(::core::default::Default::default())
+                }
+            }
+            d.deserialize_any(_V)
+        }
+    }
+    impl ::buffa::json_helpers::ProtoElemJson for Operation {
+        fn serialize_proto_json<S: ::serde::Serializer>(
+            v: &Self,
+            s: S,
+        ) -> ::core::result::Result<S::Ok, S::Error> {
+            ::serde::Serialize::serialize(v, s)
+        }
+        fn deserialize_proto_json<'de, D: ::serde::Deserializer<'de>>(
+            d: D,
+        ) -> ::core::result::Result<Self, D::Error> {
+            <Self as ::serde::Deserialize>::deserialize(d)
+        }
+    }
+    impl ::buffa::Enumeration for Operation {
+        fn from_i32(value: i32) -> ::core::option::Option<Self> {
+            match value {
+                0i32 => ::core::option::Option::Some(Self::UNSPECIFIED),
+                1i32 => ::core::option::Option::Some(Self::READ_MODEL_VERSION),
+                2i32 => ::core::option::Option::Some(Self::READ_WRITE_MODEL_VERSION),
+                _ => ::core::option::Option::None,
+            }
+        }
+        fn to_i32(&self) -> i32 {
+            *self as i32
+        }
+        fn proto_name(&self) -> &'static str {
+            match self {
+                Self::UNSPECIFIED => "UNSPECIFIED",
+                Self::READ_MODEL_VERSION => "READ_MODEL_VERSION",
+                Self::READ_WRITE_MODEL_VERSION => "READ_WRITE_MODEL_VERSION",
+            }
+        }
+        fn from_proto_name(name: &str) -> ::core::option::Option<Self> {
+            match name {
+                "UNSPECIFIED" => ::core::option::Option::Some(Self::UNSPECIFIED),
+                "READ_MODEL_VERSION" => {
+                    ::core::option::Option::Some(Self::READ_MODEL_VERSION)
+                }
+                "READ_WRITE_MODEL_VERSION" => {
+                    ::core::option::Option::Some(Self::READ_WRITE_MODEL_VERSION)
+                }
+                _ => ::core::option::Option::None,
+            }
+        }
+        fn values() -> &'static [Self] {
+            &[
+                Self::UNSPECIFIED,
+                Self::READ_MODEL_VERSION,
+                Self::READ_WRITE_MODEL_VERSION,
+            ]
+        }
+    }
+}
 #[allow(
     non_camel_case_types,
     dead_code,
@@ -6246,6 +6686,539 @@ pub mod __buffa {
                 ::serde::Serialize::serialize(&self.0, __s)
             }
         }
+        /// Generate a new set of credentials for a model version.
+        #[derive(Clone, Debug, Default)]
+        pub struct GenerateTemporaryModelVersionCredentialsRequestView<'a> {
+            /// Name of parent catalog of the model version.
+            ///
+            /// Field 1: `catalog_name`
+            pub catalog_name: &'a str,
+            /// Name of parent schema of the model version.
+            ///
+            /// Field 2: `schema_name`
+            pub schema_name: &'a str,
+            /// Name of the parent registered model.
+            ///
+            /// Field 3: `model_name`
+            pub model_name: &'a str,
+            /// The integer version number of the model version.
+            ///
+            /// Field 4: `version`
+            pub version: i64,
+            /// The operation performed against the model version data, either
+            /// READ_MODEL_VERSION or READ_WRITE_MODEL_VERSION. If READ_WRITE_MODEL_VERSION
+            /// is specified, the credentials returned will have write permissions,
+            /// otherwise, it will be read only.
+            ///
+            /// Field 5: `operation`
+            pub operation: ::buffa::EnumValue<
+                super::super::generate_temporary_model_version_credentials_request::Operation,
+            >,
+            pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
+        }
+        impl<'a> GenerateTemporaryModelVersionCredentialsRequestView<'a> {
+            /// Decode from `buf`, enforcing a recursion depth limit for nested messages.
+            ///
+            /// Called by [`::buffa::MessageView::decode_view`] with [`::buffa::RECURSION_LIMIT`]
+            /// and by generated sub-message decode arms with `depth - 1`.
+            ///
+            /// **Not part of the public API.** Named with a leading underscore to
+            /// signal that it is for generated-code use only.
+            #[doc(hidden)]
+            pub fn _decode_depth(
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                let mut view = Self::default();
+                view._merge_into_view(buf, depth)?;
+                ::core::result::Result::Ok(view)
+            }
+            /// Merge fields from `buf` into this view (proto merge semantics).
+            ///
+            /// Repeated fields append; singular fields last-wins; singular
+            /// MESSAGE fields merge recursively. Used by sub-message decode
+            /// arms when the same field appears multiple times on the wire.
+            ///
+            /// **Not part of the public API.**
+            #[doc(hidden)]
+            pub fn _merge_into_view(
+                &mut self,
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<(), ::buffa::DecodeError> {
+                let _ = depth;
+                #[allow(unused_variables)]
+                let view = self;
+                let mut cur: &'a [u8] = buf;
+                while !cur.is_empty() {
+                    let before_tag = cur;
+                    let tag = ::buffa::encoding::Tag::decode(&mut cur)?;
+                    match tag.field_number() {
+                        1u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 1u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.catalog_name = ::buffa::types::borrow_str(&mut cur)?;
+                        }
+                        2u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 2u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.schema_name = ::buffa::types::borrow_str(&mut cur)?;
+                        }
+                        3u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 3u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.model_name = ::buffa::types::borrow_str(&mut cur)?;
+                        }
+                        4u32 => {
+                            if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 4u32,
+                                    expected: 0u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.version = ::buffa::types::decode_int64(&mut cur)?;
+                        }
+                        5u32 => {
+                            if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 5u32,
+                                    expected: 0u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.operation = ::buffa::EnumValue::from(
+                                ::buffa::types::decode_int32(&mut cur)?,
+                            );
+                        }
+                        _ => {
+                            ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
+                            let span_len = before_tag.len() - cur.len();
+                            view.__buffa_unknown_fields
+                                .push_raw(&before_tag[..span_len]);
+                        }
+                    }
+                }
+                ::core::result::Result::Ok(())
+            }
+        }
+        impl<'a> ::buffa::MessageView<'a>
+        for GenerateTemporaryModelVersionCredentialsRequestView<'a> {
+            type Owned = super::super::GenerateTemporaryModelVersionCredentialsRequest;
+            fn decode_view(
+                buf: &'a [u8],
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                Self::_decode_depth(buf, ::buffa::RECURSION_LIMIT)
+            }
+            fn decode_view_with_limit(
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                Self::_decode_depth(buf, depth)
+            }
+            fn to_owned_message(
+                &self,
+            ) -> super::super::GenerateTemporaryModelVersionCredentialsRequest {
+                self.to_owned_from_source(None)
+            }
+            #[allow(clippy::useless_conversion, clippy::needless_update)]
+            fn to_owned_from_source(
+                &self,
+                __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+            ) -> super::super::GenerateTemporaryModelVersionCredentialsRequest {
+                #[allow(unused_imports)]
+                use ::buffa::alloc::string::ToString as _;
+                let _ = __buffa_src;
+                super::super::GenerateTemporaryModelVersionCredentialsRequest {
+                    catalog_name: self.catalog_name.to_string(),
+                    schema_name: self.schema_name.to_string(),
+                    model_name: self.model_name.to_string(),
+                    version: self.version,
+                    operation: self.operation,
+                    __buffa_unknown_fields: self
+                        .__buffa_unknown_fields
+                        .to_owned()
+                        .unwrap_or_default()
+                        .into(),
+                    ..::core::default::Default::default()
+                }
+            }
+        }
+        impl<'a> ::buffa::ViewEncode<'a>
+        for GenerateTemporaryModelVersionCredentialsRequestView<'a> {
+            #[allow(clippy::needless_borrow, clippy::let_and_return)]
+            fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+                #[allow(unused_imports)]
+                use ::buffa::Enumeration as _;
+                let mut size = 0u32;
+                if !self.catalog_name.is_empty() {
+                    size
+                        += 1u32
+                            + ::buffa::types::string_encoded_len(&self.catalog_name)
+                                as u32;
+                }
+                if !self.schema_name.is_empty() {
+                    size
+                        += 1u32
+                            + ::buffa::types::string_encoded_len(&self.schema_name)
+                                as u32;
+                }
+                if !self.model_name.is_empty() {
+                    size
+                        += 1u32
+                            + ::buffa::types::string_encoded_len(&self.model_name)
+                                as u32;
+                }
+                if self.version != 0i64 {
+                    size
+                        += 1u32 + ::buffa::types::int64_encoded_len(self.version) as u32;
+                }
+                {
+                    let val = self.operation.to_i32();
+                    if val != 0 {
+                        size += 1u32 + ::buffa::types::int32_encoded_len(val) as u32;
+                    }
+                }
+                size += self.__buffa_unknown_fields.encoded_len() as u32;
+                size
+            }
+            #[allow(clippy::needless_borrow)]
+            fn write_to(
+                &self,
+                _cache: &mut ::buffa::SizeCache,
+                buf: &mut impl ::buffa::bytes::BufMut,
+            ) {
+                #[allow(unused_imports)]
+                use ::buffa::Enumeration as _;
+                if !self.catalog_name.is_empty() {
+                    ::buffa::encoding::Tag::new(
+                            1u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(&self.catalog_name, buf);
+                }
+                if !self.schema_name.is_empty() {
+                    ::buffa::encoding::Tag::new(
+                            2u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(&self.schema_name, buf);
+                }
+                if !self.model_name.is_empty() {
+                    ::buffa::encoding::Tag::new(
+                            3u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(&self.model_name, buf);
+                }
+                if self.version != 0i64 {
+                    ::buffa::encoding::Tag::new(
+                            4u32,
+                            ::buffa::encoding::WireType::Varint,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_int64(self.version, buf);
+                }
+                {
+                    let val = self.operation.to_i32();
+                    if val != 0 {
+                        ::buffa::encoding::Tag::new(
+                                5u32,
+                                ::buffa::encoding::WireType::Varint,
+                            )
+                            .encode(buf);
+                        ::buffa::types::encode_int32(val, buf);
+                    }
+                }
+                self.__buffa_unknown_fields.write_to(buf);
+            }
+        }
+        /// Serializes this view as protobuf JSON.
+        ///
+        /// Implicit-presence fields with default values are omitted, `required`
+        /// fields are always emitted, explicit-presence (`optional`) fields are
+        /// emitted only when set, bytes fields are base64-encoded, and enum
+        /// values are their proto name strings.
+        ///
+        /// This impl uses `serialize_map(None)` because the number of emitted
+        /// fields depends on default-omission rules; serializers that require
+        /// known map lengths (e.g. `bincode`) will return a runtime error.
+        /// Use the owned message type for those formats.
+        impl<'__a> ::serde::Serialize
+        for GenerateTemporaryModelVersionCredentialsRequestView<'__a> {
+            fn serialize<__S: ::serde::Serializer>(
+                &self,
+                __s: __S,
+            ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                use ::serde::ser::SerializeMap as _;
+                let mut __map = __s.serialize_map(::core::option::Option::None)?;
+                if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
+                    __map.serialize_entry("catalog_name", self.catalog_name)?;
+                }
+                if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
+                    __map.serialize_entry("schema_name", self.schema_name)?;
+                }
+                if !::buffa::json_helpers::skip_if::is_empty_str(self.model_name) {
+                    __map.serialize_entry("model_name", self.model_name)?;
+                }
+                if !::buffa::json_helpers::skip_if::is_zero_i64(&self.version) {
+                    struct _W(i64);
+                    impl ::serde::Serialize for _W {
+                        fn serialize<__S: ::serde::Serializer>(
+                            &self,
+                            __s: __S,
+                        ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                            ::buffa::json_helpers::int64::serialize(&self.0, __s)
+                        }
+                    }
+                    __map.serialize_entry("version", &_W(self.version))?;
+                }
+                if !::buffa::json_helpers::skip_if::is_default_enum_value(
+                    &self.operation,
+                ) {
+                    __map.serialize_entry("operation", &self.operation)?;
+                }
+                __map.end()
+            }
+        }
+        impl<'a> ::buffa::MessageName
+        for GenerateTemporaryModelVersionCredentialsRequestView<'a> {
+            const PACKAGE: &'static str = "unitycatalog.temporary_credentials.v1";
+            const NAME: &'static str = "GenerateTemporaryModelVersionCredentialsRequest";
+            const FULL_NAME: &'static str = "unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest";
+            const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest";
+        }
+        impl<'v> ::buffa::DefaultViewInstance
+        for GenerateTemporaryModelVersionCredentialsRequestView<'v> {
+            fn default_view_instance<'a>() -> &'a Self
+            where
+                Self: 'a,
+            {
+                static VALUE: ::buffa::__private::OnceBox<
+                    GenerateTemporaryModelVersionCredentialsRequestView<'static>,
+                > = ::buffa::__private::OnceBox::new();
+                VALUE
+                    .get_or_init(|| ::buffa::alloc::boxed::Box::new(
+                        <GenerateTemporaryModelVersionCredentialsRequestView<
+                            'static,
+                        >>::default(),
+                    ))
+            }
+        }
+        impl ::buffa::ViewReborrow
+        for GenerateTemporaryModelVersionCredentialsRequestView<'static> {
+            type Reborrowed<'b> = GenerateTemporaryModelVersionCredentialsRequestView<
+                'b,
+            >;
+            fn reborrow<'b>(this: &'b Self) -> &'b Self::Reborrowed<'b> {
+                this
+            }
+        }
+        /** Self-contained, `'static` owned view of a `GenerateTemporaryModelVersionCredentialsRequest` message.
+
+ Wraps [`::buffa::OwnedView`]`<`[`GenerateTemporaryModelVersionCredentialsRequestView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`GenerateTemporaryModelVersionCredentialsRequestView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+        #[derive(Clone, Debug)]
+        pub struct GenerateTemporaryModelVersionCredentialsRequestOwnedView(
+            ::buffa::OwnedView<
+                GenerateTemporaryModelVersionCredentialsRequestView<'static>,
+            >,
+        );
+        impl GenerateTemporaryModelVersionCredentialsRequestOwnedView {
+            /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
+            ///
+            /// The view borrows directly from the buffer's data; the buffer is
+            /// retained inside the returned handle.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the buffer contains invalid
+            /// protobuf data.
+            pub fn decode(
+                bytes: ::buffa::bytes::Bytes,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    GenerateTemporaryModelVersionCredentialsRequestOwnedView(
+                        ::buffa::OwnedView::decode(bytes)?,
+                    ),
+                )
+            }
+            /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
+            /// max message size).
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the buffer is invalid or
+            /// exceeds the configured limits.
+            pub fn decode_with_options(
+                bytes: ::buffa::bytes::Bytes,
+                opts: &::buffa::DecodeOptions,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    GenerateTemporaryModelVersionCredentialsRequestOwnedView(
+                        ::buffa::OwnedView::decode_with_options(bytes, opts)?,
+                    ),
+                )
+            }
+            /// Build from an owned message via an encode → decode round-trip.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the re-encoded bytes are
+            /// somehow invalid (should not happen for well-formed messages).
+            pub fn from_owned(
+                msg: &super::super::GenerateTemporaryModelVersionCredentialsRequest,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    GenerateTemporaryModelVersionCredentialsRequestOwnedView(
+                        ::buffa::OwnedView::from_owned(msg)?,
+                    ),
+                )
+            }
+            /// Borrow the full [`GenerateTemporaryModelVersionCredentialsRequestView`] with its lifetime tied to `&self`.
+            #[must_use]
+            pub fn view(
+                &self,
+            ) -> &GenerateTemporaryModelVersionCredentialsRequestView<'_> {
+                self.0.reborrow()
+            }
+            /// Convert to the owned message type.
+            #[must_use]
+            pub fn to_owned_message(
+                &self,
+            ) -> super::super::GenerateTemporaryModelVersionCredentialsRequest {
+                self.0.to_owned_message()
+            }
+            /// The underlying bytes buffer.
+            #[must_use]
+            pub fn bytes(&self) -> &::buffa::bytes::Bytes {
+                self.0.bytes()
+            }
+            /// Consume the handle, returning the underlying bytes buffer.
+            #[must_use]
+            pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
+                self.0.into_bytes()
+            }
+            /// Name of parent catalog of the model version.
+            ///
+            /// Field 1: `catalog_name`
+            #[must_use]
+            pub fn catalog_name(&self) -> &'_ str {
+                self.0.reborrow().catalog_name
+            }
+            /// Name of parent schema of the model version.
+            ///
+            /// Field 2: `schema_name`
+            #[must_use]
+            pub fn schema_name(&self) -> &'_ str {
+                self.0.reborrow().schema_name
+            }
+            /// Name of the parent registered model.
+            ///
+            /// Field 3: `model_name`
+            #[must_use]
+            pub fn model_name(&self) -> &'_ str {
+                self.0.reborrow().model_name
+            }
+            /// The integer version number of the model version.
+            ///
+            /// Field 4: `version`
+            #[must_use]
+            pub fn version(&self) -> i64 {
+                self.0.reborrow().version
+            }
+            /// The operation performed against the model version data, either
+            /// READ_MODEL_VERSION or READ_WRITE_MODEL_VERSION. If READ_WRITE_MODEL_VERSION
+            /// is specified, the credentials returned will have write permissions,
+            /// otherwise, it will be read only.
+            ///
+            /// Field 5: `operation`
+            #[must_use]
+            pub fn operation(
+                &self,
+            ) -> ::buffa::EnumValue<
+                super::super::generate_temporary_model_version_credentials_request::Operation,
+            > {
+                self.0.reborrow().operation
+            }
+        }
+        impl ::core::convert::From<
+            ::buffa::OwnedView<
+                GenerateTemporaryModelVersionCredentialsRequestView<'static>,
+            >,
+        > for GenerateTemporaryModelVersionCredentialsRequestOwnedView {
+            fn from(
+                inner: ::buffa::OwnedView<
+                    GenerateTemporaryModelVersionCredentialsRequestView<'static>,
+                >,
+            ) -> Self {
+                GenerateTemporaryModelVersionCredentialsRequestOwnedView(inner)
+            }
+        }
+        impl ::core::convert::From<
+            GenerateTemporaryModelVersionCredentialsRequestOwnedView,
+        >
+        for ::buffa::OwnedView<
+            GenerateTemporaryModelVersionCredentialsRequestView<'static>,
+        > {
+            fn from(
+                wrapper: GenerateTemporaryModelVersionCredentialsRequestOwnedView,
+            ) -> Self {
+                wrapper.0
+            }
+        }
+        impl ::core::convert::AsRef<
+            ::buffa::OwnedView<
+                GenerateTemporaryModelVersionCredentialsRequestView<'static>,
+            >,
+        > for GenerateTemporaryModelVersionCredentialsRequestOwnedView {
+            fn as_ref(
+                &self,
+            ) -> &::buffa::OwnedView<
+                GenerateTemporaryModelVersionCredentialsRequestView<'static>,
+            > {
+                &self.0
+            }
+        }
+        impl ::buffa::HasMessageView
+        for super::super::GenerateTemporaryModelVersionCredentialsRequest {
+            type View<'a> = GenerateTemporaryModelVersionCredentialsRequestView<'a>;
+            type ViewHandle = GenerateTemporaryModelVersionCredentialsRequestOwnedView;
+        }
+        impl ::serde::Serialize
+        for GenerateTemporaryModelVersionCredentialsRequestOwnedView {
+            fn serialize<__S: ::serde::Serializer>(
+                &self,
+                __s: __S,
+            ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                ::serde::Serialize::serialize(&self.0, __s)
+            }
+        }
         pub mod oneof {
             #[allow(unused_imports)]
             use super::*;
@@ -6422,6 +7395,9 @@ pub mod __buffa {
         reg.register_json_any(
             super::__GENERATE_TEMPORARY_PATH_CREDENTIALS_REQUEST_JSON_ANY,
         );
+        reg.register_json_any(
+            super::__GENERATE_TEMPORARY_MODEL_VERSION_CREDENTIALS_REQUEST_JSON_ANY,
+        );
     }
 }
 #[doc(inline)]
@@ -6460,5 +7436,9 @@ pub use self::__buffa::view::GenerateTemporaryVolumeCredentialsRequestOwnedView;
 pub use self::__buffa::view::GenerateTemporaryPathCredentialsRequestView;
 #[doc(inline)]
 pub use self::__buffa::view::GenerateTemporaryPathCredentialsRequestOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::GenerateTemporaryModelVersionCredentialsRequestView;
+#[doc(inline)]
+pub use self::__buffa::view::GenerateTemporaryModelVersionCredentialsRequestOwnedView;
 #[doc(inline)]
 pub use self::__buffa::register_types;

@@ -55,6 +55,12 @@ export declare class NapiRecipientClient {
   delete(): Promise<void>
 }
 
+export declare class NapiRegisteredModelClient {
+  get(includeBrowse?: boolean | undefined | null): Promise<Buffer>
+  update(newName?: string | undefined | null, comment?: string | undefined | null, owner?: string | undefined | null): Promise<Buffer>
+  delete(force?: boolean | undefined | null): Promise<void>
+}
+
 export declare class NapiSchemaClient {
   get(): Promise<Buffer>
   update(comment?: string | undefined | null, properties?: Record<string, string> | undefined | null, newName?: string | undefined | null): Promise<Buffer>
@@ -109,13 +115,23 @@ export declare class NapiUnityCatalogClient {
   createExternalLocation(name: string, url: string, credentialName: string, readOnly?: boolean | undefined | null, comment?: string | undefined | null, skipValidation?: boolean | undefined | null): Promise<Buffer>
   listFunctions(catalogName: string, schemaName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
   listFunctionsStream(catalogName: string, schemaName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
-  createFunction(name: string, catalogName: string, schemaName: string, dataType: string, fullDataType: string, parameterStyle: number, isDeterministic: boolean, sqlDataAccess: number, isNullCall: boolean, securityType: number, routineBody: number, routineDefinition?: string | undefined | null, routineBodyLanguage?: string | undefined | null, comment?: string | undefined | null, properties?: Record<string, string> | undefined | null): Promise<Buffer>
+  createFunction(functionInfo: Buffer): Promise<Buffer>
+  listModelVersions(fullName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
+  listModelVersionsStream(fullName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
+  createModelVersion(modelVersion: Buffer): Promise<Buffer>
+  getModelVersion(fullName: string, version: number, includeBrowse?: boolean | undefined | null): Promise<Buffer>
+  updateModelVersion(fullName: string, version: number, comment?: string | undefined | null): Promise<Buffer>
+  deleteModelVersion(fullName: string, version: number): Promise<void>
+  finalizeModelVersion(fullName: string, version: number): Promise<Buffer>
   listProviders(maxResults?: number | undefined | null): Promise<Array<Buffer>>
   listProvidersStream(maxResults?: number | undefined | null): ReadableStream<Buffer>
   createProvider(name: string, authenticationType: number, owner?: string | undefined | null, comment?: string | undefined | null, recipientProfileStr?: string | undefined | null, properties?: Record<string, string> | undefined | null): Promise<Buffer>
   listRecipients(maxResults?: number | undefined | null): Promise<Array<Buffer>>
   listRecipientsStream(maxResults?: number | undefined | null): ReadableStream<Buffer>
   createRecipient(name: string, authenticationType: number, owner: string, comment?: string | undefined | null, properties?: Record<string, string> | undefined | null, expirationTime?: number | undefined | null): Promise<Buffer>
+  listRegisteredModels(catalogName?: string | undefined | null, schemaName?: string | undefined | null, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
+  listRegisteredModelsStream(catalogName?: string | undefined | null, schemaName?: string | undefined | null, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
+  createRegisteredModel(modelInfo: Buffer): Promise<Buffer>
   listSchemas(catalogName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
   listSchemasStream(catalogName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
   createSchema(name: string, catalogName: string, comment?: string | undefined | null, properties?: Record<string, string> | undefined | null, storageRoot?: string | undefined | null): Promise<Buffer>
@@ -132,6 +148,7 @@ export declare class NapiUnityCatalogClient {
   generateTemporaryTableCredentials(tableId: string, operation: number): Promise<Buffer>
   generateTemporaryPathCredentials(url: string, operation: number, dryRun?: boolean | undefined | null): Promise<Buffer>
   generateTemporaryVolumeCredentials(volumeId: string, operation: number): Promise<Buffer>
+  generateTemporaryModelVersionCredentials(catalogName: string, schemaName: string, modelName: string, version: number, operation: number): Promise<Buffer>
   listVolumes(catalogName: string, schemaName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
   listVolumesStream(catalogName: string, schemaName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
   createVolume(catalogName: string, schemaName: string, name: string, volumeType: number, storageLocation?: string | undefined | null, comment?: string | undefined | null): Promise<Buffer>
@@ -144,6 +161,7 @@ export declare class NapiUnityCatalogClient {
   policy(policyName: string): NapiPolicyClient
   provider(providerName: string): NapiProviderClient
   recipient(recipientName: string): NapiRecipientClient
+  registeredModel(catalogName: string, schemaName: string, registeredModelName: string): NapiRegisteredModelClient
   schema(catalogName: string, schemaName: string): NapiSchemaClient
   share(shareName: string): NapiShareClient
   stagingTable(stagingTableName: string): NapiStagingTableClient

@@ -7,9 +7,11 @@ use crate::codegen::credentials::*;
 use crate::codegen::entity_tag_assignments::*;
 use crate::codegen::external_locations::*;
 use crate::codegen::functions::*;
+use crate::codegen::model_versions::*;
 use crate::codegen::policies::*;
 use crate::codegen::providers::*;
 use crate::codegen::recipients::*;
+use crate::codegen::registered_models::*;
 use crate::codegen::schemas::*;
 use crate::codegen::shares::*;
 use crate::codegen::staging_tables::*;
@@ -24,9 +26,11 @@ use unitycatalog_common::models::catalogs::v1::*;
 use unitycatalog_common::models::credentials::v1::*;
 use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
+use unitycatalog_common::models::model_versions::v1::*;
 use unitycatalog_common::models::policies::v1::*;
 use unitycatalog_common::models::providers::v1::*;
 use unitycatalog_common::models::recipients::v1::*;
+use unitycatalog_common::models::registered_models::v1::*;
 use unitycatalog_common::models::schemas::v1::*;
 use unitycatalog_common::models::shares::v1::*;
 use unitycatalog_common::models::staging_tables::v1::*;
@@ -109,6 +113,15 @@ impl UnityCatalogClient {
             self.base_url.clone(),
         )
     }
+    ///Low-level `model_versions` client exposing request/response passthrough methods.
+    pub fn model_versions_client(
+        &self,
+    ) -> crate::codegen::model_versions::ModelVersionServiceClient {
+        crate::codegen::model_versions::ModelVersionServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
     ///Low-level `policies` client exposing request/response passthrough methods.
     pub fn policies_client(&self) -> crate::codegen::policies::PolicyServiceClient {
         crate::codegen::policies::PolicyServiceClient::new(
@@ -126,6 +139,15 @@ impl UnityCatalogClient {
     ///Low-level `recipients` client exposing request/response passthrough methods.
     pub fn recipients_client(&self) -> crate::codegen::recipients::RecipientServiceClient {
         crate::codegen::recipients::RecipientServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+    ///Low-level `registered_models` client exposing request/response passthrough methods.
+    pub fn registered_models_client(
+        &self,
+    ) -> crate::codegen::registered_models::RegisteredModelServiceClient {
+        crate::codegen::registered_models::RegisteredModelServiceClient::new(
             self.client.clone(),
             self.base_url.clone(),
         )
@@ -628,6 +650,141 @@ impl UnityCatalogClient {
             ),
         )
     }
+    /// List model versions
+    ///
+    /// List the model versions of the specified registered model. If the caller is
+    /// the metastore admin, all model versions are returned. Otherwise, the caller
+    /// must have the appropriate privileges on the parent model.
+    ///
+    /// # Arguments
+    ///
+    /// * `full_name` - The full three-level name of the registered model (catalog.schema.model)
+    /// whose versions are being listed.
+    pub fn list_model_versions(&self, full_name: impl Into<String>) -> ListModelVersionsBuilder {
+        ListModelVersionsBuilder::new(
+            crate::codegen::model_versions::ModelVersionServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            full_name,
+        )
+    }
+    /// Create a model version
+    ///
+    /// Creates a new model version in PENDING_REGISTRATION status. The server
+    /// assigns the version number and a storage location for the artifacts. The
+    /// caller must be a metastore admin or the owner of the parent registered model.
+    ///
+    /// # Arguments
+    ///
+    /// * `model_version` - The model version to create.
+    pub fn create_model_version(
+        &self,
+        model_version: CreateModelVersion,
+    ) -> CreateModelVersionBuilder {
+        CreateModelVersionBuilder::new(
+            crate::codegen::model_versions::ModelVersionServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            model_version,
+        )
+    }
+    /// Get a model version
+    ///
+    /// Gets a model version by its parent model name and version number.
+    ///
+    /// # Arguments
+    ///
+    /// * `full_name` - The full three-level name of the parent registered model
+    /// (catalog.schema.model).
+    /// * `version` - The integer version number of the model version.
+    pub fn get_model_version(
+        &self,
+        full_name: impl Into<String>,
+        version: i64,
+    ) -> GetModelVersionBuilder {
+        GetModelVersionBuilder::new(
+            crate::codegen::model_versions::ModelVersionServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            full_name,
+            version,
+        )
+    }
+    /// Update a model version
+    ///
+    /// Updates the model version that matches the supplied name and version.
+    ///
+    /// # Arguments
+    ///
+    /// * `full_name` - The full three-level name of the parent registered model
+    /// (catalog.schema.model).
+    /// * `version` - The integer version number of the model version.
+    pub fn update_model_version(
+        &self,
+        full_name: impl Into<String>,
+        version: i64,
+    ) -> UpdateModelVersionBuilder {
+        UpdateModelVersionBuilder::new(
+            crate::codegen::model_versions::ModelVersionServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            full_name,
+            version,
+        )
+    }
+    /// Delete a model version
+    ///
+    /// Deletes the model version that matches the supplied name and version. For the
+    /// deletion to succeed, the caller must be the owner of the parent registered
+    /// model.
+    ///
+    /// # Arguments
+    ///
+    /// * `full_name` - The full three-level name of the parent registered model
+    /// (catalog.schema.model).
+    /// * `version` - The integer version number of the model version.
+    pub fn delete_model_version(
+        &self,
+        full_name: impl Into<String>,
+        version: i64,
+    ) -> DeleteModelVersionBuilder {
+        DeleteModelVersionBuilder::new(
+            crate::codegen::model_versions::ModelVersionServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            full_name,
+            version,
+        )
+    }
+    /// Finalize a model version
+    ///
+    /// Transitions a model version to READY once all artifacts have been written to
+    /// its storage location.
+    ///
+    /// # Arguments
+    ///
+    /// * `full_name` - The full three-level name of the parent registered model
+    /// (catalog.schema.model).
+    /// * `version` - The integer version number of the model version to finalize.
+    pub fn finalize_model_version(
+        &self,
+        full_name: impl Into<String>,
+        version: i64,
+    ) -> FinalizeModelVersionBuilder {
+        FinalizeModelVersionBuilder::new(
+            crate::codegen::model_versions::ModelVersionServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            full_name,
+            version,
+        )
+    }
     /// List policies
     ///
     /// Gets an array of policies defined on the specified securable. There is no guarantee
@@ -735,6 +892,71 @@ impl UnityCatalogClient {
         RecipientClient::new(
             recipient_name,
             crate::codegen::recipients::RecipientServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+        )
+    }
+    /// List registered models
+    ///
+    /// List registered models within the specified parent catalog and schema. If
+    /// the caller is the metastore admin, all registered models are returned in the
+    /// response. Otherwise, the caller must have USE_CATALOG on the parent catalog
+    /// and USE_SCHEMA on the parent schema, and the model must either be owned by
+    /// the caller or the caller must have a privilege on the model.
+    pub fn list_registered_models(&self) -> ListRegisteredModelsBuilder {
+        ListRegisteredModelsBuilder::new(
+            crate::codegen::registered_models::RegisteredModelServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+        )
+    }
+    /// Create a registered model
+    ///
+    /// Creates a new registered model. The caller must be a metastore admin or have
+    /// the CREATE_MODEL privilege on the parent catalog and schema.
+    ///
+    /// # Arguments
+    ///
+    /// * `model_info` - The registered model to create.
+    pub fn create_registered_model(
+        &self,
+        model_info: CreateRegisteredModel,
+    ) -> CreateRegisteredModelBuilder {
+        CreateRegisteredModelBuilder::new(
+            crate::codegen::registered_models::RegisteredModelServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            model_info,
+        )
+    }
+    /// Access the `registered_model` resource scoped to the given name.
+    pub fn registered_model(
+        &self,
+        catalog_name: impl Into<String>,
+        schema_name: impl Into<String>,
+        registered_model_name: impl Into<String>,
+    ) -> RegisteredModelClient {
+        RegisteredModelClient::new(
+            catalog_name,
+            schema_name,
+            registered_model_name,
+            crate::codegen::registered_models::RegisteredModelServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+        )
+    }
+    /// Access the `registered_model` resource from its dot-joined full name.
+    pub fn registered_model_from_full_name(
+        &self,
+        full_name: impl Into<String>,
+    ) -> RegisteredModelClient {
+        RegisteredModelClient::from_full_name(
+            full_name,
+            crate::codegen::registered_models::RegisteredModelServiceClient::new(
                 self.client.clone(),
                 self.base_url.clone(),
             ),
@@ -1072,6 +1294,42 @@ impl UnityCatalogClient {
                 self.base_url.clone(),
             ),
             volume_id,
+            operation,
+        )
+    }
+    /// Generate a new set of credentials for a model version.
+    ///
+    /// The metastore must have the `external_access_enabled` flag set to true
+    /// (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+    /// privilege on the parent schema (granted by a catalog owner).
+    ///
+    /// # Arguments
+    ///
+    /// * `catalog_name` - Name of parent catalog of the model version.
+    /// * `schema_name` - Name of parent schema of the model version.
+    /// * `model_name` - Name of the parent registered model.
+    /// * `version` - The integer version number of the model version.
+    /// * `operation` - The operation performed against the model version data, either
+    /// READ_MODEL_VERSION or READ_WRITE_MODEL_VERSION. If READ_WRITE_MODEL_VERSION
+    /// is specified, the credentials returned will have write permissions,
+    /// otherwise, it will be read only.
+    pub fn generate_temporary_model_version_credentials(
+        &self,
+        catalog_name: impl Into<String>,
+        schema_name: impl Into<String>,
+        model_name: impl Into<String>,
+        version: i64,
+        operation: generate_temporary_model_version_credentials_request::Operation,
+    ) -> GenerateTemporaryModelVersionCredentialsBuilder {
+        GenerateTemporaryModelVersionCredentialsBuilder::new(
+            crate::codegen::temporary_credentials::TemporaryCredentialClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            catalog_name,
+            schema_name,
+            model_name,
+            version,
             operation,
         )
     }

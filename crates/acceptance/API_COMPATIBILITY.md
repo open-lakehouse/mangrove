@@ -37,13 +37,13 @@ Legend: ✅ defined · ❌ absent · — n/a
 | **Functions** C/G/L/D (+update) | ✅ | ✅ (no PATCH) | ✅ | OSS Java has no function update; ours/DBX do |
 | **External Locations** C/G/L/U/D | ✅ | ✅ | ✅ | aligned |
 | **Credentials** (storage) C/G/L/U/D | ✅ | ✅ | ✅ | aligned |
-| **Temporary Credentials** (table/path/volume) | ✅ | ✅ (+ model-version) | ✅ | we lack the model-version variant (deferred with registered models) |
+| **Temporary Credentials** (table/path/volume/model-version) | ✅ | ✅ | ✅ | aligned |
 | **Shares** + share permissions | ✅ | ❌ (no sharing server) | ✅ | OSS-Rust / DBX only |
 | **Recipients** C/G/L/U/D | ✅ | ❌ | ✅ | OSS-Rust / DBX only |
 | **Providers** C/G/L/U/D | ✅ | ❌ | ✅ | OSS-Rust / DBX only |
 | **Grants / Permissions** (`/permissions/{securable_type}/{full_name}`) | ❌ (share-scoped only) | ✅ | ✅ (`/grants/...` + `geteffective`) | **deferred** — see below |
 | **Metastore summary** (`/metastore_summary`) | ❌ | ✅ | ✅ | minor gap, deferred |
-| **Registered Models / Versions** | ❌ | ✅ | ✅ | **deferred** |
+| **Registered Models / Versions** | ✅ | ✅ | ✅ | aligned (incl. `/temporary-model-version-credentials`) |
 | **Delta commits** (`/delta/preview/commits`) | ❌ | ✅ | ✅ | out of scope (commit coordinator) |
 
 ### Conventions — aligned
@@ -92,7 +92,6 @@ serialized strings change. Evidence after regeneration:
 | Item | Status | Rationale / tracking |
 |---|---|---|
 | **Grants / Permissions** general service | **Deferred** | We only have share-scoped permissions today. The general grants service (OSS `/permissions/{securable_type}/{full_name}`; Databricks `/grants/...` + `geteffective`) is a later task that requires integrating a **policy engine** — grant enforcement is meaningless without it, so it is sequenced after that integration. Tracked by [#29 "Support Grants API"](https://github.com/unitycatalog-incubator/unitycatalog-rs/issues/29) (relates to [#28 OpenFGA-backed authorization policy](https://github.com/unitycatalog-incubator/unitycatalog-rs/issues/28)). |
-| **Registered Models / Model Versions** | **Deferred** | Not implemented; explicitly out of scope for now. Includes the `/temporary-model-version-credentials` variant. Tracked by [#148](https://github.com/unitycatalog-incubator/unitycatalog-rs/issues/148). |
 | **Metastore summary** (`/metastore_summary`) | **Deferred** | Minor read-only endpoint; low priority. Tracked by [#149](https://github.com/unitycatalog-incubator/unitycatalog-rs/issues/149). |
 | **Delta commits** (`/delta/preview/commits`) | Out of scope | Belongs to the commit-coordinator surface, not the catalog API. |
 

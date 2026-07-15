@@ -1,0 +1,154 @@
+syntax = "proto3";
+
+package unitycatalog.model_versions.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+
+// The status of a model version, reflecting the lifecycle of its artifacts in
+// external storage.
+enum ModelVersionStatus {
+  // The status is not specified.
+  MODEL_VERSION_STATUS_UNSPECIFIED = 0;
+
+  // The client has not yet completely written all model artifacts to external
+  // storage. This is the initial status assigned on creation.
+  PENDING_REGISTRATION = 1;
+
+  // The client failed to write all model artifacts to external storage.
+  FAILED_REGISTRATION = 2;
+
+  // The client successfully wrote all model artifacts to external storage and
+  // the version has been finalized.
+  READY = 3;
+}
+
+// The payload for creating a new model version.
+//
+// Wrapped in the `model_version` envelope of a `CreateModelVersionRequest`,
+// matching the Unity Catalog `POST /models/versions` wire contract.
+message CreateModelVersion {
+  // Name of the parent registered model, relative to parent schema.
+  string model_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Name of parent catalog.
+  string catalog_name = 2 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Name of parent schema.
+  string schema_name = 3 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // URI indicating the location of the source artifacts (e.g. an MLflow run
+  // artifact path) used to create the model version.
+  string source = 4 [
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // The run id used by the ML package that generated this model.
+  optional string run_id = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // User-provided free-form text description.
+  optional string comment = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// A model version under a registered model.
+//
+// A version is identified by its parent model's three-level name plus an
+// integer `version` number assigned by the server. It carries its own artifact
+// storage location and moves through the PENDING_REGISTRATION -> READY lifecycle
+// via the finalize operation.
+message ModelVersion {
+  option (google.api.resource) = {
+    type: "unitycatalog.io/ModelVersion"
+    pattern: "models/{registered_model}/versions/{version}"
+    plural: "model_versions"
+    singular: "model_version"
+    name_field: "version"
+  };
+
+  // Name of the parent registered model, relative to parent schema.
+  string model_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Name of parent catalog.
+  string catalog_name = 2 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Name of parent schema.
+  string schema_name = 3 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Integer model version number, used to reference the model version in API
+  // requests. Assigned by the server, monotonically increasing per model.
+  int64 version = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // URI indicating the location of the source artifacts used to create the model
+  // version.
+  string source = 5 [(google.api.field_behavior) = REQUIRED];
+
+  // The run id used by the ML package that generated this model.
+  optional string run_id = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // Current status of the model version.
+  ModelVersionStatus status = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The storage location under which the model version's artifacts are stored.
+  optional string storage_location = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // User-provided free-form text description.
+  optional string comment = 9 [(google.api.field_behavior) = OPTIONAL];
+
+  // Unique identifier for the model version.
+  optional string id = 10 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_behavior) = IDENTIFIER
+  ];
+
+  // Time at which this model version was created, in epoch milliseconds.
+  optional int64 created_at = 1000 [
+    (buf.validate.field).int64.gt = 0,
+    (google.api.field_behavior) = OUTPUT_ONLY
+  ];
+
+  // Username of model version creator.
+  optional string created_by = 1001 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Time at which this model version was last updated, in epoch milliseconds.
+  optional int64 updated_at = 1002 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Username of user who last modified the model version.
+  optional string updated_by = 1003 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The unique identifier of the metastore.
+  optional string metastore_id = 1004 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Indicates whether the principal is limited to retrieving metadata for the
+  // associated object through the BROWSE privilege when include_browse is
+  // enabled in the request.
+  optional bool browse_only = 1005 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

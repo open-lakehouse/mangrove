@@ -5,6 +5,7 @@ use super::client::SchemaServiceClient;
 use unitycatalog_common::models::agent_skills::v0alpha1::*;
 use unitycatalog_common::models::agents::v0alpha1::*;
 use unitycatalog_common::models::functions::v1::*;
+use unitycatalog_common::models::registered_models::v1::*;
 use unitycatalog_common::models::schemas::v1::*;
 use unitycatalog_common::models::tables::v1::*;
 use unitycatalog_common::models::volumes::v1::*;
@@ -197,6 +198,45 @@ impl SchemaClient {
             ),
             &self.catalog_name,
             &self.schema_name,
+        )
+    }
+    /// Access a `registered_model` within this resource.
+    pub fn registered_model(
+        &self,
+        registered_model_name: impl Into<String>,
+    ) -> crate::codegen::registered_models::RegisteredModelClient {
+        crate::codegen::registered_models::RegisteredModelClient::new(
+            &self.catalog_name,
+            &self.schema_name,
+            registered_model_name,
+            crate::codegen::registered_models::RegisteredModelServiceClient::new(
+                self.client.client.clone(),
+                self.client.base_url.clone(),
+            ),
+        )
+    }
+    /// Create a `registered_model` within this resource.
+    pub fn create_registered_model(
+        &self,
+        model_info: CreateRegisteredModel,
+    ) -> crate::codegen::registered_models::CreateRegisteredModelBuilder {
+        crate::codegen::registered_models::CreateRegisteredModelBuilder::new(
+            crate::codegen::registered_models::RegisteredModelServiceClient::new(
+                self.client.client.clone(),
+                self.client.base_url.clone(),
+            ),
+            model_info,
+        )
+    }
+    /// List `registered_model` resources within this resource.
+    pub fn list_registered_models(
+        &self,
+    ) -> crate::codegen::registered_models::ListRegisteredModelsBuilder {
+        crate::codegen::registered_models::ListRegisteredModelsBuilder::new(
+            crate::codegen::registered_models::RegisteredModelServiceClient::new(
+                self.client.client.clone(),
+                self.client.base_url.clone(),
+            ),
         )
     }
     /// Access a `table` within this resource.

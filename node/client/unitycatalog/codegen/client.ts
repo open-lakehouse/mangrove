@@ -9,6 +9,10 @@ import {
   CatalogSchema,
   type CreateFunction,
   CreateFunctionSchema,
+  type CreateModelVersion,
+  CreateModelVersionSchema,
+  type CreateRegisteredModel,
+  CreateRegisteredModelSchema,
   type Credential,
   CredentialSchema,
   type EntityTagAssignment,
@@ -19,12 +23,16 @@ import {
   FunctionSchema,
   type ListEntityTagAssignmentsResponse,
   ListEntityTagAssignmentsResponseSchema,
+  type ModelVersion,
+  ModelVersionSchema,
   type PolicyInfo,
   PolicyInfoSchema,
   type Provider,
   ProviderSchema,
   type Recipient,
   RecipientSchema,
+  type RegisteredModel,
+  RegisteredModelSchema,
   type Schema,
   SchemaSchema,
   type Share,
@@ -51,6 +59,7 @@ import {
   type NapiPolicyClient as NativePolicyClient,
   type NapiProviderClient as NativeProviderClient,
   type NapiRecipientClient as NativeRecipientClient,
+  type NapiRegisteredModelClient as NativeRegisteredModelClient,
   type NapiSchemaClient as NativeSchemaClient,
   type NapiShareClient as NativeShareClient,
   type NapiStagingTableClient as NativeStagingTableClient,
@@ -403,6 +412,27 @@ export interface DeleteFunctionOptions {
   force?: boolean;
 }
 
+export interface ListModelVersionsOptions {
+  /** The maximum number of results per page that should be returned. */
+  maxResults?: number;
+  /** Opaque pagination token to go to next page based on previous query. */
+  pageToken?: string;
+  /** Whether to include model versions in the response for which the principal can
+   *  only access selective metadata for. */
+  includeBrowse?: boolean;
+}
+
+export interface GetModelVersionOptions {
+  /** Whether to include model versions in the response for which the principal can
+   *  only access selective metadata for. */
+  includeBrowse?: boolean;
+}
+
+export interface UpdateModelVersionOptions {
+  /** User-provided free-form text description. */
+  comment?: string;
+}
+
 export interface ListPoliciesOptions {
   /** When true, also return policies defined on the securable's ancestors
    *  (e.g. for a table: its schema and catalog). Each returned PolicyInfo still
@@ -489,6 +519,40 @@ export interface UpdateRecipientOptions {
   properties?: Record<string, string>;
   /** Expiration timestamp of the token, in epoch milliseconds. */
   expirationTime?: number;
+}
+
+export interface ListRegisteredModelsOptions {
+  /** Name of parent catalog for models of interest. */
+  catalogName?: string;
+  /** Name of parent schema for models of interest. */
+  schemaName?: string;
+  /** The maximum number of results per page that should be returned. */
+  maxResults?: number;
+  /** Opaque pagination token to go to next page based on previous query. */
+  pageToken?: string;
+  /** Whether to include registered models in the response for which the principal
+   *  can only access selective metadata for. */
+  includeBrowse?: boolean;
+}
+
+export interface GetRegisteredModelOptions {
+  /** Whether to include registered models in the response for which the principal
+   *  can only access selective metadata for. */
+  includeBrowse?: boolean;
+}
+
+export interface UpdateRegisteredModelOptions {
+  /** New name for the registered model. */
+  newName?: string;
+  /** User-provided free-form text description. */
+  comment?: string;
+  /** Username of new owner of the registered model. */
+  owner?: string;
+}
+
+export interface DeleteRegisteredModelOptions {
+  /** Force deletion even if the registered model still has model versions. */
+  force?: boolean;
 }
 
 export interface ListSchemasOptions {
@@ -1152,6 +1216,68 @@ export class RecipientClient {
   async delete(): Promise<void> {
     try {
       await this.inner.delete();
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+}
+
+export class RegisteredModelClient {
+  private readonly inner: NativeRegisteredModelClient;
+
+  /** @internal */
+  constructor(inner: NativeRegisteredModelClient) {
+    this.inner = inner;
+  }
+
+  /**
+   * Get a registered model
+   *
+   * Gets a registered model from within a parent catalog and schema. For the
+   * fetch to succeed, the caller must be a metastore admin, the owner of the
+   * registered model, or have a privilege on the registered model.
+   */
+  async get(options?: GetRegisteredModelOptions): Promise<RegisteredModel> {
+    const { includeBrowse } = options || {};
+    try {
+      return fromBinary(
+        RegisteredModelSchema,
+        await this.inner.get(includeBrowse),
+      );
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * Update a registered model
+   *
+   * Updates the registered model that matches the supplied name.
+   */
+  async update(
+    options?: UpdateRegisteredModelOptions,
+  ): Promise<RegisteredModel> {
+    const { newName, comment, owner } = options || {};
+    try {
+      return fromBinary(
+        RegisteredModelSchema,
+        await this.inner.update(newName, comment, owner),
+      );
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * Delete a registered model
+   *
+   * Deletes the registered model that matches the supplied name. For the deletion
+   * to succeed, the caller must be the owner of the registered model.
+   */
+  async delete(options?: DeleteRegisteredModelOptions): Promise<void> {
+    const { force } = options || {};
+    try {
+      await this.inner.delete(force);
     } catch (e) {
       throw parseNativeError(e);
     }
@@ -1980,6 +2106,151 @@ export class UnityCatalogClient {
     );
   }
 
+  /**
+   * List model versions
+   *
+   * List the model versions of the specified registered model. If the caller is
+   * the metastore admin, all model versions are returned. Otherwise, the caller
+   * must have the appropriate privileges on the parent model.
+   */
+  async listModelVersions(
+    fullName: string,
+    options?: ListModelVersionsOptions,
+  ): Promise<ModelVersion[]> {
+    const { maxResults, includeBrowse } = options || {};
+    try {
+      return (
+        await this.inner.listModelVersions(fullName, maxResults, includeBrowse)
+      ).map((data) => fromBinary(ModelVersionSchema, data));
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * List model versions
+   *
+   * List the model versions of the specified registered model. If the caller is
+   * the metastore admin, all model versions are returned. Otherwise, the caller
+   * must have the appropriate privileges on the parent model.
+   */
+  async *listModelVersionsStream(
+    fullName: string,
+    options?: ListModelVersionsOptions,
+  ): AsyncIterable<ModelVersion> {
+    const { maxResults, includeBrowse } = options || {};
+    try {
+      for await (const data of this.inner.listModelVersionsStream(
+        fullName,
+        maxResults,
+        includeBrowse,
+      )) {
+        yield fromBinary(ModelVersionSchema, data);
+      }
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * Create a model version
+   *
+   * Creates a new model version in PENDING_REGISTRATION status. The server
+   * assigns the version number and a storage location for the artifacts. The
+   * caller must be a metastore admin or the owner of the parent registered model.
+   */
+  async createModelVersion(
+    modelVersion: CreateModelVersion,
+  ): Promise<ModelVersion> {
+    try {
+      return fromBinary(
+        ModelVersionSchema,
+        await this.inner.createModelVersion(
+          Buffer.from(toBinary(CreateModelVersionSchema, modelVersion)),
+        ),
+      );
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * Get a model version
+   *
+   * Gets a model version by its parent model name and version number.
+   */
+  async getModelVersion(
+    fullName: string,
+    version: number,
+    options?: GetModelVersionOptions,
+  ): Promise<ModelVersion> {
+    const { includeBrowse } = options || {};
+    try {
+      return fromBinary(
+        ModelVersionSchema,
+        await this.inner.getModelVersion(fullName, version, includeBrowse),
+      );
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * Update a model version
+   *
+   * Updates the model version that matches the supplied name and version.
+   */
+  async updateModelVersion(
+    fullName: string,
+    version: number,
+    options?: UpdateModelVersionOptions,
+  ): Promise<ModelVersion> {
+    const { comment } = options || {};
+    try {
+      return fromBinary(
+        ModelVersionSchema,
+        await this.inner.updateModelVersion(fullName, version, comment),
+      );
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * Delete a model version
+   *
+   * Deletes the model version that matches the supplied name and version. For the
+   * deletion to succeed, the caller must be the owner of the parent registered
+   * model.
+   */
+  async deleteModelVersion(fullName: string, version: number): Promise<void> {
+    try {
+      await this.inner.deleteModelVersion(fullName, version);
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * Finalize a model version
+   *
+   * Transitions a model version to READY once all artifacts have been written to
+   * its storage location.
+   */
+  async finalizeModelVersion(
+    fullName: string,
+    version: number,
+  ): Promise<ModelVersion> {
+    try {
+      return fromBinary(
+        ModelVersionSchema,
+        await this.inner.finalizeModelVersion(fullName, version),
+      );
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
   policy(policyName: string): PolicyClient {
     return new PolicyClient(this.inner.policy(policyName));
   }
@@ -2103,6 +2374,93 @@ export class UnityCatalogClient {
 
   recipient(recipientName: string): RecipientClient {
     return new RecipientClient(this.inner.recipient(recipientName));
+  }
+
+  /**
+   * List registered models
+   *
+   * List registered models within the specified parent catalog and schema. If
+   * the caller is the metastore admin, all registered models are returned in the
+   * response. Otherwise, the caller must have USE_CATALOG on the parent catalog
+   * and USE_SCHEMA on the parent schema, and the model must either be owned by
+   * the caller or the caller must have a privilege on the model.
+   */
+  async listRegisteredModels(
+    options?: ListRegisteredModelsOptions,
+  ): Promise<RegisteredModel[]> {
+    const { catalogName, schemaName, maxResults, includeBrowse } =
+      options || {};
+    try {
+      return (
+        await this.inner.listRegisteredModels(
+          catalogName,
+          schemaName,
+          maxResults,
+          includeBrowse,
+        )
+      ).map((data) => fromBinary(RegisteredModelSchema, data));
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * List registered models
+   *
+   * List registered models within the specified parent catalog and schema. If
+   * the caller is the metastore admin, all registered models are returned in the
+   * response. Otherwise, the caller must have USE_CATALOG on the parent catalog
+   * and USE_SCHEMA on the parent schema, and the model must either be owned by
+   * the caller or the caller must have a privilege on the model.
+   */
+  async *listRegisteredModelsStream(
+    options?: ListRegisteredModelsOptions,
+  ): AsyncIterable<RegisteredModel> {
+    const { catalogName, schemaName, maxResults, includeBrowse } =
+      options || {};
+    try {
+      for await (const data of this.inner.listRegisteredModelsStream(
+        catalogName,
+        schemaName,
+        maxResults,
+        includeBrowse,
+      )) {
+        yield fromBinary(RegisteredModelSchema, data);
+      }
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * Create a registered model
+   *
+   * Creates a new registered model. The caller must be a metastore admin or have
+   * the CREATE_MODEL privilege on the parent catalog and schema.
+   */
+  async createRegisteredModel(
+    modelInfo: CreateRegisteredModel,
+  ): Promise<RegisteredModel> {
+    try {
+      return fromBinary(
+        RegisteredModelSchema,
+        await this.inner.createRegisteredModel(
+          Buffer.from(toBinary(CreateRegisteredModelSchema, modelInfo)),
+        ),
+      );
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  registeredModel(
+    catalogName: string,
+    schemaName: string,
+    registeredModelName: string,
+  ): RegisteredModelClient {
+    return new RegisteredModelClient(
+      this.inner.registeredModel(catalogName, schemaName, registeredModelName),
+    );
   }
 
   /**
@@ -2494,6 +2852,36 @@ export class UnityCatalogClient {
         TemporaryCredentialSchema,
         await this.inner.generateTemporaryVolumeCredentials(
           volumeId,
+          operation,
+        ),
+      );
+    } catch (e) {
+      throw parseNativeError(e);
+    }
+  }
+
+  /**
+   * Generate a new set of credentials for a model version.
+   *
+   * The metastore must have the `external_access_enabled` flag set to true
+   * (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+   * privilege on the parent schema (granted by a catalog owner).
+   */
+  async generateTemporaryModelVersionCredentials(
+    catalogName: string,
+    schemaName: string,
+    modelName: string,
+    version: number,
+    operation: number,
+  ): Promise<TemporaryCredential> {
+    try {
+      return fromBinary(
+        TemporaryCredentialSchema,
+        await this.inner.generateTemporaryModelVersionCredentials(
+          catalogName,
+          schemaName,
+          modelName,
+          version,
           operation,
         ),
       );

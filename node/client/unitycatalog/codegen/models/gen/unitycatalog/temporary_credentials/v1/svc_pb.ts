@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file unitycatalog/temporary_credentials/v1/svc.proto.
  */
 export const file_unitycatalog_temporary_credentials_v1_svc: GenFile = /*@__PURE__*/
-  fileDesc("Ci91bml0eWNhdGFsb2cvdGVtcG9yYXJ5X2NyZWRlbnRpYWxzL3YxL3N2Yy5wcm90bxIldW5pdHljYXRhbG9nLnRlbXBvcmFyeV9jcmVkZW50aWFscy52MSLsAQooR2VuZXJhdGVUZW1wb3JhcnlUYWJsZUNyZWRlbnRpYWxzUmVxdWVzdBIVCgh0YWJsZV9pZBgBIAEoCUID4EECEnEKCW9wZXJhdGlvbhgCIAEoDjJZLnVuaXR5Y2F0YWxvZy50ZW1wb3JhcnlfY3JlZGVudGlhbHMudjEuR2VuZXJhdGVUZW1wb3JhcnlUYWJsZUNyZWRlbnRpYWxzUmVxdWVzdC5PcGVyYXRpb25CA+BBAiI2CglPcGVyYXRpb24SDwoLVU5TUEVDSUZJRUQQABIICgRSRUFEEAESDgoKUkVBRF9XUklURRACIvgBCilHZW5lcmF0ZVRlbXBvcmFyeVZvbHVtZUNyZWRlbnRpYWxzUmVxdWVzdBIWCgl2b2x1bWVfaWQYASABKAlCA+BBAhJyCglvcGVyYXRpb24YAiABKA4yWi51bml0eWNhdGFsb2cudGVtcG9yYXJ5X2NyZWRlbnRpYWxzLnYxLkdlbmVyYXRlVGVtcG9yYXJ5Vm9sdW1lQ3JlZGVudGlhbHNSZXF1ZXN0Lk9wZXJhdGlvbkID4EECIj8KCU9wZXJhdGlvbhIPCgtVTlNQRUNJRklFRBAAEg8KC1JFQURfVk9MVU1FEAESEAoMV1JJVEVfVk9MVU1FEAIirQIKJ0dlbmVyYXRlVGVtcG9yYXJ5UGF0aENyZWRlbnRpYWxzUmVxdWVzdBIQCgN1cmwYASABKAlCA+BBAhJwCglvcGVyYXRpb24YAiABKA4yWC51bml0eWNhdGFsb2cudGVtcG9yYXJ5X2NyZWRlbnRpYWxzLnYxLkdlbmVyYXRlVGVtcG9yYXJ5UGF0aENyZWRlbnRpYWxzUmVxdWVzdC5PcGVyYXRpb25CA+BBAhIZCgdkcnlfcnVuGAMgASgIQgPgQQFIAIgBASJXCglPcGVyYXRpb24SDwoLVU5TUEVDSUZJRUQQABINCglQQVRIX1JFQUQQARITCg9QQVRIX1JFQURfV1JJVEUQAhIVChFQQVRIX0NSRUFURV9UQUJMRRADQgoKCF9kcnlfcnVuMqMGChtUZW1wb3JhcnlDcmVkZW50aWFsc1NlcnZpY2US/wEKIUdlbmVyYXRlVGVtcG9yYXJ5VGFibGVDcmVkZW50aWFscxJPLnVuaXR5Y2F0YWxvZy50ZW1wb3JhcnlfY3JlZGVudGlhbHMudjEuR2VuZXJhdGVUZW1wb3JhcnlUYWJsZUNyZWRlbnRpYWxzUmVxdWVzdBo6LnVuaXR5Y2F0YWxvZy50ZW1wb3JhcnlfY3JlZGVudGlhbHMudjEuVGVtcG9yYXJ5Q3JlZGVudGlhbCJNukcjKiFHZW5lcmF0ZVRlbXBvcmFyeVRhYmxlQ3JlZGVudGlhbHOC0+STAiE6ASoiHC90ZW1wb3JhcnktdGFibGUtY3JlZGVudGlhbHMS+wEKIEdlbmVyYXRlVGVtcG9yYXJ5UGF0aENyZWRlbnRpYWxzEk4udW5pdHljYXRhbG9nLnRlbXBvcmFyeV9jcmVkZW50aWFscy52MS5HZW5lcmF0ZVRlbXBvcmFyeVBhdGhDcmVkZW50aWFsc1JlcXVlc3QaOi51bml0eWNhdGFsb2cudGVtcG9yYXJ5X2NyZWRlbnRpYWxzLnYxLlRlbXBvcmFyeUNyZWRlbnRpYWwiS7pHIiogR2VuZXJhdGVUZW1wb3JhcnlQYXRoQ3JlZGVudGlhbHOC0+STAiA6ASoiGy90ZW1wb3JhcnktcGF0aC1jcmVkZW50aWFscxKDAgoiR2VuZXJhdGVUZW1wb3JhcnlWb2x1bWVDcmVkZW50aWFscxJQLnVuaXR5Y2F0YWxvZy50ZW1wb3JhcnlfY3JlZGVudGlhbHMudjEuR2VuZXJhdGVUZW1wb3JhcnlWb2x1bWVDcmVkZW50aWFsc1JlcXVlc3QaOi51bml0eWNhdGFsb2cudGVtcG9yYXJ5X2NyZWRlbnRpYWxzLnYxLlRlbXBvcmFyeUNyZWRlbnRpYWwiT7pHJCoiR2VuZXJhdGVUZW1wb3JhcnlWb2x1bWVDcmVkZW50aWFsc4LT5JMCIjoBKiIdL3RlbXBvcmFyeS12b2x1bWUtY3JlZGVudGlhbHNC1QIKKWNvbS51bml0eWNhdGFsb2cudGVtcG9yYXJ5X2NyZWRlbnRpYWxzLnYxQghTdmNQcm90b1ABWmxnaXRodWIuY29tL2RlbHRhLWluY3ViYXRvci9kZWx0YS1zaGFyaW5nLXJzL2dvL3VuaXR5Y2F0YWxvZy90ZW1wb3JhcnlfY3JlZGVudGlhbHMvdjE7dGVtcG9yYXJ5X2NyZWRlbnRpYWxzdjGiAgNVVFiqAiRVbml0eWNhdGFsb2cuVGVtcG9yYXJ5Q3JlZGVudGlhbHMuVjHKAiRVbml0eWNhdGFsb2dcVGVtcG9yYXJ5Q3JlZGVudGlhbHNcVjHiAjBVbml0eWNhdGFsb2dcVGVtcG9yYXJ5Q3JlZGVudGlhbHNcVjFcR1BCTWV0YWRhdGHqAiZVbml0eWNhdGFsb2c6OlRlbXBvcmFyeUNyZWRlbnRpYWxzOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_gnostic_openapi_v3_annotations, file_google_api_annotations, file_google_api_field_behavior, file_unitycatalog_temporary_credentials_v1_models]);
+  fileDesc("Ci91bml0eWNhdGFsb2cvdGVtcG9yYXJ5X2NyZWRlbnRpYWxzL3YxL3N2Yy5wcm90bxIldW5pdHljYXRhbG9nLnRlbXBvcmFyeV9jcmVkZW50aWFscy52MSLsAQooR2VuZXJhdGVUZW1wb3JhcnlUYWJsZUNyZWRlbnRpYWxzUmVxdWVzdBIVCgh0YWJsZV9pZBgBIAEoCUID4EECEnEKCW9wZXJhdGlvbhgCIAEoDjJZLnVuaXR5Y2F0YWxvZy50ZW1wb3JhcnlfY3JlZGVudGlhbHMudjEuR2VuZXJhdGVUZW1wb3JhcnlUYWJsZUNyZWRlbnRpYWxzUmVxdWVzdC5PcGVyYXRpb25CA+BBAiI2CglPcGVyYXRpb24SDwoLVU5TUEVDSUZJRUQQABIICgRSRUFEEAESDgoKUkVBRF9XUklURRACIvgBCilHZW5lcmF0ZVRlbXBvcmFyeVZvbHVtZUNyZWRlbnRpYWxzUmVxdWVzdBIWCgl2b2x1bWVfaWQYASABKAlCA+BBAhJyCglvcGVyYXRpb24YAiABKA4yWi51bml0eWNhdGFsb2cudGVtcG9yYXJ5X2NyZWRlbnRpYWxzLnYxLkdlbmVyYXRlVGVtcG9yYXJ5Vm9sdW1lQ3JlZGVudGlhbHNSZXF1ZXN0Lk9wZXJhdGlvbkID4EECIj8KCU9wZXJhdGlvbhIPCgtVTlNQRUNJRklFRBAAEg8KC1JFQURfVk9MVU1FEAESEAoMV1JJVEVfVk9MVU1FEAIirQIKJ0dlbmVyYXRlVGVtcG9yYXJ5UGF0aENyZWRlbnRpYWxzUmVxdWVzdBIQCgN1cmwYASABKAlCA+BBAhJwCglvcGVyYXRpb24YAiABKA4yWC51bml0eWNhdGFsb2cudGVtcG9yYXJ5X2NyZWRlbnRpYWxzLnYxLkdlbmVyYXRlVGVtcG9yYXJ5UGF0aENyZWRlbnRpYWxzUmVxdWVzdC5PcGVyYXRpb25CA+BBAhIZCgdkcnlfcnVuGAMgASgIQgPgQQFIAIgBASJXCglPcGVyYXRpb24SDwoLVU5TUEVDSUZJRUQQABINCglQQVRIX1JFQUQQARITCg9QQVRIX1JFQURfV1JJVEUQAhIVChFQQVRIX0NSRUFURV9UQUJMRRADQgoKCF9kcnlfcnVuIuMCCi9HZW5lcmF0ZVRlbXBvcmFyeU1vZGVsVmVyc2lvbkNyZWRlbnRpYWxzUmVxdWVzdBIZCgxjYXRhbG9nX25hbWUYASABKAlCA+BBAhIYCgtzY2hlbWFfbmFtZRgCIAEoCUID4EECEhcKCm1vZGVsX25hbWUYAyABKAlCA+BBAhIUCgd2ZXJzaW9uGAQgASgDQgPgQQISeAoJb3BlcmF0aW9uGAUgASgOMmAudW5pdHljYXRhbG9nLnRlbXBvcmFyeV9jcmVkZW50aWFscy52MS5HZW5lcmF0ZVRlbXBvcmFyeU1vZGVsVmVyc2lvbkNyZWRlbnRpYWxzUmVxdWVzdC5PcGVyYXRpb25CA+BBAiJSCglPcGVyYXRpb24SDwoLVU5TUEVDSUZJRUQQABIWChJSRUFEX01PREVMX1ZFUlNJT04QARIcChhSRUFEX1dSSVRFX01PREVMX1ZFUlNJT04QAjLCCAobVGVtcG9yYXJ5Q3JlZGVudGlhbHNTZXJ2aWNlEv8BCiFHZW5lcmF0ZVRlbXBvcmFyeVRhYmxlQ3JlZGVudGlhbHMSTy51bml0eWNhdGFsb2cudGVtcG9yYXJ5X2NyZWRlbnRpYWxzLnYxLkdlbmVyYXRlVGVtcG9yYXJ5VGFibGVDcmVkZW50aWFsc1JlcXVlc3QaOi51bml0eWNhdGFsb2cudGVtcG9yYXJ5X2NyZWRlbnRpYWxzLnYxLlRlbXBvcmFyeUNyZWRlbnRpYWwiTbpHIyohR2VuZXJhdGVUZW1wb3JhcnlUYWJsZUNyZWRlbnRpYWxzgtPkkwIhOgEqIhwvdGVtcG9yYXJ5LXRhYmxlLWNyZWRlbnRpYWxzEvsBCiBHZW5lcmF0ZVRlbXBvcmFyeVBhdGhDcmVkZW50aWFscxJOLnVuaXR5Y2F0YWxvZy50ZW1wb3JhcnlfY3JlZGVudGlhbHMudjEuR2VuZXJhdGVUZW1wb3JhcnlQYXRoQ3JlZGVudGlhbHNSZXF1ZXN0GjoudW5pdHljYXRhbG9nLnRlbXBvcmFyeV9jcmVkZW50aWFscy52MS5UZW1wb3JhcnlDcmVkZW50aWFsIku6RyIqIEdlbmVyYXRlVGVtcG9yYXJ5UGF0aENyZWRlbnRpYWxzgtPkkwIgOgEqIhsvdGVtcG9yYXJ5LXBhdGgtY3JlZGVudGlhbHMSgwIKIkdlbmVyYXRlVGVtcG9yYXJ5Vm9sdW1lQ3JlZGVudGlhbHMSUC51bml0eWNhdGFsb2cudGVtcG9yYXJ5X2NyZWRlbnRpYWxzLnYxLkdlbmVyYXRlVGVtcG9yYXJ5Vm9sdW1lQ3JlZGVudGlhbHNSZXF1ZXN0GjoudW5pdHljYXRhbG9nLnRlbXBvcmFyeV9jcmVkZW50aWFscy52MS5UZW1wb3JhcnlDcmVkZW50aWFsIk+6RyQqIkdlbmVyYXRlVGVtcG9yYXJ5Vm9sdW1lQ3JlZGVudGlhbHOC0+STAiI6ASoiHS90ZW1wb3Jhcnktdm9sdW1lLWNyZWRlbnRpYWxzEpwCCihHZW5lcmF0ZVRlbXBvcmFyeU1vZGVsVmVyc2lvbkNyZWRlbnRpYWxzElYudW5pdHljYXRhbG9nLnRlbXBvcmFyeV9jcmVkZW50aWFscy52MS5HZW5lcmF0ZVRlbXBvcmFyeU1vZGVsVmVyc2lvbkNyZWRlbnRpYWxzUmVxdWVzdBo6LnVuaXR5Y2F0YWxvZy50ZW1wb3JhcnlfY3JlZGVudGlhbHMudjEuVGVtcG9yYXJ5Q3JlZGVudGlhbCJcukcqKihHZW5lcmF0ZVRlbXBvcmFyeU1vZGVsVmVyc2lvbkNyZWRlbnRpYWxzgtPkkwIpOgEqIiQvdGVtcG9yYXJ5LW1vZGVsLXZlcnNpb24tY3JlZGVudGlhbHNC1QIKKWNvbS51bml0eWNhdGFsb2cudGVtcG9yYXJ5X2NyZWRlbnRpYWxzLnYxQghTdmNQcm90b1ABWmxnaXRodWIuY29tL2RlbHRhLWluY3ViYXRvci9kZWx0YS1zaGFyaW5nLXJzL2dvL3VuaXR5Y2F0YWxvZy90ZW1wb3JhcnlfY3JlZGVudGlhbHMvdjE7dGVtcG9yYXJ5X2NyZWRlbnRpYWxzdjGiAgNVVFiqAiRVbml0eWNhdGFsb2cuVGVtcG9yYXJ5Q3JlZGVudGlhbHMuVjHKAiRVbml0eWNhdGFsb2dcVGVtcG9yYXJ5Q3JlZGVudGlhbHNcVjHiAjBVbml0eWNhdGFsb2dcVGVtcG9yYXJ5Q3JlZGVudGlhbHNcVjFcR1BCTWV0YWRhdGHqAiZVbml0eWNhdGFsb2c6OlRlbXBvcmFyeUNyZWRlbnRpYWxzOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_gnostic_openapi_v3_annotations, file_google_api_annotations, file_google_api_field_behavior, file_unitycatalog_temporary_credentials_v1_models]);
 
 /**
  * Generate a new set of credentials for a table.
@@ -219,6 +219,90 @@ export const GenerateTemporaryPathCredentialsRequest_OperationSchema: GenEnum<Ge
   enumDesc(file_unitycatalog_temporary_credentials_v1_svc, 2, 0);
 
 /**
+ * Generate a new set of credentials for a model version.
+ *
+ * @generated from message unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest
+ */
+export type GenerateTemporaryModelVersionCredentialsRequest = Message<"unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest"> & {
+  /**
+   * Name of parent catalog of the model version.
+   *
+   * @generated from field: string catalog_name = 1;
+   */
+  catalogName: string;
+
+  /**
+   * Name of parent schema of the model version.
+   *
+   * @generated from field: string schema_name = 2;
+   */
+  schemaName: string;
+
+  /**
+   * Name of the parent registered model.
+   *
+   * @generated from field: string model_name = 3;
+   */
+  modelName: string;
+
+  /**
+   * The integer version number of the model version.
+   *
+   * @generated from field: int64 version = 4;
+   */
+  version: bigint;
+
+  /**
+   * The operation performed against the model version data, either
+   * READ_MODEL_VERSION or READ_WRITE_MODEL_VERSION. If READ_WRITE_MODEL_VERSION
+   * is specified, the credentials returned will have write permissions,
+   * otherwise, it will be read only.
+   *
+   * @generated from field: unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest.Operation operation = 5;
+   */
+  operation: GenerateTemporaryModelVersionCredentialsRequest_Operation;
+};
+
+/**
+ * Describes the message unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest.
+ * Use `create(GenerateTemporaryModelVersionCredentialsRequestSchema)` to create a new message.
+ */
+export const GenerateTemporaryModelVersionCredentialsRequestSchema: GenMessage<GenerateTemporaryModelVersionCredentialsRequest> = /*@__PURE__*/
+  messageDesc(file_unitycatalog_temporary_credentials_v1_svc, 3);
+
+/**
+ * @generated from enum unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest.Operation
+ */
+export enum GenerateTemporaryModelVersionCredentialsRequest_Operation {
+  /**
+   * The operation is not specified.
+   *
+   * @generated from enum value: UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * The operation is read only.
+   *
+   * @generated from enum value: READ_MODEL_VERSION = 1;
+   */
+  READ_MODEL_VERSION = 1,
+
+  /**
+   * The operation is read and write.
+   *
+   * @generated from enum value: READ_WRITE_MODEL_VERSION = 2;
+   */
+  READ_WRITE_MODEL_VERSION = 2,
+}
+
+/**
+ * Describes the enum unitycatalog.temporary_credentials.v1.GenerateTemporaryModelVersionCredentialsRequest.Operation.
+ */
+export const GenerateTemporaryModelVersionCredentialsRequest_OperationSchema: GenEnum<GenerateTemporaryModelVersionCredentialsRequest_Operation> = /*@__PURE__*/
+  enumDesc(file_unitycatalog_temporary_credentials_v1_svc, 3, 0);
+
+/**
  * Service for generating temporary credentials to access tables and storage paths.
  * Credentials are short-lived and scoped to a specific operation (read or read/write).
  *
@@ -257,6 +341,20 @@ export const TemporaryCredentialsService: GenService<{
   generateTemporaryVolumeCredentials: {
     methodKind: "unary";
     input: typeof GenerateTemporaryVolumeCredentialsRequestSchema;
+    output: typeof TemporaryCredentialSchema;
+  },
+  /**
+   * Generate a new set of credentials for a model version.
+   *
+   * The metastore must have the `external_access_enabled` flag set to true
+   * (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+   * privilege on the parent schema (granted by a catalog owner).
+   *
+   * @generated from rpc unitycatalog.temporary_credentials.v1.TemporaryCredentialsService.GenerateTemporaryModelVersionCredentials
+   */
+  generateTemporaryModelVersionCredentials: {
+    methodKind: "unary";
+    input: typeof GenerateTemporaryModelVersionCredentialsRequestSchema;
     output: typeof TemporaryCredentialSchema;
   },
 }> = /*@__PURE__*/

@@ -1,0 +1,180 @@
+syntax = "proto3";
+
+package unitycatalog.registered_models.v1;
+
+import "buf/validate/validate.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "unitycatalog/registered_models/v1/models.proto";
+
+// List registered models in a schema.
+message ListRegisteredModelsRequest {
+  // Name of parent catalog for models of interest.
+  optional string catalog_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference) = {child_type: "unitycatalog.io/RegisteredModel"}
+  ];
+
+  // Name of parent schema for models of interest.
+  optional string schema_name = 2 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.resource_reference) = {child_type: "unitycatalog.io/RegisteredModel"}
+  ];
+
+  // The maximum number of results per page that should be returned.
+  optional int32 max_results = 3 [
+    (buf.validate.field).int32 = {
+      gt: 0
+      lte: 1000
+    },
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // Opaque pagination token to go to next page based on previous query.
+  optional string page_token = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Whether to include registered models in the response for which the principal
+  // can only access selective metadata for.
+  optional bool include_browse = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// List registered models response.
+message ListRegisteredModelsResponse {
+  // The registered models returned.
+  repeated RegisteredModel registered_models = 1;
+
+  // The next_page_token value to include in the next List request.
+  optional string next_page_token = 2;
+}
+
+// Create a new registered model.
+message CreateRegisteredModelRequest {
+  // The registered model to create.
+  CreateRegisteredModel model_info = 1 [
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+// Get a registered model.
+message GetRegisteredModelRequest {
+  // The fully-qualified name of the registered model (three-level name:
+  // catalog.schema.model).
+  string full_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "unitycatalog.io/RegisteredModel"}
+  ];
+
+  // Whether to include registered models in the response for which the principal
+  // can only access selective metadata for.
+  optional bool include_browse = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Update a registered model.
+message UpdateRegisteredModelRequest {
+  // The fully-qualified name of the registered model (three-level name:
+  // catalog.schema.model).
+  string full_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "unitycatalog.io/RegisteredModel"}
+  ];
+
+  // New name for the registered model.
+  optional string new_name = 2 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // User-provided free-form text description.
+  optional string comment = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Username of new owner of the registered model.
+  optional string owner = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Delete a registered model.
+message DeleteRegisteredModelRequest {
+  // The fully-qualified name of the registered model (three-level name:
+  // catalog.schema.model).
+  string full_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "unitycatalog.io/RegisteredModel"}
+  ];
+
+  // Force deletion even if the registered model still has model versions.
+  optional bool force = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Manage registered models in the service.
+//
+// A registered model is a securable in the three-level namespace
+// (catalog.schema.model) that groups a collection of model versions.
+service RegisteredModelsService {
+  // List registered models
+  //
+  // List registered models within the specified parent catalog and schema. If
+  // the caller is the metastore admin, all registered models are returned in the
+  // response. Otherwise, the caller must have USE_CATALOG on the parent catalog
+  // and USE_SCHEMA on the parent schema, and the model must either be owned by
+  // the caller or the caller must have a privilege on the model.
+  rpc ListRegisteredModels(ListRegisteredModelsRequest) returns (ListRegisteredModelsResponse) {
+    option (google.api.http) = {get: "/models"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "ListRegisteredModels"};
+  }
+
+  // Create a registered model
+  //
+  // Creates a new registered model. The caller must be a metastore admin or have
+  // the CREATE_MODEL privilege on the parent catalog and schema.
+  rpc CreateRegisteredModel(CreateRegisteredModelRequest) returns (RegisteredModel) {
+    option (google.api.http) = {
+      post: "/models"
+      body: "model_info"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "CreateRegisteredModel"};
+  }
+
+  // Get a registered model
+  //
+  // Gets a registered model from within a parent catalog and schema. For the
+  // fetch to succeed, the caller must be a metastore admin, the owner of the
+  // registered model, or have a privilege on the registered model.
+  rpc GetRegisteredModel(GetRegisteredModelRequest) returns (RegisteredModel) {
+    option (google.api.http) = {get: "/models/{full_name}"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "GetRegisteredModel"};
+  }
+
+  // Update a registered model
+  //
+  // Updates the registered model that matches the supplied name.
+  rpc UpdateRegisteredModel(UpdateRegisteredModelRequest) returns (RegisteredModel) {
+    option (google.api.http) = {
+      patch: "/models/{full_name}"
+      body: "*"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "UpdateRegisteredModel"};
+  }
+
+  // Delete a registered model
+  //
+  // Deletes the registered model that matches the supplied name. For the deletion
+  // to succeed, the caller must be the owner of the registered model.
+  rpc DeleteRegisteredModel(DeleteRegisteredModelRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/models/{full_name}"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "DeleteRegisteredModel"};
+  }
+}

@@ -397,6 +397,48 @@ impl ::core::convert::From<PySqlDataAccess> for super::functions::v1::SqlDataAcc
     }
 }
 #[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "ModelVersionStatus")]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyModelVersionStatus {
+    MODEL_VERSION_STATUS_UNSPECIFIED = 0isize,
+    PENDING_REGISTRATION = 1isize,
+    FAILED_REGISTRATION = 2isize,
+    READY = 3isize,
+}
+impl PyModelVersionStatus {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyModelVersionStatus::MODEL_VERSION_STATUS_UNSPECIFIED => 0i32,
+            PyModelVersionStatus::PENDING_REGISTRATION => 1i32,
+            PyModelVersionStatus::FAILED_REGISTRATION => 2i32,
+            PyModelVersionStatus::READY => 3i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyModelVersionStatus::MODEL_VERSION_STATUS_UNSPECIFIED,
+            1i32 => PyModelVersionStatus::PENDING_REGISTRATION,
+            2i32 => PyModelVersionStatus::FAILED_REGISTRATION,
+            3i32 => PyModelVersionStatus::READY,
+            _ => PyModelVersionStatus::MODEL_VERSION_STATUS_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::model_versions::v1::ModelVersionStatus> for PyModelVersionStatus {
+    fn from(value: super::model_versions::v1::ModelVersionStatus) -> Self {
+        PyModelVersionStatus::__from_proto_i32(
+            <super::model_versions::v1::ModelVersionStatus as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyModelVersionStatus> for super::model_versions::v1::ModelVersionStatus {
+    fn from(value: PyModelVersionStatus) -> Self {
+        let n = value.__to_proto_i32();
+        <super::model_versions::v1::ModelVersionStatus as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
 #[::pyo3::pyclass(eq, eq_int, name = "PolicyType")]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum PyPolicyType {
@@ -850,6 +892,66 @@ impl ::core::convert::From<PyTableType> for super::tables::v1::TableType {
     fn from(value: PyTableType) -> Self {
         let n = value.__to_proto_i32();
         <super::tables::v1::TableType as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
+#[::pyo3::pyclass(
+    eq,
+    eq_int,
+    name = "GenerateTemporaryModelVersionCredentialsRequestOperation"
+)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyGenerateTemporaryModelVersionCredentialsRequestOperation {
+    UNSPECIFIED = 0isize,
+    READ_MODEL_VERSION = 1isize,
+    READ_WRITE_MODEL_VERSION = 2isize,
+}
+impl PyGenerateTemporaryModelVersionCredentialsRequestOperation {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyGenerateTemporaryModelVersionCredentialsRequestOperation::UNSPECIFIED => {
+                0i32
+            }
+            PyGenerateTemporaryModelVersionCredentialsRequestOperation::READ_MODEL_VERSION => {
+                1i32
+            }
+            PyGenerateTemporaryModelVersionCredentialsRequestOperation::READ_WRITE_MODEL_VERSION => {
+                2i32
+            }
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyGenerateTemporaryModelVersionCredentialsRequestOperation::UNSPECIFIED,
+            1i32 => PyGenerateTemporaryModelVersionCredentialsRequestOperation::READ_MODEL_VERSION,
+            2i32 => {
+                PyGenerateTemporaryModelVersionCredentialsRequestOperation::READ_WRITE_MODEL_VERSION
+            }
+            _ => PyGenerateTemporaryModelVersionCredentialsRequestOperation::UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<
+    super::temporary_credentials::v1::generate_temporary_model_version_credentials_request::Operation,
+> for PyGenerateTemporaryModelVersionCredentialsRequestOperation {
+    fn from(
+        value: super::temporary_credentials::v1::generate_temporary_model_version_credentials_request::Operation,
+    ) -> Self {
+        PyGenerateTemporaryModelVersionCredentialsRequestOperation::__from_proto_i32(
+            <super::temporary_credentials::v1::generate_temporary_model_version_credentials_request::Operation as ::buffa::Enumeration>::to_i32(
+                &value,
+            ),
+        )
+    }
+}
+impl ::core::convert::From<PyGenerateTemporaryModelVersionCredentialsRequestOperation>
+for super::temporary_credentials::v1::generate_temporary_model_version_credentials_request::Operation {
+    fn from(value: PyGenerateTemporaryModelVersionCredentialsRequestOperation) -> Self {
+        let n = value.__to_proto_i32();
+        <super::temporary_credentials::v1::generate_temporary_model_version_credentials_request::Operation as ::buffa::Enumeration>::from_i32(
+                n,
+            )
+            .unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -7072,6 +7174,849 @@ impl ::core::convert::From<PyUpdateFunctionRequest>
         value.0
     }
 }
+#[::pyo3::pyclass(name = "CreateModelVersion")]
+#[derive(Clone, Debug)]
+pub struct PyCreateModelVersion(pub super::model_versions::v1::CreateModelVersion);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyCreateModelVersion {
+    #[new]
+    #[pyo3(
+        signature = (
+            model_name = None,
+            catalog_name = None,
+            schema_name = None,
+            source = None,
+            run_id = None,
+            comment = None
+        )
+    )]
+    fn new(
+        model_name: ::core::option::Option<::std::string::String>,
+        catalog_name: ::core::option::Option<::std::string::String>,
+        schema_name: ::core::option::Option<::std::string::String>,
+        source: ::core::option::Option<::std::string::String>,
+        run_id: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::model_versions::v1::CreateModelVersion as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = model_name {
+            inner.model_name = value;
+        }
+        if let ::core::option::Option::Some(value) = catalog_name {
+            inner.catalog_name = value;
+        }
+        if let ::core::option::Option::Some(value) = schema_name {
+            inner.schema_name = value;
+        }
+        if let ::core::option::Option::Some(value) = source {
+            inner.source = value;
+        }
+        {
+            let value = run_id;
+            inner.run_id = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn model_name(&self) -> ::std::string::String {
+        self.0.model_name.clone()
+    }
+    #[getter]
+    fn catalog_name(&self) -> ::std::string::String {
+        self.0.catalog_name.clone()
+    }
+    #[getter]
+    fn schema_name(&self) -> ::std::string::String {
+        self.0.schema_name.clone()
+    }
+    #[getter]
+    fn source(&self) -> ::std::string::String {
+        self.0.source.clone()
+    }
+    #[getter]
+    fn run_id(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.run_id.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[setter(model_name)]
+    fn set_model_name(&mut self, value: ::std::string::String) {
+        self.0.model_name = value;
+    }
+    #[setter(catalog_name)]
+    fn set_catalog_name(&mut self, value: ::std::string::String) {
+        self.0.catalog_name = value;
+    }
+    #[setter(schema_name)]
+    fn set_schema_name(&mut self, value: ::std::string::String) {
+        self.0.schema_name = value;
+    }
+    #[setter(source)]
+    fn set_source(&mut self, value: ::std::string::String) {
+        self.0.source = value;
+    }
+    #[setter(run_id)]
+    fn set_run_id(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.run_id = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::model_versions::v1::CreateModelVersion> for PyCreateModelVersion {
+    fn from(value: super::model_versions::v1::CreateModelVersion) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyCreateModelVersion> for super::model_versions::v1::CreateModelVersion {
+    fn from(value: PyCreateModelVersion) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "CreateModelVersionRequest")]
+#[derive(Clone, Debug)]
+pub struct PyCreateModelVersionRequest(pub super::model_versions::v1::CreateModelVersionRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyCreateModelVersionRequest {
+    #[new]
+    #[pyo3(signature = (model_version = None))]
+    fn new(model_version: ::core::option::Option<PyCreateModelVersion>) -> Self {
+        let mut inner = <super::model_versions::v1::CreateModelVersionRequest as ::core::default::Default>::default();
+        {
+            let value = model_version;
+            inner.model_version = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn model_version(&self) -> ::core::option::Option<PyCreateModelVersion> {
+        self.0
+            .model_version
+            .clone()
+            .into_option()
+            .map(PyCreateModelVersion::from)
+    }
+    #[setter(model_version)]
+    fn set_model_version(&mut self, value: ::core::option::Option<PyCreateModelVersion>) {
+        self.0.model_version = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::model_versions::v1::CreateModelVersionRequest>
+    for PyCreateModelVersionRequest
+{
+    fn from(value: super::model_versions::v1::CreateModelVersionRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyCreateModelVersionRequest>
+    for super::model_versions::v1::CreateModelVersionRequest
+{
+    fn from(value: PyCreateModelVersionRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "DeleteModelVersionRequest")]
+#[derive(Clone, Debug)]
+pub struct PyDeleteModelVersionRequest(pub super::model_versions::v1::DeleteModelVersionRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyDeleteModelVersionRequest {
+    #[new]
+    #[pyo3(signature = (full_name = None, version = None))]
+    fn new(
+        full_name: ::core::option::Option<::std::string::String>,
+        version: ::core::option::Option<i64>,
+    ) -> Self {
+        let mut inner = <super::model_versions::v1::DeleteModelVersionRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = full_name {
+            inner.full_name = value;
+        }
+        if let ::core::option::Option::Some(value) = version {
+            inner.version = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn full_name(&self) -> ::std::string::String {
+        self.0.full_name.clone()
+    }
+    #[getter]
+    fn version(&self) -> i64 {
+        self.0.version
+    }
+    #[setter(full_name)]
+    fn set_full_name(&mut self, value: ::std::string::String) {
+        self.0.full_name = value;
+    }
+    #[setter(version)]
+    fn set_version(&mut self, value: i64) {
+        self.0.version = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::model_versions::v1::DeleteModelVersionRequest>
+    for PyDeleteModelVersionRequest
+{
+    fn from(value: super::model_versions::v1::DeleteModelVersionRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyDeleteModelVersionRequest>
+    for super::model_versions::v1::DeleteModelVersionRequest
+{
+    fn from(value: PyDeleteModelVersionRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "FinalizeModelVersionRequest")]
+#[derive(Clone, Debug)]
+pub struct PyFinalizeModelVersionRequest(
+    pub super::model_versions::v1::FinalizeModelVersionRequest,
+);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyFinalizeModelVersionRequest {
+    #[new]
+    #[pyo3(signature = (full_name = None, version = None))]
+    fn new(
+        full_name: ::core::option::Option<::std::string::String>,
+        version: ::core::option::Option<i64>,
+    ) -> Self {
+        let mut inner = <super::model_versions::v1::FinalizeModelVersionRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = full_name {
+            inner.full_name = value;
+        }
+        if let ::core::option::Option::Some(value) = version {
+            inner.version = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn full_name(&self) -> ::std::string::String {
+        self.0.full_name.clone()
+    }
+    #[getter]
+    fn version(&self) -> i64 {
+        self.0.version
+    }
+    #[setter(full_name)]
+    fn set_full_name(&mut self, value: ::std::string::String) {
+        self.0.full_name = value;
+    }
+    #[setter(version)]
+    fn set_version(&mut self, value: i64) {
+        self.0.version = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::model_versions::v1::FinalizeModelVersionRequest>
+    for PyFinalizeModelVersionRequest
+{
+    fn from(value: super::model_versions::v1::FinalizeModelVersionRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyFinalizeModelVersionRequest>
+    for super::model_versions::v1::FinalizeModelVersionRequest
+{
+    fn from(value: PyFinalizeModelVersionRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "GetModelVersionRequest")]
+#[derive(Clone, Debug)]
+pub struct PyGetModelVersionRequest(pub super::model_versions::v1::GetModelVersionRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGetModelVersionRequest {
+    #[new]
+    #[pyo3(signature = (full_name = None, version = None, include_browse = None))]
+    fn new(
+        full_name: ::core::option::Option<::std::string::String>,
+        version: ::core::option::Option<i64>,
+        include_browse: ::core::option::Option<bool>,
+    ) -> Self {
+        let mut inner = <super::model_versions::v1::GetModelVersionRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = full_name {
+            inner.full_name = value;
+        }
+        if let ::core::option::Option::Some(value) = version {
+            inner.version = value;
+        }
+        {
+            let value = include_browse;
+            inner.include_browse = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn full_name(&self) -> ::std::string::String {
+        self.0.full_name.clone()
+    }
+    #[getter]
+    fn version(&self) -> i64 {
+        self.0.version
+    }
+    #[getter]
+    fn include_browse(&self) -> ::core::option::Option<bool> {
+        self.0.include_browse
+    }
+    #[setter(full_name)]
+    fn set_full_name(&mut self, value: ::std::string::String) {
+        self.0.full_name = value;
+    }
+    #[setter(version)]
+    fn set_version(&mut self, value: i64) {
+        self.0.version = value;
+    }
+    #[setter(include_browse)]
+    fn set_include_browse(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_browse = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::model_versions::v1::GetModelVersionRequest>
+    for PyGetModelVersionRequest
+{
+    fn from(value: super::model_versions::v1::GetModelVersionRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyGetModelVersionRequest>
+    for super::model_versions::v1::GetModelVersionRequest
+{
+    fn from(value: PyGetModelVersionRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListModelVersionsRequest")]
+#[derive(Clone, Debug)]
+pub struct PyListModelVersionsRequest(pub super::model_versions::v1::ListModelVersionsRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListModelVersionsRequest {
+    #[new]
+    #[pyo3(
+        signature = (
+            full_name = None,
+            max_results = None,
+            page_token = None,
+            include_browse = None
+        )
+    )]
+    fn new(
+        full_name: ::core::option::Option<::std::string::String>,
+        max_results: ::core::option::Option<i32>,
+        page_token: ::core::option::Option<::std::string::String>,
+        include_browse: ::core::option::Option<bool>,
+    ) -> Self {
+        let mut inner = <super::model_versions::v1::ListModelVersionsRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = full_name {
+            inner.full_name = value;
+        }
+        {
+            let value = max_results;
+            inner.max_results = value;
+        }
+        {
+            let value = page_token;
+            inner.page_token = value;
+        }
+        {
+            let value = include_browse;
+            inner.include_browse = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn full_name(&self) -> ::std::string::String {
+        self.0.full_name.clone()
+    }
+    #[getter]
+    fn max_results(&self) -> ::core::option::Option<i32> {
+        self.0.max_results
+    }
+    #[getter]
+    fn page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.page_token.clone()
+    }
+    #[getter]
+    fn include_browse(&self) -> ::core::option::Option<bool> {
+        self.0.include_browse
+    }
+    #[setter(full_name)]
+    fn set_full_name(&mut self, value: ::std::string::String) {
+        self.0.full_name = value;
+    }
+    #[setter(max_results)]
+    fn set_max_results(&mut self, value: ::core::option::Option<i32>) {
+        self.0.max_results = value;
+    }
+    #[setter(page_token)]
+    fn set_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.page_token = value;
+    }
+    #[setter(include_browse)]
+    fn set_include_browse(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_browse = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::model_versions::v1::ListModelVersionsRequest>
+    for PyListModelVersionsRequest
+{
+    fn from(value: super::model_versions::v1::ListModelVersionsRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListModelVersionsRequest>
+    for super::model_versions::v1::ListModelVersionsRequest
+{
+    fn from(value: PyListModelVersionsRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListModelVersionsResponse")]
+#[derive(Clone, Debug)]
+pub struct PyListModelVersionsResponse(pub super::model_versions::v1::ListModelVersionsResponse);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListModelVersionsResponse {
+    #[new]
+    #[pyo3(signature = (model_versions = None, next_page_token = None))]
+    fn new(
+        model_versions: ::core::option::Option<::std::vec::Vec<PyModelVersion>>,
+        next_page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner = <super::model_versions::v1::ListModelVersionsResponse as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = model_versions {
+            inner.model_versions = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = next_page_token;
+            inner.next_page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn model_versions(&self) -> ::std::vec::Vec<PyModelVersion> {
+        self.0
+            .model_versions
+            .iter()
+            .cloned()
+            .map(PyModelVersion::from)
+            .collect()
+    }
+    #[getter]
+    fn next_page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.next_page_token.clone()
+    }
+    #[setter(model_versions)]
+    fn set_model_versions(&mut self, value: ::std::vec::Vec<PyModelVersion>) {
+        self.0.model_versions = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(next_page_token)]
+    fn set_next_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.next_page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::model_versions::v1::ListModelVersionsResponse>
+    for PyListModelVersionsResponse
+{
+    fn from(value: super::model_versions::v1::ListModelVersionsResponse) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListModelVersionsResponse>
+    for super::model_versions::v1::ListModelVersionsResponse
+{
+    fn from(value: PyListModelVersionsResponse) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ModelVersion")]
+#[derive(Clone, Debug)]
+pub struct PyModelVersion(pub super::model_versions::v1::ModelVersion);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyModelVersion {
+    #[new]
+    #[pyo3(
+        signature = (
+            model_name = None,
+            catalog_name = None,
+            schema_name = None,
+            version = None,
+            source = None,
+            run_id = None,
+            status = None,
+            storage_location = None,
+            comment = None,
+            id = None,
+            created_at = None,
+            created_by = None,
+            updated_at = None,
+            updated_by = None,
+            metastore_id = None,
+            browse_only = None
+        )
+    )]
+    fn new(
+        model_name: ::core::option::Option<::std::string::String>,
+        catalog_name: ::core::option::Option<::std::string::String>,
+        schema_name: ::core::option::Option<::std::string::String>,
+        version: ::core::option::Option<i64>,
+        source: ::core::option::Option<::std::string::String>,
+        run_id: ::core::option::Option<::std::string::String>,
+        status: ::core::option::Option<PyModelVersionStatus>,
+        storage_location: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        id: ::core::option::Option<::std::string::String>,
+        created_at: ::core::option::Option<i64>,
+        created_by: ::core::option::Option<::std::string::String>,
+        updated_at: ::core::option::Option<i64>,
+        updated_by: ::core::option::Option<::std::string::String>,
+        metastore_id: ::core::option::Option<::std::string::String>,
+        browse_only: ::core::option::Option<bool>,
+    ) -> Self {
+        let mut inner =
+            <super::model_versions::v1::ModelVersion as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = model_name {
+            inner.model_name = value;
+        }
+        if let ::core::option::Option::Some(value) = catalog_name {
+            inner.catalog_name = value;
+        }
+        if let ::core::option::Option::Some(value) = schema_name {
+            inner.schema_name = value;
+        }
+        if let ::core::option::Option::Some(value) = version {
+            inner.version = value;
+        }
+        if let ::core::option::Option::Some(value) = source {
+            inner.source = value;
+        }
+        {
+            let value = run_id;
+            inner.run_id = value;
+        }
+        if let ::core::option::Option::Some(value) = status {
+            inner.status = ::buffa::EnumValue::Known(
+                <super::model_versions::v1::ModelVersionStatus as ::core::convert::From<_>>::from(
+                    value,
+                ),
+            );
+        }
+        {
+            let value = storage_location;
+            inner.storage_location = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = id;
+            inner.id = value;
+        }
+        {
+            let value = created_at;
+            inner.created_at = value;
+        }
+        {
+            let value = created_by;
+            inner.created_by = value;
+        }
+        {
+            let value = updated_at;
+            inner.updated_at = value;
+        }
+        {
+            let value = updated_by;
+            inner.updated_by = value;
+        }
+        {
+            let value = metastore_id;
+            inner.metastore_id = value;
+        }
+        {
+            let value = browse_only;
+            inner.browse_only = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn model_name(&self) -> ::std::string::String {
+        self.0.model_name.clone()
+    }
+    #[getter]
+    fn catalog_name(&self) -> ::std::string::String {
+        self.0.catalog_name.clone()
+    }
+    #[getter]
+    fn schema_name(&self) -> ::std::string::String {
+        self.0.schema_name.clone()
+    }
+    #[getter]
+    fn version(&self) -> i64 {
+        self.0.version
+    }
+    #[getter]
+    fn source(&self) -> ::std::string::String {
+        self.0.source.clone()
+    }
+    #[getter]
+    fn run_id(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.run_id.clone()
+    }
+    #[getter]
+    fn status(&self) -> PyModelVersionStatus {
+        PyModelVersionStatus::from(self.0.status.as_known().unwrap_or_default())
+    }
+    #[getter]
+    fn storage_location(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.storage_location.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn id(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.id.clone()
+    }
+    #[getter]
+    fn created_at(&self) -> ::core::option::Option<i64> {
+        self.0.created_at
+    }
+    #[getter]
+    fn created_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.created_by.clone()
+    }
+    #[getter]
+    fn updated_at(&self) -> ::core::option::Option<i64> {
+        self.0.updated_at
+    }
+    #[getter]
+    fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.updated_by.clone()
+    }
+    #[getter]
+    fn metastore_id(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.metastore_id.clone()
+    }
+    #[getter]
+    fn browse_only(&self) -> ::core::option::Option<bool> {
+        self.0.browse_only
+    }
+    #[setter(model_name)]
+    fn set_model_name(&mut self, value: ::std::string::String) {
+        self.0.model_name = value;
+    }
+    #[setter(catalog_name)]
+    fn set_catalog_name(&mut self, value: ::std::string::String) {
+        self.0.catalog_name = value;
+    }
+    #[setter(schema_name)]
+    fn set_schema_name(&mut self, value: ::std::string::String) {
+        self.0.schema_name = value;
+    }
+    #[setter(version)]
+    fn set_version(&mut self, value: i64) {
+        self.0.version = value;
+    }
+    #[setter(source)]
+    fn set_source(&mut self, value: ::std::string::String) {
+        self.0.source = value;
+    }
+    #[setter(run_id)]
+    fn set_run_id(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.run_id = value;
+    }
+    #[setter(status)]
+    fn set_status(&mut self, value: PyModelVersionStatus) {
+        self.0.status = ::buffa::EnumValue::Known(
+            <super::model_versions::v1::ModelVersionStatus as ::core::convert::From<_>>::from(
+                value,
+            ),
+        );
+    }
+    #[setter(storage_location)]
+    fn set_storage_location(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.storage_location = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(id)]
+    fn set_id(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.id = value;
+    }
+    #[setter(created_at)]
+    fn set_created_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.created_at = value;
+    }
+    #[setter(created_by)]
+    fn set_created_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.created_by = value;
+    }
+    #[setter(updated_at)]
+    fn set_updated_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.updated_at = value;
+    }
+    #[setter(updated_by)]
+    fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.updated_by = value;
+    }
+    #[setter(metastore_id)]
+    fn set_metastore_id(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.metastore_id = value;
+    }
+    #[setter(browse_only)]
+    fn set_browse_only(&mut self, value: ::core::option::Option<bool>) {
+        self.0.browse_only = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::model_versions::v1::ModelVersion> for PyModelVersion {
+    fn from(value: super::model_versions::v1::ModelVersion) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyModelVersion> for super::model_versions::v1::ModelVersion {
+    fn from(value: PyModelVersion) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "UpdateModelVersionRequest")]
+#[derive(Clone, Debug)]
+pub struct PyUpdateModelVersionRequest(pub super::model_versions::v1::UpdateModelVersionRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyUpdateModelVersionRequest {
+    #[new]
+    #[pyo3(signature = (full_name = None, version = None, comment = None))]
+    fn new(
+        full_name: ::core::option::Option<::std::string::String>,
+        version: ::core::option::Option<i64>,
+        comment: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner = <super::model_versions::v1::UpdateModelVersionRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = full_name {
+            inner.full_name = value;
+        }
+        if let ::core::option::Option::Some(value) = version {
+            inner.version = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn full_name(&self) -> ::std::string::String {
+        self.0.full_name.clone()
+    }
+    #[getter]
+    fn version(&self) -> i64 {
+        self.0.version
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[setter(full_name)]
+    fn set_full_name(&mut self, value: ::std::string::String) {
+        self.0.full_name = value;
+    }
+    #[setter(version)]
+    fn set_version(&mut self, value: i64) {
+        self.0.version = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::model_versions::v1::UpdateModelVersionRequest>
+    for PyUpdateModelVersionRequest
+{
+    fn from(value: super::model_versions::v1::UpdateModelVersionRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyUpdateModelVersionRequest>
+    for super::model_versions::v1::UpdateModelVersionRequest
+{
+    fn from(value: PyUpdateModelVersionRequest) -> Self {
+        value.0
+    }
+}
 #[::pyo3::pyclass(name = "CreatePolicyRequest")]
 #[derive(Clone, Debug)]
 pub struct PyCreatePolicyRequest(pub super::policies::v1::CreatePolicyRequest);
@@ -9375,6 +10320,761 @@ impl ::core::convert::From<PyUpdateRecipientRequest>
     for super::recipients::v1::UpdateRecipientRequest
 {
     fn from(value: PyUpdateRecipientRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "CreateRegisteredModel")]
+#[derive(Clone, Debug)]
+pub struct PyCreateRegisteredModel(pub super::registered_models::v1::CreateRegisteredModel);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyCreateRegisteredModel {
+    #[new]
+    #[pyo3(
+        signature = (
+            name = None,
+            catalog_name = None,
+            schema_name = None,
+            comment = None
+        )
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        catalog_name: ::core::option::Option<::std::string::String>,
+        schema_name: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner = <super::registered_models::v1::CreateRegisteredModel as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        if let ::core::option::Option::Some(value) = catalog_name {
+            inner.catalog_name = value;
+        }
+        if let ::core::option::Option::Some(value) = schema_name {
+            inner.schema_name = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn catalog_name(&self) -> ::std::string::String {
+        self.0.catalog_name.clone()
+    }
+    #[getter]
+    fn schema_name(&self) -> ::std::string::String {
+        self.0.schema_name.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(catalog_name)]
+    fn set_catalog_name(&mut self, value: ::std::string::String) {
+        self.0.catalog_name = value;
+    }
+    #[setter(schema_name)]
+    fn set_schema_name(&mut self, value: ::std::string::String) {
+        self.0.schema_name = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::registered_models::v1::CreateRegisteredModel>
+    for PyCreateRegisteredModel
+{
+    fn from(value: super::registered_models::v1::CreateRegisteredModel) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyCreateRegisteredModel>
+    for super::registered_models::v1::CreateRegisteredModel
+{
+    fn from(value: PyCreateRegisteredModel) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "CreateRegisteredModelRequest")]
+#[derive(Clone, Debug)]
+pub struct PyCreateRegisteredModelRequest(
+    pub super::registered_models::v1::CreateRegisteredModelRequest,
+);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyCreateRegisteredModelRequest {
+    #[new]
+    #[pyo3(signature = (model_info = None))]
+    fn new(model_info: ::core::option::Option<PyCreateRegisteredModel>) -> Self {
+        let mut inner = <super::registered_models::v1::CreateRegisteredModelRequest as ::core::default::Default>::default();
+        {
+            let value = model_info;
+            inner.model_info = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn model_info(&self) -> ::core::option::Option<PyCreateRegisteredModel> {
+        self.0
+            .model_info
+            .clone()
+            .into_option()
+            .map(PyCreateRegisteredModel::from)
+    }
+    #[setter(model_info)]
+    fn set_model_info(&mut self, value: ::core::option::Option<PyCreateRegisteredModel>) {
+        self.0.model_info = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::registered_models::v1::CreateRegisteredModelRequest>
+    for PyCreateRegisteredModelRequest
+{
+    fn from(value: super::registered_models::v1::CreateRegisteredModelRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyCreateRegisteredModelRequest>
+    for super::registered_models::v1::CreateRegisteredModelRequest
+{
+    fn from(value: PyCreateRegisteredModelRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "DeleteRegisteredModelRequest")]
+#[derive(Clone, Debug)]
+pub struct PyDeleteRegisteredModelRequest(
+    pub super::registered_models::v1::DeleteRegisteredModelRequest,
+);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyDeleteRegisteredModelRequest {
+    #[new]
+    #[pyo3(signature = (full_name = None, force = None))]
+    fn new(
+        full_name: ::core::option::Option<::std::string::String>,
+        force: ::core::option::Option<bool>,
+    ) -> Self {
+        let mut inner = <super::registered_models::v1::DeleteRegisteredModelRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = full_name {
+            inner.full_name = value;
+        }
+        {
+            let value = force;
+            inner.force = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn full_name(&self) -> ::std::string::String {
+        self.0.full_name.clone()
+    }
+    #[getter]
+    fn force(&self) -> ::core::option::Option<bool> {
+        self.0.force
+    }
+    #[setter(full_name)]
+    fn set_full_name(&mut self, value: ::std::string::String) {
+        self.0.full_name = value;
+    }
+    #[setter(force)]
+    fn set_force(&mut self, value: ::core::option::Option<bool>) {
+        self.0.force = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::registered_models::v1::DeleteRegisteredModelRequest>
+    for PyDeleteRegisteredModelRequest
+{
+    fn from(value: super::registered_models::v1::DeleteRegisteredModelRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyDeleteRegisteredModelRequest>
+    for super::registered_models::v1::DeleteRegisteredModelRequest
+{
+    fn from(value: PyDeleteRegisteredModelRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "GetRegisteredModelRequest")]
+#[derive(Clone, Debug)]
+pub struct PyGetRegisteredModelRequest(pub super::registered_models::v1::GetRegisteredModelRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGetRegisteredModelRequest {
+    #[new]
+    #[pyo3(signature = (full_name = None, include_browse = None))]
+    fn new(
+        full_name: ::core::option::Option<::std::string::String>,
+        include_browse: ::core::option::Option<bool>,
+    ) -> Self {
+        let mut inner = <super::registered_models::v1::GetRegisteredModelRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = full_name {
+            inner.full_name = value;
+        }
+        {
+            let value = include_browse;
+            inner.include_browse = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn full_name(&self) -> ::std::string::String {
+        self.0.full_name.clone()
+    }
+    #[getter]
+    fn include_browse(&self) -> ::core::option::Option<bool> {
+        self.0.include_browse
+    }
+    #[setter(full_name)]
+    fn set_full_name(&mut self, value: ::std::string::String) {
+        self.0.full_name = value;
+    }
+    #[setter(include_browse)]
+    fn set_include_browse(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_browse = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::registered_models::v1::GetRegisteredModelRequest>
+    for PyGetRegisteredModelRequest
+{
+    fn from(value: super::registered_models::v1::GetRegisteredModelRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyGetRegisteredModelRequest>
+    for super::registered_models::v1::GetRegisteredModelRequest
+{
+    fn from(value: PyGetRegisteredModelRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListRegisteredModelsRequest")]
+#[derive(Clone, Debug)]
+pub struct PyListRegisteredModelsRequest(
+    pub super::registered_models::v1::ListRegisteredModelsRequest,
+);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListRegisteredModelsRequest {
+    #[new]
+    #[pyo3(
+        signature = (
+            catalog_name = None,
+            schema_name = None,
+            max_results = None,
+            page_token = None,
+            include_browse = None
+        )
+    )]
+    fn new(
+        catalog_name: ::core::option::Option<::std::string::String>,
+        schema_name: ::core::option::Option<::std::string::String>,
+        max_results: ::core::option::Option<i32>,
+        page_token: ::core::option::Option<::std::string::String>,
+        include_browse: ::core::option::Option<bool>,
+    ) -> Self {
+        let mut inner = <super::registered_models::v1::ListRegisteredModelsRequest as ::core::default::Default>::default();
+        {
+            let value = catalog_name;
+            inner.catalog_name = value;
+        }
+        {
+            let value = schema_name;
+            inner.schema_name = value;
+        }
+        {
+            let value = max_results;
+            inner.max_results = value;
+        }
+        {
+            let value = page_token;
+            inner.page_token = value;
+        }
+        {
+            let value = include_browse;
+            inner.include_browse = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn catalog_name(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.catalog_name.clone()
+    }
+    #[getter]
+    fn schema_name(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.schema_name.clone()
+    }
+    #[getter]
+    fn max_results(&self) -> ::core::option::Option<i32> {
+        self.0.max_results
+    }
+    #[getter]
+    fn page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.page_token.clone()
+    }
+    #[getter]
+    fn include_browse(&self) -> ::core::option::Option<bool> {
+        self.0.include_browse
+    }
+    #[setter(catalog_name)]
+    fn set_catalog_name(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.catalog_name = value;
+    }
+    #[setter(schema_name)]
+    fn set_schema_name(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.schema_name = value;
+    }
+    #[setter(max_results)]
+    fn set_max_results(&mut self, value: ::core::option::Option<i32>) {
+        self.0.max_results = value;
+    }
+    #[setter(page_token)]
+    fn set_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.page_token = value;
+    }
+    #[setter(include_browse)]
+    fn set_include_browse(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_browse = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::registered_models::v1::ListRegisteredModelsRequest>
+    for PyListRegisteredModelsRequest
+{
+    fn from(value: super::registered_models::v1::ListRegisteredModelsRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListRegisteredModelsRequest>
+    for super::registered_models::v1::ListRegisteredModelsRequest
+{
+    fn from(value: PyListRegisteredModelsRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListRegisteredModelsResponse")]
+#[derive(Clone, Debug)]
+pub struct PyListRegisteredModelsResponse(
+    pub super::registered_models::v1::ListRegisteredModelsResponse,
+);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListRegisteredModelsResponse {
+    #[new]
+    #[pyo3(signature = (registered_models = None, next_page_token = None))]
+    fn new(
+        registered_models: ::core::option::Option<::std::vec::Vec<PyRegisteredModel>>,
+        next_page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner = <super::registered_models::v1::ListRegisteredModelsResponse as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = registered_models {
+            inner.registered_models = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = next_page_token;
+            inner.next_page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn registered_models(&self) -> ::std::vec::Vec<PyRegisteredModel> {
+        self.0
+            .registered_models
+            .iter()
+            .cloned()
+            .map(PyRegisteredModel::from)
+            .collect()
+    }
+    #[getter]
+    fn next_page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.next_page_token.clone()
+    }
+    #[setter(registered_models)]
+    fn set_registered_models(&mut self, value: ::std::vec::Vec<PyRegisteredModel>) {
+        self.0.registered_models = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(next_page_token)]
+    fn set_next_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.next_page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::registered_models::v1::ListRegisteredModelsResponse>
+    for PyListRegisteredModelsResponse
+{
+    fn from(value: super::registered_models::v1::ListRegisteredModelsResponse) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListRegisteredModelsResponse>
+    for super::registered_models::v1::ListRegisteredModelsResponse
+{
+    fn from(value: PyListRegisteredModelsResponse) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "RegisteredModel")]
+#[derive(Clone, Debug)]
+pub struct PyRegisteredModel(pub super::registered_models::v1::RegisteredModel);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyRegisteredModel {
+    #[new]
+    #[pyo3(
+        signature = (
+            name = None,
+            catalog_name = None,
+            schema_name = None,
+            full_name = None,
+            storage_location = None,
+            owner = None,
+            comment = None,
+            id = None,
+            created_at = None,
+            created_by = None,
+            updated_at = None,
+            updated_by = None,
+            metastore_id = None,
+            browse_only = None
+        )
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        catalog_name: ::core::option::Option<::std::string::String>,
+        schema_name: ::core::option::Option<::std::string::String>,
+        full_name: ::core::option::Option<::std::string::String>,
+        storage_location: ::core::option::Option<::std::string::String>,
+        owner: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        id: ::core::option::Option<::std::string::String>,
+        created_at: ::core::option::Option<i64>,
+        created_by: ::core::option::Option<::std::string::String>,
+        updated_at: ::core::option::Option<i64>,
+        updated_by: ::core::option::Option<::std::string::String>,
+        metastore_id: ::core::option::Option<::std::string::String>,
+        browse_only: ::core::option::Option<bool>,
+    ) -> Self {
+        let mut inner =
+            <super::registered_models::v1::RegisteredModel as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        if let ::core::option::Option::Some(value) = catalog_name {
+            inner.catalog_name = value;
+        }
+        if let ::core::option::Option::Some(value) = schema_name {
+            inner.schema_name = value;
+        }
+        if let ::core::option::Option::Some(value) = full_name {
+            inner.full_name = value;
+        }
+        {
+            let value = storage_location;
+            inner.storage_location = value;
+        }
+        {
+            let value = owner;
+            inner.owner = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = id;
+            inner.id = value;
+        }
+        {
+            let value = created_at;
+            inner.created_at = value;
+        }
+        {
+            let value = created_by;
+            inner.created_by = value;
+        }
+        {
+            let value = updated_at;
+            inner.updated_at = value;
+        }
+        {
+            let value = updated_by;
+            inner.updated_by = value;
+        }
+        {
+            let value = metastore_id;
+            inner.metastore_id = value;
+        }
+        {
+            let value = browse_only;
+            inner.browse_only = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn catalog_name(&self) -> ::std::string::String {
+        self.0.catalog_name.clone()
+    }
+    #[getter]
+    fn schema_name(&self) -> ::std::string::String {
+        self.0.schema_name.clone()
+    }
+    #[getter]
+    fn full_name(&self) -> ::std::string::String {
+        self.0.full_name.clone()
+    }
+    #[getter]
+    fn storage_location(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.storage_location.clone()
+    }
+    #[getter]
+    fn owner(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.owner.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn id(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.id.clone()
+    }
+    #[getter]
+    fn created_at(&self) -> ::core::option::Option<i64> {
+        self.0.created_at
+    }
+    #[getter]
+    fn created_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.created_by.clone()
+    }
+    #[getter]
+    fn updated_at(&self) -> ::core::option::Option<i64> {
+        self.0.updated_at
+    }
+    #[getter]
+    fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.updated_by.clone()
+    }
+    #[getter]
+    fn metastore_id(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.metastore_id.clone()
+    }
+    #[getter]
+    fn browse_only(&self) -> ::core::option::Option<bool> {
+        self.0.browse_only
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(catalog_name)]
+    fn set_catalog_name(&mut self, value: ::std::string::String) {
+        self.0.catalog_name = value;
+    }
+    #[setter(schema_name)]
+    fn set_schema_name(&mut self, value: ::std::string::String) {
+        self.0.schema_name = value;
+    }
+    #[setter(full_name)]
+    fn set_full_name(&mut self, value: ::std::string::String) {
+        self.0.full_name = value;
+    }
+    #[setter(storage_location)]
+    fn set_storage_location(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.storage_location = value;
+    }
+    #[setter(owner)]
+    fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.owner = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(id)]
+    fn set_id(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.id = value;
+    }
+    #[setter(created_at)]
+    fn set_created_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.created_at = value;
+    }
+    #[setter(created_by)]
+    fn set_created_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.created_by = value;
+    }
+    #[setter(updated_at)]
+    fn set_updated_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.updated_at = value;
+    }
+    #[setter(updated_by)]
+    fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.updated_by = value;
+    }
+    #[setter(metastore_id)]
+    fn set_metastore_id(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.metastore_id = value;
+    }
+    #[setter(browse_only)]
+    fn set_browse_only(&mut self, value: ::core::option::Option<bool>) {
+        self.0.browse_only = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::registered_models::v1::RegisteredModel> for PyRegisteredModel {
+    fn from(value: super::registered_models::v1::RegisteredModel) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyRegisteredModel> for super::registered_models::v1::RegisteredModel {
+    fn from(value: PyRegisteredModel) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "UpdateRegisteredModelRequest")]
+#[derive(Clone, Debug)]
+pub struct PyUpdateRegisteredModelRequest(
+    pub super::registered_models::v1::UpdateRegisteredModelRequest,
+);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyUpdateRegisteredModelRequest {
+    #[new]
+    #[pyo3(
+        signature = (full_name = None, new_name = None, comment = None, owner = None)
+    )]
+    fn new(
+        full_name: ::core::option::Option<::std::string::String>,
+        new_name: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        owner: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner = <super::registered_models::v1::UpdateRegisteredModelRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = full_name {
+            inner.full_name = value;
+        }
+        {
+            let value = new_name;
+            inner.new_name = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = owner;
+            inner.owner = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn full_name(&self) -> ::std::string::String {
+        self.0.full_name.clone()
+    }
+    #[getter]
+    fn new_name(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.new_name.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn owner(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.owner.clone()
+    }
+    #[setter(full_name)]
+    fn set_full_name(&mut self, value: ::std::string::String) {
+        self.0.full_name = value;
+    }
+    #[setter(new_name)]
+    fn set_new_name(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.new_name = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(owner)]
+    fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.owner = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::registered_models::v1::UpdateRegisteredModelRequest>
+    for PyUpdateRegisteredModelRequest
+{
+    fn from(value: super::registered_models::v1::UpdateRegisteredModelRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyUpdateRegisteredModelRequest>
+    for super::registered_models::v1::UpdateRegisteredModelRequest
+{
+    fn from(value: PyUpdateRegisteredModelRequest) -> Self {
         value.0
     }
 }
@@ -14276,6 +15976,126 @@ impl ::core::convert::From<super::temporary_credentials::v1::GcpOauthToken> for 
 }
 impl ::core::convert::From<PyGcpOauthToken> for super::temporary_credentials::v1::GcpOauthToken {
     fn from(value: PyGcpOauthToken) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "GenerateTemporaryModelVersionCredentialsRequest")]
+#[derive(Clone, Debug)]
+pub struct PyGenerateTemporaryModelVersionCredentialsRequest(
+    pub super::temporary_credentials::v1::GenerateTemporaryModelVersionCredentialsRequest,
+);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGenerateTemporaryModelVersionCredentialsRequest {
+    #[new]
+    #[pyo3(
+        signature = (
+            catalog_name = None,
+            schema_name = None,
+            model_name = None,
+            version = None,
+            operation = None
+        )
+    )]
+    fn new(
+        catalog_name: ::core::option::Option<::std::string::String>,
+        schema_name: ::core::option::Option<::std::string::String>,
+        model_name: ::core::option::Option<::std::string::String>,
+        version: ::core::option::Option<i64>,
+        operation: ::core::option::Option<
+            PyGenerateTemporaryModelVersionCredentialsRequestOperation,
+        >,
+    ) -> Self {
+        let mut inner = <super::temporary_credentials::v1::GenerateTemporaryModelVersionCredentialsRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = catalog_name {
+            inner.catalog_name = value;
+        }
+        if let ::core::option::Option::Some(value) = schema_name {
+            inner.schema_name = value;
+        }
+        if let ::core::option::Option::Some(value) = model_name {
+            inner.model_name = value;
+        }
+        if let ::core::option::Option::Some(value) = version {
+            inner.version = value;
+        }
+        if let ::core::option::Option::Some(value) = operation {
+            inner.operation = ::buffa::EnumValue::Known(
+                <super::temporary_credentials::v1::generate_temporary_model_version_credentials_request::Operation as ::core::convert::From<
+                    _,
+                >>::from(value),
+            );
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn catalog_name(&self) -> ::std::string::String {
+        self.0.catalog_name.clone()
+    }
+    #[getter]
+    fn schema_name(&self) -> ::std::string::String {
+        self.0.schema_name.clone()
+    }
+    #[getter]
+    fn model_name(&self) -> ::std::string::String {
+        self.0.model_name.clone()
+    }
+    #[getter]
+    fn version(&self) -> i64 {
+        self.0.version
+    }
+    #[getter]
+    fn operation(&self) -> PyGenerateTemporaryModelVersionCredentialsRequestOperation {
+        PyGenerateTemporaryModelVersionCredentialsRequestOperation::from(
+            self.0.operation.as_known().unwrap_or_default(),
+        )
+    }
+    #[setter(catalog_name)]
+    fn set_catalog_name(&mut self, value: ::std::string::String) {
+        self.0.catalog_name = value;
+    }
+    #[setter(schema_name)]
+    fn set_schema_name(&mut self, value: ::std::string::String) {
+        self.0.schema_name = value;
+    }
+    #[setter(model_name)]
+    fn set_model_name(&mut self, value: ::std::string::String) {
+        self.0.model_name = value;
+    }
+    #[setter(version)]
+    fn set_version(&mut self, value: i64) {
+        self.0.version = value;
+    }
+    #[setter(operation)]
+    fn set_operation(&mut self, value: PyGenerateTemporaryModelVersionCredentialsRequestOperation) {
+        self.0.operation = ::buffa::EnumValue::Known(
+            <super::temporary_credentials::v1::generate_temporary_model_version_credentials_request::Operation as ::core::convert::From<
+                _,
+            >>::from(value),
+        );
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl
+    ::core::convert::From<
+        super::temporary_credentials::v1::GenerateTemporaryModelVersionCredentialsRequest,
+    > for PyGenerateTemporaryModelVersionCredentialsRequest
+{
+    fn from(
+        value: super::temporary_credentials::v1::GenerateTemporaryModelVersionCredentialsRequest,
+    ) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyGenerateTemporaryModelVersionCredentialsRequest>
+    for super::temporary_credentials::v1::GenerateTemporaryModelVersionCredentialsRequest
+{
+    fn from(value: PyGenerateTemporaryModelVersionCredentialsRequest) -> Self {
         value.0
     }
 }
