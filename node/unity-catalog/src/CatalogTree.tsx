@@ -16,15 +16,18 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  Boxes,
   Database,
   FolderTree,
   Globe,
+  HardDrive,
   KeyRound,
   Pencil,
   Plus,
   Settings,
   Trash2,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useCatalogDialogs } from "./dialogs";
 import { nodeId, useExpansion } from "./ExpansionContext";
 import { GROUPS, type GroupDef } from "./groups";
@@ -83,16 +86,31 @@ export function CatalogTree() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            aria-label="New catalog"
-            title="New catalog"
-            onClick={() => dialogs.create({ kind: "catalog" })}
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
+          <CreateDropdown
+            label="Create"
+            items={[
+              {
+                label: "Catalog",
+                icon: <Database />,
+                onSelect: () => dialogs.create({ kind: "catalog" }),
+              },
+              {
+                label: "Schema",
+                icon: <FolderTree />,
+                onSelect: () => dialogs.create({ kind: "schema" }),
+              },
+              {
+                label: "Volume",
+                icon: <HardDrive />,
+                onSelect: () => dialogs.create({ kind: "volume" }),
+              },
+              {
+                label: "Registered model",
+                icon: <Boxes />,
+                onSelect: () => dialogs.create({ kind: "model" }),
+              },
+            ]}
+          />
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-1">
@@ -236,25 +254,44 @@ function SchemaNode({
         onToggle={() => toggle(id)}
         onSelect={() => select({ kind: "schema", fullName })}
         action={
-          <RowMenu
-            label={`Schema ${schema} actions`}
-            items={[
-              {
-                label: "Edit",
-                icon: <Pencil />,
-                onSelect: () =>
-                  dialogs.edit({ kind: "schema", name: fullName, comment }),
-              },
-              {
-                label: "Delete",
-                icon: <Trash2 />,
-                variant: "destructive",
-                separatorBefore: true,
-                onSelect: () =>
-                  dialogs.remove({ kind: "schema", name: fullName }),
-              },
-            ]}
-          />
+          <>
+            <CreateDropdown
+              label="Create in schema"
+              items={[
+                {
+                  label: "Volume",
+                  icon: <HardDrive />,
+                  onSelect: () =>
+                    dialogs.create({ kind: "volume", catalog, schema }),
+                },
+                {
+                  label: "Registered model",
+                  icon: <Boxes />,
+                  onSelect: () =>
+                    dialogs.create({ kind: "model", catalog, schema }),
+                },
+              ]}
+            />
+            <RowMenu
+              label={`Schema ${schema} actions`}
+              items={[
+                {
+                  label: "Edit",
+                  icon: <Pencil />,
+                  onSelect: () =>
+                    dialogs.edit({ kind: "schema", name: fullName, comment }),
+                },
+                {
+                  label: "Delete",
+                  icon: <Trash2 />,
+                  variant: "destructive",
+                  separatorBefore: true,
+                  onSelect: () =>
+                    dialogs.remove({ kind: "schema", name: fullName }),
+                },
+              ]}
+            />
+          </>
         }
       />
       {isOpen(id) &&
@@ -287,9 +324,16 @@ function GroupNode({
   // Subscribe to the same list query the filter bar / expanded list use (shared
   // cache key → one request, deduped). Surfaces the child count on the row once
   // loaded; a trailing "+" marks an unfetched next page.
-  const { data, hasNextPage } = group.useList(catalog, schema);
+  const query = group.useList(catalog, schema);
+  const { data, hasNextPage, isLoading } = query;
   const count =
     data === undefined ? undefined : `${data.length}${hasNextPage ? "+" : ""}`;
+
+  // Hide empty kind containers once loaded; schema-level create still offers
+  // volume/model when these rows are omitted.
+  if (!isLoading && data !== undefined && data.length === 0 && !hasNextPage) {
+    return null;
+  }
   // A kind row is selected when its schema is shown on this kind's tab — so
   // clicking here and switching tabs in SchemaDetail cross-highlight.
   const selected =
@@ -401,5 +445,38 @@ function ObjectList({
         );
       })}
     </ListStates>
+  );
+}
+
+function CreateDropdown({
+  label,
+  items,
+}: {
+  label: string;
+  items: { label: string; icon?: ReactNode; onSelect: () => void }[];
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0"
+          aria-label={label}
+          title={label}
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Create</DropdownMenuLabel>
+        {items.map((item) => (
+          <DropdownMenuItem key={item.label} onSelect={item.onSelect}>
+            {item.icon}
+            {item.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -1,6 +1,17 @@
 import type { ObjectKind, StorageKind } from "./types";
 
-/** Catalog-namespace create requests handled by CreateEntityDialog. */
+/**
+ * Catalog-namespace create request. Parent fields are optional when launched
+ * from the global create menu; the launcher collects missing context before
+ * handing off to CreateEntityDialog.
+ */
+export type CatalogCreateRequest =
+  | { kind: "catalog" }
+  | { kind: "schema"; catalog?: string }
+  | { kind: "volume"; catalog?: string; schema?: string }
+  | { kind: "model"; catalog?: string; schema?: string };
+
+/** Fully-resolved request passed to CreateEntityDialog. */
 export type CreateRequest =
   | { kind: "catalog" }
   | { kind: "schema"; catalog: string }
@@ -11,7 +22,13 @@ export type CreateRequest =
 export type StorageCreateRequest = { kind: StorageKind };
 
 /** Anything the dialogs provider's `create` accepts. */
-export type AnyCreateRequest = CreateRequest | StorageCreateRequest;
+export type AnyCreateRequest = CatalogCreateRequest | StorageCreateRequest;
+
+export function isCatalogCreateRequest(
+  req: AnyCreateRequest,
+): req is CatalogCreateRequest {
+  return req.kind !== "credential" && req.kind !== "external_location";
+}
 
 /** Catalog-namespace entities that support PATCH (comment / rename). */
 export type EditableKind = "catalog" | "schema" | "volume" | "model";
