@@ -438,61 +438,6 @@ class CreateFunction:
         sql_data_access: Optional[SqlDataAccess] = None,
     ) -> None: ...
 
-class CreateModelVersion:
-    """The payload for creating a new model version.
-
-    Wrapped in the `model_version` envelope of a `CreateModelVersionRequest`, matching the Unity Catalog
-    `POST /models/versions` wire contract."""
-
-    catalog_name: str
-    """Name of parent catalog."""
-    comment: Optional[str]
-    """User-provided free-form text description."""
-    model_name: str
-    """Name of the parent registered model, relative to parent schema."""
-    run_id: Optional[str]
-    """The run id used by the ML package that generated this model."""
-    schema_name: str
-    """Name of parent schema."""
-    source: str
-    """
-    URI indicating the location of the source artifacts (e.g. an MLflow run artifact path)
-    used to create the model version.
-    """
-
-    def __init__(
-        self,
-        catalog_name: Optional[str] = None,
-        comment: Optional[str] = None,
-        model_name: Optional[str] = None,
-        run_id: Optional[str] = None,
-        schema_name: Optional[str] = None,
-        source: Optional[str] = None,
-    ) -> None: ...
-
-class CreateRegisteredModel:
-    """The payload for creating a new registered model.
-
-    Wrapped in the `model_info` envelope of a `CreateRegisteredModelRequest`, matching the Unity Catalog
-    `POST /models` wire contract."""
-
-    catalog_name: str
-    """Name of parent catalog."""
-    comment: Optional[str]
-    """User-provided free-form text description."""
-    name: str
-    """Name of registered model, relative to parent schema."""
-    schema_name: str
-    """Name of parent schema."""
-
-    def __init__(
-        self,
-        catalog_name: Optional[str] = None,
-        comment: Optional[str] = None,
-        name: Optional[str] = None,
-        schema_name: Optional[str] = None,
-    ) -> None: ...
-
 class Credential:
     """A credential used to access external data sources or services."""
 
@@ -2934,7 +2879,15 @@ class UnityCatalogClient:
             A User-Defined Function (UDF) registered under a catalog + schema hierarchy.
         """
         ...
-    def create_model_version(self, model_version: CreateModelVersion) -> ModelVersion:
+    def create_model_version(
+        self,
+        model_name: str,
+        catalog_name: str,
+        schema_name: str,
+        source: str,
+        run_id: Optional[str] = None,
+        comment: Optional[str] = None,
+    ) -> ModelVersion:
         """
         Create a model version
 
@@ -2944,7 +2897,13 @@ class UnityCatalogClient:
 
 
         Args:
-            model_version: The model version to create.
+            model_name: Name of the parent registered model, relative to parent schema.
+            catalog_name: Name of parent catalog.
+            schema_name: Name of parent schema.
+            source: URI indicating the location of the source artifacts (e.g. an MLflow run artifact path)
+                    used to create the model version.
+            run_id: The run id used by the ML package that generated this model.
+            comment: User-provided free-form text description.
 
 
         Returns:
@@ -3015,7 +2974,9 @@ class UnityCatalogClient:
             The requested resource
         """
         ...
-    def create_registered_model(self, model_info: CreateRegisteredModel) -> RegisteredModel:
+    def create_registered_model(
+        self, name: str, catalog_name: str, schema_name: str, comment: Optional[str] = None
+    ) -> RegisteredModel:
         """
         Create a registered model
 
@@ -3024,7 +2985,10 @@ class UnityCatalogClient:
 
 
         Args:
-            model_info: The registered model to create.
+            name: Name of registered model, relative to parent schema.
+            catalog_name: Name of parent catalog.
+            schema_name: Name of parent schema.
+            comment: User-provided free-form text description.
 
 
         Returns:

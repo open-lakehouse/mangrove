@@ -573,13 +573,31 @@ impl PyUnityCatalogClient {
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyModelVersion::from).collect())
         })
     }
-    #[pyo3(signature = (model_version))]
+    #[pyo3(
+        signature = (
+            model_name,
+            catalog_name,
+            schema_name,
+            source,
+            run_id = None,
+            comment = None
+        )
+    )]
     pub fn create_model_version(
         &self,
         py: Python,
-        model_version: PyCreateModelVersion,
+        model_name: String,
+        catalog_name: String,
+        schema_name: String,
+        source: String,
+        run_id: Option<String>,
+        comment: Option<String>,
     ) -> PyUnityCatalogResult<PyModelVersion> {
-        let request = self.client.create_model_version(model_version.into());
+        let mut request =
+            self.client
+                .create_model_version(model_name, catalog_name, schema_name, source);
+        request = request.with_run_id(run_id);
+        request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
             #[allow(clippy::let_unit_value)]
@@ -779,13 +797,19 @@ impl PyUnityCatalogClient {
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyRegisteredModel::from).collect())
         })
     }
-    #[pyo3(signature = (model_info))]
+    #[pyo3(signature = (name, catalog_name, schema_name, comment = None))]
     pub fn create_registered_model(
         &self,
         py: Python,
-        model_info: PyCreateRegisteredModel,
+        name: String,
+        catalog_name: String,
+        schema_name: String,
+        comment: Option<String>,
     ) -> PyUnityCatalogResult<PyRegisteredModel> {
-        let request = self.client.create_registered_model(model_info.into());
+        let mut request = self
+            .client
+            .create_registered_model(name, catalog_name, schema_name);
+        request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
         py.allow_threads(|| {
             #[allow(clippy::let_unit_value)]

@@ -218,14 +218,16 @@ impl SchemaClient {
     /// Create a `registered_model` within this resource.
     pub fn create_registered_model(
         &self,
-        model_info: CreateRegisteredModel,
+        name: impl Into<String>,
     ) -> crate::codegen::registered_models::CreateRegisteredModelBuilder {
         crate::codegen::registered_models::CreateRegisteredModelBuilder::new(
             crate::codegen::registered_models::RegisteredModelServiceClient::new(
                 self.client.client.clone(),
                 self.client.base_url.clone(),
             ),
-            model_info,
+            name,
+            &self.catalog_name,
+            &self.schema_name,
         )
     }
     /// List `registered_model` resources within this resource.

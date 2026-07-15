@@ -70,13 +70,9 @@ impl<T: ResourceStore + Policy<RequestContext> + RegisteredModelHandler<RequestC
         context: RequestContext,
     ) -> Result<ModelVersion> {
         self.check_required(&request, &context).await?;
-        let model_version = request
-            .model_version
-            .into_option()
-            .ok_or_else(|| Error::invalid_argument("model_version must be provided"))?;
         let full_name = format!(
             "{}.{}.{}",
-            model_version.catalog_name, model_version.schema_name, model_version.model_name
+            request.catalog_name, request.schema_name, request.model_name
         );
         tracing::Span::current().record("resource_name", &full_name);
 
@@ -103,15 +99,15 @@ impl<T: ResourceStore + Policy<RequestContext> + RegisteredModelHandler<RequestC
 
         let id = uuid::Uuid::now_v7().hyphenated().to_string();
         let resource = ModelVersion {
-            model_name: model_version.model_name,
-            catalog_name: model_version.catalog_name,
-            schema_name: model_version.schema_name,
+            model_name: request.model_name,
+            catalog_name: request.catalog_name,
+            schema_name: request.schema_name,
             version: next_version,
-            source: model_version.source,
-            run_id: model_version.run_id,
+            source: request.source,
+            run_id: request.run_id,
             status: ModelVersionStatus::PendingRegistration.into(),
             storage_location,
-            comment: model_version.comment,
+            comment: request.comment,
             id: Some(id),
             ..Default::default()
         };
@@ -220,11 +216,10 @@ impl<T: ResourceStore> ModelVersionAllocExt for T {}
 
 impl SecuredAction for CreateModelVersionRequest {
     fn resource(&self) -> ResourceIdent {
-        let info = self.model_version.as_option();
         ResourceIdent::registered_model(ResourceName::new([
-            info.map(|i| i.catalog_name.as_str()).unwrap_or_default(),
-            info.map(|i| i.schema_name.as_str()).unwrap_or_default(),
-            info.map(|i| i.model_name.as_str()).unwrap_or_default(),
+            self.catalog_name.as_str(),
+            self.schema_name.as_str(),
+            self.model_name.as_str(),
         ]))
     }
 
@@ -322,9 +317,7 @@ mod tests {
         AwsIamRoleConfig, CreateCredentialRequest, Purpose,
     };
     use unitycatalog_common::models::external_locations::v1::CreateExternalLocationRequest;
-    use unitycatalog_common::models::registered_models::v1::{
-        CreateRegisteredModel, CreateRegisteredModelRequest,
-    };
+    use unitycatalog_common::models::registered_models::v1::CreateRegisteredModelRequest;
     use unitycatalog_common::models::schemas::v1::CreateSchemaRequest;
     use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 
@@ -407,13 +400,9 @@ mod tests {
         .unwrap();
         h.create_registered_model(
             CreateRegisteredModelRequest {
-                model_info: Some(CreateRegisteredModel {
-                    name: "mdl".to_string(),
-                    catalog_name: "cat".to_string(),
-                    schema_name: "sch".to_string(),
-                    ..Default::default()
-                })
-                .into(),
+                name: "mdl".to_string(),
+                catalog_name: "cat".to_string(),
+                schema_name: "sch".to_string(),
                 ..Default::default()
             },
             ctx(),
@@ -424,14 +413,10 @@ mod tests {
 
     fn create_version(source: &str) -> CreateModelVersionRequest {
         CreateModelVersionRequest {
-            model_version: Some(CreateModelVersion {
-                model_name: "mdl".to_string(),
-                catalog_name: "cat".to_string(),
-                schema_name: "sch".to_string(),
-                source: source.to_string(),
-                ..Default::default()
-            })
-            .into(),
+            model_name: "mdl".to_string(),
+            catalog_name: "cat".to_string(),
+            schema_name: "sch".to_string(),
+            source: source.to_string(),
             ..Default::default()
         }
     }

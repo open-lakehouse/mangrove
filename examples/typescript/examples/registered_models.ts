@@ -1,9 +1,4 @@
-import { create } from "@bufbuild/protobuf";
-import {
-  CreateModelVersionSchema,
-  CreateRegisteredModelSchema,
-  UnityCatalogClient,
-} from "@unitycatalog/client";
+import { UnityCatalogClient } from "@unitycatalog/client";
 
 // [snippet:list_registered_models]
 export async function listRegisteredModelsExample(): Promise<void> {
@@ -22,12 +17,10 @@ export async function listRegisteredModelsExample(): Promise<void> {
 export async function createRegisteredModelExample(): Promise<void> {
   const client = new UnityCatalogClient("http://localhost:8080");
   const model = await client.createRegisteredModel(
-    create(CreateRegisteredModelSchema, {
-      name: "my_model",
-      catalogName: "my_catalog",
-      schemaName: "my_schema",
-      comment: "My first model",
-    }),
+    "my_model",
+    "my_catalog",
+    "my_schema",
+    { comment: "My first model" },
   );
   console.log(`Created: ${model.fullName}`);
 }
@@ -49,12 +42,10 @@ export async function createModelVersionExample(): Promise<void> {
   // A new version starts in PENDING_REGISTRATION. Write your artifacts to the
   // returned storageLocation (vending credentials as needed), then finalize.
   const version = await client.createModelVersion(
-    create(CreateModelVersionSchema, {
-      modelName: "my_model",
-      catalogName: "my_catalog",
-      schemaName: "my_schema",
-      source: "s3://my-run/artifacts",
-    }),
+    "my_model",
+    "my_catalog",
+    "my_schema",
+    "s3://my-run/artifacts",
   );
   console.log(`Created version ${version.version}`);
 }

@@ -37,8 +37,6 @@ from ._client import (
     CatalogType as CatalogType,
     Column as Column,
     ColumnTypeName as ColumnTypeName,
-    CreateModelVersion as CreateModelVersion,
-    CreateRegisteredModel as CreateRegisteredModel,
     Credential as Credential,
     CredentialClient as CredentialClient,
     DataObject as DataObject,

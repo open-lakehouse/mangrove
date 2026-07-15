@@ -118,7 +118,7 @@ export declare class NapiUnityCatalogClient {
   createFunction(functionInfo: Buffer): Promise<Buffer>
   listModelVersions(fullName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
   listModelVersionsStream(fullName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
-  createModelVersion(modelVersion: Buffer): Promise<Buffer>
+  createModelVersion(modelName: string, catalogName: string, schemaName: string, source: string, runId?: string | undefined | null, comment?: string | undefined | null): Promise<Buffer>
   getModelVersion(fullName: string, version: number, includeBrowse?: boolean | undefined | null): Promise<Buffer>
   updateModelVersion(fullName: string, version: number, comment?: string | undefined | null): Promise<Buffer>
   deleteModelVersion(fullName: string, version: number): Promise<void>
@@ -131,7 +131,7 @@ export declare class NapiUnityCatalogClient {
   createRecipient(name: string, authenticationType: number, owner: string, comment?: string | undefined | null, properties?: Record<string, string> | undefined | null, expirationTime?: number | undefined | null): Promise<Buffer>
   listRegisteredModels(catalogName?: string | undefined | null, schemaName?: string | undefined | null, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
   listRegisteredModelsStream(catalogName?: string | undefined | null, schemaName?: string | undefined | null, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
-  createRegisteredModel(modelInfo: Buffer): Promise<Buffer>
+  createRegisteredModel(name: string, catalogName: string, schemaName: string, comment?: string | undefined | null): Promise<Buffer>
   listSchemas(catalogName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
   listSchemasStream(catalogName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
   createSchema(name: string, catalogName: string, comment?: string | undefined | null, properties?: Record<string, string> | undefined | null, storageRoot?: string | undefined | null): Promise<Buffer>

@@ -83,13 +83,29 @@ impl CreateModelVersionBuilder {
     /// Obtain via the corresponding method on `ModelVersionServiceClient`.
     pub(crate) fn new(
         client: ModelVersionServiceClient,
-        model_version: CreateModelVersion,
+        model_name: impl Into<String>,
+        catalog_name: impl Into<String>,
+        schema_name: impl Into<String>,
+        source: impl Into<String>,
     ) -> Self {
         let request = CreateModelVersionRequest {
-            model_version: buffa::MessageField::some(model_version),
+            model_name: model_name.into(),
+            catalog_name: catalog_name.into(),
+            schema_name: schema_name.into(),
+            source: source.into(),
             ..Default::default()
         };
         Self { client, request }
+    }
+    /// The run id used by the ML package that generated this model.
+    pub fn with_run_id(mut self, run_id: impl Into<Option<String>>) -> Self {
+        self.request.run_id = run_id.into();
+        self
+    }
+    /// User-provided free-form text description.
+    pub fn with_comment(mut self, comment: impl Into<Option<String>>) -> Self {
+        self.request.comment = comment.into();
+        self
     }
 }
 impl IntoFuture for CreateModelVersionBuilder {

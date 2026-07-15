@@ -58,37 +58,30 @@ impl<
         context: RequestContext,
     ) -> Result<RegisteredModel> {
         self.check_required(&request, &context).await?;
-        let model_info = request
-            .model_info
-            .into_option()
-            .ok_or_else(|| Error::invalid_argument("model_info must be provided"))?;
-        tracing::Span::current().record("resource_name", &model_info.name);
+        tracing::Span::current().record("resource_name", &request.name);
 
         // A registered model owns a managed storage location under which its model
         // versions' artifacts are stored. Derive it from the managed parent location
         // resolved for the schema/catalog (schema → catalog → metastore), mirroring
         // managed volumes/tables. The id is allocated here so the path segment equals
         // the model's id and survives renames.
-        let parent = resolve_managed_parent_location(
-            self,
-            &model_info.catalog_name,
-            &model_info.schema_name,
-        )
-        .await?;
+        let parent =
+            resolve_managed_parent_location(self, &request.catalog_name, &request.schema_name)
+                .await?;
         let id = uuid::Uuid::now_v7().hyphenated().to_string();
         let storage_location = child_location(&parent, "models", &id);
 
         let full_name = format!(
             "{}.{}.{}",
-            model_info.catalog_name, model_info.schema_name, model_info.name
+            request.catalog_name, request.schema_name, request.name
         );
         let resource = RegisteredModel {
-            name: model_info.name,
-            catalog_name: model_info.catalog_name,
-            schema_name: model_info.schema_name,
+            name: request.name,
+            catalog_name: request.catalog_name,
+            schema_name: request.schema_name,
             full_name,
             storage_location: Some(storage_location),
-            comment: model_info.comment,
+            comment: request.comment,
             id: Some(id),
             ..Default::default()
         };
@@ -148,11 +141,10 @@ impl<
 
 impl SecuredAction for CreateRegisteredModelRequest {
     fn resource(&self) -> ResourceIdent {
-        let info = self.model_info.as_option();
         ResourceIdent::registered_model(ResourceName::new([
-            info.map(|i| i.catalog_name.as_str()).unwrap_or_default(),
-            info.map(|i| i.schema_name.as_str()).unwrap_or_default(),
-            info.map(|i| i.name.as_str()).unwrap_or_default(),
+            self.catalog_name.as_str(),
+            self.schema_name.as_str(),
+            self.name.as_str(),
         ]))
     }
 

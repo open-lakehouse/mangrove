@@ -1287,7 +1287,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateRegisteredModel"
+              $ref: "#/components/schemas/CreateRegisteredModelRequest"
         required: true
       responses:
         "200":
@@ -1317,7 +1317,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateModelVersion"
+              $ref: "#/components/schemas/CreateModelVersionRequest"
         required: true
       responses:
         "200":
@@ -4000,7 +4000,7 @@ components:
          the Unity Catalog `POST /functions` wire contract.
       additionalProperties: false
       title: The payload for creating a new function.
-    CreateModelVersion:
+    CreateModelVersionRequest:
       required:
         - model_name
         - catalog_name
@@ -4028,11 +4028,9 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
-      description: |-
-        Wrapped in the `model_version` envelope of a `CreateModelVersionRequest`,
-         matching the Unity Catalog `POST /models/versions` wire contract.
+      description: Create a new model version.
       additionalProperties: false
-      title: The payload for creating a new model version.
+      title: Create Model Version Request
     CreateProviderRequest:
       required:
         - name
@@ -4101,7 +4099,7 @@ components:
       description: Creates a new recipient
       additionalProperties: false
       title: Create Recipient Request
-    CreateRegisteredModel:
+    CreateRegisteredModelRequest:
       required:
         - name
         - catalog_name
@@ -4122,11 +4120,9 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
-      description: |-
-        Wrapped in the `model_info` envelope of a `CreateRegisteredModelRequest`,
-         matching the Unity Catalog `POST /models` wire contract.
+      description: Create a new registered model.
       additionalProperties: false
-      title: The payload for creating a new registered model.
+      title: Create Registered Model Request
     CreateSchemaRequest:
       required:
         - name

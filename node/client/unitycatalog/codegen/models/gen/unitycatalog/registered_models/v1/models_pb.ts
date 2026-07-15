@@ -13,52 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file unitycatalog/registered_models/v1/models.proto.
  */
 export const file_unitycatalog_registered_models_v1_models: GenFile = /*@__PURE__*/
-  fileDesc("Ci51bml0eWNhdGFsb2cvcmVnaXN0ZXJlZF9tb2RlbHMvdjEvbW9kZWxzLnByb3RvEiF1bml0eWNhdGFsb2cucmVnaXN0ZXJlZF9tb2RlbHMudjEi9QEKFUNyZWF0ZVJlZ2lzdGVyZWRNb2RlbBI2CgRuYW1lGAEgASgJQijgQQK6SCLIAQFyHRADMhleW2Etel1bMC05YS16X10qWzAtOWEtel0kEj4KDGNhdGFsb2dfbmFtZRgCIAEoCUIo4EECukgiyAEBch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBI9CgtzY2hlbWFfbmFtZRgDIAEoCUIo4EECukgiyAEBch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBIZCgdjb21tZW50GAQgASgJQgPgQQFIAIgBAUIKCghfY29tbWVudCLeBgoPUmVnaXN0ZXJlZE1vZGVsEjMKBG5hbWUYASABKAlCJeBBArpIH3IdEAMyGV5bYS16XVswLTlhLXpfXSpbMC05YS16XSQSOwoMY2F0YWxvZ19uYW1lGAIgASgJQiXgQQK6SB9yHRADMhleW2Etel1bMC05YS16X10qWzAtOWEtel0kEjoKC3NjaGVtYV9uYW1lGAMgASgJQiXgQQK6SB9yHRADMhleW2Etel1bMC05YS16X10qWzAtOWEtel0kEmgKCWZ1bGxfbmFtZRgEIAEoCUJV4EEDukhPck0yS15bYS16XVswLTlhLXpfXSpbMC05YS16XVwuW2Etel1bMC05YS16X10qWzAtOWEtel1cLlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBIiChBzdG9yYWdlX2xvY2F0aW9uGAUgASgJQgPgQQNIAIgBARIXCgVvd25lchgGIAEoCUID4EEDSAGIAQESGQoHY29tbWVudBgHIAEoCUID4EEBSAKIAQESFwoCaWQYCCABKAlCBuBBA+BBCEgDiAEBEiQKCmNyZWF0ZWRfYXQY6AcgASgDQgrgQQO6SAQiAiAASASIAQESHQoKY3JlYXRlZF9ieRjpByABKAlCA+BBA0gFiAEBEh0KCnVwZGF0ZWRfYXQY6gcgASgDQgPgQQNIBogBARIdCgp1cGRhdGVkX2J5GOsHIAEoCUID4EEDSAeIAQESHwoMbWV0YXN0b3JlX2lkGOwHIAEoCUID4EEDSAiIAQESHgoLYnJvd3NlX29ubHkY7QcgASgIQgPgQQNICYgBATpv6kFsCh91bml0eWNhdGFsb2cuaW8vUmVnaXN0ZXJlZE1vZGVsEhltb2RlbHMve3JlZ2lzdGVyZWRfbW9kZWx9GglmdWxsX25hbWUqEXJlZ2lzdGVyZWRfbW9kZWxzMhByZWdpc3RlcmVkX21vZGVsQhMKEV9zdG9yYWdlX2xvY2F0aW9uQggKBl9vd25lckIKCghfY29tbWVudEIFCgNfaWRCDQoLX2NyZWF0ZWRfYXRCDQoLX2NyZWF0ZWRfYnlCDQoLX3VwZGF0ZWRfYXRCDQoLX3VwZGF0ZWRfYnlCDwoNX21ldGFzdG9yZV9pZEIOCgxfYnJvd3NlX29ubHlCvAIKJWNvbS51bml0eWNhdGFsb2cucmVnaXN0ZXJlZF9tb2RlbHMudjFCC01vZGVsc1Byb3RvUAFaZGdpdGh1Yi5jb20vZGVsdGEtaW5jdWJhdG9yL2RlbHRhLXNoYXJpbmctcnMvZ28vdW5pdHljYXRhbG9nL3JlZ2lzdGVyZWRfbW9kZWxzL3YxO3JlZ2lzdGVyZWRfbW9kZWxzdjGiAgNVUliqAiBVbml0eWNhdGFsb2cuUmVnaXN0ZXJlZE1vZGVscy5WMcoCIFVuaXR5Y2F0YWxvZ1xSZWdpc3RlcmVkTW9kZWxzXFYx4gIsVW5pdHljYXRhbG9nXFJlZ2lzdGVyZWRNb2RlbHNcVjFcR1BCTWV0YWRhdGHqAiJVbml0eWNhdGFsb2c6OlJlZ2lzdGVyZWRNb2RlbHM6OlYxYgZwcm90bzM", [file_buf_validate_validate, file_google_api_field_behavior, file_google_api_resource]);
-
-/**
- * The payload for creating a new registered model.
- *
- * Wrapped in the `model_info` envelope of a `CreateRegisteredModelRequest`,
- * matching the Unity Catalog `POST /models` wire contract.
- *
- * @generated from message unitycatalog.registered_models.v1.CreateRegisteredModel
- */
-export type CreateRegisteredModel = Message<"unitycatalog.registered_models.v1.CreateRegisteredModel"> & {
-  /**
-   * Name of registered model, relative to parent schema.
-   *
-   * @generated from field: string name = 1;
-   */
-  name: string;
-
-  /**
-   * Name of parent catalog.
-   *
-   * @generated from field: string catalog_name = 2;
-   */
-  catalogName: string;
-
-  /**
-   * Name of parent schema.
-   *
-   * @generated from field: string schema_name = 3;
-   */
-  schemaName: string;
-
-  /**
-   * User-provided free-form text description.
-   *
-   * @generated from field: optional string comment = 4;
-   */
-  comment?: string | undefined;
-};
-
-/**
- * Describes the message unitycatalog.registered_models.v1.CreateRegisteredModel.
- * Use `create(CreateRegisteredModelSchema)` to create a new message.
- */
-export const CreateRegisteredModelSchema: GenMessage<CreateRegisteredModel> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_registered_models_v1_models, 0);
+  fileDesc("Ci51bml0eWNhdGFsb2cvcmVnaXN0ZXJlZF9tb2RlbHMvdjEvbW9kZWxzLnByb3RvEiF1bml0eWNhdGFsb2cucmVnaXN0ZXJlZF9tb2RlbHMudjEi3gYKD1JlZ2lzdGVyZWRNb2RlbBIzCgRuYW1lGAEgASgJQiXgQQK6SB9yHRADMhleW2Etel1bMC05YS16X10qWzAtOWEtel0kEjsKDGNhdGFsb2dfbmFtZRgCIAEoCUIl4EECukgfch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBI6CgtzY2hlbWFfbmFtZRgDIAEoCUIl4EECukgfch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBJoCglmdWxsX25hbWUYBCABKAlCVeBBA7pIT3JNMkteW2Etel1bMC05YS16X10qWzAtOWEtel1cLlthLXpdWzAtOWEtel9dKlswLTlhLXpdXC5bYS16XVswLTlhLXpfXSpbMC05YS16XSQSIgoQc3RvcmFnZV9sb2NhdGlvbhgFIAEoCUID4EEDSACIAQESFwoFb3duZXIYBiABKAlCA+BBA0gBiAEBEhkKB2NvbW1lbnQYByABKAlCA+BBAUgCiAEBEhcKAmlkGAggASgJQgbgQQPgQQhIA4gBARIkCgpjcmVhdGVkX2F0GOgHIAEoA0IK4EEDukgEIgIgAEgEiAEBEh0KCmNyZWF0ZWRfYnkY6QcgASgJQgPgQQNIBYgBARIdCgp1cGRhdGVkX2F0GOoHIAEoA0ID4EEDSAaIAQESHQoKdXBkYXRlZF9ieRjrByABKAlCA+BBA0gHiAEBEh8KDG1ldGFzdG9yZV9pZBjsByABKAlCA+BBA0gIiAEBEh4KC2Jyb3dzZV9vbmx5GO0HIAEoCEID4EEDSAmIAQE6b+pBbAofdW5pdHljYXRhbG9nLmlvL1JlZ2lzdGVyZWRNb2RlbBIZbW9kZWxzL3tyZWdpc3RlcmVkX21vZGVsfRoJZnVsbF9uYW1lKhFyZWdpc3RlcmVkX21vZGVsczIQcmVnaXN0ZXJlZF9tb2RlbEITChFfc3RvcmFnZV9sb2NhdGlvbkIICgZfb3duZXJCCgoIX2NvbW1lbnRCBQoDX2lkQg0KC19jcmVhdGVkX2F0Qg0KC19jcmVhdGVkX2J5Qg0KC191cGRhdGVkX2F0Qg0KC191cGRhdGVkX2J5Qg8KDV9tZXRhc3RvcmVfaWRCDgoMX2Jyb3dzZV9vbmx5QrwCCiVjb20udW5pdHljYXRhbG9nLnJlZ2lzdGVyZWRfbW9kZWxzLnYxQgtNb2RlbHNQcm90b1ABWmRnaXRodWIuY29tL2RlbHRhLWluY3ViYXRvci9kZWx0YS1zaGFyaW5nLXJzL2dvL3VuaXR5Y2F0YWxvZy9yZWdpc3RlcmVkX21vZGVscy92MTtyZWdpc3RlcmVkX21vZGVsc3YxogIDVVJYqgIgVW5pdHljYXRhbG9nLlJlZ2lzdGVyZWRNb2RlbHMuVjHKAiBVbml0eWNhdGFsb2dcUmVnaXN0ZXJlZE1vZGVsc1xWMeICLFVuaXR5Y2F0YWxvZ1xSZWdpc3RlcmVkTW9kZWxzXFYxXEdQQk1ldGFkYXRh6gIiVW5pdHljYXRhbG9nOjpSZWdpc3RlcmVkTW9kZWxzOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_google_api_field_behavior, file_google_api_resource]);
 
 /**
  * A registered model within the three-level namespace (catalog.schema.model).
@@ -178,5 +133,5 @@ export type RegisteredModel = Message<"unitycatalog.registered_models.v1.Registe
  * Use `create(RegisteredModelSchema)` to create a new message.
  */
 export const RegisteredModelSchema: GenMessage<RegisteredModel> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_registered_models_v1_models, 1);
+  messageDesc(file_unitycatalog_registered_models_v1_models, 0);
 

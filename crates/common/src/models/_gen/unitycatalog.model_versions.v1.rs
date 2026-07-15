@@ -168,337 +168,6 @@ impl ::buffa::Enumeration for ModelVersionStatus {
         ]
     }
 }
-/// The payload for creating a new model version.
-///
-/// Wrapped in the `model_version` envelope of a `CreateModelVersionRequest`,
-/// matching the Unity Catalog `POST /models/versions` wire contract.
-#[derive(Clone, PartialEq, Default)]
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[serde(default)]
-pub struct CreateModelVersion {
-    /// Name of the parent registered model, relative to parent schema.
-    ///
-    /// Field 1: `model_name`
-    #[serde(
-        rename = "model_name",
-        alias = "modelName",
-        with = "::buffa::json_helpers::proto_string",
-        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
-    )]
-    pub model_name: ::buffa::alloc::string::String,
-    /// Name of parent catalog.
-    ///
-    /// Field 2: `catalog_name`
-    #[serde(
-        rename = "catalog_name",
-        alias = "catalogName",
-        with = "::buffa::json_helpers::proto_string",
-        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
-    )]
-    pub catalog_name: ::buffa::alloc::string::String,
-    /// Name of parent schema.
-    ///
-    /// Field 3: `schema_name`
-    #[serde(
-        rename = "schema_name",
-        alias = "schemaName",
-        with = "::buffa::json_helpers::proto_string",
-        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
-    )]
-    pub schema_name: ::buffa::alloc::string::String,
-    /// URI indicating the location of the source artifacts (e.g. an MLflow run
-    /// artifact path) used to create the model version.
-    ///
-    /// Field 4: `source`
-    #[serde(
-        rename = "source",
-        with = "::buffa::json_helpers::proto_string",
-        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
-    )]
-    pub source: ::buffa::alloc::string::String,
-    /// The run id used by the ML package that generated this model.
-    ///
-    /// Field 5: `run_id`
-    #[serde(
-        rename = "run_id",
-        alias = "runId",
-        skip_serializing_if = "::core::option::Option::is_none"
-    )]
-    pub run_id: ::core::option::Option<::buffa::alloc::string::String>,
-    /// User-provided free-form text description.
-    ///
-    /// Field 6: `comment`
-    #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
-    pub comment: ::core::option::Option<::buffa::alloc::string::String>,
-    #[serde(skip)]
-    #[doc(hidden)]
-    pub __buffa_unknown_fields: ::buffa::UnknownFields,
-}
-impl ::core::fmt::Debug for CreateModelVersion {
-    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-        f.debug_struct("CreateModelVersion")
-            .field("model_name", &self.model_name)
-            .field("catalog_name", &self.catalog_name)
-            .field("schema_name", &self.schema_name)
-            .field("source", &self.source)
-            .field("run_id", &self.run_id)
-            .field("comment", &self.comment)
-            .finish()
-    }
-}
-impl CreateModelVersion {
-    /// Protobuf type URL for this message, for use with `Any::pack` and
-    /// `Any::unpack_if`.
-    ///
-    /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
-    pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.model_versions.v1.CreateModelVersion";
-}
-impl CreateModelVersion {
-    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
-    #[inline]
-    ///Sets [`Self::run_id`] to `Some(value)`, consuming and returning `self`.
-    pub fn with_run_id(
-        mut self,
-        value: impl Into<::buffa::alloc::string::String>,
-    ) -> Self {
-        self.run_id = Some(value.into());
-        self
-    }
-    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
-    #[inline]
-    ///Sets [`Self::comment`] to `Some(value)`, consuming and returning `self`.
-    pub fn with_comment(
-        mut self,
-        value: impl Into<::buffa::alloc::string::String>,
-    ) -> Self {
-        self.comment = Some(value.into());
-        self
-    }
-}
-impl ::buffa::DefaultInstance for CreateModelVersion {
-    fn default_instance() -> &'static Self {
-        static VALUE: ::buffa::__private::OnceBox<CreateModelVersion> = ::buffa::__private::OnceBox::new();
-        VALUE.get_or_init(|| ::buffa::alloc::boxed::Box::new(Self::default()))
-    }
-}
-impl ::buffa::MessageName for CreateModelVersion {
-    const PACKAGE: &'static str = "unitycatalog.model_versions.v1";
-    const NAME: &'static str = "CreateModelVersion";
-    const FULL_NAME: &'static str = "unitycatalog.model_versions.v1.CreateModelVersion";
-    const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.model_versions.v1.CreateModelVersion";
-}
-impl ::buffa::Message for CreateModelVersion {
-    /// Returns the total encoded size in bytes.
-    ///
-    /// The result is a `u32`; the protobuf specification requires all
-    /// messages to fit within 2 GiB (2,147,483,647 bytes), so a
-    /// compliant message will never overflow this type.
-    #[allow(clippy::let_and_return)]
-    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
-        #[allow(unused_imports)]
-        use ::buffa::Enumeration as _;
-        let mut size = 0u32;
-        if !self.model_name.is_empty() {
-            size += 1u32 + ::buffa::types::string_encoded_len(&self.model_name) as u32;
-        }
-        if !self.catalog_name.is_empty() {
-            size += 1u32 + ::buffa::types::string_encoded_len(&self.catalog_name) as u32;
-        }
-        if !self.schema_name.is_empty() {
-            size += 1u32 + ::buffa::types::string_encoded_len(&self.schema_name) as u32;
-        }
-        if !self.source.is_empty() {
-            size += 1u32 + ::buffa::types::string_encoded_len(&self.source) as u32;
-        }
-        if let Some(ref v) = self.run_id {
-            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
-        }
-        if let Some(ref v) = self.comment {
-            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
-        }
-        size += self.__buffa_unknown_fields.encoded_len() as u32;
-        size
-    }
-    fn write_to(
-        &self,
-        _cache: &mut ::buffa::SizeCache,
-        buf: &mut impl ::buffa::bytes::BufMut,
-    ) {
-        #[allow(unused_imports)]
-        use ::buffa::Enumeration as _;
-        if !self.model_name.is_empty() {
-            ::buffa::encoding::Tag::new(
-                    1u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(&self.model_name, buf);
-        }
-        if !self.catalog_name.is_empty() {
-            ::buffa::encoding::Tag::new(
-                    2u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(&self.catalog_name, buf);
-        }
-        if !self.schema_name.is_empty() {
-            ::buffa::encoding::Tag::new(
-                    3u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(&self.schema_name, buf);
-        }
-        if !self.source.is_empty() {
-            ::buffa::encoding::Tag::new(
-                    4u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(&self.source, buf);
-        }
-        if let Some(ref v) = self.run_id {
-            ::buffa::encoding::Tag::new(
-                    5u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(v, buf);
-        }
-        if let Some(ref v) = self.comment {
-            ::buffa::encoding::Tag::new(
-                    6u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(v, buf);
-        }
-        self.__buffa_unknown_fields.write_to(buf);
-    }
-    fn merge_field(
-        &mut self,
-        tag: ::buffa::encoding::Tag,
-        buf: &mut impl ::buffa::bytes::Buf,
-        depth: u32,
-    ) -> ::core::result::Result<(), ::buffa::DecodeError> {
-        #[allow(unused_imports)]
-        use ::buffa::bytes::Buf as _;
-        #[allow(unused_imports)]
-        use ::buffa::Enumeration as _;
-        match tag.field_number() {
-            1u32 => {
-                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
-                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                        field_number: 1u32,
-                        expected: 2u8,
-                        actual: tag.wire_type() as u8,
-                    });
-                }
-                ::buffa::types::merge_string(&mut self.model_name, buf)?;
-            }
-            2u32 => {
-                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
-                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                        field_number: 2u32,
-                        expected: 2u8,
-                        actual: tag.wire_type() as u8,
-                    });
-                }
-                ::buffa::types::merge_string(&mut self.catalog_name, buf)?;
-            }
-            3u32 => {
-                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
-                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                        field_number: 3u32,
-                        expected: 2u8,
-                        actual: tag.wire_type() as u8,
-                    });
-                }
-                ::buffa::types::merge_string(&mut self.schema_name, buf)?;
-            }
-            4u32 => {
-                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
-                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                        field_number: 4u32,
-                        expected: 2u8,
-                        actual: tag.wire_type() as u8,
-                    });
-                }
-                ::buffa::types::merge_string(&mut self.source, buf)?;
-            }
-            5u32 => {
-                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
-                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                        field_number: 5u32,
-                        expected: 2u8,
-                        actual: tag.wire_type() as u8,
-                    });
-                }
-                ::buffa::types::merge_string(
-                    self.run_id.get_or_insert_with(::buffa::alloc::string::String::new),
-                    buf,
-                )?;
-            }
-            6u32 => {
-                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
-                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                        field_number: 6u32,
-                        expected: 2u8,
-                        actual: tag.wire_type() as u8,
-                    });
-                }
-                ::buffa::types::merge_string(
-                    self.comment.get_or_insert_with(::buffa::alloc::string::String::new),
-                    buf,
-                )?;
-            }
-            _ => {
-                self.__buffa_unknown_fields
-                    .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
-            }
-        }
-        ::core::result::Result::Ok(())
-    }
-    fn clear(&mut self) {
-        self.model_name.clear();
-        self.catalog_name.clear();
-        self.schema_name.clear();
-        self.source.clear();
-        self.run_id = ::core::option::Option::None;
-        self.comment = ::core::option::Option::None;
-        self.__buffa_unknown_fields.clear();
-    }
-}
-impl ::buffa::ExtensionSet for CreateModelVersion {
-    const PROTO_FQN: &'static str = "unitycatalog.model_versions.v1.CreateModelVersion";
-    fn unknown_fields(&self) -> &::buffa::UnknownFields {
-        &self.__buffa_unknown_fields
-    }
-    fn unknown_fields_mut(&mut self) -> &mut ::buffa::UnknownFields {
-        &mut self.__buffa_unknown_fields
-    }
-}
-impl ::buffa::json_helpers::ProtoElemJson for CreateModelVersion {
-    fn serialize_proto_json<S: ::serde::Serializer>(
-        v: &Self,
-        s: S,
-    ) -> ::core::result::Result<S::Ok, S::Error> {
-        ::serde::Serialize::serialize(v, s)
-    }
-    fn deserialize_proto_json<'de, D: ::serde::Deserializer<'de>>(
-        d: D,
-    ) -> ::core::result::Result<Self, D::Error> {
-        <Self as ::serde::Deserialize>::deserialize(d)
-    }
-}
-#[doc(hidden)]
-pub const __CREATE_MODEL_VERSION_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = ::buffa::type_registry::JsonAnyEntry {
-    type_url: "type.googleapis.com/unitycatalog.model_versions.v1.CreateModelVersion",
-    to_json: ::buffa::type_registry::any_to_json::<CreateModelVersion>,
-    from_json: ::buffa::type_registry::any_from_json::<CreateModelVersion>,
-    is_wkt: false,
-};
 /// A model version under a registered model.
 ///
 /// A version is identified by its parent model's three-level name plus an
@@ -1715,15 +1384,60 @@ pub const __LIST_MODEL_VERSIONS_RESPONSE_JSON_ANY: ::buffa::type_registry::JsonA
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[serde(default)]
 pub struct CreateModelVersionRequest {
-    /// The model version to create.
+    /// Name of the parent registered model, relative to parent schema.
     ///
-    /// Field 1: `model_version`
+    /// Field 1: `model_name`
     #[serde(
-        rename = "model_version",
-        alias = "modelVersion",
-        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
+        rename = "model_name",
+        alias = "modelName",
+        with = "::buffa::json_helpers::proto_string",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
-    pub model_version: ::buffa::MessageField<CreateModelVersion>,
+    pub model_name: ::buffa::alloc::string::String,
+    /// Name of parent catalog.
+    ///
+    /// Field 2: `catalog_name`
+    #[serde(
+        rename = "catalog_name",
+        alias = "catalogName",
+        with = "::buffa::json_helpers::proto_string",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
+    )]
+    pub catalog_name: ::buffa::alloc::string::String,
+    /// Name of parent schema.
+    ///
+    /// Field 3: `schema_name`
+    #[serde(
+        rename = "schema_name",
+        alias = "schemaName",
+        with = "::buffa::json_helpers::proto_string",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
+    )]
+    pub schema_name: ::buffa::alloc::string::String,
+    /// URI indicating the location of the source artifacts (e.g. an MLflow run
+    /// artifact path) used to create the model version.
+    ///
+    /// Field 4: `source`
+    #[serde(
+        rename = "source",
+        with = "::buffa::json_helpers::proto_string",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
+    )]
+    pub source: ::buffa::alloc::string::String,
+    /// The run id used by the ML package that generated this model.
+    ///
+    /// Field 5: `run_id`
+    #[serde(
+        rename = "run_id",
+        alias = "runId",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub run_id: ::core::option::Option<::buffa::alloc::string::String>,
+    /// User-provided free-form text description.
+    ///
+    /// Field 6: `comment`
+    #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
+    pub comment: ::core::option::Option<::buffa::alloc::string::String>,
     #[serde(skip)]
     #[doc(hidden)]
     pub __buffa_unknown_fields: ::buffa::UnknownFields,
@@ -1731,7 +1445,12 @@ pub struct CreateModelVersionRequest {
 impl ::core::fmt::Debug for CreateModelVersionRequest {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
         f.debug_struct("CreateModelVersionRequest")
-            .field("model_version", &self.model_version)
+            .field("model_name", &self.model_name)
+            .field("catalog_name", &self.catalog_name)
+            .field("schema_name", &self.schema_name)
+            .field("source", &self.source)
+            .field("run_id", &self.run_id)
+            .field("comment", &self.comment)
             .finish()
     }
 }
@@ -1741,6 +1460,28 @@ impl CreateModelVersionRequest {
     ///
     /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
     pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.model_versions.v1.CreateModelVersionRequest";
+}
+impl CreateModelVersionRequest {
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::run_id`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_run_id(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.run_id = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::comment`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_comment(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.comment = Some(value.into());
+        self
+    }
 }
 impl ::buffa::DefaultInstance for CreateModelVersionRequest {
     fn default_instance() -> &'static Self {
@@ -1761,36 +1502,85 @@ impl ::buffa::Message for CreateModelVersionRequest {
     /// messages to fit within 2 GiB (2,147,483,647 bytes), so a
     /// compliant message will never overflow this type.
     #[allow(clippy::let_and_return)]
-    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
         let mut size = 0u32;
-        if self.model_version.is_set() {
-            let __slot = __cache.reserve();
-            let inner_size = self.model_version.compute_size(__cache);
-            __cache.set(__slot, inner_size);
-            size
-                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
-                    + inner_size;
+        if !self.model_name.is_empty() {
+            size += 1u32 + ::buffa::types::string_encoded_len(&self.model_name) as u32;
+        }
+        if !self.catalog_name.is_empty() {
+            size += 1u32 + ::buffa::types::string_encoded_len(&self.catalog_name) as u32;
+        }
+        if !self.schema_name.is_empty() {
+            size += 1u32 + ::buffa::types::string_encoded_len(&self.schema_name) as u32;
+        }
+        if !self.source.is_empty() {
+            size += 1u32 + ::buffa::types::string_encoded_len(&self.source) as u32;
+        }
+        if let Some(ref v) = self.run_id {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        if let Some(ref v) = self.comment {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
         size += self.__buffa_unknown_fields.encoded_len() as u32;
         size
     }
     fn write_to(
         &self,
-        __cache: &mut ::buffa::SizeCache,
+        _cache: &mut ::buffa::SizeCache,
         buf: &mut impl ::buffa::bytes::BufMut,
     ) {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
-        if self.model_version.is_set() {
+        if !self.model_name.is_empty() {
             ::buffa::encoding::Tag::new(
                     1u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
-            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
-            self.model_version.write_to(__cache, buf);
+            ::buffa::types::encode_string(&self.model_name, buf);
+        }
+        if !self.catalog_name.is_empty() {
+            ::buffa::encoding::Tag::new(
+                    2u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(&self.catalog_name, buf);
+        }
+        if !self.schema_name.is_empty() {
+            ::buffa::encoding::Tag::new(
+                    3u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(&self.schema_name, buf);
+        }
+        if !self.source.is_empty() {
+            ::buffa::encoding::Tag::new(
+                    4u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(&self.source, buf);
+        }
+        if let Some(ref v) = self.run_id {
+            ::buffa::encoding::Tag::new(
+                    5u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        if let Some(ref v) = self.comment {
+            ::buffa::encoding::Tag::new(
+                    6u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
     }
@@ -1813,10 +1603,62 @@ impl ::buffa::Message for CreateModelVersionRequest {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                ::buffa::Message::merge_length_delimited(
-                    self.model_version.get_or_insert_default(),
+                ::buffa::types::merge_string(&mut self.model_name, buf)?;
+            }
+            2u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 2u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(&mut self.catalog_name, buf)?;
+            }
+            3u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 3u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(&mut self.schema_name, buf)?;
+            }
+            4u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 4u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(&mut self.source, buf)?;
+            }
+            5u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 5u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self.run_id.get_or_insert_with(::buffa::alloc::string::String::new),
                     buf,
-                    depth,
+                )?;
+            }
+            6u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 6u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self.comment.get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
                 )?;
             }
             _ => {
@@ -1827,7 +1669,12 @@ impl ::buffa::Message for CreateModelVersionRequest {
         ::core::result::Result::Ok(())
     }
     fn clear(&mut self) {
-        self.model_version = ::buffa::MessageField::none();
+        self.model_name.clear();
+        self.catalog_name.clear();
+        self.schema_name.clear();
+        self.source.clear();
+        self.run_id = ::core::option::Option::None;
+        self.comment = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
 }
@@ -2648,512 +2495,6 @@ pub mod __buffa {
     pub mod view {
         #[allow(unused_imports)]
         use super::*;
-        /// The payload for creating a new model version.
-        ///
-        /// Wrapped in the `model_version` envelope of a `CreateModelVersionRequest`,
-        /// matching the Unity Catalog `POST /models/versions` wire contract.
-        #[derive(Clone, Debug, Default)]
-        pub struct CreateModelVersionView<'a> {
-            /// Name of the parent registered model, relative to parent schema.
-            ///
-            /// Field 1: `model_name`
-            pub model_name: &'a str,
-            /// Name of parent catalog.
-            ///
-            /// Field 2: `catalog_name`
-            pub catalog_name: &'a str,
-            /// Name of parent schema.
-            ///
-            /// Field 3: `schema_name`
-            pub schema_name: &'a str,
-            /// URI indicating the location of the source artifacts (e.g. an MLflow run
-            /// artifact path) used to create the model version.
-            ///
-            /// Field 4: `source`
-            pub source: &'a str,
-            /// The run id used by the ML package that generated this model.
-            ///
-            /// Field 5: `run_id`
-            pub run_id: ::core::option::Option<&'a str>,
-            /// User-provided free-form text description.
-            ///
-            /// Field 6: `comment`
-            pub comment: ::core::option::Option<&'a str>,
-            pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
-        }
-        impl<'a> CreateModelVersionView<'a> {
-            /// Decode from `buf`, enforcing a recursion depth limit for nested messages.
-            ///
-            /// Called by [`::buffa::MessageView::decode_view`] with [`::buffa::RECURSION_LIMIT`]
-            /// and by generated sub-message decode arms with `depth - 1`.
-            ///
-            /// **Not part of the public API.** Named with a leading underscore to
-            /// signal that it is for generated-code use only.
-            #[doc(hidden)]
-            pub fn _decode_depth(
-                buf: &'a [u8],
-                depth: u32,
-            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-                let mut view = Self::default();
-                view._merge_into_view(buf, depth)?;
-                ::core::result::Result::Ok(view)
-            }
-            /// Merge fields from `buf` into this view (proto merge semantics).
-            ///
-            /// Repeated fields append; singular fields last-wins; singular
-            /// MESSAGE fields merge recursively. Used by sub-message decode
-            /// arms when the same field appears multiple times on the wire.
-            ///
-            /// **Not part of the public API.**
-            #[doc(hidden)]
-            pub fn _merge_into_view(
-                &mut self,
-                buf: &'a [u8],
-                depth: u32,
-            ) -> ::core::result::Result<(), ::buffa::DecodeError> {
-                let _ = depth;
-                #[allow(unused_variables)]
-                let view = self;
-                let mut cur: &'a [u8] = buf;
-                while !cur.is_empty() {
-                    let before_tag = cur;
-                    let tag = ::buffa::encoding::Tag::decode(&mut cur)?;
-                    match tag.field_number() {
-                        1u32 => {
-                            if tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: 1u32,
-                                    expected: 2u8,
-                                    actual: tag.wire_type() as u8,
-                                });
-                            }
-                            view.model_name = ::buffa::types::borrow_str(&mut cur)?;
-                        }
-                        2u32 => {
-                            if tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: 2u32,
-                                    expected: 2u8,
-                                    actual: tag.wire_type() as u8,
-                                });
-                            }
-                            view.catalog_name = ::buffa::types::borrow_str(&mut cur)?;
-                        }
-                        3u32 => {
-                            if tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: 3u32,
-                                    expected: 2u8,
-                                    actual: tag.wire_type() as u8,
-                                });
-                            }
-                            view.schema_name = ::buffa::types::borrow_str(&mut cur)?;
-                        }
-                        4u32 => {
-                            if tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: 4u32,
-                                    expected: 2u8,
-                                    actual: tag.wire_type() as u8,
-                                });
-                            }
-                            view.source = ::buffa::types::borrow_str(&mut cur)?;
-                        }
-                        5u32 => {
-                            if tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: 5u32,
-                                    expected: 2u8,
-                                    actual: tag.wire_type() as u8,
-                                });
-                            }
-                            view.run_id = Some(::buffa::types::borrow_str(&mut cur)?);
-                        }
-                        6u32 => {
-                            if tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: 6u32,
-                                    expected: 2u8,
-                                    actual: tag.wire_type() as u8,
-                                });
-                            }
-                            view.comment = Some(::buffa::types::borrow_str(&mut cur)?);
-                        }
-                        _ => {
-                            ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
-                            let span_len = before_tag.len() - cur.len();
-                            view.__buffa_unknown_fields
-                                .push_raw(&before_tag[..span_len]);
-                        }
-                    }
-                }
-                ::core::result::Result::Ok(())
-            }
-        }
-        impl<'a> ::buffa::MessageView<'a> for CreateModelVersionView<'a> {
-            type Owned = super::super::CreateModelVersion;
-            fn decode_view(
-                buf: &'a [u8],
-            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-                Self::_decode_depth(buf, ::buffa::RECURSION_LIMIT)
-            }
-            fn decode_view_with_limit(
-                buf: &'a [u8],
-                depth: u32,
-            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-                Self::_decode_depth(buf, depth)
-            }
-            fn to_owned_message(&self) -> super::super::CreateModelVersion {
-                self.to_owned_from_source(None)
-            }
-            #[allow(clippy::useless_conversion, clippy::needless_update)]
-            fn to_owned_from_source(
-                &self,
-                __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
-            ) -> super::super::CreateModelVersion {
-                #[allow(unused_imports)]
-                use ::buffa::alloc::string::ToString as _;
-                let _ = __buffa_src;
-                super::super::CreateModelVersion {
-                    model_name: self.model_name.to_string(),
-                    catalog_name: self.catalog_name.to_string(),
-                    schema_name: self.schema_name.to_string(),
-                    source: self.source.to_string(),
-                    run_id: self.run_id.map(|s| s.to_string()),
-                    comment: self.comment.map(|s| s.to_string()),
-                    __buffa_unknown_fields: self
-                        .__buffa_unknown_fields
-                        .to_owned()
-                        .unwrap_or_default()
-                        .into(),
-                    ..::core::default::Default::default()
-                }
-            }
-        }
-        impl<'a> ::buffa::ViewEncode<'a> for CreateModelVersionView<'a> {
-            #[allow(clippy::needless_borrow, clippy::let_and_return)]
-            fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
-                #[allow(unused_imports)]
-                use ::buffa::Enumeration as _;
-                let mut size = 0u32;
-                if !self.model_name.is_empty() {
-                    size
-                        += 1u32
-                            + ::buffa::types::string_encoded_len(&self.model_name)
-                                as u32;
-                }
-                if !self.catalog_name.is_empty() {
-                    size
-                        += 1u32
-                            + ::buffa::types::string_encoded_len(&self.catalog_name)
-                                as u32;
-                }
-                if !self.schema_name.is_empty() {
-                    size
-                        += 1u32
-                            + ::buffa::types::string_encoded_len(&self.schema_name)
-                                as u32;
-                }
-                if !self.source.is_empty() {
-                    size
-                        += 1u32
-                            + ::buffa::types::string_encoded_len(&self.source) as u32;
-                }
-                if let Some(ref v) = self.run_id {
-                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
-                }
-                if let Some(ref v) = self.comment {
-                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
-                }
-                size += self.__buffa_unknown_fields.encoded_len() as u32;
-                size
-            }
-            #[allow(clippy::needless_borrow)]
-            fn write_to(
-                &self,
-                _cache: &mut ::buffa::SizeCache,
-                buf: &mut impl ::buffa::bytes::BufMut,
-            ) {
-                #[allow(unused_imports)]
-                use ::buffa::Enumeration as _;
-                if !self.model_name.is_empty() {
-                    ::buffa::encoding::Tag::new(
-                            1u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(&self.model_name, buf);
-                }
-                if !self.catalog_name.is_empty() {
-                    ::buffa::encoding::Tag::new(
-                            2u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(&self.catalog_name, buf);
-                }
-                if !self.schema_name.is_empty() {
-                    ::buffa::encoding::Tag::new(
-                            3u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(&self.schema_name, buf);
-                }
-                if !self.source.is_empty() {
-                    ::buffa::encoding::Tag::new(
-                            4u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(&self.source, buf);
-                }
-                if let Some(ref v) = self.run_id {
-                    ::buffa::encoding::Tag::new(
-                            5u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(v, buf);
-                }
-                if let Some(ref v) = self.comment {
-                    ::buffa::encoding::Tag::new(
-                            6u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(v, buf);
-                }
-                self.__buffa_unknown_fields.write_to(buf);
-            }
-        }
-        /// Serializes this view as protobuf JSON.
-        ///
-        /// Implicit-presence fields with default values are omitted, `required`
-        /// fields are always emitted, explicit-presence (`optional`) fields are
-        /// emitted only when set, bytes fields are base64-encoded, and enum
-        /// values are their proto name strings.
-        ///
-        /// This impl uses `serialize_map(None)` because the number of emitted
-        /// fields depends on default-omission rules; serializers that require
-        /// known map lengths (e.g. `bincode`) will return a runtime error.
-        /// Use the owned message type for those formats.
-        impl<'__a> ::serde::Serialize for CreateModelVersionView<'__a> {
-            fn serialize<__S: ::serde::Serializer>(
-                &self,
-                __s: __S,
-            ) -> ::core::result::Result<__S::Ok, __S::Error> {
-                use ::serde::ser::SerializeMap as _;
-                let mut __map = __s.serialize_map(::core::option::Option::None)?;
-                if !::buffa::json_helpers::skip_if::is_empty_str(self.model_name) {
-                    __map.serialize_entry("model_name", self.model_name)?;
-                }
-                if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
-                    __map.serialize_entry("catalog_name", self.catalog_name)?;
-                }
-                if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
-                    __map.serialize_entry("schema_name", self.schema_name)?;
-                }
-                if !::buffa::json_helpers::skip_if::is_empty_str(self.source) {
-                    __map.serialize_entry("source", self.source)?;
-                }
-                if let ::core::option::Option::Some(__v) = self.run_id {
-                    __map.serialize_entry("run_id", __v)?;
-                }
-                if let ::core::option::Option::Some(__v) = self.comment {
-                    __map.serialize_entry("comment", __v)?;
-                }
-                __map.end()
-            }
-        }
-        impl<'a> ::buffa::MessageName for CreateModelVersionView<'a> {
-            const PACKAGE: &'static str = "unitycatalog.model_versions.v1";
-            const NAME: &'static str = "CreateModelVersion";
-            const FULL_NAME: &'static str = "unitycatalog.model_versions.v1.CreateModelVersion";
-            const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.model_versions.v1.CreateModelVersion";
-        }
-        impl<'v> ::buffa::DefaultViewInstance for CreateModelVersionView<'v> {
-            fn default_view_instance<'a>() -> &'a Self
-            where
-                Self: 'a,
-            {
-                static VALUE: ::buffa::__private::OnceBox<
-                    CreateModelVersionView<'static>,
-                > = ::buffa::__private::OnceBox::new();
-                VALUE
-                    .get_or_init(|| ::buffa::alloc::boxed::Box::new(
-                        <CreateModelVersionView<'static>>::default(),
-                    ))
-            }
-        }
-        impl ::buffa::ViewReborrow for CreateModelVersionView<'static> {
-            type Reborrowed<'b> = CreateModelVersionView<'b>;
-            fn reborrow<'b>(this: &'b Self) -> &'b Self::Reborrowed<'b> {
-                this
-            }
-        }
-        /** Self-contained, `'static` owned view of a `CreateModelVersion` message.
-
- Wraps [`::buffa::OwnedView`]`<`[`CreateModelVersionView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
-
- Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`CreateModelVersionView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
-        #[derive(Clone, Debug)]
-        pub struct CreateModelVersionOwnedView(
-            ::buffa::OwnedView<CreateModelVersionView<'static>>,
-        );
-        impl CreateModelVersionOwnedView {
-            /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
-            ///
-            /// The view borrows directly from the buffer's data; the buffer is
-            /// retained inside the returned handle.
-            ///
-            /// # Errors
-            ///
-            /// Returns [`::buffa::DecodeError`] if the buffer contains invalid
-            /// protobuf data.
-            pub fn decode(
-                bytes: ::buffa::bytes::Bytes,
-            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-                ::core::result::Result::Ok(
-                    CreateModelVersionOwnedView(::buffa::OwnedView::decode(bytes)?),
-                )
-            }
-            /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
-            /// max message size).
-            ///
-            /// # Errors
-            ///
-            /// Returns [`::buffa::DecodeError`] if the buffer is invalid or
-            /// exceeds the configured limits.
-            pub fn decode_with_options(
-                bytes: ::buffa::bytes::Bytes,
-                opts: &::buffa::DecodeOptions,
-            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-                ::core::result::Result::Ok(
-                    CreateModelVersionOwnedView(
-                        ::buffa::OwnedView::decode_with_options(bytes, opts)?,
-                    ),
-                )
-            }
-            /// Build from an owned message via an encode → decode round-trip.
-            ///
-            /// # Errors
-            ///
-            /// Returns [`::buffa::DecodeError`] if the re-encoded bytes are
-            /// somehow invalid (should not happen for well-formed messages).
-            pub fn from_owned(
-                msg: &super::super::CreateModelVersion,
-            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-                ::core::result::Result::Ok(
-                    CreateModelVersionOwnedView(::buffa::OwnedView::from_owned(msg)?),
-                )
-            }
-            /// Borrow the full [`CreateModelVersionView`] with its lifetime tied to `&self`.
-            #[must_use]
-            pub fn view(&self) -> &CreateModelVersionView<'_> {
-                self.0.reborrow()
-            }
-            /// Convert to the owned message type.
-            #[must_use]
-            pub fn to_owned_message(&self) -> super::super::CreateModelVersion {
-                self.0.to_owned_message()
-            }
-            /// The underlying bytes buffer.
-            #[must_use]
-            pub fn bytes(&self) -> &::buffa::bytes::Bytes {
-                self.0.bytes()
-            }
-            /// Consume the handle, returning the underlying bytes buffer.
-            #[must_use]
-            pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
-                self.0.into_bytes()
-            }
-            /// Name of the parent registered model, relative to parent schema.
-            ///
-            /// Field 1: `model_name`
-            #[must_use]
-            pub fn model_name(&self) -> &'_ str {
-                self.0.reborrow().model_name
-            }
-            /// Name of parent catalog.
-            ///
-            /// Field 2: `catalog_name`
-            #[must_use]
-            pub fn catalog_name(&self) -> &'_ str {
-                self.0.reborrow().catalog_name
-            }
-            /// Name of parent schema.
-            ///
-            /// Field 3: `schema_name`
-            #[must_use]
-            pub fn schema_name(&self) -> &'_ str {
-                self.0.reborrow().schema_name
-            }
-            /// URI indicating the location of the source artifacts (e.g. an MLflow run
-            /// artifact path) used to create the model version.
-            ///
-            /// Field 4: `source`
-            #[must_use]
-            pub fn source(&self) -> &'_ str {
-                self.0.reborrow().source
-            }
-            /// The run id used by the ML package that generated this model.
-            ///
-            /// Field 5: `run_id`
-            #[must_use]
-            pub fn run_id(&self) -> ::core::option::Option<&'_ str> {
-                self.0.reborrow().run_id
-            }
-            /// User-provided free-form text description.
-            ///
-            /// Field 6: `comment`
-            #[must_use]
-            pub fn comment(&self) -> ::core::option::Option<&'_ str> {
-                self.0.reborrow().comment
-            }
-        }
-        impl ::core::convert::From<::buffa::OwnedView<CreateModelVersionView<'static>>>
-        for CreateModelVersionOwnedView {
-            fn from(inner: ::buffa::OwnedView<CreateModelVersionView<'static>>) -> Self {
-                CreateModelVersionOwnedView(inner)
-            }
-        }
-        impl ::core::convert::From<CreateModelVersionOwnedView>
-        for ::buffa::OwnedView<CreateModelVersionView<'static>> {
-            fn from(wrapper: CreateModelVersionOwnedView) -> Self {
-                wrapper.0
-            }
-        }
-        impl ::core::convert::AsRef<::buffa::OwnedView<CreateModelVersionView<'static>>>
-        for CreateModelVersionOwnedView {
-            fn as_ref(&self) -> &::buffa::OwnedView<CreateModelVersionView<'static>> {
-                &self.0
-            }
-        }
-        impl ::buffa::HasMessageView for super::super::CreateModelVersion {
-            type View<'a> = CreateModelVersionView<'a>;
-            type ViewHandle = CreateModelVersionOwnedView;
-        }
-        impl ::serde::Serialize for CreateModelVersionOwnedView {
-            fn serialize<__S: ::serde::Serializer>(
-                &self,
-                __s: __S,
-            ) -> ::core::result::Result<__S::Ok, __S::Error> {
-                ::serde::Serialize::serialize(&self.0, __s)
-            }
-        }
         /// A model version under a registered model.
         ///
         /// A version is identified by its parent model's three-level name plus an
@@ -4906,12 +4247,31 @@ pub mod __buffa {
         /// Create a new model version.
         #[derive(Clone, Debug, Default)]
         pub struct CreateModelVersionRequestView<'a> {
-            /// The model version to create.
+            /// Name of the parent registered model, relative to parent schema.
             ///
-            /// Field 1: `model_version`
-            pub model_version: ::buffa::MessageFieldView<
-                super::super::__buffa::view::CreateModelVersionView<'a>,
-            >,
+            /// Field 1: `model_name`
+            pub model_name: &'a str,
+            /// Name of parent catalog.
+            ///
+            /// Field 2: `catalog_name`
+            pub catalog_name: &'a str,
+            /// Name of parent schema.
+            ///
+            /// Field 3: `schema_name`
+            pub schema_name: &'a str,
+            /// URI indicating the location of the source artifacts (e.g. an MLflow run
+            /// artifact path) used to create the model version.
+            ///
+            /// Field 4: `source`
+            pub source: &'a str,
+            /// The run id used by the ML package that generated this model.
+            ///
+            /// Field 5: `run_id`
+            pub run_id: ::core::option::Option<&'a str>,
+            /// User-provided free-form text description.
+            ///
+            /// Field 6: `comment`
+            pub comment: ::core::option::Option<&'a str>,
             pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
         }
         impl<'a> CreateModelVersionRequestView<'a> {
@@ -4962,21 +4322,67 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            if depth == 0 {
-                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            view.model_name = ::buffa::types::borrow_str(&mut cur)?;
+                        }
+                        2u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 2u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
                             }
-                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
-                            match view.model_version.as_mut() {
-                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
-                                None => {
-                                    view.model_version = ::buffa::MessageFieldView::set(
-                                        super::super::__buffa::view::CreateModelVersionView::_decode_depth(
-                                            sub,
-                                            depth - 1,
-                                        )?,
-                                    );
-                                }
+                            view.catalog_name = ::buffa::types::borrow_str(&mut cur)?;
+                        }
+                        3u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 3u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
                             }
+                            view.schema_name = ::buffa::types::borrow_str(&mut cur)?;
+                        }
+                        4u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 4u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.source = ::buffa::types::borrow_str(&mut cur)?;
+                        }
+                        5u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 5u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.run_id = Some(::buffa::types::borrow_str(&mut cur)?);
+                        }
+                        6u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 6u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.comment = Some(::buffa::types::borrow_str(&mut cur)?);
                         }
                         _ => {
                             ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
@@ -5014,14 +4420,12 @@ pub mod __buffa {
                 use ::buffa::alloc::string::ToString as _;
                 let _ = __buffa_src;
                 super::super::CreateModelVersionRequest {
-                    model_version: match self.model_version.as_option() {
-                        Some(v) => {
-                            ::buffa::MessageField::<
-                                super::super::CreateModelVersion,
-                            >::some(v.to_owned_from_source(__buffa_src))
-                        }
-                        None => ::buffa::MessageField::none(),
-                    },
+                    model_name: self.model_name.to_string(),
+                    catalog_name: self.catalog_name.to_string(),
+                    schema_name: self.schema_name.to_string(),
+                    source: self.source.to_string(),
+                    run_id: self.run_id.map(|s| s.to_string()),
+                    comment: self.comment.map(|s| s.to_string()),
                     __buffa_unknown_fields: self
                         .__buffa_unknown_fields
                         .to_owned()
@@ -5033,17 +4437,38 @@ pub mod __buffa {
         }
         impl<'a> ::buffa::ViewEncode<'a> for CreateModelVersionRequestView<'a> {
             #[allow(clippy::needless_borrow, clippy::let_and_return)]
-            fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+            fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
                 #[allow(unused_imports)]
                 use ::buffa::Enumeration as _;
                 let mut size = 0u32;
-                if self.model_version.is_set() {
-                    let __slot = __cache.reserve();
-                    let inner_size = self.model_version.compute_size(__cache);
-                    __cache.set(__slot, inner_size);
+                if !self.model_name.is_empty() {
                     size
-                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
-                            + inner_size;
+                        += 1u32
+                            + ::buffa::types::string_encoded_len(&self.model_name)
+                                as u32;
+                }
+                if !self.catalog_name.is_empty() {
+                    size
+                        += 1u32
+                            + ::buffa::types::string_encoded_len(&self.catalog_name)
+                                as u32;
+                }
+                if !self.schema_name.is_empty() {
+                    size
+                        += 1u32
+                            + ::buffa::types::string_encoded_len(&self.schema_name)
+                                as u32;
+                }
+                if !self.source.is_empty() {
+                    size
+                        += 1u32
+                            + ::buffa::types::string_encoded_len(&self.source) as u32;
+                }
+                if let Some(ref v) = self.run_id {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if let Some(ref v) = self.comment {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
                 size += self.__buffa_unknown_fields.encoded_len() as u32;
                 size
@@ -5051,19 +4476,58 @@ pub mod __buffa {
             #[allow(clippy::needless_borrow)]
             fn write_to(
                 &self,
-                __cache: &mut ::buffa::SizeCache,
+                _cache: &mut ::buffa::SizeCache,
                 buf: &mut impl ::buffa::bytes::BufMut,
             ) {
                 #[allow(unused_imports)]
                 use ::buffa::Enumeration as _;
-                if self.model_version.is_set() {
+                if !self.model_name.is_empty() {
                     ::buffa::encoding::Tag::new(
                             1u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
-                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
-                    self.model_version.write_to(__cache, buf);
+                    ::buffa::types::encode_string(&self.model_name, buf);
+                }
+                if !self.catalog_name.is_empty() {
+                    ::buffa::encoding::Tag::new(
+                            2u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(&self.catalog_name, buf);
+                }
+                if !self.schema_name.is_empty() {
+                    ::buffa::encoding::Tag::new(
+                            3u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(&self.schema_name, buf);
+                }
+                if !self.source.is_empty() {
+                    ::buffa::encoding::Tag::new(
+                            4u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(&self.source, buf);
+                }
+                if let Some(ref v) = self.run_id {
+                    ::buffa::encoding::Tag::new(
+                            5u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                if let Some(ref v) = self.comment {
+                    ::buffa::encoding::Tag::new(
+                            6u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
                 }
                 self.__buffa_unknown_fields.write_to(buf);
             }
@@ -5086,13 +4550,23 @@ pub mod __buffa {
             ) -> ::core::result::Result<__S::Ok, __S::Error> {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
-                {
-                    if let ::core::option::Option::Some(__v) = self
-                        .model_version
-                        .as_option()
-                    {
-                        __map.serialize_entry("model_version", __v)?;
-                    }
+                if !::buffa::json_helpers::skip_if::is_empty_str(self.model_name) {
+                    __map.serialize_entry("model_name", self.model_name)?;
+                }
+                if !::buffa::json_helpers::skip_if::is_empty_str(self.catalog_name) {
+                    __map.serialize_entry("catalog_name", self.catalog_name)?;
+                }
+                if !::buffa::json_helpers::skip_if::is_empty_str(self.schema_name) {
+                    __map.serialize_entry("schema_name", self.schema_name)?;
+                }
+                if !::buffa::json_helpers::skip_if::is_empty_str(self.source) {
+                    __map.serialize_entry("source", self.source)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.run_id {
+                    __map.serialize_entry("run_id", __v)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.comment {
+                    __map.serialize_entry("comment", __v)?;
                 }
                 __map.end()
             }
@@ -5203,16 +4677,48 @@ pub mod __buffa {
             pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
                 self.0.into_bytes()
             }
-            /// The model version to create.
+            /// Name of the parent registered model, relative to parent schema.
             ///
-            /// Field 1: `model_version`
+            /// Field 1: `model_name`
             #[must_use]
-            pub fn model_version(
-                &self,
-            ) -> &::buffa::MessageFieldView<
-                super::super::__buffa::view::CreateModelVersionView<'_>,
-            > {
-                &self.0.reborrow().model_version
+            pub fn model_name(&self) -> &'_ str {
+                self.0.reborrow().model_name
+            }
+            /// Name of parent catalog.
+            ///
+            /// Field 2: `catalog_name`
+            #[must_use]
+            pub fn catalog_name(&self) -> &'_ str {
+                self.0.reborrow().catalog_name
+            }
+            /// Name of parent schema.
+            ///
+            /// Field 3: `schema_name`
+            #[must_use]
+            pub fn schema_name(&self) -> &'_ str {
+                self.0.reborrow().schema_name
+            }
+            /// URI indicating the location of the source artifacts (e.g. an MLflow run
+            /// artifact path) used to create the model version.
+            ///
+            /// Field 4: `source`
+            #[must_use]
+            pub fn source(&self) -> &'_ str {
+                self.0.reborrow().source
+            }
+            /// The run id used by the ML package that generated this model.
+            ///
+            /// Field 5: `run_id`
+            #[must_use]
+            pub fn run_id(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().run_id
+            }
+            /// User-provided free-form text description.
+            ///
+            /// Field 6: `comment`
+            #[must_use]
+            pub fn comment(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().comment
             }
         }
         impl ::core::convert::From<
@@ -6771,7 +6277,6 @@ pub mod __buffa {
     }
     /// Register this package's `Any` type entries and extension entries.
     pub fn register_types(reg: &mut ::buffa::type_registry::TypeRegistry) {
-        reg.register_json_any(super::__CREATE_MODEL_VERSION_JSON_ANY);
         reg.register_json_any(super::__MODEL_VERSION_JSON_ANY);
         reg.register_json_any(super::__LIST_MODEL_VERSIONS_REQUEST_JSON_ANY);
         reg.register_json_any(super::__LIST_MODEL_VERSIONS_RESPONSE_JSON_ANY);
@@ -6782,10 +6287,6 @@ pub mod __buffa {
         reg.register_json_any(super::__FINALIZE_MODEL_VERSION_REQUEST_JSON_ANY);
     }
 }
-#[doc(inline)]
-pub use self::__buffa::view::CreateModelVersionView;
-#[doc(inline)]
-pub use self::__buffa::view::CreateModelVersionOwnedView;
 #[doc(inline)]
 pub use self::__buffa::view::ModelVersionView;
 #[doc(inline)]
