@@ -267,6 +267,14 @@ pub fn baseline_checks() -> Vec<Check> {
         ),
         check!("function_lifecycle", checks::function::function_lifecycle),
         check!("function_update", checks::function::function_update),
+        check!(
+            "registered_model_lifecycle",
+            checks::registered_model::registered_model_lifecycle
+        ),
+        check!(
+            "model_version_lifecycle",
+            checks::registered_model::model_version_lifecycle
+        ),
     ]
 }
 
