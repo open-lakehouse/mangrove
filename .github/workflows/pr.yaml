@@ -27,13 +27,13 @@ jobs:
         with:
           bun-version: 1.3.14
 
-      # bun.lock tarball URLs are generated against whatever registry `bun install`
-      # ran against. Databricks dev machines bake the internal mirror host into the
-      # lockfile; GitHub runners can't reach it, so rewrite to the public registry
-      # here (integrity hashes are unchanged — same tarball content).
+      # bun.lock must ship with empty resolution fields (no private registry proxy
+      # URLs). Fail fast if a PR bakes them in; do not mutate the lockfile here —
+      # that would defeat --frozen-lockfile. Run `bun run strip-lock-proxy` locally
+      # before opening a PR (the pre-commit hook does this when bun.lock is staged).
       - name: Install dependencies
         run: |
-          sed -i 's#https://npm-proxy.cloud.databricks.com/#https://registry.npmjs.org/#g' bun.lock
+          bun run scripts/strip-bun-lock-proxy.ts --check
           bun install --frozen-lockfile
 
       - name: Lint
