@@ -41,6 +41,8 @@ impl ResourceExt for Resource {
             Resource::TagPolicy(obj) => obj.resource_name(),
             Resource::StagingTable(obj) => obj.resource_name(),
             Resource::PolicyInfo(obj) => obj.resource_name(),
+            Resource::RegisteredModel(obj) => obj.resource_name(),
+            Resource::ModelVersion(obj) => obj.resource_name(),
         }
     }
 
@@ -62,6 +64,8 @@ impl ResourceExt for Resource {
             Resource::TagPolicy(obj) => obj.resource_ref(),
             Resource::StagingTable(obj) => obj.resource_ref(),
             Resource::PolicyInfo(obj) => obj.resource_ref(),
+            Resource::RegisteredModel(obj) => obj.resource_ref(),
+            Resource::ModelVersion(obj) => obj.resource_ref(),
         }
     }
 
@@ -83,6 +87,8 @@ impl ResourceExt for Resource {
             Resource::TagPolicy(obj) => obj.resource_ident(),
             Resource::StagingTable(obj) => obj.resource_ident(),
             Resource::PolicyInfo(obj) => obj.resource_ident(),
+            Resource::RegisteredModel(obj) => obj.resource_ident(),
+            Resource::ModelVersion(obj) => obj.resource_ident(),
         }
     }
 }
@@ -108,6 +114,8 @@ impl TryFrom<Resource> for Object {
             Resource::TagPolicy(obj) => obj.try_into(),
             Resource::StagingTable(obj) => obj.try_into(),
             Resource::PolicyInfo(obj) => obj.try_into(),
+            Resource::RegisteredModel(obj) => obj.try_into(),
+            Resource::ModelVersion(obj) => obj.try_into(),
         }
     }
 }
@@ -133,6 +141,8 @@ impl TryFrom<Object> for Resource {
             ObjectLabel::TagPolicy => Ok(Resource::TagPolicy(obj.try_into()?)),
             ObjectLabel::StagingTable => Ok(Resource::StagingTable(obj.try_into()?)),
             ObjectLabel::PolicyInfo => Ok(Resource::PolicyInfo(obj.try_into()?)),
+            ObjectLabel::RegisteredModel => Ok(Resource::RegisteredModel(obj.try_into()?)),
+            ObjectLabel::ModelVersion => Ok(Resource::ModelVersion(obj.try_into()?)),
         }
     }
 }
