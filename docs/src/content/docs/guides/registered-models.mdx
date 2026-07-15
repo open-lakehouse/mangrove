@@ -1,0 +1,64 @@
+---
+title: Work with Registered Models
+description: How to manage registered models and model versions, and vend temporary credentials for model artifacts, using the Unity Catalog clients.
+---
+
+import CodeExample from "../../../components/CodeExample.astro";
+
+Registered models are securables in the three-level namespace
+(`catalog.schema.model`) that group a collection of **model versions**. Each
+version carries its own artifact storage location and moves through a
+`PENDING_REGISTRATION → READY` lifecycle.
+
+Unity Catalog owns the registry metadata and governs the storage location; it
+does not run or proxy an MLflow tracking server. A client (for example, MLflow)
+creates a version, writes the model artifacts to the vended storage location, and
+then finalizes the version.
+
+## List registered models
+
+Retrieve the registered models in a schema.
+
+<CodeExample snippet="list_registered_models" />
+
+## Create a registered model
+
+Create a new registered model. The server allocates a managed storage location
+under which the model's version artifacts are stored.
+
+<CodeExample snippet="create_registered_model" />
+
+## Get a registered model
+
+Retrieve details for a specific registered model.
+
+<CodeExample snippet="get_registered_model" />
+
+## Create a model version
+
+Create a new model version. It starts in `PENDING_REGISTRATION`, and the server
+assigns a monotonically increasing version number and a storage location for the
+artifacts.
+
+<CodeExample snippet="create_model_version" />
+
+## Finalize a model version
+
+After writing all artifacts to the version's storage location, finalize it to
+transition its status to `READY`.
+
+<CodeExample snippet="finalize_model_version" />
+
+## List model versions
+
+Retrieve the versions of a registered model.
+
+<CodeExample snippet="list_model_versions" />
+
+## Accessing model artifacts
+
+To read or write a model version's artifacts, vend a temporary credential scoped
+to the version's storage location. This requires the metastore's
+`external_access_enabled` flag and the caller's `EXTERNAL_USE_SCHEMA` privilege on
+the parent schema, and is exposed via the temporary-credentials client
+(`temporary_model_version_credential`).
