@@ -576,17 +576,18 @@ impl NapiUnityCatalogClient {
     #[napi(catch_unwind)]
     pub async fn create_model_version(
         &self,
-        model_version: napi::bindgen_prelude::Buffer,
+        model_name: String,
+        catalog_name: String,
+        schema_name: String,
+        source: String,
+        run_id: Option<String>,
+        comment: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_model_version(
-            <CreateModelVersion as buffa::Message>::decode_from_slice(model_version.as_ref())
-                .map_err(|e| {
-                    napi::Error::new(
-                        napi::Status::GenericFailure,
-                        format!("invalid {} payload: {e}", stringify!(CreateModelVersion)),
-                    )
-                })?,
-        );
+        let mut request =
+            self.client
+                .create_model_version(model_name, catalog_name, schema_name, source);
+        request = request.with_run_id(run_id);
+        request = request.with_comment(comment);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
@@ -791,17 +792,15 @@ impl NapiUnityCatalogClient {
     #[napi(catch_unwind)]
     pub async fn create_registered_model(
         &self,
-        model_info: napi::bindgen_prelude::Buffer,
+        name: String,
+        catalog_name: String,
+        schema_name: String,
+        comment: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_registered_model(
-            <CreateRegisteredModel as buffa::Message>::decode_from_slice(model_info.as_ref())
-                .map_err(|e| {
-                    napi::Error::new(
-                        napi::Status::GenericFailure,
-                        format!("invalid {} payload: {e}", stringify!(CreateRegisteredModel)),
-                    )
-                })?,
-        );
+        let mut request = self
+            .client
+            .create_registered_model(name, catalog_name, schema_name);
+        request = request.with_comment(comment);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))

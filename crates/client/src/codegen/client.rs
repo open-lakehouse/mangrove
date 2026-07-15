@@ -677,17 +677,27 @@ impl UnityCatalogClient {
     ///
     /// # Arguments
     ///
-    /// * `model_version` - The model version to create.
+    /// * `model_name` - Name of the parent registered model, relative to parent schema.
+    /// * `catalog_name` - Name of parent catalog.
+    /// * `schema_name` - Name of parent schema.
+    /// * `source` - URI indicating the location of the source artifacts (e.g. an MLflow run
+    /// artifact path) used to create the model version.
     pub fn create_model_version(
         &self,
-        model_version: CreateModelVersion,
+        model_name: impl Into<String>,
+        catalog_name: impl Into<String>,
+        schema_name: impl Into<String>,
+        source: impl Into<String>,
     ) -> CreateModelVersionBuilder {
         CreateModelVersionBuilder::new(
             crate::codegen::model_versions::ModelVersionServiceClient::new(
                 self.client.clone(),
                 self.base_url.clone(),
             ),
-            model_version,
+            model_name,
+            catalog_name,
+            schema_name,
+            source,
         )
     }
     /// Get a model version
@@ -919,17 +929,23 @@ impl UnityCatalogClient {
     ///
     /// # Arguments
     ///
-    /// * `model_info` - The registered model to create.
+    /// * `name` - Name of registered model, relative to parent schema.
+    /// * `catalog_name` - Name of parent catalog.
+    /// * `schema_name` - Name of parent schema.
     pub fn create_registered_model(
         &self,
-        model_info: CreateRegisteredModel,
+        name: impl Into<String>,
+        catalog_name: impl Into<String>,
+        schema_name: impl Into<String>,
     ) -> CreateRegisteredModelBuilder {
         CreateRegisteredModelBuilder::new(
             crate::codegen::registered_models::RegisteredModelServiceClient::new(
                 self.client.clone(),
                 self.base_url.clone(),
             ),
-            model_info,
+            name,
+            catalog_name,
+            schema_name,
         )
     }
     /// Access the `registered_model` resource scoped to the given name.

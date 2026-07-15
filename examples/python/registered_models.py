@@ -2,9 +2,7 @@
 from unitycatalog_client import UnityCatalogClient
 
 client = UnityCatalogClient(base_url="http://localhost:8080")
-models = client.list_registered_models(
-    catalog_name="my_catalog", schema_name="my_schema"
-)
+models = client.list_registered_models(catalog_name="my_catalog", schema_name="my_schema")
 for model in models:
     print(model.name)
 # [/snippet:list_registered_models]
@@ -12,16 +10,14 @@ for model in models:
 
 # [snippet:create_registered_model]
 def create_registered_model_example() -> None:
-    from unitycatalog_client import CreateRegisteredModel, UnityCatalogClient
+    from unitycatalog_client import UnityCatalogClient
 
     client = UnityCatalogClient(base_url="http://localhost:8080")
     model = client.create_registered_model(
-        CreateRegisteredModel(
-            name="my_model",
-            catalog_name="my_catalog",
-            schema_name="my_schema",
-            comment="My first model",
-        )
+        name="my_model",
+        catalog_name="my_catalog",
+        schema_name="my_schema",
+        comment="My first model",
     )
     print(f"Created: {model.full_name}")
 
@@ -43,18 +39,16 @@ def get_registered_model_example() -> None:
 
 # [snippet:create_model_version]
 def create_model_version_example() -> None:
-    from unitycatalog_client import CreateModelVersion, UnityCatalogClient
+    from unitycatalog_client import UnityCatalogClient
 
     client = UnityCatalogClient(base_url="http://localhost:8080")
     # A new version starts in PENDING_REGISTRATION. Write your artifacts to the
     # returned storage_location (vending credentials as needed), then finalize.
     version = client.create_model_version(
-        CreateModelVersion(
-            model_name="my_model",
-            catalog_name="my_catalog",
-            schema_name="my_schema",
-            source="s3://my-run/artifacts",
-        )
+        model_name="my_model",
+        catalog_name="my_catalog",
+        schema_name="my_schema",
+        source="s3://my-run/artifacts",
     )
     print(f"Created version {version.version}")
 
