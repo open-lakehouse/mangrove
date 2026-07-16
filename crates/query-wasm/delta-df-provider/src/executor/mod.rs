@@ -49,8 +49,8 @@ use crate::error::DfResultIntoDelta;
 ///
 /// v1 gates checkpointed tables to `Unsupported` upstream, so this should be unreachable for the
 /// commit-only preview tables the wasm engine targets. If it fires we return a clear error
-/// instead of silently mis-scanning; v2 (M4) will service it asynchronously over the session
-/// object store via `parquet::arrow::async_reader` — with no kernel engine.
+/// instead of silently misreading the table; v2 (M4) will service it asynchronously over the
+/// session object store via `parquet::arrow::async_reader` — with no kernel engine.
 fn execute_schema_query_phase(node: SchemaQuery) -> Result<EngineResponse, EngineError> {
     Err(EngineError::new(EngineErrorKind::IoError {
         message: format!(
@@ -92,7 +92,7 @@ impl DataFusionExecutor {
             .optimizer
             .enable_leaf_expression_pushdown = false;
         // Statistics collection is a session-level setting; disable it -- kernel does its own
-        // file-level data skipping, and DF's parquet stats collector mis-handles
+        // file-level data skipping, and DF's parquet stats collector mishandles
         // column-mapping/field-id renamed columns (it stamps missing-by-logical-name columns as
         // all-null, which the projection then folds to Literal::NULL before the field-id rename
         // applies). See compile/logical/scan.rs for the full rationale.
