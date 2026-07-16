@@ -3,7 +3,7 @@
 #
 # Prepares everything the in-browser wasm query engine needs to preview a real
 # managed Delta table, then leaves the actual table write to the caller (the
-# `managed_table_azurite` example — see `just rest-ui-wasm-seeded`):
+# `seed_managed_tables` example — see `just ui-dev-wasm` / `just ui-dev`):
 #
 #   1. Start Azurite (docker compose `azurite` profile, blob on :10000).
 #   2. Create the `lakehouse` blob container (a vended SAS cannot create it).
