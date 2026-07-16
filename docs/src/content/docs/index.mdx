@@ -6,7 +6,7 @@ hero:
   tagline: How the unitycatalog-rs server and clients are built.
   actions:
     - text: Read the architecture
-      link: /explanation/service-composition/
+      link: /explanation/authorization/
       icon: right-arrow
     - text: View on GitHub
       link: https://github.com/unitycatalog-incubator/unitycatalog-rs
@@ -19,16 +19,16 @@ TypeScript client libraries.
 
 User-facing tutorials, client how-to guides, and REST/configuration reference
 now live in the consolidated open-lakehouse documentation. The pages here focus
-on how the server is put together: service composition, the graph data model,
-the code-generation pipeline, authorization, and the core trait contracts.
+on how the server is put together — its authorization model and the
+contributor workflow. The per-item trait and type reference lives in the crate
+rustdoc on [docs.rs](https://docs.rs/olai-uc-server).
 
 ## Where to start
 
-- **[Service composition](/explanation/service-composition/)** — how `ServerHandler` wires policy, storage, and secrets together.
-- **[The graph data model](/explanation/graph-data-model/)** — resources as objects and associations.
-- **[Code generation philosophy](/explanation/codegen-philosophy/)** — proto as the source of truth.
 - **[Authorization architecture](/explanation/authorization/)** — principals, permissions, and decisions.
 - **[Add a new resource type](/guides/add-resource-type/)** — the end-to-end contributor recipe.
+- **[Run integration tests](/guides/integration-testing/)** — the acceptance suite in live and replay modes.
+- **[API reference on docs.rs](https://docs.rs/olai-uc-server)** — the per-item trait and type reference for the published crates.
 
 ## The open lakehouse ecosystem
 

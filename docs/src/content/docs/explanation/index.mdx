@@ -6,7 +6,9 @@ These pages explain how `unitycatalog-rs` is built — the design decisions and
 internal structure behind the server and its clients, rather than how to use
 them.
 
-- **[Service composition](/explanation/service-composition/)** — how `ServerHandler` composes policy, storage, and secrets via `Arc<dyn Trait>` and the `Provides*` dependency-injection pattern.
-- **[The graph data model](/explanation/graph-data-model/)** — why resources are stored as object nodes and association edges, and the `ResourceStore` trait.
-- **[Code generation philosophy](/explanation/codegen-philosophy/)** — proto as the single source of truth, and how handlers and clients are generated from it.
 - **[Authorization architecture](/explanation/authorization/)** — principals, permissions, decisions, and the policy middleware.
+
+The per-item trait and type reference (the `Policy`, `ResourceStore`, and
+`ServerHandler` API surface) lives in the crate rustdoc on
+[docs.rs](https://docs.rs/olai-uc-server) — it is generated from the code, so it
+stays in sync with the implementation.

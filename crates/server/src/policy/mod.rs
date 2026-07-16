@@ -1,9 +1,50 @@
-//! Authorization policies.
+//! Authorization for the Unity Catalog server.
 //!
-//! Policies are used to determine whether a recipient is allowed to perform a specific action on a
-//! resource. The action is represented by a [`Permission`] and the resource is represented by a
-//! [`Resource`]. The [`Decision`] represents whether the action is allowed or denied for the given
-//! recipient.
+//! Every request that touches a resource is gated by a [`Policy`]: given a
+//! resource, the [`Permission`] the operation requires, and a caller-supplied
+//! context, it returns a [`Decision`] of [`Allow`](Decision::Allow) or
+//! [`Deny`](Decision::Deny). The trait is generic over the context type `Cx` so
+//! the identity model is not baked in — a server can authorize on a
+//! [`Principal`], a request-scoped struct, or `()` for an unauthenticated
+//! allow-all deployment.
+//!
+//! Request types don't pass a bare resource/permission pair; they implement
+//! [`SecuredAction`], which pins each operation to the exact permission it needs
+//! at compile time. Handlers call [`Policy::check_required`] with the request
+//! itself, so the required permission can never be mismatched by hand.
+//!
+//! # Provided implementations
+//!
+//! [`ConstantPolicy`] is the only implementation shipped today. It returns a
+//! fixed decision regardless of input; [`ConstantPolicy::default`] allows
+//! everything, which suits development and deployments where a trusted proxy
+//! enforces access control upstream. Real per-resource RBAC is a future
+//! implementation of this same trait.
+//!
+//! # Composing a policy into a handler
+//!
+//! A type that holds a policy behind an [`Arc`] implements [`ProvidesPolicy`],
+//! and a blanket impl then makes that type act as a [`Policy`] by delegation, so
+//! handlers can call [`check_required`](Policy::check_required) on `self`
+//! directly. List endpoints use [`process_resources`] (or [`filter_authorized`]
+//! for a `dyn`-typed policy) to drop entries the caller may not see.
+//!
+//! # Examples
+//!
+//! ```
+//! use unitycatalog_server::policy::{ConstantPolicy, Decision, Permission, Policy};
+//! use unitycatalog_common::models::{ResourceIdent, resource_name};
+//!
+//! # async fn run() -> unitycatalog_server::Result<()> {
+//! // An allow-all policy authorized against the unit context.
+//! let policy = ConstantPolicy::default();
+//! let resource = ResourceIdent::catalog(resource_name!("main"));
+//!
+//! let decision = policy.authorize(&resource, &Permission::Read, &()).await?;
+//! assert_eq!(decision, Decision::Allow);
+//! # Ok(())
+//! # }
+//! ```
 
 use std::sync::Arc;
 
@@ -16,32 +57,56 @@ use crate::{Error, Result};
 
 mod constant;
 
+/// The identity a request is made on behalf of.
+///
+/// This is one possible authorization context (`Cx`) for a [`Policy`]; a server
+/// that extracts a username from a reverse-proxy header would authorize against
+/// a `Principal`.
 #[derive(Clone, Debug)]
 pub enum Principal {
+    /// No authenticated identity — used when no credentials are present, e.g.
+    /// behind a proxy that does not forward an identity header.
     Anonymous,
+    /// A named user identity, typically the value of a forwarded-user header.
     User(String),
 }
 
 impl Principal {
+    /// Returns an [`Anonymous`](Principal::Anonymous) principal.
     pub fn anonymous() -> Self {
         Self::Anonymous
     }
 
+    /// Returns a [`User`](Principal::User) principal with the given name.
     pub fn user(name: impl Into<String>) -> Self {
         Self::User(name.into())
     }
 }
 
-/// Permission that a policy can authorize.
+/// The access level an operation requires on a resource.
+///
+/// Mirrors the Unity Catalog privilege model. A request type reports the
+/// permission it needs through [`SecuredAction::permission`], so the mapping
+/// from operation to permission is fixed rather than chosen at each call site.
+///
+/// Serialized as `snake_case`; parsing is ASCII-case-insensitive.
 #[derive(Debug, Clone, AsRefStr, PartialEq, Eq, strum::EnumString)]
 #[strum(serialize_all = "snake_case", ascii_case_insensitive)]
 pub enum Permission {
+    /// List and read a resource (e.g. `get`/`list` operations).
     Read,
+    /// Modify data within an existing resource.
     Write,
+    /// Update or delete a resource's metadata.
     Manage,
+    /// Create new resources.
     Create,
+    /// Use a resource as part of another operation, e.g. attaching a credential
+    /// (mirrors `USE_CATALOG` / `USE_SCHEMA`).
     Use,
+    /// Discover that a resource exists without reading its contents (`BROWSE`).
     Browse,
+    /// Query data from a table or volume (`SELECT`).
     Select,
 }
 
@@ -60,14 +125,30 @@ pub enum Decision {
     Deny,
 }
 
-/// Policy for access control.
+/// Access-control decision point for the server.
+///
+/// Implementations decide whether a caller (described by the context `Cx`) may
+/// perform an operation on a resource. [`authorize`](Self::authorize) is the only
+/// required method; every other method has a default that delegates to it. The
+/// trait is `async` because real backends (external RBAC, database lookups) are
+/// I/O bound.
+///
+/// `Cx` is the authorization context — the identity or request state the policy
+/// evaluates against, e.g. [`Principal`] or `()`.
 #[async_trait::async_trait]
 pub trait Policy<Cx: Send + Sync + 'static>: Send + Sync + 'static {
+    /// Authorizes a [`SecuredAction`], reading the resource and required
+    /// permission from the action itself.
+    ///
+    /// Convenience over [`authorize`](Self::authorize) that removes the chance of
+    /// passing a permission that doesn't match the operation.
     async fn check(&self, obj: &dyn SecuredAction, context: &Cx) -> Result<Decision> {
         self.authorize(&obj.resource(), obj.permission(), context)
             .await
     }
 
+    /// Like [`check`](Self::check), but maps a [`Deny`](Decision::Deny) to
+    /// [`Error::NotAllowed`] so a handler can propagate it with `?`.
     async fn check_required(&self, obj: &dyn SecuredAction, context: &Cx) -> Result<()> {
         match self.check(obj, context).await? {
             Decision::Allow => Ok(()),
@@ -75,10 +156,11 @@ pub trait Policy<Cx: Send + Sync + 'static>: Send + Sync + 'static {
         }
     }
 
-    /// Check if the policy allows the action.
+    /// Decides whether `context` may exercise `permission` on `resource`.
     ///
-    /// Specifically, this method should return [`Decision::Allow`] if the context
-    /// is granted the requested permission on the resource, and [`Decision::Deny`] otherwise.
+    /// Returns [`Decision::Allow`] if the permission is granted and
+    /// [`Decision::Deny`] otherwise. This is the one method an implementation
+    /// must provide.
     async fn authorize(
         &self,
         resource: &ResourceIdent,
@@ -86,6 +168,13 @@ pub trait Policy<Cx: Send + Sync + 'static>: Send + Sync + 'static {
         context: &Cx,
     ) -> Result<Decision>;
 
+    /// Authorizes the same `permission` against many resources, returning one
+    /// [`Decision`] per resource in the same order.
+    ///
+    /// The default calls [`authorize`](Self::authorize) sequentially;
+    /// implementations backed by a batchable service should override it to issue
+    /// a single bulk lookup. Used by [`process_resources`] to filter list
+    /// results.
     async fn authorize_many(
         &self,
         resources: &[ResourceIdent],
@@ -99,7 +188,8 @@ pub trait Policy<Cx: Send + Sync + 'static>: Send + Sync + 'static {
         Ok(decisions)
     }
 
-    /// Check if the policy allows the action, and return an error if denied.
+    /// Like [`authorize`](Self::authorize), but maps a [`Deny`](Decision::Deny)
+    /// to [`Error::NotAllowed`].
     async fn authorize_checked(
         &self,
         resource: &ResourceIdent,
@@ -113,7 +203,14 @@ pub trait Policy<Cx: Send + Sync + 'static>: Send + Sync + 'static {
     }
 }
 
+/// Types that own a [`Policy`] and want to act as one.
+///
+/// A blanket impl makes any `ProvidesPolicy<Cx>` implement `Policy<Cx>` by
+/// delegating every method to [`policy`](Self::policy), so a composed handler
+/// can call [`check_required`](Policy::check_required) on `self` without reaching
+/// into the wrapped policy explicitly.
 pub trait ProvidesPolicy<Cx: Send + Sync + 'static>: Send + Sync + 'static {
+    /// Returns the policy this type delegates authorization to.
     fn policy(&self) -> &Arc<dyn Policy<Cx>>;
 }
 
@@ -138,8 +235,14 @@ impl<T: Policy<Cx>, Cx: Send + Sync + 'static> Policy<Cx> for Arc<T> {
     }
 }
 
-/// Checks if the context has the given permission for each resource,
-/// and retains only those that receive an allow decision.
+/// Filters a `Vec` of resources in place, keeping only those the context is
+/// allowed to access.
+///
+/// Batches the check through [`Policy::authorize_many`] and then retains each
+/// resource whose decision is [`Allow`](Decision::Allow), preserving order. List
+/// endpoints call this before returning results so callers never see resources
+/// they lack `permission` on. For a policy held behind a trait object, use
+/// [`filter_authorized`] instead.
 pub async fn process_resources<
     T: Policy<Cx> + Sized,
     Cx: Send + Sync + 'static,

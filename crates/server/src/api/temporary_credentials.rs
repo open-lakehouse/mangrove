@@ -115,7 +115,7 @@ impl<
     /// Resolves the volume by its UUID, authorizes the requested operation
     /// against the concrete volume, then vends credentials scoped to the
     /// volume's storage location — mirroring
-    /// [`generate_temporary_table_credentials`](Self::generate_temporary_table_credentials).
+    /// `generate_temporary_table_credentials`.
     ///
     /// See: <https://docs.databricks.com/api/workspace/temporaryvolumecredentials/generatetemporaryvolumecredentials>
     #[tracing::instrument(skip(self, context))]
@@ -151,8 +151,7 @@ impl<
     /// Resolves the model version by its `(catalog, schema, model, version)`
     /// composite name, authorizes the requested operation against the concrete
     /// version, then vends credentials scoped to the version's storage location —
-    /// mirroring
-    /// [`generate_temporary_volume_credentials`](Self::generate_temporary_volume_credentials).
+    /// mirroring `generate_temporary_volume_credentials`.
     ///
     /// See: <https://docs.databricks.com/api/workspace/temporarymodelversioncredentials/generatetemporarymodelversioncredentials>
     #[tracing::instrument(skip(self, context))]
