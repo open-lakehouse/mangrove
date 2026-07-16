@@ -10,7 +10,16 @@
 # workspace-global, so folding this crate into the root workspace would strip
 # zstd/brotli parquet support from mangrove's NATIVE server. Keeping a separate
 # workspace (own Cargo.lock) contains the fork pins to this crate.
+#
+# `delta-df-provider` is a sibling member of this same standalone workspace: the
+# async-native (sm_plans-driven) Delta TableProvider that replaces the eager
+# inline-executor scan path. It is a workspace member (not a nested standalone)
+# so it shares this Cargo.lock — that is what unifies the `delta_kernel` types it
+# consumes (via the direct `2cf01549` dep) with the ones `deltalake-core` /
+# `deltalake-wasm` return, and so the `[patch.crates-io]` arrow pins below apply
+# to it too. See ../../handover-wasm-async-native-table-provider.md.
 [workspace]
+members = [".", "delta-df-provider"]
 
 [package]
 name = "olai-uc-query-wasm"
