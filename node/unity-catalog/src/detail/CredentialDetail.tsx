@@ -1,11 +1,14 @@
 import { useCredentialDetail } from "@open-lakehouse/unity-catalog-client";
 
+import { awsIamRoleTrust } from "../types";
 import { DetailStates } from "./DetailStates";
 import { Meta, MetaGrid } from "./Meta";
 
 export function CredentialDetail({ name }: { name: string }) {
   const { data: credential, isLoading, error } = useCredentialDetail(name);
   if (!credential) return <DetailStates isLoading={isLoading} error={error} />;
+
+  const trust = awsIamRoleTrust(credential);
 
   return (
     <MetaGrid>
@@ -20,16 +23,11 @@ export function CredentialDetail({ name }: { name: string }) {
       />
       <Meta
         label="Unity Catalog IAM ARN"
-        value={credential.aws_iam_role?.unity_catalog_iam_arn}
+        value={trust.unity_catalog_iam_arn}
         wide
         mono
       />
-      <Meta
-        label="External ID"
-        value={credential.aws_iam_role?.external_id}
-        wide
-        mono
-      />
+      <Meta label="External ID" value={trust.external_id} wide mono />
       <Meta label="Comment" value={credential.comment} wide />
     </MetaGrid>
   );

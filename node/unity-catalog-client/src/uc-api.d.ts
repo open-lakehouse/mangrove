@@ -4,6 +4,72 @@
  */
 
 export interface paths {
+    "/agent-skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Lists agent skills. */
+        get: operations["ListAgentSkills"];
+        put?: never;
+        post: operations["CreateAgentSkill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-skills/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetAgentSkill"];
+        put?: never;
+        post?: never;
+        delete: operations["DeleteAgentSkill"];
+        options?: never;
+        head?: never;
+        patch: operations["UpdateAgentSkill"];
+        trace?: never;
+    };
+    "/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Lists agents. */
+        get: operations["ListAgents"];
+        put?: never;
+        post: operations["CreateAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agents/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetAgent"];
+        put?: never;
+        post?: never;
+        delete: operations["DeleteAgent"];
+        options?: never;
+        head?: never;
+        patch: operations["UpdateAgent"];
+        trace?: never;
+    };
     "/catalogs": {
         parameters: {
             query?: never;
@@ -12,16 +78,22 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List catalogs
-         * @description Lists the available catalogs. There is no guarantee of a specific ordering of the elements in the list.
+         * @description List catalogs
+         *
+         *      Gets an array of catalogs in the metastore. If the caller is the metastore admin,
+         *      all catalogs will be retrieved. Otherwise, only catalogs owned by the caller
+         *      (or for which the caller has the USE_CATALOG privilege) will be retrieved.
+         *      There is no guarantee of a specific ordering of the elements in the array.
          */
-        get: operations["listCatalogs"];
+        get: operations["ListCatalogs"];
         put?: never;
         /**
-         * Create a catalog
-         * @description Creates a new catalog instance.
+         * @description Create a new catalog
+         *
+         *      Creates a new catalog instance in the parent metastore if the caller
+         *      is a metastore admin or has the CREATE_CATALOG privilege.
          */
-        post: operations["createCatalog"];
+        post: operations["CreateCatalog"];
         delete?: never;
         options?: never;
         head?: never;
@@ -32,31 +104,539 @@ export interface paths {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                /** @description The name of the catalog. */
-                name: string;
-            };
+            path?: never;
             cookie?: never;
         };
         /**
-         * Get a catalog
-         * @description Gets the specified catalog.
+         * @description Get a catalog
+         *
+         *      Gets the specified catalog in a metastore. The caller must be a metastore admin,
+         *      the owner of the catalog, or a user that has the USE_CATALOG privilege set for their account.
          */
-        get: operations["getCatalog"];
+        get: operations["GetCatalog"];
         put?: never;
         post?: never;
         /**
-         * Delete a catalog
-         * @description Deletes the catalog that matches the supplied name.
+         * @description Delete a catalog
+         *
+         *      Deletes the catalog that matches the supplied name. The caller must
+         *      be a metastore admin or the owner of the catalog.
          */
-        delete: operations["deleteCatalog"];
+        delete: operations["DeleteCatalog"];
         options?: never;
         head?: never;
         /**
-         * Update a catalog
-         * @description Updates the catalog that matches the supplied name.
+         * @description Update a catalog
+         *
+         *      Updates the catalog that matches the supplied name. The caller must be either
+         *      the owner of the catalog, or a metastore admin (when changing the owner field of the catalog).
          */
-        patch: operations["updateCatalog"];
+        patch: operations["UpdateCatalog"];
+        trace?: never;
+    };
+    "/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListCredentials"];
+        put?: never;
+        post: operations["CreateCredential"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/credentials/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetCredential"];
+        put?: never;
+        post?: never;
+        delete: operations["DeleteCredential"];
+        options?: never;
+        head?: never;
+        patch: operations["UpdateCredential"];
+        trace?: never;
+    };
+    "/entity-tag-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Create an entity tag assignment
+         *
+         *      Assigns a tag to a Unity Catalog entity.
+         */
+        post: operations["CreateEntityTagAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/entity-tag-assignments/{entity_type}/{entity_name}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description List entity tag assignments
+         *
+         *      Gets the tag assignments for the specified entity.
+         */
+        get: operations["ListEntityTagAssignments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/entity-tag-assignments/{entity_type}/{entity_name}/tags/{tag_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Get an entity tag assignment
+         *
+         *      Gets the tag assignment for the specified entity and tag key.
+         */
+        get: operations["GetEntityTagAssignment"];
+        put?: never;
+        post?: never;
+        /**
+         * @description Delete an entity tag assignment
+         *
+         *      Deletes the tag assignment for the specified entity and tag key.
+         */
+        delete: operations["DeleteEntityTagAssignment"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Update an entity tag assignment
+         *
+         *      Updates the tag assignment for the specified entity and tag key.
+         */
+        patch: operations["UpdateEntityTagAssignment"];
+        trace?: never;
+    };
+    "/external-locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List external locations */
+        get: operations["ListExternalLocations"];
+        put?: never;
+        /** @description Create a new external location */
+        post: operations["CreateExternalLocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/external-locations/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get an external location */
+        get: operations["GetExternalLocation"];
+        put?: never;
+        post?: never;
+        /** @description Delete an external location */
+        delete: operations["DeleteExternalLocation"];
+        options?: never;
+        head?: never;
+        /** @description Update an external location */
+        patch: operations["UpdateExternalLocation"];
+        trace?: never;
+    };
+    "/functions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description List functions
+         *
+         *      List functions within the specified parent catalog and schema. If the caller is the metastore
+         *      admin, all functions are returned in the response. Otherwise, the caller must have USE_CATALOG
+         *      on the parent catalog and USE_SCHEMA on the parent schema, and the function must either be
+         *      owned by the caller or have SELECT on the function.
+         */
+        get: operations["ListFunctions"];
+        put?: never;
+        /**
+         * @description Create a function
+         *
+         *      Creates a new function. The caller must be a metastore admin or have the CREATE_FUNCTION
+         *      privilege on the parent catalog and schema.
+         */
+        post: operations["CreateFunction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/functions/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Get a function
+         *
+         *      Gets a function from within a parent catalog and schema. For the fetch to succeed,
+         *      the caller must be a metastore admin, the owner of the function, or have SELECT on
+         *      the function.
+         */
+        get: operations["GetFunction"];
+        put?: never;
+        post?: never;
+        /**
+         * @description Delete a function
+         *
+         *      Deletes the function that matches the supplied name. For the deletion to succeed,
+         *      the caller must be the owner of the function.
+         */
+        delete: operations["DeleteFunction"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Update a function
+         *
+         *      Updates the function that matches the supplied name. Only the owner of the function
+         *      can be updated.
+         */
+        patch: operations["UpdateFunction"];
+        trace?: never;
+    };
+    "/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description List registered models
+         *
+         *      List registered models within the specified parent catalog and schema. If
+         *      the caller is the metastore admin, all registered models are returned in the
+         *      response. Otherwise, the caller must have USE_CATALOG on the parent catalog
+         *      and USE_SCHEMA on the parent schema, and the model must either be owned by
+         *      the caller or the caller must have a privilege on the model.
+         */
+        get: operations["ListRegisteredModels"];
+        put?: never;
+        /**
+         * @description Create a registered model
+         *
+         *      Creates a new registered model. The caller must be a metastore admin or have
+         *      the CREATE_MODEL privilege on the parent catalog and schema.
+         */
+        post: operations["CreateRegisteredModel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/models/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Create a model version
+         *
+         *      Creates a new model version in PENDING_REGISTRATION status. The server
+         *      assigns the version number and a storage location for the artifacts. The
+         *      caller must be a metastore admin or the owner of the parent registered model.
+         */
+        post: operations["CreateModelVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/models/{full_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Get a registered model
+         *
+         *      Gets a registered model from within a parent catalog and schema. For the
+         *      fetch to succeed, the caller must be a metastore admin, the owner of the
+         *      registered model, or have a privilege on the registered model.
+         */
+        get: operations["GetRegisteredModel"];
+        put?: never;
+        post?: never;
+        /**
+         * @description Delete a registered model
+         *
+         *      Deletes the registered model that matches the supplied name. For the deletion
+         *      to succeed, the caller must be the owner of the registered model.
+         */
+        delete: operations["DeleteRegisteredModel"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Update a registered model
+         *
+         *      Updates the registered model that matches the supplied name.
+         */
+        patch: operations["UpdateRegisteredModel"];
+        trace?: never;
+    };
+    "/models/{full_name}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description List model versions
+         *
+         *      List the model versions of the specified registered model. If the caller is
+         *      the metastore admin, all model versions are returned. Otherwise, the caller
+         *      must have the appropriate privileges on the parent model.
+         */
+        get: operations["ListModelVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/models/{full_name}/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Get a model version
+         *
+         *      Gets a model version by its parent model name and version number.
+         */
+        get: operations["GetModelVersion"];
+        put?: never;
+        post?: never;
+        /**
+         * @description Delete a model version
+         *
+         *      Deletes the model version that matches the supplied name and version. For the
+         *      deletion to succeed, the caller must be the owner of the parent registered
+         *      model.
+         */
+        delete: operations["DeleteModelVersion"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Update a model version
+         *
+         *      Updates the model version that matches the supplied name and version.
+         */
+        patch: operations["UpdateModelVersion"];
+        trace?: never;
+    };
+    "/models/{full_name}/versions/{version}/finalize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Finalize a model version
+         *
+         *      Transitions a model version to READY once all artifacts have been written to
+         *      its storage location.
+         */
+        patch: operations["FinalizeModelVersion"];
+        trace?: never;
+    };
+    "/policies/{on_securable_type}/{on_securable_fullname}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description List policies
+         *
+         *      Gets an array of policies defined on the specified securable. There is no guarantee
+         *      of a specific ordering of the elements in the array.
+         */
+        get: operations["ListPolicies"];
+        put?: never;
+        /**
+         * @description Create a new policy
+         *
+         *      Creates a new row-filter or column-mask policy on the specified securable.
+         */
+        post: operations["CreatePolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/policies/{on_securable_type}/{on_securable_fullname}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Get a policy
+         *
+         *      Gets the policy that matches the supplied name, defined on the specified securable.
+         */
+        get: operations["GetPolicy"];
+        put?: never;
+        post?: never;
+        /**
+         * @description Delete a policy
+         *
+         *      Deletes the policy that matches the supplied name, defined on the specified securable.
+         */
+        delete: operations["DeletePolicy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Update a policy
+         *
+         *      Updates the policy that matches the supplied name, defined on the specified securable.
+         */
+        patch: operations["UpdatePolicy"];
+        trace?: never;
+    };
+    "/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List providers. */
+        get: operations["ListProviders"];
+        put?: never;
+        /** @description Create a new provider. */
+        post: operations["CreateProvider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/providers/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get a provider by name. */
+        get: operations["GetProvider"];
+        put?: never;
+        post?: never;
+        /** @description Delete a provider. */
+        delete: operations["DeleteProvider"];
+        options?: never;
+        head?: never;
+        /** @description Update a provider. */
+        patch: operations["UpdateProvider"];
+        trace?: never;
+    };
+    "/recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List recipients. */
+        get: operations["ListRecipients"];
+        put?: never;
+        /** @description Create a new recipient. */
+        post: operations["CreateRecipient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recipients/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get a recipient by name. */
+        get: operations["GetRecipient"];
+        put?: never;
+        post?: never;
+        /** @description Delete a recipient. */
+        delete: operations["DeleteRecipient"];
+        options?: never;
+        head?: never;
+        /** @description Update a recipient. */
+        patch: operations["UpdateRecipient"];
         trace?: never;
     };
     "/schemas": {
@@ -67,17 +647,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List schemas
-         * @description Gets an array of schemas for a catalog.
-         *     There is no guarantee of a specific ordering of the elements in the array.
+         * @description Gets an array of schemas for a catalog in the metastore. If the caller is the metastore
+         *      admin or the owner of the parent catalog, all schemas for the catalog will be retrieved.
+         *      Otherwise, only schemas owned by the caller (or for which the caller has the USE_SCHEMA privilege)
+         *      will be retrieved. There is no guarantee of a specific ordering of the elements in the array.
          */
-        get: operations["listSchemas"];
+        get: operations["ListSchemas"];
         put?: never;
         /**
-         * Create a schema
-         * @description Creates a new schema in the specified catalog.
+         * @description Creates a new schema for catalog in the Metatastore. The caller must be a metastore admin,
+         *      or have the CREATE_SCHEMA privilege in the parent catalog.
          */
-        post: operations["createSchema"];
+        post: operations["CreateSchema"];
         delete?: never;
         options?: never;
         head?: never;
@@ -88,31 +669,86 @@ export interface paths {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                /** @description Full name of the schema. */
-                full_name: string;
-            };
+            path?: never;
             cookie?: never;
         };
         /**
-         * Get a schema
-         * @description Gets the specified schema for a catalog.
+         * @description Gets the specified schema within the metastore.
+         *      The caller must be a metastore admin, the owner of the schema,
+         *      or a user that has the USE_SCHEMA privilege on the schema.
          */
-        get: operations["getSchema"];
+        get: operations["GetSchema"];
         put?: never;
         post?: never;
         /**
-         * Delete a schema
-         * @description Deletes the specified schema from the parent catalog.
+         * @description Deletes the specified schema from the parent catalog. The caller must be the owner
+         *      of the schema or an owner of the parent catalog.
          */
-        delete: operations["deleteSchema"];
+        delete: operations["DeleteSchema"];
         options?: never;
         head?: never;
         /**
-         * Update a schema
-         * @description Updates the specified schema.
+         * @description Updates a schema for a catalog. The caller must be the owner of the schema or a metastore admin.
+         *      If the caller is a metastore admin, only the owner field can be changed in the update.
+         *      If the name field must be updated, the caller must be a metastore admin or have the CREATE_SCHEMA
+         *      privilege on the parent catalog.
          */
-        patch: operations["updateSchema"];
+        patch: operations["UpdateSchema"];
+        trace?: never;
+    };
+    "/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List shares. */
+        get: operations["ListShares"];
+        put?: never;
+        /** @description Create a new share. */
+        post: operations["CreateShare"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shares/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get a share by name. */
+        get: operations["GetShare"];
+        put?: never;
+        post?: never;
+        /** @description Deletes a share. */
+        delete: operations["DeleteShare"];
+        options?: never;
+        head?: never;
+        /** @description Update a share. */
+        patch: operations["UpdateShare"];
+        trace?: never;
+    };
+    "/shares/{name}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Gets the permissions for a data share from the metastore. */
+        get: operations["GetPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Updates the permissions for a data share in the metastore. */
+        patch: operations["UpdatePermissions"];
         trace?: never;
     };
     "/staging-tables": {
@@ -125,23 +761,36 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create a staging table
-         * @description Creates a new staging table instance. Staging tables are used during managed table creation. Creating a managed
-         *     table requires performing two actions – initializing the table data in cloud storage and creating the named
-         *     table entry in the catalog – and these should appear as an atomic operation to other operations on catalog
-         *     tables. A staging table is used to allocate storage for the managed table, and the catalog_name.schema_name.name
-         *     parameters provided in this request are used to initialize any required storage properties and determine the
-         *     storage URL that should be used for the data contained by this table.
-         *
-         *     Temporary credentials can be obtained as though the staging table were a regular table to get access to the
-         *     staging table’s storage. After the table’s data is initialized, the staging table is “promoted” to a managed
-         *     table by creating a managed table with the same location as the staging table. This allows for the atomic
-         *     creation of a managed table that already has full data written to its storage location. Note: the name provided
-         *     must match the name used to initialize the staging table originally.
-         *
-         *     WARNING: This API is experimental and may change in future versions.
+         * @description Creates a new staging table, allocating an immutable table id and a storage
+         *      location under the parent schema/catalog managed storage root. The caller
+         *      must have the CREATE privilege on the parent schema.
          */
-        post: operations["createStagingTable"];
+        post: operations["CreateStagingTable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/table-summaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Gets an array of summaries for tables for a schema and catalog within the metastore. The table summaries returned are either:
+         *      - summaries for tables (within the current metastore and parent catalog and schema), when the user is a metastore admin, or:
+         *      - summaries for tables and schemas (within the current metastore and parent catalog) for which the user has ownership or the
+         *        SELECT privilege on the table and ownership or USE_SCHEMA privilege on the schema, provided that the user also has ownership
+         *        or the USE_CATALOG privilege on the parent catalog.
+         *
+         *      There is no guarantee of a specific ordering of the elements in the array.
+         */
+        get: operations["ListTableSummaries"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -156,19 +805,17 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List tables
-         * @description Gets the list of all available tables under the parent catalog and schema.
-         *     There is no guarantee of a specific ordering of the elements in the array.
+         * @description Gets an array of all tables for the current metastore under the parent catalog and schema.
+         *
+         *      The caller must be a metastore admin or an owner of (or have the SELECT privilege on) the table.
+         *      For the latter case, the caller must also be the owner or have the USE_CATALOG privilege on the
+         *      parent catalog and the USE_SCHEMA privilege on the parent schema. There is no guarantee of a
+         *      specific ordering of the elements in the array.
          */
-        get: operations["listTables"];
+        get: operations["ListTables"];
         put?: never;
-        /**
-         * Create a table. Only external table creation is supported.
-         *     WARNING: This API is experimental and will change in future versions.
-         * @description Creates a new external table instance.
-         *     WARNING: This API is experimental and will change in future versions.
-         */
-        post: operations["createTable"];
+        /** @description Create a table */
+        post: operations["CreateTable"];
         delete?: never;
         options?: never;
         head?: never;
@@ -179,30 +826,38 @@ export interface paths {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                /** @description Full name of the table. */
-                full_name: string;
-            };
+            path?: never;
             cookie?: never;
         };
-        /**
-         * Get a table
-         * @description Gets a table for a specific catalog and schema.
-         */
-        get: operations["getTable"];
+        /** @description Get a table */
+        get: operations["GetTable"];
         put?: never;
         post?: never;
-        /**
-         * Delete a table
-         * @description Deletes a table from the specified parent catalog and schema.
-         */
-        delete: operations["deleteTable"];
+        /** @description Delete a table */
+        delete: operations["DeleteTable"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/volumes": {
+    "/tables/{full_name}/exists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get boolean reflecting if table exists */
+        get: operations["GetTableExists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tag-policies": {
         parameters: {
             query?: never;
             header?: never;
@@ -210,54 +865,54 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List Volumes
-         * @description Gets an array of available volumes under the parent catalog and schema.
-         *     There is no guarantee of a specific ordering of the elements in the array.
+         * @description List tag policies
+         *
+         *      Gets an array of tag policies. There is no guarantee of a specific ordering
+         *      of the elements in the array.
          */
-        get: operations["listVolumes"];
+        get: operations["ListTagPolicies"];
         put?: never;
         /**
-         * Create a Volume
-         * @description Creates a new volume.
+         * @description Create a new tag policy
+         *
+         *      Creates a new governed tag definition.
          */
-        post: operations["createVolume"];
+        post: operations["CreateTagPolicy"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/volumes/{name}": {
+    "/tag-policies/{tag_key}": {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                /** @description The three-level (fully qualified) name of the volume */
-                name: string;
-            };
+            path?: never;
             cookie?: never;
         };
         /**
-         * Get a Volume
-         * @description Gets a volume for a specific catalog and schema.
+         * @description Get a tag policy
+         *
+         *      Gets the governed tag definition for the specified tag key.
          */
-        get: operations["getVolume"];
+        get: operations["GetTagPolicy"];
         put?: never;
         post?: never;
         /**
-         * Delete a Volume
-         * @description Deletes a volume from the specified parent catalog and schema.
+         * @description Delete a tag policy
+         *
+         *      Deletes the governed tag definition that matches the supplied tag key.
          */
-        delete: operations["deleteVolume"];
+        delete: operations["DeleteTagPolicy"];
         options?: never;
         head?: never;
         /**
-         * Update a Volume
-         * @description Updates the specified volume under the specified parent catalog and schema.
+         * @description Update a tag policy
          *
-         *     Currently only the name or the comment of the volume could be updated.
+         *      Updates the governed tag definition that matches the supplied tag key.
          */
-        patch: operations["updateVolume"];
+        patch: operations["UpdateTagPolicy"];
         trace?: never;
     };
     "/temporary-model-version-credentials": {
@@ -269,8 +924,31 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Generate temporary model version credentials. These credentials are used by clients to write and retrieve model artifacts from the model versions external storage location. */
-        post: operations["generateTemporaryModelVersionCredentials"];
+        /**
+         * @description Generate a new set of credentials for a model version.
+         *
+         *      The metastore must have the `external_access_enabled` flag set to true
+         *      (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+         *      privilege on the parent schema (granted by a catalog owner).
+         */
+        post: operations["GenerateTemporaryModelVersionCredentials"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/temporary-path-credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Generate a new set of credentials for a path. */
+        post: operations["GenerateTemporaryPathCredentials"];
         delete?: never;
         options?: never;
         head?: never;
@@ -286,8 +964,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Generate temporary table credentials. */
-        post: operations["generateTemporaryTableCredentials"];
+        /** @description Generate a new set of credentials for a table. */
+        post: operations["GenerateTemporaryTableCredentials"];
         delete?: never;
         options?: never;
         head?: never;
@@ -303,504 +981,347 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Generate temporary volume credentials. */
-        post: operations["generateTemporaryVolumeCredentials"];
+        /**
+         * @description Generate a new set of credentials for a volume.
+         *
+         *      The metastore must have the `external_access_enabled` flag set to true
+         *      (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+         *      privilege on the parent schema (granted by a catalog owner).
+         */
+        post: operations["GenerateTemporaryVolumeCredentials"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/functions": {
+    "/volumes": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * List functions
-         * @description List functions within the specified parent catalog and schema.
-         *     There is no guarantee of a specific ordering of the elements in the array.
-         */
-        get: operations["listFunctions"];
+        /** @description Lists volumes. */
+        get: operations["ListVolumes"];
         put?: never;
-        /**
-         * Create a function.
-         *     WARNING: This API is experimental and will change in future versions.
-         * @description Creates a new function instance.
-         *     WARNING: This API is experimental and will change in future versions.
-         */
-        post: operations["createFunction"];
+        post: operations["CreateVolume"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/functions/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__). */
-                name: string;
-            };
-            cookie?: never;
-        };
-        /**
-         * Get a function
-         * @description Gets a function from within a parent catalog and schema.
-         */
-        get: operations["getFunction"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete a function
-         * @description Deletes the function that matches the supplied name.
-         */
-        delete: operations["deleteFunction"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/models": {
+    "/volumes/{name}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * List models
-         * @description Gets a paginated list of all available models either under the specified parent catalog and schema, or all models stored in UC.
-         *     There is no guarantee of a specific ordering of the elements in the array.
-         */
-        get: operations["listRegisteredModels"];
-        put?: never;
-        /**
-         * Create a model.
-         *     WARNING: This API is experimental and will change in future versions.
-         * @description Creates a new model instance.
-         *     WARNING: This API is experimental and will change in future versions.
-         */
-        post: operations["createRegisteredModel"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/models/{full_name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Full name of the model. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        /**
-         * Get a specified registered model
-         * @description Gets a fully specified registered model.
-         */
-        get: operations["getRegisteredModel"];
+        get: operations["GetVolume"];
         put?: never;
         post?: never;
-        /**
-         * Delete a specified registered model.
-         * @description Deletes a fully specified registered model. All versions of the model must have already been deleted.
-         */
-        delete: operations["deleteRegisteredModel"];
+        delete: operations["DeleteVolume"];
         options?: never;
         head?: never;
-        /**
-         * Update a registered model
-         * @description Updates the specified registered model.
-         */
-        patch: operations["updateRegisteredModel"];
-        trace?: never;
-    };
-    "/models/versions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create a model version.
-         * @description Creates a new model version instance.
-         */
-        post: operations["createModelVersion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/models/{full_name}/versions": {
-        parameters: {
-            query?: {
-                /**
-                 * @description Maximum number of model versions to return.
-                 *     - when set to a value greater than 0, the page length is the minimum of this value and a server configured value;
-                 *     - when set to 0, the page length is set to a server configured value;
-                 *     - when set to a value less than 0, an invalid parameter error is returned;
-                 */
-                max_results?: number;
-                /** @description Opaque token to send for the next page of results (pagination). */
-                page_token?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Full name of the registered model. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        /**
-         * List model versions of the specified registered model.
-         * @description Gets the paginated list of all available model versions under the specified registered model.
-         *     There is no guarantee of a specific ordering of the elements in the array.
-         */
-        get: operations["listModelVersions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/models/{full_name}/versions/{version}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Full name of the model. */
-                full_name: string;
-                /** @description Version number of the model version. */
-                version: number;
-            };
-            cookie?: never;
-        };
-        /**
-         * Get a model version
-         * @description Gets a specific model version for a specific model.
-         */
-        get: operations["getModelVersion"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete a model version
-         * @description Deletes the specified model version.
-         */
-        delete: operations["deleteModelVersion"];
-        options?: never;
-        head?: never;
-        /**
-         * Update a model version
-         * @description Updates the specified model version.
-         */
-        patch: operations["updateModelVersion"];
-        trace?: never;
-    };
-    "/models/{full_name}/versions/{version}/finalize": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Full name of the model. */
-                full_name: string;
-                /** @description Version number of the model version. */
-                version: number;
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Finalize a model version
-         * @description Finalizes the status of the specified model version.
-         */
-        patch: operations["finalizeModelVersion"];
-        trace?: never;
-    };
-    "/temporary-path-credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Generate temporary path credentials. */
-        post: operations["generateTemporaryPathCredentials"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/permissions/{securable_type}/{full_name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Type of securable. */
-                securable_type: components["schemas"]["SecurableType"];
-                /** @description Full name of securable. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        /**
-         * Get permissions
-         * @description Gets the permissions for a securable.
-         */
-        get: operations["get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update a permission
-         * @description Updates the permissions for a securable.
-         */
-        patch: operations["update"];
-        trace?: never;
-    };
-    "/metastore_summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get metastore summary
-         * @description Gets information about the metastore hosted by this Unity Catalog service (currently the service hosts only one metastore)
-         */
-        get: operations["summary"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List credentials
-         * @description Gets an array of credentials (as __CredentialInfo__ objects).
-         *     The array is limited to only those credentials the caller has permission to access.
-         *     If the caller is a metastore admin, retrieval of credentials is unrestricted.
-         *     There is no guarantee of a specific ordering of the elements in the array.
-         */
-        get: operations["listCredentials"];
-        put?: never;
-        /**
-         * Create a credential
-         * @description Creates a new credential. The type of credential to be created is determined by the **purpose** field.
-         */
-        post: operations["createCredential"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/credentials/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Name of the credential. */
-                name: string;
-            };
-            cookie?: never;
-        };
-        /**
-         * Get a credential
-         * @description Gets a credential from the metastore.
-         *     The caller must be a metastore admin, the owner of the credential, or have some permission on the credential.
-         */
-        get: operations["getCredential"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete a credential
-         * @description Deletes a credential from the metastore. The caller must be a metastore admin or the owner of the credential.
-         */
-        delete: operations["deleteCredential"];
-        options?: never;
-        head?: never;
-        /**
-         * Update a credential
-         * @description Updates a credential.
-         */
-        patch: operations["updateCredential"];
-        trace?: never;
-    };
-    "/external-locations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List external locations
-         * @description Gets an array of external locations (ExternalLocationInfo objects) from the metastore. The caller must be a metastore admin, the owner of the external location, or a user with some privilege on the external location.
-         */
-        get: operations["listExternalLocations"];
-        put?: never;
-        /**
-         * Create an external location
-         * @description Creates a new external location entry in the metastore. The caller must be a metastore admin to be able to create external locations.
-         */
-        post: operations["createExternalLocation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/external-locations/{name}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Name of the external location. */
-                name: string;
-            };
-            cookie?: never;
-        };
-        /**
-         * Get an external location
-         * @description Gets an external location from the metastore. The caller must be a metastore admin, the owner of the external location, or a user with some privilege on the external location.
-         */
-        get: operations["getExternalLocation"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete an external location
-         * @description Deletes the specified external location from the metastore. The caller must be a metastore admin or the owner of the external location.
-         */
-        delete: operations["deleteExternalLocation"];
-        options?: never;
-        head?: never;
-        /**
-         * Update an external location
-         * @description Updates an external location in the metastore. The caller must be the owner of the external location or a metastore admin.
-         */
-        patch: operations["updateExternalLocation"];
+        patch: operations["UpdateVolume"];
         trace?: never;
     };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** @description A map of key-value properties attached to the securable. */
-        SecurablePropertiesMap: {
-            [key: string]: string;
-        };
         /**
-         * @description The type of the volume
-         * @enum {string}
+         * Agent
+         * @description An agent registered in Unity Catalog.
          */
-        VolumeType: "MANAGED" | "EXTERNAL";
-        CreateVolumeRequestContent: {
-            /** @description The name of the catalog where the schema and the volume are */
-            catalog_name: string;
-            /** @description The name of the schema where the volume is */
-            schema_name: string;
-            /** @description The name of the volume */
+        Agent: {
+            /** @description Name of the agent, relative to parent schema. */
             name: string;
-            volume_type: components["schemas"]["VolumeType"];
-            /** @description The comment attached to the volume */
-            comment?: string;
-            /** @description The storage location of the volume */
-            storage_location?: string;
-        };
-        ListVolumesResponseContent: {
-            volumes?: components["schemas"]["VolumeInfo"][];
+            /** @description Name of parent catalog. */
+            catalog_name: string;
+            /** @description Name of parent schema. */
+            schema_name: string;
+            /** @description The three-level (fully qualified) name of the agent. */
+            readonly full_name: string;
+            /** @description The unique identifier of the agent. */
+            readonly agent_id: string;
             /**
-             * @description Opaque token to retrieve the next page of results. Absent if there are no more pages.
-             *     __page_token__ should be set to this value for the next request to retrieve the next page of results.
+             * Invocation Protocol
+             * Format: enum
+             * @description The protocol a recipient uses to invoke the agent.
+             * @enum {string}
              */
-            next_page_token?: string;
-        };
-        UpdateVolumeRequestContent: {
-            /** @description The comment attached to the volume */
-            comment?: string;
-            /** @description New name for the volume. */
-            new_name?: string;
-        };
-        VolumeInfo: {
-            /** @description The name of the catalog where the schema and the volume are */
-            catalog_name?: string;
-            /** @description The name of the schema where the volume is */
-            schema_name?: string;
-            /** @description The name of the volume */
-            name?: string;
-            /** @description The comment attached to the volume */
-            comment?: string;
-            /** @description The identifier of the user who owns the volume */
-            owner?: string;
+            invocation_protocol: "INVOCATION_PROTOCOL_UNSPECIFIED" | "MCP" | "A2A" | "OPENAI" | "ANTHROPIC" | "REST";
+            /** @description The agent's invocation endpoint URL. */
+            endpoint: string;
             /**
-             * Format: int64
-             * @description Time at which this volume was created, in epoch milliseconds.
+             * @description An LLM-readable description of what the agent does and the inputs it
+             *      expects.
              */
-            created_at?: number;
-            /** @description TThe identifier of the user who created the volume */
-            created_by?: string;
+            description?: string;
             /**
-             * Format: int64
-             * @description Time at which this volume was last modified, in epoch milliseconds.
+             * @description Capability identifiers advertised by the agent (e.g. `sql_query`,
+             *      `document_search`, `code_execution`).
              */
-            updated_at?: number;
-            /** @description The identifier of the user who updated the volume last time */
-            updated_by?: string;
-            /** @description Unique identifier of the volume */
-            volume_id?: string;
-            volume_type?: components["schemas"]["VolumeType"];
-            /** @description The storage location of the volume */
-            storage_location?: string;
-            /** @description Full name of volume, in form of __catalog_name__.__schema_name__.__volume_name__. */
-            full_name?: string;
+            capabilities?: string[];
+            /**
+             * @description A JSON Schema (encoded as a JSON string) describing the agent's expected
+             *      input payload. Kept as an opaque string so the schema can evolve without
+             *      changing this message.
+             */
+            input_schema?: string;
+            /** @description Username of current owner of the agent. */
+            readonly owner?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description Time at which this agent was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of agent creator. */
+            readonly created_by?: string;
+            /** @description Time at which this agent was last updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of user who last modified the agent. */
+            readonly updated_by?: string;
+            /** @description The unique identifier of the metastore. */
+            readonly metastore_id?: string;
         };
         /**
-         * @description Name of type (INT, STRUCT, MAP, etc.).
-         * @enum {string}
+         * Agent Skill
+         * @description An agent skill registered in Unity Catalog.
          */
-        ColumnTypeName: "BOOLEAN" | "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "TIMESTAMP_NTZ" | "STRING" | "BINARY" | "DECIMAL" | "INTERVAL" | "ARRAY" | "STRUCT" | "MAP" | "VARIANT" | "CHAR" | "NULL" | "USER_DEFINED_TYPE" | "TABLE_TYPE";
+        AgentSkill: {
+            /**
+             * Name of the agent skill, relative to parent schema.
+             * @description Per the Agent Skills spec a skill name is lowercase letters, numbers, and
+             *      hyphens, but Unity Catalog object names disallow hyphens, so UC stores the
+             *      catalog object name with underscores; the spec-shaped name lives in the
+             *      skill's own SKILL.md.
+             */
+            name: string;
+            /** @description Name of parent catalog. */
+            catalog_name: string;
+            /** @description Name of parent schema. */
+            schema_name: string;
+            /** @description The three-level (fully qualified) name of the agent skill. */
+            readonly full_name: string;
+            /**
+             * @description The storage location of the skill's directory (the root that holds
+             *      `SKILL.md`).
+             */
+            storage_location: string;
+            /** @description The unique identifier of the agent skill. */
+            readonly agent_skill_id: string;
+            /**
+             * Agent Skill Type
+             * Format: enum
+             * @description How the storage location is provisioned (external or managed).
+             * @enum {string}
+             */
+            agent_skill_type: "AGENT_SKILL_TYPE_UNSPECIFIED" | "EXTERNAL" | "MANAGED";
+            /**
+             * A human-readable description of what the skill does and when to use it.
+             * @description Mirrors the Agent Skills spec `description` frontmatter field.
+             */
+            description?: string;
+            /** @description SPDX license identifier or free-form license text for the skill. */
+            license?: string;
+            /** @description The tools the skill is permitted to use, as declared in its SKILL.md. */
+            allowed_tools?: string[];
+            /** @description Arbitrary additional metadata declared by the skill. */
+            metadata?: {
+                [key: string]: string;
+            };
+            /** @description Username of current owner of the agent skill. */
+            readonly owner?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description Time at which this agent skill was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of agent skill creator. */
+            readonly created_by?: string;
+            /** @description Time at which this agent skill was last updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of user who last modified the agent skill. */
+            readonly updated_by?: string;
+            /** @description The unique identifier of the metastore. */
+            readonly metastore_id?: string;
+        };
+        /**
+         * The AWS IAM role configuration used server-side to call STS AssumeRole.
+         * @description This is an internal configuration type, not exposed in the public API response.
+         *      It stores the static credentials (or ambient credential fallback) used to
+         *      authorize the STS:AssumeRole call when vending temporary credentials.
+         */
+        AwsIamRoleConfig: {
+            /** @description The Amazon Resource Name (ARN) of the AWS IAM role used to vend temporary credentials. */
+            role_arn: string;
+            /** @description The AWS region where STS calls are made. Defaults to "us-east-1" if absent. */
+            region?: string;
+            /**
+             * AWS access key ID used to authorize the STS AssumeRole call.
+             * @description When set together with secret_access_key, these static credentials are used
+             *      as the base identity to call STS:AssumeRole. When omitted, the server falls
+             *      back to ambient credentials (instance profile, ECS task role, WebIdentity, etc.).
+             */
+            access_key_id?: string;
+            /** @description AWS secret access key paired with access_key_id. */
+            secret_access_key?: string;
+            /**
+             * @description Optional AWS session token for temporary base credentials (e.g. when the
+             *      caller itself holds STS-vended credentials as the base identity).
+             */
+            session_token?: string;
+        };
+        /** Aws Temporary Credentials */
+        AwsTemporaryCredentials: {
+            /** @description The access key ID that identifies the temporary credentials. */
+            access_key_id: string;
+            /** @description The Amazon Resource Name (ARN) of the S3 access point for temporary credentials related the external location. */
+            access_point: string;
+            /** @description The secret access key that can be used to sign AWS API requests. */
+            secret_access_key: string;
+            /** @description The token that users must pass to AWS API to use the temporary credentials. */
+            session_token: string;
+        };
+        /** Azure Aad */
+        AzureAad: {
+            /** @description Opaque token that contains claims that you can use in Azure Active Directory to access cloud services. */
+            aad_token: string;
+        };
+        /**
+         * Azure Managed Identity
+         * @description The Azure managed identity configuration.
+         */
+        AzureManagedIdentity: {
+            /**
+             * @description The Azure resource ID of the Azure Databricks Access Connector.
+             *      Use the format /subscriptions/{guid}/resourceGroups/{rg-name}/providers/
+             *      Microsoft.Databricks/accessConnectors/{connector-name}.
+             */
+            access_connector_id: string;
+            /** @description The Databricks internal ID that represents this managed identity. */
+            credential_id?: string;
+            /**
+             * @description The Azure resource ID of the managed identity.
+             *      Use the format /subscriptions/{guid}/resourceGroups/{rg-name}/providers/
+             *      Microsoft.ManagedIdentity/userAssignedIdentities/{identity-name}.
+             *      This is only available for user-assigned identities. For system-assigned
+             *      identities, the access_connector_id is used to identify the identity.
+             *      If this field is not provided, then the system-assigned identity of the
+             *      Access Connector is used.
+             */
+            managed_identity_id?: string;
+        };
+        /**
+         * Azure Service Principal
+         * @description The Azure service principal configuration.
+         */
+        AzureServicePrincipal: {
+            /** @description The directory ID corresponding to the Azure Active Directory (AAD) tenant of the application. */
+            directory_id: string;
+            /** @description The application ID of the application registration within the referenced AAD tenant. */
+            application_id: string;
+            /** @description The client secret generated for the above app ID in AAD. */
+            client_secret?: string;
+            /**
+             * Location of the file containing a federated token.
+             * @description Specifically useful for workload identity federation.
+             */
+            federated_token_file?: string;
+        };
+        /**
+         * Azure Storage Key
+         * @description The Azure storage key configuration.
+         */
+        AzureStorageKey: {
+            /** @description The name of the storage account. */
+            account_name: string;
+            /** @description The account key of the storage account. */
+            account_key: string;
+        };
+        /** Azure User Delegation Sas */
+        AzureUserDelegationSas: {
+            /** @description The signed URI (SAS Token) used to access blob services for a given path */
+            sas_token: string;
+        };
+        /**
+         * Catalog
+         * @description A catalog is a root-level namespace that contains schemas.
+         */
+        CatalogInfo: {
+            /** @description Name of catalog. */
+            name: string;
+            /** @description Unique identifier for the catalog. */
+            readonly id?: string;
+            /** @description Username of current owner of catalog. */
+            owner?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description A map of key-value properties attached to the securable. */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Storage root URL for managed tables within catalog. */
+            storage_root?: string;
+            /**
+             * The name of delta sharing provider.
+             * @description A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
+             */
+            provider_name?: string;
+            /** @description The name of the share under the share provider. */
+            share_name?: string;
+            /**
+             * Catalog Type
+             * Format: enum
+             * @description The type of the catalog.
+             * @enum {string}
+             */
+            catalog_type?: "CATALOG_TYPE_UNSPECIFIED" | "MANAGED_CATALOG" | "DELTASHARING_CATALOG" | "SYSTEM_CATALOG";
+            /**
+             * Storage location URL (full path) for managed storage of the catalog.
+             * @description A unique path under `storage_root`, used as the managed-storage parent for
+             *      managed tables/volumes whose schema has no storage location of its own.
+             *      Absent when the catalog has no `storage_root`.
+             *      Example: `s3://bucket/ucroot/__unitystorage/catalogs/{catalog_id}`.
+             */
+            readonly storage_location?: string;
+            /** @description Time at which this catalog was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of catalog creator. */
+            readonly created_by?: string;
+            /** @description Time at which this catalog was last updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of user who last modified catalog. */
+            readonly updated_by?: string;
+            /**
+             * @description Indicates whether the principal is limited to retrieving metadata
+             *      for the associated object through the BROWSE privilege when include_browse
+             *      is enabled in the request.
+             */
+            readonly browse_only?: boolean;
+        };
+        /** Column */
         ColumnInfo: {
-            /** @description Name of Column. */
-            name?: string;
+            /** @description Name of the column */
+            name: string;
             /** @description Full data type specification as SQL/catalogString text. */
-            type_text?: string;
+            type_text: string;
             /** @description Full data type specification, JSON-serialized. */
-            type_json?: string;
-            type_name?: components["schemas"]["ColumnTypeName"];
+            type_json: string;
+            /**
+             * Format: int32
+             * @description Ordinal position of column (starting at position 0).
+             */
+            position?: number;
+            /**
+             * Column Type Name
+             * Format: enum
+             * @description Data type name.
+             * @enum {string}
+             */
+            type_name: "COLUMN_TYPE_NAME_UNSPECIFIED" | "BOOLEAN" | "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "STRING" | "BINARY" | "DECIMAL" | "INTERVAL" | "ARRAY" | "STRUCT" | "MAP" | "CHAR" | "NULL" | "USER_DEFINED_TYPE" | "TIMESTAMP_NTZ" | "VARIANT" | "TABLE_TYPE";
             /**
              * Format: int32
              * @description Digits of precision; required for DecimalTypes.
@@ -813,159 +1334,347 @@ export interface components {
             type_scale?: number;
             /** @description Format of IntervalType. */
             type_interval_type?: string;
-            /**
-             * Format: int32
-             * @description Ordinal position of column (starting at position 0).
-             */
-            position?: number;
             /** @description User-provided free-form text description. */
             comment?: string;
-            /**
-             * @description Whether field may be Null.
-             * @default true
-             */
-            nullable: boolean;
+            /** @description Whether field may be Null. */
+            nullable?: boolean;
             /**
              * Format: int32
              * @description Partition index for column.
              */
             partition_index?: number;
+            /** @description a unique id for the column */
+            readonly column_id?: string;
         };
-        /** @enum {string} */
-        TableType: "MANAGED" | "EXTERNAL" | "STREAMING_TABLE" | "MATERIALIZED_VIEW" | "METRIC_VIEW";
         /**
-         * @description Data source format
-         * @enum {string}
+         * Create Agent Request
+         * @description Create a new agent.
          */
-        DataSourceFormat: "DELTA" | "CSV" | "JSON" | "AVRO" | "PARQUET" | "ORC" | "TEXT";
-        TableInfo: {
-            /** @description Name of table, relative to parent schema. */
-            name?: string;
-            /** @description Name of parent catalog. */
-            catalog_name?: string;
-            /** @description Name of parent schema relative to its parent catalog. */
-            schema_name?: string;
-            table_type?: components["schemas"]["TableType"];
-            data_source_format?: components["schemas"]["DataSourceFormat"];
-            /** @description The array of __ColumnInfo__ definitions of the table's columns. */
-            columns?: components["schemas"]["ColumnInfo"][];
-            /** @description Storage root URL for table (for **MANAGED**, **EXTERNAL** tables) */
-            storage_location?: string;
-            /** @description User-provided free-form text description. */
-            comment?: string;
-            properties?: components["schemas"]["SecurablePropertiesMap"];
-            /** @description Username of current owner of table. */
-            owner?: string;
-            /**
-             * Format: int64
-             * @description Time at which this table was created, in epoch milliseconds.
-             */
-            created_at?: number;
-            /** @description Username of table creator. */
-            created_by?: string;
-            /**
-             * Format: int64
-             * @description Time at which this table was last modified, in epoch milliseconds.
-             */
-            updated_at?: number;
-            /** @description Username of user who last modified the table. */
-            updated_by?: string;
-            /** @description Unique identifier for the table. */
-            table_id?: string;
-            /** @description Definition text for view-like table types such as VIEW, MATERIALIZED_VIEW, STREAMING_TABLE, and METRIC_VIEW. The format depends on the table type (SQL for views, YAML for metric views). */
-            view_definition?: string;
-            view_dependencies?: components["schemas"]["DependencyList"];
-        };
-        CreateTable: {
-            /** @description Name of table, relative to parent schema. */
-            name: string;
-            /** @description Name of parent catalog. */
+        CreateAgentRequest: {
+            /** @description The identifier of the catalog. */
             catalog_name: string;
-            /** @description Name of parent schema relative to its parent catalog. */
+            /** @description The identifier of the schema. */
             schema_name: string;
-            table_type: components["schemas"]["TableType"];
-            data_source_format?: components["schemas"]["DataSourceFormat"];
-            /** @description The array of __ColumnInfo__ definitions of the table's columns. */
-            columns: components["schemas"]["ColumnInfo"][];
-            /** @description Storage root URL for external table */
-            storage_location?: string;
-            /** @description User-provided free-form text description. */
-            comment?: string;
-            properties?: components["schemas"]["SecurablePropertiesMap"];
-            /** @description Definition text for view-like table types such as VIEW, MATERIALIZED_VIEW, STREAMING_TABLE, and METRIC_VIEW. The format depends on the table type (SQL for views, YAML for metric views). */
-            view_definition?: string;
-            view_dependencies?: components["schemas"]["DependencyList"];
-        };
-        StagingTableInfo: {
-            /** @description Name of table, relative to parent schema. */
-            name?: string;
-            /** @description Name of parent catalog. */
-            catalog_name?: string;
-            /** @description Name of parent schema relative to its parent catalog. */
-            schema_name?: string;
-            /** @description Unique identifier for the table. */
-            id?: string;
-            /** @description URI generated for the staging table */
-            staging_location?: string;
-        };
-        CreateStagingTable: {
-            /** @description Name of table, relative to parent schema. */
+            /** @description The identifier of the agent. */
             name: string;
-            /** @description Name of parent catalog. */
-            catalog_name: string;
-            /** @description Name of parent schema relative to its parent catalog. */
-            schema_name: string;
-        };
-        ListTablesResponse: {
-            /** @description An array of table information objects. */
-            tables?: components["schemas"]["TableInfo"][];
             /**
-             * @description Opaque token to retrieve the next page of results. Absent if there are no more pages.
-             *     __page_token__ should be set to this value for the next request (for the next page of results).
+             * Invocation Protocol
+             * Format: enum
+             * @description The protocol a recipient uses to invoke the agent.
+             * @enum {string}
              */
-            next_page_token?: string;
-        };
-        SchemaInfo: {
-            /** @description Name of schema, relative to parent catalog. */
-            name?: string;
-            /** @description Name of parent catalog. */
-            catalog_name?: string;
+            invocation_protocol: "MCP" | "A2A" | "OPENAI" | "ANTHROPIC" | "REST";
+            /** @description The agent's invocation endpoint URL. */
+            endpoint: string;
+            /** @description An LLM-readable description of what the agent does and the inputs it expects. */
+            description?: string;
+            /** @description Capability identifiers advertised by the agent. */
+            capabilities?: string[];
+            /** @description A JSON Schema (encoded as a JSON string) describing the expected input. */
+            input_schema?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-            properties?: components["schemas"]["SecurablePropertiesMap"];
-            /** @description Full name of schema, in form of __catalog_name__.__schema_name__. */
-            full_name?: string;
-            /** @description Username of current owner of schema. */
-            owner?: string;
+        };
+        /**
+         * Create Agent Skill Request
+         * @description Create a new agent skill.
+         */
+        CreateAgentSkillRequest: {
+            /** @description The identifier of the catalog. */
+            catalog_name: string;
+            /** @description The identifier of the schema. */
+            schema_name: string;
+            /** @description The identifier of the agent skill. */
+            name: string;
             /**
-             * Format: int64
-             * @description Time at which this schema was created, in epoch milliseconds.
+             * Agent Skill Type
+             * Format: enum
+             * @description How the storage location is provisioned (external or managed).
+             * @enum {string}
              */
-            created_at?: number;
-            /** @description Username of schema creator. */
-            created_by?: string;
+            agent_skill_type: "EXTERNAL" | "MANAGED";
             /**
-             * Format: int64
-             * @description Time at which this schema was last modified, in epoch milliseconds.
+             * The storage location of the skill directory on the cloud.
+             * @description Required for EXTERNAL skills; ignored (server-derived) for MANAGED skills.
              */
-            updated_at?: number;
-            /** @description Username of user who last modified schema. */
-            updated_by?: string;
-            /** @description Unique identifier for the schema. */
-            schema_id?: string;
-            /**
-             * @description Storage root URL for managed storage location of schema. This can be set when creating a
-             *     schema. Example: s3://bucket/ucroot
-             */
+            storage_location?: string;
+            /** @description A human-readable description of what the skill does and when to use it. */
+            description?: string;
+            /** @description SPDX license identifier or free-form license text for the skill. */
+            license?: string;
+            /** @description The tools the skill is permitted to use. */
+            allowed_tools?: string[];
+            /** @description Arbitrary additional metadata declared by the skill. */
+            metadata?: {
+                [key: string]: string;
+            };
+            /** @description User-provided free-form text description. */
+            comment?: string;
+        };
+        /**
+         * Create Catalog Request
+         * @description Create a new catalog
+         */
+        CreateCatalog: {
+            /** @description Name of catalog. */
+            name: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description A map of key-value properties attached to the securable. */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Storage root URL for managed tables within catalog. */
             storage_root?: string;
             /**
-             * @description Storage Location URL (full path) for managed storage location of schema. This is an
-             *     automatically generated unique path under storage_root. If it is absent, managed
-             *     securables under this schema will try to use storage_location of the parent catalog
-             *     instead. Example: s3://bucket/ucroot/__unitystorage/schemas/{schema_id}
+             * The name of delta sharing provider.
+             * @description A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
              */
-            storage_location?: string;
+            provider_name?: string;
+            /** @description The name of the share under the share provider. */
+            share_name?: string;
         };
+        /**
+         * Create Credential Request
+         * @description Create a new credential.
+         */
+        CreateCredentialRequest: {
+            /** @description The credential name. The name must be unique among storage and service credentials within the metastore. */
+            name: string;
+            /**
+             * Purpose
+             * Format: enum
+             * @description Indicates the purpose of the credential.
+             * @enum {string}
+             */
+            purpose: "STORAGE" | "SERVICE";
+            /** @description Comment associated with the credential. */
+            comment?: string;
+            /** @description Whether the credential is usable only for read operations. Only applicable when purpose is STORAGE. */
+            read_only?: boolean;
+            /** @description Optional. Supplying true to this argument skips validation of the created set of credentials. */
+            skip_validation?: boolean;
+            /**
+             * Azure Service Principal
+             * @description The Azure service principal configuration.
+             */
+            azure_service_principal?: WithRequired<components["schemas"]["AzureServicePrincipal"], "directory_id" | "application_id">;
+            /**
+             * Azure Managed Identity
+             * @description The Azure managed identity configuration.
+             */
+            azure_managed_identity?: WithRequired<components["schemas"]["AzureManagedIdentity"], "access_connector_id">;
+            /**
+             * Azure Storage Key
+             * @description The Azure storage key configuration.
+             */
+            azure_storage_key?: WithRequired<components["schemas"]["AzureStorageKey"], "account_name" | "account_key">;
+            /**
+             * The AWS IAM role configuration used server-side to call STS AssumeRole.
+             * @description This is an internal configuration type, not exposed in the public API response.
+             *      It stores the static credentials (or ambient credential fallback) used to
+             *      authorize the STS:AssumeRole call when vending temporary credentials.
+             */
+            aws_iam_role?: WithRequired<components["schemas"]["AwsIamRoleConfig"], "role_arn">;
+            /**
+             * Databricks Gcp Service Account
+             * @description The Databricks managed GCP service account configuration.
+             */
+            databricks_gcp_service_account?: components["schemas"]["DatabricksGcpServiceAccount"];
+        };
+        /**
+         * Create Entity Tag Assignment Request
+         * @description Create an entity tag assignment
+         */
+        CreateEntityTagAssignmentRequest: {
+            /**
+             * The assignment of a tag to a Unity Catalog entity.
+             * @description Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
+             *      of a tag to a specific securable. It has no identifier of its own — its identity is
+             *      the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
+             *      `google.api.resource`: assignments are stored as associations between the entity and
+             *      its tag, not as standalone objects.
+             */
+            tag_assignment: WithRequired<components["schemas"]["EntityTagAssignment"], "entity_type" | "entity_name" | "tag_key">;
+        };
+        /**
+         * Create External Location Request
+         * @description Create a new external location
+         */
+        CreateExternalLocation: {
+            /** @description Name of external location. */
+            name: string;
+            /** @description Path URL of the external location. */
+            url: string;
+            /** @description Name of the storage credential used with this location. */
+            credential_name: string;
+            /** @description Indicates whether the external location is read-only. */
+            read_only?: boolean;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description Skips validation of the storage credential associated with the external location. */
+            skip_validation?: boolean;
+        };
+        /**
+         * The payload for creating a new function.
+         * @description Wrapped in the `function_info` envelope of a `CreateFunctionRequest`, matching
+         *      the Unity Catalog `POST /functions` wire contract.
+         */
+        CreateFunction: {
+            /** @description Name of function, relative to parent schema. */
+            name: string;
+            /** @description Name of parent catalog. */
+            catalog_name: string;
+            /** @description Name of parent schema. */
+            schema_name: string;
+            /** @description Full data type specification of the return type of the function. */
+            data_type: string;
+            /** @description Full data type specification as SQL/catalogString text. */
+            full_data_type: string;
+            /**
+             * Function Parameter Infos
+             * @description A collection of function parameters.
+             */
+            input_params?: components["schemas"]["FunctionParameterInfos"];
+            /**
+             * Parameter Style
+             * Format: enum
+             * @description The parameter-passing style.
+             * @enum {string}
+             */
+            parameter_style: "PARAMETER_STYLE_UNSPECIFIED" | "S";
+            /** @description Indicates whether the function is deterministic. */
+            is_deterministic: boolean;
+            /**
+             * Sql Data Access
+             * Format: enum
+             * @description SQL data access information.
+             * @enum {string}
+             */
+            sql_data_access: "SQL_DATA_ACCESS_UNSPECIFIED" | "CONTAINS_SQL" | "READS_SQL_DATA" | "NO_SQL";
+            /** @description Indicates whether the function is null-calling. */
+            is_null_call: boolean;
+            /**
+             * Security Type
+             * Format: enum
+             * @description The security type of the function.
+             * @enum {string}
+             */
+            security_type: "SECURITY_TYPE_UNSPECIFIED" | "DEFINER";
+            /**
+             * Routine Body
+             * Format: enum
+             * @description The routine body.
+             * @enum {string}
+             */
+            routine_body: "ROUTINE_BODY_UNSPECIFIED" | "SQL" | "EXTERNAL";
+            /** @description Function body. */
+            routine_definition?: string;
+            /** @description The language of the function routine body. */
+            routine_body_language?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description A map of key-value properties attached to the securable. */
+            properties?: {
+                [key: string]: string;
+            };
+        };
+        /**
+         * Create Model Version Request
+         * @description Create a new model version.
+         */
+        CreateModelVersionRequest: {
+            /** @description Name of the parent registered model, relative to parent schema. */
+            model_name: string;
+            /** @description Name of parent catalog. */
+            catalog_name: string;
+            /** @description Name of parent schema. */
+            schema_name: string;
+            /**
+             * @description URI indicating the location of the source artifacts (e.g. an MLflow run
+             *      artifact path) used to create the model version.
+             */
+            source: string;
+            /** @description The run id used by the ML package that generated this model. */
+            run_id?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+        };
+        /**
+         * Create Provider Request
+         * @description Creates a new provider
+         */
+        CreateProviderRequest: {
+            /** @description Name of the provider. */
+            name: string;
+            /**
+             * Provider Authentication Type
+             * Format: enum
+             * @description The delta sharing authentication type.
+             * @enum {string}
+             */
+            authentication_type: "TOKEN" | "OAUTH_CLIENT_CREDENTIALS";
+            /** @description Username of the provider owner. */
+            owner?: string;
+            /** @description Description about the provider. */
+            comment?: string;
+            /**
+             * @description The recipient profile (credential file contents) used to connect to the
+             *      sharing server, required for TOKEN authentication.
+             */
+            recipient_profile_str?: string;
+            /** @description Provider properties as map of string key-value pairs. */
+            properties?: {
+                [key: string]: string;
+            };
+        };
+        /**
+         * Create Recipient Request
+         * @description Creates a new recipient
+         */
+        CreateRecipientRequest: {
+            /** @description Name of the recipient. */
+            name: string;
+            /**
+             * Authentication Type
+             * Format: enum
+             * @description The delta sharing authentication type.
+             * @enum {string}
+             */
+            authentication_type: "TOKEN" | "OAUTH_CLIENT_CREDENTIALS";
+            /** @description Username of the recipient owner. */
+            owner: string;
+            /** @description Description about the recipient. */
+            comment?: string;
+            /**
+             * Recipient properties as map of string key-value pairs.
+             * @description When provided in update request, the specified properties will override the existing properties.
+             *      To add and remove properties, one would need to perform a read-modify-write.
+             */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Expiration timestamp of the token, in epoch milliseconds. */
+            expiration_time?: string;
+        };
+        /**
+         * Create Registered Model Request
+         * @description Create a new registered model.
+         */
+        CreateRegisteredModel: {
+            /** @description Name of registered model, relative to parent schema. */
+            name: string;
+            /** @description Name of parent catalog. */
+            catalog_name: string;
+            /** @description Name of parent schema. */
+            schema_name: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+        };
+        /**
+         * Create Schema Request
+         * @description Create a new Schema
+         */
         CreateSchema: {
             /** @description Name of schema, relative to parent catalog. */
             name: string;
@@ -973,117 +1682,487 @@ export interface components {
             catalog_name: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-            properties?: components["schemas"]["SecurablePropertiesMap"];
+            /** @description A map of key-value properties attached to the securable. */
+            properties?: {
+                [key: string]: string;
+            };
             /**
-             * @description Storage root URL for managed storage location of schema. If not set, managed securables
-             *     under this schema will try to use the storage_location of the parent catalog instead.
-             *     Example: s3://bucket/ucroot
+             * Storage root URL for managed storage location of the schema.
+             * @description If not set, managed securables under this schema fall back to the parent
+             *      catalog's storage location. Example: `s3://bucket/ucroot`.
              */
             storage_root?: string;
         };
-        UpdateSchema: {
-            /** @description User-provided free-form text description. */
-            comment?: string;
-            properties?: components["schemas"]["SecurablePropertiesMap"];
-            /** @description New name for the schema. */
-            new_name?: string;
-        };
-        ListSchemasResponse: {
-            /** @description An array of schema information objects. */
-            schemas?: components["schemas"]["SchemaInfo"][];
-            /**
-             * @description Opaque token to retrieve the next page of results. Absent if there are no more pages.
-             *     __page_token__ should be set to this value for the next request (for the next page of results).
-             */
-            next_page_token?: string;
-        };
-        CatalogInfo: {
-            /** @description Name of catalog. */
-            name?: string;
-            /** @description User-provided free-form text description. */
-            comment?: string;
-            properties?: components["schemas"]["SecurablePropertiesMap"];
-            /** @description Username of current owner of catalog. */
-            owner?: string;
-            /**
-             * Format: int64
-             * @description Time at which this catalog was created, in epoch milliseconds.
-             */
-            created_at?: number;
-            /** @description Username of catalog creator. */
-            created_by?: string;
-            /**
-             * Format: int64
-             * @description Time at which this catalog was last modified, in epoch milliseconds.
-             */
-            updated_at?: number;
-            /** @description Username of user who last modified catalog. */
-            updated_by?: string;
-            /** @description Unique identifier for the catalog. */
-            id?: string;
-            /**
-             * @description Storage root URL for managed storage location of catalog. This can be set when creating
-             *     a catalog. Example: s3://bucket/ucroot
-             */
-            storage_root?: string;
-            /**
-             * @description Storage Location URL (full path) for managed storage location of catalog. This is an
-             *     automatically generated unique path under storage_root.
-             *     Example: s3://bucket/ucroot/__unitystorage/catalogs/{catalog_id}
-             */
-            storage_location?: string;
-        };
-        CreateCatalog: {
-            /** @description Name of catalog. */
+        /**
+         * Creates a new share for data objects.
+         * @description Data objects can be added after creation with update.
+         *      The caller must be a metastore admin or have the CREATE_SHARE privilege on the metastore.
+         */
+        CreateShareRequest: {
+            /** @description Name of the share. */
             name: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-            properties?: components["schemas"]["SecurablePropertiesMap"];
-            /** @description Storage root URL for managed storage location of catalog. Example: s3://bucket/ucroot */
-            storage_root?: string;
         };
-        UpdateCatalog: {
+        /**
+         * Create Staging Table Request
+         * @description Create a new staging table.
+         */
+        CreateStagingTableRequest: {
+            /** @description Name of the staging table, relative to the parent schema. */
+            name: string;
+            /** @description Name of the parent catalog. */
+            catalog_name: string;
+            /** @description Name of the parent schema relative to its parent catalog. */
+            schema_name: string;
+        };
+        /**
+         * Create a table
+         * @description WARNING: this API is experimental and subject to change.
+         */
+        CreateTableRequest: {
+            /** @description Name of table, relative to parent schema. */
+            name: string;
+            /** @description Name of parent schema relative to its parent catalog. */
+            schema_name: string;
+            /** @description Name of parent catalog. */
+            catalog_name: string;
+            /**
+             * Table Type
+             * Format: enum
+             * @enum {string}
+             */
+            table_type: "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "METRIC_VIEW";
+            /**
+             * Data Source Format
+             * Format: enum
+             * @enum {string}
+             */
+            data_source_format: "DELTA" | "ICEBERG" | "HUDI" | "PARQUET" | "CSV" | "JSON" | "ORC" | "AVRO" | "TEXT" | "UNITY_CATALOG" | "DELTASHARING";
+            /** @description The array of Column definitions of the table's columns. */
+            columns?: components["schemas"]["ColumnInfo"][];
+            /** @description Storage root URL for external table. */
+            storage_location?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-            properties?: components["schemas"]["SecurablePropertiesMap"];
-            /** @description New name for the catalog. */
-            new_name?: string;
-        };
-        ListCatalogsResponse: {
-            /** @description An array of catalog information objects. */
-            catalogs?: components["schemas"]["CatalogInfo"][];
+            /** @description A map of key-value properties attached to the securable. */
+            properties?: {
+                [key: string]: string;
+            };
             /**
-             * @description Opaque token to retrieve the next page of results. Absent if there are no more pages.
-             *     __page_token__ should be set to this value for the next request (for the next page of results).
+             * @description Definition text for view-like table types (VIEW, MATERIALIZED_VIEW,
+             *      STREAMING_TABLE, METRIC_VIEW). The format depends on the table type:
+             *      SQL for views, YAML for metric views. Required for METRIC_VIEW.
              */
-            next_page_token?: string;
+            view_definition?: string;
+            /**
+             * Dependency List
+             * @description A list of dependencies referenced by a view-like table.
+             */
+            view_dependencies?: components["schemas"]["DependencyList"];
         };
         /**
-         * @description The type of function parameter.
-         * @enum {string}
+         * Create Tag Policy Request
+         * @description Create a new tag policy
          */
-        FunctionParameterType: "PARAM" | "COLUMN";
+        CreateTagPolicyRequest: {
+            /**
+             * A governed tag definition (tag policy).
+             * @description A tag policy defines a tag key together with the rules that govern how it can
+             *      be used, including the optional set of allowed values. Assigning a governed
+             *      tag to an entity is done through the Entity Tag Assignments API.
+             */
+            tag_policy: WithRequired<components["schemas"]["TagPolicy"], "tag_key">;
+        };
         /**
-         * @description The mode of the function parameter.
-         * @enum {string}
+         * Create Volume Request
+         * @description Create a new Volume
          */
-        FunctionParameterMode: "IN";
+        CreateVolumeRequestContent: {
+            /** @description The identifier of the catalog */
+            catalog_name: string;
+            /** @description The identifier of the schema */
+            schema_name: string;
+            /** @description The identifier of the volume */
+            name: string;
+            /**
+             * Volume Type
+             * Format: enum
+             * @description An external volume is located in the specified external location.
+             *      A managed volume is located in the default location which is specified
+             *      by the parent schema, or the parent catalog, or the Metastore.
+             * @enum {string}
+             */
+            volume_type: "EXTERNAL" | "MANAGED";
+            /** @description The storage location on the cloud */
+            storage_location?: string;
+            /** @description The storage location on the cloud */
+            comment?: string;
+        };
+        /**
+         * Credential
+         * @description A credential used to access external data sources or services.
+         */
+        CredentialInfo: {
+            /**
+             * The credential name.
+             * @description The name must be unique among storage and service credentials within the metastore.
+             */
+            name: string;
+            /** @description The unique identifier of the credential. */
+            readonly id?: string;
+            /**
+             * Purpose
+             * Format: enum
+             * @description Indicates the purpose of the credential.
+             * @enum {string}
+             */
+            purpose: "PURPOSE_UNSPECIFIED" | "STORAGE" | "SERVICE";
+            /**
+             * Whether the credential is usable only for read operations.
+             * @description Only applicable when purpose is STORAGE.
+             */
+            read_only: boolean;
+            /** @description Comment associated with the credential. */
+            comment?: string;
+            /** @description Username of current owner of credential. */
+            owner?: string;
+            /** @description Time at which this credential was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of credential creator. */
+            readonly created_by?: string;
+            /** @description Time at which this credential was last modified, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of user who last modified the credential. */
+            readonly updated_by?: string;
+            /**
+             * Whether this credential is the current metastore's root storage credential.
+             * @description Only applicable when purpose is STORAGE.
+             */
+            readonly used_for_managed_storage: boolean;
+            /** @description The full name of the credential. */
+            readonly full_name: string;
+            /**
+             * Azure Service Principal
+             * @description The Azure service principal configuration.
+             */
+            azure_service_principal?: WithRequired<components["schemas"]["AzureServicePrincipal"], "directory_id" | "application_id">;
+            /**
+             * Azure Managed Identity
+             * @description The Azure managed identity configuration.
+             */
+            azure_managed_identity?: WithRequired<components["schemas"]["AzureManagedIdentity"], "access_connector_id">;
+            /**
+             * Azure Storage Key
+             * @description The Azure storage key configuration.
+             */
+            azure_storage_key?: WithRequired<components["schemas"]["AzureStorageKey"], "account_name" | "account_key">;
+            /**
+             * The AWS IAM role configuration used server-side to call STS AssumeRole.
+             * @description This is an internal configuration type, not exposed in the public API response.
+             *      It stores the static credentials (or ambient credential fallback) used to
+             *      authorize the STS:AssumeRole call when vending temporary credentials.
+             */
+            aws_iam_role?: WithRequired<components["schemas"]["AwsIamRoleConfig"], "role_arn">;
+            /**
+             * Databricks Gcp Service Account
+             * @description The Databricks managed GCP service account configuration.
+             */
+            databricks_gcp_service_account?: components["schemas"]["DatabricksGcpServiceAccount"];
+        };
+        /** Data Object */
+        DataObject: {
+            /**
+             * A fully qualified name that uniquely identifies a data object.
+             * @description For example, a table's fully qualified name is in the format of <catalog>.<schema>.<table>,
+             */
+            name: string;
+            /**
+             * Data Object Type
+             * Format: enum
+             * @description Type of the data object.
+             * @enum {string}
+             */
+            data_object_type: "DATA_OBJECT_TYPE_UNSPECIFIED" | "TABLE" | "SCHEMA" | "VOLUME" | "AGENT_SKILL";
+            /** @description The time when this data object is added to the share, in epoch milliseconds. */
+            readonly added_at?: string;
+            /** @description Username of the sharer. */
+            readonly added_by?: string;
+            /** @description A user-provided comment when adding the data object to the share. */
+            comment?: string;
+            /**
+             * A user-provided new name for the data object within the share.
+             * @description If this new name is not provided, the object's original name will be used as the shared_as name.
+             *      The shared_as name must be unique within a share.
+             *      For tables, the new name must follow the format of <schema>.<table>.
+             */
+            shared_as?: string;
+            /** @description Array of partitions for the shared data. */
+            partitions?: string[];
+            /** @description Whether to enable cdf or indicate if cdf is enabled on the shared object. */
+            enable_cdf?: boolean;
+            /**
+             * History Status
+             * Format: enum
+             * @description Whether to enable or disable sharing of data history. If not specified, the default is DISABLED.
+             * @enum {string}
+             */
+            history_data_sharing_status?: "DISABLED" | "ENABLED";
+            /**
+             * The start version associated with the object.
+             * @description This allows data providers to control the lowest object version that is accessible by clients.
+             *      If specified, clients can query snapshots or changes for versions >= start_version.
+             *      If not specified, clients can only query starting from the version of the object at the time it was added to the share.
+             *
+             *      NOTE: The start_version should be <= the current version of the object.
+             */
+            start_version?: string;
+        };
+        /**
+         * Data Object Update
+         * @description Data object update.
+         */
+        DataObjectUpdate: {
+            /**
+             * Action
+             * Format: enum
+             * @description Name of the share.
+             * @enum {string}
+             */
+            action: "ACTION_UNSPECIFIED" | "ADD" | "REMOVE" | "UPDATE";
+            /**
+             * Data Object
+             * @description User-provided free-form text description.
+             */
+            data_object?: WithRequired<components["schemas"]["DataObject"], "name" | "data_object_type">;
+        };
+        /**
+         * Databricks Gcp Service Account
+         * @description The Databricks managed GCP service account configuration.
+         */
+        DatabricksGcpServiceAccount: {
+            /** @description The Databricks internal ID that represents this managed identity. */
+            credential_id?: string;
+            /** @description The email of the service account. */
+            email?: string;
+            /** @description The ID that represents the private key for this Service Account. */
+            private_key_id?: string;
+        };
+        /**
+         * Dependency
+         * @description A dependency of a SQL object. Exactly one of the fields must be set.
+         */
+        Dependency: {
+            /**
+             * Table Dependency
+             * @description A table that a SQL object (such as a view or metric view) depends on.
+             */
+            table?: components["schemas"]["TableDependency"];
+            /**
+             * Function Dependency
+             * @description A function that a SQL object (such as a view or metric view) depends on.
+             */
+            function?: components["schemas"]["FunctionDependency"];
+        };
+        /**
+         * Dependency List
+         * @description A list of dependencies referenced by a view-like table.
+         */
+        DependencyList: {
+            /** @description Array of dependencies. */
+            dependencies?: components["schemas"]["Dependency"][];
+        };
+        /**
+         * The assignment of a tag to a Unity Catalog entity.
+         * @description Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
+         *      of a tag to a specific securable. It has no identifier of its own — its identity is
+         *      the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
+         *      `google.api.resource`: assignments are stored as associations between the entity and
+         *      its tag, not as standalone objects.
+         */
+        EntityTagAssignment: {
+            /**
+             * The type of the entity to which the tag is assigned.
+             * @description Supported values: catalogs, schemas, tables, columns, volumes.
+             */
+            entity_type: string;
+            /** @description The fully qualified name of the entity to which the tag is assigned. */
+            entity_name: string;
+            /** @description The key of the tag. */
+            tag_key: string;
+            /** @description The value of the tag. */
+            tag_value?: string;
+        };
+        /** External Location */
+        ExternalLocationInfo: {
+            /** @description Name of the external location. */
+            name: string;
+            /** @description Path URL of the external location. */
+            url: string;
+            /** @description Name of the storage credential used with this location. */
+            credential_name: string;
+            /** @description Indicates whether the external location is read-only. */
+            read_only: boolean;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description The owner of the external location. */
+            owner?: string;
+            /** @description Unique ID of the location's storage credential. */
+            readonly credential_id: string;
+            /** @description Time at which this catalog was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of catalog creator. */
+            readonly created_by?: string;
+            /** @description Time at which this catalog was last updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of user who last modified catalog. */
+            readonly updated_by?: string;
+            /**
+             * @description Indicates whether the principal is limited to retrieving metadata
+             *      for the associated object through the BROWSE privilege when include_browse is enabled in the request.
+             */
+            readonly browse_only?: boolean;
+            readonly external_location_id?: string;
+        };
+        /**
+         * Finalize a model version.
+         * @description Transitions a model version from PENDING_REGISTRATION to READY once the client
+         *      has finished writing all artifacts to the version's storage location.
+         */
+        FinalizeModelVersionRequest: Record<string, never>;
+        /**
+         * Function
+         * @description A User-Defined Function (UDF) registered under a catalog + schema hierarchy.
+         */
+        FunctionInfo: {
+            /** @description Name of function, relative to parent schema. */
+            name: string;
+            /** @description Name of parent catalog. */
+            catalog_name: string;
+            /** @description Name of parent schema. */
+            schema_name: string;
+            /**
+             * The three-level (fully qualified) name of the function.
+             * @description Format: catalog_name.schema_name.function_name
+             */
+            readonly full_name: string;
+            /** @description Full data type specification of the return type of the function. */
+            data_type: string;
+            /** @description Full data type specification as SQL/catalogString text. */
+            full_data_type: string;
+            /**
+             * Function Parameter Infos
+             * @description A collection of function parameters.
+             */
+            input_params?: components["schemas"]["FunctionParameterInfos"];
+            /** @description The return type of the function in JSON format. */
+            return_params?: string;
+            /** @description The language of the function routine body. */
+            routine_body_language?: string;
+            /** @description Function body. */
+            routine_definition?: string;
+            /** @description Function dependencies (in JSON form). */
+            routine_dependencies?: string;
+            /**
+             * Parameter Style
+             * Format: enum
+             * @description The parameter-passing style.
+             * @enum {string}
+             */
+            parameter_style: "PARAMETER_STYLE_UNSPECIFIED" | "S";
+            /** @description Indicates whether the function is deterministic. */
+            is_deterministic: boolean;
+            /**
+             * Sql Data Access
+             * Format: enum
+             * @description SQL data access information.
+             * @enum {string}
+             */
+            sql_data_access: "SQL_DATA_ACCESS_UNSPECIFIED" | "CONTAINS_SQL" | "READS_SQL_DATA" | "NO_SQL";
+            /** @description Indicates whether the function is null-calling. */
+            is_null_call: boolean;
+            /**
+             * Security Type
+             * Format: enum
+             * @description The security type of the function.
+             * @enum {string}
+             */
+            security_type: "SECURITY_TYPE_UNSPECIFIED" | "DEFINER";
+            /** @description The type of the function (SCALAR or TABLE). */
+            specific_name?: string;
+            /**
+             * Routine Body
+             * Format: enum
+             * @description The routine body.
+             * @enum {string}
+             */
+            routine_body: "ROUTINE_BODY_UNSPECIFIED" | "SQL" | "EXTERNAL";
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description A map of key-value properties attached to the securable. */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Username of current owner of the function. */
+            owner?: string;
+            /** @description Unique identifier for the function. */
+            readonly function_id?: string;
+            /** @description Time at which this function was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of function creator. */
+            readonly created_by?: string;
+            /** @description Time at which this function was last updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of user who last modified the function. */
+            readonly updated_by?: string;
+        };
+        /**
+         * Function Arg
+         * @description An argument passed to a row-filter or column-mask function.
+         */
+        FunctionArg: {
+            /** @description References a column via its `MatchColumn.alias`. */
+            alias?: string;
+            /** @description A literal constant value, passed as-is to the function. */
+            constant?: string;
+        };
+        /**
+         * Function Dependency
+         * @description A function that a SQL object (such as a view or metric view) depends on.
+         */
+        FunctionDependency: {
+            /**
+             * @description Full name of the dependent function, in the form of
+             *      catalog_name.schema_name.function_name.
+             */
+            function_full_name: string;
+        };
+        /**
+         * Function Parameter Info
+         * @description Information about a single function parameter.
+         */
         FunctionParameterInfo: {
             /** @description Name of parameter. */
             name: string;
-            /** @description Full data type spec, SQL/catalogString text. */
+            /** @description Full data type specification as SQL/catalogString text. */
             type_text: string;
-            /** @description Full data type spec, JSON-serialized. */
-            type_json: string;
-            type_name: components["schemas"]["ColumnTypeName"];
+            /** @description Full data type specification, JSON-serialized. */
+            type_json?: string;
+            /**
+             * Column Type Name
+             * Format: enum
+             * @description Data type name.
+             * @enum {string}
+             */
+            type_name: "COLUMN_TYPE_NAME_UNSPECIFIED" | "BOOLEAN" | "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "STRING" | "BINARY" | "DECIMAL" | "INTERVAL" | "ARRAY" | "STRUCT" | "MAP" | "CHAR" | "NULL" | "USER_DEFINED_TYPE" | "TIMESTAMP_NTZ" | "VARIANT" | "TABLE_TYPE";
             /**
              * Format: int32
-             * @description Digits of precision; required on Create for DecimalTypes.
+             * @description Digits of precision; required for DecimalTypes.
              */
             type_precision?: number;
             /**
              * Format: int32
-             * @description Digits to right of decimal; Required on Create for DecimalTypes.
+             * @description Digits to right of decimal; required for DecimalTypes.
              */
             type_scale?: number;
             /** @description Format of IntervalType. */
@@ -1092,719 +2171,1251 @@ export interface components {
              * Format: int32
              * @description Ordinal position of column (starting at position 0).
              */
-            position: number;
-            parameter_mode?: components["schemas"]["FunctionParameterMode"];
-            parameter_type?: components["schemas"]["FunctionParameterType"];
+            position?: number;
+            /**
+             * Parameter Mode
+             * Format: enum
+             * @description The mode of the function parameter.
+             * @enum {string}
+             */
+            parameter_mode: "PARAMETER_MODE_UNSPECIFIED" | "IN";
+            /**
+             * Function Parameter Type
+             * Format: enum
+             * @description The type of function parameter.
+             * @enum {string}
+             */
+            parameter_type: "FUNCTION_PARAMETER_TYPE_UNSPECIFIED" | "COLUMN" | "PARAM";
             /** @description Default value of the parameter. */
             parameter_default?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
         };
+        /**
+         * Function Parameter Infos
+         * @description A collection of function parameters.
+         */
         FunctionParameterInfos: {
-            /** @description The array of __FunctionParameterInfo__ definitions of the function's parameters. */
+            /** @description The parameters of the function. */
             parameters?: components["schemas"]["FunctionParameterInfo"][];
         };
-        CreateFunctionRequest: {
-            function_info: components["schemas"]["CreateFunction"];
-        };
-        /** @description A function that is dependent on a SQL object. */
-        FunctionDependency: {
-            /** @description Full name of the dependent function, in the form of __catalog_name__.__schema_name__.__function_name__. */
-            function_full_name: string;
-        };
-        /** @description A table that is dependent on a SQL object. */
-        TableDependency: {
-            /** @description Full name of the dependent table, in the form of __catalog_name__.__schema_name__.__table_name__. */
-            table_full_name: string;
-        };
-        /** @description A dependency of a SQL object. Either the __table__ field or the __function__ field must be defined. */
-        Dependency: {
-            table?: components["schemas"]["TableDependency"];
-            function?: components["schemas"]["FunctionDependency"];
-        };
-        /** @description A list of dependencies. */
-        DependencyList: {
-            /** @description Array of dependencies. */
-            dependencies?: components["schemas"]["Dependency"][];
-        };
-        CreateFunction: {
-            /** @description Name of function, relative to parent schema. */
-            name: string;
-            /** @description Name of parent catalog. */
-            catalog_name: string;
-            /** @description Name of parent schema relative to its parent catalog. */
-            schema_name: string;
-            input_params: components["schemas"]["FunctionParameterInfos"];
-            data_type: components["schemas"]["ColumnTypeName"];
-            /** @description Pretty printed function data type. */
-            full_data_type: string;
-            return_params?: components["schemas"]["FunctionParameterInfos"];
-            /**
-             * @description Function language. When **EXTERNAL** is used, the language of the routine function should be specified in the __external_language__ field,
-             *     and the __return_params__ of the function cannot be used (as **TABLE** return type is not supported),
-             *     and the __sql_data_access__ field must be **NO_SQL**.
-             * @enum {string}
-             */
-            routine_body: "SQL" | "EXTERNAL";
-            /** @description Function body. */
-            routine_definition: string;
-            routine_dependencies?: components["schemas"]["DependencyList"];
-            /**
-             * @description Function parameter style. **S** is the value for SQL.
-             * @enum {string}
-             */
-            parameter_style: "S";
-            /** @description Whether the function is deterministic. */
-            is_deterministic: boolean;
-            /**
-             * @description Function SQL data access.
-             * @enum {string}
-             */
-            sql_data_access: "CONTAINS_SQL" | "READS_SQL_DATA" | "NO_SQL";
-            /** @description Function null call. */
-            is_null_call: boolean;
-            /**
-             * @description Function security type.
-             * @enum {string}
-             */
-            security_type: "DEFINER";
-            /** @description Specific name of the function; Reserved for future use. */
-            specific_name: string;
-            /** @description User-provided free-form text description. */
-            comment?: string;
-            /** @description JSON-serialized key-value pair map, encoded (escaped) as a string. */
-            properties?: string;
-            /** @description External language of the function. */
-            external_language?: string;
-        };
-        FunctionInfo: {
-            /** @description Name of function, relative to parent schema. */
-            name?: string;
-            /** @description Name of parent catalog. */
-            catalog_name?: string;
-            /** @description Name of parent schema relative to its parent catalog. */
-            schema_name?: string;
-            input_params?: components["schemas"]["FunctionParameterInfos"];
-            data_type?: components["schemas"]["ColumnTypeName"];
-            /** @description Pretty printed function data type. */
-            full_data_type?: string;
-            return_params?: components["schemas"]["FunctionParameterInfos"];
-            /**
-             * @description Function language. When **EXTERNAL** is used, the language of the routine function should be specified in the __external_language__ field,
-             *     and the __return_params__ of the function cannot be used (as **TABLE** return type is not supported),
-             *     and the __sql_data_access__ field must be **NO_SQL**.
-             * @enum {string}
-             */
-            routine_body?: "SQL" | "EXTERNAL";
-            /** @description Function body. */
-            routine_definition?: string;
-            routine_dependencies?: components["schemas"]["DependencyList"];
-            /**
-             * @description Function parameter style. **S** is the value for SQL.
-             * @enum {string}
-             */
-            parameter_style?: "S";
-            /** @description Whether the function is deterministic. */
-            is_deterministic?: boolean;
-            /**
-             * @description Function SQL data access.
-             * @enum {string}
-             */
-            sql_data_access?: "CONTAINS_SQL" | "READS_SQL_DATA" | "NO_SQL";
-            /** @description Function null call. */
-            is_null_call?: boolean;
-            /**
-             * @description Function security type.
-             * @enum {string}
-             */
-            security_type?: "DEFINER";
-            /** @description Specific name of the function; Reserved for future use. */
-            specific_name?: string;
-            /** @description User-provided free-form text description. */
-            comment?: string;
-            /** @description JSON-serialized key-value pair map, encoded (escaped) as a string. */
-            properties?: string;
-            /** @description Full name of function, in form of __catalog_name__.__schema_name__.__function__name__ */
-            full_name?: string;
-            /** @description Username of current owner of function. */
-            owner?: string;
-            /**
-             * Format: int64
-             * @description Time at which this function was created, in epoch milliseconds.
-             */
-            created_at?: number;
-            /** @description Username of function creator. */
-            created_by?: string;
-            /**
-             * Format: int64
-             * @description Time at which this function was last updated, in epoch milliseconds.
-             */
-            updated_at?: number;
-            /** @description Username of user who last modified function. */
-            updated_by?: string;
-            /** @description Id of Function, relative to parent schema. */
-            function_id?: string;
-            /** @description External language of the function. */
-            external_language?: string;
-        };
-        ListFunctionsResponse: {
-            /** @description An array of function information objects. */
-            functions?: components["schemas"]["FunctionInfo"][];
-            /**
-             * @description Opaque token to retrieve the next page of results. Absent if there are no more pages.
-             *     __page_token__ should be set to this value for the next request (for the next page of results).
-             */
-            next_page_token?: string;
-        };
         /**
-         * @example {
-         *       "catalog_name": "catalog_name",
-         *       "schema_name": "schema_name",
-         *       "model_name": "model_name",
-         *       "version": "version",
-         *       "operation": null
-         *     }
+         * Function Ref
+         * @description A reference to the SQL function that implements a row-filter or column-mask policy,
+         *      together with the arguments it is invoked with.
          */
-        GenerateTemporaryModelVersionCredential: {
-            /**
-             * @description Catalog name for which temporary credentials are generated.
-             *     Can be obtained from models/{full_name} (get model info) API.
-             */
-            catalog_name: string;
-            /**
-             * @description Schema name for which temporary credentials are generated.
-             *     Can be obtained from models/{full_name} (get model info) API.
-             */
-            schema_name: string;
-            /**
-             * @description Model name for which temporary credentials are generated.
-             *     Can be obtained from models/{full_name} (get model info) API.
-             */
-            model_name: string;
-            /**
-             * Format: int64
-             * @description Model version for which temporary credentials are generated.
-             */
-            version: number;
-            operation: components["schemas"]["ModelVersionOperation"];
+        FunctionRef: {
+            /** @description Fully qualified name of the function (catalog.schema.function) to invoke. */
+            function_name: string;
+            /** @description The arguments passed to the function, in declaration order. */
+            using?: components["schemas"]["FunctionArg"][];
         };
-        /** @enum {string} */
-        ModelVersionOperation: "UNKNOWN_MODEL_VERSION_OPERATION" | "READ_MODEL_VERSION" | "READ_WRITE_MODEL_VERSION";
-        /**
-         * @example {
-         *       "table_id": "table_id",
-         *       "operation": null
-         *     }
-         */
-        GenerateTemporaryTableCredential: {
-            /**
-             * @description Table id for which temporary credentials are generated.
-             *     Can be obtained from tables/{full_name} (get table info) API.
-             */
-            table_id: string;
-            operation: components["schemas"]["TableOperation"];
-        };
-        /** @enum {string} */
-        TableOperation: "UNKNOWN_TABLE_OPERATION" | "READ" | "READ_WRITE";
-        AwsCredentials: {
-            /** @description The access key ID that identifies the temporary credentials. */
-            access_key_id?: string;
-            /** @description The secret access key that can be used to sign AWS API requests. */
-            secret_access_key?: string;
-            /** @description The token that users must pass to AWS API to use the temporary credentials. */
-            session_token?: string;
-        };
-        AzureUserDelegationSAS: {
-            /** @description Azure SAS Token */
-            sas_token?: string;
-        };
+        /** Gcp Oauth Token */
         GcpOauthToken: {
-            /** @description Gcp Token */
-            oauth_token?: string;
-        };
-        GenerateTemporaryVolumeCredential: {
-            /**
-             * @description Volume id for which temporary credentials are generated.
-             *     Can be obtained from volumes/{full_name} (get volume info) API.
-             */
-            volume_id: string;
-            operation: components["schemas"]["VolumeOperation"];
-        };
-        /** @enum {string} */
-        VolumeOperation: "UNKNOWN_VOLUME_OPERATION" | "READ_VOLUME" | "WRITE_VOLUME";
-        RegisteredModelInfo: {
-            /** @description The name of the registered model */
-            name?: string;
-            /** @description The name of the catalog where the schema and the registered model reside */
-            catalog_name?: string;
-            /** @description The name of the schema where the registered model resides */
-            schema_name?: string;
-            /** @description The storage location on the cloud under which model version data files are stored */
-            storage_location?: string;
-            /** @description The three-level (fully qualified) name of the registered model */
-            full_name?: string;
-            /** @description The comment attached to the registered model */
-            comment?: string;
-            /** @description The identifier of the user who owns the registered model */
-            owner?: string;
-            /**
-             * Format: int64
-             * @description Creation timestamp of the registered model in milliseconds since the Unix epoch
-             */
-            created_at?: number;
-            /** @description The identifier of the user who created the registered model */
-            created_by?: string;
-            /**
-             * Format: int64
-             * @description Last-update timestamp of the registered model in milliseconds since the Unix epoch
-             */
-            updated_at?: number;
-            /** @description The identifier of the user who updated the registered model last time */
-            updated_by?: string;
-            /** @description Unique identifier for the registered model. */
-            id?: string;
-        };
-        ModelVersionInfo: {
-            /** @description The name of the parent registered model of the model version, relative to parent schema */
-            model_name?: string;
-            /** @description The name of the catalog containing the model version */
-            catalog_name?: string;
-            /** @description The name of the schema containing the model version, relative to parent catalog */
-            schema_name?: string;
-            /**
-             * Format: int64
-             * @description Integer model version number, used to reference the model version in API requests.
-             */
-            version?: number;
-            /** @description URI indicating the location of the source artifacts (files) for the model version */
-            source?: string;
-            /** @description The run id used by the ML package that generated the model. */
-            run_id?: string;
-            status?: components["schemas"]["ModelVersionStatus"];
-            /** @description The storage location on the cloud under which model version data files are stored */
-            storage_location?: string;
-            /** @description The comment attached to the model version */
-            comment?: string;
-            /**
-             * Format: int64
-             * @description Time at which this model version was created, in epoch milliseconds.
-             */
-            created_at?: number;
-            /** @description The identifier of the user who created the model version */
-            created_by?: string;
-            /**
-             * Format: int64
-             * @description Time at which this model version was last modified, in epoch milliseconds.
-             */
-            updated_at?: number;
-            /** @description The identifier of the user who updated the model version last time */
-            updated_by?: string;
-            /** @description Unique identifier for the model version. */
-            id?: string;
+            /** @description The OAuth token used to access Google Cloud services. */
+            oauth_token: string;
         };
         /**
-         * @description All possible model version statuses.
-         * @enum {string}
+         * Generate Temporary Model Version Credentials Request
+         * @description Generate a new set of credentials for a model version.
          */
-        ModelVersionStatus: "MODEL_VERSION_STATUS_UNKNOWN" | "PENDING_REGISTRATION" | "FAILED_REGISTRATION" | "READY";
-        CreateRegisteredModel: {
-            /** @description Name of model, relative to parent schema. */
-            name: string;
-            /** @description Name of parent catalog. */
+        GenerateTemporaryModelVersionCredentialsRequest: {
+            /** @description Name of parent catalog of the model version. */
             catalog_name: string;
-            /** @description Name of parent schema relative to its parent catalog. */
+            /** @description Name of parent schema of the model version. */
             schema_name: string;
-            /** @description User-provided free-form text description. */
-            comment?: string;
-        };
-        UpdateRegisteredModel: {
-            /** @description User-provided free-form text description. */
-            comment?: string;
-            /** @description New name for the model. */
-            new_name?: string;
-        };
-        ListRegisteredModelsResponse: {
-            /** @description An array of model information objects. */
-            registered_models?: components["schemas"]["RegisteredModelInfo"][];
+            /** @description Name of the parent registered model. */
+            model_name: string;
+            /** @description The integer version number of the model version. */
+            version: string;
             /**
-             * @description Opaque token to retrieve the next page of results. Absent if there are no more pages.
-             *     __page_token__ should be set to this value for the next request (for the next page of results).
+             * Operation
+             * Format: enum
+             * @description The operation performed against the model version data, either
+             *      READ_MODEL_VERSION or READ_WRITE_MODEL_VERSION. If READ_WRITE_MODEL_VERSION
+             *      is specified, the credentials returned will have write permissions,
+             *      otherwise, it will be read only.
+             * @enum {string}
+             */
+            operation: "READ_MODEL_VERSION" | "READ_WRITE_MODEL_VERSION";
+        };
+        /**
+         * Generate Temporary Path Credentials Request
+         * @description Generate a new set of credentials for a path.
+         */
+        GenerateTemporaryPathCredentialsRequest: {
+            /** @description URL for path-based access. */
+            url: string;
+            /**
+             * Operation
+             * Format: enum
+             * @description The operation being performed on the path.
+             * @enum {string}
+             */
+            operation: "PATH_READ" | "PATH_READ_WRITE" | "PATH_CREATE_TABLE";
+            /**
+             * @description When set to true, the service will not validate that the generated
+             *      credentials can perform write operations, therefore no new paths will be
+             *      created and the response will not contain valid credentials. Defaults to false.
+             */
+            dry_run?: boolean;
+        };
+        /**
+         * Generate Temporary Table Credentials Request
+         * @description Generate a new set of credentials for a table.
+         */
+        GenerateTemporaryTableCredentialsRequest: {
+            /** @description UUID of the table to read or write. */
+            table_id: string;
+            /**
+             * Operation
+             * Format: enum
+             * @description The operation performed against the table data, either READ or READ_WRITE.
+             *      If READ_WRITE is specified, the credentials returned will have write
+             *      permissions, otherwise, it will be read only.
+             * @enum {string}
+             */
+            operation: "READ" | "READ_WRITE";
+        };
+        /**
+         * Generate Temporary Volume Credentials Request
+         * @description Generate a new set of credentials for a volume.
+         */
+        GenerateTemporaryVolumeCredentialsRequest: {
+            /** @description UUID of the volume to read or write. */
+            volume_id: string;
+            /**
+             * Operation
+             * Format: enum
+             * @description The operation performed against the volume data, either READ_VOLUME or
+             *      WRITE_VOLUME. If WRITE_VOLUME is specified, the credentials returned will
+             *      have write permissions, otherwise, it will be read only.
+             * @enum {string}
+             */
+            operation: "READ_VOLUME" | "WRITE_VOLUME";
+        };
+        /**
+         * Get Permissions Response
+         * @description Response to list shares.
+         */
+        GetPermissionsResponse: {
+            /** @description The privileges assigned to each principal */
+            privilege_assignments?: components["schemas"]["PrivilegeAssignment"][];
+            /** @description Opaque pagination token to go to next page based on previous query. */
+            next_page_token?: string;
+        };
+        /** Get Table Exists Response */
+        GetTableExistsResponse: {
+            /** @description Boolean reflecting if table exists. */
+            table_exists: boolean;
+        };
+        /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
+        GoogleProtobufAny: {
+            /** @description The type of the serialized message. */
+            "@type"?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * List Agent Skills Response
+         * @description List agent skills response.
+         */
+        ListAgentSkillsResponse: {
+            /** @description The agent skills returned. */
+            agent_skills?: components["schemas"]["AgentSkill"][];
+            /**
+             * Opaque token to retrieve the next page of results.
+             * @description Absent if there are no more pages. page_token should be set to
+             *      this value for the next request to retrieve the next page of results.
              */
             next_page_token?: string;
         };
-        CreateModelVersion: {
-            /** @description Name of registered model, relative to parent schema. */
+        /**
+         * List Agents Response
+         * @description List agents response.
+         */
+        ListAgentsResponse: {
+            /** @description The agents returned. */
+            agents?: components["schemas"]["Agent"][];
+            /**
+             * Opaque token to retrieve the next page of results.
+             * @description Absent if there are no more pages. page_token should be set to
+             *      this value for the next request to retrieve the next page of results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * List Catalogs Response
+         * @description List catalogs response.
+         */
+        ListCatalogsResponse: {
+            /** @description The catalogs returned. */
+            catalogs?: components["schemas"]["CatalogInfo"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /** List Credentials Response */
+        ListCredentialsResponse: {
+            /** @description The credentials returned. */
+            credentials?: components["schemas"]["CredentialInfo"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List Entity Tag Assignments Response
+         * @description List entity tag assignments response.
+         */
+        ListEntityTagAssignmentsResponse: {
+            /** @description The tag assignments returned. */
+            tag_assignments?: components["schemas"]["EntityTagAssignment"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List External Locations Response
+         * @description List external locations response.
+         */
+        ListExternalLocationsResponse: {
+            /** @description The external locations returned. */
+            external_locations?: components["schemas"]["ExternalLocationInfo"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List Functions Response
+         * @description List functions response.
+         */
+        ListFunctionsResponse: {
+            /** @description The functions returned. */
+            functions?: components["schemas"]["FunctionInfo"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List Model Versions Response
+         * @description List model versions response.
+         */
+        ListModelVersionsResponse: {
+            /** @description The model versions returned. */
+            model_versions?: components["schemas"]["ModelVersion"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List Policies Response
+         * @description List policies response.
+         */
+        ListPoliciesResponse: {
+            /** @description The policies returned. */
+            policies?: components["schemas"]["PolicyInfo"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List Providers Response
+         * @description Response to list providers.
+         */
+        ListProvidersResponse: {
+            /** @description List of providers. */
+            providers?: components["schemas"]["Provider"][];
+            /** @description Opaque pagination token to go to next page based on previous query. */
+            next_page_token?: string;
+        };
+        /**
+         * List Recipients Response
+         * @description Response to list recipients.
+         */
+        ListRecipientsResponse: {
+            /** @description List of recipients. */
+            recipients?: components["schemas"]["Recipient"][];
+            /** @description Opaque pagination token to go to next page based on previous query. */
+            next_page_token?: string;
+        };
+        /**
+         * List Registered Models Response
+         * @description List registered models response.
+         */
+        ListRegisteredModelsResponse: {
+            /** @description The registered models returned. */
+            registered_models?: components["schemas"]["RegisteredModelInfo"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List Schemas Response
+         * @description List Schemas response.
+         */
+        ListSchemasResponse: {
+            /** @description The schemas returned. */
+            schemas?: components["schemas"]["SchemaInfo"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List Shares Response
+         * @description Response to list shares.
+         */
+        ListSharesResponse: {
+            /** @description List of shares. */
+            shares?: components["schemas"]["Share"][];
+            /** @description Opaque pagination token to go to next page based on previous query. */
+            next_page_token?: string;
+        };
+        /** List Table Summaries Response */
+        ListTableSummariesResponse: {
+            /** @description The table summaries returned. */
+            tables?: components["schemas"]["TableSummary"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List Tables Response
+         * @description Response for ListTablesRequest.
+         */
+        ListTablesResponse: {
+            /** @description The tables returned. */
+            tables?: components["schemas"]["TableInfo"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List Tag Policies Response
+         * @description List tag policies response.
+         */
+        ListTagPoliciesResponse: {
+            /** @description The tag policies returned. */
+            tag_policies?: components["schemas"]["TagPolicy"][];
+            /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List Volumes Response
+         * @description List Schemas response.
+         */
+        ListVolumesResponseContent: {
+            /** @description The volumes returned. */
+            volumes?: components["schemas"]["VolumeInfo"][];
+            /**
+             * Opaque token to retrieve the next page of results.
+             * @description Absent if there are no more pages. page_token should be set to
+             *      this value for the next request to retrieve the next page of results.
+             */
+            next_page_token?: string;
+        };
+        /**
+         * Match Column
+         * @description A column referenced by a policy, together with the alias it is bound to in the
+         *      row-filter or column-mask function invocation.
+         */
+        MatchColumn: {
+            /**
+             * @description The name of the alias the column is bound to when invoking the row-filter or
+             *      column-mask function.
+             */
+            alias: string;
+            /** @description The condition on the column, e.g. its name, that must match for this binding to apply. */
+            condition: string;
+        };
+        /**
+         * A model version under a registered model.
+         * @description A version is identified by its parent model's three-level name plus an
+         *      integer `version` number assigned by the server. It carries its own artifact
+         *      storage location and moves through the PENDING_REGISTRATION -> READY lifecycle
+         *      via the finalize operation.
+         */
+        ModelVersion: {
+            /** @description Name of the parent registered model, relative to parent schema. */
             model_name: string;
             /** @description Name of parent catalog. */
             catalog_name: string;
-            /** @description Name of parent schema relative to its parent catalog. */
+            /** @description Name of parent schema. */
             schema_name: string;
-            /** @description URI indicating the location of the source model artifacts. */
+            /**
+             * @description Integer model version number, used to reference the model version in API
+             *      requests. Assigned by the server, monotonically increasing per model.
+             */
+            readonly version: string;
+            /**
+             * @description URI indicating the location of the source artifacts used to create the model
+             *      version.
+             */
             source: string;
-            /** @description The run id used by the ML package that generated the model. */
+            /** @description The run id used by the ML package that generated this model. */
             run_id?: string;
+            /**
+             * Model Version Status
+             * Format: enum
+             * @description Current status of the model version.
+             * @enum {string}
+             */
+            readonly status: "MODEL_VERSION_STATUS_UNSPECIFIED" | "PENDING_REGISTRATION" | "FAILED_REGISTRATION" | "READY";
+            /** @description The storage location under which the model version's artifacts are stored. */
+            readonly storage_location?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-        };
-        UpdateModelVersion: {
-            /** @description User-provided free-form text description. */
-            comment?: string;
-        };
-        ListModelVersionsResponse: {
-            /** @description An array of model version information objects. */
-            model_versions?: components["schemas"]["ModelVersionInfo"][];
+            /** @description Unique identifier for the model version. */
+            readonly id?: string;
+            /** @description Time at which this model version was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of model version creator. */
+            readonly created_by?: string;
+            /** @description Time at which this model version was last updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of user who last modified the model version. */
+            readonly updated_by?: string;
+            /** @description The unique identifier of the metastore. */
+            readonly metastore_id?: string;
             /**
-             * @description Opaque token to retrieve the next page of results. Absent if there are no more pages.
-             *     __page_token__ should be set to this value for the next request (for the next page of results).
+             * @description Indicates whether the principal is limited to retrieving metadata for the
+             *      associated object through the BROWSE privilege when include_browse is
+             *      enabled in the request.
              */
-            next_page_token?: string;
+            readonly browse_only?: boolean;
         };
-        FinalizeModelVersion: {
-            /** @description The full name of the registered model to finalize. */
-            full_name: string;
-            /**
-             * Format: int64
-             * @description Version number of the version to finalize.
-             */
-            version: number;
-        };
-        GenerateTemporaryPathCredential: {
-            /** @description The URL of the storage path for which temporary credentials need to be generated. */
-            url: string;
-            operation: components["schemas"]["PathOperation"];
-        };
-        TemporaryCredentials: {
-            aws_temp_credentials?: components["schemas"]["AwsCredentials"];
-            azure_user_delegation_sas?: components["schemas"]["AzureUserDelegationSAS"];
-            gcp_oauth_token?: components["schemas"]["GcpOauthToken"];
-            /**
-             * Format: int64
-             * @description Server time when the credential will expire, in epoch milliseconds.
-             *     The API client is advised to cache the credential given this expiration time.
-             */
-            expiration_time?: number;
-        };
-        /** @enum {string} */
-        PathOperation: "UNKNOWN_PATH_OPERATION" | "PATH_READ" | "PATH_READ_WRITE" | "PATH_CREATE_TABLE";
-        /**
-         * @description The type of the principal.
-         * @enum {string}
-         */
-        PrincipalType: "USER" | "GROUP";
-        /**
-         * @description The type of the resource.
-         * @enum {string}
-         */
-        SecurableType: "metastore" | "catalog" | "schema" | "table" | "function" | "volume" | "registered_model" | "external_location" | "credential";
-        /**
-         * @description The privilege to grant.
-         * @enum {string}
-         */
-        Privilege: "CREATE CATALOG" | "USE CATALOG" | "CREATE SCHEMA" | "USE SCHEMA" | "CREATE TABLE" | "SELECT" | "MODIFY" | "CREATE FUNCTION" | "EXECUTE" | "CREATE VOLUME" | "READ VOLUME" | "CREATE MODEL" | "CREATE EXTERNAL LOCATION" | "READ FILES" | "WRITE FILES" | "CREATE EXTERNAL TABLE" | "CREATE EXTERNAL VOLUME" | "CREATE MANAGED STORAGE" | "CREATE STORAGE CREDENTIAL";
-        UpdatePermissions: {
-            /** @description Array of permissions change objects. */
-            changes: components["schemas"]["PermissionsChange"][];
-        };
+        /** Permissions Change */
         PermissionsChange: {
-            /** @description The principal whose privileges we are changing. */
-            principal: string;
-            /** @description The set of privileges to add. */
-            add: components["schemas"]["Privilege"][];
-            /** @description The set of privileges to remove. */
-            remove: components["schemas"]["Privilege"][];
-        };
-        PermissionsList: {
-            /** @description The privileges assigned to each principal. */
-            privilege_assignments: components["schemas"]["PrivilegeAssignment"][];
-        };
-        PrivilegeAssignment: {
             /** @description The principal (user email address or group name). */
             principal: string;
+            /** @description The set of privileges to add. */
+            add?: string[];
+            /** @description The set of privileges to remove. */
+            remove?: string[];
+        };
+        /**
+         * A row-filter or column-mask policy bound to principals and scoped to a securable.
+         * @description Policies are read as whole documents; enforcement is performed by the query engine,
+         *      not by this service. `when_condition` is stored and returned opaque — this service does
+         *      not parse or evaluate it.
+         */
+        PolicyInfo: {
+            /** @description The name of the policy. Unique within the securable it is defined on. */
+            name: string;
+            /** @description Server-assigned unique identifier for the policy. */
+            readonly id?: string;
+            /**
+             * The type of securable the policy is defined on.
+             * @description Supported values: catalogs, schemas, tables.
+             */
+            on_securable_type: string;
+            /** @description The fully qualified name of the securable the policy is defined on. */
+            on_securable_fullname: string;
+            /**
+             * Policy Type
+             * Format: enum
+             * @description The kind of enforcement this policy applies.
+             * @enum {string}
+             */
+            policy_type: "POLICY_TYPE_UNSPECIFIED" | "POLICY_TYPE_ROW_FILTER" | "POLICY_TYPE_COLUMN_MASK";
+            /** @description The principals the policy applies to. Empty means "all principals". */
+            to_principals?: string[];
+            /** @description The principals explicitly excluded from the policy, even if matched by to_principals. */
+            except_principals?: string[];
+            /**
+             * @description An opaque condition expression, e.g. "hasTagValue('env','prod')", evaluated by the
+             *      query engine at enforcement time. Stored and returned as-is; not parsed server-side.
+             */
+            when_condition?: string;
+            /**
+             * @description The columns referenced by the row-filter or column-mask function, and the aliases
+             *      they are bound to.
+             */
+            match_columns?: components["schemas"]["MatchColumn"][];
+            /**
+             * Function Ref
+             * @description A reference to the SQL function that implements a row-filter or column-mask policy,
+             *      together with the arguments it is invoked with.
+             */
+            row_filter?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /**
+             * Function Ref
+             * @description A reference to the SQL function that implements a row-filter or column-mask policy,
+             *      together with the arguments it is invoked with.
+             */
+            column_mask?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /** @description User-provided free-form text description of the policy. */
+            comment?: string;
+            /** @description Time at which this policy was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Time at which this policy was last updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+        };
+        /** Privilege Assignment */
+        PrivilegeAssignment: {
+            /**
+             * The principal (user email address or group name).
+             * @description For deleted principals, principal is empty while principal_id is populated.
+             */
+            principal: string;
             /** @description The privileges assigned to the principal. */
-            privileges: components["schemas"]["Privilege"][];
+            privileges?: string[];
         };
-        GetMetastoreSummaryResponse: {
-            /** @description Unique identifier of the metastore. */
-            metastore_id?: string;
-        };
-        CredentialInfo: {
-            /** @description The credential name. The name must be unique within the metastore. */
-            name?: string;
-            aws_iam_role?: components["schemas"]["AwsIamRoleResponse"];
-            /** @description Comment associated with the credential. */
-            comment?: string;
-            /** @description Username of current owner of credential. */
-            owner?: string;
-            /** @description The full name of the credential. */
-            full_name?: string;
-            /** @description The unique identifier of the credential. */
-            id?: string;
-            /**
-             * Format: int64
-             * @description Time at which this Credential was created, in epoch milliseconds.
-             */
-            created_at?: number;
-            /** @description Username of credential creator. */
-            created_by?: string;
-            /**
-             * Format: int64
-             * @description Time at which this credential was last modified, in epoch milliseconds.
-             */
-            updated_at?: number;
-            /** @description Username of user who last modified the credential. */
-            updated_by?: string;
-            purpose?: components["schemas"]["CredentialPurpose"];
-        };
-        CreateCredentialRequest: {
-            /** @description The credential name. The name must be unique within the metastore. */
+        /**
+         * A provider represents an organization sharing data with this metastore.
+         * @description A provider is the inbound counterpart of a recipient: it is registered from a
+         *      share activation/credential file and is used to access shares offered by an
+         *      upstream Delta Sharing server.
+         */
+        Provider: {
+            /** @description Unique ID of the provider. */
+            readonly id?: string;
+            /** @description The name of the provider. */
             name: string;
-            /** @description Comment associated with the credential. */
-            comment?: string;
-            aws_iam_role?: components["schemas"]["AwsIamRoleRequest"];
-            purpose?: components["schemas"]["CredentialPurpose"];
-        };
-        UpdateCredentialRequest: {
-            /** @description Comment associated with the credential. */
-            comment?: string;
-            /** @description Username of current owner of credential. */
-            owner?: string;
-            aws_iam_role?: components["schemas"]["AwsIamRoleRequest"];
-            /** @description New name for the credential. */
-            new_name?: string;
-        };
-        /** @description The Amazon Resource Name (ARN) of the AWS IAM role used to vend temporary credentials. */
-        AwsIamRoleArn: string;
-        AwsIamRoleRequest: {
-            role_arn: components["schemas"]["AwsIamRoleArn"];
-        };
-        AwsIamRoleResponse: {
-            role_arn: components["schemas"]["AwsIamRoleArn"];
-            /** @description The Amazon Resource Name (ARN) of the AWS IAM used by the Unity Catalog Server. This is the identity that is going to assume the AWS IAM role. */
-            unity_catalog_iam_arn?: string;
-            /** @description The external ID used in role assumption to prevent confused deputy problem. */
-            external_id?: string;
-        };
-        ListCredentialsResponse: {
-            /** @description An array of credential information objects. */
-            credentials?: components["schemas"]["CredentialInfo"][];
             /**
-             * @description Opaque token to retrieve the next page of results. Absent if there are no more pages.
-             *     __page_token__ should be set to this value for the next request (for the next page of results).
+             * Provider Authentication Type
+             * Format: enum
+             * @description The delta sharing authentication type.
+             * @enum {string}
              */
-            next_page_token?: string;
+            authentication_type: "PROVIDER_AUTHENTICATION_TYPE_UNSPECIFIED" | "TOKEN" | "OAUTH_CLIENT_CREDENTIALS";
+            /** @description Username of the provider owner. */
+            owner?: string;
+            /** @description Description about the provider. */
+            comment?: string;
+            /**
+             * @description The recipient profile (credential file contents) used to connect to the
+             *      sharing server, present only for TOKEN authentication.
+             */
+            recipient_profile_str?: string;
+            /** @description A map of key-value properties attached to the provider. */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Time at which this provider was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of the creator of the provider. */
+            readonly created_by?: string;
+            /** @description Time at which this provider was updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of the provider updater. */
+            readonly updated_by?: string;
         };
-        /** @enum {string} */
-        CredentialPurpose: "STORAGE";
-        ExternalLocationInfo: {
-            /** @description Name of the external location. */
-            name?: string;
-            /** @description Unique identifier for the external location. */
-            id?: string;
-            /** @description Path URL of the external location. */
-            url?: string;
-            /** @description Name of the storage credential used with this location. */
-            credential_name?: string;
+        /** R2 Temporary Credentials */
+        R2TemporaryCredentials: {
+            /** @description The access key ID that identifies the temporary credentials. */
+            access_key_id: string;
+            /** @description The secret access key associated with the access key. */
+            secret_access_key: string;
+            /** @description The generated JWT that users must pass to use the temporary credentials. */
+            session_token: string;
+        };
+        /** Recipient */
+        Recipient: {
+            /** @description Unique ID of the recipient. */
+            readonly id?: string;
+            /** @description The name of the recipient. */
+            name: string;
+            /**
+             * Authentication Type
+             * Format: enum
+             * @description The delta sharing authentication type.
+             * @enum {string}
+             */
+            authentication_type: "AUTHENTICATION_TYPE_UNSPECIFIED" | "TOKEN" | "OAUTH_CLIENT_CREDENTIALS";
+            /** @description Username of the recipient owner. */
+            owner?: string;
+            /** @description Description about the recipient. */
+            comment?: string;
+            /** @description A map of key-value properties attached to the securable. */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Time at which this share was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of the creator of the share. */
+            readonly created_by?: string;
+            /** @description This field is only present when the authentication_type is TOKEN. */
+            readonly tokens?: components["schemas"]["RecipientToken"][];
+            /** @description Time at which this share was updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of share updater. */
+            readonly updated_by?: string;
+        };
+        /** Recipient Token */
+        RecipientToken: {
+            /** @description Unique ID of the recipient token. */
+            readonly id: string;
+            /** @description Time at which this recipient token was created, in epoch milliseconds. */
+            readonly created_at: string;
+            /** @description Username of recipient token creator. */
+            readonly created_by: string;
+            /** @description Full activation URL to retrieve the access token. It will be empty if the token is already retrieved. */
+            readonly activation_url: string;
+            /** @description Expiration timestamp of the token in epoch milliseconds. */
+            expiration_time: string;
+            /** @description Time at which this recipient token was updated, in epoch milliseconds. */
+            readonly updated_at: string;
+            /** @description Username of recipient token updater. */
+            readonly updated_by: string;
+        };
+        /**
+         * A registered model within the three-level namespace (catalog.schema.model).
+         * @description Registered models group a collection of model versions. Individual versions
+         *      carry their own artifact storage location and are created, finalized, and
+         *      governed independently.
+         */
+        RegisteredModelInfo: {
+            /** @description Name of registered model, relative to parent schema. */
+            name: string;
+            /** @description Name of parent catalog. */
+            catalog_name: string;
+            /** @description Name of parent schema. */
+            schema_name: string;
+            /**
+             * The three-level (fully qualified) name of the registered model.
+             * @description Format: catalog_name.schema_name.model_name
+             */
+            readonly full_name: string;
+            /** @description The storage location under which model version data files are stored. */
+            readonly storage_location?: string;
+            /** @description Username of current owner of the registered model. */
+            readonly owner?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-            /** @description The owner of the external location. */
-            owner?: string;
-            /** @description Unique ID of the location's storage credential. */
-            credential_id?: string;
+            /** @description Unique identifier for the registered model. */
+            readonly id?: string;
+            /** @description Time at which this registered model was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of registered model creator. */
+            readonly created_by?: string;
+            /** @description Time at which this registered model was last updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of user who last modified the registered model. */
+            readonly updated_by?: string;
+            /** @description The unique identifier of the metastore. */
+            readonly metastore_id?: string;
             /**
-             * Format: int64
-             * @description Time at which this external location was created, in epoch milliseconds.
+             * @description Indicates whether the principal is limited to retrieving metadata for the
+             *      associated object through the BROWSE privilege when include_browse is
+             *      enabled in the request.
              */
+            readonly browse_only?: boolean;
+        };
+        /**
+         * Schema
+         * @description A schema is a namespace within a catalog that contains tables.
+         */
+        SchemaInfo: {
+            /** @description Name of parent catalog. */
+            catalog_name: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description Time at which this schema was created, in epoch milliseconds. */
             created_at?: number;
-            /** @description Username of external location creator. */
+            /** @description Username of schema creator. */
             created_by?: string;
+            /** @description Full name of schema, in form of catalog_name.schema_name. */
+            full_name: string;
+            /** @description Name of schema, relative to parent catalog. */
+            name: string;
+            /** @description Username of current owner of schema. */
+            owner?: string;
+            /** @description A map of key-value properties attached to the securable. */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Unique identifier for the schema. */
+            schema_id?: string;
             /**
-             * Format: int64
-             * @description Time at which external location this was last modified, in epoch milliseconds.
+             * Storage location URL (full path) for managed storage of the schema.
+             * @description A unique path under `storage_root`. Absent when the schema has no
+             *      `storage_root`, in which case managed securables fall back to the parent
+             *      catalog's storage location.
+             *      Example: `s3://bucket/ucroot/__unitystorage/schemas/{schema_id}`.
              */
+            storage_location?: string;
+            /**
+             * Storage root URL for managed storage location of the schema.
+             * @description Can be set when creating a schema. When set, managed tables/volumes created
+             *      in this schema are rooted here; otherwise the parent catalog's storage
+             *      location is used. Example: `s3://bucket/ucroot`.
+             */
+            storage_root?: string;
+            /** @description Time at which this schema was last updated, in epoch milliseconds. */
             updated_at?: number;
-            /** @description Username of user who last modified the external location. */
+            /** @description Username of user who last modified schema. */
             updated_by?: string;
         };
-        CreateExternalLocation: {
-            /** @description Name of the external location. */
+        /**
+         * Share
+         * @description A share is a logical grouping to share with recipients. A share can be shared with one or multiple recipients.
+         *      A recipient can access all resources in a share. A share may contain multiple schemas.
+         */
+        Share: {
+            /** @description Unique ID of the recipient. */
+            readonly id?: string;
+            /**
+             * Name of the share.
+             * @description Name of the share.
+             */
             name: string;
-            /** @description Path URL of the external location. */
-            url: string;
-            /** @description Name of the storage credential used with this location. */
-            credential_name: string;
-            /** @description User-provided free-form text description. */
-            comment?: string;
-        };
-        UpdateExternalLocation: {
-            /** @description Path URL of the external location. */
-            url?: string;
-            /** @description Name of the storage credential used with this location. */
-            credential_name?: string;
-            /** @description User-provided free-form text description. */
-            comment?: string;
-            /** @description The owner of the external location. */
+            /** @description A list of shared data objects within the share. */
+            objects?: components["schemas"]["DataObject"][];
+            /** @description Username of current owner of share. */
             owner?: string;
-            /** @description New name for the external location. */
-            new_name?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description Storage Location URL (full path) for the share. */
+            readonly storage_location?: string;
+            /** @description Storage root URL for the share. */
+            readonly storage_root?: string;
+            /** @description Time at which this share was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of the creator of the share. */
+            readonly created_by?: string;
+            /** @description Time at which this share was updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of share updater. */
+            readonly updated_by?: string;
         };
-        ListExternalLocationsResponse: {
-            /** @description An array of external locations. */
-            external_locations?: components["schemas"]["ExternalLocationInfo"][];
-            /** @description Opaque token to retrieve the next page of results. Absent if there are no more pages. __page_token__ should be set to this value for the next request (for the next page of results). */
-            next_page_token?: string;
-        };
-        /** @description Request body for committing changes to a specified Delta table. At least one of commit_info and latest_backfilled_version must be present. */
-        DeltaCommit: {
-            /** @description The ID of the table to commit to. This ID uniquely identifies a table. */
-            table_id: string;
+        /**
+         * A staging table is a transient reservation created while provisioning a
+         *      Unity Catalog managed table.
+         * @description On creation the server allocates an immutable table id and storage location
+         *      under the parent schema/catalog's managed storage root. The client then
+         *      writes the initial Delta commit (`_delta_log/00...0.json`) at that location
+         *      and finalizes the table via the CreateTable API, which commits this staging
+         *      row. A staging table is not yet a usable table and is not returned by the
+         *      table APIs.
+         */
+        StagingTable: {
             /**
-             * @description The URI of the storage location of the table. If the table_id exists but the table_uri is
-             *     different from the one previously registered (e.g., if the client moved the table), the request will fail.
-             *     Example: s3://bucket-name/tables/some-table-id
+             * @description Unique identifier generated for the staging table. Becomes the managed
+             *      table's id once finalized.
              */
-            table_uri: string;
-            commit_info?: components["schemas"]["DeltaCommitInfo"];
+            readonly id: string;
+            /** @description Name of the staging table, relative to the parent schema. */
+            name: string;
+            /** @description Name of the parent schema relative to its parent catalog. */
+            schema_name: string;
+            /** @description Name of the parent catalog. */
+            catalog_name: string;
             /**
-             * Format: int64
-             * @description The highest version of the commits that have been backfilled for this table; meaning UC no longer
-             *     needs to keep track of commits of versions <= this version.
+             * @description Storage location allocated for the staging table, where the client writes
+             *      the initial Delta commit. Immutable once allocated.
              */
-            latest_backfilled_version?: number;
-            metadata?: components["schemas"]["DeltaMetadata"];
+            readonly staging_location: string;
             /**
-             * @description Optional UniForm metadata to be committed alongside this Delta commit. Whether this field is
-             *     strictly required by a UC API compatible implementation is left up to the implementation.
-             *     It is set by UniForm conversion processes after converting a Delta commit. When set,
-             *     UC will atomically update the table's format-specific metadata (e.g. DeltaUniformIceberg),
-             *     keeping the conversion state synchronized with the Delta version.
-             *     Uniform enables Delta tables to be read by other table formats (e.g., Iceberg) without data conversion.
-             *     Independent of the `metadata` field, both can be provided together or separately.
+             * @description Username of the principal that created the staging table. Only this
+             *      principal may finalize the table.
              */
-            uniform?: components["schemas"]["DeltaUniform"];
+            readonly created_by?: string;
+            /** @description Whether the staging table has been finalized into a managed table. */
+            readonly stage_committed: boolean;
+            /** @description Time at which this staging table was created, in epoch milliseconds. */
+            readonly created_at?: string;
         };
-        /** @description Represents a Delta metadata action (see https://github.com/delta-io/delta/blob/master/PROTOCOL.md#change-metadata for more information). */
-        DeltaMetadata: {
-            /** @description The table comment. */
-            description?: string;
-            schema?: components["schemas"]["ColumnInfos"];
-            properties?: components["schemas"]["DeltaCommitMetadataProperties"];
+        /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
+        Status: {
+            /**
+             * Format: int32
+             * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+             */
+            code?: number;
+            /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
+            message?: string;
+            /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
+            details?: components["schemas"]["GoogleProtobufAny"][];
         };
-        /** @description The properties of the Delta table. Updated by UC if set. */
-        DeltaCommitMetadataProperties: {
-            properties?: components["schemas"]["SecurablePropertiesMap"];
-        };
-        /** @description The schema of the table. */
-        ColumnInfos: {
-            /** @description The array of column descriptions. */
+        /**
+         * Table
+         * @description A table is a Delta Lake table or a view on top of a Delta Lake table.
+         */
+        TableInfo: {
+            /** @description Name of table, relative to parent schema. */
+            name: string;
+            /** @description Name of parent catalog. */
+            catalog_name: string;
+            /** @description Name of parent schema. */
+            schema_name: string;
+            /**
+             * Table Type
+             * Format: enum
+             * @enum {string}
+             */
+            table_type: "TABLE_TYPE_UNSPECIFIED" | "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "METRIC_VIEW";
+            /**
+             * Data Source Format
+             * Format: enum
+             * @description Data source format of the table.
+             * @enum {string}
+             */
+            data_source_format: "DATA_SOURCE_FORMAT_UNSPECIFIED" | "DELTA" | "ICEBERG" | "HUDI" | "PARQUET" | "CSV" | "JSON" | "ORC" | "AVRO" | "TEXT" | "UNITY_CATALOG" | "DELTASHARING";
+            /** @description The array of Column definitions of the table's columns. */
             columns?: components["schemas"]["ColumnInfo"][];
+            /** @description Storage root URL for table (for MANAGED, EXTERNAL tables) */
+            storage_location?: string;
+            /**
+             * @description Definition text for view-like table types (VIEW, MATERIALIZED_VIEW,
+             *      STREAMING_TABLE, METRIC_VIEW). The format depends on the table type:
+             *      SQL for views, YAML for metric views.
+             */
+            view_definition?: string;
+            /**
+             * Dependency List
+             * @description A list of dependencies referenced by a view-like table.
+             */
+            view_dependencies?: components["schemas"]["DependencyList"];
+            /** @description Username of current owner of table. */
+            readonly owner?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description A map of key-value properties attached to the securable. */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Name of the storage credential, when a storage credential is configured for use with this table. */
+            storage_credential_name?: string;
+            /** @description Full name of table, in form of catalog_name.schema_name.table_name. */
+            readonly full_name: string;
+            /** @description Time at which this table was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of table creator. */
+            readonly created_by?: string;
+            /** @description Time at which this table was last updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of user who last modified table. */
+            readonly updated_by?: string;
+            /** @description Time at which this table was deleted, in epoch milliseconds. Field is omitted if table is not deleted. */
+            readonly deleted_at?: string;
+            /** @description Unique identifier for the table. */
+            readonly table_id?: string;
         };
-        /** @description Represents a Delta commit version. */
-        DeltaCommitInfo: {
-            /**
-             * Format: int64
-             * @description The version of this commit.
-             */
-            version: number;
-            /**
-             * Format: int64
-             * @description The timestamp for when the commit was made. This is the in-commit timestamp as produced by the Delta client writing to the table.
-             */
-            timestamp: number;
-            /** @description The filename of the UUID-based commit file. */
-            file_name: string;
-            /**
-             * Format: int64
-             * @description The size of the commit file in bytes.
-             */
-            file_size: number;
-            /**
-             * Format: int64
-             * @description The modification time of the commit file. This is the mod time of the file as written to the file system.
-             */
-            file_modification_timestamp: number;
-        };
-        /** @description The response for the Delta commit action */
-        DeltaCommitResponse: Record<string, never>;
         /**
-         * @description Uniform metadata that can be atomically committed alongside a Delta commit.
-         *     Uniform enables Delta tables to be read by other table formats (e.g. Iceberg)
-         *     without data conversion. When this message is provided in a Commit request,
-         *     UC will atomically update the table's format-specific metadata during the commit.
+         * Table Dependency
+         * @description A table that a SQL object (such as a view or metric view) depends on.
          */
-        DeltaUniform: {
-            /** @description Metadata for Delta UniForm Iceberg conversion. */
-            iceberg: components["schemas"]["DeltaUniformIceberg"];
+        TableDependency: {
+            /**
+             * @description Full name of the dependent table, in the form of
+             *      catalog_name.schema_name.table_name.
+             */
+            table_full_name: string;
+        };
+        /** Table Summary */
+        TableSummary: {
+            /** @description The full name of the table. */
+            full_name: string;
+            /**
+             * Table Type
+             * Format: enum
+             * @enum {string}
+             */
+            table_type: "TABLE_TYPE_UNSPECIFIED" | "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "METRIC_VIEW";
         };
         /**
-         * @description Iceberg conversion metadata tracking the Delta-to-Iceberg conversion state.
-         *     It contains the metadata location pointer, converted Delta version, timestamp, and
-         *     optional base converted Delta version of the corresponding conversion.
+         * A governed tag definition (tag policy).
+         * @description A tag policy defines a tag key together with the rules that govern how it can
+         *      be used, including the optional set of allowed values. Assigning a governed
+         *      tag to an entity is done through the Entity Tag Assignments API.
          */
-        DeltaUniformIceberg: {
+        TagPolicy: {
+            /** @description The key of the governed tag. */
+            tag_key: string;
+            /** @description User-provided free-form text description of the tag policy. */
+            description?: string;
             /**
-             * Format: uri
-             * @description The latest Iceberg metadata location.
-             *     Example: s3://abc/def/metadata/v1.json
+             * The set of allowed values for the governed tag.
+             * @description When empty, the governed tag does not restrict the values that may be assigned.
              */
-            metadata_location: string;
-            /**
-             * Format: int64
-             * @description The Delta version that was converted to Iceberg to produce the Iceberg metadata location.
-             *     It should match the Delta version in the commit info.
-             *     Example: 1044
-             */
-            converted_delta_version: number;
-            /**
-             * @description The timestamp that Delta finished conversion to produce the Iceberg metadata location.
-             *     The string must represent a valid instant in UTC with ISO 8601 format.
-             *     Example: 2025-01-04T03:13:11.423Z
-             */
-            converted_delta_timestamp: string;
-            /**
-             * Format: int64
-             * @description Optional Delta version used to incrementally convert Delta changes to Iceberg changes to
-             *     produce the latest Iceberg metadata at the metadata_location.
-             *     Example: 1042
-             */
-            base_converted_delta_version?: number;
+            values?: components["schemas"]["Value"][];
+            /** @description Unique identifier for the tag policy. */
+            readonly id?: string;
+            /** @description Time at which this tag policy was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Time at which this tag policy was last updated, in epoch milliseconds. */
+            readonly updated_at?: string;
         };
-        DeltaGetCommits: {
-            /** @description The ID of the table to get the commits for. This ID uniquely identifies a table. */
-            table_id: string;
+        /**
+         * Temporary Credential
+         * @description The response to the GenerateTemporaryTableCredentialsRequest.
+         */
+        TemporaryCredential: {
             /**
-             * @description The URI of the storage location of the table. If the table_id exists but the table_uri is
-             *     different from the one previously registered (e.g., if the client moved the table), the request will fail.
-             *     Example: s3://bucket-name/tables/some-table-id
+             * @description Server time when the credential will expire, in epoch milliseconds.
+             *      The API client is advised to cache the credential given this expiration time.
              */
-            table_uri: string;
+            expiration_time: string;
+            /** @description The URL of the storage path accessible by the temporary credential. */
+            url: string;
             /**
-             * Format: int64
-             * @description The start version from which to retrieve commits (inclusive). This along with the
-             *     optional end_version specifies the range of commit versions that this request wants.
+             * Azure User Delegation Sas
+             * @description Credentials for Azure Blob Storage.
              */
-            start_version: number;
+            azure_user_delegation_sas?: WithRequired<components["schemas"]["AzureUserDelegationSas"], "sas_token">;
             /**
-             * Format: int64
-             * @description The end version upto which to retrieve commits (inclusive).
-             *     If not set, the latest version will be used as the end version. This does not affect the
-             *     latest_table_version in the response.
-             *     If num of commits that meet this criteria is larger than a limit set by server config,
-             *     the response will be limited to the first X commits. Call can send request again with a
-             *     larger start_version according to the response to get the remaining commits.
+             * Azure Aad
+             * @description Credentials for Azure Active Directory.
              */
-            end_version?: number;
+            azure_aad?: WithRequired<components["schemas"]["AzureAad"], "aad_token">;
+            /**
+             * Aws Temporary Credentials
+             * @description Credentials for AWS S3.
+             */
+            aws_temp_credentials?: WithRequired<components["schemas"]["AwsTemporaryCredentials"], "access_key_id" | "access_point" | "secret_access_key" | "session_token">;
+            /**
+             * Gcp Oauth Token
+             * @description Credentials for Google Cloud Storage.
+             */
+            gcp_oauth_token?: WithRequired<components["schemas"]["GcpOauthToken"], "oauth_token">;
+            /**
+             * R2 Temporary Credentials
+             * @description Credentials for R2.
+             */
+            r2_temp_credentials?: WithRequired<components["schemas"]["R2TemporaryCredentials"], "access_key_id" | "secret_access_key" | "session_token">;
         };
-        DeltaGetCommitsResponse: {
-            /** @description The list of unbackfilled Delta table commits. Can be in arbitrary order. */
-            commits: components["schemas"]["DeltaCommitInfo"][];
+        /** Update Agent Request */
+        UpdateAgentRequest: {
+            /** @description New name for the agent. */
+            new_name?: string;
             /**
-             * Format: int64
-             * @description Represents the latest version of the table tracked by UC. For a newly created managed table
-             *     with no commits, this returns 0. Use this field to manage pagination —
-             *     if the returned commits don't cover the range up to latest_table_version or end_version (whichever is smaller),
-             *     it indicates that more unbackfilled commits may be available.
+             * Invocation Protocol
+             * Format: enum
+             * @description The protocol a recipient uses to invoke the agent.
+             * @enum {string}
              */
-            latest_table_version: number;
+            invocation_protocol?: "INVOCATION_PROTOCOL_UNSPECIFIED" | "MCP" | "A2A" | "OPENAI" | "ANTHROPIC" | "REST";
+            /** @description The agent's invocation endpoint URL. */
+            endpoint?: string;
+            /** @description Updated LLM-readable description. */
+            description?: string;
+            /** @description Updated capability identifiers advertised by the agent. */
+            capabilities?: string[];
+            /** @description Updated JSON Schema (encoded as a JSON string) describing the expected input. */
+            input_schema?: string;
+            /** @description The comment attached to the agent. */
+            comment?: string;
+            /** @description The identifier of the user who owns the agent. */
+            owner?: string;
+        };
+        /** Update Agent Skill Request */
+        UpdateAgentSkillRequest: {
+            /** @description New name for the agent skill. */
+            new_name?: string;
+            /** @description Updated description of what the skill does and when to use it. */
+            description?: string;
+            /** @description Updated tools the skill is permitted to use. */
+            allowed_tools?: string[];
+            /** @description The comment attached to the agent skill. */
+            comment?: string;
+            /** @description The identifier of the user who owns the agent skill. */
+            owner?: string;
+        };
+        /**
+         * Update Catalog Request
+         * @description Update a catalog
+         */
+        UpdateCatalogRequest: {
+            /** @description Username of new owner of catalog. */
+            owner?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /**
+             * A map of key-value properties attached to the securable.
+             * @description When provided in update request, the specified properties will override the existing properties.
+             *      To add and remove properties, one would need to perform a read-modify-write.
+             */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Name of catalog. */
+            new_name?: string;
+        };
+        /**
+         * Update Credential Request
+         * @description Update a credential.
+         */
+        UpdateCredentialRequest: {
+            /** @description New name of the credential. */
+            new_name?: string;
+            /** @description Comment associated with the credential. */
+            comment?: string;
+            /** @description Whether the credential is usable only for read operations. Only applicable when purpose is STORAGE. */
+            read_only?: boolean;
+            /** @description Username of current owner of credential. */
+            owner?: string;
+            /** @description Supply true to this argument to skip validation of the updated credential. */
+            skip_validation?: boolean;
+            /**
+             * @description Force an update even if there are dependent services (when purpose is SERVICE)
+             *      or dependent external locations and external tables (when purpose is STORAGE).
+             */
+            force?: boolean;
+            /**
+             * Azure Service Principal
+             * @description The Azure service principal configuration.
+             */
+            azure_service_principal?: WithRequired<components["schemas"]["AzureServicePrincipal"], "directory_id" | "application_id">;
+            /**
+             * Azure Managed Identity
+             * @description The Azure managed identity configuration.
+             */
+            azure_managed_identity?: WithRequired<components["schemas"]["AzureManagedIdentity"], "access_connector_id">;
+            /**
+             * Azure Storage Key
+             * @description The Azure storage key configuration.
+             */
+            azure_storage_key?: WithRequired<components["schemas"]["AzureStorageKey"], "account_name" | "account_key">;
+            /**
+             * The AWS IAM role configuration used server-side to call STS AssumeRole.
+             * @description This is an internal configuration type, not exposed in the public API response.
+             *      It stores the static credentials (or ambient credential fallback) used to
+             *      authorize the STS:AssumeRole call when vending temporary credentials.
+             */
+            aws_iam_role?: WithRequired<components["schemas"]["AwsIamRoleConfig"], "role_arn">;
+            /**
+             * Databricks Gcp Service Account
+             * @description The Databricks managed GCP service account configuration.
+             */
+            databricks_gcp_service_account?: components["schemas"]["DatabricksGcpServiceAccount"];
+        };
+        /**
+         * Update Entity Tag Assignment Request
+         * @description Update an entity tag assignment
+         */
+        UpdateEntityTagAssignmentRequest: {
+            /**
+             * The assignment of a tag to a Unity Catalog entity.
+             * @description Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
+             *      of a tag to a specific securable. It has no identifier of its own — its identity is
+             *      the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
+             *      `google.api.resource`: assignments are stored as associations between the entity and
+             *      its tag, not as standalone objects.
+             */
+            tag_assignment: WithRequired<components["schemas"]["EntityTagAssignment"], "entity_type" | "entity_name" | "tag_key">;
+            /** @description The list of fields to update, as a comma-separated string. */
+            update_mask?: string;
+        };
+        /**
+         * Update External Location Request
+         * @description Update an external location
+         */
+        UpdateExternalLocationRequest: {
+            /** @description Path URL of the external location. */
+            url?: string;
+            /** @description Name of the storage credential used with this location. */
+            credential_name?: string;
+            /** @description Indicates whether the external location is read-only. */
+            read_only?: boolean;
+            /** @description owner of the external location. */
+            owner?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description new name of the external location. */
+            new_name?: string;
+            /** @description force update of the external location. */
+            force?: boolean;
+            /** @description Skips validation of the storage credential associated with the external location. */
+            skip_validation?: boolean;
+        };
+        /**
+         * Update Function Request
+         * @description Update a function
+         */
+        UpdateFunctionRequest: {
+            /** @description Username of new owner of the function. */
+            owner?: string;
+        };
+        /**
+         * Update Model Version Request
+         * @description Update a model version.
+         */
+        UpdateModelVersionRequest: {
+            /** @description User-provided free-form text description. */
+            comment?: string;
+        };
+        /** Update Permissions Request */
+        UpdatePermissionsRequest: {
+            /** @description Array of permissions change objects. */
+            changes?: components["schemas"]["PermissionsChange"][];
+            /** @description Whether to return the latest permissions list of the share in the response. */
+            omit_permissions_list?: boolean;
+        };
+        /** Update Permissions Response */
+        UpdatePermissionsResponse: {
+            /** @description The privileges assigned to each principal */
+            privilege_assignments?: components["schemas"]["PrivilegeAssignment"][];
+        };
+        /**
+         * Update Policy Request
+         * @description Update a policy defined on a securable.
+         */
+        UpdatePolicyRequest: {
+            /**
+             * A row-filter or column-mask policy bound to principals and scoped to a securable.
+             * @description Policies are read as whole documents; enforcement is performed by the query engine,
+             *      not by this service. `when_condition` is stored and returned opaque — this service does
+             *      not parse or evaluate it.
+             */
+            policy_info: WithRequired<components["schemas"]["PolicyInfo"], "name" | "on_securable_type" | "on_securable_fullname" | "policy_type">;
+            /** @description The list of fields to update, as a comma-separated string. */
+            update_mask?: string;
+        };
+        /**
+         * Update Provider Request
+         * @description Update a provider
+         */
+        UpdateProviderRequest: {
+            /** @description New name for the provider. */
+            new_name?: string;
+            /** @description Username of the provider owner. */
+            owner?: string;
+            /** @description Description about the provider. */
+            comment?: string;
+            /**
+             * @description The recipient profile (credential file contents) used to connect to the
+             *      sharing server.
+             */
+            recipient_profile_str?: string;
+            /**
+             * Provider properties as map of string key-value pairs.
+             * @description When provided in update request, the specified properties will override the existing properties.
+             *      To add and remove properties, one would need to perform a read-modify-write.
+             */
+            properties?: {
+                [key: string]: string;
+            };
+        };
+        /**
+         * Update Recipient Request
+         * @description Update a recipient
+         */
+        UpdateRecipientRequest: {
+            /** @description New name for the recipient */
+            new_name?: string;
+            /** @description Username of the recipient owner. */
+            owner?: string;
+            /** @description Description about the recipient. */
+            comment?: string;
+            /**
+             * Recipient properties as map of string key-value pairs.
+             * @description When provided in update request, the specified properties will override the existing properties.
+             *      To add and remove properties, one would need to perform a read-modify-write.
+             */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Expiration timestamp of the token, in epoch milliseconds. */
+            expiration_time?: string;
+        };
+        /**
+         * Update Registered Model Request
+         * @description Update a registered model.
+         */
+        UpdateRegisteredModelRequest: {
+            /** @description New name for the registered model. */
+            new_name?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description Username of new owner of the registered model. */
+            owner?: string;
+        };
+        /**
+         * Update Schema Request
+         * @description Update a Schema
+         */
+        UpdateSchemaRequest: {
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /**
+             * A map of key-value properties attached to the securable.
+             * @description When provided in update request, the specified properties will override the existing properties.
+             *      To add and remove properties, one would need to perform a read-modify-write.
+             */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Name of schema. */
+            new_name?: string;
+        };
+        /**
+         * Update a share.
+         * @description The caller must be a metastore admin or have the UPDATE_SHARE privilege on the metastore.
+         */
+        UpdateShareRequest: {
+            /** @description Array of shared data object updates. */
+            updates?: components["schemas"]["DataObjectUpdate"][];
+            /** @description A new name for the share. */
+            new_name?: string;
+            /** @description Owner of the share. */
+            owner?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+        };
+        /**
+         * Update Tag Policy Request
+         * @description Update a tag policy
+         */
+        UpdateTagPolicyRequest: {
+            /**
+             * A governed tag definition (tag policy).
+             * @description A tag policy defines a tag key together with the rules that govern how it can
+             *      be used, including the optional set of allowed values. Assigning a governed
+             *      tag to an entity is done through the Entity Tag Assignments API.
+             */
+            tag_policy: WithRequired<components["schemas"]["TagPolicy"], "tag_key">;
+            /** @description The list of fields to update, as a comma-separated string. */
+            update_mask?: string;
+        };
+        /** Update Volume Request */
+        UpdateVolumeRequest: {
+            /** @description New name for the volume. */
+            new_name?: string;
+            /** @description The comment attached to the volume */
+            comment?: string;
+            /** @description The identifier of the user who owns the volume */
+            owner?: string;
+        };
+        /**
+         * Value
+         * @description An allowed value for a governed tag.
+         */
+        Value: {
+            /** @description The name of the allowed value. */
+            name: string;
+        };
+        /** Volume */
+        VolumeInfo: {
+            /** @description Name of volume, relative to parent schema. */
+            name: string;
+            /** @description Name of parent catalog. */
+            catalog_name: string;
+            /** @description Name of parent schema. */
+            schema_name: string;
+            /** @description The three-level (fully qualified) name of the volume */
+            readonly full_name: string;
+            /** @description The storage location on the cloud */
+            storage_location: string;
+            /** @description The unique identifier of the volume */
+            readonly volume_id: string;
+            /**
+             * Volume Type
+             * Format: enum
+             * @description An external volume is located in the specified external location.
+             *      A managed volume is located in the default location which is specified
+             *      by the parent schema, or the parent catalog, or the Metastore.
+             * @enum {string}
+             */
+            volume_type: "VOLUME_TYPE_UNSPECIFIED" | "EXTERNAL" | "MANAGED";
+            /** @description Username of current owner of table. */
+            readonly owner?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description Time at which this catalog was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of catalog creator. */
+            readonly created_by?: string;
+            /** @description Time at which this catalog was last updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of user who last modified catalog. */
+            readonly updated_by?: string;
+            /**
+             * @description Indicates whether the principal is limited to retrieving metadata
+             *      for the associated object through the BROWSE privilege when include_browse
+             *      is enabled in the request.
+             */
+            readonly browse_only?: boolean;
+            /** @description The unique identifier of the metastore */
+            readonly metastore_id?: string;
         };
     };
     responses: never;
@@ -1815,308 +3426,22 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    listCatalogs: {
+    ListAgentSkills: {
         parameters: {
             query?: {
-                /** @description Opaque pagination token to go to next page based on previous query. */
-                page_token?: string;
-                /**
-                 * @description Maximum number of catalogs to return.
-                 *     - when set to a value greater than 0, the page length is the minimum of this value and a server configured value;
-                 *     - when set to 0, the page length is set to a server configured value;
-                 *     - when set to a value less than 0, an invalid parameter error is returned;
-                 */
-                max_results?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The catalog list was successfully retrieved. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListCatalogsResponse"];
-                };
-            };
-        };
-    };
-    createCatalog: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CreateCatalog"];
-            };
-        };
-        responses: {
-            /** @description The new catalog was successfully created. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CatalogInfo"];
-                };
-            };
-        };
-    };
-    getCatalog: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The name of the catalog. */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The catalog was successfully retrieved. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CatalogInfo"];
-                };
-            };
-        };
-    };
-    deleteCatalog: {
-        parameters: {
-            query?: {
-                /** @description Force deletion even if the catalog is not empty. */
-                force?: boolean;
-            };
-            header?: never;
-            path: {
-                /** @description The name of the catalog. */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The catalog was successfully deleted. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    updateCatalog: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The name of the catalog. */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["UpdateCatalog"];
-            };
-        };
-        responses: {
-            /** @description The catalog was successfully updated. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CatalogInfo"];
-                };
-            };
-        };
-    };
-    listSchemas: {
-        parameters: {
-            query: {
-                /** @description Parent catalog for schemas of interest. */
-                catalog_name: string;
-                /**
-                 * @description Maximum number of schemas to return.
-                 *     - when set to a value greater than 0, the page length is the minimum of this value and a server configured value;
-                 *     - when set to 0, the page length is set to a server configured value;
-                 *     - when set to a value less than 0, an invalid parameter error is returned;
-                 */
+                /** @description The identifier of the catalog. */
+                catalog_name?: string;
+                /** @description The identifier of the schema. */
+                schema_name?: string;
+                /** @description The maximum number of results per page that should be returned. */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The schemas list was successfully retrieved. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListSchemasResponse"];
-                };
-            };
-        };
-    };
-    createSchema: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CreateSchema"];
-            };
-        };
-        responses: {
-            /** @description The new schema was successfully created. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaInfo"];
-                };
-            };
-        };
-    };
-    getSchema: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Full name of the schema. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The schema was successfully retrieved. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaInfo"];
-                };
-            };
-        };
-    };
-    deleteSchema: {
-        parameters: {
-            query?: {
-                /** @description Force deletion even if the catalog is not empty. */
-                force?: boolean;
-            };
-            header?: never;
-            path: {
-                /** @description Full name of the schema. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The schema was successfully deleted. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    updateSchema: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Full name of the schema. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["UpdateSchema"];
-            };
-        };
-        responses: {
-            /** @description The schema was successfully updated. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaInfo"];
-                };
-            };
-        };
-    };
-    createStagingTable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CreateStagingTable"];
-            };
-        };
-        responses: {
-            /** @description The new staging table was successfully created. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StagingTableInfo"];
-                };
-            };
-        };
-    };
-    listTables: {
-        parameters: {
-            query: {
-                /** @description Name of parent catalog for tables of interest. */
-                catalog_name: string;
-                /** @description Parent schema of tables. */
-                schema_name: string;
                 /**
-                 * @description Maximum number of tables to return.
-                 *     - when set to a value greater than 0, the page length is the minimum of this value and a server configured value;
-                 *     - when set to 0, the page length is set to a server configured value;
-                 *     - when set to a value less than 0, an invalid parameter error is returned;
+                 * @description Whether to include agent skills in the response for which the principal can
+                 *      only access selective metadata for.
                  */
-                max_results?: number;
-                /** @description Opaque token to send for the next page of results (pagination). */
-                page_token?: string;
+                include_browse?: boolean;
             };
             header?: never;
             path?: never;
@@ -2124,131 +3449,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The tables list was successfully retrieved. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListTablesResponse"];
+                    "application/json": components["schemas"]["ListAgentSkillsResponse"];
                 };
             };
-        };
-    };
-    createTable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CreateTable"];
-            };
-        };
-        responses: {
-            /** @description The new external table was successfully created. */
-            200: {
+            /** @description Default error response */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TableInfo"];
+                    "application/json": components["schemas"]["Status"];
                 };
             };
         };
     };
-    getTable: {
-        parameters: {
-            query?: {
-                /** @description Whether to read Streaming Tables as Managed tables. */
-                read_streaming_table_as_managed?: boolean;
-                /** @description Whether to read Materialized Views as Managed tables. */
-                read_materialized_view_as_managed?: boolean;
-            };
-            header?: never;
-            path: {
-                /** @description Full name of the table. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The table was successfully retrieved. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TableInfo"];
-                };
-            };
-        };
-    };
-    deleteTable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Full name of the table. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The table was successfully deleted. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    listVolumes: {
-        parameters: {
-            query: {
-                /** @description The identifier of the catalog */
-                catalog_name: string;
-                /** @description The identifier of the schema */
-                schema_name: string;
-                /**
-                 * @description Maximum number of volumes to return (page length).
-                 *
-                 *     If not set, the page length is set to a server configured value.
-                 *     - when set to a value greater than 0, the page length is the minimum of this value and a server configured value;
-                 *     - when set to 0, the page length is set to a server configured value;
-                 *     - when set to a value less than 0, an invalid parameter error is returned;
-                 *
-                 *     Note: this parameter controls only the maximum number of volumes to return. The actual number of volumes returned in a page may be smaller than this value, including 0, even if there are more pages.
-                 */
-                max_results?: number;
-                /** @description Opaque token returned by a previous request. It must be included in the request to retrieve the next page of results (pagination). */
-                page_token?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The volume list was successfully retrieved */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListVolumesResponseContent"];
-                };
-            };
-        };
-    };
-    createVolume: {
+    CreateAgentSkill: {
         parameters: {
             query?: never;
             header?: never;
@@ -2257,179 +3478,318 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateVolumeRequestContent"];
+                "application/json": components["schemas"]["CreateAgentSkillRequest"];
             };
         };
         responses: {
-            /** @description Successfully created the volume */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VolumeInfo"];
+                    "application/json": components["schemas"]["AgentSkill"];
                 };
             };
-        };
-    };
-    getVolume: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The three-level (fully qualified) name of the volume */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successfully retrieved the properties of the volume */
-            200: {
+            /** @description Default error response */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VolumeInfo"];
+                    "application/json": components["schemas"]["Status"];
                 };
             };
         };
     };
-    deleteVolume: {
+    GetAgentSkill: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The three-level (fully qualified) name of the volume */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successfully deleted the volume */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    updateVolume: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The three-level (fully qualified) name of the volume */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["UpdateVolumeRequestContent"];
-            };
-        };
-        responses: {
-            /** @description Successfully updated the properties of the volume */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VolumeInfo"];
-                };
-            };
-        };
-    };
-    generateTemporaryModelVersionCredentials: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["GenerateTemporaryModelVersionCredential"];
-            };
-        };
-        responses: {
-            /** @description Successful response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TemporaryCredentials"];
-                };
-            };
-        };
-    };
-    generateTemporaryTableCredentials: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["GenerateTemporaryTableCredential"];
-            };
-        };
-        responses: {
-            /** @description Successful response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TemporaryCredentials"];
-                };
-            };
-        };
-    };
-    generateTemporaryVolumeCredentials: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["GenerateTemporaryVolumeCredential"];
-            };
-        };
-        responses: {
-            /** @description Successful response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TemporaryCredentials"];
-                };
-            };
-        };
-    };
-    listFunctions: {
-        parameters: {
-            query: {
-                /** @description Name of parent catalog for functions of interest. */
-                catalog_name: string;
-                /** @description Parent schema of functions. */
-                schema_name: string;
+            query?: {
                 /**
-                 * @description Maximum number of functions to return.
-                 *     - when set to a value greater than 0, the page length is the minimum of this value and a server configured value;
-                 *     - when set to 0, the page length is set to a server configured value;
-                 *     - when set to a value less than 0, an invalid parameter error is returned;
+                 * @description Whether to include agent skills in the response for which the principal can
+                 *      only access selective metadata for.
                  */
+                include_browse?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description The three-level (fully qualified) name of the agent skill. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentSkill"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteAgentSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The three-level (fully qualified) name of the agent skill. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateAgentSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The three-level (fully qualified) name of the agent skill. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAgentSkillRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentSkill"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListAgents: {
+        parameters: {
+            query?: {
+                /** @description The identifier of the catalog. */
+                catalog_name?: string;
+                /** @description The identifier of the schema. */
+                schema_name?: string;
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+                /**
+                 * @description Whether to include agents in the response for which the principal can only
+                 *      access selective metadata for.
+                 */
+                include_browse?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListAgentsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Agent"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetAgent: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Whether to include agents in the response for which the principal can only
+                 *      access selective metadata for.
+                 */
+                include_browse?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description The three-level (fully qualified) name of the agent. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Agent"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The three-level (fully qualified) name of the agent. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The three-level (fully qualified) name of the agent. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Agent"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListCatalogs: {
+        parameters: {
+            query?: {
+                /** @description The maximum number of results per page that should be returned. */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -2440,505 +3800,172 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The function list was successfully retrieved. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListFunctionsResponse"];
+                    "application/json": components["schemas"]["ListCatalogsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
                 };
             };
         };
     };
-    createFunction: {
+    CreateCatalog: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateFunctionRequest"];
+                "application/json": components["schemas"]["CreateCatalog"];
             };
         };
         responses: {
-            /** @description The new function was successfully created. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FunctionInfo"];
+                    "application/json": components["schemas"]["CatalogInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
                 };
             };
         };
     };
-    getFunction: {
+    GetCatalog: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Whether to include catalogs in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+            };
             header?: never;
             path: {
-                /** @description The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__). */
+                /** @description Name of catalog. */
                 name: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The function was successfully retrieved. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FunctionInfo"];
+                    "application/json": components["schemas"]["CatalogInfo"];
                 };
             };
-        };
-    };
-    deleteFunction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__). */
-                name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The function was successfully deleted. */
-            200: {
+            /** @description Default error response */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Status"];
                 };
             };
         };
     };
-    listRegisteredModels: {
+    DeleteCatalog: {
         parameters: {
             query?: {
-                /** @description Name of parent catalog for models of interest. */
-                catalog_name?: string;
-                /** @description Name of parent schema for models of interest. */
-                schema_name?: string;
-                /**
-                 * @description Maximum number of models to return.
-                 *     - when set to a value greater than 0, the page length is the minimum of this value and a server configured value;
-                 *     - when set to 0, the page length is set to a server configured value;
-                 *     - when set to a value less than 0, an invalid parameter error is returned;
-                 */
-                max_results?: number;
-                /** @description Opaque token to send for the next page of results (pagination). */
-                page_token?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The models list was successfully retrieved. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListRegisteredModelsResponse"];
-                };
-            };
-        };
-    };
-    createRegisteredModel: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CreateRegisteredModel"];
-            };
-        };
-        responses: {
-            /** @description The new registered model was successfully created. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RegisteredModelInfo"];
-                };
-            };
-        };
-    };
-    getRegisteredModel: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Full name of the model. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The registered model was successfully retrieved. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RegisteredModelInfo"];
-                };
-            };
-        };
-    };
-    deleteRegisteredModel: {
-        parameters: {
-            query?: {
-                /** @description Force deletion even if the registered model still has model versions. */
+                /** @description Force deletion even if the catalog is not empty. */
                 force?: boolean;
             };
             header?: never;
             path: {
-                /** @description Full name of the model. */
-                full_name: string;
+                /** @description Name of catalog. */
+                name: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The registered model was successfully deleted. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Status"];
                 };
             };
         };
     };
-    updateRegisteredModel: {
+    UpdateCatalog: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Full name of the model. */
-                full_name: string;
+                /** @description Name of catalog. */
+                name: string;
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateRegisteredModel"];
+                "application/json": components["schemas"]["UpdateCatalogRequest"];
             };
         };
         responses: {
-            /** @description The registered model was successfully updated. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RegisteredModelInfo"];
+                    "application/json": components["schemas"]["CatalogInfo"];
                 };
             };
-        };
-    };
-    createModelVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CreateModelVersion"];
-            };
-        };
-        responses: {
-            /** @description The new model version was successfully created. */
-            200: {
+            /** @description Default error response */
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ModelVersionInfo"];
+                    "application/json": components["schemas"]["Status"];
                 };
             };
         };
     };
-    listModelVersions: {
+    ListCredentials: {
         parameters: {
             query?: {
-                /**
-                 * @description Maximum number of model versions to return.
-                 *     - when set to a value greater than 0, the page length is the minimum of this value and a server configured value;
-                 *     - when set to 0, the page length is set to a server configured value;
-                 *     - when set to a value less than 0, an invalid parameter error is returned;
-                 */
-                max_results?: number;
-                /** @description Opaque token to send for the next page of results (pagination). */
-                page_token?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Full name of the registered model. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The model versions list was successfully retrieved. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListModelVersionsResponse"];
-                };
-            };
-        };
-    };
-    getModelVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Full name of the model. */
-                full_name: string;
-                /** @description Version number of the model version. */
-                version: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The model version was successfully retrieved. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ModelVersionInfo"];
-                };
-            };
-        };
-    };
-    deleteModelVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Full name of the model. */
-                full_name: string;
-                /** @description Version number of the model version. */
-                version: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The model version was successfully deleted. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    updateModelVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Full name of the model. */
-                full_name: string;
-                /** @description Version number of the model version. */
-                version: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["UpdateModelVersion"];
-            };
-        };
-        responses: {
-            /** @description The model version was successfully updated. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ModelVersionInfo"];
-                };
-            };
-        };
-    };
-    finalizeModelVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Full name of the model. */
-                full_name: string;
-                /** @description Version number of the model version. */
-                version: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["FinalizeModelVersion"];
-            };
-        };
-        responses: {
-            /** @description The model version was successfully finalized. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ModelVersionInfo"];
-                };
-            };
-        };
-    };
-    generateTemporaryPathCredentials: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["GenerateTemporaryPathCredential"];
-            };
-        };
-        responses: {
-            /** @description Successful response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TemporaryCredentials"];
-                };
-            };
-        };
-    };
-    get: {
-        parameters: {
-            query?: {
-                /** @description If provided, only the permissions for the specified principal (user or group) are returned. */
-                principal?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Type of securable. */
-                securable_type: components["schemas"]["SecurableType"];
-                /** @description Full name of securable. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The permissions list for securable was successfully retrieved. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PermissionsList"];
-                };
-            };
-        };
-    };
-    update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Type of securable. */
-                securable_type: components["schemas"]["SecurableType"];
-                /** @description Full name of securable. */
-                full_name: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["UpdatePermissions"];
-            };
-        };
-        responses: {
-            /** @description The permissions list for securable was successfully updated. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PermissionsList"];
-                };
-            };
-        };
-    };
-    summary: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The metastore summary was successfully retrieved. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GetMetastoreSummaryResponse"];
-                };
-            };
-        };
-    };
-    listCredentials: {
-        parameters: {
-            query?: {
-                /**
-                 * @description Maximum number of credentials to return.
-                 *       - If not set, the default max page size is used.
-                 *       - When set to a value greater than 0, the page length is the minimum of
-                 *         this value and a server-configured value.
-                 *       - When set to 0, the page length is set to a server-configured value
-                 *         (recommended).
-                 *       - When set to a value less than 0, an invalid parameter error is
-                 *         returned.
-                 */
+                /** @description Return only credentials for the specified purpose. */
+                purpose?: "PURPOSE_UNSPECIFIED" | "STORAGE" | "SERVICE";
+                /** @description The maximum number of results per page that should be returned. */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
-                /** @description Return only credentials for the specified purpose. */
-                purpose?: components["schemas"]["CredentialPurpose"];
             };
             header?: never;
             path?: never;
@@ -2946,7 +3973,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The credentials list was successfully retrieved. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2955,22 +3982,31 @@ export interface operations {
                     "application/json": components["schemas"]["ListCredentialsResponse"];
                 };
             };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
         };
     };
-    createCredential: {
+    CreateCredential: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateCredentialRequest"];
             };
         };
         responses: {
-            /** @description The new credential was successfully created. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2979,21 +4015,30 @@ export interface operations {
                     "application/json": components["schemas"]["CredentialInfo"];
                 };
             };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
         };
     };
-    getCredential: {
+    GetCredential: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Name of the credential. */
+                /** @description Name of credential. */
                 name: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The credential was successfully retrieved. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3002,51 +4047,64 @@ export interface operations {
                     "application/json": components["schemas"]["CredentialInfo"];
                 };
             };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
         };
     };
-    deleteCredential: {
+    DeleteCredential: {
         parameters: {
-            query?: {
-                /** @description Force deletion even if there are dependent external locations. */
-                force?: boolean;
-            };
+            query?: never;
             header?: never;
             path: {
-                /** @description Name of the credential. */
+                /** @description Name of credential. */
                 name: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The credential was successfully deleted. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Status"];
                 };
             };
         };
     };
-    updateCredential: {
+    UpdateCredential: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Name of the credential. */
+                /** @description Name of credential. */
                 name: string;
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateCredentialRequest"];
             };
         };
         responses: {
-            /** @description The credential was successfully updated. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3055,15 +4113,208 @@ export interface operations {
                     "application/json": components["schemas"]["CredentialInfo"];
                 };
             };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
         };
     };
-    listExternalLocations: {
+    CreateEntityTagAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEntityTagAssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityTagAssignment"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListEntityTagAssignments: {
         parameters: {
             query?: {
-                /** @description Maximum number of external locations to return. If not set, all external locations are returned. */
+                /** @description The maximum number of results per page that should be returned. */
                 max_results?: number;
-                /** @description Opaque pagination token to go to the next page. */
+                /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The type of the entity whose tag assignments to list. */
+                entity_type: string;
+                /** @description The fully qualified name of the entity whose tag assignments to list. */
+                entity_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListEntityTagAssignmentsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetEntityTagAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The type of the entity to which the tag is assigned. */
+                entity_type: string;
+                /** @description The fully qualified name of the entity to which the tag is assigned. */
+                entity_name: string;
+                /** @description The key of the tag. */
+                tag_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityTagAssignment"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteEntityTagAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The type of the entity to which the tag is assigned. */
+                entity_type: string;
+                /** @description The fully qualified name of the entity to which the tag is assigned. */
+                entity_name: string;
+                /** @description The key of the tag to delete. */
+                tag_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateEntityTagAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The type of the entity to which the tag is assigned. */
+                entity_type: string;
+                /** @description The fully qualified name of the entity to which the tag is assigned. */
+                entity_name: string;
+                /** @description The key of the tag to update. */
+                tag_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEntityTagAssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityTagAssignment"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListExternalLocations: {
+        parameters: {
+            query?: {
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+                /** @description Whether to include schemas in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
             };
             header?: never;
             path?: never;
@@ -3071,7 +4322,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The external location list was successfully retrieved. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3080,9 +4331,18 @@ export interface operations {
                     "application/json": components["schemas"]["ListExternalLocationsResponse"];
                 };
             };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
         };
     };
-    createExternalLocation: {
+    CreateExternalLocation: {
         parameters: {
             query?: never;
             header?: never;
@@ -3095,7 +4355,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The new external location was successfully created. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3104,21 +4364,30 @@ export interface operations {
                     "application/json": components["schemas"]["ExternalLocationInfo"];
                 };
             };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
         };
     };
-    getExternalLocation: {
+    GetExternalLocation: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Name of the external location. */
+                /** @description Name of external location. */
                 name: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The external location was successfully retrieved. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3127,49 +4396,67 @@ export interface operations {
                     "application/json": components["schemas"]["ExternalLocationInfo"];
                 };
             };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
         };
     };
-    deleteExternalLocation: {
+    DeleteExternalLocation: {
         parameters: {
             query?: {
-                /** @description Force deletion even if there are dependent external tables or mounts. */
+                /** @description Force deletion even if the external location is not empty. */
                 force?: boolean;
             };
             header?: never;
             path: {
-                /** @description Name of the external location. */
+                /** @description Name of external location. */
                 name: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description The external location was successfully deleted. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
         };
     };
-    updateExternalLocation: {
+    UpdateExternalLocation: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Name of the external location. */
+                /** @description Name of external location. */
                 name: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateExternalLocation"];
+                "application/json": components["schemas"]["UpdateExternalLocationRequest"];
             };
         };
         responses: {
-            /** @description The external location was successfully updated. */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3178,6 +4465,2317 @@ export interface operations {
                     "application/json": components["schemas"]["ExternalLocationInfo"];
                 };
             };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListFunctions: {
+        parameters: {
+            query?: {
+                /** @description Name of parent catalog for functions of interest. */
+                catalog_name?: string;
+                /** @description Parent schema of functions. */
+                schema_name?: string;
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+                /** @description Whether to include functions in the response for which the principal can only access selective metadata for. */
+                include_browse?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListFunctionsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateFunction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFunction"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FunctionInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetFunction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The fully-qualified name of the function (three-level name: catalog.schema.function). */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FunctionInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteFunction: {
+        parameters: {
+            query?: {
+                /** @description Force deletion even if the function is not empty. */
+                force?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description The fully-qualified name of the function (three-level name: catalog.schema.function). */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateFunction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The fully-qualified name of the function (three-level name: catalog.schema.function). */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFunctionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FunctionInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListRegisteredModels: {
+        parameters: {
+            query?: {
+                /** @description Name of parent catalog for models of interest. */
+                catalog_name?: string;
+                /** @description Name of parent schema for models of interest. */
+                schema_name?: string;
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+                /**
+                 * @description Whether to include registered models in the response for which the principal
+                 *      can only access selective metadata for.
+                 */
+                include_browse?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListRegisteredModelsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateRegisteredModel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRegisteredModel"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisteredModelInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateModelVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateModelVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelVersion"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetRegisteredModel: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Whether to include registered models in the response for which the principal
+                 *      can only access selective metadata for.
+                 */
+                include_browse?: boolean;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The fully-qualified name of the registered model (three-level name:
+                 *      catalog.schema.model).
+                 */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisteredModelInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteRegisteredModel: {
+        parameters: {
+            query?: {
+                /** @description Force deletion even if the registered model still has model versions. */
+                force?: boolean;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The fully-qualified name of the registered model (three-level name:
+                 *      catalog.schema.model).
+                 */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateRegisteredModel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The fully-qualified name of the registered model (three-level name:
+                 *      catalog.schema.model).
+                 */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRegisteredModelRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisteredModelInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListModelVersions: {
+        parameters: {
+            query?: {
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+                /**
+                 * @description Whether to include model versions in the response for which the principal can
+                 *      only access selective metadata for.
+                 */
+                include_browse?: boolean;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The full three-level name of the registered model (catalog.schema.model)
+                 *      whose versions are being listed.
+                 */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListModelVersionsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetModelVersion: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Whether to include model versions in the response for which the principal can
+                 *      only access selective metadata for.
+                 */
+                include_browse?: boolean;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The full three-level name of the parent registered model
+                 *      (catalog.schema.model).
+                 */
+                full_name: string;
+                /** @description The integer version number of the model version. */
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelVersion"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteModelVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The full three-level name of the parent registered model
+                 *      (catalog.schema.model).
+                 */
+                full_name: string;
+                /** @description The integer version number of the model version. */
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateModelVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The full three-level name of the parent registered model
+                 *      (catalog.schema.model).
+                 */
+                full_name: string;
+                /** @description The integer version number of the model version. */
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateModelVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelVersion"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    FinalizeModelVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The full three-level name of the parent registered model
+                 *      (catalog.schema.model).
+                 */
+                full_name: string;
+                /** @description The integer version number of the model version to finalize. */
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinalizeModelVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelVersion"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListPolicies: {
+        parameters: {
+            query?: {
+                /**
+                 * @description When true, also return policies defined on the securable's ancestors
+                 *      (e.g. for a table: its schema and catalog). Each returned PolicyInfo still
+                 *      carries its own on_securable_type / on_securable_fullname, so callers can see
+                 *      where it was defined.
+                 */
+                include_inherited?: boolean;
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The type of the securable to list policies on.
+                 *
+                 *      Supported values: catalogs, schemas, tables.
+                 */
+                on_securable_type: string;
+                /** @description The fully qualified name of the securable to list policies on. */
+                on_securable_fullname: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListPoliciesResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreatePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The type of the securable to create the policy on.
+                 *
+                 *      Supported values: catalogs, schemas, tables.
+                 */
+                on_securable_type: string;
+                /** @description The fully qualified name of the securable to create the policy on. */
+                on_securable_fullname: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyInfo"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The type of the securable the policy is defined on.
+                 *
+                 *      Supported values: catalogs, schemas, tables.
+                 */
+                on_securable_type: string;
+                /** @description The fully qualified name of the securable the policy is defined on. */
+                on_securable_fullname: string;
+                /** @description The name of the policy. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeletePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The type of the securable the policy is defined on.
+                 *
+                 *      Supported values: catalogs, schemas, tables.
+                 */
+                on_securable_type: string;
+                /** @description The fully qualified name of the securable the policy is defined on. */
+                on_securable_fullname: string;
+                /** @description The name of the policy to delete. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdatePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description The type of the securable the policy is defined on.
+                 *
+                 *      Supported values: catalogs, schemas, tables.
+                 */
+                on_securable_type: string;
+                /** @description The fully qualified name of the securable the policy is defined on. */
+                on_securable_fullname: string;
+                /** @description The name of the policy to update. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListProviders: {
+        parameters: {
+            query?: {
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListProvidersResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateProvider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProviderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetProvider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the provider. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteProvider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the provider. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateProvider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the provider. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProviderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListRecipients: {
+        parameters: {
+            query?: {
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListRecipientsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateRecipient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRecipientRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipient"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetRecipient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the recipient. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipient"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteRecipient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the recipient. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateRecipient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the recipient. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRecipientRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipient"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListSchemas: {
+        parameters: {
+            query?: {
+                /** @description Name of parent catalog. */
+                catalog_name?: string;
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+                /** @description Whether to include schemas in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSchemasResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateSchema: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSchema"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetSchema: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Full name of schema.
+                 *
+                 *      Format: catalog_name.schema_name
+                 */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteSchema: {
+        parameters: {
+            query?: {
+                /** @description Force deletion even if the schema is not empty. */
+                force?: boolean;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description Full name of schema to delete.
+                 *
+                 *      Format: catalog_name.schema_name
+                 */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateSchema: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Full name of schema, in form of catalog_name.schema_name. */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSchemaRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListShares: {
+        parameters: {
+            query?: {
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSharesResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Share"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetShare: {
+        parameters: {
+            query?: {
+                /** @description Query for data to include in the share. */
+                include_shared_data?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Name of the share. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Share"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the share. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the share. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Share"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetPermissions: {
+        parameters: {
+            query?: {
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Name of the share. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPermissionsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdatePermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the share. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePermissionsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdatePermissionsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateStagingTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStagingTableRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StagingTable"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListTableSummaries: {
+        parameters: {
+            query?: {
+                /** @description Name of parent catalog for tables of interest. */
+                catalog_name?: string;
+                /** @description A sql LIKE pattern (% and _) for schema names. All schemas will be returned if not set or empty. */
+                schema_name_pattern?: string;
+                /** @description A sql LIKE pattern (% and _) for table names. All tables will be returned if not set or empty. */
+                table_name_pattern?: string;
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+                /** @description Whether to include a manifest containing capabilities the table has. */
+                include_manifest_capabilities?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTableSummariesResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListTables: {
+        parameters: {
+            query?: {
+                /** @description Name of parent catalog for tables of interest. */
+                catalog_name?: string;
+                /** @description Name of parent schema for tables of interest. */
+                schema_name?: string;
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+                /** @description Whether delta metadata should be included in the response. */
+                include_delta_metadata?: boolean;
+                /** @description Whether to omit the columns of the table from the response or not. */
+                omit_columns?: boolean;
+                /** @description Whether to omit the properties of the table from the response or not. */
+                omit_properties?: boolean;
+                /** @description Whether to omit the username of the table (e.g. owner, updated_by, created_by) from the response or not. */
+                omit_username?: boolean;
+                /** @description Whether to include tables in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+                /** @description Whether to include a manifest containing capabilities the table has. */
+                include_manifest_capabilities?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTablesResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTableRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetTable: {
+        parameters: {
+            query?: {
+                /** @description Whether delta metadata should be included in the response. */
+                include_delta_metadata?: boolean;
+                /** @description Whether to include tables in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+                /** @description Whether to include a manifest containing capabilities the table has. */
+                include_manifest_capabilities?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Full name of the table. */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Full name of the table. */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetTableExists: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Full name of the table. */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetTableExistsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListTagPolicies: {
+        parameters: {
+            query?: {
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTagPoliciesResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateTagPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTagPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagPolicy"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetTagPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the governed tag. */
+                tag_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagPolicy"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteTagPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the governed tag to delete. */
+                tag_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateTagPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the governed tag to update. */
+                tag_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTagPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagPolicy"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GenerateTemporaryModelVersionCredentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateTemporaryModelVersionCredentialsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemporaryCredential"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GenerateTemporaryPathCredentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateTemporaryPathCredentialsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemporaryCredential"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GenerateTemporaryTableCredentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateTemporaryTableCredentialsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemporaryCredential"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GenerateTemporaryVolumeCredentials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateTemporaryVolumeCredentialsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemporaryCredential"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListVolumes: {
+        parameters: {
+            query?: {
+                /** @description The identifier of the catalog */
+                catalog_name?: string;
+                /** @description The identifier of the schema */
+                schema_name?: string;
+                /** @description The maximum number of results per page that should be returned. */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+                /** @description Whether to include schemas in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListVolumesResponseContent"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateVolume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateVolumeRequestContent"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VolumeInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetVolume: {
+        parameters: {
+            query?: {
+                /** @description Whether to include schemas in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description The three-level (fully qualified) name of the volume */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VolumeInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteVolume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The three-level (fully qualified) name of the volume */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateVolume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The three-level (fully qualified) name of the volume */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVolumeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VolumeInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
         };
     };
 }
+type WithRequired<T, K extends keyof T> = T & {
+    [P in K]-?: T[P];
+};
