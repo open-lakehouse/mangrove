@@ -422,6 +422,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-stream"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b5a71a6f37880a80d1d7f19efd781e4b5de42c88f0722cc13bcb6cc2cfe8476"
+dependencies = [
+ "async-stream-impl",
+ "futures-core",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "async-stream-impl"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7c24de15d275a1ecfd47a380fb4d5ec9bfe0933f309ed5e705b775596a3574d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -880,7 +902,7 @@ version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "faf9468729b8cbcea668e36183cb69d317348c2e08e994829fb56ebfdfbaac34"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -1998,7 +2020,7 @@ dependencies = [
 [[package]]
 name = "delta_kernel"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=530e94d241779dfc17eda242f554b24091e00d23#530e94d241779dfc17eda242f554b24091e00d23"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=2cf015496d437859e836aaffa39cc128507b5f52#2cf015496d437859e836aaffa39cc128507b5f52"
 dependencies = [
  "arrow",
  "bytes",
@@ -2030,13 +2052,17 @@ dependencies = [
 [[package]]
 name = "delta_kernel_default_engine"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=530e94d241779dfc17eda242f554b24091e00d23#530e94d241779dfc17eda242f554b24091e00d23"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=2cf015496d437859e836aaffa39cc128507b5f52#2cf015496d437859e836aaffa39cc128507b5f52"
 dependencies = [
+ "async-stream",
+ "async-trait",
  "bytes",
+ "chrono",
  "delta_kernel",
  "futures",
  "itertools 0.14.0",
  "reqwest 0.13.4",
+ "serde_json",
  "tokio",
  "tracing",
  "url",
@@ -2046,7 +2072,7 @@ dependencies = [
 [[package]]
 name = "delta_kernel_derive"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=530e94d241779dfc17eda242f554b24091e00d23#530e94d241779dfc17eda242f554b24091e00d23"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=2cf015496d437859e836aaffa39cc128507b5f52#2cf015496d437859e836aaffa39cc128507b5f52"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2056,7 +2082,7 @@ dependencies = [
 [[package]]
 name = "deltalake-core"
 version = "0.32.4"
-source = "git+https://github.com/roeap/delta-rs?rev=f24c9f344d9ccb87958065fdf34659524328fafe#f24c9f344d9ccb87958065fdf34659524328fafe"
+source = "git+https://github.com/roeap/delta-rs?rev=b7bef0748060fd27013c19f7eaeb296de2daabf5#b7bef0748060fd27013c19f7eaeb296de2daabf5"
 dependencies = [
  "alloc-stdlib",
  "arrow",
@@ -2115,7 +2141,7 @@ dependencies = [
 [[package]]
 name = "deltalake-derive"
 version = "0.32.4"
-source = "git+https://github.com/roeap/delta-rs?rev=f24c9f344d9ccb87958065fdf34659524328fafe#f24c9f344d9ccb87958065fdf34659524328fafe"
+source = "git+https://github.com/roeap/delta-rs?rev=b7bef0748060fd27013c19f7eaeb296de2daabf5#b7bef0748060fd27013c19f7eaeb296de2daabf5"
 dependencies = [
  "convert_case 0.9.0",
  "itertools 0.14.0",
@@ -4412,7 +4438,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03da047801ff44bb6a4d407d4860c05fd70bb81714e6b2f3812603d5b145b042"
 dependencies = [
  "heck",
- "itertools 0.14.0",
+ "itertools 0.13.0",
  "log",
  "multimap",
  "petgraph",
@@ -4431,7 +4457,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b570b25f7617e43d59005d0990ccb79e950a423952cea19671b7a876da390adf"
 dependencies = [
  "anyhow",
- "itertools 0.14.0",
+ "itertools 0.13.0",
  "proc-macro2",
  "quote",
  "syn",
@@ -4877,6 +4903,8 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "rustls-platform-verifier",
+ "serde",
+ "serde_urlencoded",
  "sync_wrapper",
  "tokio",
  "tokio-rustls",
@@ -6699,7 +6727,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
