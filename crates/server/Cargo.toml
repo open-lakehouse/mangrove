@@ -9,13 +9,18 @@ readme.workspace = true
 rust-version.workspace = true
 homepage.workspace = true
 keywords.workspace = true
-# Published to crates.io (library + the `uc-server` binary, the latter behind the
-# `bin` feature). The same crate additionally ships as the `mangrove` Docker image
-# on release — see release-plz.toml + docker-release.yml. Its dependency graph is
-# free of git sources (verified via `cargo tree`), so `cargo publish` accepts it;
-# that only became true once the git-pinned Delta Sharing query surface was removed
-# (PR #89). `readme` resolves to this crate's README.md, required by `cargo publish`.
-publish = true
+# Deployable service, shipped as the `mangrove` Docker image (see release-plz.toml
+# + docker-release.yml), NOT (yet) a crates.io library. `publish = false` makes
+# that contract explicit and guards against an accidental `cargo publish`.
+#
+# The crate's own dependency graph is git-free (PR #89) so it *could* publish, but
+# its path deps `olai-uc-common`/`-client`/`-delta-api` are still on crates.io at
+# their PRE-buffa `0.0.2`; a verifying `cargo publish` builds the server against
+# those stale registry copies and fails (the current source uses the buffa API).
+# It can flip back to `publish = true` once those siblings are re-released to
+# crates.io with the current API. (The crate is still consumed in-workspace as a
+# library by tests/tools.)
+publish = false
 
 [lib]
 # Stable Rust crate identifier, independent of the provisional package name.
