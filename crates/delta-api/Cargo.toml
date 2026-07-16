@@ -4,7 +4,7 @@
 # `unitycatalog(_)delta_api` via each dependent's `package =` alias, so no source
 # changes. See release-plz.toml / CONTRIBUTING.md.
 name = "olai-uc-delta-api"
-version = "0.0.2"
+version = "0.0.3"
 description = "Portable Unity Catalog Delta v1 REST API: wire models, managed-table contract, commit coordinator, and the backend-agnostic DeltaBackend port shared across server implementations."
 edition.workspace = true
 homepage.workspace = true

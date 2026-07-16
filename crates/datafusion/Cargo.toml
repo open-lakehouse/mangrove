@@ -29,10 +29,10 @@ tokio = { workspace = true, features = ["rt-multi-thread"] }
 tracing = { workspace = true }
 url = { workspace = true }
 
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2" }
-unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.2" }
-unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.2" }
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.2" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.3" }
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.3" }
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.3" }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.3" }
 
 deltalake-core = { workspace = true, optional = true }
 # Build catalog-managed kernel snapshots (log tail + max catalog version) to hand
