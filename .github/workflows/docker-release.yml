@@ -260,6 +260,10 @@ jobs:
           DIGEST: ${{ steps.digest.outputs.index }}
           IMAGE: ${{ env.IMAGE }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This job has no repo checkout, so `gh release` cannot infer the repo
+          # from a local git remote (it errors "not a git repository"). Pin the
+          # target repo explicitly so every gh call resolves without a checkout.
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           tag="olai-uc-server-v${VERSION}"
