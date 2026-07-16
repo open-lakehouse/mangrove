@@ -193,6 +193,28 @@ impl DataFusionExecutor {
         Ok(DataFrame::new(self.session_ctx.state(), logical))
     }
 
+    /// Compile a [`ResultPlan`] to a bare [`LogicalPlan`], unbound to any session.
+    ///
+    /// Unlike [`Self::ssa_result_to_dataframe`], this does not wrap the plan in a `DataFrame`
+    /// tied to the executor's own `SessionContext` — the caller (e.g.
+    /// [`crate::DeltaSsaTableProvider::scan`]) plans it against the *scan's* session so the
+    /// object store and config are the caller's, not the executor's. Compilation itself is
+    /// session-independent: it lowers SSA nodes to logical operators and `LoadTableProvider`s.
+    ///
+    /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
+    /// [`LogicalPlan`]: datafusion_expr::LogicalPlan
+    pub fn compile_result_plan(
+        &self,
+        rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
+    ) -> Result<datafusion_expr::LogicalPlan, DeltaError> {
+        let ctx = CompileContext {
+            sm_id: crate::next_sm_id(),
+            sm_kind: "standalone",
+            step_name: "compile_result_plan",
+        };
+        compile_ssa(&rp.plan.stmts, rp.result, &ctx).into_delta()
+    }
+
     /// Drive a combined metadata + data scan and return the data DataFrame.
     ///
     /// Sugar for `self.drive_ssa_to_dataframe(scan.scan_state_machine()?)`.

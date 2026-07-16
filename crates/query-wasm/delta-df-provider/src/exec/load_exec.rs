@@ -9,9 +9,10 @@
 //!
 //! The deletion-vector path is gated out upstream in `query-wasm`'s `resolve.rs`, so this exec
 //! carries **no kernel `Engine`** (the POC's engine existed only for DV bitmap reads via
-//! `spawn_blocking`, which is not wasm-compatible) and no `_row_number` virtual column. A
-//! defensive assertion in [`LoadExec::new`] rejects any `LoadNode` that still carries a
-//! `dv_ref`, belt-and-suspenders with the `resolve.rs` gate.
+//! `spawn_blocking`, which is not wasm-compatible) and no `_row_number` virtual column. The
+//! scan SSA always attaches a `dv_ref` *column pointer*, so the guard is per-row: a row bearing
+//! a non-null DV descriptor errors in `extract_row_inputs`, belt-and-suspenders with the
+//! `resolve.rs` `delta.enableDeletionVectors` gate.
 
 use std::fmt;
 use std::sync::Arc;
@@ -66,17 +67,11 @@ impl LoadExec {
         projection: Option<Vec<usize>>,
         limit: Option<usize>,
     ) -> DfResult<Self> {
-        // v1 is DV-free: the deletion-vector path is gated to `Unsupported` upstream in
-        // `query-wasm`'s `resolve.rs`. Assert it here as a belt-and-suspenders guard so a
-        // DV-bearing plan fails loudly at construction rather than silently returning deleted
-        // rows.
-        if node.dv_ref.is_some() {
-            return Err(crate::error::plan_compilation(
-                "LoadNode carries a deletion vector (dv_ref); deletion vectors are unsupported \
-                 in the v1 wasm scan path and must be gated to Unsupported upstream",
-            ));
-        }
-
+        // v1 is DV-free. Note the scan SSA ALWAYS attaches a `dv_ref` column pointer (see
+        // `extract_row_inputs`), so we do NOT reject on `node.dv_ref.is_some()` at construction —
+        // that would reject every commit-only table. The real guard is per-row: a non-null DV
+        // descriptor errors during the stream (belt-and-suspenders with the `resolve.rs`
+        // `delta.enableDeletionVectors` gate).
         let file_count = node.file_schema.fields().len();
         let passthrough_count = node.passthrough_columns.len();
         debug_assert_eq!(full_schema.fields().len(), file_count + passthrough_count);

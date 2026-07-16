@@ -91,9 +91,18 @@ uuid = { version = "1.18.0", default-features = false }
 # The M0/M1 verification harness runs the !Send SM on a current-thread runtime
 # natively. tokio is native-tests-only (it does not compile for wasm32); the
 # wasm smoke test (M2) drives under wasm-bindgen-futures instead.
-tokio = { version = "1", features = ["macros", "rt"] }
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
 rstest = "0.23"
 tempfile = "3"
+# Native-only: builds a kernel `SnapshotRef` over the fixture object store for the M1
+# regression tests. Its `default` pulls arrow-59; force arrow-58 so it unifies with our
+# arrow-58 graph. This is the kernel `DefaultEngine` — used ONLY to CONSTRUCT the snapshot in
+# tests; the provider itself never touches it (v1 is engine-free).
+delta_kernel_default_engine = { git = "https://github.com/roeap/delta-kernel-rs", rev = "2cf015496d437859e836aaffa39cc128507b5f52", package = "delta_kernel_default_engine", default-features = false, features = [
+  "arrow-58",
+  "rustls",
+] }
+object_store = "0.13"
 # Self dev-dependency activating `test-utils` so this crate's own integration tests can use the
 # `testing` collectors — mirrors the pattern in the kernel POC and `kernel/Cargo.toml`.
 delta_df_provider = { package = "olai-uc-delta-df-provider", path = ".", features = ["test-utils"] }

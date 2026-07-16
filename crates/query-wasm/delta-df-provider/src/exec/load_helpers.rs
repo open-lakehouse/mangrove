@@ -112,6 +112,25 @@ pub(crate) fn extract_row_inputs(
     }
     // Path columns are always Utf8 per kernel's scan_live_actions_schema.
     let url = resolve_file_location(node, path_arr.as_string::<i32>().value(row))?;
+
+    // v1 is DV-free. The scan SSA ALWAYS attaches a `dv_ref` (a pointer to the
+    // `deletionVector` descriptor column on the upstream), so its mere presence does NOT mean a
+    // deletion vector is in use — the descriptor is null per-row for files without one. Reject
+    // only if a row actually carries a non-null descriptor (belt-and-suspenders: `resolve.rs`
+    // gates `delta.enableDeletionVectors` tables to Unsupported upstream, so this should never
+    // fire; if it does, error rather than silently returning deleted rows).
+    if let Some(dv_ref) = node.dv_ref.as_ref() {
+        let dv_arr = extract_column_array(batch, &dv_ref.column)?;
+        if !dv_arr.is_null(row) {
+            return Err(crate::error::plan_compilation(format!(
+                "row {row} carries a deletion-vector descriptor (column `{}`); deletion vectors \
+                 are unsupported in the v1 wasm scan path and must be gated to Unsupported \
+                 upstream (delta.enableDeletionVectors)",
+                dv_ref.column
+            )));
+        }
+    }
+
     let size = match node.file_meta.size.as_ref() {
         Some(sz_cn) => {
             let arr = extract_column_array(batch, sz_cn)?;
