@@ -88,21 +88,28 @@ url = "2"
 uuid = { version = "1.18.0", default-features = false }
 
 [dev-dependencies]
-# The M0/M1 verification harness runs the !Send SM on a current-thread runtime
-# natively. tokio is native-tests-only (it does not compile for wasm32); the
-# wasm smoke test (M2) drives under wasm-bindgen-futures instead.
-tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
-rstest = "0.23"
-tempfile = "3"
-# Native-only: builds a kernel `SnapshotRef` over the fixture object store for the M1
-# regression tests. Its `default` pulls arrow-59; force arrow-58 so it unifies with our
-# arrow-58 graph. This is the kernel `DefaultEngine` — used ONLY to CONSTRUCT the snapshot in
-# tests; the provider itself never touches it (v1 is engine-free).
-delta_kernel_default_engine = { git = "https://github.com/roeap/delta-kernel-rs", rev = "2cf015496d437859e836aaffa39cc128507b5f52", package = "delta_kernel_default_engine", default-features = false, features = [
-  "arrow-58",
-  "rustls",
-] }
+# Shared across native + wasm tests. object_store provides the InMemory fixture store both the
+# native (M0/M1) and wasm (M2) tests build tables in.
 object_store = "0.13"
 # Self dev-dependency activating `test-utils` so this crate's own integration tests can use the
 # `testing` collectors — mirrors the pattern in the kernel POC and `kernel/Cargo.toml`.
 delta_df_provider = { package = "olai-uc-delta-df-provider", path = ".", features = ["test-utils"] }
+
+# Native-only test deps. tokio (current-thread runtime to drive the !Send SM), rstest (ported
+# unit tests), tempfile (LocalFileSystem fixtures), and the kernel DefaultEngine (used ONLY to
+# CONSTRUCT the snapshot in the M1 test — its `default` pulls arrow-59 so force arrow-58 to
+# unify with our graph; the provider itself never touches it). None compile for wasm32.
+[target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
+rstest = "0.23"
+tempfile = "3"
+delta_kernel_default_engine = { git = "https://github.com/roeap/delta-kernel-rs", rev = "2cf015496d437859e836aaffa39cc128507b5f52", package = "delta_kernel_default_engine", default-features = false, features = [
+  "arrow-58",
+  "rustls",
+] }
+
+# wasm-only: the M2 headless test drives the sm_plans scan on wasm32 under
+# wasm-bindgen-futures (Node runner). Native builds never see it.
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
+wasm-bindgen-test = "0.3"
+wasm-bindgen-futures = "0.4"

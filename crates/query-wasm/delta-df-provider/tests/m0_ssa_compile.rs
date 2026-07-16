@@ -12,6 +12,11 @@
 //! against DataFusion 54.0.0 + arrow-58 (roeap fork) + kernel `2cf01549` (sm-plans, arrow-58),
 //! with no tokio runtime dependency in the crate itself (the harness spins a current-thread
 //! runtime purely to drive the `!Send` futures — the crate has no tokio dep).
+//!
+//! Native-only: the harness uses tokio (a native-only dev-dep). The wasm equivalent lives in
+//! `m2_wasm.rs`, driven under `wasm-bindgen-futures`.
+
+#![cfg(not(target_arch = "wasm32"))]
 
 mod common;
 
