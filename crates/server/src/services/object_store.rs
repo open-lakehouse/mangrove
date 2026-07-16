@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use super::kernel::ObjectStoreFactory;
-use datafusion::common::{DataFusionError, Result as DFResult};
 use itertools::Itertools;
 use object_store::azure::MicrosoftAzureBuilder;
 use object_store::local::LocalFileSystem;
@@ -14,6 +12,7 @@ use unitycatalog_common::models::credentials::v1::{
 use unitycatalog_common::models::external_locations::v1::ExternalLocation;
 use unitycatalog_common::models::tables::v1::Table;
 use unitycatalog_common::models::volumes::v1::Volume;
+use unitycatalog_sharing_api::kernel::ObjectStoreFactory;
 use url::Url;
 
 use super::ProvidesLocalStoragePolicy;
@@ -36,13 +35,16 @@ impl<T: ResourceStore + CredentialHandler<crate::api::RequestContext> + Credenti
 
 #[async_trait::async_trait]
 impl ObjectStoreFactory for ServerHandlerInner<crate::api::RequestContext> {
-    async fn create_object_store(&self, location: &Url) -> DFResult<Arc<DynObjectStore>> {
+    async fn create_object_store(
+        &self,
+        location: &Url,
+    ) -> unitycatalog_sharing_api::Result<Arc<DynObjectStore>> {
         tracing::debug!("create_object_store: {:?}", location);
         let location = StorageLocationUrl::try_new(location.clone())
-            .map_err(|e| DataFusionError::Execution(e.to_string()))?;
+            .map_err(|e| unitycatalog_sharing_api::Error::generic(e.to_string()))?;
         get_object_store(&location, self)
             .await
-            .map_err(|e| DataFusionError::Execution(e.to_string()))
+            .map_err(|e| unitycatalog_sharing_api::Error::generic(e.to_string()))
     }
 }
 

@@ -2,11 +2,17 @@ use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 use unitycatalog_sharing_client::models::open_sharing::v1::*;
 pub use unitycatalog_sharing_client::models::*;
 
-pub use self::handler::*;
 use crate::api::SecuredAction;
 use crate::policy::Permission;
 
-mod handler;
+// The sharing handler traits + the NDJSON query handler now live in the portable
+// `olai-uc-sharing-api` crate; re-exported here so existing `crate::api::sharing`
+// references (routers, `build_rest_router` bounds) keep resolving. The server
+// satisfies them all by implementing `SharingBackend` (see
+// `crate::services::sharing_backend`).
+pub use unitycatalog_sharing_api::{
+    SharingHandler, SharingQueryHandler, SharingSkillHandler, SharingVolumeHandler,
+};
 
 impl SecuredAction for GetShareRequest {
     fn resource(&self) -> ResourceIdent {
