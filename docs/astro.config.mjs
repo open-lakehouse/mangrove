@@ -19,15 +19,31 @@ export default defineConfig({
       sidebar: [
         {
           label: "Explanation",
-          autogenerate: { directory: "explanation" },
+          items: [{ autogenerate: { directory: "explanation" } }],
         },
         {
           label: "Contributor guides",
-          autogenerate: { directory: "guides" },
+          items: [{ autogenerate: { directory: "guides" } }],
         },
         {
-          label: "Reference",
-          autogenerate: { directory: "reference" },
+          label: "API reference (docs.rs)",
+          items: [
+            {
+              label: "olai-uc-server",
+              link: "https://docs.rs/olai-uc-server",
+              attrs: { target: "_blank", rel: "noopener" },
+            },
+            {
+              label: "olai-uc-common",
+              link: "https://docs.rs/olai-uc-common",
+              attrs: { target: "_blank", rel: "noopener" },
+            },
+            {
+              label: "olai-uc-client",
+              link: "https://docs.rs/olai-uc-client",
+              attrs: { target: "_blank", rel: "noopener" },
+            },
+          ],
         },
       ],
       plugins: [
