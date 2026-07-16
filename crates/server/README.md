@@ -54,7 +54,7 @@ docker run -p 8080:8080 ghcr.io/open-lakehouse/mangrove:latest
 ```toml
 [dependencies]
 # The `package` rename keeps the `unitycatalog_server` import path.
-unitycatalog-server = { package = "olai-uc-server", version = "0.0.1" }
+unitycatalog-server = { package = "olai-uc-server", version = "0.0.2" }
 ```
 
 A bare library build brings in only the handler/routing surface (default
