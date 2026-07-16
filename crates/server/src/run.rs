@@ -49,8 +49,6 @@ use crate::api::recipients::RecipientHandler;
 use crate::api::registered_models::RegisteredModelHandler;
 use crate::api::schemas::SchemaHandler;
 use crate::api::shares::ShareHandler;
-use crate::api::sharing::{SharingHandler, SharingQueryHandler};
-use crate::api::sharing::{SharingSkillHandler, SharingVolumeHandler};
 use crate::api::staging_tables::StagingTableHandler;
 use crate::api::tables::TableHandler;
 use crate::api::tag_policies::TagPolicyHandler;
@@ -63,11 +61,11 @@ use crate::rest::{
     AnonymousAuthenticator, AuthenticationLayer, create_agent_skills_router, create_agents_router,
     create_catalogs_router, create_credentials_router, create_delta_router,
     create_entity_tag_assignments_router, create_external_locations_router,
-    create_functions_router, create_model_versions_router, create_open_sharing_router,
-    create_policies_router, create_providers_router, create_recipients_router,
-    create_registered_models_router, create_schemas_router, create_shares_router,
-    create_sharing_router, create_staging_tables_router, create_tables_router,
-    create_tag_policies_router, create_temporary_credentials_router, create_volumes_router,
+    create_functions_router, create_model_versions_router, create_policies_router,
+    create_providers_router, create_recipients_router, create_registered_models_router,
+    create_schemas_router, create_shares_router, create_staging_tables_router,
+    create_tables_router, create_tag_policies_router, create_temporary_credentials_router,
+    create_volumes_router,
 };
 use crate::services::{LocalStoragePolicy, ServerHandler, location::StorageLocationUrl};
 
@@ -222,18 +220,6 @@ pub(crate) fn swagger_api_defs() -> Vec<ApiDefinition<&'static str>> {
             api_definition: OpenApiSource::Inline(include_str!("../../../openapi/openapi.yaml")),
             title: Some("Unity Catalog API"),
         },
-        ApiDefinition {
-            uri_prefix: "/api/v1/delta-sharing",
-            api_definition: OpenApiSource::Inline(include_str!("../../../openapi/sharing.yaml")),
-            title: Some("Delta Sharing API"),
-        },
-        // Open Sharing is a superset of Delta Sharing served at its own prefix;
-        // the tabular surface is wire-compatible, so it reuses the same spec.
-        ApiDefinition {
-            uri_prefix: "/api/v1/open-sharing",
-            api_definition: OpenApiSource::Inline(include_str!("../../../openapi/sharing.yaml")),
-            title: Some("Open Sharing API"),
-        },
         // The Delta REST API routes live at `/delta/v1/...` under the UC base
         // path, but its Swagger UI + spec are hosted under a distinct prefix so
         // the swagger-ui asset routes don't collide with the main UC API's.
@@ -251,10 +237,6 @@ where
     T: CatalogHandler<Cx>
         + CredentialHandler<Cx>
         + FunctionHandler<Cx>
-        + SharingHandler<Cx>
-        + SharingQueryHandler<Cx>
-        + SharingVolumeHandler<Cx>
-        + SharingSkillHandler<Cx>
         + ShareHandler<Cx>
         + SchemaHandler<Cx>
         + StagingTableHandler<Cx>
@@ -298,13 +280,7 @@ where
     Router::new()
         .nest("/api/2.1/unity-catalog", api_routes)
         // Tag Policies (governed tag definitions) live under /api/2.1, not /unity-catalog.
-        .nest("/api/2.1", create_tag_policies_router(handler.clone()))
-        .nest(
-            "/api/v1/delta-sharing",
-            create_sharing_router(handler.clone()),
-        )
-        // Open Sharing: superset surface sharing the same tabular handlers.
-        .nest("/api/v1/open-sharing", create_open_sharing_router(handler))
+        .nest("/api/2.1", create_tag_policies_router(handler))
 }
 
 /// Operational endpoints served regardless of backend or routing.

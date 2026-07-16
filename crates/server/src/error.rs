@@ -10,22 +10,10 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("Delta Kernel Error: {source}")]
-    DeltaKernel {
-        #[from]
-        source: delta_kernel::Error,
-    },
-
     #[error("Common Error: {source}")]
     Common {
         #[from]
         source: unitycatalog_common::Error,
-    },
-
-    #[error("Sharing Error: {source}")]
-    Sharing {
-        #[from]
-        source: unitycatalog_sharing_client::Error,
     },
 
     #[error("Object Store Error: {source}")]
@@ -112,8 +100,6 @@ impl Error {
             Error::InvalidIdentifier(_) => "INVALID_PARAMETER_VALUE",
             Error::MissingRecipient => "INVALID_PARAMETER_VALUE",
             Error::Common { source } => source.error_code(),
-            Error::DeltaKernel { .. } => "INTERNAL_ERROR",
-            Error::Sharing { .. } => "INTERNAL_ERROR",
             Error::ObjectStore { .. } => "INTERNAL_ERROR",
             Error::SerDe { .. } => "INTERNAL_ERROR",
             Error::Generic(_) => "INTERNAL_ERROR",
@@ -156,14 +142,6 @@ impl IntoResponse for Error {
                     .into_response();
             }
             // EXTERNAL ERRORS
-            Error::DeltaKernel { source } => {
-                error!("Delta Kernel error: {}", source);
-                INTERNAL_ERROR
-            }
-            Error::Sharing { source } => {
-                error!("Delta Sharing error: {}", source);
-                INTERNAL_ERROR
-            }
             Error::ObjectStore { source } => match &source {
                 object_store::Error::NotFound { .. } => (
                     StatusCode::NOT_FOUND,
@@ -292,7 +270,6 @@ impl From<Error> for Status {
                 }
                 _ => Status::internal(format!("Common Error: {source}")),
             },
-            Error::Sharing { source } => Status::internal(format!("Sharing Error: {}", source)),
             Error::NotFound => Status::not_found("The requested resource does not exist."),
             Error::NotAllowed => {
                 Status::permission_denied("The request is forbidden from being fulfilled.")
@@ -300,9 +277,6 @@ impl From<Error> for Status {
             Error::Unauthenticated => Status::unauthenticated(
                 "The request is unauthenticated. The bearer token is missing or incorrect.",
             ),
-            Error::DeltaKernel { source } => {
-                Status::internal(format!("Delta Kernel Error: {}", source))
-            }
             Error::SerDe { source } => {
                 Status::internal(format!("Serialization/Deserialization Error: {}", source))
             }

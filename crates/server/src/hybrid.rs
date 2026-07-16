@@ -4,8 +4,8 @@
 //! surface is wired at startup to either the local [`ServerHandler`] or a
 //! per-surface upstream adapter (from [`crate::handlers::upstream`]), decided by
 //! [`RoutingConfig`]. The adapters enforce this server's policy locally before
-//! forwarding; see that module for details. Delta Sharing and any surface not
-//! marked `upstream` are always served locally.
+//! forwarding; see that module for details. Any surface not marked `upstream` is
+//! always served locally.
 
 use std::sync::Arc;
 
@@ -21,19 +21,19 @@ use crate::policy::Policy;
 use crate::rest::{
     create_catalogs_router, create_credentials_router, create_delta_router,
     create_entity_tag_assignments_router, create_external_locations_router,
-    create_functions_router, create_open_sharing_router, create_policies_router,
-    create_providers_router, create_recipients_router, create_schemas_router, create_shares_router,
-    create_sharing_router, create_staging_tables_router, create_tables_router,
-    create_tag_policies_router, create_temporary_credentials_router,
+    create_functions_router, create_policies_router, create_providers_router,
+    create_recipients_router, create_schemas_router, create_shares_router,
+    create_staging_tables_router, create_tables_router, create_tag_policies_router,
+    create_temporary_credentials_router,
 };
 use crate::services::ServerHandler;
 
 /// Build the REST router with selected surfaces proxied to an upstream instance.
 ///
 /// Each resource router is given either the local `handler` or a per-surface
-/// upstream adapter, decided by `routing`. Delta Sharing and any surface not
-/// marked `upstream` are always served locally. The returned router still needs
-/// the authentication layer applied by the caller.
+/// upstream adapter, decided by `routing`. Any surface not marked `upstream` is
+/// always served locally. The returned router still needs the authentication
+/// layer applied by the caller.
 pub(crate) fn build_hybrid_router(
     handler: ServerHandler<RequestContext>,
     policy: Arc<dyn Policy<RequestContext>>,
@@ -62,22 +62,6 @@ pub(crate) fn build_hybrid_router(
         )),
     };
 
-    // Delta Sharing resolves a shared table's storage location by looking up the
-    // backing Table primitive. When tables are routed upstream, point that
-    // resolution at the upstream handler too, so sharing reads work in the
-    // side-by-side topology; otherwise the local handler resolves it.
-    let sharing_handler = match routing.tables {
-        RoutingMode::Local => handler.clone(),
-        RoutingMode::Upstream => {
-            handler
-                .clone()
-                .with_table_source(Arc::new(UpstreamTableHandler::new(
-                    policy.clone(),
-                    client.tables_client(),
-                )))
-        }
-    };
-
     // Remaining surfaces are local-only in v1 (validated upstream of here).
     let api_routes = catalogs
         .merge(schemas)
@@ -97,15 +81,5 @@ pub(crate) fn build_hybrid_router(
     Router::new()
         .nest("/api/2.1/unity-catalog", api_routes)
         // Tag Policies (governed tag definitions) are local-only and live under /api/2.1.
-        .nest("/api/2.1", create_tag_policies_router(handler.clone()))
-        .nest(
-            "/api/v1/delta-sharing",
-            create_sharing_router(sharing_handler.clone()),
-        )
-        // Open Sharing: superset surface sharing the same tabular handlers and the
-        // same (optionally upstream-routed) table-source resolution.
-        .nest(
-            "/api/v1/open-sharing",
-            create_open_sharing_router(sharing_handler),
-        )
+        .nest("/api/2.1", create_tag_policies_router(handler))
 }

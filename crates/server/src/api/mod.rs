@@ -48,7 +48,6 @@ pub mod recipients;
 pub mod registered_models;
 pub mod schemas;
 pub mod shares;
-pub mod sharing;
 pub mod staging_tables;
 pub mod tables;
 pub mod tag_policies;

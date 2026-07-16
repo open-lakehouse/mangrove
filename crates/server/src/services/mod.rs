@@ -1,13 +1,8 @@
 use std::sync::Arc;
 
-use unitycatalog_sharing_api::session::KernelSession;
-
-use self::location::StorageLocationUrl;
-use crate::api::tables::TableHandler;
-use crate::api::volumes::VolumeHandler;
 use crate::policy::{Decision, Permission, Policy, ProvidesPolicy};
 use crate::store::{ProvidesResourceStore, ResourceStore};
-use crate::{Error, Result};
+use crate::Result;
 use unitycatalog_common::models::ResourceIdent;
 use unitycatalog_delta_api::coordinator::{
     CommitCoordinator, InMemoryCommitCoordinator, ProvidesCommitCoordinator,
@@ -18,7 +13,6 @@ mod delta_backend;
 pub mod location;
 pub mod location_policy;
 pub(crate) mod object_store;
-mod sharing_backend;
 
 pub use location_policy::LocalStoragePolicy;
 
@@ -47,33 +41,9 @@ pub trait ProvidesManagedStorageRoot {
 #[derive(Clone)]
 pub struct ServerHandler<Cx> {
     handler: Arc<ServerHandlerInner<Cx>>,
-    session: Arc<KernelSession>,
-    /// Optional source for resolving shared *table* primitives.
-    ///
-    /// Delta Sharing resolves a shared table's storage location by looking up
-    /// the underlying Table primitive. In the self-contained topology that
-    /// primitive lives in this server's own store, so the default
-    /// (`None`) resolves it locally. In the side-by-side topology the Table
-    /// primitive lives in an upstream Unity Catalog, so the hybrid wiring
-    /// injects an [`UpstreamTableHandler`](crate::handlers::upstream::UpstreamTableHandler)
-    /// here and resolution follows the same routing as every other surface.
-    table_source: Option<Arc<dyn TableHandler<Cx>>>,
-    /// Optional source for resolving shared *volume* primitives.
-    ///
-    /// The Open Sharing volume and agent-skill surfaces resolve a shared
-    /// asset's storage location by looking up the underlying Volume primitive.
-    /// As with [`table_source`](Self::table_source), the default (`None`)
-    /// resolves it from this server's own store (self-contained topology), while
-    /// the hybrid wiring injects an
-    /// [`UpstreamVolumeHandler`](crate::handlers::upstream::UpstreamVolumeHandler)
-    /// to resolve it from an upstream Unity Catalog (side-by-side topology).
-    volume_source: Option<Arc<dyn VolumeHandler<Cx>>>,
 }
 
-impl<Cx: Send + Sync + 'static> ServerHandler<Cx>
-where
-    ServerHandlerInner<Cx>: unitycatalog_sharing_api::kernel::ObjectStoreFactory,
-{
+impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
     pub fn try_new_tokio(
         policy: Arc<dyn Policy<Cx>>,
         store: Arc<dyn ResourceStore>,
@@ -98,52 +68,11 @@ where
             ServerHandlerInner::new(policy.clone(), store.clone())
                 .with_commit_coordinator(commit_coordinator),
         );
-        let session = Arc::new(
-            KernelSession::new(handler.clone()).map_err(|e| Error::Generic(e.to_string()))?,
-        );
-        Ok(Self {
-            handler,
-            session,
-            table_source: None,
-            volume_source: None,
-        })
+        Ok(Self { handler })
     }
 }
 
 impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
-    /// Route shared-table resolution through `table_source` instead of the
-    /// local store.
-    ///
-    /// Used by the hybrid topology so that Delta Sharing reads resolve their
-    /// backing Table primitive from the same place every other table surface is
-    /// served (e.g. an upstream Unity Catalog), rather than the local store.
-    pub fn with_table_source(mut self, table_source: Arc<dyn TableHandler<Cx>>) -> Self {
-        self.table_source = Some(table_source);
-        self
-    }
-
-    /// The configured table source, if any.
-    pub(crate) fn table_source(&self) -> Option<&Arc<dyn TableHandler<Cx>>> {
-        self.table_source.as_ref()
-    }
-
-    /// Route shared-volume resolution through `volume_source` instead of the
-    /// local store.
-    ///
-    /// Used by the hybrid topology so that Open Sharing volume and agent-skill
-    /// reads resolve their backing Volume primitive from the same place every
-    /// other volume surface is served (e.g. an upstream Unity Catalog), rather
-    /// than the local store.
-    pub fn with_volume_source(mut self, volume_source: Arc<dyn VolumeHandler<Cx>>) -> Self {
-        self.volume_source = Some(volume_source);
-        self
-    }
-
-    /// The configured volume source, if any.
-    pub(crate) fn volume_source(&self) -> Option<&Arc<dyn VolumeHandler<Cx>>> {
-        self.volume_source.as_ref()
-    }
-
     /// Set the allowlist governing `file://` storage locations.
     ///
     /// Rebuilds the inner handler with the policy attached. Call at construction

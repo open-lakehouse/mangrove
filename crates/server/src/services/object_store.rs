@@ -1,52 +1,13 @@
-use std::sync::Arc;
-
 use itertools::Itertools;
-use object_store::azure::MicrosoftAzureBuilder;
-use object_store::local::LocalFileSystem;
-use object_store::{DynObjectStore, ObjectStoreScheme};
-use unitycatalog_common::credentials::v1::AzureManagedIdentity;
-use unitycatalog_common::models::credentials::v1::{
-    AzureServicePrincipal, AzureStorageKey, GetCredentialRequest,
-    azure_service_principal::Credential as AzureSpCredential,
-};
 use unitycatalog_common::models::external_locations::v1::ExternalLocation;
 use unitycatalog_common::models::tables::v1::Table;
 use unitycatalog_common::models::volumes::v1::Volume;
-use unitycatalog_sharing_api::kernel::ObjectStoreFactory;
-use url::Url;
 
 use super::ProvidesLocalStoragePolicy;
-use super::ServerHandlerInner;
-use super::location::{StorageLocationScheme, StorageLocationUrl};
-use crate::api::CredentialHandler;
-use crate::api::credentials::CredentialHandlerExt;
+use super::location::StorageLocationUrl;
 use crate::api::staging_tables::MANAGED_STORAGE_PREFIX;
 use crate::store::ResourceStore;
 use crate::{Error, Result};
-
-pub(crate) trait RegistryHandler:
-    ResourceStore + CredentialHandler<crate::api::RequestContext> + CredentialHandlerExt
-{
-}
-impl<T: ResourceStore + CredentialHandler<crate::api::RequestContext> + CredentialHandlerExt>
-    RegistryHandler for T
-{
-}
-
-#[async_trait::async_trait]
-impl ObjectStoreFactory for ServerHandlerInner<crate::api::RequestContext> {
-    async fn create_object_store(
-        &self,
-        location: &Url,
-    ) -> unitycatalog_sharing_api::Result<Arc<DynObjectStore>> {
-        tracing::debug!("create_object_store: {:?}", location);
-        let location = StorageLocationUrl::try_new(location.clone())
-            .map_err(|e| unitycatalog_sharing_api::Error::generic(e.to_string()))?;
-        get_object_store(&location, self)
-            .await
-            .map_err(|e| unitycatalog_sharing_api::Error::generic(e.to_string()))
-    }
-}
 
 /// Find the most specific external location whose URL is a prefix of `location`.
 ///
@@ -287,169 +248,9 @@ pub(crate) fn is_path_prefix(url: &str, prefix: &str) -> bool {
     object_store::path::Path::from(url).prefix_matches(&object_store::path::Path::from(prefix))
 }
 
-pub(crate) async fn get_object_store(
-    location: &StorageLocationUrl,
-    handler: &dyn RegistryHandler,
-) -> Result<Arc<DynObjectStore>> {
-    tracing::debug!("get_object_store: {:?}", location.location());
-    // Local filesystem storage needs neither an external location nor a vended
-    // credential — short-circuit before the lookup and build a LocalFileSystem
-    // directly, mirroring the client-side object-store factory.
-    if matches!(
-        location.scheme(),
-        StorageLocationScheme::ObjectStore(ObjectStoreScheme::Local)
-    ) {
-        return get_local_store(location);
-    }
-    let ext_loc = find_external_location_for_url(location, handler).await?;
-    let credential = handler
-        .get_credential_internal(GetCredentialRequest {
-            name: ext_loc.credential_name.clone(),
-            ..Default::default()
-        })
-        .await?;
-    get_azure_store(
-        location,
-        credential.azure_managed_identity.into_option(),
-        credential.azure_service_principal.into_option(),
-        credential.azure_storage_key.into_option(),
-    )
-}
-
-/// Build an unrooted [`LocalFileSystem`] store for a `file://` location.
-///
-/// The delta_kernel engine addresses objects by their full path, so the store
-/// is left unrooted (paths are relative to the filesystem root) rather than
-/// prefixed at the table directory.
-///
-/// Local `file://` storage is **POSIX-only** for now and errors on Windows:
-/// `object_store::path::Path` cannot represent a Windows absolute path (the
-/// drive-letter colon is percent-encoded), so an unrooted store addressed by
-/// full path does not resolve to the real on-disk location. Mirrors the
-/// client-side `local_store` in `unitycatalog-object-store`.
-fn get_local_store(location: &StorageLocationUrl) -> Result<Arc<DynObjectStore>> {
-    tracing::debug!("get_local_store: {:?}", location.location());
-    if cfg!(windows) {
-        return Err(Error::invalid_argument(format!(
-            "local (file://) storage is not supported on Windows: {}",
-            location.raw()
-        )));
-    }
-    location.raw().to_file_path().map_err(|_| {
-        Error::invalid_argument(format!("not a valid local file path: {}", location.raw()))
-    })?;
-    Ok(Arc::new(LocalFileSystem::new()))
-}
-
-fn get_azure_store(
-    location: &StorageLocationUrl,
-    azure_managed_identity: Option<AzureManagedIdentity>,
-    azure_service_principal: Option<AzureServicePrincipal>,
-    azure_storage_key: Option<AzureStorageKey>,
-) -> Result<Arc<DynObjectStore>> {
-    tracing::debug!("get_azure_store: {:?}", location.location());
-    let url_err = || {
-        Error::invalid_argument(
-            "emulator URLs must encode the account and container name in the path",
-        )
-    };
-    // check if the location is localhost to determine if we are running the emulator
-    let mut builder = if matches!(location.scheme(), StorageLocationScheme::Azurite) {
-        let container_name = location
-            .location()
-            .host_str()
-            .ok_or_else(url_err)?
-            .to_string();
-
-        MicrosoftAzureBuilder::new()
-            .with_use_emulator(true)
-            .with_container_name(container_name)
-    } else {
-        MicrosoftAzureBuilder::new().with_url(location.raw().as_str())
-    };
-
-    if let Some(AzureServicePrincipal {
-        directory_id,
-        application_id,
-        credential,
-        ..
-    }) = azure_service_principal
-    {
-        builder = builder
-            .with_tenant_id(directory_id)
-            .with_client_id(application_id);
-        match credential {
-            Some(AzureSpCredential::ClientSecret(client_secret)) => {
-                builder = builder.with_client_secret(client_secret);
-            }
-            Some(AzureSpCredential::FederatedTokenFile(federated_token_file)) => {
-                builder = builder.with_federated_token_file(federated_token_file);
-            }
-            _ => {
-                return Err(Error::invalid_argument(
-                    "Azure service principal requires a credential.",
-                ));
-            }
-        };
-    } else if let Some(AzureStorageKey {
-        account_name,
-        account_key,
-        ..
-    }) = azure_storage_key
-    {
-        builder = builder
-            .with_account(account_name)
-            .with_access_key(account_key);
-    } else if let Some(msi) = azure_managed_identity {
-        // managed_identity_id is the ARM resource ID of a user-assigned identity.
-        // Pass it as the client_id to the object store builder when present.
-        // When absent, the system-assigned identity of the Access Connector is used.
-        if let Some(managed_identity_id) = msi.managed_identity_id {
-            builder = builder.with_client_id(managed_identity_id);
-        }
-    } else {
-        return Err(Error::invalid_argument(
-            "Azure service principal requires a credential.",
-        ));
-    }
-
-    Ok(Arc::new(builder.build()?))
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{get_local_store, is_path_prefix, locations_overlap, paths_overlap};
-    use crate::services::location::StorageLocationUrl;
-
-    /// A `file://` location resolves to a local store with no external-location
-    /// lookup or credential — and the resulting store can read what it writes.
-    /// POSIX-only: local file:// is gated off on Windows (see `get_local_store`).
-    #[cfg(not(windows))]
-    #[tokio::test]
-    async fn local_store_roundtrips_full_path() {
-        use object_store::{ObjectStoreExt, PutPayload, path::Path};
-
-        let dir = tempfile::tempdir().unwrap();
-        let table_dir = dir.path().join("mytable");
-        std::fs::create_dir_all(&table_dir).unwrap();
-        let url = url::Url::from_directory_path(&table_dir).unwrap();
-        let location = StorageLocationUrl::try_new(url.clone()).unwrap();
-
-        let store = get_local_store(&location).unwrap();
-
-        // The kernel engine addresses objects by their full path, derived from
-        // the location URL (not a native PathBuf — whose absolute-path spelling
-        // diverges from object_store's on Windows). Correctness is the put/get
-        // round-trip through that same mapping.
-        let full =
-            Path::from_url_path(format!("{}/part-0", url.path().trim_end_matches('/'))).unwrap();
-        store
-            .put(&full, PutPayload::from_static(b"data"))
-            .await
-            .unwrap();
-        let got = store.get(&full).await.unwrap().bytes().await.unwrap();
-        assert_eq!(&got[..], b"data");
-    }
+    use super::{StorageLocationUrl, is_path_prefix, locations_overlap, paths_overlap};
 
     #[test]
     fn path_prefix_matches_exact_and_subpaths() {
