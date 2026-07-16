@@ -3964,7 +3964,6 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
- "tonic",
  "tower",
  "tower-http",
  "tracing",
