@@ -2082,7 +2082,7 @@ dependencies = [
 [[package]]
 name = "deltalake-core"
 version = "0.32.4"
-source = "git+https://github.com/roeap/delta-rs?rev=b7bef0748060fd27013c19f7eaeb296de2daabf5#b7bef0748060fd27013c19f7eaeb296de2daabf5"
+source = "git+https://github.com/roeap/delta-rs?rev=a686c3be5720c036efb80dded5fdaa995ebaab0c#a686c3be5720c036efb80dded5fdaa995ebaab0c"
 dependencies = [
  "alloc-stdlib",
  "arrow",
@@ -2141,7 +2141,7 @@ dependencies = [
 [[package]]
 name = "deltalake-derive"
 version = "0.32.4"
-source = "git+https://github.com/roeap/delta-rs?rev=b7bef0748060fd27013c19f7eaeb296de2daabf5#b7bef0748060fd27013c19f7eaeb296de2daabf5"
+source = "git+https://github.com/roeap/delta-rs?rev=a686c3be5720c036efb80dded5fdaa995ebaab0c#a686c3be5720c036efb80dded5fdaa995ebaab0c"
 dependencies = [
  "convert_case 0.9.0",
  "itertools 0.14.0",

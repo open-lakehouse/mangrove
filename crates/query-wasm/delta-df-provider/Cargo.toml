@@ -1,0 +1,115 @@
+# Async-native Delta `TableProvider` driven by the kernel's experimental
+# `sm_plans` API — the replacement for the eager inline-executor scan path in
+# `olai-uc-query-wasm`. Ported (patterns, not a dependency) from the kernel POC
+# `delta-kernel-datafusion-engine`, reconciled to mangrove's exact pins:
+#
+#   * DataFusion 54.0.0 from crates.io (the POC used DF git-main solely for the
+#     parquet `_row_number` virtual column, which is DELETION-VECTOR-only; v1
+#     gates DVs out, so 54.0.0 suffices — verified: `with_projection_indices`,
+#     `TableSchema`, `ParquetSource::new` all exist in 54.0.0).
+#   * arrow-58 via the kernel `arrow-58` feature alias (the roeap arrow-rs fork,
+#     patched workspace-globally by the parent query-wasm Cargo.toml). Arrow is
+#     imported through `delta_kernel::arrow::…` so there is ONE arrow in the graph.
+#   * `delta_kernel` at the SAME rev the whole repo pins (2cf01549) with
+#     `sm-plans` + `internal-api` + `arrow-58` — so kernel `SnapshotRef` unifies
+#     with what `deltalake-wasm` returns.
+#   * NO tokio, NO spawn_blocking, NO getrandom: the sm_plans SM is a CPU-only,
+#     IO-free coroutine, and v1 gates out the only `spawn_blocking` (DV reads).
+#
+# See ../../../handover-wasm-async-native-table-provider.md.
+[package]
+name = "olai-uc-delta-df-provider"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/open-lakehouse/mangrove"
+description = "Async-native (sm_plans-driven) Delta DataFusion TableProvider for the in-browser UC query engine"
+rust-version = "1.91"
+publish = false
+
+[lib]
+name = "delta_df_provider"
+
+[features]
+# Exposes `delta_df_provider::testing`: buffered `Vec<RecordBatch>` collectors over the SSA
+# result-plan APIs, for integration tests / harnesses that want eager materialization. Not for
+# production. Named `testing` (not `test-utils`) at the module to avoid clashing with kernel's
+# `test_utils`, but the FEATURE keeps the conventional `test-utils` name.
+test-utils = []
+
+[dependencies]
+# The kernel, pinned to the exact rev the rest of the repo uses so its types
+# unify across the graph. `sm-plans` brings the CoroutineSM scan state machines;
+# `internal-api` exposes the plan IR the compiler walks; `arrow-58` selects the
+# roeap arrow major (paired with `need-arrow`, kernel designs this to pair
+# sm-plans with any arrow major). NO default-engine: v1 needs no kernel Engine.
+delta_kernel = { git = "https://github.com/roeap/delta-kernel-rs", rev = "2cf015496d437859e836aaffa39cc128507b5f52", package = "delta_kernel", default-features = false, features = [
+  "sm-plans",
+  "internal-api",
+  "need-arrow",
+  "arrow-58",
+  # arrow base traits only: `arrow-conversion` (TryIntoArrow/TryFromArrow) + `arrow_data`
+  # (ArrowEngineData, gated on default-engine-base). This is NOT the DefaultEngine impl (that
+  # lives in the separate `delta_kernel_default_engine` crate, which we deliberately do NOT
+  # depend on — v1 needs no kernel Engine). `reqwest` it pulls is default-features-off and
+  # only backs the gated `Error::Reqwest` variant, so it stays wasm-safe.
+  "default-engine-base",
+] }
+
+# DataFusion 54.0.0 (crates.io) — same set the parent query-wasm crate pins,
+# default-features off with only the features the compile/exec port needs.
+datafusion-common = { version = "54", default-features = false }
+datafusion = { version = "54", default-features = false }
+datafusion-catalog-listing = { version = "54", default-features = false }
+datafusion-expr = { version = "54", default-features = false }
+datafusion-execution = { version = "54", default-features = false }
+datafusion-physical-expr = { version = "54", default-features = false }
+datafusion-physical-expr-adapter = { version = "54", default-features = false }
+datafusion-physical-expr-common = { version = "54", default-features = false }
+datafusion-physical-plan = { version = "54", default-features = false }
+datafusion-physical-optimizer = { version = "54", default-features = false }
+datafusion-functions-window = { version = "54", default-features = false }
+datafusion-functions = { version = "54", default-features = false }
+datafusion-functions-nested = { version = "54", default-features = false }
+datafusion-functions-json = { version = "0.54", default-features = false }
+datafusion-datasource = { version = "54", default-features = false }
+datafusion-datasource-json = { version = "54", default-features = false }
+datafusion-datasource-parquet = { version = "54", default-features = false }
+
+async-stream = "0.3"
+async-trait = "0.1"
+futures = "0.3"
+chrono = "0.4"
+url = "2"
+# Matches the kernel's `uuid` pin. Used only to construct opaque `sm_id` labels the kernel
+# stamps onto Consume handles; we build them entropy-free from an atomic counter (see
+# `next_sm_id`), so no `v4` feature here. The kernel enables its own `v4`/`js` for the SMs it
+# mints internally.
+uuid = { version = "1.18.0", default-features = false }
+
+[dev-dependencies]
+# Shared across native + wasm tests. object_store provides the InMemory fixture store both the
+# native (M0/M1) and wasm (M2) tests build tables in.
+object_store = "0.13"
+# Self dev-dependency activating `test-utils` so this crate's own integration tests can use the
+# `testing` collectors — mirrors the pattern in the kernel POC and `kernel/Cargo.toml`.
+delta_df_provider = { package = "olai-uc-delta-df-provider", path = ".", features = ["test-utils"] }
+
+# Native-only test deps. tokio (current-thread runtime to drive the !Send SM), rstest (ported
+# unit tests), tempfile (LocalFileSystem fixtures), and the kernel DefaultEngine (used ONLY to
+# CONSTRUCT the snapshot in the M1 test — its `default` pulls arrow-59 so force arrow-58 to
+# unify with our graph; the provider itself never touches it). None compile for wasm32.
+[target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
+rstest = "0.23"
+tempfile = "3"
+delta_kernel_default_engine = { git = "https://github.com/roeap/delta-kernel-rs", rev = "2cf015496d437859e836aaffa39cc128507b5f52", package = "delta_kernel_default_engine", default-features = false, features = [
+  "arrow-58",
+  "rustls",
+] }
+
+# wasm-only: the M2 headless test drives the sm_plans scan on wasm32 under
+# wasm-bindgen-futures (Node runner). Native builds never see it.
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
+wasm-bindgen-test = "0.3"
+wasm-bindgen-futures = "0.4"

@@ -2,5 +2,11 @@
 # (pulled transitively by uuid/rand in deltalake-core). Same setting as the
 # delta-rs wasm workspace. NOTE: cargo discovers this file from the CWD upward,
 # so build from inside crates/query-wasm (the just recipes do).
+#
+# `runner` wires `cargo test --target wasm32-unknown-unknown` to the
+# wasm-bindgen test runner (installed by `just setup-wasm`). It runs headless
+# tests in Node by default — the `delta-df-provider` M2 test
+# (`m2_wasm.rs`) drives the sm_plans scan on wasm32 this way, no browser needed.
 [target.wasm32-unknown-unknown]
 rustflags = ["--cfg", 'getrandom_backend="wasm_js"']
+runner = "wasm-bindgen-test-runner"

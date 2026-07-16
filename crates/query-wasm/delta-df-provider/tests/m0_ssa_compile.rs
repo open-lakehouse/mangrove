@@ -1,0 +1,423 @@
+//! M0 reconciliation-spike verification (see
+//! `handover-wasm-async-native-table-provider.md`).
+//!
+//! Each test builds a [`Plan`](delta_kernel::sm_plans::ir::plan::Plan) via the SSA
+//! [`Context`] builder, wraps it in a [`ResultPlan`], and runs it through
+//! [`DataFusionExecutor::ssa_result_to_dataframe`] — exercising the per-`NodeKind` lowerings
+//! **without a kernel `Engine`**, proving that the DV-free port:
+//!
+//!   * compiles a hand-built `ResultPlan` via `compile_ssa`, and
+//!   * runs it over a `LocalFileSystem` store producing correct batches (the `Load` test),
+//!
+//! against DataFusion 54.0.0 + arrow-58 (roeap fork) + kernel `2cf01549` (sm-plans, arrow-58),
+//! with no tokio runtime dependency in the crate itself (the harness spins a current-thread
+//! runtime purely to drive the `!Send` futures — the crate has no tokio dep).
+//!
+//! Native-only: the harness uses tokio (a native-only dev-dep). The wasm equivalent lives in
+//! `m2_wasm.rs`, driven under `wasm-bindgen-futures`.
+
+#![cfg(not(target_arch = "wasm32"))]
+
+mod common;
+
+use std::collections::HashSet;
+use std::sync::Arc;
+
+use common::SumRowsConsumer;
+use delta_df_provider::{DataFusionExecutor, testing};
+use delta_kernel::arrow::array::{AsArray, RecordBatch};
+use delta_kernel::arrow::compute::concat_batches;
+use delta_kernel::arrow::datatypes::Int64Type;
+use delta_kernel::expressions::{
+    ColumnName, Expression, ExpressionRef, Predicate, PredicateRef, Scalar,
+};
+use delta_kernel::schema::{DataType, SchemaRef, StructField, StructType};
+use delta_kernel::sm_plans::ir::nodes::{ConsumeSink, FileType, ScanFileColumns};
+use delta_kernel::sm_plans::ir::plan::ResultPlan;
+use delta_kernel::sm_plans::state_machines::framework::plan_context::{Context, LoadSpec};
+use delta_kernel::sm_plans::state_machines::framework::step::EngineRequest;
+use delta_kernel::sm_plans::state_machines::framework::step_payload::EngineResponse;
+
+/// Drive a `ResultPlan` to a single concatenated batch on a current-thread runtime (the SSA SM
+/// drive future is `!Send`).
+fn run_to_one_batch(rp: ResultPlan) -> RecordBatch {
+    let exec = DataFusionExecutor::new();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("tokio runtime");
+    let batches = runtime
+        .block_on(testing::collect_ssa_result(&exec, rp))
+        .expect("collect");
+    assert!(!batches.is_empty(), "expected at least one batch");
+    let schema = batches[0].schema();
+    concat_batches(&schema, &batches).expect("concat")
+}
+
+fn long_field(name: &str) -> StructField {
+    StructField::new(name, DataType::LONG, true)
+}
+
+fn long_schema(fields: &[&str]) -> SchemaRef {
+    Arc::new(StructType::try_new(fields.iter().map(|n| long_field(n))).expect("schema"))
+}
+
+fn long_col(batch: &RecordBatch, name: &str) -> Vec<i64> {
+    let idx = batch
+        .schema()
+        .index_of(name)
+        .unwrap_or_else(|_| panic!("column {name} not found in {:?}", batch.schema()));
+    batch
+        .column(idx)
+        .as_primitive::<Int64Type>()
+        .values()
+        .iter()
+        .copied()
+        .collect()
+}
+
+/// Write a single-row-group parquet file with one non-null `Int64` column, via the kernel's
+/// re-exported (arrow-58 fork) parquet writer — no external `test_utils` dependency.
+fn write_i64_parquet(path: &std::path::Path, field: &str, values: &[i64]) {
+    use delta_kernel::arrow::array::Int64Array;
+    use delta_kernel::arrow::datatypes::{DataType as ArrowDataType, Field, Schema as ArrowSchema};
+    use delta_kernel::parquet::arrow::arrow_writer::ArrowWriter;
+
+    let schema = Arc::new(ArrowSchema::new(vec![Field::new(
+        field,
+        ArrowDataType::Int64,
+        false,
+    )]));
+    let batch = RecordBatch::try_new(
+        schema.clone(),
+        vec![Arc::new(Int64Array::from_iter_values(
+            values.iter().copied(),
+        ))],
+    )
+    .expect("record batch");
+    let file = std::fs::File::create(path).expect("create parquet file");
+    let mut writer = ArrowWriter::try_new(file, schema, None).expect("arrow writer");
+    writer.write(&batch).expect("write batch");
+    writer.close().expect("close writer");
+}
+
+/// `Values` rows lower to a `LogicalPlan::Values` whose batches preserve row order.
+#[test]
+fn values_round_trip_preserves_rows() {
+    let rows = vec![
+        vec![Scalar::Long(1), Scalar::Long(10)],
+        vec![Scalar::Long(2), Scalar::Long(20)],
+        vec![Scalar::Long(3), Scalar::Long(30)],
+    ];
+    let ctx = Context::new();
+    let builder = ctx.values(long_schema(&["a", "b"]), rows).unwrap();
+    let rp = ctx.into_result_plan(builder).unwrap();
+
+    let batch = run_to_one_batch(rp);
+    assert_eq!(long_col(&batch, "a"), vec![1, 2, 3]);
+    assert_eq!(long_col(&batch, "b"), vec![10, 20, 30]);
+}
+
+/// `Filter` keeps rows where the predicate evaluates true.
+#[test]
+fn filter_drops_rows_where_predicate_is_false() {
+    let ctx = Context::new();
+    let src = ctx
+        .values(
+            long_schema(&["x"]),
+            vec![
+                vec![Scalar::Long(1)],
+                vec![Scalar::Long(2)],
+                vec![Scalar::Long(3)],
+                vec![Scalar::Long(4)],
+            ],
+        )
+        .unwrap();
+    let predicate: PredicateRef = Arc::new(Predicate::gt(
+        Expression::column(["x"]),
+        Expression::literal(Scalar::Long(2)),
+    ));
+    let builder = src.filter(predicate).unwrap();
+    let rp = ctx.into_result_plan(builder).unwrap();
+
+    let batch = run_to_one_batch(rp);
+    let kept_set: HashSet<i64> = long_col(&batch, "x").into_iter().collect();
+    assert_eq!(kept_set, HashSet::from([3, 4]));
+}
+
+/// `Project` renames + reorders columns; the output schema honors the named expression list.
+#[test]
+fn project_renames_columns() {
+    let ctx = Context::new();
+    let src = ctx
+        .values(
+            long_schema(&["a", "b"]),
+            vec![vec![Scalar::Long(11), Scalar::Long(22)]],
+        )
+        .unwrap();
+    let exprs: Vec<ExpressionRef> = vec![
+        Arc::new(Expression::column(["b"])),
+        Arc::new(Expression::column(["a"])),
+    ];
+    let builder = src
+        .project_with_schema(exprs, long_schema(&["y", "x"]))
+        .unwrap();
+    let rp = ctx.into_result_plan(builder).unwrap();
+
+    let batch = run_to_one_batch(rp);
+    assert_eq!(long_col(&batch, "y"), vec![22]);
+    assert_eq!(long_col(&batch, "x"), vec![11]);
+}
+
+/// `Union { ordered: true }` concatenates inputs in order.
+#[test]
+fn ordered_union_preserves_input_order() {
+    let ctx = Context::new();
+    let left = ctx
+        .values(
+            long_schema(&["v"]),
+            vec![vec![Scalar::Long(1)], vec![Scalar::Long(2)]],
+        )
+        .unwrap();
+    let right = ctx
+        .values(
+            long_schema(&["v"]),
+            vec![vec![Scalar::Long(3)], vec![Scalar::Long(4)]],
+        )
+        .unwrap();
+    let builder = left.union_ordered(&[right]).unwrap();
+    let rp = ctx.into_result_plan(builder).unwrap();
+
+    let batch = run_to_one_batch(rp);
+    assert_eq!(long_col(&batch, "v"), vec![1, 2, 3, 4]);
+}
+
+/// `EquiJoin { kind: Inner }` emits matching `(left, right)` rows.
+#[test]
+fn inner_equi_join_emits_matching_rows() {
+    let ctx = Context::new();
+    let left = ctx
+        .values(
+            long_schema(&["k", "v_left"]),
+            vec![
+                vec![Scalar::Long(1), Scalar::Long(10)],
+                vec![Scalar::Long(2), Scalar::Long(20)],
+                vec![Scalar::Long(3), Scalar::Long(30)],
+            ],
+        )
+        .unwrap();
+    let right = ctx
+        .values(
+            long_schema(&["rk", "v_right"]),
+            vec![
+                vec![Scalar::Long(2), Scalar::Long(200)],
+                vec![Scalar::Long(3), Scalar::Long(300)],
+                vec![Scalar::Long(4), Scalar::Long(400)],
+            ],
+        )
+        .unwrap();
+    let keys: Vec<(ExpressionRef, ExpressionRef)> = vec![(
+        Arc::new(Expression::column(["k"])),
+        Arc::new(Expression::column(["rk"])),
+    )];
+    let builder = left.inner_join(right, keys).unwrap();
+    let rp = ctx.into_result_plan(builder).unwrap();
+
+    let batch = run_to_one_batch(rp);
+    let mut tuples: Vec<(i64, i64, i64, i64)> = (0..batch.num_rows())
+        .map(|i| {
+            (
+                long_col(&batch, "k")[i],
+                long_col(&batch, "v_left")[i],
+                long_col(&batch, "rk")[i],
+                long_col(&batch, "v_right")[i],
+            )
+        })
+        .collect();
+    tuples.sort();
+    assert_eq!(tuples, vec![(2, 20, 2, 200), (3, 30, 3, 300)]);
+}
+
+/// `EquiJoin { kind: LeftAnti }` emits each left row whose key matches no right row.
+#[test]
+fn left_anti_join_drops_matched_left_rows() {
+    let ctx = Context::new();
+    let left = ctx
+        .values(
+            long_schema(&["k"]),
+            vec![
+                vec![Scalar::Long(1)],
+                vec![Scalar::Long(2)],
+                vec![Scalar::Long(3)],
+            ],
+        )
+        .unwrap();
+    let right = ctx
+        .values(long_schema(&["k"]), vec![vec![Scalar::Long(2)]])
+        .unwrap();
+    let keys: Vec<(ExpressionRef, ExpressionRef)> = vec![(
+        Arc::new(Expression::column(["k"])),
+        Arc::new(Expression::column(["k"])),
+    )];
+    let builder = left.left_anti_join(right, keys).unwrap();
+    let rp = ctx.into_result_plan(builder).unwrap();
+
+    let batch = run_to_one_batch(rp);
+    let kept: HashSet<i64> = long_col(&batch, "k").into_iter().collect();
+    assert_eq!(kept, HashSet::from([1, 3]));
+}
+
+/// `EngineRequest::Consume` drains an SSA dataflow into a [`KernelConsumer`] and the executor
+/// returns the finalized handle as `EngineResponse::Consumer`, keyed by the sink's token.
+#[tokio::test]
+async fn step_consume_drains_ssa_into_consumer_handle() {
+    let ctx = Context::new();
+    let src = ctx
+        .values(
+            long_schema(&["v"]),
+            vec![
+                vec![Scalar::Long(1)],
+                vec![Scalar::Long(2)],
+                vec![Scalar::Long(3)],
+                vec![Scalar::Long(4)],
+            ],
+        )
+        .unwrap();
+    let predicate: PredicateRef = Arc::new(Predicate::gt(
+        Expression::column(["v"]),
+        Expression::literal(Scalar::Long(2)),
+    ));
+    let builder = src.filter(predicate).unwrap();
+    let rp = ctx.into_result_plan(builder).unwrap();
+    let terminal = rp.result;
+    let stmts = rp.plan.stmts;
+
+    let sink = ConsumeSink::new_consumer(SumRowsConsumer::new("ssa.consume_test"));
+    let token = sink.token.clone();
+
+    let executor = DataFusionExecutor::new();
+    let payload = executor
+        .execute_step(EngineRequest::Consume {
+            stmts,
+            terminal,
+            sink,
+        })
+        .await
+        .expect("EngineRequest::Consume execution");
+
+    let handle = match payload {
+        EngineResponse::Consumer(h) => h,
+        other => panic!("expected EngineResponse::Consumer, got {other:?}"),
+    };
+    assert_eq!(
+        handle.token, token,
+        "finished handle carries the sink token"
+    );
+    let total = *handle
+        .erased
+        .downcast::<usize>()
+        .expect("SumRowsConsumer finishes with usize");
+    assert_eq!(total, 2, "filter keeps rows with v > 2 (i.e., 3 and 4)");
+}
+
+/// `NodeKind::Load` reads each upstream row's path-column file over a `LocalFileSystem` store,
+/// broadcasts the `passthrough_columns` onto every emitted file row, and lifts the
+/// `file_schema` columns alongside. This is the M0 "runs over a LocalFileSystem store producing
+/// correct batches" proof — engine-free, DV-free.
+#[tokio::test]
+async fn load_node_reads_files_and_broadcasts_passthrough() {
+    use url::Url;
+
+    let dir = tempfile::tempdir().unwrap();
+    let parquet_path = dir.path().join("data.parquet");
+    write_i64_parquet(&parquet_path, "x", &[10_i64, 20_i64]);
+    let rel_path = parquet_path
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
+    let base_url = Url::from_directory_path(dir.path()).unwrap();
+
+    let upstream_schema = Arc::new(
+        StructType::try_new([
+            StructField::not_null("path", DataType::STRING),
+            StructField::not_null("tag", DataType::STRING),
+        ])
+        .unwrap(),
+    );
+    let file_schema =
+        Arc::new(StructType::try_new([StructField::not_null("x", DataType::LONG)]).unwrap());
+
+    let ctx = Context::new();
+    let upstream = ctx
+        .values(
+            upstream_schema,
+            vec![
+                vec![
+                    Scalar::String(rel_path.clone()),
+                    Scalar::String("alpha".into()),
+                ],
+                vec![Scalar::String(rel_path), Scalar::String("beta".into())],
+            ],
+        )
+        .unwrap();
+    let builder = upstream
+        .load(LoadSpec {
+            file_schema,
+            file_type: FileType::Parquet,
+            base_url: Some(base_url),
+            passthrough_columns: vec![ColumnName::new(["tag"])],
+            file_meta: ScanFileColumns {
+                path: ColumnName::new(["path"]),
+                size: None,
+                record_count: None,
+            },
+            dv_ref: None,
+        })
+        .unwrap();
+    let rp = ctx.into_result_plan(builder).unwrap();
+
+    let exec = DataFusionExecutor::new();
+    let batches = testing::collect_ssa_result(&exec, rp).await.unwrap();
+    assert!(!batches.is_empty(), "expected at least one batch");
+    // Two upstream rows, each broadcasting onto two file rows -> 4 emitted rows.
+    let total_rows: usize = batches.iter().map(|b| b.num_rows()).sum();
+    assert_eq!(total_rows, 4);
+
+    // Every emitted row carries the file `x` column and the broadcast upstream `tag`.
+    let schema = batches[0].schema();
+    assert!(schema.field_with_name("x").is_ok());
+    assert!(schema.field_with_name("tag").is_ok());
+}
+
+/// `MaxByVersion` keeps the row with the largest `version` per group key, narrowed to the
+/// declared `value_columns`.
+#[test]
+fn max_by_version_keeps_top_row_per_group_and_narrows_to_value_columns() {
+    let ctx = Context::new();
+    let src = ctx
+        .values(
+            long_schema(&["k", "version", "payload"]),
+            vec![
+                vec![Scalar::Long(1), Scalar::Long(1), Scalar::Long(100)],
+                vec![Scalar::Long(1), Scalar::Long(3), Scalar::Long(300)],
+                vec![Scalar::Long(1), Scalar::Long(2), Scalar::Long(200)],
+                vec![Scalar::Long(2), Scalar::Long(5), Scalar::Long(500)],
+                vec![Scalar::Long(2), Scalar::Long(7), Scalar::Long(700)],
+            ],
+        )
+        .unwrap();
+    let group_by: Vec<ExpressionRef> = vec![Arc::new(Expression::column(["k"]))];
+    let version_column: ExpressionRef = Arc::new(Expression::column(["version"]));
+    let builder = src
+        .max_by_version(group_by, version_column, vec!["payload".to_string()])
+        .unwrap();
+    let rp = ctx.into_result_plan(builder).unwrap();
+
+    let batch = run_to_one_batch(rp);
+    assert_eq!(batch.schema().fields().len(), 1);
+    assert_eq!(batch.schema().field(0).name(), "payload");
+    let payloads: HashSet<i64> = long_col(&batch, "payload").into_iter().collect();
+    assert_eq!(payloads, HashSet::from([300, 700]));
+}

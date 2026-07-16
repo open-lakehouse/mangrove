@@ -46,8 +46,11 @@ keywords = [
 # `git`+`rev` still governs the actual build; `version` only satisfies the
 # packaging check and matches each fork's declared version. See release-plz#2595.
 # Pinned to the delta-kernel-rs `sm-plans-consolidation` line (rev 2cf01549) and
-# the matching delta-rs `feat/sm-plans-kernel` (rev b7bef074), converging native
-# + wasm (crates/query-wasm) on ONE kernel rev. `default-features = false` +
+# the matching delta-rs durable `olai/sm-plans` branch (rev a686c3be), converging
+# native + wasm (crates/query-wasm) on ONE delta-rs rev — the single-rev
+# invariant. a686c3be = the sm-plans-consolidation kernel bump plus the additive
+# `Snapshot::kernel_snapshot()` accessor; the wasm crate pins the same rev.
+# `default-features = false` +
 # explicit `arrow-58` is REQUIRED: the kernel's `arrow` default alias is arrow-59
 # and delta_kernel_default_engine's `default` enables it, so leaving defaults on
 # unions arrow-59 into this arrow-58 graph and splits the two `Schema` types.
@@ -60,7 +63,7 @@ delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/ro
   "arrow-58",
   "rustls",
 ] }
-deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "b7bef0748060fd27013c19f7eaeb296de2daabf5", features = [
+deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "a686c3be5720c036efb80dded5fdaa995ebaab0c", features = [
   "datafusion",
   "cloud",
 ] }

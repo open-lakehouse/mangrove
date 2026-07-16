@@ -336,3 +336,50 @@ async fn catalog_managed_table_opens_with_max_catalog_version() {
     }
     assert_eq!(ids, vec![1, 2, 3], "catalog-managed table rows read back");
 }
+
+/// The scan path is inline-executor-free (M3).
+///
+/// The other tests pass `Some(InlineExecutor.into())` to `open_table`, but that executor only
+/// drives *snapshot construction* under the facade. The async-native `DeltaSsaTableProvider`
+/// scan needs no executor at all. Open with `executor: None` and confirm the preview still
+/// produces the same `[1, 2, 3, 4]` oracle output — proving the scan does not depend on an
+/// inline executor.
+#[tokio::test]
+async fn scan_runs_with_no_inline_executor() {
+    let store = fixture_store().await;
+    let log = discover_log(&store, &Path::from(TABLE_PREFIX), None)
+        .await
+        .unwrap();
+
+    // No executor supplied. `open_table_with_store` falls back to `ExecutorHandle::current()`
+    // for the snapshot build, which is Tokio on native (a real runtime), never the inline
+    // executor. The scan itself constructs no executor of any kind.
+    let opened = open_table(store, &table_url(), log, None, None)
+        .await
+        .unwrap();
+    assert_eq!(opened.snapshot.version(), 0);
+
+    let sql = "SELECT * FROM `uc`.`sales`.`orders` ORDER BY `id`";
+    let (reference, _) = extract_table(sql, None, None).unwrap();
+    register_table(&opened.ctx, &opened, &reference).unwrap();
+
+    let chunks: Vec<_> = execute_chunks(&opened.ctx, sql, Some(4))
+        .await
+        .unwrap()
+        .try_collect()
+        .await
+        .unwrap();
+
+    let mut ids = Vec::new();
+    for chunk in &chunks {
+        for b in decode_chunk(&chunk.ipc) {
+            let col = b.column(0).as_any().downcast_ref::<Int64Array>().unwrap();
+            ids.extend(col.iter().flatten());
+        }
+    }
+    assert_eq!(
+        ids,
+        vec![1, 2, 3, 4],
+        "scan produces the oracle output with no inline executor"
+    );
+}
