@@ -176,28 +176,19 @@ release = false
 
 [[package]]
 name = "unitycatalog-acceptance"
-# Internal test harness (`publish = false` in its Cargo.toml), never released to
-# crates.io and NOT a dependency of any released crate.
+# Internal test harness (`publish = false` in its Cargo.toml), a workspace leaf
+# nothing depends on and never released to crates.io. `release = false` excludes
+# it from release-plz entirely (no update / tag / release, and — per the
+# docs — from the version-determination `cargo package` pass).
 #
-# `git_only = true` is what actually keeps it out of the verifying `cargo
-# package` failure. When release-plz determines a released crate's next version
-# it runs a verifying `cargo package`; for crates it treats as crates.io-bound it
-# rewrites the manifest (stripping the `path`, falling back to the registry
-# version) before verifying — and that rewrite drops the `path` dep's `version`,
-# so verification fails with "dependency `olai-uc-client` does not specify a
-# version" even though the source manifest DOES pin it (see the #55 pins, which
-# are correct but insufficient on their own). `git_only` marks the crate as
-# git-tag-only, so release-plz skips that crates.io-oriented rewrite. This crate
-# is a publish=false bin-bearing test harness, exactly the shape that trips the
-# verify — so it keeps `git_only` (as does the server, for now).
-#
-# `publish = false` is the companion release-plz requires alongside `git_only`
-# (and matches the crate's Cargo.toml). Suppress the tag/release for this
-# internal crate — we only want the packaging behavior, not tag noise.
-git_only = true
-publish = false
-git_tag_enable = false
-git_release_enable = false
+# This used to carry `git_only = true` + `publish = false` + tag/release-disable
+# as a workaround for the whole-workspace `cargo package` verify that a git_only
+# crate's version-determination triggered (the #55–#58 chain). That workaround
+# was a symptom of the release setup at the time; with the server posture cleaned
+# up, `release = false` is expected to suffice on its own. If a future Release PR
+# regresses with "dependency `olai-uc-client` does not specify a version" (or a
+# whole-workspace package failure), restore the `git_only = true` block.
+release = false
 
 # ---------------------------------------------------------------------------
 # Changelog rendering (git-cliff, embedded). Conventional-commit grouping.
