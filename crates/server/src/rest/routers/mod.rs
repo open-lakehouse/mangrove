@@ -7,9 +7,6 @@ use crate::api::{
 use axum::routing::{delete, get, patch, post};
 
 pub use unitycatalog_delta_api::get_router as create_delta_router;
-pub use unitycatalog_sharing_api::{
-    get_router as create_sharing_router, open_sharing_router as create_open_sharing_router,
-};
 
 pub fn create_catalogs_router<T, Cx>(handler: T) -> axum::Router
 where
