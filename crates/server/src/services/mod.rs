@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
+use crate::Result;
 use crate::policy::{Decision, Permission, Policy, ProvidesPolicy};
 use crate::store::{ProvidesResourceStore, ResourceStore};
-use crate::Result;
 use unitycatalog_common::models::ResourceIdent;
 use unitycatalog_delta_api::coordinator::{
     CommitCoordinator, InMemoryCommitCoordinator, ProvidesCommitCoordinator,
