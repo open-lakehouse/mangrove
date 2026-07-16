@@ -14,11 +14,19 @@ pub mod error;
 pub mod exec;
 pub mod executor;
 pub mod provider;
+pub mod snapshot_build;
 #[cfg(any(test, feature = "test-utils"))]
 pub mod testing;
 
 pub use executor::DataFusionExecutor;
 pub use provider::{DeltaSsaScanConfig, DeltaSsaTableProvider};
+pub use snapshot_build::build_snapshot_from_manifest;
+
+// Re-export the kernel types on `build_snapshot_from_manifest`'s public signature so consumers
+// (e.g. `query-wasm`) need not take a direct `delta_kernel` dependency and pin its features
+// themselves — the kernel version/features are this crate's concern.
+pub use delta_kernel::snapshot::SnapshotRef;
+pub use delta_kernel::{FileMeta, Version};
 
 /// A process-monotonic state-machine identity, replacing the POC's `uuid::Uuid::new_v4()` at
 /// this crate's *SM-less* compile entry points (`ssa_result_to_dataframe`, `execute_step`).

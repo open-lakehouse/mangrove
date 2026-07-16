@@ -13,11 +13,12 @@
 #
 # `delta-df-provider` is a sibling member of this same standalone workspace: the
 # async-native (sm_plans-driven) Delta TableProvider that replaces the eager
-# inline-executor scan path. It is a workspace member (not a nested standalone)
-# so it shares this Cargo.lock — that is what unifies the `delta_kernel` types it
-# consumes (via the direct `2cf01549` dep) with the ones `deltalake-core` /
-# `deltalake-wasm` return, and so the `[patch.crates-io]` arrow pins below apply
-# to it too. See ../../handover-wasm-async-native-table-provider.md.
+# inline-executor scan path AND drives async-native snapshot construction. It is a
+# workspace member (not a nested standalone) so it shares this Cargo.lock — that is
+# what unifies the `delta_kernel` types it consumes (via the direct `c70137e7` dep)
+# with the ones `deltalake-core` / `deltalake-wasm` return (they pin the same rev
+# transitively), and so the `[patch.crates-io]` arrow pins below apply to it too.
+# See ../../handover-wasm-async-native-table-provider.md.
 [workspace]
 members = [".", "delta-df-provider"]
 
@@ -38,25 +39,21 @@ publish = false
 name = "query_wasm"
 crate-type = ["cdylib", "rlib"]
 
-# The delta-rs wasm engine: pinned by immutable rev to the roeap fork's durable
-# `olai/sm-plans` branch (rev a686c3be), the consolidation of the stacked
-# wasm/sm-plans line: the sm-plans-consolidation kernel bump, the
-# `feat/wasm-max-catalog-version` work (so the `OpenOptions.max_catalog_version`
-# field this crate threads through is retained), and the additive
-# `Snapshot::kernel_snapshot()` accessor (see below). The old per-step feature
-# branches were folded into `olai/sm-plans` and deleted.
-# Both deps resolve from one git source so `Snapshot`/`DeltaScanNext` types unify
-# with what `deltalake-wasm` returns, and it shares the SAME roeap `delta_kernel`
-# rev (2cf01549) as the native workspace (see ../../Cargo.toml) — one kernel pin
-# across the whole repo.
+# The delta-rs wasm engine, pinned by immutable rev to the roeap fork's
+# `feat/kernel-snapshot-accessor` branch (rev 1b0ad42a): the sm-plans/wasm line
+# with `feat/wasm-max-catalog-version` (so `OpenOptions.max_catalog_version` — the
+# discovery-version thread — is retained) and its `delta_kernel` bumped to the
+# sm-plans-consolidation tip `c70137e7`. Both deps resolve from one git source and
+# pin the SAME kernel rev the `delta-df-provider` sibling pins directly, so exactly
+# one `delta_kernel` is in the graph and `SnapshotRef` unifies across it.
+#
+# NOTE (follow-up): async-native construction no longer uses the facade's
+# `Snapshot::kernel_snapshot()` accessor or `open_table_with_store`; the
+# deltalake-wasm/-core deps remain only for a now-dead `Error::Delta` variant and
+# are slated for removal (see the M3 follow-up issue).
 [dependencies]
-# rev a686c3be = the `olai/sm-plans` tip: the `Snapshot::kernel_snapshot()`
-# accessor the async-native provider needs to reach the kernel `SnapshotRef` from
-# a facade-opened table, on top of the sm-plans-consolidation kernel bump. Same
-# kernel rev (2cf01549) as the native workspace — the accessor is purely additive,
-# so `Snapshot`/`OpenedTable` types are unchanged otherwise.
-deltalake-wasm = { git = "https://github.com/roeap/delta-rs", rev = "a686c3be5720c036efb80dded5fdaa995ebaab0c" }
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "a686c3be5720c036efb80dded5fdaa995ebaab0c", default-features = false, features = [
+deltalake-wasm = { git = "https://github.com/roeap/delta-rs", rev = "1b0ad42ad10d02def901986c45fd1fbd07b9b8f3" }
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "1b0ad42ad10d02def901986c45fd1fbd07b9b8f3", default-features = false, features = [
   "datafusion",
 ] }
 
@@ -97,7 +94,7 @@ url = { version = "2.5" }
 # needs none (the browser supplies fetch), so re-add it natively only. Mirrors
 # deltalake-wasm's own manifest.
 [target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "a686c3be5720c036efb80dded5fdaa995ebaab0c", default-features = false, features = [
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "1b0ad42ad10d02def901986c45fd1fbd07b9b8f3", default-features = false, features = [
   "datafusion",
   "rustls",
 ] }

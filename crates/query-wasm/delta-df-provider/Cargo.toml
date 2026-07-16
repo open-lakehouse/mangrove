@@ -10,9 +10,11 @@
 #   * arrow-58 via the kernel `arrow-58` feature alias (the roeap arrow-rs fork,
 #     patched workspace-globally by the parent query-wasm Cargo.toml). Arrow is
 #     imported through `delta_kernel::arrow::…` so there is ONE arrow in the graph.
-#   * `delta_kernel` at the SAME rev the whole repo pins (2cf01549) with
-#     `sm-plans` + `internal-api` + `arrow-58` — so kernel `SnapshotRef` unifies
-#     with what `deltalake-wasm` returns.
+#   * `delta_kernel` at the sm-plans-consolidation tip (c70137e7 — 2cf01549 plus the
+#     list-free snapshot-construction seam, the SnapshotPm P&M state machine, and the
+#     checkpoint-only reconciliation fix) with `sm-plans` + `internal-api` + `arrow-58`.
+#     A workspace `[patch]` (parent query-wasm Cargo.toml) redirects `deltalake-wasm`'s
+#     transitive kernel onto the same rev, so kernel `SnapshotRef` unifies across the graph.
 #   * NO tokio, NO spawn_blocking, NO getrandom: the sm_plans SM is a CPU-only,
 #     IO-free coroutine, and v1 gates out the only `spawn_blocking` (DV reads).
 #
@@ -43,7 +45,7 @@ test-utils = []
 # `internal-api` exposes the plan IR the compiler walks; `arrow-58` selects the
 # roeap arrow major (paired with `need-arrow`, kernel designs this to pair
 # sm-plans with any arrow major). NO default-engine: v1 needs no kernel Engine.
-delta_kernel = { git = "https://github.com/roeap/delta-kernel-rs", rev = "2cf015496d437859e836aaffa39cc128507b5f52", package = "delta_kernel", default-features = false, features = [
+delta_kernel = { git = "https://github.com/roeap/delta-kernel-rs", rev = "c70137e7c99552e2ac531e873d4dc4499476f3b6", package = "delta_kernel", default-features = false, features = [
   "sm-plans",
   "internal-api",
   "need-arrow",
@@ -103,7 +105,7 @@ delta_df_provider = { package = "olai-uc-delta-df-provider", path = ".", feature
 tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
 rstest = "0.23"
 tempfile = "3"
-delta_kernel_default_engine = { git = "https://github.com/roeap/delta-kernel-rs", rev = "2cf015496d437859e836aaffa39cc128507b5f52", package = "delta_kernel_default_engine", default-features = false, features = [
+delta_kernel_default_engine = { git = "https://github.com/roeap/delta-kernel-rs", rev = "c70137e7c99552e2ac531e873d4dc4499476f3b6", package = "delta_kernel_default_engine", default-features = false, features = [
   "arrow-58",
   "rustls",
 ] }

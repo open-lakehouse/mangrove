@@ -1,5 +1,5 @@
-//! Native end-to-end test of the preview pipeline: log discovery → facade open
-//! (forced onto the inline executor, i.e. the browser execution model) →
+//! Native end-to-end test of the preview pipeline: log discovery → async-native
+//! snapshot construction (no `PrimedStore` prefetch, no inline executor) →
 //! qualified-name registration → contract-framed IPC chunks.
 //!
 //! The fixture Delta table is generated in memory at test time (parquet bytes
@@ -22,7 +22,6 @@ use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use url::Url;
 
-use deltalake_core::kernel::InlineExecutor;
 use query_wasm::engine::{execute_chunks, extract_table, open_table, register_table};
 use query_wasm::resolve::discover_log;
 
@@ -128,10 +127,8 @@ async fn preview_pipeline_end_to_end() {
         .unwrap();
     assert_eq!(log.version, 0);
 
-    // Open on the inline executor — the browser execution model.
-    let opened = open_table(store, &table_url(), log, None, Some(InlineExecutor.into()))
-        .await
-        .unwrap();
+    // Async-native construction: no prime, no inline executor.
+    let opened = open_table(store, &table_url(), log, None).await.unwrap();
     assert_eq!(opened.snapshot.version(), 0);
 
     // Register under exactly the name the preview SQL uses.
@@ -168,9 +165,7 @@ async fn empty_result_yields_one_schema_only_chunk() {
     let log = discover_log(&store, &Path::from(TABLE_PREFIX), None)
         .await
         .unwrap();
-    let opened = open_table(store, &table_url(), log, None, Some(InlineExecutor.into()))
-        .await
-        .unwrap();
+    let opened = open_table(store, &table_url(), log, None).await.unwrap();
 
     let sql = "SELECT * FROM `uc`.`sales`.`orders` WHERE `id` < 0";
     let (reference, _) = extract_table(sql, None, None).unwrap();
@@ -200,9 +195,7 @@ async fn bare_reference_resolves_via_session_defaults() {
     let log = discover_log(&store, &Path::from(TABLE_PREFIX), None)
         .await
         .unwrap();
-    let opened = open_table(store, &table_url(), log, None, Some(InlineExecutor.into()))
-        .await
-        .unwrap();
+    let opened = open_table(store, &table_url(), log, None).await.unwrap();
 
     // Bare name in SQL + request-level defaults: the UC address comes from the
     // defaults while DataFusion resolution lands in the session's default
@@ -283,15 +276,9 @@ async fn catalog_managed_table_opens_with_max_catalog_version() {
         .unwrap();
     assert_eq!(log.version, 0);
 
-    let opened = open_table(
-        store,
-        &table_url(),
-        log,
-        latest,
-        Some(InlineExecutor.into()),
-    )
-    .await
-    .expect("catalog-managed table must open when max_catalog_version is supplied");
+    let opened = open_table(store, &table_url(), log, latest)
+        .await
+        .expect("catalog-managed table must open when max_catalog_version is supplied");
     assert_eq!(opened.snapshot.version(), 0);
 
     let sql = "SELECT * FROM `uc`.`sales`.`orders` ORDER BY `id`";
@@ -337,13 +324,12 @@ async fn catalog_managed_table_opens_with_max_catalog_version() {
     assert_eq!(ids, vec![1, 2, 3], "catalog-managed table rows read back");
 }
 
-/// The scan path is inline-executor-free (M3).
+/// The whole pipeline is inline-executor-free.
 ///
-/// The other tests pass `Some(InlineExecutor.into())` to `open_table`, but that executor only
-/// drives *snapshot construction* under the facade. The async-native `DeltaSsaTableProvider`
-/// scan needs no executor at all. Open with `executor: None` and confirm the preview still
-/// produces the same `[1, 2, 3, 4]` oracle output — proving the scan does not depend on an
-/// inline executor.
+/// Both snapshot construction and the scan are async-native now: `open_table` drives the kernel
+/// P&M state machine (no `PrimedStore` prefetch), and the `DeltaSsaTableProvider` scan needs no
+/// executor. This test asserts the preview still produces the `[1, 2, 3, 4]` oracle output with no
+/// inline executor anywhere on the path.
 #[tokio::test]
 async fn scan_runs_with_no_inline_executor() {
     let store = fixture_store().await;
@@ -351,12 +337,7 @@ async fn scan_runs_with_no_inline_executor() {
         .await
         .unwrap();
 
-    // No executor supplied. `open_table_with_store` falls back to `ExecutorHandle::current()`
-    // for the snapshot build, which is Tokio on native (a real runtime), never the inline
-    // executor. The scan itself constructs no executor of any kind.
-    let opened = open_table(store, &table_url(), log, None, None)
-        .await
-        .unwrap();
+    let opened = open_table(store, &table_url(), log, None).await.unwrap();
     assert_eq!(opened.snapshot.version(), 0);
 
     let sql = "SELECT * FROM `uc`.`sales`.`orders` ORDER BY `id`";

@@ -5,16 +5,17 @@
 //! an `EngineRequest::Consume` (SSA dataflow drained into a [`ConsumeSink`]). Terminal
 //! `ResultPlan`s describe a single self-contained dataflow DAG that compiles to a `LogicalPlan`.
 //!
-//! # Engine-free (v1)
+//! # Engine-free
 //!
-//! Unlike the POC, this executor holds **no kernel `Engine`**. Two POC touch-points needed one:
+//! Unlike the POC, this executor holds **no kernel `Engine`**. Both POC touch-points that needed
+//! one are handled without it:
 //!
-//!   1. deletion-vector reads — dropped entirely (v1 gates DVs to `Unsupported`), and
-//!   2. checkpoint-footer `SchemaQuery` — v1 gates checkpointed tables to `Unsupported`
-//!      upstream in `query-wasm`'s `resolve.rs`, so a commit-only preview table emits **zero**
-//!      `SchemaQuery` steps. If one ever fires, we surface a clear "unsupported in v1" error
-//!      rather than carrying an engine to service it. (v2/M4 will service it async over the
-//!      session object store — still no engine.)
+//!   1. deletion-vector reads — dropped entirely (DVs are gated to `Unsupported` upstream), and
+//!   2. checkpoint-footer `SchemaQuery` — serviced async over the session object store via
+//!      `parquet::arrow::async_reader` (a metadata-only footer read; see [`Self::read_footer_schema`]),
+//!      converting the arrow schema to a kernel `StructType`. This is what lets the P&M
+//!      snapshot-construction SM ([`build_snapshot_pm`](Self::build_snapshot_pm)) resolve a
+//!      classic-checkpointed table, and ungates classic checkpoints on the scan path.
 //!
 //! [`ConsumeSink`]: delta_kernel::sm_plans::ir::nodes::ConsumeSink
 
@@ -26,9 +27,15 @@ use datafusion_common::error::DataFusionError;
 use datafusion_execution::TaskContext;
 use datafusion_execution::config::SessionConfig;
 use datafusion_physical_plan::ExecutionPlan;
+use delta_kernel::engine::arrow_conversion::TryFromArrow;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
+use delta_kernel::log_segment::LogSegment;
+use delta_kernel::parquet::arrow::async_reader::{
+    ParquetObjectReader, ParquetRecordBatchStreamBuilder,
+};
 use delta_kernel::scan::Scan;
-use delta_kernel::sm_plans::errors::DeltaError;
+use delta_kernel::schema::{SchemaRef as KernelSchemaRef, StructType};
+use delta_kernel::sm_plans::errors::{DeltaError, KernelErrAsDelta};
 use delta_kernel::sm_plans::ir::nodes::ConsumeSink;
 use delta_kernel::sm_plans::kernel_consumers::{FinishedHandle, KdfControl};
 use delta_kernel::sm_plans::state_machines::framework::coroutine::driver::CoroutineSM;
@@ -39,27 +46,14 @@ use delta_kernel::sm_plans::state_machines::framework::state_machine::{NextStep,
 use delta_kernel::sm_plans::state_machines::framework::step::{EngineRequest, SchemaQuery};
 use delta_kernel::sm_plans::state_machines::framework::step_payload::EngineResponse;
 use delta_kernel::sm_plans::state_machines::scan::FullState;
+use delta_kernel::sm_plans::state_machines::snapshot::SnapshotPm;
+use delta_kernel::snapshot::{Snapshot, SnapshotRef};
 use futures::TryStreamExt;
+use url::Url;
 use uuid::Uuid;
 
 use crate::compile::{CompileContext, compile_ssa};
 use crate::error::DfResultIntoDelta;
-
-/// Service a checkpoint-footer `SchemaQuery` step.
-///
-/// v1 gates checkpointed tables to `Unsupported` upstream, so this should be unreachable for the
-/// commit-only preview tables the wasm engine targets. If it fires we return a clear error
-/// instead of silently misreading the table; v2 (M4) will service it asynchronously over the
-/// session object store via `parquet::arrow::async_reader` — with no kernel engine.
-fn execute_schema_query_phase(node: SchemaQuery) -> Result<EngineResponse, EngineError> {
-    Err(EngineError::new(EngineErrorKind::IoError {
-        message: format!(
-            "checkpoint-footer SchemaQuery for `{}` is unsupported in the v1 wasm scan path \
-             (checkpointed tables must be gated to Unsupported upstream)",
-            node.file_path
-        ),
-    }))
-}
 
 /// Minimal executor: a [`TaskContext`] for [`ExecutionPlan::execute`] calls and a
 /// [`SessionContext`] for DataFusion compile/optimize/lower. Carries no kernel engine.
@@ -80,13 +74,28 @@ impl DataFusionExecutor {
     /// remote files, drive against a [`SessionContext`] whose runtime env has the object store
     /// registered (see the `TableProvider` integration in `query-wasm`).
     pub fn new() -> Self {
+        let session_ctx = SessionContext::new_with_config(Self::replay_session_config());
+        Self {
+            task_ctx: Arc::new(TaskContext::default()),
+            session_ctx,
+        }
+    }
+
+    /// The `SessionConfig` the SSA reconciliation / P&M replay shape requires.
+    ///
+    /// These three overrides are load-bearing for driving the reconciliation `Consume` plans,
+    /// so any executor session that *runs* those plans (not just compiles a `ResultPlan` for the
+    /// caller to run) must apply them — hence [`Self::new`] and [`Self::new_with_store`] share
+    /// this, and callers who hand in their own session via [`Self::from_session`] are responsible
+    /// for matching it.
+    fn replay_session_config() -> SessionConfig {
         let mut session_config = SessionConfig::new();
-        // DataFusion's leaf-expression-pushdown pass interacts badly with our FSR scan replay
-        // shape (Filter over a Projection that builds a struct via named_struct). The rule
-        // inlines the full struct definition into every Filter leaf, CommonSubexprEliminate
-        // then dedups badly and ultimately fails Projection::try_new with duplicate
-        // `__common_expr_N` fields. Keep it disabled (apache/datafusion#20432 tracks the
-        // upstream `build_extraction_projection_impl` dedup gap).
+        // DataFusion's leaf-expression-pushdown pass interacts badly with our FSR replay shape
+        // (Filter over a Projection that builds a struct via named_struct): it inlines the full
+        // struct definition into every Filter leaf, and downstream either CommonSubexprEliminate
+        // dedups badly (duplicate `__common_expr_N`) or the qualified/unqualified struct field
+        // refs (`scan."metaData"` vs `"metaData"`) become ambiguous. Keep it disabled
+        // (apache/datafusion#20432).
         session_config
             .options_mut()
             .optimizer
@@ -101,15 +110,36 @@ impl DataFusionExecutor {
         // partition 0 only, and scan/FSR correctness does not depend on intra-file parallelism.
         // (Also required on wasm, where multi-partition repartition tasks never run.)
         session_config.options_mut().execution.target_partitions = 1;
-        let session_ctx = SessionContext::new_with_config(session_config);
+        session_config
+    }
+
+    /// Builds an executor over a reconciliation-safe session (see [`Self::replay_session_config`])
+    /// with `store` registered for `table_url`'s authority.
+    ///
+    /// Unlike [`Self::from_session`], this owns the session config, so it is the right constructor
+    /// for **driving** replay SMs (scan/FSR/P&M) that both run the reconciliation `Consume`/
+    /// `SchemaQuery` plans *and* read log/data files over `store` — e.g. snapshot construction,
+    /// where a checkpointed table's P&M replay reads the checkpoint parquet during the drive.
+    pub fn new_with_store(
+        table_url: &url::Url,
+        store: Arc<dyn delta_kernel::object_store::ObjectStore>,
+    ) -> Self {
+        let session_ctx = SessionContext::new_with_config(Self::replay_session_config());
+        session_ctx
+            .runtime_env()
+            .register_object_store(table_url, store);
+        let task_ctx = session_ctx.task_ctx();
         Self {
-            task_ctx: Arc::new(TaskContext::default()),
+            task_ctx,
             session_ctx,
         }
     }
 
     /// Builds an executor over a caller-provided [`SessionContext`] (whose runtime env should
     /// have the scan's object store registered) and its task context.
+    ///
+    /// The caller's session config must match [`Self::replay_session_config`] when this executor
+    /// will *drive* a replay SM (as opposed to only compiling a `ResultPlan`).
     pub fn from_session(session_ctx: SessionContext) -> Self {
         let task_ctx = session_ctx.task_ctx();
         Self {
@@ -238,6 +268,33 @@ impl DataFusionExecutor {
         self.drive_ssa_to_dataframe(fsr.state_machine()?).await
     }
 
+    /// Build a kernel [`SnapshotRef`] from a pre-listed [`LogSegment`], **async-native and
+    /// engine-free**: drive the [`SnapshotPm`] state machine to resolve `(Protocol, Metadata)`
+    /// (log replay streamed lazily through this executor's session object store — commits + any
+    /// checkpoint parquet, short-circuiting once both are found), then assemble the snapshot via
+    /// [`Snapshot::from_parts`].
+    ///
+    /// This is the async-native replacement for the eager `PrimedStore` + synchronous
+    /// `DataFusionEngine` snapshot build: no up-front log prime, no `InlineExecutor`, no CRC.
+    ///
+    /// The `SnapshotPm` SM is `!Send` (like the scan SM), but — unlike the scan SM — its drive
+    /// awaits real object-store reads (commit `.json`, checkpoint footer). Callers must therefore
+    /// `.await` this, NOT `block_on` it: on a browser worker a blocked thread starves the event
+    /// loop a `fetch` needs, hanging construction forever. Awaiting leaves the caller's future
+    /// `!Send`, which every driver we target (wasm-bindgen-futures, native current-thread) accepts.
+    pub async fn build_snapshot_pm(
+        &self,
+        log_segment: Arc<LogSegment>,
+        table_root: Url,
+    ) -> Result<SnapshotRef, DeltaError> {
+        let sm = SnapshotPm::for_log_segment(Arc::clone(&log_segment)).state_machine()?;
+        let (protocol, metadata) = self.drive_to_completion(sm).await?;
+        let log_segment = Arc::unwrap_or_clone(log_segment);
+        let snapshot = Snapshot::from_parts(table_root, log_segment, protocol, metadata)
+            .map_err(KernelErrAsDelta::into_delta_default)?;
+        Ok(Arc::new(snapshot))
+    }
+
     /// Execute a single [`EngineRequest`] against the executor and return the resulting
     /// [`EngineResponse`]. Used internally by [`Self::drive_to_completion`] and exposed for
     /// callers (typically tests) that need to drive an individual phase op directly.
@@ -256,7 +313,7 @@ impl DataFusionExecutor {
         step_name: &'static str,
     ) -> Result<EngineResponse, EngineError> {
         match op {
-            EngineRequest::SchemaQuery(node) => execute_schema_query_phase(node),
+            EngineRequest::SchemaQuery(node) => self.read_footer_schema(&node).await,
             EngineRequest::Consume {
                 stmts,
                 terminal,
@@ -293,6 +350,58 @@ impl DataFusionExecutor {
             .create_physical_plan(&df_state.optimize(&logical)?)
             .await?;
         self.drain_consume_sink(physical, sink, &ctx).await
+    }
+
+    /// Service a checkpoint-footer [`SchemaQuery`] step: read the parquet file's schema from its
+    /// footer over the session object store, engine-free.
+    ///
+    /// The kernel emits this only for **checkpointed** tables (the reconciliation SM probes the
+    /// checkpoint parquet footer to classify inline-vs-manifest / stats layout). Commit-only
+    /// previews emit zero `SchemaQuery` steps. Reading only the footer (metadata) — not the row
+    /// groups — keeps this cheap and unaffected by page compression, so it works even for
+    /// compressed checkpoints. The arrow schema is converted to a kernel [`StructType`] via
+    /// [`TryFromArrow`], matching what the kernel's own footer reader would produce.
+    async fn read_footer_schema(&self, node: &SchemaQuery) -> Result<EngineResponse, EngineError> {
+        self.read_footer_schema_inner(node)
+            .await
+            .map(EngineResponse::Schema)
+            .map_err(|e| {
+                EngineError::new(EngineErrorKind::IoError {
+                    message: format!(
+                        "checkpoint-footer SchemaQuery for `{}` failed: {e}",
+                        node.file_path
+                    ),
+                })
+            })
+    }
+
+    async fn read_footer_schema_inner(
+        &self,
+        node: &SchemaQuery,
+    ) -> Result<KernelSchemaRef, DataFusionError> {
+        let url =
+            Url::parse(&node.file_path).map_err(|e| DataFusionError::External(Box::new(e)))?;
+        // Resolve the caller-registered object store for this URL's authority (the same store the
+        // scan path reads through), then footer-read via DataFusion's async parquet reader.
+        let listing = datafusion_datasource::ListingTableUrl::parse(url.as_str())?;
+        let object_store_url = listing.object_store();
+        let store = self
+            .task_ctx
+            .runtime_env()
+            .object_store(&object_store_url)?;
+        let path = listing.prefix().clone();
+        let meta = {
+            use delta_kernel::object_store::ObjectStoreExt;
+            store.head(&path).await?
+        };
+        let reader = ParquetObjectReader::new(store, meta.location).with_file_size(meta.size);
+        let builder = ParquetRecordBatchStreamBuilder::new(reader)
+            .await
+            .map_err(|e| DataFusionError::External(Box::new(e)))?;
+        let arrow_schema = builder.schema().as_ref();
+        let kernel_schema = StructType::try_from_arrow(arrow_schema)
+            .map_err(|e| DataFusionError::External(Box::new(e)))?;
+        Ok(Arc::new(kernel_schema))
     }
 
     /// Drain `physical` through a
