@@ -1,12 +1,9 @@
 use std::sync::Arc;
 
-use delta_kernel::{Snapshot, Version};
-
-use unitycatalog_common::models::tables::v1::DataSourceFormat;
 use unitycatalog_sharing_api::session::KernelSession;
 
 use self::location::StorageLocationUrl;
-use crate::api::tables::{TableHandler, TableManager};
+use crate::api::tables::TableHandler;
 use crate::api::volumes::VolumeHandler;
 use crate::policy::{Decision, Permission, Policy, ProvidesPolicy};
 use crate::store::{ProvidesResourceStore, ResourceStore};
@@ -346,32 +343,5 @@ impl<Cx: Send + Sync + 'static> ProvidesManagedStorageRoot for ServerHandlerInne
 impl<Cx: Send + Sync + 'static> ProvidesManagedStorageRoot for ServerHandler<Cx> {
     fn managed_storage_root(&self) -> Option<&str> {
         self.handler.managed_storage_root.as_deref()
-    }
-}
-
-#[async_trait::async_trait]
-impl<Cx: Send + Sync + 'static> TableManager for ServerHandler<Cx> {
-    async fn read_snapshot(
-        &self,
-        location: &StorageLocationUrl,
-        format: &DataSourceFormat,
-        version: Option<Version>,
-    ) -> Result<Arc<Snapshot>> {
-        // The kernel session serves only Delta; keep the server-side guard here so
-        // the tables API rejects non-Delta formats with `InvalidArgument` (the
-        // crate's `read_snapshot` does not check the format).
-        if *format != DataSourceFormat::Delta {
-            return Err(Error::InvalidArgument(format!(
-                "unsupported data source format in kernel session: {format:?}"
-            )));
-        }
-        let resolved = unitycatalog_sharing_api::backend::ResolvedLocation {
-            url: location.location().clone(),
-            raw: location.raw().to_string(),
-        };
-        self.session
-            .read_snapshot(&resolved, version)
-            .await
-            .map_err(|e| Error::Generic(e.to_string()))
     }
 }
