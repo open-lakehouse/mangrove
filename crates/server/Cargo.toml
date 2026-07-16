@@ -69,7 +69,11 @@ tower = { workspace = true, features = ["make"], optional = true }
 tower-http = { version = "0.6", features = ["trace", "fs"], optional = true }
 
 # in-memory handler dependencies (in alphabetical order)
-uuid = { workspace = true, optional = true, features = ["v7"] }
+# `v4` for random ids (in-memory store, staging tables) and `v7` for
+# time-ordered ids (volumes, agents, model versions). Both are used directly;
+# declaring them here rather than relying on feature unification from a sibling
+# crate keeps the build correct in isolation.
+uuid = { workspace = true, optional = true, features = ["v4", "v7"] }
 
 # `bin` (deployable `uc-server` binary) dependencies — all optional so a library
 # build of this crate doesn't pull the CLI / storage-backend / serve stack.
