@@ -217,7 +217,11 @@ pub(crate) fn swagger_api_defs() -> Vec<ApiDefinition<&'static str>> {
     vec![
         ApiDefinition {
             uri_prefix: "/api/2.1/unity-catalog",
-            api_definition: OpenApiSource::Inline(include_str!("../../../openapi/openapi.yaml")),
+            // In-crate copy of the canonical repo-root `openapi/openapi.yaml`, so
+            // the embed survives `cargo publish` (which packages only files under
+            // the crate; a `../../../` read escapes the tarball). Kept in sync by
+            // `just sync-server-openapi` + a CI drift guard — see justfile.
+            api_definition: OpenApiSource::Inline(include_str!("../openapi/openapi.yaml")),
             title: Some("Unity Catalog API"),
         },
         // The Delta REST API routes live at `/delta/v1/...` under the UC base
@@ -225,7 +229,9 @@ pub(crate) fn swagger_api_defs() -> Vec<ApiDefinition<&'static str>> {
         // the swagger-ui asset routes don't collide with the main UC API's.
         ApiDefinition {
             uri_prefix: "/api/2.1/unity-catalog/delta",
-            api_definition: OpenApiSource::Inline(include_str!("../../../openapi/delta.yaml")),
+            // In-crate copy of repo-root `openapi/delta.yaml` (same publish-safety
+            // reason as above).
+            api_definition: OpenApiSource::Inline(include_str!("../openapi/delta.yaml")),
             title: Some("UC Delta API"),
         },
     ]

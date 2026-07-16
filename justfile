@@ -64,6 +64,7 @@ generate-openapi:
     mv tmp.yaml openapi/openapi.yaml
     bun run openapi
     just generate-node-openapi
+    just sync-server-openapi
 
 # Regenerate the node unity-catalog-client's TypeScript API types from the
 # canonical openapi/openapi.yaml (via openapi-typescript). Chained off
@@ -72,6 +73,41 @@ generate-openapi:
 [group('codegen')]
 generate-node-openapi:
     cd {{ justfile_directory() }}/node/unity-catalog-client && bun run gen:api
+
+# The `olai-uc-server` crate embeds the OpenAPI specs via `include_str!` to serve
+# Swagger UI. The canonical specs live at the repo root (`openapi/`), but a
+# `cargo publish` tarball contains ONLY files under the crate, so an
+# `../../../openapi/...` embed would break the published build. These recipes keep
+# byte-identical copies inside the crate (`crates/server/openapi/`) that DO ship
+# in the tarball; `run.rs` `include_str!`s those copies. Chained off
+# `generate-openapi` so the copies can't drift from the canonical specs; a CI
+# drift guard (`sync-server-openapi-check`) fails the build if they do. Mirrors
+# the `generate-node-openapi` / `ui-fingerprint` conventions.
+SERVER_OPENAPI_DIR := "crates/server/openapi"
+
+# copy the canonical repo-root openapi specs into the server crate
+[group('codegen')]
+sync-server-openapi:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p {{ justfile_directory() }}/{{ SERVER_OPENAPI_DIR }}
+    for f in openapi.yaml delta.yaml; do
+        cp {{ justfile_directory() }}/openapi/"$f" {{ justfile_directory() }}/{{ SERVER_OPENAPI_DIR }}/"$f"
+    done
+    echo "→ synced openapi.yaml, delta.yaml into {{ SERVER_OPENAPI_DIR }}"
+
+# fail if the in-crate openapi copies are stale relative to the canonical specs
+[group('test')]
+sync-server-openapi-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for f in openapi.yaml delta.yaml; do
+        if ! diff -q {{ justfile_directory() }}/openapi/"$f" \
+            {{ justfile_directory() }}/{{ SERVER_OPENAPI_DIR }}/"$f" >/dev/null; then
+            echo "::error::{{ SERVER_OPENAPI_DIR }}/$f is out of sync with openapi/$f — run \`just sync-server-openapi\` and commit the result." >&2
+            exit 1
+        fi
+    done
 
 # generate rest server and client code with build crate.
 [group('codegen')]
