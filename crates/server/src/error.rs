@@ -1,8 +1,6 @@
 use axum::extract::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-#[cfg(feature = "grpc")]
-use tonic::Status;
 use tracing::error;
 use unitycatalog_common::ErrorResponse;
 
@@ -247,76 +245,5 @@ impl IntoResponse for Error {
             }),
         )
             .into_response()
-    }
-}
-
-#[cfg(feature = "grpc")]
-impl From<Error> for Status {
-    fn from(e: Error) -> Self {
-        match e {
-            Error::Common { source } => match source {
-                unitycatalog_common::Error::NotFound => {
-                    Status::not_found("The requested resource does not exist.")
-                }
-                unitycatalog_common::Error::InvalidArgument(msg) => Status::invalid_argument(msg),
-                unitycatalog_common::Error::InvalidIdentifier(e) => {
-                    Status::invalid_argument(e.to_string())
-                }
-                unitycatalog_common::Error::InvalidTableLocation(loc) => {
-                    Status::invalid_argument(format!("Invalid table location: {loc}"))
-                }
-                unitycatalog_common::Error::InvalidUrl(e) => {
-                    Status::invalid_argument(format!("Invalid URL: {e}"))
-                }
-                _ => Status::internal(format!("Common Error: {source}")),
-            },
-            Error::NotFound => Status::not_found("The requested resource does not exist."),
-            Error::NotAllowed => {
-                Status::permission_denied("The request is forbidden from being fulfilled.")
-            }
-            Error::Unauthenticated => Status::unauthenticated(
-                "The request is unauthenticated. The bearer token is missing or incorrect.",
-            ),
-            Error::SerDe { source } => {
-                Status::internal(format!("Serialization/Deserialization Error: {}", source))
-            }
-            // Error::InvalidTableLocation(location) => {
-            //     Status::internal(format!("Invalid table location: {}", location))
-            // }
-            Error::MissingRecipient => {
-                Status::invalid_argument("Failed to extract recipient from request")
-            }
-            // Error::DataFusion(error) => Status::internal(error.to_string()),
-            // Error::Arrow(error) => Status::internal(error.to_string()),
-            // Error::InvalidPredicate(msg) => Status::invalid_argument(msg),
-            Error::AlreadyExists => Status::already_exists("The resource already exists."),
-            Error::CommitVersionConflict(message) => Status::aborted(message),
-            Error::UpdateRequirementConflict(message) => Status::aborted(message),
-            Error::ResourceExhausted(message) => Status::resource_exhausted(message),
-            Error::InvalidIdentifier(e) => Status::invalid_argument(e.to_string()),
-            Error::InvalidArgument(message) => Status::invalid_argument(message),
-            Error::Generic(message) => Status::internal(message),
-            Error::NotImplemented(what) => {
-                Status::unimplemented(format!("Not implemented: {what}"))
-            }
-            // Error::Client(error) => Status::internal(error.to_string()),
-            // Error::InvalidUrl(_) => Status::internal("Invalid url"),
-            Error::ObjectStore { source } => {
-                Status::internal(format!("ObjectStore error: {}", source))
-            }
-            Error::CloudCredential { source } => {
-                Status::internal(format!("Cloud credential error: {}", source))
-            }
-            Error::ResourceStore { source } => match source {
-                olai_store::Error::NotFound => {
-                    Status::not_found("The requested resource does not exist.")
-                }
-                olai_store::Error::AlreadyExists => {
-                    Status::already_exists("The resource already exists.")
-                }
-                olai_store::Error::InvalidArgument(msg) => Status::invalid_argument(msg),
-                _ => Status::internal(format!("Resource store error: {source}")),
-            },
-        }
     }
 }

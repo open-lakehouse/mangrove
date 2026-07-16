@@ -1,6 +1,6 @@
 # olai-uc-server
 
-**Unity Catalog REST and gRPC server with pluggable storage backends — a
+**Unity Catalog REST server with pluggable storage backends — a
 deployable catalog service and the library it is built from.**
 
 > [!NOTE]
@@ -11,7 +11,7 @@ deployable catalog service and the library it is built from.**
 
 This crate is two things at once:
 
-- A **library** (`unitycatalog_server`) providing the Unity Catalog REST/gRPC
+- A **library** (`unitycatalog_server`) providing the Unity Catalog REST
   handlers, routing, storage services, and the reusable handler patterns
   (in-memory backend, proxy/federation connectors) that a custom deployment can
   build on.
@@ -35,7 +35,7 @@ cargo install olai-uc-server --features bin
 This installs `uc-server`:
 
 ```sh
-uc-server serve            # run the catalog server (REST + gRPC + bundled UI)
+uc-server serve            # run the catalog server (REST + bundled UI)
 uc-server migrate          # run database migrations
 uc-server healthcheck      # probe /health (used by the Docker HEALTHCHECK)
 ```
@@ -58,7 +58,7 @@ unitycatalog-server = { package = "olai-uc-server", version = "0.0.2" }
 ```
 
 A bare library build brings in only the handler/routing surface (default
-features `axum` + `memory` + `grpc`); the `bin` feature and its storage-backend /
+features `axum` + `memory`); the `bin` feature and its storage-backend /
 CLI / UI-serving dependencies stay out unless you opt in.
 
 ## Feature flags
@@ -67,7 +67,6 @@ CLI / UI-serving dependencies stay out unless you opt in.
 | --------- | :-----: | ---------------------------------------------------------------------------------------- |
 | `axum`    |   yes   | The axum router, extractors, and served HTTP surface.                                    |
 | `memory`  |   yes   | The in-memory handler backend (random/time-ordered IDs).                                 |
-| `grpc`    |   yes   | The generated tonic gRPC service.                                                        |
 | `proxy`   |         | Reusable proxy leaves + a Unity Catalog client connector.                                |
 | `federation` |      | Federation over the proxy connector (implies `proxy`).                                   |
 | `bin`     |         | The deployable `uc-server` binary: SQLite/Postgres backends, the hybrid proxy, swagger UI, the CLI parser, and the healthcheck client. |
