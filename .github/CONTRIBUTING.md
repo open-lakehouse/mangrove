@@ -183,24 +183,30 @@ here.
 2. release-plz opens/updates a **Release PR** that bumps the affected crates' versions
    and updates their changelogs. Review it like any PR.
 3. **Merging the Release PR** publishes: release-plz tags each changed crate
-   (`<crate>-v<version>`), creates its GitHub Release, and publishes the *library* crates
-   to crates.io via OIDC trusted publishing. The `olai-uc-server` tag additionally drives
-   the container build (see below); `olai-uc-server` is **not** published to crates.io.
+   (`<crate>-v<version>`), creates its GitHub Release, and publishes the publishable crates
+   to crates.io via OIDC trusted publishing. When a release includes `olai-uc-server`,
+   release-plz.yml additionally drives the `mangrove` container build off release-plz's own
+   `releases` output (see below).
 
 **Tags / artifacts:**
 
 | Tag                    | Builds & attaches                                  | Workflow                          |
 |------------------------|----------------------------------------------------|-----------------------------------|
-| every `olai-uc-*-v*`   | GitHub Release (changelog); crates.io publish for library crates | release-plz.yml     |
-| `olai-uc-server-v*`    | + `ghcr.io/open-lakehouse/mangrove` image (no crates.io publish) | release-plz.yml → docker-release.yml |
+| every `olai-uc-*-v*`   | GitHub Release (changelog); crates.io publish for publishable crates | release-plz.yml   |
+| `olai-uc-server-v*`    | + `ghcr.io/open-lakehouse/mangrove` image (in addition to the crates.io publish) | release-plz.yml → docker-release.yml |
 
-**The server is a deployable, not a library.** `olai-uc-server` is `git_only = true` in
-`release-plz.toml` (and `publish = false` in its `Cargo.toml`): release-plz versions,
-changelogs, tags, and GitHub-releases it from git, but never `cargo publish`es it. Its
-`olai-uc-server-v<version>` tag is what triggers the `mangrove` Docker image build. Its
-bundled web UI lives in `node/` — outside the crate's packaged fileset — so a UI change is
-tied to the crate via `crates/server/ui.lock`; after editing anything under `node/`, run
-`just ui-fingerprint` and commit the updated lock (CI's `ui-fingerprint` job enforces this).
+**The server is both a published crate and a Docker image.** `olai-uc-server` publishes to
+crates.io like any other crate (library + the `uc-server` binary, the latter behind the
+`bin` feature — `cargo install olai-uc-server --features bin`), *and* ships as the
+`ghcr.io/open-lakehouse/mangrove` image. Because it is a normal published crate, release-plz
+lists it in the `release` command's `releases` JSON; release-plz.yml reads that JSON and, when
+the server was released this run, calls `docker-release.yml` with the version + tag. (This
+replaced an older bespoke tag-creation shell step that was only needed while the server was
+`git_only`.) The Docker image builds **only** on an actual server release or a manual
+`workflow_dispatch` rebuild — there is no per-push/edge build. The server's bundled web UI
+lives in `node/` — outside the crate's packaged fileset — so a UI change is tied to the crate
+via `crates/server/ui.lock`; after editing anything under `node/`, run `just ui-fingerprint`
+and commit the updated lock (CI's `ui-fingerprint` job enforces this).
 
 The Python (`python/client`) and Node (`node/client`) bindings are `publish = false` for
 now (held off); so are `unitycatalog-acceptance` and the doc `examples`.
@@ -209,14 +215,15 @@ now (held off); so are `unitycatalog-acceptance` and the doc `examples`.
 that has never existed. Each `olai-uc-*` crate therefore needs a one-time token bootstrap
 before release-plz can publish it via OIDC. Until then it carries `release = false` in
 `release-plz.toml` (release-plz still versions/changelogs/tags it, just doesn't publish).
-The bootstrap is staged tier-by-tier in `.github/workflows/bootstrap-publish.yml`
-(`common` → `client`/`sharing-client`/`postgres`/`sqlite` → `object-store`/`datafusion`
-→ `cli`). For each tier: token-publish it, register its crates.io Trusted Publisher (repo
-`open-lakehouse/mangrove`, workflow `release-plz.yml`, env `release`), then remove its
-`release = false`. `olai-uc-server` is **not** in this chain — it is a deployable
-(`git_only`), never published to crates.io. When the library crates are all live, delete
-the bootstrap workflow and revoke the `CARGO_REGISTRY_TOKEN` secret. Any *new* publishable
-crate added later needs the same one-time bootstrap.
+The bootstrap runs from `.github/workflows/bootstrap-publish.yml`. For each crate:
+token-publish it, register its crates.io Trusted Publisher (repo `open-lakehouse/mangrove`,
+workflow `release-plz.yml`, env `release`), then remove its `release = false`.
+`olai-uc-server` is the **last** crate that needs this bootstrap (it recently became a
+published crate); once it is live, delete the bootstrap workflow and revoke the
+`CARGO_REGISTRY_TOKEN` secret. Any *new* publishable crate added later needs the same
+one-time bootstrap (re-add the workflow if so). Not published to crates.io at all:
+`olai-uc-sharing-client` / `olai-uc-sharing-api` / `olai-uc-datafusion` (standing git-dep
+block via the `delta_kernel`/`deltalake-core` git revs) and `olai-uc-cli` (held out for now).
 
 **Notes:**
 

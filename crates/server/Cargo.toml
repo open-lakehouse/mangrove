@@ -9,11 +9,13 @@ readme.workspace = true
 rust-version.workspace = true
 homepage.workspace = true
 keywords.workspace = true
-# Deployable service, not a reusable library on crates.io: ship via Docker +
-# GitHub release, keyed off this crate's release-plz git tag. `publish = false`
-# makes that contract explicit and guards against an accidental `cargo publish`.
-# (The crate is still consumed in-workspace as a library by tests/tools.)
-publish = false
+# Published to crates.io (library + the `uc-server` binary, the latter behind the
+# `bin` feature). The same crate additionally ships as the `mangrove` Docker image
+# on release — see release-plz.toml + docker-release.yml. Its dependency graph is
+# free of git sources (verified via `cargo tree`), so `cargo publish` accepts it;
+# that only became true once the git-pinned Delta Sharing query surface was removed
+# (PR #89). `readme` resolves to this crate's README.md, required by `cargo publish`.
+publish = true
 
 [lib]
 # Stable Rust crate identifier, independent of the provisional package name.

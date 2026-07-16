@@ -64,7 +64,8 @@ pr_draft = false
 #       OIDC trusted publishing cannot create a brand-new name. It needs a
 #       one-time token bootstrap (bootstrap-publish.yml) first. Remove the
 #       `release = false` line once the crate is bootstrapped + its Trusted
-#       Publisher is registered. Currently only `olai-uc-delta-api`.
+#       Publisher is registered. Currently only `olai-uc-server` (delta-api has
+#       been bootstrapped and now releases via OIDC).
 #
 #   (b) GIT-DEP BLOCK — the crate depends (transitively, via the workspace
 #       `delta_kernel` / `deltalake-core` git revs) on a git source. `cargo
@@ -75,17 +76,19 @@ pr_draft = false
 #       behind the `delta` feature) are both blocked this way.
 #
 # crates.io publish/bootstrap order (root -> leaf):
-#   delta-api, common -> client, object-store, postgres, sqlite -> cli
-# (sharing-client, datafusion are out of the order entirely — see (b) above.)
+#   delta-api, common -> client, object-store, postgres, sqlite -> server, cli
+# (sharing-client, sharing-api, datafusion are out of the order entirely — see
+# (b) above.)
 #
-# Already on crates.io (bootstrapped, releasing via OIDC): common, client,
-# object-store, postgres, sqlite — these carry NO `release = false`.
+# Already on crates.io (bootstrapped, releasing via OIDC): delta-api, common,
+# client, object-store, postgres, sqlite — these carry NO `release = false`.
 #
 # `olai-uc-cli` is publishable (no git deps, its deps are live) but is
 # intentionally held out of crates.io for now; it keeps `release = false`.
 #
-# `olai-uc-server` is NOT a library: it is a deployable (`git_only = true`),
-# released as a Docker image rather than to crates.io — see its block below.
+# `olai-uc-server` is a published crate (library + the `uc-server` binary) that
+# ALSO ships as the `mangrove` Docker image; it carries a temporary bootstrap
+# `release = false` gate until its first token publish — see its block below.
 # ---------------------------------------------------------------------------
 [[package]]
 name = "olai-uc-delta-api"
@@ -138,21 +141,26 @@ release = false
 [[package]]
 name = "olai-uc-server"
 changelog_path = "crates/server/CHANGELOG.md"
-# The server is a DEPLOYABLE, not a crates.io library: it ships as the
-# `mangrove` Docker image, keyed off this crate's `olai-uc-server-v<version>`
-# git tag (see docker-release.yml). `git_only = true` versions/changelogs/tags
-# it from git (deriving the current version from the existing tag, not the
-# registry) and creates the tag + GitHub release — everything except
-# `cargo publish`. `publish = false` (also set in Cargo.toml) is the mutually-
-# exclusive companion release-plz requires alongside `git_only`. This replaces
-# the former `release = false` bootstrap gate: the server is never bootstrapped
-# onto crates.io.
+# The server is now a PUBLISHED crate (library + the `uc-server` binary), AND it
+# ships as the `mangrove` Docker image. This became possible once PR #89 removed
+# the git-pinned Delta Sharing query surface, so the crate's dependency graph is
+# free of git sources and `cargo publish` accepts it. As an ordinary published
+# crate, release-plz versions/changelogs/tags it (`olai-uc-server-v<version>`),
+# creates its GitHub Release, `cargo publish`es it via OIDC, AND includes it in
+# the `release` command's `releases` JSON — which is what docker-release.yml is
+# now gated off (release-plz.yml), replacing the old bespoke tag-creation step
+# that `git_only` forced.
+#
+# (a) BOOTSTRAP GATE: `olai-uc-server` has never been published, and crates.io
+# OIDC cannot create a brand-new name. Remove this `release = false` line once
+# the crate is bootstrapped (bootstrap-publish.yml) + its Trusted Publisher is
+# registered on crates.io — same one-time step every other olai-uc-* crate went
+# through.
+release = false
 #
 # Its bundled UI lives in node/ (outside this crate's packaged fileset), so a UI
 # change is tied to this crate via crates/server/ui.lock — see `just
 # ui-fingerprint`.
-git_only = true
-publish = false
 
 [[package]]
 name = "olai-uc-cli"
@@ -166,17 +174,17 @@ name = "unitycatalog-acceptance"
 # Internal test harness (`publish = false` in its Cargo.toml), never released to
 # crates.io and NOT a dependency of any released crate.
 #
-# `git_only = true` (matching the server) is what actually keeps it out of the
-# verifying `cargo package` failure. release-plz runs `cargo package` over the
-# whole workspace to determine the server's next version; for crates it treats
-# as crates.io-bound it rewrites the manifest (stripping the `path`, falling back
-# to the registry version) before verifying — and that rewrite drops the `path`
-# dep's `version`, so verification fails with "dependency `olai-uc-client` does
-# not specify a version" even though the source manifest DOES pin it (see the
-# #55 pins, which are correct but insufficient on their own). `git_only` marks
-# the crate as git-tag-only, so release-plz skips that crates.io-oriented rewrite
-# — the same reason `olai-uc-server` (also git_only + publish=false) packages
-# cleanly while acceptance did not.
+# `git_only = true` is what actually keeps it out of the verifying `cargo
+# package` failure. When release-plz determines a released crate's next version
+# it runs a verifying `cargo package`; for crates it treats as crates.io-bound it
+# rewrites the manifest (stripping the `path`, falling back to the registry
+# version) before verifying — and that rewrite drops the `path` dep's `version`,
+# so verification fails with "dependency `olai-uc-client` does not specify a
+# version" even though the source manifest DOES pin it (see the #55 pins, which
+# are correct but insufficient on their own). `git_only` marks the crate as
+# git-tag-only, so release-plz skips that crates.io-oriented rewrite. This crate
+# is a publish=false bin-bearing test harness, exactly the shape that trips the
+# verify — so it keeps `git_only`, independently of the (now published) server.
 #
 # `publish = false` is the companion release-plz requires alongside `git_only`
 # (and matches the crate's Cargo.toml). Suppress the tag/release for this
