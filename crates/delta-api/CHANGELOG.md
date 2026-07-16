@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.3](https://github.com/open-lakehouse/mangrove/compare/olai-uc-delta-api-v0.0.2...olai-uc-delta-api-v0.0.3) - 2026-07-16
+
+### Changed
+
+- *(acceptance)* [**breaking**] replace journey framework with an API-coverage conformance battery (#64)
+
 ## [0.0.2](https://github.com/open-lakehouse/mangrove/compare/olai-uc-delta-api-v0.0.1...olai-uc-delta-api-v0.0.2) - 2026-07-12
 
 ### Changed
