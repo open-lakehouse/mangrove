@@ -40,7 +40,10 @@ message CreateRecipientRequest {
   ];
 
   // The delta sharing authentication type.
-  AuthenticationType authentication_type = 2 [(google.api.field_behavior) = REQUIRED];
+  AuthenticationType authentication_type = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {not_in: [0]}
+  ];
 
   // Username of the recipient owner.
   string owner = 3 [

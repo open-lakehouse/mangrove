@@ -4,8 +4,7 @@
 //! baseline checks (UC OSS Java implements the `/models` surface).
 
 use futures::StreamExt;
-use unitycatalog_common::models::model_versions::v1::{CreateModelVersion, ModelVersionStatus};
-use unitycatalog_common::models::registered_models::v1::CreateRegisteredModel;
+use unitycatalog_common::models::model_versions::v1::ModelVersionStatus;
 
 use super::{unique, with_cleanup};
 use crate::{AcceptanceResult, JourneyContext};
@@ -24,13 +23,8 @@ pub async fn registered_model_lifecycle(ctx: &JourneyContext) -> AcceptanceResul
 
             let created = ctx
                 .client()
-                .create_registered_model(CreateRegisteredModel {
-                    name: model.to_string(),
-                    catalog_name: catalog.clone(),
-                    schema_name: schema.to_string(),
-                    comment: Some("conformance registered model".to_string()),
-                    ..Default::default()
-                })
+                .create_registered_model(model, catalog.clone(), schema.to_string())
+                .with_comment("conformance registered model".to_string())
                 .await?;
             assert_eq!(created.name, model);
             assert_eq!(created.full_name, format!("{catalog}.{schema}.{model}"));
@@ -86,23 +80,17 @@ pub async fn model_version_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<(
             ctx.create_catalog_for_managed_volume(&catalog).await?;
             ctx.client().create_schema(schema, &catalog).await?;
             ctx.client()
-                .create_registered_model(CreateRegisteredModel {
-                    name: model.to_string(),
-                    catalog_name: catalog.clone(),
-                    schema_name: schema.to_string(),
-                    ..Default::default()
-                })
+                .create_registered_model(model, catalog.clone(), schema.to_string())
                 .await?;
 
             let created = ctx
                 .client()
-                .create_model_version(CreateModelVersion {
-                    model_name: model.to_string(),
-                    catalog_name: catalog.clone(),
-                    schema_name: schema.to_string(),
-                    source: "s3://source/model".to_string(),
-                    ..Default::default()
-                })
+                .create_model_version(
+                    model,
+                    catalog.clone(),
+                    schema.to_string(),
+                    "s3://source/model".to_string(),
+                )
                 .await?;
             assert_eq!(created.version, 1);
             assert_eq!(

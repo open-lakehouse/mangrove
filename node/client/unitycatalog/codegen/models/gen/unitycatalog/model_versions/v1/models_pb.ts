@@ -13,67 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file unitycatalog/model_versions/v1/models.proto.
  */
 export const file_unitycatalog_model_versions_v1_models: GenFile = /*@__PURE__*/
-  fileDesc("Cit1bml0eWNhdGFsb2cvbW9kZWxfdmVyc2lvbnMvdjEvbW9kZWxzLnByb3RvEh51bml0eWNhdGFsb2cubW9kZWxfdmVyc2lvbnMudjEiuAIKEkNyZWF0ZU1vZGVsVmVyc2lvbhI8Cgptb2RlbF9uYW1lGAEgASgJQijgQQK6SCLIAQFyHRADMhleW2Etel1bMC05YS16X10qWzAtOWEtel0kEj4KDGNhdGFsb2dfbmFtZRgCIAEoCUIo4EECukgiyAEBch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBI9CgtzY2hlbWFfbmFtZRgDIAEoCUIo4EECukgiyAEBch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBIZCgZzb3VyY2UYBCABKAlCCeBBArpIA8gBARIYCgZydW5faWQYBSABKAlCA+BBAUgAiAEBEhkKB2NvbW1lbnQYBiABKAlCA+BBAUgBiAEBQgkKB19ydW5faWRCCgoIX2NvbW1lbnQi9QYKDE1vZGVsVmVyc2lvbhI5Cgptb2RlbF9uYW1lGAEgASgJQiXgQQK6SB9yHRADMhleW2Etel1bMC05YS16X10qWzAtOWEtel0kEjsKDGNhdGFsb2dfbmFtZRgCIAEoCUIl4EECukgfch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBI6CgtzY2hlbWFfbmFtZRgDIAEoCUIl4EECukgfch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBIUCgd2ZXJzaW9uGAQgASgDQgPgQQMSEwoGc291cmNlGAUgASgJQgPgQQISGAoGcnVuX2lkGAYgASgJQgPgQQFIAIgBARJHCgZzdGF0dXMYByABKA4yMi51bml0eWNhdGFsb2cubW9kZWxfdmVyc2lvbnMudjEuTW9kZWxWZXJzaW9uU3RhdHVzQgPgQQMSIgoQc3RvcmFnZV9sb2NhdGlvbhgIIAEoCUID4EEDSAGIAQESGQoHY29tbWVudBgJIAEoCUID4EEBSAKIAQESFwoCaWQYCiABKAlCBuBBA+BBCEgDiAEBEiQKCmNyZWF0ZWRfYXQY6AcgASgDQgrgQQO6SAQiAiAASASIAQESHQoKY3JlYXRlZF9ieRjpByABKAlCA+BBA0gFiAEBEh0KCnVwZGF0ZWRfYXQY6gcgASgDQgPgQQNIBogBARIdCgp1cGRhdGVkX2J5GOsHIAEoCUID4EEDSAeIAQESHwoMbWV0YXN0b3JlX2lkGOwHIAEoCUID4EEDSAiIAQESHgoLYnJvd3NlX29ubHkY7QcgASgIQgPgQQNICYgBATp36kF0Chx1bml0eWNhdGFsb2cuaW8vTW9kZWxWZXJzaW9uEixtb2RlbHMve3JlZ2lzdGVyZWRfbW9kZWx9L3ZlcnNpb25zL3t2ZXJzaW9ufRoHdmVyc2lvbioObW9kZWxfdmVyc2lvbnMyDW1vZGVsX3ZlcnNpb25CCQoHX3J1bl9pZEITChFfc3RvcmFnZV9sb2NhdGlvbkIKCghfY29tbWVudEIFCgNfaWRCDQoLX2NyZWF0ZWRfYXRCDQoLX2NyZWF0ZWRfYnlCDQoLX3VwZGF0ZWRfYXRCDQoLX3VwZGF0ZWRfYnlCDwoNX21ldGFzdG9yZV9pZEIOCgxfYnJvd3NlX29ubHkqeAoSTW9kZWxWZXJzaW9uU3RhdHVzEiQKIE1PREVMX1ZFUlNJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASGAoUUEVORElOR19SRUdJU1RSQVRJT04QARIXChNGQUlMRURfUkVHSVNUUkFUSU9OEAISCQoFUkVBRFkQA0KnAgoiY29tLnVuaXR5Y2F0YWxvZy5tb2RlbF92ZXJzaW9ucy52MUILTW9kZWxzUHJvdG9QAVpeZ2l0aHViLmNvbS9kZWx0YS1pbmN1YmF0b3IvZGVsdGEtc2hhcmluZy1ycy9nby91bml0eWNhdGFsb2cvbW9kZWxfdmVyc2lvbnMvdjE7bW9kZWxfdmVyc2lvbnN2MaICA1VNWKoCHVVuaXR5Y2F0YWxvZy5Nb2RlbFZlcnNpb25zLlYxygIdVW5pdHljYXRhbG9nXE1vZGVsVmVyc2lvbnNcVjHiAilVbml0eWNhdGFsb2dcTW9kZWxWZXJzaW9uc1xWMVxHUEJNZXRhZGF0YeoCH1VuaXR5Y2F0YWxvZzo6TW9kZWxWZXJzaW9uczo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_field_behavior, file_google_api_resource]);
-
-/**
- * The payload for creating a new model version.
- *
- * Wrapped in the `model_version` envelope of a `CreateModelVersionRequest`,
- * matching the Unity Catalog `POST /models/versions` wire contract.
- *
- * @generated from message unitycatalog.model_versions.v1.CreateModelVersion
- */
-export type CreateModelVersion = Message<"unitycatalog.model_versions.v1.CreateModelVersion"> & {
-  /**
-   * Name of the parent registered model, relative to parent schema.
-   *
-   * @generated from field: string model_name = 1;
-   */
-  modelName: string;
-
-  /**
-   * Name of parent catalog.
-   *
-   * @generated from field: string catalog_name = 2;
-   */
-  catalogName: string;
-
-  /**
-   * Name of parent schema.
-   *
-   * @generated from field: string schema_name = 3;
-   */
-  schemaName: string;
-
-  /**
-   * URI indicating the location of the source artifacts (e.g. an MLflow run
-   * artifact path) used to create the model version.
-   *
-   * @generated from field: string source = 4;
-   */
-  source: string;
-
-  /**
-   * The run id used by the ML package that generated this model.
-   *
-   * @generated from field: optional string run_id = 5;
-   */
-  runId?: string | undefined;
-
-  /**
-   * User-provided free-form text description.
-   *
-   * @generated from field: optional string comment = 6;
-   */
-  comment?: string | undefined;
-};
-
-/**
- * Describes the message unitycatalog.model_versions.v1.CreateModelVersion.
- * Use `create(CreateModelVersionSchema)` to create a new message.
- */
-export const CreateModelVersionSchema: GenMessage<CreateModelVersion> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_model_versions_v1_models, 0);
+  fileDesc("Cit1bml0eWNhdGFsb2cvbW9kZWxfdmVyc2lvbnMvdjEvbW9kZWxzLnByb3RvEh51bml0eWNhdGFsb2cubW9kZWxfdmVyc2lvbnMudjEi9QYKDE1vZGVsVmVyc2lvbhI5Cgptb2RlbF9uYW1lGAEgASgJQiXgQQK6SB9yHRADMhleW2Etel1bMC05YS16X10qWzAtOWEtel0kEjsKDGNhdGFsb2dfbmFtZRgCIAEoCUIl4EECukgfch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBI6CgtzY2hlbWFfbmFtZRgDIAEoCUIl4EECukgfch0QAzIZXlthLXpdWzAtOWEtel9dKlswLTlhLXpdJBIUCgd2ZXJzaW9uGAQgASgDQgPgQQMSEwoGc291cmNlGAUgASgJQgPgQQISGAoGcnVuX2lkGAYgASgJQgPgQQFIAIgBARJHCgZzdGF0dXMYByABKA4yMi51bml0eWNhdGFsb2cubW9kZWxfdmVyc2lvbnMudjEuTW9kZWxWZXJzaW9uU3RhdHVzQgPgQQMSIgoQc3RvcmFnZV9sb2NhdGlvbhgIIAEoCUID4EEDSAGIAQESGQoHY29tbWVudBgJIAEoCUID4EEBSAKIAQESFwoCaWQYCiABKAlCBuBBA+BBCEgDiAEBEiQKCmNyZWF0ZWRfYXQY6AcgASgDQgrgQQO6SAQiAiAASASIAQESHQoKY3JlYXRlZF9ieRjpByABKAlCA+BBA0gFiAEBEh0KCnVwZGF0ZWRfYXQY6gcgASgDQgPgQQNIBogBARIdCgp1cGRhdGVkX2J5GOsHIAEoCUID4EEDSAeIAQESHwoMbWV0YXN0b3JlX2lkGOwHIAEoCUID4EEDSAiIAQESHgoLYnJvd3NlX29ubHkY7QcgASgIQgPgQQNICYgBATp36kF0Chx1bml0eWNhdGFsb2cuaW8vTW9kZWxWZXJzaW9uEixtb2RlbHMve3JlZ2lzdGVyZWRfbW9kZWx9L3ZlcnNpb25zL3t2ZXJzaW9ufRoHdmVyc2lvbioObW9kZWxfdmVyc2lvbnMyDW1vZGVsX3ZlcnNpb25CCQoHX3J1bl9pZEITChFfc3RvcmFnZV9sb2NhdGlvbkIKCghfY29tbWVudEIFCgNfaWRCDQoLX2NyZWF0ZWRfYXRCDQoLX2NyZWF0ZWRfYnlCDQoLX3VwZGF0ZWRfYXRCDQoLX3VwZGF0ZWRfYnlCDwoNX21ldGFzdG9yZV9pZEIOCgxfYnJvd3NlX29ubHkqeAoSTW9kZWxWZXJzaW9uU3RhdHVzEiQKIE1PREVMX1ZFUlNJT05fU1RBVFVTX1VOU1BFQ0lGSUVEEAASGAoUUEVORElOR19SRUdJU1RSQVRJT04QARIXChNGQUlMRURfUkVHSVNUUkFUSU9OEAISCQoFUkVBRFkQA0KnAgoiY29tLnVuaXR5Y2F0YWxvZy5tb2RlbF92ZXJzaW9ucy52MUILTW9kZWxzUHJvdG9QAVpeZ2l0aHViLmNvbS9kZWx0YS1pbmN1YmF0b3IvZGVsdGEtc2hhcmluZy1ycy9nby91bml0eWNhdGFsb2cvbW9kZWxfdmVyc2lvbnMvdjE7bW9kZWxfdmVyc2lvbnN2MaICA1VNWKoCHVVuaXR5Y2F0YWxvZy5Nb2RlbFZlcnNpb25zLlYxygIdVW5pdHljYXRhbG9nXE1vZGVsVmVyc2lvbnNcVjHiAilVbml0eWNhdGFsb2dcTW9kZWxWZXJzaW9uc1xWMVxHUEJNZXRhZGF0YeoCH1VuaXR5Y2F0YWxvZzo6TW9kZWxWZXJzaW9uczo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_field_behavior, file_google_api_resource]);
 
 /**
  * A model version under a registered model.
@@ -208,7 +148,7 @@ export type ModelVersion = Message<"unitycatalog.model_versions.v1.ModelVersion"
  * Use `create(ModelVersionSchema)` to create a new message.
  */
 export const ModelVersionSchema: GenMessage<ModelVersion> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_model_versions_v1_models, 1);
+  messageDesc(file_unitycatalog_model_versions_v1_models, 0);
 
 /**
  * The status of a model version, reflecting the lifecycle of its artifacts in

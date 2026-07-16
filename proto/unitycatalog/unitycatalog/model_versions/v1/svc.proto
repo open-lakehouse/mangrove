@@ -49,11 +49,42 @@ message ListModelVersionsResponse {
 
 // Create a new model version.
 message CreateModelVersionRequest {
-  // The model version to create.
-  CreateModelVersion model_version = 1 [
+  // Name of the parent registered model, relative to parent schema.
+  string model_name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
+
+  // Name of parent catalog.
+  string catalog_name = 2 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Name of parent schema.
+  string schema_name = 3 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // URI indicating the location of the source artifacts (e.g. an MLflow run
+  // artifact path) used to create the model version.
+  string source = 4 [
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // The run id used by the ML package that generated this model.
+  optional string run_id = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // User-provided free-form text description.
+  optional string comment = 6 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Get a model version.
@@ -166,7 +197,7 @@ service ModelVersionsService {
   rpc CreateModelVersion(CreateModelVersionRequest) returns (ModelVersion) {
     option (google.api.http) = {
       post: "/models/versions"
-      body: "model_version"
+      body: "*"
     };
     option (gnostic.openapi.v3.operation) = {operation_id: "CreateModelVersion"};
   }

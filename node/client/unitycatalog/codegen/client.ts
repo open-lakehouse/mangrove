@@ -9,10 +9,6 @@ import {
   CatalogSchema,
   type CreateFunction,
   CreateFunctionSchema,
-  type CreateModelVersion,
-  CreateModelVersionSchema,
-  type CreateRegisteredModel,
-  CreateRegisteredModelSchema,
   type Credential,
   CredentialSchema,
   type EntityTagAssignment,
@@ -422,6 +418,13 @@ export interface ListModelVersionsOptions {
   includeBrowse?: boolean;
 }
 
+export interface CreateModelVersionOptions {
+  /** The run id used by the ML package that generated this model. */
+  runId?: string;
+  /** User-provided free-form text description. */
+  comment?: string;
+}
+
 export interface GetModelVersionOptions {
   /** Whether to include model versions in the response for which the principal can
    *  only access selective metadata for. */
@@ -533,6 +536,11 @@ export interface ListRegisteredModelsOptions {
   /** Whether to include registered models in the response for which the principal
    *  can only access selective metadata for. */
   includeBrowse?: boolean;
+}
+
+export interface CreateRegisteredModelOptions {
+  /** User-provided free-form text description. */
+  comment?: string;
 }
 
 export interface GetRegisteredModelOptions {
@@ -2160,13 +2168,23 @@ export class UnityCatalogClient {
    * caller must be a metastore admin or the owner of the parent registered model.
    */
   async createModelVersion(
-    modelVersion: CreateModelVersion,
+    modelName: string,
+    catalogName: string,
+    schemaName: string,
+    source: string,
+    options?: CreateModelVersionOptions,
   ): Promise<ModelVersion> {
+    const { runId, comment } = options || {};
     try {
       return fromBinary(
         ModelVersionSchema,
         await this.inner.createModelVersion(
-          Buffer.from(toBinary(CreateModelVersionSchema, modelVersion)),
+          modelName,
+          catalogName,
+          schemaName,
+          source,
+          runId,
+          comment,
         ),
       );
     } catch (e) {
@@ -2439,13 +2457,20 @@ export class UnityCatalogClient {
    * the CREATE_MODEL privilege on the parent catalog and schema.
    */
   async createRegisteredModel(
-    modelInfo: CreateRegisteredModel,
+    name: string,
+    catalogName: string,
+    schemaName: string,
+    options?: CreateRegisteredModelOptions,
   ): Promise<RegisteredModel> {
+    const { comment } = options || {};
     try {
       return fromBinary(
         RegisteredModelSchema,
         await this.inner.createRegisteredModel(
-          Buffer.from(toBinary(CreateRegisteredModelSchema, modelInfo)),
+          name,
+          catalogName,
+          schemaName,
+          comment,
         ),
       );
     } catch (e) {

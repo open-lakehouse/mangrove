@@ -98,28 +98,28 @@ paths:
       description: Lists agent skills.
       operationId: ListAgentSkills
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: query
           description: The identifier of the catalog.
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: query
           description: The identifier of the schema.
           schema:
             type: string
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: |-
             Whether to include agent skills in the response for which the principal can
@@ -174,7 +174,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: |-
             Whether to include agent skills in the response for which the principal can
@@ -252,28 +252,28 @@ paths:
       description: Lists agents.
       operationId: ListAgents
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: query
           description: The identifier of the catalog.
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: query
           description: The identifier of the schema.
           schema:
             type: string
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: |-
             Whether to include agents in the response for which the principal can only
@@ -328,7 +328,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: |-
             Whether to include agents in the response for which the principal can only
@@ -412,13 +412,13 @@ paths:
          There is no guarantee of a specific ordering of the elements in the array.
       operationId: ListCatalogs
       parameters:
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
@@ -481,7 +481,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: Whether to include catalogs in the response for which the principal can only access selective metadata for
           schema:
@@ -575,15 +575,19 @@ paths:
           in: query
           description: Return only credentials for the specified purpose.
           schema:
-            type: integer
+            enum:
+              - PURPOSE_UNSPECIFIED
+              - STORAGE
+              - SERVICE
+            type: string
             format: enum
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
@@ -728,7 +732,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /entity-tag-assignments/{entityType}/{entityName}/tags:
+  /entity-tag-assignments/{entity_type}/{entity_name}/tags:
     get:
       tags:
         - EntityTagAssignmentsService
@@ -738,25 +742,25 @@ paths:
          Gets the tag assignments for the specified entity.
       operationId: ListEntityTagAssignments
       parameters:
-        - name: entityType
+        - name: entity_type
           in: path
           description: The type of the entity whose tag assignments to list.
           required: true
           schema:
             type: string
-        - name: entityName
+        - name: entity_name
           in: path
           description: The fully qualified name of the entity whose tag assignments to list.
           required: true
           schema:
             type: string
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
@@ -774,7 +778,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /entity-tag-assignments/{entityType}/{entityName}/tags/{tagKey}:
+  /entity-tag-assignments/{entity_type}/{entity_name}/tags/{tag_key}:
     get:
       tags:
         - EntityTagAssignmentsService
@@ -784,19 +788,19 @@ paths:
          Gets the tag assignment for the specified entity and tag key.
       operationId: GetEntityTagAssignment
       parameters:
-        - name: entityType
+        - name: entity_type
           in: path
           description: The type of the entity to which the tag is assigned.
           required: true
           schema:
             type: string
-        - name: entityName
+        - name: entity_name
           in: path
           description: The fully qualified name of the entity to which the tag is assigned.
           required: true
           schema:
             type: string
-        - name: tagKey
+        - name: tag_key
           in: path
           description: The key of the tag.
           required: true
@@ -824,19 +828,19 @@ paths:
          Deletes the tag assignment for the specified entity and tag key.
       operationId: DeleteEntityTagAssignment
       parameters:
-        - name: entityType
+        - name: entity_type
           in: path
           description: The type of the entity to which the tag is assigned.
           required: true
           schema:
             type: string
-        - name: entityName
+        - name: entity_name
           in: path
           description: The fully qualified name of the entity to which the tag is assigned.
           required: true
           schema:
             type: string
-        - name: tagKey
+        - name: tag_key
           in: path
           description: The key of the tag to delete.
           required: true
@@ -861,19 +865,19 @@ paths:
          Updates the tag assignment for the specified entity and tag key.
       operationId: UpdateEntityTagAssignment
       parameters:
-        - name: entityType
+        - name: entity_type
           in: path
           description: The type of the entity to which the tag is assigned.
           required: true
           schema:
             type: string
-        - name: entityName
+        - name: entity_name
           in: path
           description: The fully qualified name of the entity to which the tag is assigned.
           required: true
           schema:
             type: string
-        - name: tagKey
+        - name: tag_key
           in: path
           description: The key of the tag to update.
           required: true
@@ -905,18 +909,18 @@ paths:
       description: List external locations
       operationId: ListExternalLocations
       parameters:
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: Whether to include schemas in the response for which the principal can only access selective metadata for
           schema:
@@ -1055,28 +1059,28 @@ paths:
          owned by the caller or have SELECT on the function.
       operationId: ListFunctions
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: query
           description: Name of parent catalog for functions of interest.
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: query
           description: Parent schema of functions.
           schema:
             type: string
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: Whether to include functions in the response for which the principal can only access selective metadata for.
           schema:
@@ -1233,28 +1237,28 @@ paths:
          the caller or the caller must have a privilege on the model.
       operationId: ListRegisteredModels
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: query
           description: Name of parent catalog for models of interest.
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: query
           description: Name of parent schema for models of interest.
           schema:
             type: string
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: |-
             Whether to include registered models in the response for which the principal
@@ -1287,7 +1291,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateRegisteredModel"
+              $ref: "#/components/schemas/CreateRegisteredModelRequest"
         required: true
       responses:
         "200":
@@ -1317,7 +1321,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateModelVersion"
+              $ref: "#/components/schemas/CreateModelVersionRequest"
         required: true
       responses:
         "200":
@@ -1332,7 +1336,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /models/{fullName}:
+  /models/{full_name}:
     get:
       tags:
         - RegisteredModelsService
@@ -1344,7 +1348,7 @@ paths:
          registered model, or have a privilege on the registered model.
       operationId: GetRegisteredModel
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: |-
             The fully-qualified name of the registered model (three-level name:
@@ -1352,7 +1356,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: |-
             Whether to include registered models in the response for which the principal
@@ -1382,7 +1386,7 @@ paths:
          to succeed, the caller must be the owner of the registered model.
       operationId: DeleteRegisteredModel
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: |-
             The fully-qualified name of the registered model (three-level name:
@@ -1414,7 +1418,7 @@ paths:
          Updates the registered model that matches the supplied name.
       operationId: UpdateRegisteredModel
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: |-
             The fully-qualified name of the registered model (three-level name:
@@ -1441,7 +1445,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /models/{fullName}/versions:
+  /models/{full_name}/versions:
     get:
       tags:
         - ModelVersionsService
@@ -1453,7 +1457,7 @@ paths:
          must have the appropriate privileges on the parent model.
       operationId: ListModelVersions
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: |-
             The full three-level name of the registered model (catalog.schema.model)
@@ -1461,18 +1465,18 @@ paths:
           required: true
           schema:
             type: string
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: |-
             Whether to include model versions in the response for which the principal can
@@ -1492,7 +1496,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /models/{fullName}/versions/{version}:
+  /models/{full_name}/versions/{version}:
     get:
       tags:
         - ModelVersionsService
@@ -1502,7 +1506,7 @@ paths:
          Gets a model version by its parent model name and version number.
       operationId: GetModelVersion
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: |-
             The full three-level name of the parent registered model
@@ -1516,7 +1520,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: |-
             Whether to include model versions in the response for which the principal can
@@ -1547,7 +1551,7 @@ paths:
          model.
       operationId: DeleteModelVersion
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: |-
             The full three-level name of the parent registered model
@@ -1580,7 +1584,7 @@ paths:
          Updates the model version that matches the supplied name and version.
       operationId: UpdateModelVersion
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: |-
             The full three-level name of the parent registered model
@@ -1613,7 +1617,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /models/{fullName}/versions/{version}/finalize:
+  /models/{full_name}/versions/{version}/finalize:
     patch:
       tags:
         - ModelVersionsService
@@ -1624,7 +1628,7 @@ paths:
          its storage location.
       operationId: FinalizeModelVersion
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: |-
             The full three-level name of the parent registered model
@@ -1657,7 +1661,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /policies/{onSecurableType}/{onSecurableFullname}:
+  /policies/{on_securable_type}/{on_securable_fullname}:
     get:
       tags:
         - PoliciesService
@@ -1668,7 +1672,7 @@ paths:
          of a specific ordering of the elements in the array.
       operationId: ListPolicies
       parameters:
-        - name: onSecurableType
+        - name: on_securable_type
           in: path
           description: |-
             The type of the securable to list policies on.
@@ -1677,13 +1681,13 @@ paths:
           required: true
           schema:
             type: string
-        - name: onSecurableFullname
+        - name: on_securable_fullname
           in: path
           description: The fully qualified name of the securable to list policies on.
           required: true
           schema:
             type: string
-        - name: includeInherited
+        - name: include_inherited
           in: query
           description: |-
             When true, also return policies defined on the securable's ancestors
@@ -1692,13 +1696,13 @@ paths:
              where it was defined.
           schema:
             type: boolean
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
@@ -1725,7 +1729,7 @@ paths:
          Creates a new row-filter or column-mask policy on the specified securable.
       operationId: CreatePolicy
       parameters:
-        - name: onSecurableType
+        - name: on_securable_type
           in: path
           description: |-
             The type of the securable to create the policy on.
@@ -1734,7 +1738,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: onSecurableFullname
+        - name: on_securable_fullname
           in: path
           description: The fully qualified name of the securable to create the policy on.
           required: true
@@ -1759,7 +1763,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /policies/{onSecurableType}/{onSecurableFullname}/{name}:
+  /policies/{on_securable_type}/{on_securable_fullname}/{name}:
     get:
       tags:
         - PoliciesService
@@ -1769,7 +1773,7 @@ paths:
          Gets the policy that matches the supplied name, defined on the specified securable.
       operationId: GetPolicy
       parameters:
-        - name: onSecurableType
+        - name: on_securable_type
           in: path
           description: |-
             The type of the securable the policy is defined on.
@@ -1778,7 +1782,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: onSecurableFullname
+        - name: on_securable_fullname
           in: path
           description: The fully qualified name of the securable the policy is defined on.
           required: true
@@ -1812,7 +1816,7 @@ paths:
          Deletes the policy that matches the supplied name, defined on the specified securable.
       operationId: DeletePolicy
       parameters:
-        - name: onSecurableType
+        - name: on_securable_type
           in: path
           description: |-
             The type of the securable the policy is defined on.
@@ -1821,7 +1825,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: onSecurableFullname
+        - name: on_securable_fullname
           in: path
           description: The fully qualified name of the securable the policy is defined on.
           required: true
@@ -1852,7 +1856,7 @@ paths:
          Updates the policy that matches the supplied name, defined on the specified securable.
       operationId: UpdatePolicy
       parameters:
-        - name: onSecurableType
+        - name: on_securable_type
           in: path
           description: |-
             The type of the securable the policy is defined on.
@@ -1861,7 +1865,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: onSecurableFullname
+        - name: on_securable_fullname
           in: path
           description: The fully qualified name of the securable the policy is defined on.
           required: true
@@ -1899,13 +1903,13 @@ paths:
       description: List providers.
       operationId: ListProviders
       parameters:
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
@@ -2033,13 +2037,13 @@ paths:
       description: List recipients.
       operationId: ListRecipients
       parameters:
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
@@ -2171,23 +2175,23 @@ paths:
          will be retrieved. There is no guarantee of a specific ordering of the elements in the array.
       operationId: ListSchemas
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: query
           description: Name of parent catalog.
           schema:
             type: string
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: Whether to include schemas in the response for which the principal can only access selective metadata for
           schema:
@@ -2231,7 +2235,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /schemas/{fullName}:
+  /schemas/{full_name}:
     get:
       tags:
         - SchemasService
@@ -2241,7 +2245,7 @@ paths:
          or a user that has the USE_SCHEMA privilege on the schema.
       operationId: GetSchema
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: |-
             Full name of schema.
@@ -2271,7 +2275,7 @@ paths:
          of the schema or an owner of the parent catalog.
       operationId: DeleteSchema
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: |-
             Full name of schema to delete.
@@ -2305,7 +2309,7 @@ paths:
          privilege on the parent catalog.
       operationId: UpdateSchema
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: Full name of schema, in form of catalog_name.schema_name.
           required: true
@@ -2337,13 +2341,13 @@ paths:
       description: List shares.
       operationId: ListShares
       parameters:
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
@@ -2398,7 +2402,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: includeSharedData
+        - name: include_shared_data
           in: query
           description: Query for data to include in the share.
           schema:
@@ -2482,13 +2486,13 @@ paths:
           required: true
           schema:
             type: string
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
@@ -2579,33 +2583,33 @@ paths:
          There is no guarantee of a specific ordering of the elements in the array.
       operationId: ListTableSummaries
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: query
           description: Name of parent catalog for tables of interest.
           schema:
             type: string
-        - name: schemaNamePattern
+        - name: schema_name_pattern
           in: query
           description: A sql LIKE pattern (% and _) for schema names. All schemas will be returned if not set or empty.
           schema:
             type: string
-        - name: tableNamePattern
+        - name: table_name_pattern
           in: query
           description: A sql LIKE pattern (% and _) for table names. All tables will be returned if not set or empty.
           schema:
             type: string
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
             type: string
-        - name: includeManifestCapabilities
+        - name: include_manifest_capabilities
           in: query
           description: Whether to include a manifest containing capabilities the table has.
           schema:
@@ -2636,53 +2640,53 @@ paths:
          specific ordering of the elements in the array.
       operationId: ListTables
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: query
           description: Name of parent catalog for tables of interest.
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: query
           description: Name of parent schema for tables of interest.
           schema:
             type: string
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
             type: string
-        - name: includeDeltaMetadata
+        - name: include_delta_metadata
           in: query
           description: Whether delta metadata should be included in the response.
           schema:
             type: boolean
-        - name: omitColumns
+        - name: omit_columns
           in: query
           description: Whether to omit the columns of the table from the response or not.
           schema:
             type: boolean
-        - name: omitProperties
+        - name: omit_properties
           in: query
           description: Whether to omit the properties of the table from the response or not.
           schema:
             type: boolean
-        - name: omitUsername
+        - name: omit_username
           in: query
           description: Whether to omit the username of the table (e.g. owner, updated_by, created_by) from the response or not.
           schema:
             type: boolean
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: Whether to include tables in the response for which the principal can only access selective metadata for
           schema:
             type: boolean
-        - name: includeManifestCapabilities
+        - name: include_manifest_capabilities
           in: query
           description: Whether to include a manifest containing capabilities the table has.
           schema:
@@ -2724,30 +2728,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /tables/{fullName}:
+  /tables/{full_name}:
     get:
       tags:
         - TablesService
       description: Get a table
       operationId: GetTable
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: Full name of the table.
           required: true
           schema:
             type: string
-        - name: includeDeltaMetadata
+        - name: include_delta_metadata
           in: query
           description: Whether delta metadata should be included in the response.
           schema:
             type: boolean
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: Whether to include tables in the response for which the principal can only access selective metadata for
           schema:
             type: boolean
-        - name: includeManifestCapabilities
+        - name: include_manifest_capabilities
           in: query
           description: Whether to include a manifest containing capabilities the table has.
           schema:
@@ -2771,7 +2775,7 @@ paths:
       description: Delete a table
       operationId: DeleteTable
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: Full name of the table.
           required: true
@@ -2787,14 +2791,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /tables/{fullName}/exists:
+  /tables/{full_name}/exists:
     get:
       tags:
         - TablesService
       description: Get boolean reflecting if table exists
       operationId: GetTableExists
       parameters:
-        - name: fullName
+        - name: full_name
           in: path
           description: Full name of the table.
           required: true
@@ -2824,13 +2828,13 @@ paths:
          of the elements in the array.
       operationId: ListTagPolicies
       parameters:
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
@@ -2875,7 +2879,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /tag-policies/{tagKey}:
+  /tag-policies/{tag_key}:
     get:
       tags:
         - TagPoliciesService
@@ -2885,7 +2889,7 @@ paths:
          Gets the governed tag definition for the specified tag key.
       operationId: GetTagPolicy
       parameters:
-        - name: tagKey
+        - name: tag_key
           in: path
           description: The key of the governed tag.
           required: true
@@ -2913,7 +2917,7 @@ paths:
          Deletes the governed tag definition that matches the supplied tag key.
       operationId: DeleteTagPolicy
       parameters:
-        - name: tagKey
+        - name: tag_key
           in: path
           description: The key of the governed tag to delete.
           required: true
@@ -2938,7 +2942,7 @@ paths:
          Updates the governed tag definition that matches the supplied tag key.
       operationId: UpdateTagPolicy
       parameters:
-        - name: tagKey
+        - name: tag_key
           in: path
           description: The key of the governed tag to update.
           required: true
@@ -3080,28 +3084,28 @@ paths:
       description: Lists volumes.
       operationId: ListVolumes
       parameters:
-        - name: catalogName
+        - name: catalog_name
           in: query
           description: The identifier of the catalog
           schema:
             type: string
-        - name: schemaName
+        - name: schema_name
           in: query
           description: The identifier of the schema
           schema:
             type: string
-        - name: maxResults
+        - name: max_results
           in: query
           description: The maximum number of results per page that should be returned.
           schema:
             type: integer
             format: int32
-        - name: pageToken
+        - name: page_token
           in: query
           description: Opaque pagination token to go to next page based on previous query.
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: Whether to include schemas in the response for which the principal can only access selective metadata for
           schema:
@@ -3154,7 +3158,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: includeBrowse
+        - name: include_browse
           in: query
           description: Whether to include schemas in the response for which the principal can only access selective metadata for
           schema:
@@ -3228,7 +3232,7 @@ components:
     AdditionalPropertiesItem:
       type: object
       properties:
-        schemaOrReference:
+        schema_or_reference:
           $ref: "#/components/schemas/SchemaOrReference"
         boolean:
           type: boolean
@@ -3248,24 +3252,37 @@ components:
           description: Name of the agent, relative to parent schema.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        catalogName:
+        catalog_name:
           type: string
           description: Name of parent catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: Name of parent schema.
-        fullName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        full_name:
           readOnly: true
           type: string
           description: The three-level (fully qualified) name of the agent.
-        agentId:
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+        agent_id:
           readOnly: true
           type: string
           description: The unique identifier of the agent.
-        invocationProtocol:
-          type: integer
+        invocation_protocol:
+          enum:
+            - INVOCATION_PROTOCOL_UNSPECIFIED
+            - MCP
+            - A2A
+            - OPENAI
+            - ANTHROPIC
+            - REST
+          type: string
           description: The protocol a recipient uses to invoke the agent.
           format: enum
+          title: Invocation Protocol
         endpoint:
           type: string
           description: The agent's invocation endpoint URL.
@@ -3283,7 +3300,7 @@ components:
           description: |-
             Capability identifiers advertised by the agent (e.g. `sql_query`,
              `document_search`, `code_execution`).
-        inputSchema:
+        input_schema:
           type: string
           description: |-
             A JSON Schema (encoded as a JSON string) describing the agent's expected
@@ -3298,23 +3315,25 @@ components:
           description: User-provided free-form text description.
           minLength: 1
           maxLength: 65536
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this agent was created, in epoch milliseconds.
-        createdBy:
+          minimum: 0
+          exclusiveMinimum: true
+        created_by:
           readOnly: true
           type: string
           description: Username of agent creator.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this agent was last updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of user who last modified the agent.
-        metastoreId:
+        metastore_id:
           readOnly: true
           type: string
           description: The unique identifier of the metastore.
@@ -3343,29 +3362,40 @@ components:
           maxLength: 64
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
           title: Name of the agent skill, relative to parent schema.
-        catalogName:
+        catalog_name:
           type: string
           description: Name of parent catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: Name of parent schema.
-        fullName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        full_name:
           readOnly: true
           type: string
           description: The three-level (fully qualified) name of the agent skill.
-        storageLocation:
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+        storage_location:
           type: string
           description: |-
             The storage location of the skill's directory (the root that holds
              `SKILL.md`).
-        agentSkillId:
+          pattern: ^(?:(?:[a-zA-Z][a-zA-Z\d+\-.]*):)?(?://(?:[A-Za-z0-9\-\.]+(?::\d+)?))?(/[^\?#]*)?(?:\?([^\#]*))?(?:\#(.*))?$
+        agent_skill_id:
           readOnly: true
           type: string
           description: The unique identifier of the agent skill.
-        agentSkillType:
-          type: integer
+        agent_skill_type:
+          enum:
+            - AGENT_SKILL_TYPE_UNSPECIFIED
+            - EXTERNAL
+            - MANAGED
+          type: string
           description: How the storage location is provisioned (external or managed).
           format: enum
+          title: Agent Skill Type
         description:
           type: string
           description: Mirrors the Agent Skills spec `description` frontmatter field.
@@ -3374,7 +3404,7 @@ components:
         license:
           type: string
           description: SPDX license identifier or free-form license text for the skill.
-        allowedTools:
+        allowed_tools:
           type: array
           items:
             type: string
@@ -3393,23 +3423,25 @@ components:
           description: User-provided free-form text description.
           minLength: 1
           maxLength: 65536
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this agent skill was created, in epoch milliseconds.
-        createdBy:
+          minimum: 0
+          exclusiveMinimum: true
+        created_by:
           readOnly: true
           type: string
           description: Username of agent skill creator.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this agent skill was last updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of user who last modified the agent skill.
-        metastoreId:
+        metastore_id:
           readOnly: true
           type: string
           description: The unique identifier of the metastore.
@@ -3428,24 +3460,23 @@ components:
         - role_arn
       type: object
       properties:
-        roleArn:
+        role_arn:
           type: string
           description: The Amazon Resource Name (ARN) of the AWS IAM role used to vend temporary credentials.
         region:
           type: string
           description: The AWS region where STS calls are made. Defaults to "us-east-1" if absent.
-        accessKeyId:
+        access_key_id:
           type: string
           description: |-
-            AWS access key ID used to authorize the STS AssumeRole call.
-
-             When set together with secret_access_key, these static credentials are used
+            When set together with secret_access_key, these static credentials are used
              as the base identity to call STS:AssumeRole. When omitted, the server falls
              back to ambient credentials (instance profile, ECS task role, WebIdentity, etc.).
-        secretAccessKey:
+          title: AWS access key ID used to authorize the STS AssumeRole call.
+        secret_access_key:
           type: string
           description: AWS secret access key paired with access_key_id.
-        sessionToken:
+        session_token:
           type: string
           description: |-
             Optional AWS session token for temporary base credentials (e.g. when the
@@ -3459,16 +3490,16 @@ components:
     AwsTemporaryCredentials:
       type: object
       properties:
-        accessKeyId:
+        access_key_id:
           type: string
           description: The access key ID that identifies the temporary credentials.
-        accessPoint:
+        access_point:
           type: string
           description: The Amazon Resource Name (ARN) of the S3 access point for temporary credentials related the external location.
-        secretAccessKey:
+        secret_access_key:
           type: string
           description: The secret access key that can be used to sign AWS API requests.
-        sessionToken:
+        session_token:
           type: string
           description: The token that users must pass to AWS API to use the temporary credentials.
       additionalProperties: false
@@ -3481,7 +3512,7 @@ components:
     AzureAad:
       type: object
       properties:
-        aadToken:
+        aad_token:
           type: string
           description: Opaque token that contains claims that you can use in Azure Active Directory to access cloud services.
       additionalProperties: false
@@ -3493,16 +3524,16 @@ components:
         - access_connector_id
       type: object
       properties:
-        accessConnectorId:
+        access_connector_id:
           type: string
           description: |-
             The Azure resource ID of the Azure Databricks Access Connector.
              Use the format /subscriptions/{guid}/resourceGroups/{rg-name}/providers/
              Microsoft.Databricks/accessConnectors/{connector-name}.
-        credentialId:
+        credential_id:
           type: string
           description: The Databricks internal ID that represents this managed identity.
-        managedIdentityId:
+        managed_identity_id:
           type: string
           description: |-
             The Azure resource ID of the managed identity.
@@ -3521,21 +3552,19 @@ components:
         - application_id
       type: object
       properties:
-        directoryId:
+        directory_id:
           type: string
           description: The directory ID corresponding to the Azure Active Directory (AAD) tenant of the application.
-        applicationId:
+        application_id:
           type: string
           description: The application ID of the application registration within the referenced AAD tenant.
-        clientSecret:
+        client_secret:
           type: string
           description: The client secret generated for the above app ID in AAD.
-        federatedTokenFile:
+        federated_token_file:
           type: string
-          description: |-
-            Location of the file containing a federated token.
-
-             Specifically useful for workload identity federation.
+          description: Specifically useful for workload identity federation.
+          title: Location of the file containing a federated token.
       description: The Azure service principal configuration.
       additionalProperties: false
       title: Azure Service Principal
@@ -3545,10 +3574,10 @@ components:
         - account_key
       type: object
       properties:
-        accountName:
+        account_name:
           type: string
           description: The name of the storage account.
-        accountKey:
+        account_key:
           type: string
           description: The account key of the storage account.
       description: The Azure storage key configuration.
@@ -3557,7 +3586,7 @@ components:
     AzureUserDelegationSas:
       type: object
       properties:
-        sasToken:
+        sas_token:
           type: string
           description: The signed URI (SAS Token) used to access blob services for a given path
       additionalProperties: false
@@ -3587,49 +3616,54 @@ components:
           additionalProperties:
             type: string
           description: A map of key-value properties attached to the securable.
-        storageRoot:
+        storage_root:
           type: string
           description: Storage root URL for managed tables within catalog.
-        providerName:
+        provider_name:
           type: string
-          description: |-
-            The name of delta sharing provider.
-
-             A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
-        shareName:
+          description: A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
+          title: The name of delta sharing provider.
+        share_name:
           type: string
           description: The name of the share under the share provider.
-        catalogType:
-          type: integer
+        catalog_type:
+          enum:
+            - CATALOG_TYPE_UNSPECIFIED
+            - MANAGED_CATALOG
+            - DELTASHARING_CATALOG
+            - SYSTEM_CATALOG
+          type: string
           description: The type of the catalog.
           format: enum
-        storageLocation:
+          title: Catalog Type
+        storage_location:
           readOnly: true
           type: string
           description: |-
-            Storage location URL (full path) for managed storage of the catalog.
-
-             A unique path under `storage_root`, used as the managed-storage parent for
+            A unique path under `storage_root`, used as the managed-storage parent for
              managed tables/volumes whose schema has no storage location of its own.
              Absent when the catalog has no `storage_root`.
              Example: `s3://bucket/ucroot/__unitystorage/catalogs/{catalog_id}`.
-        createdAt:
+          title: Storage location URL (full path) for managed storage of the catalog.
+        created_at:
           readOnly: true
           type: string
           description: Time at which this catalog was created, in epoch milliseconds.
-        createdBy:
+          minimum: 0
+          exclusiveMinimum: true
+        created_by:
           readOnly: true
           type: string
           description: Username of catalog creator.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this catalog was last updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of user who last modified catalog.
-        browseOnly:
+        browse_only:
           readOnly: true
           type: boolean
           description: |-
@@ -3650,10 +3684,10 @@ components:
         name:
           type: string
           description: Name of the column
-        typeText:
+        type_text:
           type: string
           description: Full data type specification as SQL/catalogString text.
-        typeJson:
+        type_json:
           type: string
           description: Full data type specification, JSON-serialized.
         position:
@@ -3662,19 +3696,48 @@ components:
           format: int32
           minimum: -2147483648
           maximum: 2147483647
-        typeName:
-          type: integer
+        type_name:
+          enum:
+            - COLUMN_TYPE_NAME_UNSPECIFIED
+            - BOOLEAN
+            - BYTE
+            - SHORT
+            - INT
+            - LONG
+            - FLOAT
+            - DOUBLE
+            - DATE
+            - TIMESTAMP
+            - STRING
+            - BINARY
+            - DECIMAL
+            - INTERVAL
+            - ARRAY
+            - STRUCT
+            - MAP
+            - CHAR
+            - "NULL"
+            - USER_DEFINED_TYPE
+            - TIMESTAMP_NTZ
+            - VARIANT
+            - TABLE_TYPE
+          type: string
           description: Data type name.
           format: enum
-        typePrecision:
+          title: Column Type Name
+        type_precision:
           type: integer
           description: Digits of precision; required for DecimalTypes.
           format: int32
-        typeScale:
+          minimum: -2147483648
+          maximum: 2147483647
+        type_scale:
           type: integer
           description: Digits to right of decimal; Required for DecimalTypes.
           format: int32
-        typeIntervalType:
+          minimum: -2147483648
+          maximum: 2147483647
+        type_interval_type:
           type: string
           description: Format of IntervalType.
         comment:
@@ -3683,11 +3746,13 @@ components:
         nullable:
           type: boolean
           description: Whether field may be Null.
-        partitionIndex:
+        partition_index:
           type: integer
           description: Partition index for column.
           format: int32
-        columnId:
+          minimum: -2147483648
+          maximum: 2147483647
+        column_id:
           readOnly: true
           type: string
           description: a unique id for the column
@@ -3702,21 +3767,32 @@ components:
         - endpoint
       type: object
       properties:
-        catalogName:
+        catalog_name:
           type: string
           description: The identifier of the catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: The identifier of the schema.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         name:
           type: string
           description: The identifier of the agent.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        invocationProtocol:
-          type: integer
+        invocation_protocol:
+          enum:
+            - MCP
+            - A2A
+            - OPENAI
+            - ANTHROPIC
+            - REST
+          type: string
           description: The protocol a recipient uses to invoke the agent.
           format: enum
+          title: Invocation Protocol
         endpoint:
           type: string
           description: The agent's invocation endpoint URL.
@@ -3730,7 +3806,7 @@ components:
           items:
             type: string
           description: Capability identifiers advertised by the agent.
-        inputSchema:
+        input_schema:
           type: string
           description: A JSON Schema (encoded as a JSON string) describing the expected input.
         comment:
@@ -3749,28 +3825,34 @@ components:
         - agent_skill_type
       type: object
       properties:
-        catalogName:
+        catalog_name:
           type: string
           description: The identifier of the catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: The identifier of the schema.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         name:
           type: string
           description: The identifier of the agent skill.
           minLength: 3
           maxLength: 64
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        agentSkillType:
-          type: integer
+        agent_skill_type:
+          enum:
+            - EXTERNAL
+            - MANAGED
+          type: string
           description: How the storage location is provisioned (external or managed).
           format: enum
-        storageLocation:
+          title: Agent Skill Type
+        storage_location:
           type: string
-          description: |-
-            The storage location of the skill directory on the cloud.
-
-             Required for EXTERNAL skills; ignored (server-derived) for MANAGED skills.
+          description: Required for EXTERNAL skills; ignored (server-derived) for MANAGED skills.
+          title: The storage location of the skill directory on the cloud.
         description:
           type: string
           description: A human-readable description of what the skill does and when to use it.
@@ -3778,7 +3860,7 @@ components:
         license:
           type: string
           description: SPDX license identifier or free-form license text for the skill.
-        allowedTools:
+        allowed_tools:
           type: array
           items:
             type: string
@@ -3814,18 +3896,21 @@ components:
           additionalProperties:
             type: string
           description: A map of key-value properties attached to the securable.
-        storageRoot:
+        storage_root:
           type: string
           description: Storage root URL for managed tables within catalog.
-        providerName:
+          pattern: ^(?:(?:[a-zA-Z][a-zA-Z\d+\-.]*):)?(?://(?:[A-Za-z0-9\-\.]+(?::\d+)?))?(/[^\?#]*)?(?:\?([^\#]*))?(?:\#(.*))?$
+        provider_name:
           type: string
-          description: |-
-            The name of delta sharing provider.
-
-             A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
-        shareName:
+          description: A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z-_]*[0-9a-z]$
+          title: The name of delta sharing provider.
+        share_name:
           type: string
           description: The name of the share under the share provider.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
       description: Create a new catalog
       additionalProperties: false
       title: Create Catalog Request
@@ -3841,42 +3926,65 @@ components:
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         purpose:
-          type: integer
-          description: Indicates the purpose of the credential.
-          format: enum
           enum:
             - STORAGE
             - SERVICE
+          type: string
+          description: Indicates the purpose of the credential.
+          format: enum
           title: Purpose
         comment:
           type: string
           description: Comment associated with the credential.
-        readOnly:
+        read_only:
           type: boolean
           description: Whether the credential is usable only for read operations. Only applicable when purpose is STORAGE.
-        skipValidation:
+        skip_validation:
           type: boolean
           description: Optional. Supplying true to this argument skips validation of the created set of credentials.
-        azureServicePrincipal:
+        azure_service_principal:
           allOf:
             - $ref: "#/components/schemas/AzureServicePrincipal"
           description: The Azure service principal configuration.
-        azureManagedIdentity:
+          additionalProperties: false
+          required:
+            - directory_id
+            - application_id
+          title: Azure Service Principal
+        azure_managed_identity:
           allOf:
             - $ref: "#/components/schemas/AzureManagedIdentity"
           description: The Azure managed identity configuration.
-        azureStorageKey:
+          additionalProperties: false
+          required:
+            - access_connector_id
+          title: Azure Managed Identity
+        azure_storage_key:
           allOf:
             - $ref: "#/components/schemas/AzureStorageKey"
           description: The Azure storage key configuration.
-        awsIamRole:
+          additionalProperties: false
+          required:
+            - account_name
+            - account_key
+          title: Azure Storage Key
+        aws_iam_role:
           allOf:
             - $ref: "#/components/schemas/AwsIamRoleConfig"
-          description: The AWS IAM role configuration.
-        databricksGcpServiceAccount:
+          description: |-
+            This is an internal configuration type, not exposed in the public API response.
+             It stores the static credentials (or ambient credential fallback) used to
+             authorize the STS:AssumeRole call when vending temporary credentials.
+          additionalProperties: false
+          required:
+            - role_arn
+          title: The AWS IAM role configuration used server-side to call STS AssumeRole.
+        databricks_gcp_service_account:
           allOf:
             - $ref: "#/components/schemas/DatabricksGcpServiceAccount"
           description: The Databricks managed GCP service account configuration.
+          additionalProperties: false
+          title: Databricks Gcp Service Account
       description: Create a new credential.
       additionalProperties: false
       title: Create Credential Request
@@ -3885,10 +3993,21 @@ components:
         - tag_assignment
       type: object
       properties:
-        tagAssignment:
+        tag_assignment:
           allOf:
             - $ref: "#/components/schemas/EntityTagAssignment"
-          description: The tag assignment to create.
+          description: |-
+            Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
+             of a tag to a specific securable. It has no identifier of its own — its identity is
+             the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
+             `google.api.resource`: assignments are stored as associations between the entity and
+             its tag, not as standalone objects.
+          additionalProperties: false
+          required:
+            - entity_type
+            - entity_name
+            - tag_key
+          title: The assignment of a tag to a Unity Catalog entity.
       description: Create an entity tag assignment
       additionalProperties: false
       title: Create Entity Tag Assignment Request
@@ -3908,16 +4027,18 @@ components:
           type: string
           description: Path URL of the external location.
           pattern: ^(?:(?:[a-zA-Z][a-zA-Z\d+\-.]*):)?(?://(?:[A-Za-z0-9\-\.]+(?::\d+)?))?(/[^\?#]*)?(?:\?([^\#]*))?(?:\#(.*))?$
-        credentialName:
+        credential_name:
           type: string
           description: Name of the storage credential used with this location.
-        readOnly:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        read_only:
           type: boolean
           description: Indicates whether the external location is read-only.
         comment:
           type: string
           description: User-provided free-form text description.
-        skipValidation:
+        skip_validation:
           type: boolean
           description: Skips validation of the storage credential associated with the external location.
       description: Create a new external location
@@ -3943,48 +4064,73 @@ components:
           description: Name of function, relative to parent schema.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        catalogName:
+        catalog_name:
           type: string
           description: Name of parent catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: Name of parent schema.
-        dataType:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        data_type:
           type: string
           description: Full data type specification of the return type of the function.
-        fullDataType:
+        full_data_type:
           type: string
           description: Full data type specification as SQL/catalogString text.
-        inputParams:
+        input_params:
           allOf:
             - $ref: "#/components/schemas/FunctionParameterInfos"
-          description: The array of function parameter infos.
-        parameterStyle:
-          type: integer
+          description: A collection of function parameters.
+          additionalProperties: false
+          title: Function Parameter Infos
+        parameter_style:
+          enum:
+            - PARAMETER_STYLE_UNSPECIFIED
+            - S
+          type: string
           description: The parameter-passing style.
           format: enum
-        isDeterministic:
+          title: Parameter Style
+        is_deterministic:
           type: boolean
           description: Indicates whether the function is deterministic.
-        sqlDataAccess:
-          type: integer
+        sql_data_access:
+          enum:
+            - SQL_DATA_ACCESS_UNSPECIFIED
+            - CONTAINS_SQL
+            - READS_SQL_DATA
+            - NO_SQL
+          type: string
           description: SQL data access information.
           format: enum
-        isNullCall:
+          title: Sql Data Access
+        is_null_call:
           type: boolean
           description: Indicates whether the function is null-calling.
-        securityType:
-          type: integer
+        security_type:
+          enum:
+            - SECURITY_TYPE_UNSPECIFIED
+            - DEFINER
+          type: string
           description: The security type of the function.
           format: enum
-        routineBody:
-          type: integer
+          title: Security Type
+        routine_body:
+          enum:
+            - ROUTINE_BODY_UNSPECIFIED
+            - SQL
+            - EXTERNAL
+          type: string
           description: The routine body.
           format: enum
-        routineDefinition:
+          title: Routine Body
+        routine_definition:
           type: string
           description: Function body.
-        routineBodyLanguage:
+        routine_body_language:
           type: string
           description: The language of the function routine body.
         comment:
@@ -4000,7 +4146,7 @@ components:
          the Unity Catalog `POST /functions` wire contract.
       additionalProperties: false
       title: The payload for creating a new function.
-    CreateModelVersion:
+    CreateModelVersionRequest:
       required:
         - model_name
         - catalog_name
@@ -4008,31 +4154,35 @@ components:
         - source
       type: object
       properties:
-        modelName:
+        model_name:
           type: string
           description: Name of the parent registered model, relative to parent schema.
-        catalogName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        catalog_name:
           type: string
           description: Name of parent catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: Name of parent schema.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         source:
           type: string
           description: |-
             URI indicating the location of the source artifacts (e.g. an MLflow run
              artifact path) used to create the model version.
-        runId:
+        run_id:
           type: string
           description: The run id used by the ML package that generated this model.
         comment:
           type: string
           description: User-provided free-form text description.
-      description: |-
-        Wrapped in the `model_version` envelope of a `CreateModelVersionRequest`,
-         matching the Unity Catalog `POST /models/versions` wire contract.
+      description: Create a new model version.
       additionalProperties: false
-      title: The payload for creating a new model version.
+      title: Create Model Version Request
     CreateProviderRequest:
       required:
         - name
@@ -4043,17 +4193,21 @@ components:
           type: string
           description: Name of the provider.
           pattern: ^[a-z][0-9a-z._]*[0-9a-z]$
-        authenticationType:
-          type: integer
+        authentication_type:
+          enum:
+            - TOKEN
+            - OAUTH_CLIENT_CREDENTIALS
+          type: string
           description: The delta sharing authentication type.
           format: enum
+          title: Provider Authentication Type
         owner:
           type: string
           description: Username of the provider owner.
         comment:
           type: string
           description: Description about the provider.
-        recipientProfileStr:
+        recipient_profile_str:
           type: string
           description: |-
             The recipient profile (credential file contents) used to connect to the
@@ -4077,10 +4231,14 @@ components:
           type: string
           description: Name of the recipient.
           pattern: ^[a-z][0-9a-z._]*[0-9a-z]$
-        authenticationType:
-          type: integer
+        authentication_type:
+          enum:
+            - TOKEN
+            - OAUTH_CLIENT_CREDENTIALS
+          type: string
           description: The delta sharing authentication type.
           format: enum
+          title: Authentication Type
         owner:
           type: string
           description: Username of the recipient owner.
@@ -4095,13 +4253,13 @@ components:
             When provided in update request, the specified properties will override the existing properties.
              To add and remove properties, one would need to perform a read-modify-write.
           title: Recipient properties as map of string key-value pairs.
-        expirationTime:
+        expiration_time:
           type: string
           description: Expiration timestamp of the token, in epoch milliseconds.
       description: Creates a new recipient
       additionalProperties: false
       title: Create Recipient Request
-    CreateRegisteredModel:
+    CreateRegisteredModelRequest:
       required:
         - name
         - catalog_name
@@ -4113,20 +4271,22 @@ components:
           description: Name of registered model, relative to parent schema.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        catalogName:
+        catalog_name:
           type: string
           description: Name of parent catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: Name of parent schema.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         comment:
           type: string
           description: User-provided free-form text description.
-      description: |-
-        Wrapped in the `model_info` envelope of a `CreateRegisteredModelRequest`,
-         matching the Unity Catalog `POST /models` wire contract.
+      description: Create a new registered model.
       additionalProperties: false
-      title: The payload for creating a new registered model.
+      title: Create Registered Model Request
     CreateSchemaRequest:
       required:
         - name
@@ -4138,9 +4298,11 @@ components:
           description: Name of schema, relative to parent catalog.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        catalogName:
+        catalog_name:
           type: string
           description: Name of parent catalog.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         comment:
           type: string
           description: User-provided free-form text description.
@@ -4149,13 +4311,12 @@ components:
           additionalProperties:
             type: string
           description: A map of key-value properties attached to the securable.
-        storageRoot:
+        storage_root:
           type: string
           description: |-
-            Storage root URL for managed storage location of the schema.
-
-             If not set, managed securables under this schema fall back to the parent
+            If not set, managed securables under this schema fall back to the parent
              catalog's storage location. Example: `s3://bucket/ucroot`.
+          title: Storage root URL for managed storage location of the schema.
       description: Create a new Schema
       additionalProperties: false
       title: Create Schema Request
@@ -4189,12 +4350,16 @@ components:
           description: Name of the staging table, relative to the parent schema.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        catalogName:
+        catalog_name:
           type: string
           description: Name of the parent catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: Name of the parent schema relative to its parent catalog.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
       description: Create a new staging table.
       additionalProperties: false
       title: Create Staging Table Request
@@ -4212,18 +4377,43 @@ components:
           description: Name of table, relative to parent schema.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        schemaName:
+        schema_name:
           type: string
           description: Name of parent schema relative to its parent catalog.
-        catalogName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        catalog_name:
           type: string
           description: Name of parent catalog.
-        tableType:
-          type: integer
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        table_type:
+          enum:
+            - MANAGED
+            - EXTERNAL
+            - VIEW
+            - MATERIALIZED_VIEW
+            - STREAMING_TABLE
+            - METRIC_VIEW
+          type: string
           format: enum
-        dataSourceFormat:
-          type: integer
+          title: Table Type
+        data_source_format:
+          enum:
+            - DELTA
+            - ICEBERG
+            - HUDI
+            - PARQUET
+            - CSV
+            - JSON
+            - ORC
+            - AVRO
+            - TEXT
+            - UNITY_CATALOG
+            - DELTASHARING
+          type: string
           format: enum
+          title: Data Source Format
         columns:
           type: array
           items:
@@ -4236,7 +4426,7 @@ components:
               - type_name
             title: Column
           description: The array of Column definitions of the table's columns.
-        storageLocation:
+        storage_location:
           type: string
           description: Storage root URL for external table.
         comment:
@@ -4247,19 +4437,18 @@ components:
           additionalProperties:
             type: string
           description: A map of key-value properties attached to the securable.
-        viewDefinition:
+        view_definition:
           type: string
           description: |-
             Definition text for view-like table types (VIEW, MATERIALIZED_VIEW,
              STREAMING_TABLE, METRIC_VIEW). The format depends on the table type:
              SQL for views, YAML for metric views. Required for METRIC_VIEW.
-        viewDependencies:
+        view_dependencies:
           allOf:
             - $ref: "#/components/schemas/DependencyList"
-          description: |-
-            Tables and functions the view-like table reads. For metric views the server
-             derives this from view_definition and rejects a supplied list that diverges
-             from the derived set (the definition is the single source of truth).
+          description: A list of dependencies referenced by a view-like table.
+          additionalProperties: false
+          title: Dependency List
       description: "WARNING: this API is experimental and subject to change."
       additionalProperties: false
       title: Create a table
@@ -4268,10 +4457,17 @@ components:
         - tag_policy
       type: object
       properties:
-        tagPolicy:
+        tag_policy:
           allOf:
             - $ref: "#/components/schemas/TagPolicy"
-          description: The tag policy to create.
+          description: |-
+            A tag policy defines a tag key together with the rules that govern how it can
+             be used, including the optional set of allowed values. Assigning a governed
+             tag to an entity is done through the Entity Tag Assignments API.
+          additionalProperties: false
+          required:
+            - tag_key
+          title: A governed tag definition (tag policy).
       description: Create a new tag policy
       additionalProperties: false
       title: Create Tag Policy Request
@@ -4283,27 +4479,33 @@ components:
         - volume_type
       type: object
       properties:
-        catalogName:
+        catalog_name:
           type: string
           description: The identifier of the catalog
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: The identifier of the schema
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         name:
           type: string
           description: The identifier of the volume
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        volumeType:
-          type: integer
+        volume_type:
+          enum:
+            - EXTERNAL
+            - MANAGED
+          type: string
           description: |-
-            The type of the volume.
-
-             An external volume is located in the specified external location.
+            An external volume is located in the specified external location.
              A managed volume is located in the default location which is specified
              by the parent schema, or the parent catalog, or the Metastore.
           format: enum
-        storageLocation:
+          title: Volume Type
+        storage_location:
           type: string
           description: The storage location on the cloud
         comment:
@@ -4332,77 +4534,92 @@ components:
           type: string
           description: The unique identifier of the credential.
         purpose:
-          type: integer
-          description: Indicates the purpose of the credential.
-          format: enum
           enum:
             - PURPOSE_UNSPECIFIED
             - STORAGE
             - SERVICE
+          type: string
+          description: Indicates the purpose of the credential.
+          format: enum
           title: Purpose
-        readOnly:
+        read_only:
           type: boolean
-          description: |-
-            Whether the credential is usable only for read operations.
-
-             Only applicable when purpose is STORAGE.
+          description: Only applicable when purpose is STORAGE.
+          title: Whether the credential is usable only for read operations.
         comment:
           type: string
           description: Comment associated with the credential.
         owner:
           type: string
           description: Username of current owner of credential.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this credential was created, in epoch milliseconds.
-        createdBy:
+        created_by:
           readOnly: true
           type: string
           description: Username of credential creator.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this credential was last modified, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of user who last modified the credential.
-        usedForManagedStorage:
+        used_for_managed_storage:
           readOnly: true
           type: boolean
-          description: |-
-            Whether this credential is the current metastore's root storage credential.
-
-             Only applicable when purpose is STORAGE.
-        fullName:
+          description: Only applicable when purpose is STORAGE.
+          title: Whether this credential is the current metastore's root storage credential.
+        full_name:
           readOnly: true
           type: string
           description: The full name of the credential.
-        azureServicePrincipal:
+        azure_service_principal:
           allOf:
             - $ref: "#/components/schemas/AzureServicePrincipal"
-          description: |-
-            The Azure service principal configuration.
-
-             Sealed into the object's inline sensitive blob (envelope-encrypted, redacted
-             from ordinary reads) rather than stored in the searchable properties.
-        azureManagedIdentity:
+          description: The Azure service principal configuration.
+          additionalProperties: false
+          required:
+            - directory_id
+            - application_id
+          title: Azure Service Principal
+        azure_managed_identity:
           allOf:
             - $ref: "#/components/schemas/AzureManagedIdentity"
           description: The Azure managed identity configuration.
-        azureStorageKey:
+          additionalProperties: false
+          required:
+            - access_connector_id
+          title: Azure Managed Identity
+        azure_storage_key:
           allOf:
             - $ref: "#/components/schemas/AzureStorageKey"
           description: The Azure storage key configuration.
-        awsIamRole:
+          additionalProperties: false
+          required:
+            - account_name
+            - account_key
+          title: Azure Storage Key
+        aws_iam_role:
           allOf:
             - $ref: "#/components/schemas/AwsIamRoleConfig"
-          description: The AWS IAM role configuration.
-        databricksGcpServiceAccount:
+          description: |-
+            This is an internal configuration type, not exposed in the public API response.
+             It stores the static credentials (or ambient credential fallback) used to
+             authorize the STS:AssumeRole call when vending temporary credentials.
+          additionalProperties: false
+          required:
+            - role_arn
+          title: The AWS IAM role configuration used server-side to call STS AssumeRole.
+        databricks_gcp_service_account:
           allOf:
             - $ref: "#/components/schemas/DatabricksGcpServiceAccount"
           description: The Databricks managed GCP service account configuration.
+          additionalProperties: false
+          title: Databricks Gcp Service Account
       description: A credential used to access external data sources or services.
       additionalProperties: false
       title: Credential
@@ -4416,51 +4633,60 @@ components:
           type: string
           description: For example, a table's fully qualified name is in the format of <catalog>.<schema>.<table>,
           title: A fully qualified name that uniquely identifies a data object.
-        dataObjectType:
-          type: integer
+        data_object_type:
+          enum:
+            - DATA_OBJECT_TYPE_UNSPECIFIED
+            - TABLE
+            - SCHEMA
+            - VOLUME
+            - AGENT_SKILL
+          type: string
           description: Type of the data object.
           format: enum
-        addedAt:
+          title: Data Object Type
+        added_at:
           readOnly: true
           type: string
           description: The time when this data object is added to the share, in epoch milliseconds.
-        addedBy:
+        added_by:
           readOnly: true
           type: string
           description: Username of the sharer.
         comment:
           type: string
           description: A user-provided comment when adding the data object to the share.
-        sharedAs:
+        shared_as:
           type: string
           description: |-
-            A user-provided new name for the data object within the share.
-
-             If this new name is not provided, the object's original name will be used as the shared_as name.
+            If this new name is not provided, the object's original name will be used as the shared_as name.
              The shared_as name must be unique within a share.
              For tables, the new name must follow the format of <schema>.<table>.
+          title: A user-provided new name for the data object within the share.
         partitions:
           type: array
           items:
             type: string
           description: Array of partitions for the shared data.
-        enableCdf:
+        enable_cdf:
           type: boolean
           description: Whether to enable cdf or indicate if cdf is enabled on the shared object.
-        historyDataSharingStatus:
-          type: integer
+        history_data_sharing_status:
+          enum:
+            - DISABLED
+            - ENABLED
+          type: string
           description: Whether to enable or disable sharing of data history. If not specified, the default is DISABLED.
           format: enum
-        startVersion:
+          title: History Status
+        start_version:
           type: string
           description: |-
-            The start version associated with the object.
-
-             This allows data providers to control the lowest object version that is accessible by clients.
+            This allows data providers to control the lowest object version that is accessible by clients.
              If specified, clients can query snapshots or changes for versions >= start_version.
              If not specified, clients can only query starting from the version of the object at the time it was added to the share.
 
              NOTE: The start_version should be <= the current version of the object.
+          title: The start version associated with the object.
       additionalProperties: false
       title: Data Object
     DataObjectUpdate:
@@ -4469,32 +4695,37 @@ components:
       type: object
       properties:
         action:
-          type: integer
-          description: Name of the share.
-          format: enum
           enum:
             - ACTION_UNSPECIFIED
             - ADD
             - REMOVE
             - UPDATE
+          type: string
+          description: Name of the share.
+          format: enum
           title: Action
-        dataObject:
+        data_object:
           allOf:
             - $ref: "#/components/schemas/DataObject"
           description: User-provided free-form text description.
+          additionalProperties: false
+          required:
+            - name
+            - data_object_type
+          title: Data Object
       description: Data object update.
       additionalProperties: false
       title: Data Object Update
     DatabricksGcpServiceAccount:
       type: object
       properties:
-        credentialId:
+        credential_id:
           type: string
           description: The Databricks internal ID that represents this managed identity.
         email:
           type: string
           description: The email of the service account.
-        privateKeyId:
+        private_key_id:
           type: string
           description: The ID that represents the private key for this Service Account.
       description: The Databricks managed GCP service account configuration.
@@ -4547,11 +4778,11 @@ components:
     Discriminator:
       type: object
       properties:
-        propertyName:
+        property_name:
           type: string
         mapping:
           $ref: "#/components/schemas/Strings"
-        specificationExtension:
+        specification_extension:
           type: array
           items:
             $ref: "#/components/schemas/NamedAny"
@@ -4563,19 +4794,21 @@ components:
         - tag_key
       type: object
       properties:
-        entityType:
+        entity_type:
           type: string
-          description: |-
-            The type of the entity to which the tag is assigned.
-
-             Supported values: catalogs, schemas, tables, columns, volumes.
-        entityName:
+          description: "Supported values: catalogs, schemas, tables, columns, volumes."
+          minLength: 1
+          pattern: ^(catalogs|schemas|tables|columns|volumes)$
+          title: The type of the entity to which the tag is assigned.
+        entity_name:
           type: string
           description: The fully qualified name of the entity to which the tag is assigned.
-        tagKey:
+          minLength: 1
+        tag_key:
           type: string
           description: The key of the tag.
-        tagValue:
+          minLength: 1
+        tag_value:
           type: string
           description: The value of the tag.
       description: |-
@@ -4593,7 +4826,7 @@ components:
           type: string
         url:
           type: string
-        specificationExtension:
+        specification_extension:
           type: array
           items:
             $ref: "#/components/schemas/NamedAny"
@@ -4613,10 +4846,10 @@ components:
         url:
           type: string
           description: Path URL of the external location.
-        credentialName:
+        credential_name:
           type: string
           description: Name of the storage credential used with this location.
-        readOnly:
+        read_only:
           type: boolean
           description: Indicates whether the external location is read-only.
         comment:
@@ -4625,33 +4858,33 @@ components:
         owner:
           type: string
           description: The owner of the external location.
-        credentialId:
+        credential_id:
           readOnly: true
           type: string
           description: Unique ID of the location's storage credential.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this catalog was created, in epoch milliseconds.
-        createdBy:
+        created_by:
           readOnly: true
           type: string
           description: Username of catalog creator.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this catalog was last updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of user who last modified catalog.
-        browseOnly:
+        browse_only:
           readOnly: true
           type: boolean
           description: |-
             Indicates whether the principal is limited to retrieving metadata
              for the associated object through the BROWSE privilege when include_browse is enabled in the request.
-        externalLocationId:
+        external_location_id:
           readOnly: true
           type: string
       additionalProperties: false
@@ -4659,12 +4892,7 @@ components:
     FinalizeModelVersionRequest:
       required: []
       type: object
-      properties:
-        fullName:
-          type: string
-          description: |-
-            The full three-level name of the parent registered model
-             (catalog.schema.model).
+      properties: {}
       description: |-
         Transitions a model version from PENDING_REGISTRATION to READY once the client
          has finished writing all artifacts to the version's storage location.
@@ -4691,66 +4919,90 @@ components:
           description: Name of function, relative to parent schema.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        catalogName:
+        catalog_name:
           type: string
           description: Name of parent catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: Name of parent schema.
-        fullName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        full_name:
           readOnly: true
           type: string
-          description: |-
-            The three-level (fully qualified) name of the function.
-
-             Format: catalog_name.schema_name.function_name
-        dataType:
+          description: "Format: catalog_name.schema_name.function_name"
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+          title: The three-level (fully qualified) name of the function.
+        data_type:
           type: string
           description: Full data type specification of the return type of the function.
-        fullDataType:
+        full_data_type:
           type: string
           description: Full data type specification as SQL/catalogString text.
-        inputParams:
+        input_params:
           allOf:
             - $ref: "#/components/schemas/FunctionParameterInfos"
-          description: The array of function parameter infos.
-        returnParams:
+          description: A collection of function parameters.
+          additionalProperties: false
+          title: Function Parameter Infos
+        return_params:
           type: string
           description: The return type of the function in JSON format.
-        routineBodyLanguage:
+        routine_body_language:
           type: string
           description: The language of the function routine body.
-        routineDefinition:
+        routine_definition:
           type: string
           description: Function body.
-        routineDependencies:
+        routine_dependencies:
           type: string
           description: Function dependencies (in JSON form).
-        parameterStyle:
-          type: integer
+        parameter_style:
+          enum:
+            - PARAMETER_STYLE_UNSPECIFIED
+            - S
+          type: string
           description: The parameter-passing style.
           format: enum
-        isDeterministic:
+          title: Parameter Style
+        is_deterministic:
           type: boolean
           description: Indicates whether the function is deterministic.
-        sqlDataAccess:
-          type: integer
+        sql_data_access:
+          enum:
+            - SQL_DATA_ACCESS_UNSPECIFIED
+            - CONTAINS_SQL
+            - READS_SQL_DATA
+            - NO_SQL
+          type: string
           description: SQL data access information.
           format: enum
-        isNullCall:
+          title: Sql Data Access
+        is_null_call:
           type: boolean
           description: Indicates whether the function is null-calling.
-        securityType:
-          type: integer
+        security_type:
+          enum:
+            - SECURITY_TYPE_UNSPECIFIED
+            - DEFINER
+          type: string
           description: The security type of the function.
           format: enum
-        specificName:
+          title: Security Type
+        specific_name:
           type: string
           description: The type of the function (SCALAR or TABLE).
-        routineBody:
-          type: integer
+        routine_body:
+          enum:
+            - ROUTINE_BODY_UNSPECIFIED
+            - SQL
+            - EXTERNAL
+          type: string
           description: The routine body.
           format: enum
+          title: Routine Body
         comment:
           type: string
           description: User-provided free-form text description.
@@ -4762,23 +5014,25 @@ components:
         owner:
           type: string
           description: Username of current owner of the function.
-        functionId:
+        function_id:
           readOnly: true
           type: string
           description: Unique identifier for the function.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this function was created, in epoch milliseconds.
-        createdBy:
+          minimum: 0
+          exclusiveMinimum: true
+        created_by:
           readOnly: true
           type: string
           description: Username of function creator.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this function was last updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of user who last modified the function.
@@ -4802,7 +5056,7 @@ components:
         - function_full_name
       type: object
       properties:
-        functionFullName:
+        function_full_name:
           type: string
           description: |-
             Full name of the dependent function, in the form of
@@ -4822,25 +5076,54 @@ components:
         name:
           type: string
           description: Name of parameter.
-        typeText:
+        type_text:
           type: string
           description: Full data type specification as SQL/catalogString text.
-        typeJson:
+        type_json:
           type: string
           description: Full data type specification, JSON-serialized.
-        typeName:
-          type: integer
+        type_name:
+          enum:
+            - COLUMN_TYPE_NAME_UNSPECIFIED
+            - BOOLEAN
+            - BYTE
+            - SHORT
+            - INT
+            - LONG
+            - FLOAT
+            - DOUBLE
+            - DATE
+            - TIMESTAMP
+            - STRING
+            - BINARY
+            - DECIMAL
+            - INTERVAL
+            - ARRAY
+            - STRUCT
+            - MAP
+            - CHAR
+            - "NULL"
+            - USER_DEFINED_TYPE
+            - TIMESTAMP_NTZ
+            - VARIANT
+            - TABLE_TYPE
+          type: string
           description: Data type name.
           format: enum
-        typePrecision:
+          title: Column Type Name
+        type_precision:
           type: integer
           description: Digits of precision; required for DecimalTypes.
           format: int32
-        typeScale:
+          minimum: -2147483648
+          maximum: 2147483647
+        type_scale:
           type: integer
           description: Digits to right of decimal; required for DecimalTypes.
           format: int32
-        typeIntervalType:
+          minimum: -2147483648
+          maximum: 2147483647
+        type_interval_type:
           type: string
           description: Format of IntervalType.
         position:
@@ -4849,15 +5132,24 @@ components:
           format: int32
           minimum: -2147483648
           maximum: 2147483647
-        parameterMode:
-          type: integer
+        parameter_mode:
+          enum:
+            - PARAMETER_MODE_UNSPECIFIED
+            - IN
+          type: string
           description: The mode of the function parameter.
           format: enum
-        parameterType:
-          type: integer
+          title: Parameter Mode
+        parameter_type:
+          enum:
+            - FUNCTION_PARAMETER_TYPE_UNSPECIFIED
+            - COLUMN
+            - PARAM
+          type: string
           description: The type of function parameter.
           format: enum
-        parameterDefault:
+          title: Function Parameter Type
+        parameter_default:
           type: string
           description: Default value of the parameter.
         comment:
@@ -4891,7 +5183,7 @@ components:
         - function_name
       type: object
       properties:
-        functionName:
+        function_name:
           type: string
           description: Fully qualified name of the function (catalog.schema.function) to invoke.
         using:
@@ -4910,7 +5202,7 @@ components:
     GcpOauthToken:
       type: object
       properties:
-        oauthToken:
+        oauth_token:
           type: string
           description: The OAuth token used to access Google Cloud services.
       additionalProperties: false
@@ -4926,30 +5218,29 @@ components:
         - operation
       type: object
       properties:
-        catalogName:
+        catalog_name:
           type: string
           description: Name of parent catalog of the model version.
-        schemaName:
+        schema_name:
           type: string
           description: Name of parent schema of the model version.
-        modelName:
+        model_name:
           type: string
           description: Name of the parent registered model.
         version:
           type: string
           description: The integer version number of the model version.
         operation:
-          type: integer
+          enum:
+            - READ_MODEL_VERSION
+            - READ_WRITE_MODEL_VERSION
+          type: string
           description: |-
             The operation performed against the model version data, either
              READ_MODEL_VERSION or READ_WRITE_MODEL_VERSION. If READ_WRITE_MODEL_VERSION
              is specified, the credentials returned will have write permissions,
              otherwise, it will be read only.
           format: enum
-          enum:
-            - UNSPECIFIED
-            - READ_MODEL_VERSION
-            - READ_WRITE_MODEL_VERSION
           title: Operation
       description: Generate a new set of credentials for a model version.
       additionalProperties: false
@@ -4964,16 +5255,15 @@ components:
           type: string
           description: URL for path-based access.
         operation:
-          type: integer
-          description: The operation being performed on the path.
-          format: enum
           enum:
-            - UNSPECIFIED
             - PATH_READ
             - PATH_READ_WRITE
             - PATH_CREATE_TABLE
+          type: string
+          description: The operation being performed on the path.
+          format: enum
           title: Operation
-        dryRun:
+        dry_run:
           type: boolean
           description: |-
             When set to true, the service will not validate that the generated
@@ -4988,20 +5278,19 @@ components:
         - operation
       type: object
       properties:
-        tableId:
+        table_id:
           type: string
           description: UUID of the table to read or write.
         operation:
-          type: integer
+          enum:
+            - READ
+            - READ_WRITE
+          type: string
           description: |-
             The operation performed against the table data, either READ or READ_WRITE.
              If READ_WRITE is specified, the credentials returned will have write
              permissions, otherwise, it will be read only.
           format: enum
-          enum:
-            - UNSPECIFIED
-            - READ
-            - READ_WRITE
           title: Operation
       description: Generate a new set of credentials for a table.
       additionalProperties: false
@@ -5012,20 +5301,19 @@ components:
         - operation
       type: object
       properties:
-        volumeId:
+        volume_id:
           type: string
           description: UUID of the volume to read or write.
         operation:
-          type: integer
+          enum:
+            - READ_VOLUME
+            - WRITE_VOLUME
+          type: string
           description: |-
             The operation performed against the volume data, either READ_VOLUME or
              WRITE_VOLUME. If WRITE_VOLUME is specified, the credentials returned will
              have write permissions, otherwise, it will be read only.
           format: enum
-          enum:
-            - UNSPECIFIED
-            - READ_VOLUME
-            - WRITE_VOLUME
           title: Operation
       description: Generate a new set of credentials for a volume.
       additionalProperties: false
@@ -5033,12 +5321,16 @@ components:
     GetPermissionsResponse:
       type: object
       properties:
-        privilegeAssignments:
+        privilege_assignments:
           type: array
           items:
             $ref: "#/components/schemas/PrivilegeAssignment"
+            additionalProperties: false
+            required:
+              - principal
+            title: Privilege Assignment
           description: The privileges assigned to each principal
-        nextPageToken:
+        next_page_token:
           type: string
           description: Opaque pagination token to go to next page based on previous query.
       description: Response to list shares.
@@ -5047,7 +5339,7 @@ components:
     GetTableExistsResponse:
       type: object
       properties:
-        tableExists:
+        table_exists:
           type: boolean
           description: Boolean reflecting if table exists.
       additionalProperties: false
@@ -5065,25 +5357,35 @@ components:
     ItemsItem:
       type: object
       properties:
-        schemaOrReference:
+        schema_or_reference:
           type: array
           items:
             $ref: "#/components/schemas/SchemaOrReference"
     ListAgentSkillsResponse:
       type: object
       properties:
-        agentSkills:
+        agent_skills:
           type: array
           items:
             $ref: "#/components/schemas/AgentSkill"
+            additionalProperties: false
+            required:
+              - name
+              - catalog_name
+              - schema_name
+              - full_name
+              - storage_location
+              - agent_skill_id
+              - agent_skill_type
+            description: An agent skill registered in Unity Catalog.
+            title: Agent Skill
           description: The agent skills returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: |-
-            Opaque token to retrieve the next page of results.
-
-             Absent if there are no more pages. page_token should be set to
+            Absent if there are no more pages. page_token should be set to
              this value for the next request to retrieve the next page of results.
+          title: Opaque token to retrieve the next page of results.
       description: List agent skills response.
       additionalProperties: false
       title: List Agent Skills Response
@@ -5106,13 +5408,12 @@ components:
             description: An agent registered in Unity Catalog.
             title: Agent
           description: The agents returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: |-
-            Opaque token to retrieve the next page of results.
-
-             Absent if there are no more pages. page_token should be set to
+            Absent if there are no more pages. page_token should be set to
              this value for the next request to retrieve the next page of results.
+          title: Opaque token to retrieve the next page of results.
       description: List agents response.
       additionalProperties: false
       title: List Agents Response
@@ -5129,7 +5430,7 @@ components:
             description: A catalog is a root-level namespace that contains schemas.
             title: Catalog
           description: The catalogs returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       description: List catalogs response.
@@ -5152,7 +5453,7 @@ components:
             description: A credential used to access external data sources or services.
             title: Credential
           description: The credentials returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       additionalProperties: false
@@ -5160,12 +5461,24 @@ components:
     ListEntityTagAssignmentsResponse:
       type: object
       properties:
-        tagAssignments:
+        tag_assignments:
           type: array
           items:
             $ref: "#/components/schemas/EntityTagAssignment"
+            additionalProperties: false
+            required:
+              - entity_type
+              - entity_name
+              - tag_key
+            description: |-
+              Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
+               of a tag to a specific securable. It has no identifier of its own — its identity is
+               the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
+               `google.api.resource`: assignments are stored as associations between the entity and
+               its tag, not as standalone objects.
+            title: The assignment of a tag to a Unity Catalog entity.
           description: The tag assignments returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       description: List entity tag assignments response.
@@ -5174,12 +5487,20 @@ components:
     ListExternalLocationsResponse:
       type: object
       properties:
-        externalLocations:
+        external_locations:
           type: array
           items:
             $ref: "#/components/schemas/ExternalLocation"
+            additionalProperties: false
+            required:
+              - name
+              - url
+              - credential_name
+              - read_only
+              - credential_id
+            title: External Location
           description: The external locations returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       description: List external locations response.
@@ -5209,7 +5530,7 @@ components:
             description: A User-Defined Function (UDF) registered under a catalog + schema hierarchy.
             title: Function
           description: The functions returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       description: List functions response.
@@ -5218,12 +5539,26 @@ components:
     ListModelVersionsResponse:
       type: object
       properties:
-        modelVersions:
+        model_versions:
           type: array
           items:
             $ref: "#/components/schemas/ModelVersion"
+            additionalProperties: false
+            required:
+              - model_name
+              - catalog_name
+              - schema_name
+              - version
+              - source
+              - status
+            description: |-
+              A version is identified by its parent model's three-level name plus an
+               integer `version` number assigned by the server. It carries its own artifact
+               storage location and moves through the PENDING_REGISTRATION -> READY lifecycle
+               via the finalize operation.
+            title: A model version under a registered model.
           description: The model versions returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       description: List model versions response.
@@ -5248,7 +5583,7 @@ components:
                not parse or evaluate it.
             title: A row-filter or column-mask policy bound to principals and scoped to a securable.
           description: The policies returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       description: List policies response.
@@ -5271,7 +5606,7 @@ components:
                upstream Delta Sharing server.
             title: A provider represents an organization sharing data with this metastore.
           description: List of providers.
-        nextPageToken:
+        next_page_token:
           type: string
           description: Opaque pagination token to go to next page based on previous query.
       description: Response to list providers.
@@ -5290,7 +5625,7 @@ components:
               - authentication_type
             title: Recipient
           description: List of recipients.
-        nextPageToken:
+        next_page_token:
           type: string
           description: Opaque pagination token to go to next page based on previous query.
       description: Response to list recipients.
@@ -5299,12 +5634,23 @@ components:
     ListRegisteredModelsResponse:
       type: object
       properties:
-        registeredModels:
+        registered_models:
           type: array
           items:
             $ref: "#/components/schemas/RegisteredModel"
+            additionalProperties: false
+            required:
+              - name
+              - catalog_name
+              - schema_name
+              - full_name
+            description: |-
+              Registered models group a collection of model versions. Individual versions
+               carry their own artifact storage location and are created, finalized, and
+               governed independently.
+            title: A registered model within the three-level namespace (catalog.schema.model).
           description: The registered models returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       description: List registered models response.
@@ -5325,7 +5671,7 @@ components:
             description: A schema is a namespace within a catalog that contains tables.
             title: Schema
           description: The schemas returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       description: List Schemas response.
@@ -5343,7 +5689,7 @@ components:
               - name
             title: Share
           description: List of shares.
-        nextPageToken:
+        next_page_token:
           type: string
           description: Opaque pagination token to go to next page based on previous query.
       description: Response to list shares.
@@ -5362,7 +5708,7 @@ components:
               - table_type
             title: Table Summary
           description: The table summaries returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       additionalProperties: false
@@ -5384,7 +5730,7 @@ components:
               - full_name
             title: Table
           description: The tables returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       additionalProperties: false
@@ -5393,12 +5739,20 @@ components:
     ListTagPoliciesResponse:
       type: object
       properties:
-        tagPolicies:
+        tag_policies:
           type: array
           items:
             $ref: "#/components/schemas/TagPolicy"
+            additionalProperties: false
+            required:
+              - tag_key
+            description: |-
+              A tag policy defines a tag key together with the rules that govern how it can
+               be used, including the optional set of allowed values. Assigning a governed
+               tag to an entity is done through the Entity Tag Assignments API.
+            title: A governed tag definition (tag policy).
           description: The tag policies returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: The next_page_token value to include in the next List request.
       description: List tag policies response.
@@ -5422,13 +5776,12 @@ components:
               - volume_type
             title: Volume
           description: The volumes returned.
-        nextPageToken:
+        next_page_token:
           type: string
           description: |-
-            Opaque token to retrieve the next page of results.
-
-             Absent if there are no more pages. page_token should be set to
+            Absent if there are no more pages. page_token should be set to
              this value for the next request to retrieve the next page of results.
+          title: Opaque token to retrieve the next page of results.
       description: List Schemas response.
       additionalProperties: false
       title: List Volumes Response
@@ -5461,15 +5814,21 @@ components:
         - status
       type: object
       properties:
-        modelName:
+        model_name:
           type: string
           description: Name of the parent registered model, relative to parent schema.
-        catalogName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        catalog_name:
           type: string
           description: Name of parent catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: Name of parent schema.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         version:
           readOnly: true
           type: string
@@ -5481,21 +5840,21 @@ components:
           description: |-
             URI indicating the location of the source artifacts used to create the model
              version.
-        runId:
+        run_id:
           type: string
           description: The run id used by the ML package that generated this model.
         status:
           readOnly: true
-          type: integer
-          description: Current status of the model version.
-          format: enum
           enum:
             - MODEL_VERSION_STATUS_UNSPECIFIED
             - PENDING_REGISTRATION
             - FAILED_REGISTRATION
             - READY
+          type: string
+          description: Current status of the model version.
+          format: enum
           title: Model Version Status
-        storageLocation:
+        storage_location:
           readOnly: true
           type: string
           description: The storage location under which the model version's artifacts are stored.
@@ -5506,27 +5865,29 @@ components:
           readOnly: true
           type: string
           description: Unique identifier for the model version.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this model version was created, in epoch milliseconds.
-        createdBy:
+          minimum: 0
+          exclusiveMinimum: true
+        created_by:
           readOnly: true
           type: string
           description: Username of model version creator.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this model version was last updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of user who last modified the model version.
-        metastoreId:
+        metastore_id:
           readOnly: true
           type: string
           description: The unique identifier of the metastore.
-        browseOnly:
+        browse_only:
           readOnly: true
           type: boolean
           description: |-
@@ -5607,57 +5968,83 @@ components:
           readOnly: true
           type: string
           description: Server-assigned unique identifier for the policy.
-        onSecurableType:
+        on_securable_type:
           type: string
-          description: |-
-            The type of securable the policy is defined on.
-
-             Supported values: catalogs, schemas, tables.
-        onSecurableFullname:
+          description: "Supported values: catalogs, schemas, tables."
+          minLength: 1
+          pattern: ^(catalogs|schemas|tables)$
+          title: The type of securable the policy is defined on.
+        on_securable_fullname:
           type: string
           description: The fully qualified name of the securable the policy is defined on.
-        policyType:
-          type: integer
+          minLength: 1
+        policy_type:
+          enum:
+            - POLICY_TYPE_UNSPECIFIED
+            - POLICY_TYPE_ROW_FILTER
+            - POLICY_TYPE_COLUMN_MASK
+          type: string
           description: The kind of enforcement this policy applies.
           format: enum
-        toPrincipals:
+          title: Policy Type
+        to_principals:
           type: array
           items:
             type: string
           description: The principals the policy applies to. Empty means "all principals".
-        exceptPrincipals:
+        except_principals:
           type: array
           items:
             type: string
           description: The principals explicitly excluded from the policy, even if matched by to_principals.
-        whenCondition:
+        when_condition:
           type: string
           description: |-
             An opaque condition expression, e.g. "hasTagValue('env','prod')", evaluated by the
              query engine at enforcement time. Stored and returned as-is; not parsed server-side.
-        matchColumns:
+        match_columns:
           type: array
           items:
             $ref: "#/components/schemas/MatchColumn"
+            additionalProperties: false
+            required:
+              - alias
+              - condition
+            description: |-
+              A column referenced by a policy, together with the alias it is bound to in the
+               row-filter or column-mask function invocation.
+            title: Match Column
           description: |-
             The columns referenced by the row-filter or column-mask function, and the aliases
              they are bound to.
-        rowFilter:
+        row_filter:
           allOf:
             - $ref: "#/components/schemas/FunctionRef"
-          description: The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
-        columnMask:
+          description: |-
+            A reference to the SQL function that implements a row-filter or column-mask policy,
+             together with the arguments it is invoked with.
+          additionalProperties: false
+          required:
+            - function_name
+          title: Function Ref
+        column_mask:
           allOf:
             - $ref: "#/components/schemas/FunctionRef"
-          description: The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+          description: |-
+            A reference to the SQL function that implements a row-filter or column-mask policy,
+             together with the arguments it is invoked with.
+          additionalProperties: false
+          required:
+            - function_name
+          title: Function Ref
         comment:
           type: string
           description: User-provided free-form text description of the policy.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this policy was created, in epoch milliseconds.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this policy was last updated, in epoch milliseconds.
@@ -5686,7 +6073,7 @@ components:
     Properties:
       type: object
       properties:
-        additionalProperties:
+        additional_properties:
           type: array
           items:
             $ref: "#/components/schemas/NamedSchemaOrReference"
@@ -5703,17 +6090,22 @@ components:
         name:
           type: string
           description: The name of the provider.
-        authenticationType:
-          type: integer
+        authentication_type:
+          enum:
+            - PROVIDER_AUTHENTICATION_TYPE_UNSPECIFIED
+            - TOKEN
+            - OAUTH_CLIENT_CREDENTIALS
+          type: string
           description: The delta sharing authentication type.
           format: enum
+          title: Provider Authentication Type
         owner:
           type: string
           description: Username of the provider owner.
         comment:
           type: string
           description: Description about the provider.
-        recipientProfileStr:
+        recipient_profile_str:
           type: string
           description: |-
             The recipient profile (credential file contents) used to connect to the
@@ -5723,19 +6115,19 @@ components:
           additionalProperties:
             type: string
           description: A map of key-value properties attached to the provider.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this provider was created, in epoch milliseconds.
-        createdBy:
+        created_by:
           readOnly: true
           type: string
           description: Username of the creator of the provider.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this provider was updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of the provider updater.
@@ -5748,13 +6140,13 @@ components:
     R2TemporaryCredentials:
       type: object
       properties:
-        accessKeyId:
+        access_key_id:
           type: string
           description: The access key ID that identifies the temporary credentials.
-        secretAccessKey:
+        secret_access_key:
           type: string
           description: The secret access key associated with the access key.
-        sessionToken:
+        session_token:
           type: string
           description: The generated JWT that users must pass to use the temporary credentials.
       additionalProperties: false
@@ -5776,10 +6168,15 @@ components:
         name:
           type: string
           description: The name of the recipient.
-        authenticationType:
-          type: integer
+        authentication_type:
+          enum:
+            - AUTHENTICATION_TYPE_UNSPECIFIED
+            - TOKEN
+            - OAUTH_CLIENT_CREDENTIALS
+          type: string
           description: The delta sharing authentication type.
           format: enum
+          title: Authentication Type
         owner:
           type: string
           description: Username of the recipient owner.
@@ -5791,11 +6188,11 @@ components:
           additionalProperties:
             type: string
           description: A map of key-value properties attached to the securable.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this share was created, in epoch milliseconds.
-        createdBy:
+        created_by:
           readOnly: true
           type: string
           description: Username of the creator of the share.
@@ -5815,11 +6212,11 @@ components:
               - updated_by
             title: Recipient Token
           description: This field is only present when the authentication_type is TOKEN.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this share was updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of share updater.
@@ -5840,26 +6237,26 @@ components:
           readOnly: true
           type: string
           description: Unique ID of the recipient token.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this recipient token was created, in epoch milliseconds.
-        createdBy:
+        created_by:
           readOnly: true
           type: string
           description: Username of recipient token creator.
-        activationUrl:
+        activation_url:
           readOnly: true
           type: string
           description: Full activation URL to retrieve the access token. It will be empty if the token is already retrieved.
-        expirationTime:
+        expiration_time:
           type: string
           description: Expiration timestamp of the token in epoch milliseconds.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this recipient token was updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of recipient token updater.
@@ -5868,7 +6265,7 @@ components:
     Reference:
       type: object
       properties:
-        Ref:
+        _ref:
           type: string
         summary:
           type: string
@@ -5888,20 +6285,23 @@ components:
           description: Name of registered model, relative to parent schema.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        catalogName:
+        catalog_name:
           type: string
           description: Name of parent catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: Name of parent schema.
-        fullName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        full_name:
           readOnly: true
           type: string
-          description: |-
-            The three-level (fully qualified) name of the registered model.
-
-             Format: catalog_name.schema_name.model_name
-        storageLocation:
+          description: "Format: catalog_name.schema_name.model_name"
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+          title: The three-level (fully qualified) name of the registered model.
+        storage_location:
           readOnly: true
           type: string
           description: The storage location under which model version data files are stored.
@@ -5916,27 +6316,29 @@ components:
           readOnly: true
           type: string
           description: Unique identifier for the registered model.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this registered model was created, in epoch milliseconds.
-        createdBy:
+          minimum: 0
+          exclusiveMinimum: true
+        created_by:
           readOnly: true
           type: string
           description: Username of registered model creator.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this registered model was last updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of user who last modified the registered model.
-        metastoreId:
+        metastore_id:
           readOnly: true
           type: string
           description: The unique identifier of the metastore.
-        browseOnly:
+        browse_only:
           readOnly: true
           type: boolean
           description: |-
@@ -5956,13 +6358,13 @@ components:
           type: boolean
         discriminator:
           $ref: "#/components/schemas/Discriminator"
-        readOnly:
+        read_only:
           type: boolean
-        writeOnly:
+        write_only:
           type: boolean
         xml:
           $ref: "#/components/schemas/Xml"
-        externalDocs:
+        external_docs:
           $ref: "#/components/schemas/ExternalDocs"
         example:
           $ref: "#/components/schemas/Any"
@@ -5970,34 +6372,34 @@ components:
           type: boolean
         title:
           type: string
-        multipleOf:
+        multiple_of:
           type: number
           format: double
         maximum:
           type: number
           format: double
-        exclusiveMaximum:
+        exclusive_maximum:
           type: boolean
         minimum:
           type: number
           format: double
-        exclusiveMinimum:
+        exclusive_minimum:
           type: boolean
-        maxLength:
+        max_length:
           type: string
-        minLength:
+        min_length:
           type: string
         pattern:
           type: string
-        maxItems:
+        max_items:
           type: string
-        minItems:
+        min_items:
           type: string
-        uniqueItems:
+        unique_items:
           type: boolean
-        maxProperties:
+        max_properties:
           type: string
-        minProperties:
+        min_properties:
           type: string
         required:
           type: array
@@ -6009,15 +6411,15 @@ components:
             $ref: "#/components/schemas/Any"
         type:
           type: string
-        allOf:
+        all_of:
           type: array
           items:
             $ref: "#/components/schemas/SchemaOrReference"
-        oneOf:
+        one_of:
           type: array
           items:
             $ref: "#/components/schemas/SchemaOrReference"
-        anyOf:
+        any_of:
           type: array
           items:
             $ref: "#/components/schemas/SchemaOrReference"
@@ -6030,7 +6432,7 @@ components:
           additionalProperties:
             type: string
           description: A map of key-value properties attached to the securable.
-        additionalProperties:
+        additional_properties:
           $ref: "#/components/schemas/AdditionalPropertiesItem"
         default:
           $ref: "#/components/schemas/DefaultType"
@@ -6038,7 +6440,7 @@ components:
           type: string
         format:
           type: string
-        specificationExtension:
+        specification_extension:
           type: array
           items:
             $ref: "#/components/schemas/NamedAny"
@@ -6088,27 +6490,27 @@ components:
           type: string
           description: User-provided free-form text description.
           maxLength: 65536
-        storageLocation:
+        storage_location:
           readOnly: true
           type: string
           description: Storage Location URL (full path) for the share.
-        storageRoot:
+        storage_root:
           readOnly: true
           type: string
           description: Storage root URL for the share.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this share was created, in epoch milliseconds.
-        createdBy:
+        created_by:
           readOnly: true
           type: string
           description: Username of the creator of the share.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this share was updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of share updater.
@@ -6136,29 +6538,29 @@ components:
         name:
           type: string
           description: Name of the staging table, relative to the parent schema.
-        schemaName:
+        schema_name:
           type: string
           description: Name of the parent schema relative to its parent catalog.
-        catalogName:
+        catalog_name:
           type: string
           description: Name of the parent catalog.
-        stagingLocation:
+        staging_location:
           readOnly: true
           type: string
           description: |-
             Storage location allocated for the staging table, where the client writes
              the initial Delta commit. Immutable once allocated.
-        createdBy:
+        created_by:
           readOnly: true
           type: string
           description: |-
             Username of the principal that created the staging table. Only this
              principal may finalize the table.
-        stageCommitted:
+        stage_committed:
           readOnly: true
           type: boolean
           description: Whether the staging table has been finalized into a managed table.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this staging table was created, in epoch milliseconds.
@@ -6192,7 +6594,7 @@ components:
     Strings:
       type: object
       properties:
-        additionalProperties:
+        additional_properties:
           type: array
           items:
             $ref: "#/components/schemas/NamedString"
@@ -6212,19 +6614,46 @@ components:
           minLength: 3
           maxLength: 255
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        catalogName:
+        catalog_name:
           type: string
           description: Name of parent catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: Name of parent schema.
-        tableType:
-          type: integer
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        table_type:
+          enum:
+            - TABLE_TYPE_UNSPECIFIED
+            - MANAGED
+            - EXTERNAL
+            - VIEW
+            - MATERIALIZED_VIEW
+            - STREAMING_TABLE
+            - METRIC_VIEW
+          type: string
           format: enum
-        dataSourceFormat:
-          type: integer
+          title: Table Type
+        data_source_format:
+          enum:
+            - DATA_SOURCE_FORMAT_UNSPECIFIED
+            - DELTA
+            - ICEBERG
+            - HUDI
+            - PARQUET
+            - CSV
+            - JSON
+            - ORC
+            - AVRO
+            - TEXT
+            - UNITY_CATALOG
+            - DELTASHARING
+          type: string
           description: Data source format of the table.
           format: enum
+          title: Data Source Format
         columns:
           type: array
           items:
@@ -6237,22 +6666,21 @@ components:
               - type_name
             title: Column
           description: The array of Column definitions of the table's columns.
-        storageLocation:
+        storage_location:
           type: string
           description: Storage root URL for table (for MANAGED, EXTERNAL tables)
-        viewDefinition:
+        view_definition:
           type: string
           description: |-
             Definition text for view-like table types (VIEW, MATERIALIZED_VIEW,
              STREAMING_TABLE, METRIC_VIEW). The format depends on the table type:
              SQL for views, YAML for metric views.
-        viewDependencies:
+        view_dependencies:
           allOf:
             - $ref: "#/components/schemas/DependencyList"
-          description: |-
-            Tables and functions the view-like table reads. For metric views this is
-             derived from the view_definition by the server (the definition is the
-             single source of truth).
+          description: A list of dependencies referenced by a view-like table.
+          additionalProperties: false
+          title: Dependency List
         owner:
           readOnly: true
           type: string
@@ -6265,34 +6693,35 @@ components:
           additionalProperties:
             type: string
           description: A map of key-value properties attached to the securable.
-        storageCredentialName:
+        storage_credential_name:
           type: string
           description: Name of the storage credential, when a storage credential is configured for use with this table.
-        fullName:
+        full_name:
           readOnly: true
           type: string
           description: Full name of table, in form of catalog_name.schema_name.table_name.
-        createdAt:
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+        created_at:
           readOnly: true
           type: string
           description: Time at which this table was created, in epoch milliseconds.
-        createdBy:
+        created_by:
           readOnly: true
           type: string
           description: Username of table creator.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this table was last updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of user who last modified table.
-        deletedAt:
+        deleted_at:
           readOnly: true
           type: string
           description: Time at which this table was deleted, in epoch milliseconds. Field is omitted if table is not deleted.
-        tableId:
+        table_id:
           readOnly: true
           type: string
           description: Unique identifier for the table.
@@ -6304,7 +6733,7 @@ components:
         - table_full_name
       type: object
       properties:
-        tableFullName:
+        table_full_name:
           type: string
           description: |-
             Full name of the dependent table, in the form of
@@ -6315,12 +6744,21 @@ components:
     TableSummary:
       type: object
       properties:
-        fullName:
+        full_name:
           type: string
           description: The full name of the table.
-        tableType:
-          type: integer
+        table_type:
+          enum:
+            - TABLE_TYPE_UNSPECIFIED
+            - MANAGED
+            - EXTERNAL
+            - VIEW
+            - MATERIALIZED_VIEW
+            - STREAMING_TABLE
+            - METRIC_VIEW
+          type: string
           format: enum
+          title: Table Type
       additionalProperties: false
       required:
         - full_name
@@ -6331,9 +6769,10 @@ components:
         - tag_key
       type: object
       properties:
-        tagKey:
+        tag_key:
           type: string
           description: The key of the governed tag.
+          minLength: 1
         description:
           type: string
           description: User-provided free-form text description of the tag policy.
@@ -6352,11 +6791,13 @@ components:
           readOnly: true
           type: string
           description: Unique identifier for the tag policy.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this tag policy was created, in epoch milliseconds.
-        updatedAt:
+          minimum: 0
+          exclusiveMinimum: true
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this tag policy was last updated, in epoch milliseconds.
@@ -6369,35 +6810,62 @@ components:
     TemporaryCredential:
       type: object
       properties:
-        expirationTime:
+        expiration_time:
           type: string
           description: |-
             Server time when the credential will expire, in epoch milliseconds.
              The API client is advised to cache the credential given this expiration time.
+          minimum: 0
+          exclusiveMinimum: true
         url:
           type: string
           description: The URL of the storage path accessible by the temporary credential.
           pattern: ^(?:(?:[a-zA-Z][a-zA-Z\d+\-.]*):)?(?://(?:[A-Za-z0-9\-\.]+(?::\d+)?))?(/[^\?#]*)?(?:\?([^\#]*))?(?:\#(.*))?$
-        azureUserDelegationSas:
+        azure_user_delegation_sas:
           allOf:
             - $ref: "#/components/schemas/AzureUserDelegationSas"
           description: Credentials for Azure Blob Storage.
-        azureAad:
+          additionalProperties: false
+          required:
+            - sas_token
+          title: Azure User Delegation Sas
+        azure_aad:
           allOf:
             - $ref: "#/components/schemas/AzureAad"
           description: Credentials for Azure Active Directory.
-        awsTempCredentials:
+          additionalProperties: false
+          required:
+            - aad_token
+          title: Azure Aad
+        aws_temp_credentials:
           allOf:
             - $ref: "#/components/schemas/AwsTemporaryCredentials"
           description: Credentials for AWS S3.
-        gcpOauthToken:
+          additionalProperties: false
+          required:
+            - access_key_id
+            - access_point
+            - secret_access_key
+            - session_token
+          title: Aws Temporary Credentials
+        gcp_oauth_token:
           allOf:
             - $ref: "#/components/schemas/GcpOauthToken"
           description: Credentials for Google Cloud Storage.
-        r2TempCredentials:
+          additionalProperties: false
+          required:
+            - oauth_token
+          title: Gcp Oauth Token
+        r2_temp_credentials:
           allOf:
             - $ref: "#/components/schemas/R2TemporaryCredentials"
           description: Credentials for R2.
+          additionalProperties: false
+          required:
+            - access_key_id
+            - secret_access_key
+            - session_token
+          title: R2 Temporary Credentials
       description: The response to the GenerateTemporaryTableCredentialsRequest.
       additionalProperties: false
       required:
@@ -6408,13 +6876,23 @@ components:
       required: []
       type: object
       properties:
-        newName:
+        new_name:
           type: string
           description: New name for the agent.
-        invocationProtocol:
-          type: integer
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        invocation_protocol:
+          enum:
+            - INVOCATION_PROTOCOL_UNSPECIFIED
+            - MCP
+            - A2A
+            - OPENAI
+            - ANTHROPIC
+            - REST
+          type: string
           description: The protocol a recipient uses to invoke the agent.
           format: enum
+          title: Invocation Protocol
         endpoint:
           type: string
           description: The agent's invocation endpoint URL.
@@ -6428,7 +6906,7 @@ components:
           items:
             type: string
           description: Updated capability identifiers advertised by the agent.
-        inputSchema:
+        input_schema:
           type: string
           description: Updated JSON Schema (encoded as a JSON string) describing the expected input.
         comment:
@@ -6445,14 +6923,17 @@ components:
       required: []
       type: object
       properties:
-        newName:
+        new_name:
           type: string
           description: New name for the agent skill.
+          minLength: 3
+          maxLength: 64
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         description:
           type: string
           description: Updated description of what the skill does and when to use it.
           maxLength: 1024
-        allowedTools:
+        allowed_tools:
           type: array
           items:
             type: string
@@ -6485,9 +6966,11 @@ components:
             When provided in update request, the specified properties will override the existing properties.
              To add and remove properties, one would need to perform a read-modify-write.
           title: A map of key-value properties attached to the securable.
-        newName:
+        new_name:
           type: string
           description: Name of catalog.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
       description: Update a catalog
       additionalProperties: false
       title: Update Catalog Request
@@ -6495,19 +6978,21 @@ components:
       required: []
       type: object
       properties:
-        newName:
+        new_name:
           type: string
           description: New name of the credential.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         comment:
           type: string
           description: Comment associated with the credential.
-        readOnly:
+        read_only:
           type: boolean
           description: Whether the credential is usable only for read operations. Only applicable when purpose is STORAGE.
         owner:
           type: string
           description: Username of current owner of credential.
-        skipValidation:
+        skip_validation:
           type: boolean
           description: Supply true to this argument to skip validation of the updated credential.
         force:
@@ -6515,26 +7000,49 @@ components:
           description: |-
             Force an update even if there are dependent services (when purpose is SERVICE)
              or dependent external locations and external tables (when purpose is STORAGE).
-        azureServicePrincipal:
+        azure_service_principal:
           allOf:
             - $ref: "#/components/schemas/AzureServicePrincipal"
           description: The Azure service principal configuration.
-        azureManagedIdentity:
+          additionalProperties: false
+          required:
+            - directory_id
+            - application_id
+          title: Azure Service Principal
+        azure_managed_identity:
           allOf:
             - $ref: "#/components/schemas/AzureManagedIdentity"
           description: The Azure managed identity configuration.
-        azureStorageKey:
+          additionalProperties: false
+          required:
+            - access_connector_id
+          title: Azure Managed Identity
+        azure_storage_key:
           allOf:
             - $ref: "#/components/schemas/AzureStorageKey"
           description: The Azure storage key configuration.
-        awsIamRole:
+          additionalProperties: false
+          required:
+            - account_name
+            - account_key
+          title: Azure Storage Key
+        aws_iam_role:
           allOf:
             - $ref: "#/components/schemas/AwsIamRoleConfig"
-          description: The AWS IAM role configuration.
-        databricksGcpServiceAccount:
+          description: |-
+            This is an internal configuration type, not exposed in the public API response.
+             It stores the static credentials (or ambient credential fallback) used to
+             authorize the STS:AssumeRole call when vending temporary credentials.
+          additionalProperties: false
+          required:
+            - role_arn
+          title: The AWS IAM role configuration used server-side to call STS AssumeRole.
+        databricks_gcp_service_account:
           allOf:
             - $ref: "#/components/schemas/DatabricksGcpServiceAccount"
           description: The Databricks managed GCP service account configuration.
+          additionalProperties: false
+          title: Databricks Gcp Service Account
       description: Update a credential.
       additionalProperties: false
       title: Update Credential Request
@@ -6543,20 +7051,22 @@ components:
         - tag_assignment
       type: object
       properties:
-        entityType:
-          type: string
-          description: The type of the entity to which the tag is assigned.
-        entityName:
-          type: string
-          description: The fully qualified name of the entity to which the tag is assigned.
-        tagKey:
-          type: string
-          description: The key of the tag to update.
-        tagAssignment:
+        tag_assignment:
           allOf:
             - $ref: "#/components/schemas/EntityTagAssignment"
-          description: The tag assignment with the updated fields.
-        updateMask:
+          description: |-
+            Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
+             of a tag to a specific securable. It has no identifier of its own — its identity is
+             the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
+             `google.api.resource`: assignments are stored as associations between the entity and
+             its tag, not as standalone objects.
+          additionalProperties: false
+          required:
+            - entity_type
+            - entity_name
+            - tag_key
+          title: The assignment of a tag to a Unity Catalog entity.
+        update_mask:
           type: string
           description: The list of fields to update, as a comma-separated string.
       description: Update an entity tag assignment
@@ -6570,10 +7080,10 @@ components:
           type: string
           description: Path URL of the external location.
           pattern: ^(?:(?:[a-zA-Z][a-zA-Z\d+\-.]*):)?(?://(?:[A-Za-z0-9\-\.]+(?::\d+)?))?(/[^\?#]*)?(?:\?([^\#]*))?(?:\#(.*))?$
-        credentialName:
+        credential_name:
           type: string
           description: Name of the storage credential used with this location.
-        readOnly:
+        read_only:
           type: boolean
           description: Indicates whether the external location is read-only.
         owner:
@@ -6582,13 +7092,15 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
-        newName:
+        new_name:
           type: string
           description: new name of the external location.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         force:
           type: boolean
           description: force update of the external location.
-        skipValidation:
+        skip_validation:
           type: boolean
           description: Skips validation of the storage credential associated with the external location.
       description: Update an external location
@@ -6608,11 +7120,6 @@ components:
       required: []
       type: object
       properties:
-        fullName:
-          type: string
-          description: |-
-            The full three-level name of the parent registered model
-             (catalog.schema.model).
         comment:
           type: string
           description: User-provided free-form text description.
@@ -6632,7 +7139,7 @@ components:
               - principal
             title: Permissions Change
           description: Array of permissions change objects.
-        omitPermissionsList:
+        omit_permissions_list:
           type: boolean
           description: Whether to return the latest permissions list of the share in the response.
       additionalProperties: false
@@ -6640,10 +7147,14 @@ components:
     UpdatePermissionsResponse:
       type: object
       properties:
-        privilegeAssignments:
+        privilege_assignments:
           type: array
           items:
             $ref: "#/components/schemas/PrivilegeAssignment"
+            additionalProperties: false
+            required:
+              - principal
+            title: Privilege Assignment
           description: The privileges assigned to each principal
       additionalProperties: false
       title: Update Permissions Response
@@ -6652,20 +7163,21 @@ components:
         - policy_info
       type: object
       properties:
-        onSecurableType:
-          type: string
-          description: |-
-            The type of the securable the policy is defined on.
-
-             Supported values: catalogs, schemas, tables.
-        onSecurableFullname:
-          type: string
-          description: The fully qualified name of the securable the policy is defined on.
-        policyInfo:
+        policy_info:
           allOf:
             - $ref: "#/components/schemas/PolicyInfo"
-          description: The policy with the updated fields.
-        updateMask:
+          description: |-
+            Policies are read as whole documents; enforcement is performed by the query engine,
+             not by this service. `when_condition` is stored and returned opaque — this service does
+             not parse or evaluate it.
+          additionalProperties: false
+          required:
+            - name
+            - on_securable_type
+            - on_securable_fullname
+            - policy_type
+          title: A row-filter or column-mask policy bound to principals and scoped to a securable.
+        update_mask:
           type: string
           description: The list of fields to update, as a comma-separated string.
       description: Update a policy defined on a securable.
@@ -6675,16 +7187,17 @@ components:
       required: []
       type: object
       properties:
-        newName:
+        new_name:
           type: string
           description: New name for the provider.
+          pattern: ^[a-z][0-9a-z._]*[0-9a-z]$
         owner:
           type: string
           description: Username of the provider owner.
         comment:
           type: string
           description: Description about the provider.
-        recipientProfileStr:
+        recipient_profile_str:
           type: string
           description: |-
             The recipient profile (credential file contents) used to connect to the
@@ -6704,9 +7217,10 @@ components:
       required: []
       type: object
       properties:
-        newName:
+        new_name:
           type: string
           description: New name for the recipient
+          pattern: ^[a-z][0-9a-z._]*[0-9a-z]$
         owner:
           type: string
           description: Username of the recipient owner.
@@ -6721,7 +7235,7 @@ components:
             When provided in update request, the specified properties will override the existing properties.
              To add and remove properties, one would need to perform a read-modify-write.
           title: Recipient properties as map of string key-value pairs.
-        expirationTime:
+        expiration_time:
           type: string
           description: Expiration timestamp of the token, in epoch milliseconds.
       description: Update a recipient
@@ -6731,14 +7245,11 @@ components:
       required: []
       type: object
       properties:
-        fullName:
-          type: string
-          description: |-
-            The fully-qualified name of the registered model (three-level name:
-             catalog.schema.model).
-        newName:
+        new_name:
           type: string
           description: New name for the registered model.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         comment:
           type: string
           description: User-provided free-form text description.
@@ -6752,9 +7263,6 @@ components:
       required: []
       type: object
       properties:
-        fullName:
-          type: string
-          description: Full name of schema, in form of catalog_name.schema_name.
         comment:
           type: string
           description: User-provided free-form text description.
@@ -6766,9 +7274,11 @@ components:
             When provided in update request, the specified properties will override the existing properties.
              To add and remove properties, one would need to perform a read-modify-write.
           title: A map of key-value properties attached to the securable.
-        newName:
+        new_name:
           type: string
           description: Name of schema.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
       description: Update a Schema
       additionalProperties: false
       title: Update Schema Request
@@ -6786,9 +7296,11 @@ components:
             description: Data object update.
             title: Data Object Update
           description: Array of shared data object updates.
-        newName:
+        new_name:
           type: string
           description: A new name for the share.
+          minLength: 3
+          pattern: ^[a-z][0-9a-z._]*[0-9a-z]$
         owner:
           type: string
           description: Owner of the share.
@@ -6803,14 +7315,18 @@ components:
         - tag_policy
       type: object
       properties:
-        tagKey:
-          type: string
-          description: The key of the governed tag to update.
-        tagPolicy:
+        tag_policy:
           allOf:
             - $ref: "#/components/schemas/TagPolicy"
-          description: The tag policy with the updated fields.
-        updateMask:
+          description: |-
+            A tag policy defines a tag key together with the rules that govern how it can
+             be used, including the optional set of allowed values. Assigning a governed
+             tag to an entity is done through the Entity Tag Assignments API.
+          additionalProperties: false
+          required:
+            - tag_key
+          title: A governed tag definition (tag policy).
+        update_mask:
           type: string
           description: The list of fields to update, as a comma-separated string.
       description: Update a tag policy
@@ -6820,9 +7336,10 @@ components:
       required: []
       type: object
       properties:
-        newName:
+        new_name:
           type: string
           description: New name for the volume.
+          minLength: 3
         comment:
           type: string
           description: The comment attached to the volume
@@ -6860,32 +7377,41 @@ components:
           description: Name of volume, relative to parent schema.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
-        catalogName:
+        catalog_name:
           type: string
           description: Name of parent catalog.
-        schemaName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        schema_name:
           type: string
           description: Name of parent schema.
-        fullName:
+          minLength: 3
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+        full_name:
           readOnly: true
           type: string
           description: The three-level (fully qualified) name of the volume
-        storageLocation:
+          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+        storage_location:
           type: string
           description: The storage location on the cloud
-        volumeId:
+          pattern: ^(?:(?:[a-zA-Z][a-zA-Z\d+\-.]*):)?(?://(?:[A-Za-z0-9\-\.]+(?::\d+)?))?(/[^\?#]*)?(?:\?([^\#]*))?(?:\#(.*))?$
+        volume_id:
           readOnly: true
           type: string
           description: The unique identifier of the volume
-        volumeType:
-          type: integer
+        volume_type:
+          enum:
+            - VOLUME_TYPE_UNSPECIFIED
+            - EXTERNAL
+            - MANAGED
+          type: string
           description: |-
-            The type of the volume.
-
-             An external volume is located in the specified external location.
+            An external volume is located in the specified external location.
              A managed volume is located in the default location which is specified
              by the parent schema, or the parent catalog, or the Metastore.
           format: enum
+          title: Volume Type
         owner:
           readOnly: true
           type: string
@@ -6893,30 +7419,32 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
-        createdAt:
+        created_at:
           readOnly: true
           type: string
           description: Time at which this catalog was created, in epoch milliseconds.
-        createdBy:
+          minimum: 0
+          exclusiveMinimum: true
+        created_by:
           readOnly: true
           type: string
           description: Username of catalog creator.
-        updatedAt:
+        updated_at:
           readOnly: true
           type: string
           description: Time at which this catalog was last updated, in epoch milliseconds.
-        updatedBy:
+        updated_by:
           readOnly: true
           type: string
           description: Username of user who last modified catalog.
-        browseOnly:
+        browse_only:
           readOnly: true
           type: boolean
           description: |-
             Indicates whether the principal is limited to retrieving metadata
              for the associated object through the BROWSE privilege when include_browse
              is enabled in the request.
-        metastoreId:
+        metastore_id:
           readOnly: true
           type: string
           description: The unique identifier of the metastore
@@ -6935,7 +7463,7 @@ components:
           type: boolean
         wrapped:
           type: boolean
-        specificationExtension:
+        specification_extension:
           type: array
           items:
             $ref: "#/components/schemas/NamedAny"

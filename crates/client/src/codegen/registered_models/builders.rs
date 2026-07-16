@@ -95,13 +95,22 @@ impl CreateRegisteredModelBuilder {
     /// Obtain via the corresponding method on `RegisteredModelServiceClient`.
     pub(crate) fn new(
         client: RegisteredModelServiceClient,
-        model_info: CreateRegisteredModel,
+        name: impl Into<String>,
+        catalog_name: impl Into<String>,
+        schema_name: impl Into<String>,
     ) -> Self {
         let request = CreateRegisteredModelRequest {
-            model_info: buffa::MessageField::some(model_info),
+            name: name.into(),
+            catalog_name: catalog_name.into(),
+            schema_name: schema_name.into(),
             ..Default::default()
         };
         Self { client, request }
+    }
+    /// User-provided free-form text description.
+    pub fn with_comment(mut self, comment: impl Into<Option<String>>) -> Self {
+        self.request.comment = comment.into();
+        self
     }
 }
 impl IntoFuture for CreateRegisteredModelBuilder {

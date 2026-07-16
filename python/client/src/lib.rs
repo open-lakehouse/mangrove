@@ -10,11 +10,10 @@ use pyo3::prelude::*;
 // old prost stack we register the wrappers here, not the bare model types.
 use unitycatalog_common::models::{
     PyAction, PyAzureManagedIdentity, PyAzureServicePrincipal, PyAzureStorageKey, PyCatalog,
-    PyCatalogType, PyColumn, PyColumnTypeName, PyCreateModelVersion, PyCreateRegisteredModel,
-    PyCredential, PyDataObject, PyDataObjectType, PyDataObjectUpdate, PyDataSourceFormat,
-    PyExternalLocation, PyHistoryStatus, PyModelVersion, PyModelVersionStatus, PyPurpose,
-    PyRecipient, PyRegisteredModel, PySchema, PyShare, PyTable, PyTableType, PyTagPolicy,
-    PyTemporaryCredential, PyValue, PyVolume, PyVolumeType,
+    PyCatalogType, PyColumn, PyColumnTypeName, PyCredential, PyDataObject, PyDataObjectType,
+    PyDataObjectUpdate, PyDataSourceFormat, PyExternalLocation, PyHistoryStatus, PyModelVersion,
+    PyModelVersionStatus, PyPurpose, PyRecipient, PyRegisteredModel, PySchema, PyShare, PyTable,
+    PyTableType, PyTagPolicy, PyTemporaryCredential, PyValue, PyVolume, PyVolumeType,
 };
 
 mod client;
@@ -62,9 +61,7 @@ fn _client(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyTagPolicy>()?;
     m.add_class::<PyValue>()?;
     m.add_class::<PyRegisteredModel>()?;
-    m.add_class::<PyCreateRegisteredModel>()?;
     m.add_class::<PyModelVersion>()?;
-    m.add_class::<PyCreateModelVersion>()?;
     m.add_class::<PyModelVersionStatus>()?;
 
     // service clients

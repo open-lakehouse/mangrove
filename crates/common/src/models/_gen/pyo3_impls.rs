@@ -7174,12 +7174,12 @@ impl ::core::convert::From<PyUpdateFunctionRequest>
         value.0
     }
 }
-#[::pyo3::pyclass(name = "CreateModelVersion")]
+#[::pyo3::pyclass(name = "CreateModelVersionRequest")]
 #[derive(Clone, Debug)]
-pub struct PyCreateModelVersion(pub super::model_versions::v1::CreateModelVersion);
+pub struct PyCreateModelVersionRequest(pub super::model_versions::v1::CreateModelVersionRequest);
 #[allow(clippy::too_many_arguments, clippy::useless_conversion)]
 #[::pyo3::pymethods]
-impl PyCreateModelVersion {
+impl PyCreateModelVersionRequest {
     #[new]
     #[pyo3(
         signature = (
@@ -7199,8 +7199,7 @@ impl PyCreateModelVersion {
         run_id: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
     ) -> Self {
-        let mut inner =
-            <super::model_versions::v1::CreateModelVersion as ::core::default::Default>::default();
+        let mut inner = <super::model_versions::v1::CreateModelVersionRequest as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = model_name {
             inner.model_name = value;
         }
@@ -7270,55 +7269,6 @@ impl PyCreateModelVersion {
     #[setter(comment)]
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
-    }
-    fn __repr__(&self) -> ::std::string::String {
-        ::std::format!("{:?}", self.0)
-    }
-    fn __eq__(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-impl ::core::convert::From<super::model_versions::v1::CreateModelVersion> for PyCreateModelVersion {
-    fn from(value: super::model_versions::v1::CreateModelVersion) -> Self {
-        Self(value)
-    }
-}
-impl ::core::convert::From<PyCreateModelVersion> for super::model_versions::v1::CreateModelVersion {
-    fn from(value: PyCreateModelVersion) -> Self {
-        value.0
-    }
-}
-#[::pyo3::pyclass(name = "CreateModelVersionRequest")]
-#[derive(Clone, Debug)]
-pub struct PyCreateModelVersionRequest(pub super::model_versions::v1::CreateModelVersionRequest);
-#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
-#[::pyo3::pymethods]
-impl PyCreateModelVersionRequest {
-    #[new]
-    #[pyo3(signature = (model_version = None))]
-    fn new(model_version: ::core::option::Option<PyCreateModelVersion>) -> Self {
-        let mut inner = <super::model_versions::v1::CreateModelVersionRequest as ::core::default::Default>::default();
-        {
-            let value = model_version;
-            inner.model_version = value
-                .map(|w| ::buffa::MessageField::some(w.into()))
-                .unwrap_or_default();
-        }
-        Self(inner)
-    }
-    #[getter]
-    fn model_version(&self) -> ::core::option::Option<PyCreateModelVersion> {
-        self.0
-            .model_version
-            .clone()
-            .into_option()
-            .map(PyCreateModelVersion::from)
-    }
-    #[setter(model_version)]
-    fn set_model_version(&mut self, value: ::core::option::Option<PyCreateModelVersion>) {
-        self.0.model_version = value
-            .map(|w| ::buffa::MessageField::some(w.into()))
-            .unwrap_or_default();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -10323,12 +10273,14 @@ impl ::core::convert::From<PyUpdateRecipientRequest>
         value.0
     }
 }
-#[::pyo3::pyclass(name = "CreateRegisteredModel")]
+#[::pyo3::pyclass(name = "CreateRegisteredModelRequest")]
 #[derive(Clone, Debug)]
-pub struct PyCreateRegisteredModel(pub super::registered_models::v1::CreateRegisteredModel);
+pub struct PyCreateRegisteredModelRequest(
+    pub super::registered_models::v1::CreateRegisteredModelRequest,
+);
 #[allow(clippy::too_many_arguments, clippy::useless_conversion)]
 #[::pyo3::pymethods]
-impl PyCreateRegisteredModel {
+impl PyCreateRegisteredModelRequest {
     #[new]
     #[pyo3(
         signature = (
@@ -10344,7 +10296,7 @@ impl PyCreateRegisteredModel {
         schema_name: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
     ) -> Self {
-        let mut inner = <super::registered_models::v1::CreateRegisteredModel as ::core::default::Default>::default();
+        let mut inner = <super::registered_models::v1::CreateRegisteredModelRequest as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
             inner.name = value;
         }
@@ -10391,61 +10343,6 @@ impl PyCreateRegisteredModel {
     #[setter(comment)]
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
-    }
-    fn __repr__(&self) -> ::std::string::String {
-        ::std::format!("{:?}", self.0)
-    }
-    fn __eq__(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-impl ::core::convert::From<super::registered_models::v1::CreateRegisteredModel>
-    for PyCreateRegisteredModel
-{
-    fn from(value: super::registered_models::v1::CreateRegisteredModel) -> Self {
-        Self(value)
-    }
-}
-impl ::core::convert::From<PyCreateRegisteredModel>
-    for super::registered_models::v1::CreateRegisteredModel
-{
-    fn from(value: PyCreateRegisteredModel) -> Self {
-        value.0
-    }
-}
-#[::pyo3::pyclass(name = "CreateRegisteredModelRequest")]
-#[derive(Clone, Debug)]
-pub struct PyCreateRegisteredModelRequest(
-    pub super::registered_models::v1::CreateRegisteredModelRequest,
-);
-#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
-#[::pyo3::pymethods]
-impl PyCreateRegisteredModelRequest {
-    #[new]
-    #[pyo3(signature = (model_info = None))]
-    fn new(model_info: ::core::option::Option<PyCreateRegisteredModel>) -> Self {
-        let mut inner = <super::registered_models::v1::CreateRegisteredModelRequest as ::core::default::Default>::default();
-        {
-            let value = model_info;
-            inner.model_info = value
-                .map(|w| ::buffa::MessageField::some(w.into()))
-                .unwrap_or_default();
-        }
-        Self(inner)
-    }
-    #[getter]
-    fn model_info(&self) -> ::core::option::Option<PyCreateRegisteredModel> {
-        self.0
-            .model_info
-            .clone()
-            .into_option()
-            .map(PyCreateRegisteredModel::from)
-    }
-    #[setter(model_info)]
-    fn set_model_info(&mut self, value: ::core::option::Option<PyCreateRegisteredModel>) {
-        self.0.model_info = value
-            .map(|w| ::buffa::MessageField::some(w.into()))
-            .unwrap_or_default();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)

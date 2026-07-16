@@ -83,7 +83,10 @@ message CreateVolumeRequest {
   // An external volume is located in the specified external location.
   // A managed volume is located in the default location which is specified
   // by the parent schema, or the parent catalog, or the Metastore.
-  VolumeType volume_type = 4 [(google.api.field_behavior) = REQUIRED];
+  VolumeType volume_type = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {not_in: [0]}
+  ];
 
   // The storage location on the cloud
   optional string storage_location = 5 [(google.api.field_behavior) = OPTIONAL];

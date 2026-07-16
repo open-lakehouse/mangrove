@@ -56,11 +56,32 @@ message ListRegisteredModelsResponse {
 
 // Create a new registered model.
 message CreateRegisteredModelRequest {
-  // The registered model to create.
-  CreateRegisteredModel model_info = 1 [
+  // Name of registered model, relative to parent schema.
+  string name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
+
+  // Name of parent catalog.
+  string catalog_name = 2 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Name of parent schema.
+  string schema_name = 3 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // User-provided free-form text description.
+  optional string comment = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Get a registered model.
@@ -143,7 +164,7 @@ service RegisteredModelsService {
   rpc CreateRegisteredModel(CreateRegisteredModelRequest) returns (RegisteredModel) {
     option (google.api.http) = {
       post: "/models"
-      body: "model_info"
+      body: "*"
     };
     option (gnostic.openapi.v3.operation) = {operation_id: "CreateRegisteredModel"};
   }

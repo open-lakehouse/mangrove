@@ -1,5 +1,4 @@
 use unitycatalog_client::UnityCatalogClient;
-use unitycatalog_common::models::model_versions::v1::CreateModelVersion;
 
 // [snippet:list_registered_models]
 pub async fn list_registered_models_example(base_url: url::Url) {
@@ -18,17 +17,10 @@ pub async fn list_registered_models_example(base_url: url::Url) {
 
 // [snippet:create_registered_model]
 pub async fn create_registered_model_example(base_url: url::Url) {
-    use unitycatalog_common::models::registered_models::v1::CreateRegisteredModel;
-
     let client = UnityCatalogClient::new_unauthenticated(base_url);
     let model = client
-        .create_registered_model(CreateRegisteredModel {
-            name: "my_model".to_string(),
-            catalog_name: "my_catalog".to_string(),
-            schema_name: "my_schema".to_string(),
-            comment: Some("My first model".to_string()),
-            ..Default::default()
-        })
+        .create_registered_model("my_model", "my_catalog", "my_schema")
+        .with_comment("My first model".to_string())
         .await
         .unwrap();
     println!("Created: {}", model.full_name);
@@ -53,13 +45,12 @@ pub async fn create_model_version_example(base_url: url::Url) {
     // A new version starts in PENDING_REGISTRATION. Write your artifacts to the
     // returned `storage_location` (vending credentials as needed), then finalize.
     let version = client
-        .create_model_version(CreateModelVersion {
-            model_name: "my_model".to_string(),
-            catalog_name: "my_catalog".to_string(),
-            schema_name: "my_schema".to_string(),
-            source: "s3://my-run/artifacts".to_string(),
-            ..Default::default()
-        })
+        .create_model_version(
+            "my_model",
+            "my_catalog",
+            "my_schema",
+            "s3://my-run/artifacts",
+        )
         .await
         .unwrap();
     println!("Created version {}", version.version);
