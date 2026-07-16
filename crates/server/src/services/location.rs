@@ -1,4 +1,3 @@
-use datafusion::datasource::object_store::ObjectStoreUrl;
 use itertools::Itertools;
 use object_store::ObjectStoreScheme;
 use unitycatalog_common::{Error, Result};
@@ -51,7 +50,10 @@ impl StorageLocationScheme {
 pub struct StorageLocationUrl {
     /// The raw, unaltered URL.
     url: Url,
-    store_url: ObjectStoreUrl,
+    /// The normalized `scheme://authority/` base of the location, used to derive
+    /// [`location`](Self::location). A plain [`Url`] — this is only ever built
+    /// from an authority string and read back as a URL/str.
+    store_url: Url,
     scheme: StorageLocationScheme,
     location: Url,
 }
@@ -80,7 +82,7 @@ impl StorageLocationUrl {
         &self.location
     }
 
-    pub fn store_url(&self) -> &ObjectStoreUrl {
+    pub fn store_url(&self) -> &Url {
         &self.store_url
     }
 
@@ -206,10 +208,10 @@ fn is_azurite(url: &Url) -> bool {
             && url.port() == Some(10000))
 }
 
-fn get_store_url(url: &url::Url) -> Result<(ObjectStoreUrl, StorageLocationScheme, Url)> {
+fn get_store_url(url: &url::Url) -> Result<(Url, StorageLocationScheme, Url)> {
     let scheme = StorageLocationScheme::parse(url)?;
     let store_url = match &scheme {
-        StorageLocationScheme::ObjectStore(_) => ObjectStoreUrl::parse(format!(
+        StorageLocationScheme::ObjectStore(_) => Url::parse(&format!(
             "{}://{}",
             scheme.as_ref(),
             &url[url::Position::BeforeHost..url::Position::AfterPort]
@@ -228,10 +230,10 @@ fn get_store_url(url: &url::Url) -> Result<(ObjectStoreUrl, StorageLocationSchem
                         url.path()
                     )));
                 }
-                ObjectStoreUrl::parse(format!("azurite://{}", parts[2]))
+                Url::parse(&format!("azurite://{}", parts[2]))
                     .map_err(|e| Error::Generic(e.to_string()))?
             } else {
-                ObjectStoreUrl::parse(format!(
+                Url::parse(&format!(
                     "{}://{}/",
                     url.scheme(),
                     &url[url::Position::BeforeHost..url::Position::AfterPort]
@@ -241,12 +243,7 @@ fn get_store_url(url: &url::Url) -> Result<(ObjectStoreUrl, StorageLocationSchem
         }
     };
     let location = match &scheme {
-        StorageLocationScheme::ObjectStore(_) => {
-            let store: &Url = store_url.as_ref();
-            let store = store.clone();
-
-            store.join(url.path())?
-        }
+        StorageLocationScheme::ObjectStore(_) => store_url.join(url.path())?,
         StorageLocationScheme::Azurite if url.scheme() != "azurite" => {
             let path = url
                 .path_segments()
