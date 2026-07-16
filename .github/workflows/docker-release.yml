@@ -9,8 +9,9 @@ name: Release Docker Image
 # Primary trigger is `workflow_call` from release-plz.yml: when release-plz
 # releases (git-tags) a new `olai-uc-server` version, it calls this workflow with
 # that version + the release tag to build from. `workflow_dispatch` allows a
-# manual rebuild of an existing release (e.g. base-image CVE refresh). PRs / main
-# pushes build for validation but do not publish (see the `build` job's `if:`).
+# manual rebuild of an existing release (e.g. base-image CVE refresh). Those are
+# the ONLY triggers — there is no build on push/PR, so the image is only ever
+# built for an actual server release (or a deliberate manual rebuild).
 #
 # A run builds multi-arch (amd64 + native arm64), pushes each arch by digest,
 # then a merge job assembles the multi-arch manifest list, applies the tags, and
@@ -38,9 +39,9 @@ on:
         required: true
         type: string
 
-# Cancel superseded runs on the same ref/version.
+# Cancel superseded runs on the same version.
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.version || github.head_ref || github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.version }}
   cancel-in-progress: true
 
 # Least privilege by default; jobs opt into more.
@@ -56,10 +57,10 @@ jobs:
     name: Build (${{ matrix.platform.arch }})
     runs-on: ${{ matrix.platform.runner }}
 
-    # Publish from the canonical repo on a release (workflow_call /
-    # workflow_dispatch) or on a main push (edge build). Never on PRs (those run
-    # the validation-only `build_pr` job below).
-    if: ${{ contains(fromJSON('["workflow_call", "workflow_dispatch", "push"]'), github.event_name) && github.repository == 'open-lakehouse/mangrove' }}
+    # Publish only from the canonical repo (a fork calling this workflow must not
+    # push to our GHCR namespace). The triggers are already release-only
+    # (workflow_call / workflow_dispatch), so no event-name gate is needed.
+    if: ${{ github.repository == 'open-lakehouse/mangrove' }}
 
     permissions:
       contents: read
@@ -81,9 +82,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
-          # On a release build, check out the exact tag release-plz published;
-          # otherwise (main push) build HEAD.
-          ref: ${{ inputs.ref || github.ref }}
+          # Check out the exact tag release-plz published (always supplied — a
+          # required input on both triggers).
+          ref: ${{ inputs.ref }}
           persist-credentials: false
 
       - name: Set up Docker Buildx
@@ -179,17 +180,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Tagging strategy:
-      #   release (workflow_call / workflow_dispatch) -> <inputs.version>
-      #     (e.g. 0.0.1) via type=semver, which also sets `latest` for a
-      #     non-prerelease version (flavor latest=auto).
-      #   main push -> `main`, `main-<sha>`, and `edge` (latest dev build);
-      #     never `latest`.
-      # type=semver reads the version from the `inputs.version` we feed it
-      # below (there is no git-tag push event to derive from on workflow_call).
-      # DOCKER_METADATA_ANNOTATIONS_LEVELS=index emits index-level OCI
-      # annotations (manifest-level labels from a per-arch build do NOT
-      # propagate to the multi-arch index created by imagetools).
+      # Tagging strategy: the released `<inputs.version>` (e.g. 0.0.1) via
+      # type=semver, which also sets `latest` for a non-prerelease version
+      # (flavor latest=auto). type=semver reads the version from the
+      # `inputs.version` we feed it (there is no git-tag push event to derive
+      # from on workflow_call). DOCKER_METADATA_ANNOTATIONS_LEVELS=index emits
+      # index-level OCI annotations (manifest-level labels from a per-arch build
+      # do NOT propagate to the multi-arch index created by imagetools).
       - name: Generate metadata and tags
         id: meta
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
@@ -198,10 +195,7 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           tags: |
-            type=semver,pattern={{version}},value=${{ inputs.version }},enable=${{ inputs.version != '' }}
-            type=raw,value=main,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
-            type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
-            type=sha,prefix=main-,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+            type=semver,pattern={{version}},value=${{ inputs.version }}
           flavor: |
             latest=auto
           labels: |
@@ -257,7 +251,8 @@ jobs:
       # deep link to the notes and attach immutable provenance assets (the index
       # digest pin + the per-arch SBOMs that were baked into the image). GHCR has
       # no native package<->release binding, so this cross-reference is the link.
-      # Release-only: skipped on edge/PR builds where inputs.version is empty.
+      # `inputs.version` is a required input on both triggers, so the guard below
+      # is belt-and-suspenders only.
       - name: Link and attach provenance to release
         if: ${{ inputs.version != '' }}
         env:

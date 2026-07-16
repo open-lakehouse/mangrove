@@ -67,17 +67,14 @@ jobs:
 
   # --- Tag + GitHub Release + cargo publish, after the Release PR is merged ---
   # release-plz publishes every crate whose `release` is not false to crates.io
-  # via OIDC. The DEPLOYABLE server (`olai-uc-server`, `git_only = true`) is not
-  # published — it is tagged from git, and that tag drives the Docker image.
-  #
-  # NOTE: release-plz does NOT include `git_only` packages in the `releases` JSON
-  # its `release` command emits, and (with no prior baseline tag to derive from)
-  # does NOT itself push the `olai-uc-server-v<version>` tag — so we cannot rely
-  # on that tag already existing (doing so silently skips the server forever).
-  # Instead the `server` step below reads the version from crates/server/Cargo.toml
-  # (which the merged Release PR already bumped), and if no matching
-  # `olai-uc-server-v<version>` tag exists yet, creates it + a GitHub Release. The
-  # presence of a freshly-created tag is what fires the Docker job.
+  # via OIDC, and creates each released crate's git tag + GitHub Release. The
+  # server (`olai-uc-server`) is one of those published crates — release-plz tags
+  # it `olai-uc-server-v<version>`, publishes it, and lists it in the `release`
+  # command's `releases` JSON. We read that JSON to learn whether the server was
+  # released this run and, if so, drive the Docker image build off it. (Before the
+  # server became a published crate it was `git_only`, which is omitted from
+  # `releases` — that forced a bespoke tag-creation shell step here; publishing
+  # the server let us delete it and gate Docker off release-plz's own output.)
   release-plz-release:
     name: Release
     if: ${{ github.repository == 'open-lakehouse/mangrove' }}
@@ -88,8 +85,8 @@ jobs:
       contents: write # create tags + GitHub Releases
       id-token: write # crates.io OIDC publish
     outputs:
-      # server version + tag IF this run released the server (tag was newly
-      # created), else empty — the Docker job keys off this.
+      # server version + tag IF release-plz released the server this run, else
+      # empty — the Docker job keys off this.
       server_version: ${{ steps.server.outputs.version }}
       server_tag: ${{ steps.server.outputs.tag }}
     steps:
@@ -110,49 +107,28 @@ jobs:
         env:
           SQLX_OFFLINE: "true"
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-      # Tag + release the server ourselves. release-plz omits `git_only` packages
-      # from its `releases` output, so we cannot read the version from there. Read
-      # it from the manifest the Release PR already bumped, and if the
-      # `olai-uc-server-v<version>` tag does not exist yet, create it + a GitHub
-      # Release. Setting `version`/`tag` then fires the Docker job. When the tag
-      # already exists (e.g. a re-run, or a push that did not bump the server),
-      # the outputs stay empty and Docker is skipped — idempotent by design.
-      - name: Tag + release server
+      # Did release-plz release the server this run? Its `release` step emits a
+      # `releases` JSON array (one object per released crate, each with
+      # `package_name` / `version` / `tag`). Filter for `olai-uc-server`; if
+      # present, surface its version + tag so the Docker job fires. If the server
+      # was not bumped this run (or is still bootstrap-gated `release = false`),
+      # the array has no such entry, the outputs stay empty, and Docker is skipped.
+      - name: Detect server release
         id: server
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASES: ${{ steps.release.outputs.releases }}
         run: |
-          version=$(grep -m1 '^version = ' crates/server/Cargo.toml \
-            | sed -E 's/^version = "([^"]+)".*/\1/')
-          if [ -z "$version" ]; then
-            echo "::error::could not parse server version from crates/server/Cargo.toml"
-            exit 1
+          entry=$(printf '%s' "${RELEASES:-[]}" \
+            | jq -c '.[] | select(.package_name == "olai-uc-server")')
+          if [ -n "$entry" ]; then
+            version=$(printf '%s' "$entry" | jq -r '.version')
+            tag=$(printf '%s' "$entry" | jq -r '.tag')
+            echo "Server released this run: ${version} (tag ${tag})."
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          else
+            echo "Server not released this run — Docker build skipped."
           fi
-          tag="olai-uc-server-v${version}"
-          # The remote is the source of truth (this checkout has persist-
-          # credentials=false, so we don't push via git here — `gh release
-          # create` creates the tag at HEAD and authenticates via GH_TOKEN).
-          if gh release view "$tag" >/dev/null 2>&1 \
-            || git ls-remote --exit-code --tags origin "$tag" >/dev/null 2>&1; then
-            echo "Tag/release ${tag} already exists — server not released this run."
-            exit 0
-          fi
-          echo "Releasing server ${version} (tag ${tag})."
-          # `gh release create` creates the tag at the current commit (the merge
-          # commit that bumped the manifest) and the GitHub Release in one step.
-          # Body is the crate's changelog section for THIS version (skipping the
-          # leading `## [Unreleased]`), matching what release-plz produces for
-          # the published crates.
-          notes=$(awk -v ver="$version" '
-            $0 ~ "^## \\[" ver "\\]" {grab=1; next}
-            grab && /^## \[/ {exit}
-            grab {print}' crates/server/CHANGELOG.md)
-          gh release create "$tag" \
-            --target "$GITHUB_SHA" \
-            --title "olai-uc-server v${version}" \
-            --notes "${notes:-olai-uc-server v${version}}"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
   # --- Build + push the server (mangrove) Docker image, iff it was released ---
   docker:

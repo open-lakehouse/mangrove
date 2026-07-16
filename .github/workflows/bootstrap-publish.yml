@@ -13,23 +13,23 @@ name: Bootstrap publish (one-shot, DELETE AFTER USE)
 #
 # STATUS (2026-07): the original bootstrap already put these on crates.io, and
 # they now release via OIDC (no `release = false`): olai-uc-common,
-# olai-uc-client, olai-uc-object-store, olai-uc-postgres, olai-uc-sqlite.
+# olai-uc-client, olai-uc-object-store, olai-uc-postgres, olai-uc-sqlite,
+# olai-uc-delta-api.
 #
-# The ONLY crate still needing a bootstrap is the newly-extracted
-# olai-uc-delta-api. It is a new root of the graph: the current `client` source
-# now depends on it, so `client`'s next release needs delta-api on crates.io
-# first. Its deps are all registry/workspace (no git), so it bootstraps cleanly.
+# The ONLY crate still needing a bootstrap is olai-uc-server. It just became a
+# published crate (library + the `uc-server` binary) after PR #89 removed the
+# git-pinned Delta Sharing query surface from its dependency graph. Its deps are
+# all registry/workspace (no git), so it bootstraps cleanly. We bootstrap the
+# `bin`-featured build, since that (the `uc-server` binary) is what ships.
 #
-#   Tier 0 (ACTIVE): olai-uc-delta-api
+#   Tier 0 (ACTIVE): olai-uc-server
 #
 # NOT bootstrappable here — do NOT add steps for these:
-#   * olai-uc-sharing-client, olai-uc-datafusion — depend (transitively, via the
-#     workspace `delta_kernel` / `deltalake-core` git revs) on a git source.
-#     `cargo publish` rejects ANY git dependency, so these cannot go to crates.io
-#     until those upstream deps are published to the registry. They stay
-#     `release = false` in release-plz.toml as a standing git-dep block.
-#   * olai-uc-server — a deployable, shipped as the `mangrove` Docker image, not
-#     a crates.io library (`git_only = true` in release-plz.toml).
+#   * olai-uc-sharing-client, olai-uc-sharing-api, olai-uc-datafusion — depend
+#     (transitively, via the workspace `delta_kernel` / `deltalake-core` git
+#     revs) on a git source. `cargo publish` rejects ANY git dependency, so these
+#     cannot go to crates.io until those upstream deps are published to the
+#     registry. They stay `release = false` in release-plz.toml (git-dep block).
 #   * olai-uc-cli — publishable, but intentionally held out of crates.io for now.
 #
 # Run once with dry_run=true to package-check the active tier, then again with
@@ -38,13 +38,15 @@ name: Bootstrap publish (one-shot, DELETE AFTER USE)
 # Prerequisite: a temporary `CARGO_REGISTRY_TOKEN` repo secret (a crates.io API
 # token with publish scope) on the protected `release` environment.
 #
-# After bootstrapping delta-api, decommission it:
-#   1. Register Trusted Publishing on crates.io for olai-uc-delta-api
+# After bootstrapping olai-uc-server, decommission it:
+#   1. Register Trusted Publishing on crates.io for olai-uc-server
 #      (repo open-lakehouse/mangrove, workflow release-plz.yml, env release).
 #   2. Remove its `release = false` line in release-plz.toml so release-plz
 #      publishes it via OIDC from then on.
-#   3. Once no crate needs a token bootstrap: delete this workflow file, then
-#      delete + revoke the CARGO_REGISTRY_TOKEN secret.
+#   3. olai-uc-server is the LAST crate needing a token bootstrap — so after this,
+#      DELETE this workflow file entirely, then delete + revoke the
+#      CARGO_REGISTRY_TOKEN secret (matching the sibling headwaters repo, which
+#      has no bootstrap workflow and publishes 100% via OIDC).
 #
 # Manual trigger only — never runs automatically, so it can't race release-plz.
 
@@ -75,10 +77,13 @@ jobs:
         with:
           toolchain: "1.97"
 
-      # ----- Tier 0: olai-uc-delta-api (root; deps are all registry/workspace) -----
-      - name: Publish olai-uc-delta-api
+      # ----- Tier 0: olai-uc-server (deps all on crates.io; graph is git-free) -----
+      # Publish the `bin`-featured build — the `uc-server` binary is what ships
+      # (and it exercises the full dependency set: postgres/sqlite backends, the
+      # proxy, swagger UI, the CLI parser). `--locked` uses the committed lockfile.
+      - name: Publish olai-uc-server
         run: |
-          cargo publish -p olai-uc-delta-api --locked \
+          cargo publish -p olai-uc-server --locked --features bin \
             ${{ inputs.dry_run && '--dry-run' || '' }}
         env:
           SQLX_OFFLINE: "true"
