@@ -139,12 +139,13 @@ pub fn extract_table(
     Ok((reference, address))
 }
 
-/// Open the Delta table at `table_url` from `store`, priming the discovered log.
+/// Open the Delta table at `table_url` from `store` by constructing its snapshot from the
+/// pre-discovered `_delta_log` manifest — async-native, list-free, and engine-free.
 ///
-/// `executor` overrides the kernel executor (native tests force the inline
-/// executor); `None` picks the target's natural choice. The snapshot is pinned
-/// to the discovered log's newest version so the query sees exactly the
-/// manifest that was primed.
+/// The snapshot is pinned to the discovered log's newest version so the query sees exactly the
+/// manifest that was discovered. Construction `.await`s the kernel P&M drive (it reads commit /
+/// checkpoint files over `store`); it must not be blocked, or a browser worker's event loop would
+/// starve and the open would hang (see [`build_snapshot_from_manifest`]).
 ///
 /// `max_catalog_version` must be set for catalog-managed tables (the kernel refuses to build
 /// their snapshot without it) and must be `None` for filesystem/external tables (the kernel
@@ -182,7 +183,7 @@ pub async fn open_table(
     // no `InlineExecutor`. `max_catalog_version` is encoded by the pinned `log.version` (the
     // catalog's ratified version drives the manifest's newest commit in `resolve.rs`), so the P&M
     // replay resolves exactly that version.
-    let snapshot = build_snapshot_from_manifest(&ctx, table_url, manifest, log.version)?;
+    let snapshot = build_snapshot_from_manifest(&ctx, table_url, manifest, log.version).await?;
 
     Ok(OpenedTable { ctx, snapshot })
 }

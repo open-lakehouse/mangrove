@@ -10,9 +10,12 @@
 //!     network fetch (which the `deltalake-wasm` facade + `UcFetchStore` supply in production,
 //!     exercised by the M3 browser smoke test).
 //!
-//! Snapshot *construction* needs a kernel engine and lives behind the wasm facade, so this
-//! crate-level test drives the engine-free planning + Load execution directly, which is the part
-//! that previously forced the inline executor.
+//! This test drives the engine-free planning + Load execution directly — the part that previously
+//! forced the inline executor. Snapshot *construction* is now async-native on this crate too
+//! (`build_snapshot_from_manifest` awaits the P&M drive); its browser fetch behavior is covered by
+//! the M3 browser smoke test, since an in-memory `object_store` resolves synchronously and would
+//! not exercise the event-loop cooperation that a real `fetch` (and the async `.await`, not
+//! `block_on`) requires.
 
 #![cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 

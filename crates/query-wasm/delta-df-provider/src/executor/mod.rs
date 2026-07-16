@@ -277,9 +277,11 @@ impl DataFusionExecutor {
     /// This is the async-native replacement for the eager `PrimedStore` + synchronous
     /// `DataFusionEngine` snapshot build: no up-front log prime, no `InlineExecutor`, no CRC.
     ///
-    /// The `SnapshotPm` SM is `!Send` (like the scan SM); callers confine the drive with
-    /// `futures::executor::block_on` inside their `async` seam so nothing `!Send` crosses an
-    /// `.await`.
+    /// The `SnapshotPm` SM is `!Send` (like the scan SM), but — unlike the scan SM — its drive
+    /// awaits real object-store reads (commit `.json`, checkpoint footer). Callers must therefore
+    /// `.await` this, NOT `block_on` it: on a browser worker a blocked thread starves the event
+    /// loop a `fetch` needs, hanging construction forever. Awaiting leaves the caller's future
+    /// `!Send`, which every driver we target (wasm-bindgen-futures, native current-thread) accepts.
     pub async fn build_snapshot_pm(
         &self,
         log_segment: Arc<LogSegment>,

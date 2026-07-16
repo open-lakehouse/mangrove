@@ -9,6 +9,19 @@
 //! engine-free [`DataFusionExecutor`] over the caller's own async object store — the same store the
 //! scan path reads through.
 //!
+//! # Why `async` (not `block_on`)
+//!
+//! Driving [`SnapshotPm`] reads real files over the object store — commit `.json` (a `Consume`
+//! drain) and, for checkpointed tables, the checkpoint parquet footer (a `SchemaQuery`). Those
+//! reads `.await` the store. On a browser target the store is `fetch`-backed, and a `fetch`
+//! resolves *only* when control returns to the JS event loop. Wrapping the drive in
+//! `futures::executor::block_on` parks the (single) worker thread, so the event loop never runs,
+//! the fetch never settles, and construction hangs forever. So this builder is genuinely `async`
+//! and `.await`s the drive; nothing here blocks. The future is `!Send` (the kernel SM is `!Send`),
+//! which is fine on every driver we use — `wasm-bindgen-futures` in the browser, a current-thread
+//! runtime in the native tests. Contrast the *scan* path ([`crate::DeltaSsaTableProvider::scan`]),
+//! whose SM yields a `ResultPlan` without ever awaiting IO, so `block_on` is still correct there.
+//!
 //! [`SnapshotPm`]: delta_kernel::sm_plans::state_machines::snapshot::SnapshotPm
 
 use std::sync::Arc;
@@ -33,21 +46,31 @@ use crate::error::{plan_compilation, wrap_delta_err};
 ///
 /// `session` must have the object store registered for `table_url`'s authority (the same session
 /// the scan runs against). The [`SnapshotPm`] SM is driven through a
-/// [`DataFusionExecutor::from_session`] so its log-replay reads go through that store.
+/// [`DataFusionExecutor::new_with_store`] so its log-replay reads go through that store.
 ///
-/// The SM is `!Send`; the drive is confined to a `block_on` here so nothing `!Send` crosses the
-/// `async` boundary and the returned `SnapshotRef` is `Send`.
+/// This is genuinely `async` and `.await`s the P&M drive — it must NOT be `block_on`-ed by the
+/// caller: the drive awaits real object-store reads (commit `.json`, checkpoint footer), and on a
+/// browser worker a blocked thread starves the event loop that a `fetch` needs to complete, so
+/// construction would hang forever (see the module docs). The future is `!Send` (the kernel SM is
+/// `!Send`), which every driver we target tolerates.
 ///
 /// [`SnapshotPm`]: delta_kernel::sm_plans::state_machines::snapshot::SnapshotPm
-pub fn build_snapshot_from_manifest(
+pub async fn build_snapshot_from_manifest(
     session: &SessionContext,
     table_url: &Url,
     manifest: Vec<FileMeta>,
     version: Version,
 ) -> DfResult<SnapshotRef> {
-    // The kernel joins the log root onto the table root; the trailing slash makes it append rather
-    // than replace the last path segment.
-    let log_root = table_url
+    // Normalize the table root to a directory URL (trailing `/`) BEFORE any `join`. `Url::join`
+    // treats the last path segment as a file and REPLACES it unless the base ends in `/`, so a
+    // caller-supplied root like `…/tables/<uuid>` (no trailing slash — how `creds::resolve_storage`
+    // builds Azure/Azurite/GCS URLs) would otherwise drop the `<uuid>` segment: `join("_delta_log/")`
+    // yields `…/tables/_delta_log/`, and the kernel then resolves every commit/data file against that
+    // truncated root, producing a doubled `…/tables/_delta_log/…/tables/<uuid>/_delta_log/…json`
+    // 404. Anchoring the trailing slash here fixes both the log root and the `Snapshot::from_parts`
+    // table root below.
+    let table_root = ensure_trailing_slash(table_url);
+    let log_root = table_root
         .join("_delta_log/")
         .map_err(|e| plan_compilation(format!("build_snapshot_from_manifest: log root: {e}")))?;
 
@@ -71,16 +94,30 @@ pub fn build_snapshot_from_manifest(
     // — which needs the leaf-pushdown / single-partition config — and reads the log/checkpoint
     // files over the store during the drive.
     let object_store_url =
-        datafusion_datasource::ListingTableUrl::parse(table_url.as_str())?.object_store();
+        datafusion_datasource::ListingTableUrl::parse(table_root.as_str())?.object_store();
     let store = session.runtime_env().object_store(&object_store_url)?;
 
-    // The SM is `!Send`/IO-free-CPU (it yields Consume/SchemaQuery ops the executor services
-    // async), so `block_on` completes without cooperating with the outer runtime and confines the
-    // `!Send` region — the returned `SnapshotRef` is `Send`. Mirrors the scan path's confinement.
-    let executor = DataFusionExecutor::new_with_store(table_url, store);
-    let snapshot = futures::executor::block_on(
-        executor.build_snapshot_pm(Arc::new(log_segment), table_url.clone()),
-    )
-    .map_err(wrap_delta_err)?;
+    // Drive the P&M SM by AWAITING it — do NOT `block_on`. The drive services `Consume` /
+    // `SchemaQuery` ops that read commit `.json` / checkpoint footers over the store, and on a
+    // browser worker those `fetch`es only settle when the event loop runs; `block_on` would park
+    // the thread and hang (see module docs). The `!Send` SM future is awaited directly here — the
+    // whole `build_snapshot_from_manifest` future is `!Send`, which is fine on wasm-bindgen-futures
+    // and the native current-thread test runtime.
+    let executor = DataFusionExecutor::new_with_store(&table_root, store);
+    let snapshot = executor
+        .build_snapshot_pm(Arc::new(log_segment), table_root)
+        .await
+        .map_err(wrap_delta_err)?;
     Ok(snapshot)
+}
+
+/// Return `url` with a trailing `/` on its path so `Url::join` appends a child segment rather than
+/// replacing the last one. Idempotent: a URL that already ends in `/` is returned unchanged.
+fn ensure_trailing_slash(url: &Url) -> Url {
+    if url.path().ends_with('/') {
+        return url.clone();
+    }
+    let mut out = url.clone();
+    out.set_path(&format!("{}/", url.path()));
+    out
 }

@@ -65,8 +65,10 @@ fn parquet_bytes(batch: &RecordBatch) -> Vec<u8> {
     buf
 }
 
-/// Commit-only in-memory fixture (same shape as `native.rs::fixture_store`).
-async fn commit_only_store() -> Arc<InMemory> {
+/// Commit-only in-memory fixture rooted at `prefix` (no trailing slash). A test can place the table
+/// deep under a path — e.g. the `…/__unitystorage/catalogs/<id>/tables/<uuid>` shape a Unity Catalog
+/// managed table has — to exercise table-root/log-root path joining.
+async fn commit_only_store_at(prefix: &str) -> Arc<InMemory> {
     let store = InMemory::new();
     let files = [
         (
@@ -95,15 +97,13 @@ async fn commit_only_store() -> Arc<InMemory> {
         ));
         commit.push('\n');
         store
-            .put(&Path::from(format!("{TABLE_PREFIX}/{name}")), bytes.into())
+            .put(&Path::from(format!("{prefix}/{name}")), bytes.into())
             .await
             .unwrap();
     }
     store
         .put(
-            &Path::from(format!(
-                "{TABLE_PREFIX}/_delta_log/00000000000000000000.json"
-            )),
+            &Path::from(format!("{prefix}/_delta_log/00000000000000000000.json")),
             commit.into_bytes().into(),
         )
         .await
@@ -111,13 +111,17 @@ async fn commit_only_store() -> Arc<InMemory> {
     Arc::new(store)
 }
 
+/// Commit-only in-memory fixture under [`TABLE_PREFIX`] (same shape as `native.rs::fixture_store`).
+async fn commit_only_store() -> Arc<InMemory> {
+    commit_only_store_at(TABLE_PREFIX).await
+}
+
 /// Build the `_delta_log` manifest (kernel `FileMeta`s) for `store` under `table_url` by listing
 /// the log directory — standing in for mangrove's HEAD-probe discovery.
 async fn manifest_for(store: &dyn ObjectStore, table_url: &Url) -> Vec<FileMeta> {
-    let log_prefix = Path::from(format!(
-        "{}_delta_log",
-        table_url.path().trim_start_matches('/')
-    ));
+    // Join `_delta_log` onto the table path segment-wise (slash-safe) so this works whether or not
+    // `table_url` carries a trailing slash — mirrors production discovery's `Path::join`.
+    let log_prefix = Path::from(table_url.path().trim_start_matches('/')).child("_delta_log");
     let mut out = Vec::new();
     let mut listing = store.list(Some(&log_prefix));
     while let Some(meta) = futures::StreamExt::next(&mut listing).await {
@@ -176,6 +180,7 @@ async fn snapshot_from_manifest_matches_eager_commit_only() {
     let manifest = manifest_for(store.as_ref(), &table_url).await;
     let session = session_with_store(&table_url, Arc::clone(&store) as Arc<dyn ObjectStore>);
     let built = build_snapshot_from_manifest(&session, &table_url, manifest, 0)
+        .await
         .expect("build_snapshot_from_manifest");
 
     assert_eq!(built.version(), eager.version(), "version must match");
@@ -233,8 +238,60 @@ async fn snapshot_from_manifest_matches_eager_classic_checkpoint() {
 
     let session = session_with_store(&table_url, Arc::clone(&store));
     let built = build_snapshot_from_manifest(&session, &table_url, manifest, 1)
+        .await
         .expect("build_snapshot_from_manifest (checkpointed)");
 
     assert_eq!(built.version(), eager.version(), "version must match");
     assert_eq!(built.schema(), eager.schema(), "logical schema must match");
+}
+
+/// Regression: a deep table root passed WITHOUT a trailing slash still resolves. This is the exact
+/// shape `creds::resolve_storage` produces for a Unity Catalog managed table
+/// (`…/__unitystorage/catalogs/<id>/tables/<uuid>`, no trailing `/`). `build_snapshot_from_manifest`
+/// must anchor the trailing slash before `join("_delta_log/")`; otherwise `Url::join` drops the
+/// `<uuid>` segment, the kernel resolves commits against `…/tables/_delta_log/`, and every read
+/// 404s with a doubled `…/tables/_delta_log/…/tables/<uuid>/_delta_log/…json` path.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn deep_table_root_without_trailing_slash_resolves() {
+    let prefix = "lakehouse/__unitystorage/catalogs/019f6d3e/tables/9e3a1584";
+    let store = commit_only_store_at(prefix).await;
+
+    // NO trailing slash — the production URL shape. `manifest_for` lists the real object paths and
+    // builds full-from-root `memory:///lakehouse/.../tables/9e3a1584/_delta_log/…json` FileMeta URLs.
+    let table_url = Url::parse(&format!("memory:///{prefix}")).unwrap();
+    assert!(
+        !table_url.path().ends_with('/'),
+        "root must lack a trailing slash for the regression"
+    );
+
+    let manifest = manifest_for(store.as_ref(), &table_url).await;
+    let session = session_with_store(&table_url, Arc::clone(&store) as Arc<dyn ObjectStore>);
+    let built = build_snapshot_from_manifest(&session, &table_url, manifest, 0)
+        .await
+        .expect("build_snapshot_from_manifest must resolve a slash-less deep table root");
+    assert_eq!(built.version(), 0);
+
+    // End-to-end scan: proves data-file paths (`add.path`) also resolve against the anchored root.
+    let provider = DeltaSsaTableProvider::new(
+        built,
+        DeltaSsaScanConfig {
+            schema_force_view_types: false,
+        },
+    )
+    .unwrap();
+    session
+        .register_table("preview", Arc::new(provider))
+        .unwrap();
+    let batches = session
+        .sql("SELECT count(*) AS n FROM preview")
+        .await
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    let n = batches[0].column(0).as_primitive::<Int64Type>().value(0);
+    assert_eq!(
+        n, 6,
+        "six rows read back through a slash-less deep table root"
+    );
 }
