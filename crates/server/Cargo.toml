@@ -38,25 +38,12 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.2" }
 # buffa runtime: generated handler glue constructs/matches buffa model types.
 buffa = { workspace = true }
-# The portable Open Sharing / Delta Sharing surface: owns the sharing semantics
-# behind a `SharingBackend` port, plus the DataFusion + `delta-kernel` NDJSON
-# query path (the only `ReconciledLogProvider` consumer). The server delegates to
-# it via a `SharingBackend` adapter.
-unitycatalog-sharing-api = { package = "olai-uc-sharing-api", path = "../sharing-api", version = "0.0.1" }
-unitycatalog-sharing-client = { package = "olai-uc-sharing-client", path = "../sharing-client", version = "0.0.1", features = [
-  "server",
-] }
 unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.2", optional = true }
 
 async-trait = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
 percent-encoding = "2.1"
-# Retained ONLY for the `Error::DeltaKernel` variant (`src/error.rs`), which the
-# Open Sharing path maps into `SharingError`. The `KernelSession` that backs the
-# Delta Sharing query surface is owned by `olai-uc-sharing-api`; the server no
-# longer reads Delta snapshots itself (createTable is metadata-only).
-delta_kernel = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true }
 object_store = { workspace = true }
@@ -72,12 +59,6 @@ url = { workspace = true }
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }
 tonic = { workspace = true, optional = true }
-# Retained ONLY for `datafusion::datasource::object_store::ObjectStoreUrl`, used
-# to normalize storage-location authorities in `services::location`. The heavy
-# DataFusion query surface (`SessionContext` + `ReconciledLogProvider` + arrow)
-# that served the Delta Sharing query path now lives entirely in
-# `olai-uc-sharing-api`; the server no longer depends on `unitycatalog-datafusion`.
-datafusion = { workspace = true }
 futures-util = { version = "0.3.28" }
 http = { version = "1.2", optional = true }
 olai-store = { workspace = true, features = ["encryption"] }
