@@ -64,8 +64,9 @@ pr_draft = false
 #       OIDC trusted publishing cannot create a brand-new name. It needs a
 #       one-time token bootstrap (bootstrap-publish.yml) first. Remove the
 #       `release = false` line once the crate is bootstrapped + its Trusted
-#       Publisher is registered. Currently only `olai-uc-server` (delta-api has
-#       been bootstrapped and now releases via OIDC).
+#       Publisher is registered. Currently NONE — every publishable name is live
+#       (delta-api, common, client, object-store, postgres, sqlite). The server
+#       will need this bootstrap when it flips from `git_only` to published.
 #
 #   (b) GIT-DEP BLOCK — the crate depends (transitively, via the workspace
 #       `delta_kernel` / `deltalake-core` git revs) on a git source. `cargo
@@ -76,9 +77,9 @@ pr_draft = false
 #       behind the `delta` feature) are both blocked this way.
 #
 # crates.io publish/bootstrap order (root -> leaf):
-#   delta-api, common -> client, object-store, postgres, sqlite -> server, cli
+#   delta-api, common -> client, object-store, postgres, sqlite -> cli
 # (sharing-client, sharing-api, datafusion are out of the order entirely — see
-# (b) above.)
+# (b) above; server is git_only — see below.)
 #
 # Already on crates.io (bootstrapped, releasing via OIDC): delta-api, common,
 # client, object-store, postgres, sqlite — these carry NO `release = false`.
@@ -86,9 +87,9 @@ pr_draft = false
 # `olai-uc-cli` is publishable (no git deps, its deps are live) but is
 # intentionally held out of crates.io for now; it keeps `release = false`.
 #
-# `olai-uc-server` is a published crate (library + the `uc-server` binary) that
-# ALSO ships as the `mangrove` Docker image; it carries a temporary bootstrap
-# `release = false` gate until its first token publish — see its block below.
+# `olai-uc-server` ships as the `mangrove` Docker image (`git_only = true`); it is
+# eligible to publish (git-free graph, PR #89) but held back until its sibling
+# path deps are re-released to crates.io with the current buffa API — see below.
 # ---------------------------------------------------------------------------
 [[package]]
 name = "olai-uc-delta-api"
@@ -141,26 +142,30 @@ release = false
 [[package]]
 name = "olai-uc-server"
 changelog_path = "crates/server/CHANGELOG.md"
-# The server is now a PUBLISHED crate (library + the `uc-server` binary), AND it
-# ships as the `mangrove` Docker image. This became possible once PR #89 removed
-# the git-pinned Delta Sharing query surface, so the crate's dependency graph is
-# free of git sources and `cargo publish` accepts it. As an ordinary published
-# crate, release-plz versions/changelogs/tags it (`olai-uc-server-v<version>`),
-# creates its GitHub Release, `cargo publish`es it via OIDC, AND includes it in
-# the `release` command's `releases` JSON — which is what docker-release.yml is
-# now gated off (release-plz.yml), replacing the old bespoke tag-creation step
-# that `git_only` forced.
+# The server is PAUSED at `git_only = true` + `publish = false`: release-plz
+# versions/changelogs/tags it from git but does not `cargo publish` it.
+# `publish = false` (also set in Cargo.toml) is the mutually-exclusive companion
+# release-plz requires alongside `git_only`.
 #
-# (a) BOOTSTRAP GATE: `olai-uc-server` has never been published, and crates.io
-# OIDC cannot create a brand-new name. Remove this `release = false` line once
-# the crate is bootstrapped (bootstrap-publish.yml) + its Trusted Publisher is
-# registered on crates.io — same one-time step every other olai-uc-* crate went
-# through.
-release = false
+# WHY paused: the crate's own graph is git-free (PR #89) so it is *eligible* to
+# publish (#90 flipped it), but its path deps `olai-uc-common`/`-client`/
+# `-delta-api` are still on crates.io at their PRE-buffa `0.0.2`, and a verifying
+# `cargo publish` of the server builds against those stale registry copies and
+# fails. Flip back to a published crate (drop `git_only`, set `publish = true`,
+# then bootstrap) once release-plz re-releases those siblings with the buffa API.
+#
+# DOCKER WHILE PAUSED: the docker gate in release-plz.yml reads release-plz's
+# `releases` JSON, which OMITS `git_only` crates — so no image builds during the
+# pause. That is intentional (no publish ⇒ no new image). Flipping the server to
+# `publish = true` puts it back in `releases`, which re-activates the Docker build
+# automatically — NO release-plz.yml edit needed. (If an image IS wanted during
+# the pause, that's a separate change: re-add the manifest-parsing tag step.)
 #
 # Its bundled UI lives in node/ (outside this crate's packaged fileset), so a UI
 # change is tied to this crate via crates/server/ui.lock — see `just
 # ui-fingerprint`.
+git_only = true
+publish = false
 
 [[package]]
 name = "olai-uc-cli"
@@ -171,28 +176,19 @@ release = false
 
 [[package]]
 name = "unitycatalog-acceptance"
-# Internal test harness (`publish = false` in its Cargo.toml), never released to
-# crates.io and NOT a dependency of any released crate.
+# Internal test harness (`publish = false` in its Cargo.toml), a workspace leaf
+# nothing depends on and never released to crates.io. `release = false` excludes
+# it from release-plz entirely (no update / tag / release, and — per the
+# docs — from the version-determination `cargo package` pass).
 #
-# `git_only = true` is what actually keeps it out of the verifying `cargo
-# package` failure. When release-plz determines a released crate's next version
-# it runs a verifying `cargo package`; for crates it treats as crates.io-bound it
-# rewrites the manifest (stripping the `path`, falling back to the registry
-# version) before verifying — and that rewrite drops the `path` dep's `version`,
-# so verification fails with "dependency `olai-uc-client` does not specify a
-# version" even though the source manifest DOES pin it (see the #55 pins, which
-# are correct but insufficient on their own). `git_only` marks the crate as
-# git-tag-only, so release-plz skips that crates.io-oriented rewrite. This crate
-# is a publish=false bin-bearing test harness, exactly the shape that trips the
-# verify — so it keeps `git_only`, independently of the (now published) server.
-#
-# `publish = false` is the companion release-plz requires alongside `git_only`
-# (and matches the crate's Cargo.toml). Suppress the tag/release for this
-# internal crate — we only want the packaging behavior, not tag noise.
-git_only = true
-publish = false
-git_tag_enable = false
-git_release_enable = false
+# This used to carry `git_only = true` + `publish = false` + tag/release-disable
+# as a workaround for the whole-workspace `cargo package` verify that a git_only
+# crate's version-determination triggered (the #55–#58 chain). That workaround
+# was a symptom of the release setup at the time; with the server posture cleaned
+# up, `release = false` is expected to suffice on its own. If a future Release PR
+# regresses with "dependency `olai-uc-client` does not specify a version" (or a
+# whole-workspace package failure), restore the `git_only = true` block.
+release = false
 
 # ---------------------------------------------------------------------------
 # Changelog rendering (git-cliff, embedded). Conventional-commit grouping.
