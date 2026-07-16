@@ -1,3 +1,14 @@
+//! `uc` — the Unity Catalog command-line client.
+//!
+//! A thin CLI over [`unitycatalog_client`] for talking to a running Unity
+//! Catalog server: managing securables (catalogs, schemas, tables, …) and
+//! exploring the catalog hierarchy. It targets a server by host — the client
+//! appends the `/api/2.1/unity-catalog` API prefix itself — and renders results
+//! in the format selected by the global output flag.
+//!
+//! This crate is a binary, not a library; run `uc --help` for the full command
+//! surface.
+
 use clap::{Args, Parser, Subcommand};
 use unitycatalog_client::UnityCatalogClient;
 

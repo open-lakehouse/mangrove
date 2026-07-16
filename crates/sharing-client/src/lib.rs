@@ -1,3 +1,18 @@
+//! Delta Sharing protocol client and shared wire types for Unity Catalog.
+//!
+//! This crate provides a [`DeltaSharingClient`](client::DeltaSharingClient) for
+//! consuming the Delta Sharing REST API — discovering shares, schemas, and
+//! tables, and reading table metadata and data — along with the request/response
+//! [`models`] that describe the protocol on the wire. Those models are shared:
+//! the server-side `unitycatalog-sharing-api` crate serves the same types this
+//! client sends.
+//!
+//! # Feature flags
+//!
+//! `axum` compiles the request extractors used by a server built on these types
+//! (including the hand-written NDJSON query-path extractors); a plain client
+//! build does not need it.
+
 // The generated client/extractor code refers to this crate by its external name
 // (`unitycatalog_sharing_client::...`); alias `self` so those paths resolve from
 // within the crate.
