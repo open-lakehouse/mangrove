@@ -29,6 +29,15 @@ WORKDIR /ui
 # whole bun workspace (root manifest + every node/* package the app imports).
 COPY package.json bun.lock ./
 COPY node/ ./node/
+# The root manifest also lists the `docs` and `examples/typescript` workspaces, which
+# the server image never builds. With `--frozen-lockfile`, bun still resolves EVERY
+# workspace glob against the on-disk tree, so their manifests must exist or install
+# fails with `Workspace not found`. Copy just the package.json (not the source): bun
+# resolves the workspace but never fetches its deps, since nothing the app builds
+# depends on them — the docs toolchain (astro/sharp) stays out of the image. Editing
+# the lockfile to drop them instead would trip the frozen-lockfile check.
+COPY docs/package.json ./docs/
+COPY examples/typescript/package.json ./examples/typescript/
 # The committed bun.lock pins each tarball URL to whatever registry it was generated
 # against — for us some entries may point at an internal mirror
 # (npm-proxy.cloud.databricks.com) that CI and other external builders can't reach.
