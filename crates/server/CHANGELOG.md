@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.1...olai-uc-server-v0.0.2) - 2026-07-16
+
+### Fixed
+
+- ui fingerprint (#97)
+
 ## [0.0.1](https://github.com/open-lakehouse/mangrove/releases/tag/olai-uc-server-v0.0.1) - 2026-07-12
 
 ### Added

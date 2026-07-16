@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-server"
-version = "0.0.1"
+version = "0.0.2"
 description = "Unity Catalog REST and gRPC server with pluggable storage backends."
 edition.workspace = true
 license.workspace = true
