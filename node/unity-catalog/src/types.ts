@@ -1,6 +1,30 @@
 // Shared types for the Catalog Explorer.
 
+import type { CredentialInfo } from "@open-lakehouse/unity-catalog-client";
+
 export type ObjectKind = "table" | "volume" | "function" | "model";
+
+/**
+ * AWS IAM trust material shown on a credential (the external ID + the managed
+ * Unity Catalog IAM ARN the user wires into their role's trust policy).
+ *
+ * TODO(#85): the canonical proto-derived spec types `Credential.aws_iam_role` as
+ * the internal `AwsIamRoleConfig` (role_arn + static base creds) rather than the
+ * public `AwsIamRole` response shape, so these two output-only trust fields are
+ * absent from the generated type. Read them through this narrow view until #85
+ * splits the response model and populates them server-side; then delete this.
+ */
+export type AwsIamRoleTrust = {
+  external_id?: string;
+  unity_catalog_iam_arn?: string;
+};
+
+/** Read the (currently un-typed — see #85) AWS IAM trust material off a credential. */
+export function awsIamRoleTrust(
+  credential: Pick<CredentialInfo, "aws_iam_role"> | null | undefined,
+): AwsIamRoleTrust {
+  return (credential?.aws_iam_role ?? {}) as AwsIamRoleTrust;
+}
 
 export const OBJECT_KINDS: ObjectKind[] = [
   "table",

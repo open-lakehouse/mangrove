@@ -34,5 +34,5 @@ export { parseUcError } from "./uc/errors";
 export * from "./uc/mutations";
 // Read hooks + query helpers + list keys.
 export * from "./uc/queries";
-// Generated UC OpenAPI types (from openapi/unity-catalog.yaml via `gen:api`).
+// Generated UC OpenAPI types (from the canonical ../../openapi/openapi.yaml via `gen:api`).
 export * from "./uc-types";

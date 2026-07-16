@@ -66,16 +66,19 @@ Import from the barrel — `@open-lakehouse/unity-catalog-client`:
 
 ## Codegen
 
-- `bun run gen:api` — regenerate `src/uc-api.d.ts` from
-  `openapi/unity-catalog.yaml` (the OSS-shaped UC REST spec) via
-  `openapi-typescript`.
+- `bun run gen:api` — regenerate `src/uc-api.d.ts` from the canonical
+  proto-derived spec `../../openapi/openapi.yaml` (produced by
+  `just generate-openapi`) via `openapi-typescript`.
 - `bun run gen:form-schemas` — regenerate the RJSF form schemas from this repo's
   UC proto. These are presentational assets, so the script writes them into the
   sibling `@open-lakehouse/unity-catalog` package's `src/forms/schemas/`.
 
-> The spec here is the Databricks-style OSS UC shape; it differs from mangrove's
-> native `openapi/openapi.yaml`. Reconciling onto the native spec is deferred
-> follow-up.
+> These types are generated from mangrove's own canonical spec, so they stay in
+> sync with the running server. Regeneration is wired into `just generate-openapi`
+> and a CI drift guard fails the build if `uc-api.d.ts` is stale — never hand-edit
+> it. The three inlined enums (`TableType`, `DataSourceFormat`, `VolumeType`) are
+> derived from their carrying fields in `uc-types.ts` because gnostic inlines enum
+> values rather than emitting named component schemas.
 
 ## Distribution
 

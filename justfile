@@ -63,6 +63,15 @@ generate-openapi:
     bunx @redocly/cli bundle --remove-unused-components openapi/openapi.yaml > tmp.yaml
     mv tmp.yaml openapi/openapi.yaml
     bun run openapi
+    just generate-node-openapi
+
+# Regenerate the node unity-catalog-client's TypeScript API types from the
+# canonical openapi/openapi.yaml (via openapi-typescript). Chained off
+# generate-openapi so the client types can never drift from the spec; a CI
+# drift guard (node-ci.yaml) fails the build if the committed output is stale.
+[group('codegen')]
+generate-node-openapi:
+    cd {{ justfile_directory() }}/node/unity-catalog-client && bun run gen:api
 
 # generate rest server and client code with build crate.
 [group('codegen')]

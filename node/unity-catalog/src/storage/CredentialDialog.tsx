@@ -27,6 +27,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { SchemaForm } from "../forms/SchemaForm";
 import { cloneSchema, formSchemas } from "../forms/schemas";
+import { awsIamRoleTrust } from "../types";
 
 import { CopyField } from "./CopyField";
 
@@ -186,10 +187,8 @@ export function CredentialDialog({
             toast.success(`Created credential "${createdName}"`);
             onCreated?.(createdName);
             // Show trust details if the server returned them; otherwise close.
-            if (
-              result?.aws_iam_role?.external_id ||
-              result?.aws_iam_role?.unity_catalog_iam_arn
-            ) {
+            const trust = awsIamRoleTrust(result);
+            if (trust.external_id || trust.unity_catalog_iam_arn) {
               setCreated(result);
             } else {
               onClose();
@@ -248,11 +247,11 @@ export function CredentialDialog({
             </p>
             <CopyField
               label="Unity Catalog IAM ARN"
-              value={created.aws_iam_role?.unity_catalog_iam_arn}
+              value={awsIamRoleTrust(created).unity_catalog_iam_arn}
             />
             <CopyField
               label="External ID"
-              value={created.aws_iam_role?.external_id}
+              value={awsIamRoleTrust(created).external_id}
             />
           </div>
         ) : (
