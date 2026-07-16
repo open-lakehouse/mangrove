@@ -1,7 +1,3 @@
-use std::sync::Arc;
-
-use delta_kernel::schema::{DataType, PrimitiveType, Schema, StructField};
-use delta_kernel::{Snapshot, Version};
 use itertools::Itertools;
 
 use unitycatalog_common::ResourceIdent;
@@ -10,10 +6,9 @@ use unitycatalog_common::models::ObjectLabel;
 use unitycatalog_common::models::ResourceName;
 use unitycatalog_common::models::tables::v1::*;
 
-use super::staging_tables::find_staging_table_by_location;
 use super::{RequestContext, SecuredAction};
 pub use crate::codegen::tables::TableHandler;
-use crate::policy::{Permission, Policy, Principal, process_resources};
+use crate::policy::{Permission, Policy, process_resources};
 use crate::services::ProvidesLocalStoragePolicy;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::validate_external_storage_location;
@@ -90,17 +85,7 @@ impl SecuredAction for DeleteTableRequest {
 }
 
 #[async_trait::async_trait]
-pub trait TableManager: Send + Sync + 'static {
-    async fn read_snapshot(
-        &self,
-        location: &StorageLocationUrl,
-        format: &DataSourceFormat,
-        version: Option<Version>,
-    ) -> Result<Arc<Snapshot>>;
-}
-
-#[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalStoragePolicy>
+impl<T: ResourceStore + Policy<RequestContext> + ProvidesLocalStoragePolicy>
     TableHandler<RequestContext> for T
 {
     #[tracing::instrument(skip(self, context))]
@@ -167,20 +152,20 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
         let info = if request.table_type == TableType::External {
+            // External table: a metadata-only registration over data that already
+            // exists at `storage_location`. Per the Unity Catalog / Databricks
+            // createTable contract, the server records the catalog row and the
+            // caller-supplied column schema; it never reads or writes the Delta
+            // log. `storage_location` is required for external tables.
             let Some(location) = request.storage_location.as_ref() else {
                 return Err(Error::invalid_argument("missing storage location"));
             };
             let location = StorageLocationUrl::parse(location)?;
-            let data_source_format = request.data_source_format.as_known().unwrap_or_default();
-            // Validate the storage location before touching cloud storage so we
-            // fail fast on a governance violation. The path must live inside a
-            // registered external location and must not overlap any existing
-            // table or volume (Unity Catalog forbids overlapping governed
-            // storage regions).
+            // Enforce the governance rules on the location: it must live inside a
+            // registered external location and must not overlap any existing table
+            // or volume (Unity Catalog forbids overlapping governed storage
+            // regions). This is a store/metadata check — no cloud access.
             validate_external_storage_location(self, &location).await?;
-            let snapshot = self
-                .read_snapshot(&location, &data_source_format, None)
-                .await?;
             Table {
                 name: request.name,
                 catalog_name: request.catalog_name,
@@ -190,97 +175,21 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
                 properties: request.properties,
                 storage_location: request.storage_location,
                 comment: request.comment,
-                columns: schema_to_columns(
-                    snapshot.schema().as_ref(),
-                    snapshot
-                        .table_configuration()
-                        .metadata()
-                        .partition_columns(),
-                )?,
+                columns: request.columns,
                 ..Default::default()
             }
         } else if request.table_type == TableType::Managed {
-            // Managed table: finalize a previously created staging table. The
-            // client has written the initial Delta commit (`0.json`) at the
-            // staging location; here we commit the staging reservation, adopt its
-            // id as the table id, and register the table. The server never writes
-            // the Delta log itself.
-            if request.data_source_format != DataSourceFormat::Delta {
-                return Err(Error::invalid_argument(format!(
-                    "managed tables must use the DELTA data source format, got {:?}",
-                    request.data_source_format
-                )));
-            }
-            let Some(location) = request.storage_location.as_ref() else {
-                return Err(Error::invalid_argument(
-                    "managed tables require storage_location to be the staging location",
-                ));
-            };
-
-            // Resolve and validate the staging reservation.
-            let staging = find_staging_table_by_location(self, location).await?;
-            match context.recipient() {
-                Principal::User(name) if staging.created_by.as_deref() == Some(name.as_str()) => {}
-                Principal::Anonymous if staging.created_by.is_none() => {}
-                _ => {
-                    return Err(Error::NotAllowed);
-                }
-            }
-            if staging.stage_committed {
-                return Err(Error::invalid_argument(format!(
-                    "staging table at '{location}' has already been committed"
-                )));
-            }
-
-            // Confirm the client wrote a readable Delta table at the location and
-            // adopt its schema as the source of truth.
-            let location_url = StorageLocationUrl::parse(location)?;
-            let snapshot = self
-                .read_snapshot(&location_url, &DataSourceFormat::Delta, None)
-                .await?;
-
-            // Consume the staging reservation and register the table in one atomic
-            // swap: the reservation is deleted and the table is created **at the same
-            // uuid** (the id was fixed at staging time and the Delta API protocol
-            // depends on it). The object store keys objects by a single uuid, so the
-            // StagingTable and the Table cannot coexist at that id — the reservation
-            // transitions into the table. Doing both in one transaction means a crash
-            // between them cannot leave the reservation gone without the table, and a
-            // concurrent reader sees either the staging row or the table row, never
-            // neither. A subsequent commit against the same location then fails at
-            // `find_staging_table_by_location` (gone), the correct already-committed
-            // behavior.
-            let staging_ident = ResourceIdent::staging_table(ResourceName::new([
-                staging.catalog_name.as_str(),
-                staging.schema_name.as_str(),
-                staging.name.as_str(),
-            ]));
-
-            let table = Table {
-                name: request.name,
-                catalog_name: request.catalog_name,
-                schema_name: request.schema_name,
-                table_type: request.table_type,
-                data_source_format: request.data_source_format,
-                properties: request.properties,
-                storage_location: request.storage_location,
-                comment: request.comment,
-                table_id: Some(staging.id),
-                columns: schema_to_columns(
-                    snapshot.schema().as_ref(),
-                    snapshot
-                        .table_configuration()
-                        .metadata()
-                        .partition_columns(),
-                )?,
-                ..Default::default()
-            };
-            // TODO: update the table with the current actor as owner
-            return Ok(self
-                .replace_atomically(&staging_ident, table.into())
-                .await?
-                .0
-                .try_into()?);
+            // Managed tables are not provisioned through the bare createTable
+            // endpoint: the catalog must own the commit log, so a managed table is
+            // created through the `/delta/v1` staging flow (createStagingTable →
+            // write `_delta_log/0.json` → createTable), which registers the table
+            // atomically against its staging reservation. Reject here with a clear
+            // pointer rather than silently registering a table with no commit log.
+            return Err(Error::invalid_argument(
+                "managed tables cannot be created through this endpoint; use the \
+                 /delta/v1 staging flow (createStagingTable, write the initial Delta \
+                 commit, then createTable)",
+            ));
         } else if request.table_type == TableType::MetricView {
             // Metric view: a semantic layer with no storage of its own. The
             // definition (YAML) lives in `view_definition`; there is no Delta
@@ -372,91 +281,6 @@ impl<T: ResourceStore + Policy<RequestContext> + TableManager + ProvidesLocalSto
     }
 }
 
-trait FieldExt {
-    fn type_text(&self) -> String;
-    fn type_json(&self) -> Result<String>;
-    fn type_name(&self) -> ColumnTypeName;
-    fn type_precision(&self) -> Option<i32>;
-    fn type_scale(&self) -> Option<i32>;
-}
-
-impl FieldExt for StructField {
-    fn type_text(&self) -> String {
-        self.data_type().to_string()
-    }
-
-    fn type_json(&self) -> Result<String> {
-        Ok(serde_json::to_string(self.data_type())?)
-    }
-
-    fn type_name(&self) -> ColumnTypeName {
-        match self.data_type() {
-            DataType::Primitive(p) => match p {
-                PrimitiveType::String => ColumnTypeName::String,
-                PrimitiveType::Long => ColumnTypeName::Long,
-                PrimitiveType::Integer => ColumnTypeName::Int,
-                PrimitiveType::Short => ColumnTypeName::Short,
-                PrimitiveType::Byte => ColumnTypeName::Byte,
-                PrimitiveType::Double => ColumnTypeName::Double,
-                PrimitiveType::Float => ColumnTypeName::Float,
-                PrimitiveType::Boolean => ColumnTypeName::Boolean,
-                PrimitiveType::Binary => ColumnTypeName::Binary,
-                PrimitiveType::Date => ColumnTypeName::Date,
-                PrimitiveType::Timestamp => ColumnTypeName::Timestamp,
-                PrimitiveType::TimestampNtz => ColumnTypeName::TimestampNtz,
-                PrimitiveType::Decimal(_) => ColumnTypeName::Decimal,
-                PrimitiveType::Void => ColumnTypeName::Null,
-                // kernel v0.25 split the interval primitive into year-month and
-                // day-time; UC's column type taxonomy has a single `Interval`.
-                PrimitiveType::IntervalYearMonth | PrimitiveType::IntervalDayTime => {
-                    ColumnTypeName::Interval
-                }
-            },
-            DataType::Struct(_) => ColumnTypeName::Struct,
-            DataType::Array(_) => ColumnTypeName::Array,
-            DataType::Map(_) => ColumnTypeName::Map,
-            DataType::Variant(_) => ColumnTypeName::Variant,
-        }
-    }
-
-    fn type_precision(&self) -> Option<i32> {
-        match self.data_type() {
-            DataType::Primitive(PrimitiveType::Decimal(dec)) => Some(dec.precision() as i32),
-            _ => None,
-        }
-    }
-
-    fn type_scale(&self) -> Option<i32> {
-        match self.data_type() {
-            DataType::Primitive(PrimitiveType::Decimal(dec)) => Some(dec.scale() as i32),
-            _ => None,
-        }
-    }
-}
-
-fn schema_to_columns(schema: &Schema, partition_columns: &[String]) -> Result<Vec<Column>> {
-    let partition_index = |name: &str| partition_columns.iter().position(|n| n == name);
-    schema
-        .fields()
-        .enumerate()
-        .map(|(idx, f)| {
-            Ok(Column {
-                name: f.name.clone(),
-                nullable: Some(f.nullable),
-                type_text: f.type_text(),
-                type_json: f.type_json()?,
-                type_name: f.type_name().into(),
-                type_precision: f.type_precision(),
-                type_scale: f.type_scale(),
-                type_interval_type: None,
-                position: Some(idx as i32),
-                partition_index: partition_index(&f.name).map(|v| v as i32),
-                ..Default::default()
-            })
-        })
-        .try_collect()
-}
-
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
@@ -488,8 +312,7 @@ mod tests {
     }
 
     /// An external table whose storage location is not within any registered
-    /// external location is rejected *before* any cloud access is attempted
-    /// (the containment check runs ahead of `read_snapshot`).
+    /// external location is rejected by the governance containment check.
     #[tokio::test]
     async fn external_table_outside_external_location_is_rejected() {
         let h = handler();
@@ -537,10 +360,106 @@ mod tests {
         assert!(matches!(res, Err(Error::InvalidArgument(_))), "{res:?}");
     }
 
-    /// A managed table in a non-Delta format is rejected before any staging
-    /// lookup or storage access.
+    /// Register `cred` + `ext` so an external table at `s3://bucket/ext/...` is
+    /// inside a registered external location.
+    async fn with_external_location(h: &ServerHandler<RequestContext>) {
+        h.create_credential(
+            CreateCredentialRequest {
+                name: "cred".to_string(),
+                purpose: Purpose::Storage.into(),
+                aws_iam_role: Some(AwsIamRoleConfig {
+                    role_arn: "arn:aws:iam::123456789012:role/test".to_string(),
+                    ..Default::default()
+                })
+                .into(),
+                ..Default::default()
+            },
+            ctx(),
+        )
+        .await
+        .unwrap();
+        h.create_external_location(
+            CreateExternalLocationRequest {
+                name: "ext".to_string(),
+                url: "s3://bucket/ext".to_string(),
+                credential_name: "cred".to_string(),
+                ..Default::default()
+            },
+            ctx(),
+        )
+        .await
+        .unwrap();
+    }
+
+    /// createTable is a metadata-only registration: an external table persists the
+    /// caller-supplied columns verbatim (no Delta log is read) and they round-trip
+    /// through `get_table`.
     #[tokio::test]
-    async fn managed_table_non_delta_is_rejected() {
+    async fn external_table_persists_client_columns() {
+        let h = handler();
+        with_external_location(&h).await;
+
+        let columns = vec![
+            Column {
+                name: "id".to_string(),
+                type_text: "bigint".to_string(),
+                type_json: "\"long\"".to_string(),
+                type_name: ColumnTypeName::Long.into(),
+                position: Some(0),
+                nullable: Some(false),
+                ..Default::default()
+            },
+            Column {
+                name: "name".to_string(),
+                type_text: "string".to_string(),
+                type_json: "\"string\"".to_string(),
+                type_name: ColumnTypeName::String.into(),
+                position: Some(1),
+                nullable: Some(true),
+                ..Default::default()
+            },
+        ];
+
+        let created = h
+            .create_table(
+                CreateTableRequest {
+                    name: "tbl".to_string(),
+                    schema_name: "sch".to_string(),
+                    catalog_name: "cat".to_string(),
+                    table_type: TableType::External.into(),
+                    data_source_format: DataSourceFormat::Delta.into(),
+                    storage_location: Some("s3://bucket/ext/tbl".to_string()),
+                    columns: columns.clone(),
+                    ..Default::default()
+                },
+                ctx(),
+            )
+            .await
+            .expect("create external table");
+        assert_eq!(created.table_type, TableType::External);
+        let created_names: Vec<_> = created.columns.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(created_names, vec!["id", "name"]);
+
+        let fetched = h
+            .get_table(
+                GetTableRequest {
+                    full_name: "cat.sch.tbl".to_string(),
+                    ..Default::default()
+                },
+                ctx(),
+            )
+            .await
+            .expect("get external table");
+        let fetched_names: Vec<_> = fetched.columns.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(fetched_names, vec!["id", "name"]);
+    }
+
+    /// Managed tables cannot be created through the bare createTable endpoint: the
+    /// catalog owns the commit log, so managed creation goes through the
+    /// `/delta/v1` staging flow. A bare managed create is rejected with
+    /// `InvalidArgument`.
+    #[tokio::test]
+    async fn managed_table_via_bare_create_is_rejected() {
         let h = handler();
         let res = h
             .create_table(
@@ -549,54 +468,8 @@ mod tests {
                     schema_name: "sch".to_string(),
                     catalog_name: "cat".to_string(),
                     table_type: TableType::Managed.into(),
-                    data_source_format: DataSourceFormat::Parquet.into(),
+                    data_source_format: DataSourceFormat::Delta.into(),
                     storage_location: Some("s3://bucket/cat/__unitystorage/tables/x".to_string()),
-                    ..Default::default()
-                },
-                ctx(),
-            )
-            .await;
-        assert!(matches!(res, Err(Error::InvalidArgument(_))), "{res:?}");
-    }
-
-    /// A managed table whose storage_location has no matching staging table is
-    /// rejected: the reservation must be created first via `/staging-tables`.
-    #[tokio::test]
-    async fn managed_table_without_staging_reservation_is_rejected() {
-        let h = handler();
-        let res = h
-            .create_table(
-                CreateTableRequest {
-                    name: "t".to_string(),
-                    schema_name: "sch".to_string(),
-                    catalog_name: "cat".to_string(),
-                    table_type: TableType::Managed.into(),
-                    data_source_format: DataSourceFormat::Delta.into(),
-                    storage_location: Some(
-                        "s3://bucket/cat/__unitystorage/tables/unknown".to_string(),
-                    ),
-                    ..Default::default()
-                },
-                ctx(),
-            )
-            .await;
-        assert!(matches!(res, Err(Error::NotFound)), "{res:?}");
-    }
-
-    /// A managed table request without a storage_location (the staging location)
-    /// is rejected.
-    #[tokio::test]
-    async fn managed_table_without_storage_location_is_rejected() {
-        let h = handler();
-        let res = h
-            .create_table(
-                CreateTableRequest {
-                    name: "t".to_string(),
-                    schema_name: "sch".to_string(),
-                    catalog_name: "cat".to_string(),
-                    table_type: TableType::Managed.into(),
-                    data_source_format: DataSourceFormat::Delta.into(),
-                    storage_location: None,
                     ..Default::default()
                 },
                 ctx(),
