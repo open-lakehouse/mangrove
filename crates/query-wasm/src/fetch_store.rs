@@ -124,14 +124,11 @@ impl UcFetchStore {
             }
             request
         };
-        let mut response = request.send().await.map_err(network_err)?;
+        let mut response = no_store(request).send().await.map_err(network_err)?;
 
         // Some hosts reject HEAD; retry as a zero-length ranged GET.
         if options.head && matches!(response.status().as_u16(), 405 | 501) {
-            response = self
-                .client
-                .get(url)
-                .header("Range", "bytes=0-0")
+            response = no_store(self.client.get(url).header("Range", "bytes=0-0"))
                 .send()
                 .await
                 .map_err(network_err)?;
@@ -218,6 +215,31 @@ impl UcFetchStore {
 /// what a CORS rejection looks like. Tagged so callers can classify it.
 fn network_err(err: reqwest::Error) -> object_store::Error {
     generic_err(format!("network/CORS: {err}"))
+}
+
+/// Force the browser to bypass its HTTP cache for a storage request.
+///
+/// Storage URLs (`_delta_log` commits/checkpoints and parquet data) are stable
+/// across preview runs — Azurite's emulator endpoint is credential-free and even
+/// a vended SAS repeats within its validity window — so the browser's default
+/// HTTP cache keys identically run to run. A cached response replayed to a
+/// *ranged* parquet read (footer/page GET) on a repeat visit yields a parquet
+/// decode error rather than a fresh body: the preview loads once, then fails on
+/// the second visit. `no-store` makes every request hit the network, so each run
+/// reads the bytes it actually asked for.
+///
+/// `RequestBuilder::fetch_cache_no_store` is a wasm-only method on reqwest's
+/// fetch backend; native builds (the shared test path) pass the builder through
+/// unchanged.
+fn no_store(request: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+    #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+    {
+        request.fetch_cache_no_store()
+    }
+    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+    {
+        request
+    }
 }
 
 fn make_result(
