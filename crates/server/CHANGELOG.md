@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.3](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.2...olai-uc-server-v0.0.3) - 2026-07-16
+
+### Changed
+
+- [**breaking**] drop the undeveloped gRPC feature + fix crate README publishing (#101)
+
 ## [0.0.2](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.1...olai-uc-server-v0.0.2) - 2026-07-16
 
 ### Fixed
