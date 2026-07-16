@@ -12,13 +12,13 @@
 //! `deltalake_wasm::query_ipc`, whose chunks form one incremental stream and
 //! only parse when concatenated.
 //!
-//! The scan engine is the `sm_plans`-driven [`DeltaSsaTableProvider`], which
-//! streams data files lazily through DataFusion's own async object-store stack —
-//! **no inline executor** on the scan path. Snapshot *construction* still runs
-//! through the `deltalake_wasm` facade (which threads `max_catalog_version` for
-//! catalog-managed tables); the native tests drive that build with an
-//! [`InlineExecutor`](deltalake_core::kernel::InlineExecutor) over an in-memory
-//! store — the browser execution model minus the network.
+//! Both snapshot construction *and* the scan are now async-native and engine-free.
+//! Construction drives the kernel `sm_plans` P&M state machine over the discovered
+//! `_delta_log` manifest ([`build_snapshot_from_manifest`]) — list-free (no
+//! directory listing) and with **no `PrimedStore` prefetch** and **no
+//! `InlineExecutor`**. The scan is the `sm_plans`-driven [`DeltaSsaTableProvider`],
+//! which streams data files lazily through DataFusion's own async object-store
+//! stack. The `deltalake_wasm` facade is no longer on this path.
 
 use std::sync::Arc;
 
@@ -27,6 +27,8 @@ use arrow_ipc::writer::StreamWriter;
 use arrow_schema::SchemaRef;
 use datafusion::catalog::memory::{MemoryCatalogProvider, MemorySchemaProvider};
 use datafusion::execution::context::SessionContext;
+use datafusion::execution::runtime_env::RuntimeEnv;
+use datafusion::prelude::SessionConfig;
 use datafusion::sql::TableReference;
 use datafusion::sql::parser::DFParserBuilder;
 use futures::StreamExt;
@@ -34,11 +36,22 @@ use futures::stream::BoxStream;
 use object_store::ObjectStore;
 use url::Url;
 
-use delta_df_provider::{DeltaSsaScanConfig, DeltaSsaTableProvider};
-use deltalake_wasm::{LogSource, OpenOptions, OpenedTable, open_table_with_store};
+use delta_df_provider::{
+    DeltaSsaScanConfig, DeltaSsaTableProvider, FileMeta, SnapshotRef, build_snapshot_from_manifest,
+};
 
 use crate::error::{Error, Result};
 use crate::resolve::DiscoveredLog;
+
+/// An opened Delta table ready to register and query: the query [`SessionContext`] (with the
+/// vended-credential object store registered and view types forced off) plus the async-native
+/// kernel [`SnapshotRef`] the scan provider reads.
+pub struct OpenedTable {
+    /// The query session — `register_table` and `execute_chunks` run against this.
+    pub ctx: SessionContext,
+    /// The kernel snapshot, built list-free and engine-free from the discovered manifest.
+    pub snapshot: SnapshotRef,
+}
 
 /// The Unity Catalog address a query's table reference resolves to.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -141,22 +154,68 @@ pub async fn open_table(
     store: Arc<dyn ObjectStore>,
     table_url: &Url,
     log: DiscoveredLog,
-    max_catalog_version: Option<u64>,
-    executor: Option<deltalake_core::kernel::ExecutorHandle>,
+    _max_catalog_version: Option<u64>,
 ) -> Result<OpenedTable> {
-    let opened = open_table_with_store(
-        store,
-        table_url,
-        LogSource::Manifest(log.manifest),
-        OpenOptions {
-            version: Some(log.version),
-            max_catalog_version,
-            executor,
-            ..OpenOptions::default()
-        },
-    )
-    .await?;
-    Ok(opened)
+    // Build the query session with the vended-credential store registered under the table's
+    // authority and Arrow view types forced off (the browser IPC reader can't decode them;
+    // mangrove #28). Single-partition / no-repartition mirrors the wasm execution model.
+    let ctx = build_query_session(Arc::clone(&store), table_url);
+
+    // Absolute-URL the discovered manifest into kernel `FileMeta`s. `DiscoveredLog.manifest`
+    // carries store-relative `Path`s (from HEAD probes); resolve each against the table URL's
+    // origin so the kernel log paths match what the session store serves.
+    let manifest: Vec<FileMeta> = log
+        .manifest
+        .iter()
+        .map(|meta| {
+            let mut url = table_url.clone();
+            url.set_path(&format!("/{}", meta.location));
+            FileMeta {
+                location: url,
+                last_modified: 0,
+                size: meta.size,
+            }
+        })
+        .collect();
+
+    // Async-native, list-free, engine-free snapshot construction — no `PrimedStore` prefetch and
+    // no `InlineExecutor`. `max_catalog_version` is encoded by the pinned `log.version` (the
+    // catalog's ratified version drives the manifest's newest commit in `resolve.rs`), so the P&M
+    // replay resolves exactly that version.
+    let snapshot = build_snapshot_from_manifest(&ctx, table_url, manifest, log.version)?;
+
+    Ok(OpenedTable { ctx, snapshot })
+}
+
+/// Build the single-partition query [`SessionContext`] the preview runs on: the vended-credential
+/// `store` registered under `table_url`'s origin, and `parquet.schema_force_view_types = false` so
+/// the physical reader emits plain `Utf8`/`Binary` (the browser arrow-js IPC reader can't decode
+/// `Utf8View`/`BinaryView`; mangrove #28). Mirrors the former `deltalake_wasm::session` shape minus
+/// the delta-rs-specific planner (the async-native provider needs none).
+fn build_query_session(store: Arc<dyn ObjectStore>, table_url: &Url) -> SessionContext {
+    let mut config = SessionConfig::new()
+        .with_target_partitions(1)
+        .with_round_robin_repartition(false)
+        .with_repartition_joins(false)
+        .with_repartition_aggregations(false)
+        .with_repartition_windows(false)
+        .with_repartition_sorts(false)
+        .with_repartition_file_scans(false);
+    config
+        .options_mut()
+        .execution
+        .parquet
+        .schema_force_view_types = false;
+    let ctx = SessionContext::new_with_config_rt(config, Arc::new(RuntimeEnv::default()));
+
+    // Register the store under the table URL's origin (scheme://authority/), matching how the
+    // kernel/DataFusion resolve object stores by `ObjectStoreUrl` authority.
+    let mut base = table_url.clone();
+    base.set_path("/");
+    base.set_query(None);
+    base.set_fragment(None);
+    ctx.runtime_env().register_object_store(&base, store);
+    ctx
 }
 
 /// Register the opened table's scan under exactly the name `reference` resolves
@@ -197,40 +256,22 @@ pub fn register_table(
         }
     };
 
-    // Disable Arrow "view" types (Utf8View/BinaryView): arrow-rs 58 / DataFusion
-    // materializes string & binary columns as view types by default, but the
-    // browser-side apache-arrow IPC reader can't decode them in any published
-    // release — its `Type` enum stops at `LargeUtf8 = 20`, so a Utf8View field
-    // (id 24) hits no case and throws "Unrecognized type: undefined (24)".
-    // Reading them as plain Utf8/Binary keeps the emitted IPC within the JS
-    // reader's vocabulary.
-    //
-    // This is an *unreleased* upstream gap, not a permanent one: apache/arrow-js
-    // added BinaryView/Utf8View read support on `main` (PR #320), but the latest
-    // npm release / git tag is still 21.1.0 and lacks it. Drop this override
-    // once a release ships the reader — tracked in
-    // https://github.com/open-lakehouse/mangrove/issues/28.
-    //
-    // The `DeltaSsaTableProvider` reads parquet through DataFusion's own source, which honors
-    // the session-level `datafusion.execution.parquet.schema_force_view_types` knob. Set it to
-    // `false` on the facade session so the physical reader emits plain `Utf8`/`Binary`; the
-    // provider config records the same intent and asserts the two agree at scan time.
-    ctx.state_ref()
-        .write()
-        .config_mut()
-        .options_mut()
-        .execution
-        .parquet
-        .schema_force_view_types = false;
+    // Arrow "view" types (Utf8View/BinaryView) are forced off on the query session at build time
+    // (see `build_query_session`): arrow-rs 58 / DataFusion materialize string & binary columns as
+    // view types by default, but the browser-side apache-arrow IPC reader can't decode them in any
+    // published release — its `Type` enum stops at `LargeUtf8 = 20`, so a Utf8View field (id 24)
+    // hits no case and throws "Unrecognized type: undefined (24)". Reading them as plain
+    // Utf8/Binary keeps the emitted IPC within the JS reader's vocabulary. This is an *unreleased*
+    // upstream gap (apache/arrow-js PR #320 adds view support on `main`; latest release 21.1.0
+    // lacks it) — drop the override once a release ships the reader (mangrove #28). The provider
+    // config records the same intent and asserts it against the session at scan time.
     let scan_config = DeltaSsaScanConfig {
         schema_force_view_types: false,
     };
-    // Extract the kernel `SnapshotRef` from the facade-opened table (via the additive fork
-    // accessor) and hand it to the async-native, sm_plans-driven provider — replacing the eager
-    // `DeltaScanNext` + InlineExecutor scan path. Snapshot *construction* still goes through the
-    // facade above (it correctly threads `max_catalog_version` for catalog-managed tables); only
-    // the scan engine changes.
-    let scan = DeltaSsaTableProvider::new(opened.snapshot.kernel_snapshot(), scan_config)?;
+    // Hand the async-native kernel `SnapshotRef` (built list-free + engine-free from the discovered
+    // manifest, no `PrimedStore` prefetch) to the sm_plans-driven provider — the full construction
+    // + scan path is now async-native.
+    let scan = DeltaSsaTableProvider::new(opened.snapshot.clone(), scan_config)?;
     schema.register_table(resolved.table.to_string(), Arc::new(scan))?;
     Ok(())
 }
