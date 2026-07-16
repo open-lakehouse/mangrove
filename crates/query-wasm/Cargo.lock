@@ -313,6 +313,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-stream"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b5a71a6f37880a80d1d7f19efd781e4b5de42c88f0722cc13bcb6cc2cfe8476"
+dependencies = [
+ "async-stream-impl",
+ "futures-core",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "async-stream-impl"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7c24de15d275a1ecfd47a380fb4d5ec9bfe0933f309ed5e705b775596a3574d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1504,7 +1526,7 @@ dependencies = [
 [[package]]
 name = "delta_kernel"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=530e94d241779dfc17eda242f554b24091e00d23#530e94d241779dfc17eda242f554b24091e00d23"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=2cf015496d437859e836aaffa39cc128507b5f52#2cf015496d437859e836aaffa39cc128507b5f52"
 dependencies = [
  "arrow",
  "bytes",
@@ -1536,13 +1558,17 @@ dependencies = [
 [[package]]
 name = "delta_kernel_default_engine"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=530e94d241779dfc17eda242f554b24091e00d23#530e94d241779dfc17eda242f554b24091e00d23"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=2cf015496d437859e836aaffa39cc128507b5f52#2cf015496d437859e836aaffa39cc128507b5f52"
 dependencies = [
+ "async-stream",
+ "async-trait",
  "bytes",
+ "chrono",
  "delta_kernel",
  "futures",
  "itertools",
  "reqwest 0.13.4",
+ "serde_json",
  "tokio",
  "tracing",
  "url",
@@ -1552,7 +1578,7 @@ dependencies = [
 [[package]]
 name = "delta_kernel_derive"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=530e94d241779dfc17eda242f554b24091e00d23#530e94d241779dfc17eda242f554b24091e00d23"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=2cf015496d437859e836aaffa39cc128507b5f52#2cf015496d437859e836aaffa39cc128507b5f52"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1561,8 +1587,8 @@ dependencies = [
 
 [[package]]
 name = "deltalake-core"
-version = "1.0.0"
-source = "git+https://github.com/roeap/delta-rs?rev=8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c#8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c"
+version = "0.32.4"
+source = "git+https://github.com/roeap/delta-rs?rev=b7bef0748060fd27013c19f7eaeb296de2daabf5#b7bef0748060fd27013c19f7eaeb296de2daabf5"
 dependencies = [
  "alloc-stdlib",
  "arrow",
@@ -1619,8 +1645,8 @@ dependencies = [
 
 [[package]]
 name = "deltalake-derive"
-version = "1.0.0"
-source = "git+https://github.com/roeap/delta-rs?rev=8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c#8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c"
+version = "0.32.4"
+source = "git+https://github.com/roeap/delta-rs?rev=b7bef0748060fd27013c19f7eaeb296de2daabf5#b7bef0748060fd27013c19f7eaeb296de2daabf5"
 dependencies = [
  "convert_case",
  "itertools",
@@ -1632,7 +1658,7 @@ dependencies = [
 [[package]]
 name = "deltalake-wasm"
 version = "0.1.0"
-source = "git+https://github.com/roeap/delta-rs?rev=8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c#8b9181d5ebd3f0a30dfbe173d9fffb5cbb97ed8c"
+source = "git+https://github.com/roeap/delta-rs?rev=b7bef0748060fd27013c19f7eaeb296de2daabf5#b7bef0748060fd27013c19f7eaeb296de2daabf5"
 dependencies = [
  "arrow-ipc",
  "async-trait",
@@ -3256,6 +3282,7 @@ dependencies = [
  "rustls-platform-verifier",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "sync_wrapper",
  "tokio",
  "tokio-rustls",
@@ -4671,3 +4698,11 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
+
+[[patch.unused]]
+name = "olai-http"
+version = "0.0.6"
+
+[[patch.unused]]
+name = "olai-store"
+version = "0.0.6"

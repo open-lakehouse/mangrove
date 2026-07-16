@@ -45,13 +45,22 @@ keywords = [
 # dependency (git-sourced included) that lacks a version requirement. The
 # `git`+`rev` still governs the actual build; `version` only satisfies the
 # packaging check and matches each fork's declared version. See release-plz#2595.
-delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "530e94d241779dfc17eda242f554b24091e00d23", features = [
+# Pinned to the delta-kernel-rs `sm-plans-consolidation` line (rev 2cf01549) and
+# the matching delta-rs `feat/sm-plans-kernel` (rev b7bef074), converging native
+# + wasm (crates/query-wasm) on ONE kernel rev. `default-features = false` +
+# explicit `arrow-58` is REQUIRED: the kernel's `arrow` default alias is arrow-59
+# and delta_kernel_default_engine's `default` enables it, so leaving defaults on
+# unions arrow-59 into this arrow-58 graph and splits the two `Schema` types.
+delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "2cf015496d437859e836aaffa39cc128507b5f52", default-features = false, features = [
   "internal-api",
   "default-engine-base",
   "arrow-58",
 ] }
-delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "530e94d241779dfc17eda242f554b24091e00d23", package = "delta_kernel_default_engine" }
-deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "f24c9f344d9ccb87958065fdf34659524328fafe", features = [
+delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "2cf015496d437859e836aaffa39cc128507b5f52", package = "delta_kernel_default_engine", default-features = false, features = [
+  "arrow-58",
+  "rustls",
+] }
+deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "b7bef0748060fd27013c19f7eaeb296de2daabf5", features = [
   "datafusion",
   "cloud",
 ] }
