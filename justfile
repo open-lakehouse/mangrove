@@ -208,9 +208,14 @@ rest-ui-wasm *args: ui-build-wasm
     RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- serve {{ args }}
 
 # Full "explore the wasm UI with real data" flow: build the wasm SPA, start the
-# server against Azurite-backed managed storage, seed a preview-able managed
-# Delta table, then serve the API + SPA on one origin. Open the printed URL and
-# browse to demo.default.orders to run the in-browser query preview.
+# server against Azurite-backed managed storage, seed a few preview-able managed
+# Delta tables, then serve the API + SPA on one origin. Open the printed URL and
+# browse to demo.default.customers / demo.default.orders to run the in-browser
+# query preview.
+#
+# Uses the same `seed_managed_tables` example as `just ui-dev` (create + append,
+# no read-back — avoids the delta-rs nested-runtime panic), so the wasm preview
+# gets the same varied sample data the UI dev-server flow does.
 #
 # On Ctrl-C (or any exit) it shuts down gracefully: SIGTERMs the server, tears
 # down the Azurite container, and unstages ./web — leaving no stray process,
@@ -269,14 +274,15 @@ rest-ui-wasm-seeded: ui-build-wasm
     # Seed Azurite + UC (container, CORS, credential, external location, catalog,
     # schema). The script waits for the server's /catalogs to answer.
     bash dev/scripts/seed-azurite.sh
-    # Write a real managed Delta table (create + append + publish/backfill) so the
-    # wasm preview has data. Reuses the end-to-end example.
-    echo "[seed] writing managed Delta table demo.default.orders…"
-    UC_ENDPOINT=http://localhost:8080/api/2.1/unity-catalog/ \
-    UC_CATALOG=demo UC_SCHEMA=default UC_TABLE=orders \
-        cargo run -p olai-uc-datafusion --features delta --example managed_table_azurite
+    # Write a few real managed Delta tables (create + append) with varied sample
+    # data so the wasm preview has something interesting to query. Same example
+    # `just ui-dev` uses — cloud-agnostic (works against Azurite) and idempotent.
+    echo "[seed] seeding sample managed tables…"
+    UC_ENDPOINT="http://localhost:8080/api/2.1/unity-catalog/" \
+    UC_CATALOG="${UC_CATALOG:-demo}" UC_SCHEMA="${UC_SCHEMA:-default}" \
+        cargo run -p olai-uc-datafusion --features delta --example seed_managed_tables
     echo ""
-    echo "[seed] ready — open http://localhost:8080 and browse to demo.default.orders"
+    echo "[seed] ready — open http://localhost:8080 and browse to demo.default.customers / demo.default.orders"
     echo "[seed] (Ctrl-C to stop the server and clean up Azurite + ./web)"
     wait "$server_pid"
 
