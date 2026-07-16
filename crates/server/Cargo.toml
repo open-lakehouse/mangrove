@@ -5,7 +5,11 @@ description = "Unity Catalog REST and gRPC server with pluggable storage backend
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-readme.workspace = true
+# Crate-local README (not the workspace one): `readme.workspace = true` would
+# inherit the workspace `readme = "README.md"`, which Cargo resolves relative to
+# the WORKSPACE ROOT — so the generic root README shipped as this crate's page.
+# Point at the crate's own tailored README instead.
+readme = "README.md"
 rust-version.workspace = true
 homepage.workspace = true
 keywords.workspace = true
