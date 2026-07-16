@@ -68,6 +68,15 @@ jobs:
       - name: Check UI fingerprint is in sync
         run: just ui-fingerprint-check
 
+      # The server crate embeds the OpenAPI specs via include_str! for Swagger UI.
+      # The canonical specs are at the repo root, but a cargo-publish tarball only
+      # contains files under the crate, so the crate keeps byte-identical copies in
+      # crates/server/openapi/. Fail the PR if those copies drifted from the
+      # canonical openapi/*.yaml — else the published crate would ship a stale spec.
+      # See `just sync-server-openapi`.
+      - name: Check server OpenAPI copies are in sync
+        run: just sync-server-openapi-check
+
   clippy:
     name: clippy
     runs-on: ubuntu-latest
