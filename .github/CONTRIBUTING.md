@@ -7,6 +7,13 @@
 - Rust toolchain ([install instructions](https://www.rust-lang.org/tools/install))
 - buf ([install instructions](https://buf.build/docs/installation))
 - just ([install instructions](https://just.systems/man/en/))
+- bun ([install instructions](https://bun.sh/docs/installation))
+
+Behind the Databricks corporate network, point your user-level `~/.npmrc` at the
+internal npm mirror (`registry=https://npm-proxy.cloud.databricks.com/`). `bun.lock`
+stores the mirror host in each tarball URL, so installs go through the proxy
+instead of hitting `registry.npmjs.org` directly (which fails TLS inspection).
+CI and Docker builds rewrite those URLs to the public registry at install time.
 
 ## Generated Code
 
@@ -31,6 +38,7 @@ and by our custom code to provide boilerplate server/client implementations.
 Run the complete generation sequence:
 
 ```sh
+bun install
 just generate
 ```
 

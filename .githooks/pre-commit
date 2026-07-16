@@ -1,0 +1,58 @@
+#!/usr/bin/env sh
+#
+# Repo pre-commit hook.
+#
+# 1. Delegates to any globally-configured hooks (e.g. the Databricks gitleaks
+#    secret scanner). A repo-local core.hooksPath overrides the global one, so
+#    we re-invoke the global hook here to avoid disabling it for this repo.
+# 2. Strips npm registry proxy URLs out of bun.lock so they never get committed.
+# 3. Regenerates crates/server/ui.lock when node/ UI files are staged.
+# 4. Verifies Cargo.lock trestle crates still list crates.io registry entries.
+#
+set -e
+
+# --- 1) Run globally-configured hooks, if any -------------------------------
+global_hooks="$(git config --global core.hooksPath 2>/dev/null || true)"
+if [ -n "$global_hooks" ]; then
+  case "$global_hooks" in
+    "~"*) global_hooks="$HOME${global_hooks#\~}" ;;
+  esac
+  if [ -x "$global_hooks/pre-commit" ]; then
+    "$global_hooks/pre-commit" "$@" || exit $?
+  fi
+fi
+
+# --- 2) Strip proxy URLs from bun.lock when staged --------------------------
+if git diff --cached --name-only | grep -qx 'bun.lock'; then
+  if command -v bun >/dev/null 2>&1; then
+    bun run scripts/strip-bun-lock-proxy.ts
+    git add bun.lock
+  else
+    echo "pre-commit: 'bun' not found; skipping bun.lock proxy strip" >&2
+  fi
+fi
+
+# --- 3) Keep UI fingerprint in sync when node/ or ui.lock is staged ---------
+STAGED=$(git diff --cached --name-only)
+if echo "$STAGED" | grep -qE '^(node/|crates/server/ui\.lock)'; then
+  if command -v just >/dev/null 2>&1; then
+    if echo "$STAGED" | grep -q '^node/'; then
+      just ui-fingerprint
+      git add crates/server/ui.lock
+    fi
+    if ! just ui-fingerprint-check; then
+      echo "pre-commit: crates/server/ui.lock is out of sync with node/." >&2
+      echo "  Run: just ui-fingerprint" >&2
+      exit 1
+    fi
+  else
+    echo "pre-commit: 'just' not found; skipping ui-fingerprint check" >&2
+  fi
+fi
+
+# --- 4) Cargo.lock must list olai-http/olai-store from crates.io when staged ----
+if git diff --cached --name-only | grep -qx 'Cargo.lock'; then
+  if ! bash scripts/check-cargo-lock-trestle.sh; then
+    exit 1
+  fi
+fi

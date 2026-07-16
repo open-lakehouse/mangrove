@@ -6,13 +6,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # Fetch npm packages from the public registry in CI. Local dev resolves through
-  # the internal mirror (npm-proxy.cloud.databricks.com) via the developer's own
-  # ~/.npmrc, which bakes mirror hosts into package-lock.json `resolved` URLs that
-  # GitHub runners can't reach. This env override + npm's default
-  # `replace-registry-host=npmjs` rewrites those hosts at fetch time, so CI works
-  # without a committed .npmrc (which would break local installs behind the proxy).
-  npm_config_registry: https://registry.npmjs.org/
 
 jobs:
   typos:
@@ -30,14 +23,19 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
+          bun-version: 1.3.14
 
+      # bun.lock must ship with empty resolution fields (no private registry proxy
+      # URLs). Fail fast if a PR bakes them in; do not mutate the lockfile here —
+      # that would defeat --frozen-lockfile. Run `bun run strip-lock-proxy` locally
+      # before opening a PR (the pre-commit hook does this when bun.lock is staged).
       - name: Install dependencies
-        run: npm install
-        working-directory: node/client
+        run: |
+          bun run scripts/strip-bun-lock-proxy.ts --check
+          bun install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
+        run: bun run lint
         working-directory: node/client

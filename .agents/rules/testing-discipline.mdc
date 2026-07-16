@@ -1,0 +1,95 @@
+---
+description: All code changes must be accompanied by tests. Never delete passing tests. Target ~80% coverage.
+alwaysApply: true
+---
+
+# Testing Discipline
+
+## Core Principles
+
+1. **Every change ships with tests.** No production code is considered complete without corresponding test coverage.
+2. **Never delete a passing test.** If a test fails after a code change, fix the code or update the test to match the new correct behavior — do not remove it.
+3. **Target ~80% coverage** across methods and conditional branches (if/else, switch, error paths).
+
+## Rust Testing Standards
+
+- Unit tests live in `#[cfg(test)]` modules; integration and acceptance tests live in `tests/` or `crates/acceptance/`.
+- Use `rstest` for parameterized tests with multiple input scenarios.
+- Name tests clearly: `test_<functionality>` or descriptive `#[test]` names (e.g. `parse_lineage_empty_input`).
+- Test the happy path **and** error/edge cases for every exported function.
+- Run the workspace suite with `cargo nextest run --workspace --all-features`.
+- Run doctests with `cargo test --workspace --doc` (nextest does not run them).
+
+## Go Testing Standards
+
+- Use the standard `testing` package. Prefer table-driven tests for functions with multiple input scenarios.
+- Place test files alongside source files (`foo.go` -> `foo_test.go`).
+- Name tests clearly: `TestFunctionName_Scenario` (e.g. `TestParseLineage_EmptyInput`).
+- Test both the happy path **and** error/edge cases for every exported function.
+
+## TypeScript Testing Standards
+
+- Use `bun:test` (Bun's built-in test runner).
+- Place test files alongside source (`foo.ts` -> `foo.test.ts`) or in `__test__/` directories.
+- Name tests clearly and group related cases with `describe` / `test` blocks.
+- Test the happy path **and** error/edge cases for exported functions and public APIs.
+- Prefer deterministic fixtures; mock network and filesystem boundaries in unit tests.
+
+## Coverage Workflow
+
+### Rust
+
+- After writing or modifying code, collect coverage with:
+
+  ```bash
+  cargo llvm-cov nextest --workspace --all-features --lcov --output-path lcov.info
+  ```
+
+- For doctest coverage:
+
+  ```bash
+  cargo llvm-cov --doc --workspace --all-features --lcov --output-path lcov.info
+  ```
+
+- Upload `lcov.info` via the Codecov GitHub Action.
+- Use `cargo llvm-cov report` (or `--text` / `--html`) for local review.
+- Flag any exported function below 80% branch coverage and add tests before considering work complete.
+
+### Go
+
+- Go has no native `--lcov` flag. Collect coverage with `go test`, then convert to LCOV with `gcov2lcov`:
+
+  ```bash
+  go test ./... -coverprofile=coverage.out
+  go install github.com/jandelgado/gcov2lcov@latest
+  gcov2lcov -infile=coverage.out -outfile=lcov.info
+  ```
+
+- Use `go tool cover -func=coverage.out` for local per-function review.
+- Upload `lcov.info` via the Codecov GitHub Action.
+- Flag any exported function below 80% branch coverage and add tests before considering work complete.
+
+### TypeScript
+
+- Collect coverage with:
+
+  ```bash
+  bun test --coverage --coverage-reporter=lcov
+  ```
+
+  Writes `coverage/lcov.info` for Codecov upload (same LCOV format as Rust and Go).
+
+- Shortcut from the repo root:
+
+  ```bash
+  bun run test:coverage
+  ```
+
+- Upload `coverage/lcov.info` via the Codecov GitHub Action.
+- Review the console table for files below 80% line coverage and add tests before considering work complete.
+
+## What Not To Do
+
+- Do not write tests that assert on non-deterministic values (timestamps, random IDs) without controlling the input.
+- Do not skip flaky tests permanently — fix the root cause.
+- Do not delete or comment out tests to make a suite pass.

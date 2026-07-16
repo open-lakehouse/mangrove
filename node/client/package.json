@@ -44,7 +44,7 @@
   },
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "npm run build:debug && npm run tsc && shx cp unitycatalog/codegen/*.node dist/codegen/",
+    "build": "bun run build:debug && bun run tsc && shx cp unitycatalog/codegen/*.node dist/codegen/",
     "build:release": "napi build --platform --release --output-dir unitycatalog/codegen",
     "build:debug": "napi build --platform --output-dir unitycatalog/codegen --dts native.d.ts --js native.js",
     "tsc": "tsc -b",

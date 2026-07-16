@@ -2,6 +2,14 @@ mod dev 'dev/justfile'
 
 set dotenv-load
 
+# Patch olai-http / olai-store from the local trestle checkout (.cargo/config.toml,
+# gitignored). Run once per clone when crates.io or a corporate proxy cannot resolve
+# the published versions. Requires `trestle` on PATH and a source checkout (../trestle
+# or TRESTLE_ROOT).
+[group('dev')]
+configure-trestle-deps:
+    {{ justfile_directory() }}/dev/scripts/configure-trestle-deps.sh
+
 # Show available commands
 _default:
     @just --list --justfile {{ justfile() }}
@@ -39,27 +47,27 @@ generate-openapi-sharing:
       openapi/sharing-query-paths.yaml \
       openapi/sharing.yaml
     rm -rf {{ justfile_directory() }}/openapi/sharing-gen
-    npx -y @redocly/cli bundle openapi/sharing.yaml > /dev/null
+    bunx @redocly/cli bundle openapi/sharing.yaml > /dev/null
 
 # Update the generated openapi spec with validation extracted from generated jsonschema.
 [group('codegen')]
 generate-openapi:
     buf generate --template '{"version":"v2","plugins":[{"remote":"buf.build/bufbuild/protoschema-jsonschema:v0.6.0","opt": ["target=proto-strict-bundle"], "out":"openapi/jsonschema"}]}' proto
     buf build --output {{ justfile_directory() }}/descriptors.bin proto/unitycatalog
-    cargo run --manifest-path ../trestle/crates/trestle/Cargo.toml --bin trestle -- enrich-openapi \
+    trestle enrich-openapi \
       --jsonschema-dir openapi/jsonschema \
       --descriptors {{ justfile_directory() }}/descriptors.bin
     rm -f {{ justfile_directory() }}/descriptors.bin
     rm -rf openapi/jsonschema
-    npx -y @redocly/cli bundle --remove-unused-components openapi/openapi.yaml > tmp.yaml
+    bunx @redocly/cli bundle --remove-unused-components openapi/openapi.yaml > tmp.yaml
     mv tmp.yaml openapi/openapi.yaml
-    npm run openapi
+    bun run openapi
 
 # generate rest server and client code with build crate.
 [group('codegen')]
 generate-code:
     buf build --output {{ justfile_directory() }}/descriptors.bin proto/unitycatalog
-    cargo run --manifest-path ../trestle/crates/trestle/Cargo.toml --bin trestle -- generate --config trestle.yaml \
+    trestle generate --config trestle.yaml \
       --descriptors {{ justfile_directory() }}/descriptors.bin
     rm {{ justfile_directory() }}/descriptors.bin
     just fmt
@@ -92,7 +100,7 @@ generate-code:
 [group('codegen')]
 generate-code-sharing:
     buf build --output {{ justfile_directory() }}/sharing-descriptors.bin proto/sharing
-    cargo run --manifest-path ../trestle/crates/trestle/Cargo.toml --bin trestle -- generate --config trestle.sharing.yaml \
+    trestle generate --config trestle.sharing.yaml \
       --descriptors {{ justfile_directory() }}/sharing-descriptors.bin
     rm {{ justfile_directory() }}/sharing-descriptors.bin
     just fmt
@@ -117,9 +125,12 @@ generate-query-contract:
 # Regenerate proto-gen test fixture descriptors from proto/ source files.
 [group('codegen')]
 generate-proto-gen-fixtures:
-    buf dep update ../trestle/crates/trestle-codegen/proto
-    buf build --output {{ justfile_directory() }}/../trestle/crates/olai-codegen/proto/example.bin \
-      ../trestle/crates/olai-codegen/proto/
+    #!/usr/bin/env bash
+    set -euo pipefail
+    trestle_root="$({{ justfile_directory() }}/dev/scripts/trestle-root.sh)"
+    buf dep update "$trestle_root/crates/trestle-codegen/proto"
+    buf build --output "$trestle_root/crates/olai-codegen/proto/example.bin" \
+      "$trestle_root/crates/olai-codegen/proto/"
 
 # run the development REST server (ephemeral in-memory SQLite; auto-migrated)
 [group('dev')]
@@ -308,7 +319,7 @@ ui-dev:
 # build the bundled single-page app into node/app/dist
 [group('build')]
 ui-build:
-    npm run build --workspace @open-lakehouse/uc-app
+    bun run --filter @open-lakehouse/uc-app build
 
 # one-time toolchain setup for the in-browser query engine (crates/query-wasm)
 [group('setup')]
@@ -332,19 +343,19 @@ build-query-wasm:
 # (default `ui-build` ships neither; see node/app/vite.config.ts)
 [group('build')]
 ui-build-wasm: build-query-wasm
-    VITE_ENABLE_WASM_QUERY=true VITE_ENABLE_PREVIEW=true npm run build --workspace @open-lakehouse/uc-app
+    VITE_ENABLE_WASM_QUERY=true VITE_ENABLE_PREVIEW=true bun run --filter @open-lakehouse/uc-app build
 
 docs:
-    npm run dev -w docs
+    bun run --filter docs dev
 
 # validate code examples type-check and docs build successfully
 [group('test')]
 validate-examples:
     cargo check -p unitycatalog-examples
     uvx ty check examples/python/
-    npm run build -w @unitycatalog/client
-    npx tsc --noEmit -p examples/typescript/tsconfig.json
-    npm run build -w docs
+    bun run --filter @unitycatalog/client build
+    bunx tsc --noEmit -p examples/typescript/tsconfig.json
+    bun run --filter docs build
 
 # build python bindings
 [group('build')]
@@ -384,7 +395,7 @@ build-py-server:
 # build node bindings
 [group('build')]
 build-node:
-    npm run build -w @unitycatalog/client
+    bun run --filter @unitycatalog/client build
 
 # build the server Docker image (mangrove): builds the bundled UI + the
 # `uc-server` binary and assembles the distroless runtime with the SPA at ./web.
@@ -444,7 +455,7 @@ build-sqlx: _start_pg_sqlx
     # present too. Apply olai-store's own Postgres migrations first (piped straight
     # in, bypassing the `_sqlx_migrations` ledger so the two migration sources don't
     # collide on it), then the mangrove-local `delta_commits` schema.
-    cat ../trestle/crates/olai-store/migrations/postgres/*.sql \
+    cat "$(bash {{ justfile_directory() }}/dev/scripts/trestle-root.sh)/crates/olai-store/migrations/postgres"/*.sql \
         | docker exec -i unitycatalog-sqlx-pg psql -U postgres -d postgres -v ON_ERROR_STOP=1
     DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres cargo sqlx migrate run --source ./crates/postgres/migrations
     # Prepare the postgres crate's queries from its OWN directory (not
@@ -496,13 +507,13 @@ _stop_pg_sqlx:
 
 [group('test')]
 test-node:
-    npm run test -w @unitycatalog/client
+    bun run --filter @unitycatalog/client test
 
 # run node integration tests (starts UC server automatically)
 [group('test')]
 test-node-integration:
-    npm run build -w @unitycatalog/client
-    npm run test:integration -w @unitycatalog/client
+    bun run --filter @unitycatalog/client build
+    bun run --filter @unitycatalog/client test:integration
 
 # Run the portable baseline conformance battery against the open-source Java
 # Unity Catalog server. Boots the server via docker compose, waits for its
@@ -582,14 +593,14 @@ record-managed:
 
 # lint nodejs bindings
 lint-node:
-    npm run lint -w @unitycatalog/client
+    bun run --filter @unitycatalog/client lint
 
 fix: fix-rust fix-node fix-py
     just fmt
 
 # fix nodejs bindings
 fix-node:
-    npm run lint-fix -w @unitycatalog/client
+    bun run --filter @unitycatalog/client lint-fix
 
 # fix rust code
 fix-rust:
