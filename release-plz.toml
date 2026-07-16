@@ -176,18 +176,7 @@ release = false
 
 [[package]]
 name = "unitycatalog-acceptance"
-# Internal test harness (`publish = false` in its Cargo.toml), a workspace leaf
-# nothing depends on and never released to crates.io. `release = false` excludes
-# it from release-plz entirely (no update / tag / release, and — per the
-# docs — from the version-determination `cargo package` pass).
-#
-# This used to carry `git_only = true` + `publish = false` + tag/release-disable
-# as a workaround for the whole-workspace `cargo package` verify that a git_only
-# crate's version-determination triggered (the #55–#58 chain). That workaround
-# was a symptom of the release setup at the time; with the server posture cleaned
-# up, `release = false` is expected to suffice on its own. If a future Release PR
-# regresses with "dependency `olai-uc-client` does not specify a version" (or a
-# whole-workspace package failure), restore the `git_only = true` block.
+publish = false
 release = false
 
 # ---------------------------------------------------------------------------
