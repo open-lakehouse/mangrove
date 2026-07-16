@@ -38,19 +38,23 @@ publish = false
 name = "query_wasm"
 crate-type = ["cdylib", "rlib"]
 
-# The delta-rs wasm engine: pinned by immutable rev to the roeap fork's
-# `feat/sm-plans-kernel` branch (the sm-plans-consolidation kernel bump; a
-# superset of the earlier `feat/wasm-max-catalog-version`, so the
-# `OpenOptions.max_catalog_version` field this crate threads through is retained).
+# The delta-rs wasm engine: pinned by immutable rev to the roeap fork's durable
+# `olai/sm-plans` branch (rev a686c3be), the consolidation of the stacked
+# wasm/sm-plans line: the sm-plans-consolidation kernel bump, the
+# `feat/wasm-max-catalog-version` work (so the `OpenOptions.max_catalog_version`
+# field this crate threads through is retained), and the additive
+# `Snapshot::kernel_snapshot()` accessor (see below). The old per-step feature
+# branches were folded into `olai/sm-plans` and deleted.
 # Both deps resolve from one git source so `Snapshot`/`DeltaScanNext` types unify
 # with what `deltalake-wasm` returns, and it shares the SAME roeap `delta_kernel`
 # rev (2cf01549) as the native workspace (see ../../Cargo.toml) — one kernel pin
 # across the whole repo.
 [dependencies]
-# Bumped to a686c3be: `feat/sm-plans-kernel` (b7bef074) + the additive
-# `Snapshot::kernel_snapshot()` accessor the async-native provider needs to reach the kernel
-# `SnapshotRef` from a facade-opened table. Same kernel rev (2cf01549) as before — the accessor
-# is purely additive, so `Snapshot`/`OpenedTable` types are unchanged otherwise.
+# rev a686c3be = the `olai/sm-plans` tip: the `Snapshot::kernel_snapshot()`
+# accessor the async-native provider needs to reach the kernel `SnapshotRef` from
+# a facade-opened table, on top of the sm-plans-consolidation kernel bump. Same
+# kernel rev (2cf01549) as the native workspace — the accessor is purely additive,
+# so `Snapshot`/`OpenedTable` types are unchanged otherwise.
 deltalake-wasm = { git = "https://github.com/roeap/delta-rs", rev = "a686c3be5720c036efb80dded5fdaa995ebaab0c" }
 deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "a686c3be5720c036efb80dded5fdaa995ebaab0c", default-features = false, features = [
   "datafusion",
