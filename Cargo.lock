@@ -3954,9 +3954,9 @@ dependencies = [
  "olai-store",
  "olai-uc-client",
  "olai-uc-common",
- "olai-uc-datafusion",
  "olai-uc-delta-api",
  "olai-uc-postgres",
+ "olai-uc-sharing-api",
  "olai-uc-sharing-client",
  "olai-uc-sqlite",
  "percent-encoding",
@@ -3976,6 +3976,32 @@ dependencies = [
  "tracing-subscriber",
  "url",
  "uuid",
+]
+
+[[package]]
+name = "olai-uc-sharing-api"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "axum",
+ "axum-extra",
+ "bytes",
+ "chrono",
+ "datafusion",
+ "delta_kernel",
+ "delta_kernel_default_engine",
+ "itertools 0.14.0",
+ "object_store",
+ "olai-uc-common",
+ "olai-uc-datafusion",
+ "olai-uc-sharing-client",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tracing",
+ "url",
 ]
 
 [[package]]

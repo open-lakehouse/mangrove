@@ -107,6 +107,15 @@ changelog_path = "crates/sharing-client/CHANGELOG.md"
 release = false
 
 [[package]]
+name = "olai-uc-sharing-api"
+changelog_path = "crates/sharing-api/CHANGELOG.md"
+# (b) Git-dep block: owns the kernel-backed query path, so it pulls the
+# non-optional `delta_kernel` / `delta_kernel_default_engine` git deps (and
+# `olai-uc-datafusion`'s `delta` feature) — cannot publish to crates.io.
+# Standing block, not a bootstrap step.
+release = false
+
+[[package]]
 name = "olai-uc-object-store"
 changelog_path = "crates/object-store/CHANGELOG.md"
 

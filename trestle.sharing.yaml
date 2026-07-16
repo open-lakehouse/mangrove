@@ -1,10 +1,12 @@
 # Trestle codegen config for the Open Sharing proto module.
 #
 # The sharing protocol is served from the `unitycatalog-sharing-client` crate
-# (models + client + co-located axum extractors) and the `unitycatalog-server`
+# (models + client + co-located axum extractors) and the `unitycatalog-sharing-api`
 # crate (handler traits & axum routes), separately from the resource-oriented
-# Unity Catalog surface (see `trestle.yaml`). Sharing services are RPC-style
-# (non-resource), so the resource-specific features stay off.
+# Unity Catalog surface (see `trestle.yaml`). The sharing-api crate is a portable
+# carve-out (a `SharingBackend` port + blanket handler impl); the server adopts it
+# via a thin adapter. Sharing services are RPC-style (non-resource), so the
+# resource-specific features stay off.
 #
 # `buf.gen.sharing.yaml` is hand-maintained separately (mangrove runs
 # `buf generate` directly).
@@ -31,9 +33,13 @@ generate:
     crate_name: unitycatalog_sharing_client
 
   server:
-    output: crates/server/src/sharing
-    context_type: crate::api::RequestContext
-    error_type_path: crate::Error
+    output: crates/sharing-api/src
+    # The handler traits/routes are generic over the context `Cx`; the crate is
+    # portable, so the default context type is the crate-neutral `DefaultContext`
+    # (an alias for `()`; the server plugs in its own `RequestContext` when it
+    # implements the port).
+    context_type: crate::DefaultContext
+    error_type_path: crate::error::Error
     resource_enum: false
     store_integration: false
     object_conversions: false
