@@ -287,31 +287,45 @@ rest-ui-wasm-seeded: ui-build-wasm
 # source edits hot-reload without a rebuild. No wasm — the default (non-preview)
 # UI build.
 #
-# Backend mirrors the seeded flow but persists: durable Postgres (started via
-# compose + migrated) plus Azurite-backed managed storage, seeded with the demo
-# catalog/schema (create tables via the UI). It skips the demo Delta-table
-# datagen `rest-ui-wasm-seeded` does — that only feeds the wasm query preview
-# and trips a delta-rs nested-runtime panic — so no `delta` feature build.
+# Backend is EPHEMERAL: every run starts from a clean slate. It uses Postgres as
+# the backend engine (started via the shared compose container) but on its own
+# dedicated `uc_dev` database that is DROPPED + RECREATED each run, plus a freshly
+# re-created Azurite container — so no catalog metadata or table data survives
+# across sessions. After the demo catalog/schema are seeded it also writes a few
+# managed Delta tables with sample data (via the `seed_managed_tables` example) so
+# the UI has something interesting to browse immediately.
 #
-# On Ctrl-C it tears down gracefully: stops the UC server and the Azurite
-# container. The shared Postgres container is left running (stop it yourself with
-# `docker compose -f dev/compose.yaml stop postgres_uc_dev`).
+# On Ctrl-C it tears down: stops the UC server, tears down the Azurite container,
+# and DROPS the `uc_dev` database. The shared Postgres CONTAINER is left running
+# (only the ephemeral `uc_dev` database inside it is dropped) — stop the container
+# yourself with `docker compose -f dev/compose.yaml stop postgres_uc_dev`.
 #
-# Requires Docker (Postgres + Azurite) and npm. No wasm toolchain needed.
+# Requires Docker (Postgres + Azurite) and npm. Builds the `delta` feature (the
+# seed example writes managed Delta tables). No wasm toolchain needed.
 [group('dev')]
 ui-dev:
     #!/usr/bin/env bash
     set -euo pipefail
     export AZURITE_BLOB_STORAGE_URL="http://127.0.0.1:10000"
-    export PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres PGDATABASE=postgres
+    # Ephemeral, dedicated database inside the shared Postgres container — NOT the
+    # `postgres` default DB (kept intact for other flows). Dropped + recreated per run.
+    export PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres PGDATABASE=uc_dev
     compose_file="{{ justfile_directory() }}/dev/compose.yaml"
     config="{{ justfile_directory() }}/dev/config-azurite-pg.yaml"
 
+    # Run a psql command against the container's default `postgres` DB (used to
+    # drop/create the ephemeral `uc_dev` database — you cannot drop the DB you are
+    # connected to).
+    admin_psql() {
+        docker compose -f "$compose_file" exec -T \
+            -e PGPASSWORD="$PGPASSWORD" postgres_uc_dev \
+            psql -U "$PGUSER" -d postgres -v ON_ERROR_STOP=1 "$@"
+    }
+
     # Graceful shutdown: stop the background UC server (SIGTERM → it flushes via
-    # `with_graceful_shutdown`) and tear down the Azurite container the seed
-    # script started. Postgres is intentionally left running (it is the shared
-    # default-profile dev container). Idempotent guard since EXIT also fires
-    # after INT/TERM.
+    # `with_graceful_shutdown`), tear down the Azurite container, and drop the
+    # ephemeral `uc_dev` database so the next run starts clean. The shared Postgres
+    # container is left running. Idempotent guard since EXIT also fires after INT/TERM.
     cleaned=""
     cleanup() {
         [ -n "$cleaned" ] && return
@@ -330,14 +344,25 @@ ui-dev:
         fi
         echo "[ui-dev]   tearing down Azurite (docker compose rm -sf azurite_uc_dev)…"
         docker compose -f "$compose_file" --profile azurite rm -sfv azurite_uc_dev >/dev/null 2>&1 || true
-        echo "[ui-dev] done. (Postgres left running: docker compose -f dev/compose.yaml stop postgres_uc_dev)"
+        echo "[ui-dev]   dropping ephemeral database ${PGDATABASE}…"
+        admin_psql -c "DROP DATABASE IF EXISTS ${PGDATABASE} WITH (FORCE);" >/dev/null 2>&1 || true
+        echo "[ui-dev] done. (Postgres container left running: docker compose -f dev/compose.yaml stop postgres_uc_dev)"
     }
     trap cleanup EXIT INT TERM
 
-    # Durable backend: start Postgres and migrate first — `serve` does not
-    # migrate a durable backend.
+    # 1. Ephemeral backend: start the shared Postgres container, then drop +
+    #    recreate the dedicated `uc_dev` database so this run starts empty. A stale
+    #    Azurite container from a prior run is torn down + recreated the same way
+    #    (its blobs live in the container FS, so recreation = empty storage).
     echo "[ui-dev] starting Postgres…"
     docker compose -f "$compose_file" up -d --wait postgres_uc_dev
+    echo "[ui-dev] recreating ephemeral database ${PGDATABASE}…"
+    admin_psql -c "DROP DATABASE IF EXISTS ${PGDATABASE} WITH (FORCE);"
+    admin_psql -c "CREATE DATABASE ${PGDATABASE};"
+    echo "[ui-dev] recreating Azurite (clean blob storage)…"
+    docker compose -f "$compose_file" --profile azurite rm -sfv azurite_uc_dev >/dev/null 2>&1 || true
+
+    # 2. Migrate the fresh DB — `serve` does not migrate a durable backend.
     echo "[ui-dev] applying migrations…"
     cargo run -p olai-uc-server --features bin --bin uc-server -- migrate -c "$config"
 
@@ -346,21 +371,29 @@ ui-dev:
         serve -c "$config" &
     server_pid=$!
 
-    # Seed Azurite + UC (container, CORS, credential, external location, catalog,
-    # schema). The script starts the Azurite container and waits for the server's
-    # /catalogs to answer. Unlike `rest-ui-wasm-seeded`, we do NOT write the demo
-    # managed Delta table — that exists only to feed the in-browser wasm query
-    # preview (which this flow doesn't build), and its datagen example trips a
-    # delta-rs nested-runtime panic. The seeded catalog/schema is enough to
-    # exercise the UI; create tables through the UI itself as needed.
+    # 3. Seed Azurite + UC infra: (re)starts the Azurite container, creates the
+    #    lakehouse container + CORS, seeds the storage credential + external
+    #    location that credential vending requires, and creates the demo catalog +
+    #    schema. Waits for the server's /catalogs to answer.
     bash dev/scripts/seed-azurite.sh
+
+    # 4. Seed sample data: write a couple of managed Delta tables with interesting
+    #    rows so the UI has something to browse. This uses the Rust write path
+    #    (create + append only — no read-back, so it avoids the delta-rs
+    #    nested-runtime panic that blocks the in-process datagen). External engines
+    #    (e.g. PySpark) cannot write here yet — the server vends the repo's custom
+    #    `azurite://` scheme, which Hadoop/Spark has no FileSystem for.
+    echo "[ui-dev] seeding sample managed tables…"
+    UC_ENDPOINT="http://localhost:8080/api/2.1/unity-catalog/" \
+    UC_CATALOG="${UC_CATALOG:-demo}" UC_SCHEMA="${UC_SCHEMA:-default}" \
+        cargo run -p olai-uc-datafusion --features delta --example seed_managed_tables
 
     echo ""
     echo "[ui-dev] backend ready on http://localhost:8080 — starting Vite dev server…"
     echo "[ui-dev] open the printed URL (http://localhost:3003); /api proxies to :8080"
-    echo "[ui-dev] (Ctrl-C to stop the dev server, UC server, and Azurite)"
+    echo "[ui-dev] (Ctrl-C to stop the dev server + UC server, tear down Azurite, drop ${PGDATABASE})"
     # Foreground: Ctrl-C ends the dev server, then the EXIT trap cleans up.
-    npm run dev --workspace @open-lakehouse/uc-app
+    bun run --filter @open-lakehouse/uc-app dev
 
 # build the bundled single-page app into node/app/dist
 [group('build')]
