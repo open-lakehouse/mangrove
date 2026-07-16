@@ -1,29 +1,42 @@
 ---
-title: Open Lakehouse - rs
-description: Explore the best the open lakehouse ecosystem has to offer
+title: Unity Catalog Rust
+description: Architecture and internals of the unitycatalog-rs server and clients.
 template: splash
 hero:
-  tagline: Explore your open table data with native performance.
+  tagline: How the unitycatalog-rs server and clients are built.
   actions:
-    - text: Tutorials
-      link: /tutorials/01-first-server/
+    - text: Read the architecture
+      link: /explanation/service-composition/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
-      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/unitycatalog-incubator/unitycatalog-rs
+      icon: external
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+This site documents the **architecture and internals** of `unitycatalog-rs` — a
+Rust implementation of the Unity Catalog REST API, with Rust, Python, and
+TypeScript client libraries.
 
-The Open Lakehouse is a loose concept of a collection of open source projects that can be used
-to build and deploy data systems adhering to the lakehouse architecture.
+User-facing tutorials, client how-to guides, and REST/configuration reference
+now live in the consolidated open-lakehouse documentation. The pages here focus
+on how the server is put together: service composition, the graph data model,
+the code-generation pipeline, authorization, and the core trait contracts.
 
-## Relevant projects
+## Where to start
 
-While there is no official affiliation, here are some projects that can be considered part of the
-open lakehouse ecosystem.
+- **[Service composition](/explanation/service-composition/)** — how `ServerHandler` wires policy, storage, and secrets together.
+- **[The graph data model](/explanation/graph-data-model/)** — resources as objects and associations.
+- **[Code generation philosophy](/explanation/codegen-philosophy/)** — proto as the source of truth.
+- **[Authorization architecture](/explanation/authorization/)** — principals, permissions, and decisions.
+- **[Add a new resource type](/guides/add-resource-type/)** — the end-to-end contributor recipe.
 
-### Open Table Formats
+## The open lakehouse ecosystem
+
+`unitycatalog-rs` is one project in a broader ecosystem of open source tools for
+building lakehouse data systems. While there is no official affiliation, these
+projects are commonly considered part of it.
+
+### Open table formats
 
 - [delta](https://github.com/delta-io/delta)
 - [delta-rs](https://github.com/delta-io/delta-rs)
@@ -36,7 +49,7 @@ open lakehouse ecosystem.
 - [polaris](https://github.com/apache/polaris)
 - [unitycatalog](https://github.com/unitycatalog/unitycatalog)
 
-### Query Engines
+### Query engines
 
 - [datafusion](https://github.com/apache/arrow-datafusion)
 - [polars](https://github.com/pola-rs/polars)
@@ -45,14 +58,3 @@ open lakehouse ecosystem.
 ### Integrations
 
 - [delta-datafusion](https://github.com/delta-incubator/deltalake-datafusion)
-
-## Next steps
-
-<CardGrid stagger>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
-</CardGrid>

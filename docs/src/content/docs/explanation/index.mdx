@@ -1,13 +1,12 @@
 ---
-title: Ecosystem Overview
+title: Architecture overview
 ---
 
-The Open Lakehouse ecosystem is not a strict set of libraries or services,
-but rather we aim to provide a place to find, try, and learn about the open
-lakehouse ecosystem.
+These pages explain how `unitycatalog-rs` is built — the design decisions and
+internal structure behind the server and its clients, rather than how to use
+them.
 
-Since the current authors have their roots in the delta lake project, this
-site will for a while contain more information about delta lake and the delta
-ecosystem.
-
-## Delta Lake
+- **[Service composition](/explanation/service-composition/)** — how `ServerHandler` composes policy, storage, and secrets via `Arc<dyn Trait>` and the `Provides*` dependency-injection pattern.
+- **[The graph data model](/explanation/graph-data-model/)** — why resources are stored as object nodes and association edges, and the `ResourceStore` trait.
+- **[Code generation philosophy](/explanation/codegen-philosophy/)** — proto as the single source of truth, and how handlers and clients are generated from it.
+- **[Authorization architecture](/explanation/authorization/)** — principals, permissions, decisions, and the policy middleware.
