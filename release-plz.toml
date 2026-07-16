@@ -142,7 +142,6 @@ release = false
 [[package]]
 name = "olai-uc-server"
 changelog_path = "crates/server/CHANGELOG.md"
-release = false
 
 [[package]]
 name = "olai-uc-cli"
