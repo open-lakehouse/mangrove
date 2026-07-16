@@ -1,5 +1,5 @@
 ---
-description: After editing node/, regenerate crates/server/ui.lock before opening a PR.
+description: After editing node/ or merging main, regenerate crates/server/ui.lock before opening a PR.
 alwaysApply: true
 ---
 
@@ -44,3 +44,30 @@ bun run setup-hooks   # git config core.hooksPath .githooks
 ```
 
 The hook is a safety net — still run `just ui-fingerprint-check` before opening a PR.
+
+## After merging `main`
+
+Merging `main` into a feature branch often conflicts on `ui.lock` because both
+branches changed `node/`. **Do not keep either side's hash** — regenerate from the
+merged tree:
+
+```bash
+git fetch origin main
+git merge origin/main
+# if ui.lock conflicts: remove conflict markers, then:
+just ui-fingerprint
+git add crates/server/ui.lock
+git commit   # complete the merge, or amend the merge commit
+just ui-fingerprint-check
+```
+
+Agents resolving a `main` merge should always run `just ui-fingerprint` before
+finishing the merge commit.
+
+## Post-merge hook
+
+After a merge or pull that changes `node/`, [`.githooks/post-merge`](../../.githooks/post-merge)
+runs `just ui-fingerprint-check` and regenerates `ui.lock` when stale. If the lock
+file changes, commit it in a follow-up (or amend the merge commit before pushing).
+
+Activated with the other repo hooks: `bun run setup-hooks`.

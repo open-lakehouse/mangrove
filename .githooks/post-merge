@@ -1,0 +1,50 @@
+#!/usr/bin/env sh
+#
+# Regenerate crates/server/ui.lock after a merge that changes node/.
+#
+# Merging main into a feature branch often conflicts on ui.lock because both
+# sides changed node/ independently. The correct hash is never "ours" or "theirs"
+# — run `just ui-fingerprint` on the merged tree (see ui-fingerprint-rule.mdc).
+#
+set -e
+
+# Squash merges pass $1=1; lockfile is unchanged at squash time.
+[ "${1:-0}" = "1" ] && exit 0
+
+if ! command -v just >/dev/null 2>&1; then
+  echo "post-merge: 'just' not found; run: just ui-fingerprint-check" >&2
+  exit 0
+fi
+
+node_touched=false
+if git rev-parse -q --verify ORIG_HEAD >/dev/null 2>&1; then
+  if git diff --name-only ORIG_HEAD HEAD | grep -qE '^node/'; then
+    node_touched=true
+  fi
+fi
+
+is_merge=false
+if git rev-parse -q --verify HEAD^2 >/dev/null 2>&1; then
+  is_merge=true
+fi
+
+# Skip pulls/merges that did not touch node/ (unrelated merge).
+if [ "$is_merge" = false ] && [ "$node_touched" = false ]; then
+  exit 0
+fi
+
+if just ui-fingerprint-check 2>/dev/null; then
+  echo "post-merge: crates/server/ui.lock is up to date." >&2
+  exit 0
+fi
+
+just ui-fingerprint
+
+if git diff --quiet crates/server/ui.lock; then
+  exit 0
+fi
+
+echo "post-merge: regenerated crates/server/ui.lock after merge." >&2
+echo "  Review and commit if needed:" >&2
+echo "    git add crates/server/ui.lock" >&2
+echo "    git commit -m 'chore: refresh ui.lock after merge'" >&2

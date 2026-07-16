@@ -127,6 +127,10 @@ just ui-fingerprint-check   # same check CI runs
 The pre-commit hook regenerates `ui.lock` when `node/` files are staged and runs
 `ui-fingerprint-check` before the commit completes (see **Git hooks** below).
 
+After **merging `main`**, always run `just ui-fingerprint` on the merged tree — do not
+keep either side's `ui.lock` hash in a conflict. The post-merge hook regenerates the
+lock when stale (see **Git hooks** below).
+
 ### 5. Cargo.lock and trestle
 
 **File:** [`.agents/rules/cargo-lock-trestle-rule.mdc`](.agents/rules/cargo-lock-trestle-rule.mdc)
@@ -146,9 +150,9 @@ Enforced by the pre-commit hook when `Cargo.lock` is staged (see **Git hooks** b
 
 ### Git hooks (`setup-hooks`)
 
-The repo ships a **local pre-commit hook** at [`.githooks/pre-commit`](.githooks/pre-commit) that
-automates several PR hygiene checks. Git does not run it until you point `core.hooksPath` at
-`.githooks` for this clone.
+The repo ships **local git hooks** under [`.githooks/`](.githooks/) that automate PR
+hygiene checks. Git does not run them until you point `core.hooksPath` at `.githooks`
+for this clone.
 
 **Activate once per clone:**
 
@@ -171,8 +175,18 @@ git config --get core.hooksPath   # should print: .githooks
 | 3 | `node/` or `crates/server/ui.lock` staged | Regenerates `ui.lock` when `node/` changes are staged; runs `just ui-fingerprint-check` |
 | 4 | `Cargo.lock` staged | Verifies `olai-http` / `olai-store` still have crates.io `source` + `checksum` lines |
 
-**Prerequisites on PATH:** `bun` (step 2), `just` (step 3). If a tool is missing, that step is
-skipped with a warning — run the manual checks below before opening a PR.
+**What `post-merge` does** (after `git merge` / `git pull` that merges):
+
+| When | Action |
+|------|--------|
+| Merge changed `node/` (or is a merge commit that did) | Runs `just ui-fingerprint-check`; regenerates `ui.lock` if stale and prints commit instructions |
+
+Use this after merging `main` — `ui.lock` conflicts should be resolved with
+`just ui-fingerprint`, not by keeping one side's hash.
+
+**Prerequisites on PATH:** `bun` (pre-commit step 2), `just` (pre-commit step 3, post-merge).
+If a tool is missing, that step is skipped with a warning — run the manual checks below
+before opening a PR.
 
 **Manual pre-PR checks** (same gates CI enforces; run even if hooks are not installed):
 
@@ -214,7 +228,7 @@ inputs and regenerate with `just generate`; commit generated output in the same 
 | `just fmt` | Format all code |
 | `cargo nextest run --workspace --all-features` | Run Rust test suite |
 | `bun run test:coverage` | TypeScript tests with LCOV coverage |
-| `bun run setup-hooks` | Enable repo pre-commit hooks (once per clone) |
+| `bun run setup-hooks` | Enable repo git hooks (pre-commit, post-merge; once per clone) |
 
 ### Pre-push check (mimics CI)
 
