@@ -164,7 +164,7 @@ changelog_path = "crates/server/CHANGELOG.md"
 # Its bundled UI lives in node/ (outside this crate's packaged fileset), so a UI
 # change is tied to this crate via crates/server/ui.lock — see `just
 # ui-fingerprint`.
-git_only = true
+release = false
 publish = false
 
 [[package]]
