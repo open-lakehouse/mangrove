@@ -7,7 +7,6 @@ pub mod memory;
 pub mod policy;
 pub mod rest;
 pub mod services;
-pub mod sharing;
 pub mod store;
 pub mod telemetry;
 

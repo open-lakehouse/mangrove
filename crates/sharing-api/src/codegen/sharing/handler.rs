@@ -15,7 +15,7 @@ use crate::Result;
 use async_trait::async_trait;
 use unitycatalog_sharing_client::models::open_sharing::v1::*;
 #[async_trait]
-pub trait SharingHandler<Cx = crate::api::RequestContext>: Send + Sync + 'static {
+pub trait SharingHandler<Cx = crate::DefaultContext>: Send + Sync + 'static {
     /// List shares accessible to a recipient.
     async fn list_shares(
         &self,

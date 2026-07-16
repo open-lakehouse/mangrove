@@ -2,15 +2,15 @@ use std::sync::Arc;
 
 use delta_kernel::{Snapshot, Version};
 
-use session::*;
 use unitycatalog_common::models::tables::v1::DataSourceFormat;
+use unitycatalog_sharing_api::session::KernelSession;
 
 use self::location::StorageLocationUrl;
-use crate::Result;
 use crate::api::tables::{TableHandler, TableManager};
 use crate::api::volumes::VolumeHandler;
 use crate::policy::{Decision, Permission, Policy, ProvidesPolicy};
 use crate::store::{ProvidesResourceStore, ResourceStore};
+use crate::{Error, Result};
 use unitycatalog_common::models::ResourceIdent;
 use unitycatalog_delta_api::coordinator::{
     CommitCoordinator, InMemoryCommitCoordinator, ProvidesCommitCoordinator,
@@ -18,12 +18,10 @@ use unitycatalog_delta_api::coordinator::{
 
 pub mod credential_vending;
 mod delta_backend;
-pub(crate) mod kernel;
 pub mod location;
 pub mod location_policy;
 pub(crate) mod object_store;
-mod session;
-mod sharing;
+mod sharing_backend;
 
 pub use location_policy::LocalStoragePolicy;
 
@@ -77,7 +75,7 @@ pub struct ServerHandler<Cx> {
 
 impl<Cx: Send + Sync + 'static> ServerHandler<Cx>
 where
-    ServerHandlerInner<Cx>: kernel::ObjectStoreFactory,
+    ServerHandlerInner<Cx>: unitycatalog_sharing_api::kernel::ObjectStoreFactory,
 {
     pub fn try_new_tokio(
         policy: Arc<dyn Policy<Cx>>,
@@ -103,7 +101,9 @@ where
             ServerHandlerInner::new(policy.clone(), store.clone())
                 .with_commit_coordinator(commit_coordinator),
         );
-        let session = Arc::new(KernelSession::new(handler.clone())?);
+        let session = Arc::new(
+            KernelSession::new(handler.clone()).map_err(|e| Error::Generic(e.to_string()))?,
+        );
         Ok(Self {
             handler,
             session,
@@ -357,6 +357,21 @@ impl<Cx: Send + Sync + 'static> TableManager for ServerHandler<Cx> {
         format: &DataSourceFormat,
         version: Option<Version>,
     ) -> Result<Arc<Snapshot>> {
-        self.session.read_snapshot(location, format, version).await
+        // The kernel session serves only Delta; keep the server-side guard here so
+        // the tables API rejects non-Delta formats with `InvalidArgument` (the
+        // crate's `read_snapshot` does not check the format).
+        if *format != DataSourceFormat::Delta {
+            return Err(Error::InvalidArgument(format!(
+                "unsupported data source format in kernel session: {format:?}"
+            )));
+        }
+        let resolved = unitycatalog_sharing_api::backend::ResolvedLocation {
+            url: location.location().clone(),
+            raw: location.raw().to_string(),
+        };
+        self.session
+            .read_snapshot(&resolved, version)
+            .await
+            .map_err(|e| Error::Generic(e.to_string()))
     }
 }

@@ -50,6 +50,7 @@ use crate::api::registered_models::RegisteredModelHandler;
 use crate::api::schemas::SchemaHandler;
 use crate::api::shares::ShareHandler;
 use crate::api::sharing::{SharingHandler, SharingQueryHandler};
+use crate::api::sharing::{SharingSkillHandler, SharingVolumeHandler};
 use crate::api::staging_tables::StagingTableHandler;
 use crate::api::tables::TableHandler;
 use crate::api::tag_policies::TagPolicyHandler;
@@ -69,7 +70,6 @@ use crate::rest::{
     create_tag_policies_router, create_temporary_credentials_router, create_volumes_router,
 };
 use crate::services::{LocalStoragePolicy, ServerHandler, location::StorageLocationUrl};
-use crate::sharing::{SharingSkillHandler, SharingVolumeHandler};
 
 /// Directory the bundled single-page app is served from, relative to the process
 /// working directory. The Docker image places the built bundle here (see the

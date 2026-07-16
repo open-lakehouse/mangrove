@@ -38,12 +38,11 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.2" }
 # buffa runtime: generated handler glue constructs/matches buffa model types.
 buffa = { workspace = true }
-# The reconciled Delta-log TableProvider (log replay → scan-file rows) lives here
-# as the single shared implementation; the server serves it as the Delta Sharing
-# `query_table` response. `delta` gates the kernel-backed providers.
-unitycatalog-datafusion = { package = "olai-uc-datafusion", path = "../datafusion", version = "0.1.0", default-features = false, features = [
-  "delta",
-] }
+# The portable Open Sharing / Delta Sharing surface: owns the sharing semantics
+# behind a `SharingBackend` port, plus the DataFusion + `delta-kernel` NDJSON
+# query path (the only `ReconciledLogProvider` consumer). The server delegates to
+# it via a `SharingBackend` adapter.
+unitycatalog-sharing-api = { package = "olai-uc-sharing-api", path = "../sharing-api", version = "0.0.1" }
 unitycatalog-sharing-client = { package = "olai-uc-sharing-client", path = "../sharing-client", version = "0.0.1", features = [
   "server",
 ] }
@@ -72,6 +71,11 @@ url = { workspace = true }
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }
 tonic = { workspace = true, optional = true }
+# Retained ONLY for `datafusion::datasource::object_store::ObjectStoreUrl`, used
+# to normalize storage-location authorities in `services::location`. The heavy
+# DataFusion query surface (`SessionContext` + `ReconciledLogProvider` + arrow)
+# that served the Delta Sharing query path now lives entirely in
+# `olai-uc-sharing-api`; the server no longer depends on `unitycatalog-datafusion`.
 datafusion = { workspace = true }
 futures-util = { version = "0.3.28" }
 http = { version = "1.2", optional = true }

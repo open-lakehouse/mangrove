@@ -1,7 +1,7 @@
-//! Minimal delta_kernel integration for the Unity Catalog server.
+//! Minimal delta_kernel integration for the sharing query path.
 //!
-//! This module provides the small slice of `deltalake-datafusion` that the server
-//! actually relies on: an [`ObjectStoreFactory`] abstraction (implemented by the
+//! This module provides the small slice of `deltalake-datafusion` the sharing
+//! query path relies on: an [`ObjectStoreFactory`] abstraction (implemented by a
 //! server to resolve credentialed object stores per storage location) and a
 //! kernel [`Engine`] builder. The Delta-log `query_table` response is served by
 //! the shared [`ReconciledLogProvider`](unitycatalog_datafusion::log_explorer::ReconciledLogProvider)
@@ -13,19 +13,21 @@
 
 use std::sync::Arc;
 
-use datafusion::common::Result as DFResult;
 use delta_kernel::Engine;
 use delta_kernel_default_engine::DefaultEngine;
 use object_store::DynObjectStore;
 use url::Url;
 
+use crate::error::{Error, Result};
+
 /// Resolves an [`object_store`] for a given storage location.
 ///
-/// The server implements this to map a storage URL to a credentialed object
-/// store (see `services::object_store`).
+/// A server implements this to map a storage URL to a credentialed object store.
+/// It returns the crate's [`Error`] so a server implementation names no
+/// DataFusion type — the DataFusion coupling stays entirely inside this crate.
 #[async_trait::async_trait]
 pub trait ObjectStoreFactory: Send + Sync + 'static {
-    async fn create_object_store(&self, url: &Url) -> DFResult<Arc<DynObjectStore>>;
+    async fn create_object_store(&self, url: &Url) -> Result<Arc<DynObjectStore>>;
 }
 
 /// Build a delta_kernel [`Engine`] for the given table root.
@@ -35,7 +37,10 @@ pub trait ObjectStoreFactory: Send + Sync + 'static {
 pub(crate) async fn build_engine(
     factory: &dyn ObjectStoreFactory,
     table_root: &Url,
-) -> DFResult<Arc<dyn Engine>> {
-    let store = factory.create_object_store(table_root).await?;
+) -> Result<Arc<dyn Engine>> {
+    let store = factory
+        .create_object_store(table_root)
+        .await
+        .map_err(|e| Error::generic(e.to_string()))?;
     Ok(Arc::new(DefaultEngine::builder(store).build()))
 }

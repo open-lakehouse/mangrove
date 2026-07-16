@@ -1,0 +1,81 @@
+[package]
+# Published to crates.io under a provisional `olai-uc-*` name while the design
+# settles; the in-workspace dependency key + crate identifier stay
+# `unitycatalog(_)sharing_api` via each dependent's `package =` alias, so no
+# source changes. See release-plz.toml / CONTRIBUTING.md.
+name = "olai-uc-sharing-api"
+version = "0.0.1"
+description = "Portable Unity Catalog Open Sharing / Delta Sharing REST API: the backend-agnostic SharingBackend port, discovery + asset handlers, and the kernel-backed NDJSON query path, shared across server implementations."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+# Crate-local README (shown on crates.io / docs.rs), overriding the inherited
+# workspace-root README which describes the whole project rather than this crate.
+readme = "README.md"
+rust-version.workspace = true
+
+[lib]
+# Keep the Rust crate identifier stable (`unitycatalog_sharing_api`) independent
+# of the provisional `olai-uc-*` package name, so source `use` paths, sibling
+# crates, and this crate's own tests/examples need no churn from the rename.
+name = "unitycatalog_sharing_api"
+
+[dependencies]
+# local dependencies in alphabetical order
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.2" }
+unitycatalog-datafusion = { package = "olai-uc-datafusion", path = "../datafusion", version = "0.1.0", default-features = false, features = [
+    "delta",
+] }
+unitycatalog-sharing-client = { package = "olai-uc-sharing-client", path = "../sharing-client", version = "0.0.1" }
+
+# workspace dependencies in alphabetical order
+async-trait = { workspace = true }
+axum = { workspace = true, optional = true }
+axum-extra = { workspace = true, optional = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+datafusion = { workspace = true }
+delta_kernel = { workspace = true }
+delta_kernel_default_engine = { workspace = true }
+itertools = { workspace = true }
+object_store = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["rt"] }
+tracing = { workspace = true }
+url = { workspace = true }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+tower = { workspace = true }
+
+# The handler + router integration tests drive the in-memory backend, which
+# lives behind the `testing` feature.
+[[test]]
+name = "handler"
+required-features = ["testing"]
+
+[[test]]
+name = "router"
+required-features = ["testing"]
+
+[features]
+# `axum` gates the generated axum route functions, the hand-written router, and
+# the error `IntoResponse`. On by default: this crate exists to serve an axum
+# surface. The feature name must be `axum` because the generated server code
+# hard-codes `#[cfg(feature = "axum")]`. Downstream consumers that only want the
+# port + types (no HTTP surface) can opt out with `default-features = false`.
+default = ["axum"]
+axum = ["dep:axum", "dep:axum-extra", "unitycatalog-sharing-client/server"]
+# Exposes `InMemorySharingBackend`, an in-memory `SharingBackend` implementation
+# for exercising the sharing logic (discovery + query + asset serving) without a
+# real backend. Downstream servers can enable it to test their own port wiring.
+testing = ["axum"]
+
+# docs.rs builds with default features only; enable all features there so the
+# `testing` module is documented.
+[package.metadata.docs.rs]
+all-features = true
