@@ -2,7 +2,7 @@
 //!
 //! Provides:
 //! - [`ValidationLayer`] / [`ValidationMiddleware`]: Tower middleware that rejects requests with
-//!   a `Content-Length` header exceeding [`MAX_BODY_SIZE`] (1 MiB) with HTTP 413.
+//!   a `Content-Length` header exceeding a fixed maximum body size (1 MiB) with HTTP 413.
 //! - [`max_results_clamp`]: Utility that clamps an optional `max_results` query parameter to a
 //!   caller-supplied maximum, converting from `i32` to `usize`. Use this in list handlers instead
 //!   of the raw `.map(|v| v as usize)` pattern to enforce per-endpoint upper bounds.
@@ -44,7 +44,7 @@ pub fn max_results_clamp(value: Option<i32>, max: usize) -> Option<usize> {
 // Middleware
 // ---------------------------------------------------------------------------
 
-/// Middleware that rejects requests whose `Content-Length` header exceeds [`MAX_BODY_SIZE`].
+/// Middleware that rejects requests whose `Content-Length` header exceeds `MAX_BODY_SIZE`.
 ///
 /// Only the `Content-Length` header is inspected — the body itself is not buffered. This makes
 /// the check cheap but means a client that omits the header (or lies about it) will not be

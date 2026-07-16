@@ -4,7 +4,7 @@
 //! [`olai_store::InMemoryStore`] wrapped in an
 //! [`olai_store::ManagedObjectStore`] (for inline sensitive-field sealing) and
 //! lifted to the typed [`ResourceStore`] API by
-//! [`ObjectStoreAdapter`](unitycatalog_common::store::ObjectStoreAdapter). It
+//! [`ObjectStoreAdapter`]. It
 //! mirrors the durable backends (sqlite/postgres) so the same code paths —
 //! object/association storage and inline secret sealing — are exercised in
 //! tests, without a database.
