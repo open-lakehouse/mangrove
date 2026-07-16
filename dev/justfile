@@ -3,6 +3,7 @@ _default:
 
 # basic setup
 setup:
+  {{ source_directory() }}/dev/scripts/configure-trestle-deps.sh
   uvx pre-commit install
 
 # Update pre-commit hooks

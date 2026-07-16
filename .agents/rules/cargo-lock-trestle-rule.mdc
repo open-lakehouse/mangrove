@@ -1,0 +1,57 @@
+---
+description: Never commit Cargo.lock drift from local trestle path patches — CI resolves olai-http/olai-store from crates.io.
+alwaysApply: true
+---
+
+# Cargo.lock and trestle (`olai-http` / `olai-store`)
+
+CI and open-source contributors resolve `olai-http` and `olai-store` from **crates.io**
+at the pinned versions in the root `Cargo.toml`. Do **not** commit a `Cargo.lock` that
+was generated while a local trestle path patch is active.
+
+## Local development behind a crates.io proxy
+
+When the corporate proxy's age filter hides a freshly published version, use a
+**gitignored** patch (once per clone):
+
+```bash
+just configure-trestle-deps
+```
+
+This writes `.cargo/config.toml` with `[patch.crates-io]` pointing at `../trestle`.
+CI does not use this patch.
+
+## Before Creating Any PR
+
+Verify `Cargo.lock` still has crates.io entries for the trestle library crates:
+
+```bash
+bun run cargo-lock-trestle:check
+```
+
+If the check fails after building with local patches, restore the lockfile:
+
+```bash
+git checkout main -- Cargo.lock
+```
+
+Only commit `Cargo.lock` changes from a **crates.io** resolution (no active
+`[patch.crates-io]` for `olai-http` / `olai-store`).
+
+## What Not To Do
+
+- Do not commit `[patch.crates-io]` for trestle in `Cargo.toml` or `.cargo/config.toml`.
+- Do not add a trestle git submodule for routine development — crates.io is the
+  canonical source for CI and external contributors.
+- Do not hand-edit `olai-http` / `olai-store` stanzas in `Cargo.lock`.
+
+## Pre-commit Hook
+
+When `Cargo.lock` is staged, `.githooks/pre-commit` runs `cargo-lock-trestle:check`
+and aborts the commit if registry `source` / `checksum` lines are missing.
+
+Activate once per clone:
+
+```bash
+bun run setup-hooks
+```

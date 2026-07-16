@@ -1,0 +1,84 @@
+---
+description: Before opening a PR, strip registry proxy URLs from bun.lock so the resolution field is empty.
+alwaysApply: true
+---
+
+# bun.lock Proxy Stripping
+
+Local installs may route through a private npm proxy/registry, which bakes the
+proxy URL into the resolution (second) field of each package entry in
+`bun.lock`. That host-specific URL must never land in a PR.
+
+## Before Creating Any PR
+
+1. **Always** clear the proxy/resolution field in `bun.lock` first.
+2. Do **not** match on a specific host name — clear the field for **any** npm
+   registry tarball URL, leaving it as `""` (the value Bun uses for the default
+   registry).
+3. Stage the cleaned `bun.lock` before opening the PR.
+
+## What to Strip
+
+Each package entry is an array of the form:
+
+```
+"<key>": ["<name>@<version>", "<resolution>", { ...deps }, "<integrity>"]
+```
+
+The **second element** is the resolution/proxy field. When it points at a
+registry tarball it must be reset to an empty string.
+
+- With proxy:
+
+```
+"readdirp/picomatch": ["picomatch@2.3.2", "https://proxy.npm.your-company.com/picomatch/-/picomatch-2.3.2.tgz", {}, "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA=="]
+```
+
+- After stripping:
+
+```
+"readdirp/picomatch": ["picomatch@2.3.2", "", {}, "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA=="]
+```
+
+## How to Strip
+
+Use the project's TypeScript script (run by Bun). It is host-agnostic: it
+matches any `http(s)` registry tarball URL (`.../-/<name>-<version>.tgz`)
+sitting in the resolution slot and replaces only that URL with `""`. Git,
+GitHub, file, and already-empty resolutions are left untouched.
+
+```bash
+bun run strip-lock-proxy
+```
+
+The logic lives in [`scripts/strip-bun-lock-proxy.ts`](../../scripts/strip-bun-lock-proxy.ts).
+
+Verify nothing remains before committing (exits non-zero if any proxy URL is
+still present, so it doubles as a CI / pre-PR gate):
+
+```bash
+bun run strip-lock-proxy:check
+```
+
+## Automated via Git Hook
+
+A committed pre-commit hook does this automatically whenever `bun.lock` is
+staged. It lives at [`.githooks/pre-commit`](../../.githooks/pre-commit) and
+delegates to any globally-configured hooks first (e.g. anything set globally on your machine) so those are preserved.
+
+Activate it once per clone (also runs automatically on `bun install` via the
+`prepare` script):
+
+```bash
+bun run setup-hooks   # git config core.hooksPath .githooks
+```
+
+The hook is a safety net, not a replacement for the rule — still run the strip
+and `:check` before opening a PR.
+
+## Rules
+
+- **Never open a PR with proxy URLs in `bun.lock`.**
+- Keep the strip logic host-agnostic — do not hardcode a proxy hostname.
+- Only the resolution field is cleared; names, versions, dependency maps, and
+  integrity hashes are never modified.

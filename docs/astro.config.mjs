@@ -19,19 +19,19 @@ export default defineConfig({
       sidebar: [
         {
           label: "Tutorials",
-          autogenerate: { directory: "tutorials" },
+          items: [{ autogenerate: { directory: "tutorials" } }],
         },
         {
           label: "Guides",
-          autogenerate: { directory: "guides" },
+          items: [{ autogenerate: { directory: "guides" } }],
         },
         {
           label: "Explanation",
-          autogenerate: { directory: "explanation" },
+          items: [{ autogenerate: { directory: "explanation" } }],
         },
         {
           label: "Reference",
-          autogenerate: { directory: "reference" },
+          items: [{ autogenerate: { directory: "reference" } }],
         },
       ],
       plugins: [
