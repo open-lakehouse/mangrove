@@ -142,30 +142,7 @@ release = false
 [[package]]
 name = "olai-uc-server"
 changelog_path = "crates/server/CHANGELOG.md"
-# The server is PAUSED at `git_only = true` + `publish = false`: release-plz
-# versions/changelogs/tags it from git but does not `cargo publish` it.
-# `publish = false` (also set in Cargo.toml) is the mutually-exclusive companion
-# release-plz requires alongside `git_only`.
-#
-# WHY paused: the crate's own graph is git-free (PR #89) so it is *eligible* to
-# publish (#90 flipped it), but its path deps `olai-uc-common`/`-client`/
-# `-delta-api` are still on crates.io at their PRE-buffa `0.0.2`, and a verifying
-# `cargo publish` of the server builds against those stale registry copies and
-# fails. Flip back to a published crate (drop `git_only`, set `publish = true`,
-# then bootstrap) once release-plz re-releases those siblings with the buffa API.
-#
-# DOCKER WHILE PAUSED: the docker gate in release-plz.yml reads release-plz's
-# `releases` JSON, which OMITS `git_only` crates — so no image builds during the
-# pause. That is intentional (no publish ⇒ no new image). Flipping the server to
-# `publish = true` puts it back in `releases`, which re-activates the Docker build
-# automatically — NO release-plz.yml edit needed. (If an image IS wanted during
-# the pause, that's a separate change: re-add the manifest-parsing tag step.)
-#
-# Its bundled UI lives in node/ (outside this crate's packaged fileset), so a UI
-# change is tied to this crate via crates/server/ui.lock — see `just
-# ui-fingerprint`.
 release = false
-publish = false
 
 [[package]]
 name = "olai-uc-cli"
