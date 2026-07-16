@@ -449,7 +449,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateCatalogRequest"
+              $ref: "#/components/schemas/CreateCatalog"
         required: true
       responses:
         "200":
@@ -457,7 +457,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Catalog"
+                $ref: "#/components/schemas/CatalogInfo"
         default:
           description: Default error response
           content:
@@ -492,7 +492,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Catalog"
+                $ref: "#/components/schemas/CatalogInfo"
         default:
           description: Default error response
           content:
@@ -558,7 +558,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Catalog"
+                $ref: "#/components/schemas/CatalogInfo"
         default:
           description: Default error response
           content:
@@ -621,7 +621,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Credential"
+                $ref: "#/components/schemas/CredentialInfo"
         default:
           description: Default error response
           content:
@@ -646,7 +646,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Credential"
+                $ref: "#/components/schemas/CredentialInfo"
         default:
           description: Default error response
           content:
@@ -697,7 +697,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Credential"
+                $ref: "#/components/schemas/CredentialInfo"
         default:
           description: Default error response
           content:
@@ -947,7 +947,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateExternalLocationRequest"
+              $ref: "#/components/schemas/CreateExternalLocation"
         required: true
       responses:
         "200":
@@ -955,7 +955,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExternalLocation"
+                $ref: "#/components/schemas/ExternalLocationInfo"
         default:
           description: Default error response
           content:
@@ -981,7 +981,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExternalLocation"
+                $ref: "#/components/schemas/ExternalLocationInfo"
         default:
           description: Default error response
           content:
@@ -1039,7 +1039,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExternalLocation"
+                $ref: "#/components/schemas/ExternalLocationInfo"
         default:
           description: Default error response
           content:
@@ -1119,7 +1119,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Function"
+                $ref: "#/components/schemas/FunctionInfo"
         default:
           description: Default error response
           content:
@@ -1150,7 +1150,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Function"
+                $ref: "#/components/schemas/FunctionInfo"
         default:
           description: Default error response
           content:
@@ -1216,7 +1216,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Function"
+                $ref: "#/components/schemas/FunctionInfo"
         default:
           description: Default error response
           content:
@@ -1291,7 +1291,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateRegisteredModelRequest"
+              $ref: "#/components/schemas/CreateRegisteredModel"
         required: true
       responses:
         "200":
@@ -1299,7 +1299,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RegisteredModel"
+                $ref: "#/components/schemas/RegisteredModelInfo"
         default:
           description: Default error response
           content:
@@ -1369,7 +1369,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RegisteredModel"
+                $ref: "#/components/schemas/RegisteredModelInfo"
         default:
           description: Default error response
           content:
@@ -1438,7 +1438,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RegisteredModel"
+                $ref: "#/components/schemas/RegisteredModelInfo"
         default:
           description: Default error response
           content:
@@ -2220,7 +2220,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateSchemaRequest"
+              $ref: "#/components/schemas/CreateSchema"
         required: true
       responses:
         "200":
@@ -2228,7 +2228,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Schema"
+                $ref: "#/components/schemas/SchemaInfo"
         default:
           description: Default error response
           content:
@@ -2260,7 +2260,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Schema"
+                $ref: "#/components/schemas/SchemaInfo"
         default:
           description: Default error response
           content:
@@ -2327,7 +2327,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Schema"
+                $ref: "#/components/schemas/SchemaInfo"
         default:
           description: Default error response
           content:
@@ -2721,7 +2721,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Table"
+                $ref: "#/components/schemas/TableInfo"
         default:
           description: Default error response
           content:
@@ -2762,7 +2762,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Table"
+                $ref: "#/components/schemas/TableInfo"
         default:
           description: Default error response
           content:
@@ -3116,7 +3116,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListVolumesResponse"
+                $ref: "#/components/schemas/ListVolumesResponseContent"
         default:
           description: Default error response
           content:
@@ -3131,7 +3131,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateVolumeRequest"
+              $ref: "#/components/schemas/CreateVolumeRequestContent"
         required: true
       responses:
         "200":
@@ -3139,7 +3139,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Volume"
+                $ref: "#/components/schemas/VolumeInfo"
         default:
           description: Default error response
           content:
@@ -3169,7 +3169,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Volume"
+                $ref: "#/components/schemas/VolumeInfo"
         default:
           description: Default error response
           content:
@@ -3220,7 +3220,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Volume"
+                $ref: "#/components/schemas/VolumeInfo"
         default:
           description: Default error response
           content:
@@ -3229,13 +3229,6 @@ paths:
                 $ref: "#/components/schemas/Status"
 components:
   schemas:
-    AdditionalPropertiesItem:
-      type: object
-      properties:
-        schema_or_reference:
-          $ref: "#/components/schemas/SchemaOrReference"
-        boolean:
-          type: boolean
     Agent:
       required:
         - name
@@ -3448,13 +3441,6 @@ components:
       description: An agent skill registered in Unity Catalog.
       additionalProperties: false
       title: Agent Skill
-    Any:
-      type: object
-      properties:
-        value:
-          $ref: "#/components/schemas/GoogleProtobufAny"
-        yaml:
-          type: string
     AwsIamRoleConfig:
       required:
         - role_arn
@@ -3593,7 +3579,7 @@ components:
       required:
         - sas_token
       title: Azure User Delegation Sas
-    Catalog:
+    CatalogInfo:
       required:
         - name
       type: object
@@ -3673,7 +3659,7 @@ components:
       description: A catalog is a root-level namespace that contains schemas.
       additionalProperties: false
       title: Catalog
-    Column:
+    ColumnInfo:
       required:
         - name
         - type_text
@@ -3878,7 +3864,7 @@ components:
       description: Create a new agent skill.
       additionalProperties: false
       title: Create Agent Skill Request
-    CreateCatalogRequest:
+    CreateCatalog:
       required:
         - name
       type: object
@@ -4011,7 +3997,7 @@ components:
       description: Create an entity tag assignment
       additionalProperties: false
       title: Create Entity Tag Assignment Request
-    CreateExternalLocationRequest:
+    CreateExternalLocation:
       required:
         - name
         - url
@@ -4259,7 +4245,7 @@ components:
       description: Creates a new recipient
       additionalProperties: false
       title: Create Recipient Request
-    CreateRegisteredModelRequest:
+    CreateRegisteredModel:
       required:
         - name
         - catalog_name
@@ -4287,7 +4273,7 @@ components:
       description: Create a new registered model.
       additionalProperties: false
       title: Create Registered Model Request
-    CreateSchemaRequest:
+    CreateSchema:
       required:
         - name
         - catalog_name
@@ -4417,7 +4403,7 @@ components:
         columns:
           type: array
           items:
-            $ref: "#/components/schemas/Column"
+            $ref: "#/components/schemas/ColumnInfo"
             additionalProperties: false
             required:
               - name
@@ -4471,7 +4457,7 @@ components:
       description: Create a new tag policy
       additionalProperties: false
       title: Create Tag Policy Request
-    CreateVolumeRequest:
+    CreateVolumeRequestContent:
       required:
         - catalog_name
         - schema_name
@@ -4516,7 +4502,7 @@ components:
       description: Create a new Volume
       additionalProperties: false
       title: Create Volume Request
-    Credential:
+    CredentialInfo:
       required:
         - name
         - purpose
@@ -4731,16 +4717,6 @@ components:
       description: The Databricks managed GCP service account configuration.
       additionalProperties: false
       title: Databricks Gcp Service Account
-    DefaultType:
-      type: object
-      properties:
-        number:
-          type: number
-          format: double
-        boolean:
-          type: boolean
-        string:
-          type: string
     Dependency:
       type: object
       properties:
@@ -4775,18 +4751,6 @@ components:
       description: A list of dependencies referenced by a view-like table.
       additionalProperties: false
       title: Dependency List
-    Discriminator:
-      type: object
-      properties:
-        property_name:
-          type: string
-        mapping:
-          $ref: "#/components/schemas/Strings"
-        specification_extension:
-          type: array
-          items:
-            $ref: "#/components/schemas/NamedAny"
-      description: When request bodies or response payloads may be one of a number of different schemas, a `discriminator` object can be used to aid in serialization, deserialization, and validation.  The discriminator is a specific object in a schema which is used to inform the consumer of the specification of an alternative schema based on the value associated with it.  When using the discriminator, _inline_ schemas will not be considered.
     EntityTagAssignment:
       required:
         - entity_type
@@ -4819,19 +4783,7 @@ components:
          its tag, not as standalone objects.
       additionalProperties: false
       title: The assignment of a tag to a Unity Catalog entity.
-    ExternalDocs:
-      type: object
-      properties:
-        description:
-          type: string
-        url:
-          type: string
-        specification_extension:
-          type: array
-          items:
-            $ref: "#/components/schemas/NamedAny"
-      description: Allows referencing an external resource for extended documentation.
-    ExternalLocation:
+    ExternalLocationInfo:
       required:
         - name
         - url
@@ -4898,7 +4850,7 @@ components:
          has finished writing all artifacts to the version's storage location.
       additionalProperties: false
       title: Finalize a model version.
-    Function:
+    FunctionInfo:
       required:
         - name
         - catalog_name
@@ -5354,13 +5306,6 @@ components:
           description: The type of the serialized message.
       additionalProperties: true
       description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
-    ItemsItem:
-      type: object
-      properties:
-        schema_or_reference:
-          type: array
-          items:
-            $ref: "#/components/schemas/SchemaOrReference"
     ListAgentSkillsResponse:
       type: object
       properties:
@@ -5423,7 +5368,7 @@ components:
         catalogs:
           type: array
           items:
-            $ref: "#/components/schemas/Catalog"
+            $ref: "#/components/schemas/CatalogInfo"
             additionalProperties: false
             required:
               - name
@@ -5442,7 +5387,7 @@ components:
         credentials:
           type: array
           items:
-            $ref: "#/components/schemas/Credential"
+            $ref: "#/components/schemas/CredentialInfo"
             additionalProperties: false
             required:
               - name
@@ -5490,7 +5435,7 @@ components:
         external_locations:
           type: array
           items:
-            $ref: "#/components/schemas/ExternalLocation"
+            $ref: "#/components/schemas/ExternalLocationInfo"
             additionalProperties: false
             required:
               - name
@@ -5512,7 +5457,7 @@ components:
         functions:
           type: array
           items:
-            $ref: "#/components/schemas/Function"
+            $ref: "#/components/schemas/FunctionInfo"
             additionalProperties: false
             required:
               - name
@@ -5637,7 +5582,7 @@ components:
         registered_models:
           type: array
           items:
-            $ref: "#/components/schemas/RegisteredModel"
+            $ref: "#/components/schemas/RegisteredModelInfo"
             additionalProperties: false
             required:
               - name
@@ -5662,7 +5607,7 @@ components:
         schemas:
           type: array
           items:
-            $ref: "#/components/schemas/Schema"
+            $ref: "#/components/schemas/SchemaInfo"
             additionalProperties: false
             required:
               - name
@@ -5719,7 +5664,7 @@ components:
         tables:
           type: array
           items:
-            $ref: "#/components/schemas/Table"
+            $ref: "#/components/schemas/TableInfo"
             additionalProperties: false
             required:
               - name
@@ -5758,13 +5703,13 @@ components:
       description: List tag policies response.
       additionalProperties: false
       title: List Tag Policies Response
-    ListVolumesResponse:
+    ListVolumesResponseContent:
       type: object
       properties:
         volumes:
           type: array
           items:
-            $ref: "#/components/schemas/Volume"
+            $ref: "#/components/schemas/VolumeInfo"
             additionalProperties: false
             required:
               - name
@@ -5901,38 +5846,6 @@ components:
          via the finalize operation.
       additionalProperties: false
       title: A model version under a registered model.
-    NamedAny:
-      type: object
-      properties:
-        name:
-          type: string
-          description: Map key
-        value:
-          allOf:
-            - $ref: "#/components/schemas/Any"
-          description: Mapped value
-      description: Automatically-generated message used to represent maps of Any as ordered (name,value) pairs.
-    NamedSchemaOrReference:
-      type: object
-      properties:
-        name:
-          type: string
-          description: Map key
-        value:
-          allOf:
-            - $ref: "#/components/schemas/SchemaOrReference"
-          description: Mapped value
-      description: Automatically-generated message used to represent maps of SchemaOrReference as ordered (name,value) pairs.
-    NamedString:
-      type: object
-      properties:
-        name:
-          type: string
-          description: Map key
-        value:
-          type: string
-          description: Mapped value
-      description: Automatically-generated message used to represent maps of string as ordered (name,value) pairs.
     PermissionsChange:
       type: object
       properties:
@@ -6070,13 +5983,6 @@ components:
       required:
         - principal
       title: Privilege Assignment
-    Properties:
-      type: object
-      properties:
-        additional_properties:
-          type: array
-          items:
-            $ref: "#/components/schemas/NamedSchemaOrReference"
     Provider:
       required:
         - name
@@ -6262,17 +6168,7 @@ components:
           description: Username of recipient token updater.
       additionalProperties: false
       title: Recipient Token
-    Reference:
-      type: object
-      properties:
-        _ref:
-          type: string
-        summary:
-          type: string
-        description:
-          type: string
-      description: A simple object to allow referencing other components in the specification, internally and externally.  The Reference Object is defined by JSON Reference and follows the same structure, behavior and rules.   For this specification, reference resolution is accomplished as defined by the JSON Reference specification and not by the JSON Schema specification.
-    RegisteredModel:
+    RegisteredModelInfo:
       required:
         - name
         - catalog_name
@@ -6351,113 +6247,68 @@ components:
          governed independently.
       additionalProperties: false
       title: A registered model within the three-level namespace (catalog.schema.model).
-    Schema:
+    SchemaInfo:
       type: object
+      additionalProperties: false
+      description: A schema is a namespace within a catalog that contains tables.
       properties:
-        nullable:
-          type: boolean
-        discriminator:
-          $ref: "#/components/schemas/Discriminator"
-        read_only:
-          type: boolean
-        write_only:
-          type: boolean
-        xml:
-          $ref: "#/components/schemas/Xml"
-        external_docs:
-          $ref: "#/components/schemas/ExternalDocs"
-        example:
-          $ref: "#/components/schemas/Any"
-        deprecated:
-          type: boolean
-        title:
+        catalog_name:
+          description: Name of parent catalog.
           type: string
-        multiple_of:
-          type: number
-          format: double
-        maximum:
-          type: number
-          format: double
-        exclusive_maximum:
-          type: boolean
-        minimum:
-          type: number
-          format: double
-        exclusive_minimum:
-          type: boolean
-        max_length:
+        comment:
+          description: User-provided free-form text description.
           type: string
-        min_length:
+        created_at:
+          description: Time at which this schema was created, in epoch milliseconds.
+          type: integer
+        created_by:
+          description: Username of schema creator.
           type: string
-        pattern:
+        full_name:
+          description: Full name of schema, in form of catalog_name.schema_name.
           type: string
-        max_items:
+        name:
+          description: Name of schema, relative to parent catalog.
           type: string
-        min_items:
+        owner:
+          description: Username of current owner of schema.
           type: string
-        unique_items:
-          type: boolean
-        max_properties:
-          type: string
-        min_properties:
-          type: string
-        required:
-          type: array
-          items:
-            type: string
-        enum:
-          type: array
-          items:
-            $ref: "#/components/schemas/Any"
-        type:
-          type: string
-        all_of:
-          type: array
-          items:
-            $ref: "#/components/schemas/SchemaOrReference"
-        one_of:
-          type: array
-          items:
-            $ref: "#/components/schemas/SchemaOrReference"
-        any_of:
-          type: array
-          items:
-            $ref: "#/components/schemas/SchemaOrReference"
-        not:
-          $ref: "#/components/schemas/Schema"
-        items:
-          $ref: "#/components/schemas/ItemsItem"
         properties:
-          $ref: "#/components/schemas/Properties"
           additionalProperties:
             type: string
           description: A map of key-value properties attached to the securable.
-        additional_properties:
-          $ref: "#/components/schemas/AdditionalPropertiesItem"
-        default:
-          $ref: "#/components/schemas/DefaultType"
-        description:
+          propertyNames:
+            type: string
+          type: object
+        schema_id:
+          description: Unique identifier for the schema.
           type: string
-        format:
+        storage_location:
+          description: |-
+            A unique path under `storage_root`. Absent when the schema has no
+             `storage_root`, in which case managed securables fall back to the parent
+             catalog's storage location.
+             Example: `s3://bucket/ucroot/__unitystorage/schemas/{schema_id}`.
+          title: Storage location URL (full path) for managed storage of the schema.
           type: string
-        specification_extension:
-          type: array
-          items:
-            $ref: "#/components/schemas/NamedAny"
-      description: A schema is a namespace within a catalog that contains tables.
-      additionalProperties: false
+        storage_root:
+          description: |-
+            Can be set when creating a schema. When set, managed tables/volumes created
+             in this schema are rooted here; otherwise the parent catalog's storage
+             location is used. Example: `s3://bucket/ucroot`.
+          title: Storage root URL for managed storage location of the schema.
+          type: string
+        updated_at:
+          description: Time at which this schema was last updated, in epoch milliseconds.
+          type: integer
+        updated_by:
+          description: Username of user who last modified schema.
+          type: string
       required:
         - name
         - catalog_name
         - full_name
       title: Schema
-    SchemaOrReference:
-      type: object
-      properties:
-        schema:
-          $ref: "#/components/schemas/Schema"
-        reference:
-          $ref: "#/components/schemas/Reference"
     Share:
       required:
         - name
@@ -6591,14 +6442,7 @@ components:
             $ref: "#/components/schemas/GoogleProtobufAny"
           description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
       description: "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors)."
-    Strings:
-      type: object
-      properties:
-        additional_properties:
-          type: array
-          items:
-            $ref: "#/components/schemas/NamedString"
-    Table:
+    TableInfo:
       required:
         - name
         - catalog_name
@@ -6657,7 +6501,7 @@ components:
         columns:
           type: array
           items:
-            $ref: "#/components/schemas/Column"
+            $ref: "#/components/schemas/ColumnInfo"
             additionalProperties: false
             required:
               - name
@@ -7361,7 +7205,7 @@ components:
       description: An allowed value for a governed tag.
       additionalProperties: false
       title: Value
-    Volume:
+    VolumeInfo:
       required:
         - name
         - catalog_name
@@ -7450,21 +7294,3 @@ components:
           description: The unique identifier of the metastore
       additionalProperties: false
       title: Volume
-    Xml:
-      type: object
-      properties:
-        name:
-          type: string
-        namespace:
-          type: string
-        prefix:
-          type: string
-        attribute:
-          type: boolean
-        wrapped:
-          type: boolean
-        specification_extension:
-          type: array
-          items:
-            $ref: "#/components/schemas/NamedAny"
-      description: A metadata object that allows for more fine-tuned XML model definitions.  When using arrays, XML element names are *not* inferred (for singular/plural forms) and the `name` property SHOULD be used to add that information. See examples for expected behavior.

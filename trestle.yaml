@@ -61,3 +61,35 @@ generate:
 enrich_openapi:
   spec: openapi/openapi.yaml
   jsonschema_dir: openapi/jsonschema
+  # Present the emitted OpenAPI component keys under the official Unity Catalog
+  # `*Info` naming without renaming the proto messages (which would rename the
+  # Rust/Python/Node model types too). gnostic derives the schema key from the
+  # message name with no override, so trestle rewrites the keys + all `$ref`s in
+  # the enrich pass. Maps current key -> desired key; absent source keys are
+  # ignored. Keeps the generated spec aligned with the reference RP spec / the
+  # node unity-catalog-client's expected schema names.
+  schema_renames:
+    Catalog: CatalogInfo
+    Schema: SchemaInfo
+    Table: TableInfo
+    Column: ColumnInfo
+    Volume: VolumeInfo
+    Function: FunctionInfo
+    RegisteredModel: RegisteredModelInfo
+    Credential: CredentialInfo
+    ExternalLocation: ExternalLocationInfo
+    CreateCatalogRequest: CreateCatalog
+    CreateSchemaRequest: CreateSchema
+    CreateRegisteredModelRequest: CreateRegisteredModel
+    CreateExternalLocationRequest: CreateExternalLocation
+    CreateVolumeRequest: CreateVolumeRequestContent
+    ListVolumesResponse: ListVolumesResponseContent
+  # gnostic emits its own OpenAPI meta-model `Schema` (pulled in via the
+  # gnostic/openapi/v3 annotations import used for operation_id), which collides
+  # with and overwrites our `unitycatalog.schemas.v1.Schema` entity — the emitted
+  # component ends up with meta-object fields (nullable, discriminator, …) instead
+  # of the real ones. Rebuild it from the authoritative JSON Schema. `Schema` is
+  # the only proto<->gnostic name clash. Applied before the rename above, so the
+  # corrected component becomes `SchemaInfo`.
+  schema_overrides:
+    - Schema

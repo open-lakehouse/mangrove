@@ -54,7 +54,8 @@ generate-openapi-sharing:
 generate-openapi:
     buf generate --template '{"version":"v2","plugins":[{"remote":"buf.build/bufbuild/protoschema-jsonschema:v0.6.0","opt": ["target=proto-strict-bundle"], "out":"openapi/jsonschema"}]}' proto
     buf build --output {{ justfile_directory() }}/descriptors.bin proto/unitycatalog
-    trestle enrich-openapi \
+    cargo run --manifest-path ../trestle/crates/trestle/Cargo.toml --bin trestle -- enrich-openapi \
+      --config {{ justfile_directory() }}/trestle.yaml \
       --jsonschema-dir openapi/jsonschema \
       --descriptors {{ justfile_directory() }}/descriptors.bin
     rm -f {{ justfile_directory() }}/descriptors.bin
