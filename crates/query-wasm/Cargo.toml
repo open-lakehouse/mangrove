@@ -47,10 +47,20 @@ crate-type = ["cdylib", "rlib"]
 # rev (2cf01549) as the native workspace (see ../../Cargo.toml) — one kernel pin
 # across the whole repo.
 [dependencies]
-deltalake-wasm = { git = "https://github.com/roeap/delta-rs", rev = "b7bef0748060fd27013c19f7eaeb296de2daabf5" }
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "b7bef0748060fd27013c19f7eaeb296de2daabf5", default-features = false, features = [
+# Bumped to a686c3be: `feat/sm-plans-kernel` (b7bef074) + the additive
+# `Snapshot::kernel_snapshot()` accessor the async-native provider needs to reach the kernel
+# `SnapshotRef` from a facade-opened table. Same kernel rev (2cf01549) as before — the accessor
+# is purely additive, so `Snapshot`/`OpenedTable` types are unchanged otherwise.
+deltalake-wasm = { git = "https://github.com/roeap/delta-rs", rev = "a686c3be5720c036efb80dded5fdaa995ebaab0c" }
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "a686c3be5720c036efb80dded5fdaa995ebaab0c", default-features = false, features = [
   "datafusion",
 ] }
+
+# The async-native (sm_plans-driven) Delta TableProvider — the workspace-member
+# replacement for the eager `DeltaScanNext` + InlineExecutor scan path. Shares
+# this workspace's Cargo.lock so its `delta_kernel` types unify with what
+# `deltalake-wasm` returns.
+olai-uc-delta-df-provider = { path = "delta-df-provider" }
 
 arrow-array = { version = "58" }
 arrow-ipc = { version = "58" }
@@ -83,7 +93,7 @@ url = { version = "2.5" }
 # needs none (the browser supplies fetch), so re-add it natively only. Mirrors
 # deltalake-wasm's own manifest.
 [target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "b7bef0748060fd27013c19f7eaeb296de2daabf5", default-features = false, features = [
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "a686c3be5720c036efb80dded5fdaa995ebaab0c", default-features = false, features = [
   "datafusion",
   "rustls",
 ] }

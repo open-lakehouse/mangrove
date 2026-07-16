@@ -5,13 +5,18 @@
 //! ``SELECT … FROM `catalog`.`schema`.`table` LIMIT n``). The engine extracts
 //! the single table reference, resolves it against the request's optional
 //! default catalog/schema (the Unity Catalog address), opens the table through
-//! [`deltalake_wasm`], registers the scan under exactly the name the SQL will
-//! resolve to, and executes — emitting one **self-contained** Arrow IPC stream
-//! per record batch (schema + batch + EOS), per the proto contract. This
-//! differs from `deltalake_wasm::query_ipc`, whose chunks form one incremental
-//! stream and only parse when concatenated.
+//! [`deltalake_wasm`], registers an async-native scan
+//! ([`DeltaSsaTableProvider`]) under exactly the name the SQL will resolve to,
+//! and executes — emitting one **self-contained** Arrow IPC stream per record
+//! batch (schema + batch + EOS), per the proto contract. This differs from
+//! `deltalake_wasm::query_ipc`, whose chunks form one incremental stream and
+//! only parse when concatenated.
 //!
-//! Everything here compiles natively; the native tests drive it with an
+//! The scan engine is the `sm_plans`-driven [`DeltaSsaTableProvider`], which
+//! streams data files lazily through DataFusion's own async object-store stack —
+//! **no inline executor** on the scan path. Snapshot *construction* still runs
+//! through the `deltalake_wasm` facade (which threads `max_catalog_version` for
+//! catalog-managed tables); the native tests drive that build with an
 //! [`InlineExecutor`](deltalake_core::kernel::InlineExecutor) over an in-memory
 //! store — the browser execution model minus the network.
 
@@ -29,7 +34,7 @@ use futures::stream::BoxStream;
 use object_store::ObjectStore;
 use url::Url;
 
-use deltalake_core::delta_datafusion::{DeltaScanConfig, DeltaScanNext};
+use delta_df_provider::{DeltaSsaScanConfig, DeltaSsaTableProvider};
 use deltalake_wasm::{LogSource, OpenOptions, OpenedTable, open_table_with_store};
 
 use crate::error::{Error, Result};
@@ -203,13 +208,29 @@ pub fn register_table(
     // This is an *unreleased* upstream gap, not a permanent one: apache/arrow-js
     // added BinaryView/Utf8View read support on `main` (PR #320), but the latest
     // npm release / git tag is still 21.1.0 and lacks it. Drop this override
-    // (revert to `DeltaScanConfig::default()`) once a release ships the reader —
-    // tracked in https://github.com/open-lakehouse/mangrove/issues/28.
-    let scan_config = DeltaScanConfig {
+    // once a release ships the reader — tracked in
+    // https://github.com/open-lakehouse/mangrove/issues/28.
+    //
+    // The `DeltaSsaTableProvider` reads parquet through DataFusion's own source, which honors
+    // the session-level `datafusion.execution.parquet.schema_force_view_types` knob. Set it to
+    // `false` on the facade session so the physical reader emits plain `Utf8`/`Binary`; the
+    // provider config records the same intent and asserts the two agree at scan time.
+    ctx.state_ref()
+        .write()
+        .config_mut()
+        .options_mut()
+        .execution
+        .parquet
+        .schema_force_view_types = false;
+    let scan_config = DeltaSsaScanConfig {
         schema_force_view_types: false,
-        ..DeltaScanConfig::default()
     };
-    let scan = DeltaScanNext::new(opened.snapshot.clone(), scan_config)?;
+    // Extract the kernel `SnapshotRef` from the facade-opened table (via the additive fork
+    // accessor) and hand it to the async-native, sm_plans-driven provider — replacing the eager
+    // `DeltaScanNext` + InlineExecutor scan path. Snapshot *construction* still goes through the
+    // facade above (it correctly threads `max_catalog_version` for catalog-managed tables); only
+    // the scan engine changes.
+    let scan = DeltaSsaTableProvider::new(opened.snapshot.kernel_snapshot(), scan_config)?;
     schema.register_table(resolved.table.to_string(), Arc::new(scan))?;
     Ok(())
 }

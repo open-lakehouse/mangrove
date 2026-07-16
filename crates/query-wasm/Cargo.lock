@@ -1621,7 +1621,7 @@ dependencies = [
 [[package]]
 name = "deltalake-core"
 version = "0.32.4"
-source = "git+https://github.com/roeap/delta-rs?rev=b7bef0748060fd27013c19f7eaeb296de2daabf5#b7bef0748060fd27013c19f7eaeb296de2daabf5"
+source = "git+https://github.com/roeap/delta-rs?rev=a686c3be5720c036efb80dded5fdaa995ebaab0c#a686c3be5720c036efb80dded5fdaa995ebaab0c"
 dependencies = [
  "alloc-stdlib",
  "arrow",
@@ -1679,7 +1679,7 @@ dependencies = [
 [[package]]
 name = "deltalake-derive"
 version = "0.32.4"
-source = "git+https://github.com/roeap/delta-rs?rev=b7bef0748060fd27013c19f7eaeb296de2daabf5#b7bef0748060fd27013c19f7eaeb296de2daabf5"
+source = "git+https://github.com/roeap/delta-rs?rev=a686c3be5720c036efb80dded5fdaa995ebaab0c#a686c3be5720c036efb80dded5fdaa995ebaab0c"
 dependencies = [
  "convert_case",
  "itertools",
@@ -1691,7 +1691,7 @@ dependencies = [
 [[package]]
 name = "deltalake-wasm"
 version = "0.1.0"
-source = "git+https://github.com/roeap/delta-rs?rev=b7bef0748060fd27013c19f7eaeb296de2daabf5#b7bef0748060fd27013c19f7eaeb296de2daabf5"
+source = "git+https://github.com/roeap/delta-rs?rev=a686c3be5720c036efb80dded5fdaa995ebaab0c#a686c3be5720c036efb80dded5fdaa995ebaab0c"
 dependencies = [
  "arrow-ipc",
  "async-trait",
@@ -2891,6 +2891,7 @@ dependencies = [
  "futures",
  "js-sys",
  "object_store",
+ "olai-uc-delta-df-provider",
  "parquet",
  "percent-encoding",
  "reqwest 0.13.4",
