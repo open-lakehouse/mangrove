@@ -51,30 +51,31 @@ keywords = [
 # dependency (git-sourced included) that lacks a version requirement. The
 # `git`+`rev` still governs the actual build; `version` only satisfies the
 # packaging check and matches each fork's declared version. See release-plz#2595.
-# Pinned to the delta-kernel-rs `sm-plans-consolidation` TIP (rev c70137e7 =
-# 2cf01549 plus 3 additive, `sm-plans`-gated commits: the list-free snapshot
-# construction seam, the SnapshotPm P&M state machine, and the checkpoint-only
-# reconciliation fix) and the matching delta-rs rev 1b0ad42a (= the olai/sm-plans
+# Pinned to the delta-kernel-rs `sm-plans-consolidation` TIP (rev bb721add =
+# 2cf01549 plus 4 additive, `sm-plans`-gated commits: the list-free snapshot
+# construction seam, the SnapshotPm P&M state machine, the checkpoint-only
+# reconciliation fix, and the stats-on-terminal scan metadata SM) and the
+# matching delta-rs rev 0cc782c9 (= the olai/sm-plans
 # tip a686c3be plus a one-line Cargo bump of delta-rs's own kernel pin to
-# c70137e7). This is the rev the wasm query engine (`crates/query-wasm` +
+# bb721add). This is the rev the wasm query engine (`crates/query-wasm` +
 # `delta-df-provider`) requires for its async-native sm_plans path, and it is
 # now the WHOLE repo's rev — native + wasm share ONE kernel and ONE delta-rs rev
-# (the single-rev invariant). The 3 extra commits are inside the `sm-plans`
+# (the single-rev invariant). The 4 extra commits are inside the `sm-plans`
 # feature the native build never enables, so the native surface is unchanged.
 # `default-features = false` +
 # explicit `arrow-58` is REQUIRED: the kernel's `arrow` default alias is arrow-59
 # and delta_kernel_default_engine's `default` enables it, so leaving defaults on
 # unions arrow-59 into this arrow-58 graph and splits the two `Schema` types.
-delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "c70137e7c99552e2ac531e873d4dc4499476f3b6", default-features = false, features = [
+delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "bb721addebb685c3adbd5f998150331a5f60b547", default-features = false, features = [
   "internal-api",
   "default-engine-base",
   "arrow-58",
 ] }
-delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "c70137e7c99552e2ac531e873d4dc4499476f3b6", package = "delta_kernel_default_engine", default-features = false, features = [
+delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "bb721addebb685c3adbd5f998150331a5f60b547", package = "delta_kernel_default_engine", default-features = false, features = [
   "arrow-58",
   "rustls",
 ] }
-deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "1b0ad42ad10d02def901986c45fd1fbd07b9b8f3", features = [
+deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "0cc782c930104cb7cf92c3561f8e210eb6d03f67", features = [
   "datafusion",
   "cloud",
 ] }
