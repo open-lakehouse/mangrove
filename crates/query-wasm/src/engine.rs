@@ -36,7 +36,7 @@ use futures::stream::BoxStream;
 use object_store::ObjectStore;
 use url::Url;
 
-use delta_df_provider::{
+use olai_delta_df::{
     DeltaSsaScanConfig, DeltaSsaTableProvider, FileMeta, SnapshotRef, build_snapshot_from_manifest,
 };
 

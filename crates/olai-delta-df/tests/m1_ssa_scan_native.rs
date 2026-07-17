@@ -16,7 +16,6 @@ use std::sync::Arc;
 use datafusion::execution::context::SessionContext;
 use datafusion::execution::runtime_env::RuntimeEnv;
 use datafusion::prelude::SessionConfig;
-use delta_df_provider::{DeltaSsaScanConfig, DeltaSsaTableProvider};
 use delta_kernel::arrow::array::{ArrayRef, AsArray, Int64Array, RecordBatch, StringArray};
 use delta_kernel::arrow::datatypes::{DataType, Field, Int64Type, Schema};
 use delta_kernel::parquet::arrow::ArrowWriter;
@@ -27,6 +26,7 @@ use delta_kernel_default_engine::DefaultEngineBuilder;
 use object_store::ObjectStoreExt;
 use object_store::memory::InMemory;
 use object_store::path::Path;
+use olai_delta_df::{DeltaSsaScanConfig, DeltaSsaTableProvider};
 use url::Url;
 
 const TABLE_PREFIX: &str = "tbl";

@@ -18,7 +18,6 @@ use std::sync::Arc;
 use datafusion::execution::context::SessionContext;
 use datafusion::execution::runtime_env::RuntimeEnv;
 use datafusion::prelude::SessionConfig;
-use delta_df_provider::{DeltaSsaScanConfig, DeltaSsaTableProvider, build_snapshot_from_manifest};
 use delta_kernel::arrow::array::{ArrayRef, AsArray, Int64Array, RecordBatch, StringArray};
 use delta_kernel::arrow::datatypes::{DataType, Field, Int64Type, Schema};
 use delta_kernel::parquet::arrow::ArrowWriter;
@@ -31,6 +30,7 @@ use object_store::local::LocalFileSystem;
 use object_store::memory::InMemory;
 use object_store::path::Path;
 use object_store::{ObjectStore, ObjectStoreExt};
+use olai_delta_df::{DeltaSsaScanConfig, DeltaSsaTableProvider, build_snapshot_from_manifest};
 use url::Url;
 
 const TABLE_PREFIX: &str = "tbl";
@@ -223,7 +223,7 @@ async fn snapshot_from_manifest_matches_eager_classic_checkpoint() {
     // `<kernel>/kernel/tests/data/app-txn-checkpoint` — a small classic-checkpointed table.
     let table_dir = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../../../delta-kernel-rs/kernel/tests/data/app-txn-checkpoint"
+        "/../../../delta-kernel-rs/kernel/tests/data/app-txn-checkpoint"
     );
     let canonical = std::fs::canonicalize(table_dir)
         .unwrap_or_else(|e| panic!("app-txn-checkpoint fixture not found at {table_dir}: {e}"));
@@ -319,7 +319,7 @@ async fn deep_table_root_without_trailing_slash_resolves() {
 async fn scan_on_classic_checkpoint_succeeds() {
     let table_dir = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../../../delta-kernel-rs/kernel/tests/data/app-txn-checkpoint"
+        "/../../../delta-kernel-rs/kernel/tests/data/app-txn-checkpoint"
     );
     let canonical = std::fs::canonicalize(table_dir)
         .unwrap_or_else(|e| panic!("app-txn-checkpoint fixture not found at {table_dir}: {e}"));

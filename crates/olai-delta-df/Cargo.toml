@@ -20,7 +20,7 @@
 #
 # See ../../../handover-wasm-async-native-table-provider.md.
 [package]
-name = "olai-uc-delta-df-provider"
+name = "olai-delta-df"
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
@@ -30,10 +30,10 @@ rust-version = "1.91"
 publish = false
 
 [lib]
-name = "delta_df_provider"
+name = "olai_delta_df"
 
 [features]
-# Exposes `delta_df_provider::testing`: buffered `Vec<RecordBatch>` collectors over the SSA
+# Exposes `olai_delta_df::testing`: buffered `Vec<RecordBatch>` collectors over the SSA
 # result-plan APIs, for integration tests / harnesses that want eager materialization. Not for
 # production. Named `testing` (not `test-utils`) at the module to avoid clashing with kernel's
 # `test_utils`, but the FEATURE keeps the conventional `test-utils` name.
@@ -95,7 +95,7 @@ uuid = { version = "1.18.0", default-features = false }
 object_store = "0.13"
 # Self dev-dependency activating `test-utils` so this crate's own integration tests can use the
 # `testing` collectors — mirrors the pattern in the kernel POC and `kernel/Cargo.toml`.
-delta_df_provider = { package = "olai-uc-delta-df-provider", path = ".", features = ["test-utils"] }
+olai_delta_df = { package = "olai-delta-df", path = ".", features = ["test-utils"] }
 
 # Native-only test deps. tokio (current-thread runtime to drive the !Send SM), rstest (ported
 # unit tests), tempfile (LocalFileSystem fixtures), and the kernel DefaultEngine (used ONLY to
