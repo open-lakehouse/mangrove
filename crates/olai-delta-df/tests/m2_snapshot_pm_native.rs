@@ -239,6 +239,40 @@ async fn snapshot_from_manifest_matches_eager_classic_checkpoint() {
     assert_eq!(built.schema(), eager.schema(), "logical schema must match");
 }
 
+/// The checkpoint P&M reconciliation drive is correct on a **native, multi-partition** session
+/// (`DeltaEngineSessionOptions::native()` — `target_partitions` = host cores, NOT forced to 1).
+/// This exercises the structural single-partition guarantee: `run_consume`'s drain coalesces the
+/// reconciliation plan's partitions before reading, so the drive does not depend on the session
+/// forcing single-partition. If the drain still read only partition 0, a fanned-out plan would drop
+/// rows and the resolved `(Protocol, Metadata)` — hence schema/version — would diverge from the
+/// eager oracle.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn snapshot_from_manifest_matches_eager_classic_checkpoint_native_multi_partition() {
+    let table_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/app-txn-checkpoint");
+    let canonical = std::fs::canonicalize(table_dir)
+        .unwrap_or_else(|e| panic!("app-txn-checkpoint fixture not found at {table_dir}: {e}"));
+    let table_url = Url::from_directory_path(&canonical).unwrap();
+    let store: Arc<dyn ObjectStore> = Arc::new(LocalFileSystem::new());
+
+    let eager = eager_snapshot(Arc::clone(&store), &table_url, 1);
+    let manifest = manifest_for(store.as_ref(), &table_url).await;
+
+    // Native preset: multi-partition (leaves `target_partitions` at host parallelism). The only
+    // difference from `session_with_store` is that single-partition is NOT forced. View types are
+    // off just to keep the session shape identical to the wasm helper; irrelevant to this drive.
+    let session = delta_engine_session(
+        Arc::clone(&store),
+        &table_url,
+        &DeltaEngineSessionOptions::native().with_schema_force_view_types(false),
+    );
+    let built = build_snapshot_from_manifest(&session, &table_url, manifest, 1)
+        .await
+        .expect("build_snapshot_from_manifest (checkpointed, native multi-partition)");
+
+    assert_eq!(built.version(), eager.version(), "version must match");
+    assert_eq!(built.schema(), eager.schema(), "logical schema must match");
+}
+
 /// Regression: a deep table root passed WITHOUT a trailing slash still resolves. This is the exact
 /// shape `creds::resolve_storage` produces for a Unity Catalog managed table
 /// (`…/__unitystorage/catalogs/<id>/tables/<uuid>`, no trailing `/`). `build_snapshot_from_manifest`

@@ -104,42 +104,49 @@ impl Default for DeltaEngineSessionOptions {
     }
 }
 
-/// Apply the Delta engine's session config onto `config`: three unconditional, load-bearing knobs
+/// Apply the Delta engine's session config onto `config`: the unconditional, load-bearing knobs
 /// plus the caller-selected [`DeltaEngineSessionOptions`]. This is the single source of truth for
 /// engine session config — every caller and test helper should route through it rather than
 /// setting `options_mut()` by hand.
 ///
-/// # Load-bearing knobs (unconditional)
+/// # Unconditional knobs (both targets)
 ///
-/// These fall into two distinct categories:
+/// These are correctness requirements, not preferences, and are **not** wasm-specific:
 ///
-/// **Execution-model (single-threaded) knobs.** `target_partitions = 1` and
-/// `collect_statistics = false`. The consume-sink drain reads partition 0 only, scan/FSR
-/// correctness does not depend on intra-file parallelism, and the kernel does its own file-level
-/// data skipping (DataFusion's parquet stats collector also mishandles column-mapping/field-id
-/// renamed columns). Single-partition additionally matches the wasm runtime, which has no threads.
+/// **`collect_statistics = false` — column-mapping correctness.** DataFusion's parquet stats
+/// collector mishandles Delta column-mapping / field-id renamed columns: it stamps
+/// missing-by-logical-name columns as all-null, which the projection folds to `Literal::NULL`
+/// *before* the field-id rename applies — producing wrong results. That bug hits native reads just
+/// as much as wasm, so the knob is unconditional. (The kernel does its own file-level data skipping,
+/// so we lose nothing by disabling DF's stats.)
 ///
-/// **Kernel-integration compiler workaround.** `enable_leaf_expression_pushdown = false`. This is
-/// **NOT a wasm constraint** and not an execution-model concern — it runs identically native and
-/// wasm. It works around a name-qualification collision in *our own* SSA -> `LogicalPlan` compiler:
-/// the FSR replay shape is a `Filter` reading nested fields over a `Project` that builds the Delta
-/// action structs via `named_struct`, and DataFusion's leaf-expression-pushdown pass inlines the
-/// whole struct into every filter leaf, producing a schema that carries both the qualified
-/// `scan."metaData"` (from the scan alias) and the unqualified `"metaData"` (the projection
+/// **`enable_leaf_expression_pushdown = false` — kernel-integration compiler workaround.** Runs
+/// identically native and wasm. It works around a name-qualification collision in *our own* SSA ->
+/// `LogicalPlan` compiler: the FSR replay shape is a `Filter` reading nested fields over a `Project`
+/// that builds the Delta action structs via `named_struct`, and DataFusion's leaf-expression-pushdown
+/// pass inlines the whole struct into every filter leaf, producing a schema that carries both the
+/// qualified `scan."metaData"` (from the scan alias) and the unqualified `"metaData"` (the projection
 /// output) — an `AmbiguousReference` (apache/datafusion#20432). The proper fix is at the compile
-/// layer (neutralize the qualified/unqualified collision); until then we disable the pass, which
-/// costs essentially nothing on these single-partition, projection-already-pushed plans.
+/// layer (neutralize the collision); until then we disable the pass, which costs essentially nothing
+/// on these plans. Tracked in mangrove#123.
+///
+/// # Single-partition
+///
+/// `target_partitions = 1` is applied only when [`DeltaEngineSessionOptions::disable_repartition`]
+/// is set (the wasm preset) — it is a single-threaded-runtime / perf knob, **not** a correctness
+/// requirement, because single-partition is now enforced *structurally* where it matters: the
+/// consume-sink drain coalesces to one partition before reading
+/// ([`DataFusionExecutor`](crate::DataFusionExecutor)), and the internal `LoadExec` leaf declares
+/// single-partition output. So native (`disable_repartition = false`) keeps intra-plan parallelism
+/// and concurrent file reads while staying correct.
 pub fn configure_delta_engine_config(
     mut config: SessionConfig,
     options: &DeltaEngineSessionOptions,
 ) -> SessionConfig {
-    // --- Execution-model (single-threaded) knobs ---
-    config.options_mut().execution.target_partitions = 1;
+    // --- Unconditional, load-bearing (both targets); see fn docs ---
+    // Column-mapping correctness (DF stats collector mishandles field-id renamed columns).
     config.options_mut().execution.collect_statistics = false;
-
-    // --- Kernel-integration compiler workaround (NOT wasm-specific); see fn docs, #20432, and
-    // the compiler-fix follow-up mangrove#123 (fixing the qualified/unqualified collision there
-    // lets this flag be removed) ---
+    // Kernel-integration compiler workaround (apache/datafusion#20432, mangrove#123).
     config
         .options_mut()
         .optimizer
@@ -152,6 +159,10 @@ pub fn configure_delta_engine_config(
         .parquet
         .schema_force_view_types = options.schema_force_view_types;
     if options.disable_repartition {
+        // Single-threaded runtime: force one partition and disable every repartition pass. Not a
+        // correctness requirement (the drain coalesces structurally); native leaves this off to
+        // keep parallelism.
+        config.options_mut().execution.target_partitions = 1;
         config = config
             .with_round_robin_repartition(false)
             .with_repartition_joins(false)
@@ -236,6 +247,9 @@ pub fn validate_delta_engine_session(
     let options = session.config_options();
     let mut problems = Vec::new();
 
+    // Only the correctness-critical knobs are validated. `target_partitions` is deliberately NOT
+    // checked: single-partition is enforced structurally (the consume drain coalesces), so a
+    // multi-partition native session is valid.
     if options.optimizer.enable_leaf_expression_pushdown {
         problems.push(
             "optimizer.enable_leaf_expression_pushdown=true (must be false; the FSR replay shape \
@@ -243,16 +257,10 @@ pub fn validate_delta_engine_session(
                 .to_string(),
         );
     }
-    if options.execution.target_partitions != 1 {
-        problems.push(format!(
-            "execution.target_partitions={} (must be 1; the consume-sink drain reads partition 0)",
-            options.execution.target_partitions
-        ));
-    }
     if options.execution.collect_statistics {
         problems.push(
-            "execution.collect_statistics=true (must be false; DF stats mishandle field-id \
-             renamed columns)"
+            "execution.collect_statistics=true (must be false; DF stats mishandle Delta \
+             column-mapping/field-id renamed columns and produce wrong results)"
                 .to_string(),
         );
     }
@@ -303,8 +311,8 @@ mod tests {
     }
 
     #[test]
-    fn configure_sets_load_bearing_knobs_unconditionally() {
-        // Both presets must set the three load-bearing knobs identically, regardless of options.
+    fn configure_sets_correctness_knobs_unconditionally() {
+        // The correctness-critical knobs are set for both presets, regardless of options.
         for options in [
             DeltaEngineSessionOptions::native(),
             DeltaEngineSessionOptions::wasm(),
@@ -312,7 +320,6 @@ mod tests {
             let config = delta_engine_session_config(&options);
             let opts = config.options();
             assert!(!opts.optimizer.enable_leaf_expression_pushdown);
-            assert_eq!(opts.execution.target_partitions, 1);
             assert!(!opts.execution.collect_statistics);
             // The option is honored.
             assert_eq!(
@@ -320,6 +327,24 @@ mod tests {
                 options.schema_force_view_types
             );
         }
+    }
+
+    #[test]
+    fn target_partitions_is_gated_on_disable_repartition() {
+        // Single-partition is a wasm/perf knob (correctness is structural in the drain), so it is
+        // forced only when repartition is disabled.
+        let wasm = delta_engine_session_config(&DeltaEngineSessionOptions::wasm());
+        assert_eq!(wasm.options().execution.target_partitions, 1);
+
+        // Native leaves `target_partitions` untouched at the SessionConfig default (host
+        // parallelism) rather than forcing 1. Compare against a fresh config so the assertion holds
+        // even on a single-core runner where the default happens to be 1.
+        let native = delta_engine_session_config(&DeltaEngineSessionOptions::native());
+        assert_eq!(
+            native.options().execution.target_partitions,
+            SessionConfig::new().options().execution.target_partitions,
+            "native must not override target_partitions"
+        );
     }
 
     #[test]

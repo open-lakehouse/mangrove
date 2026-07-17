@@ -24,7 +24,8 @@ use std::sync::Arc;
 use datafusion::catalog::Session;
 use datafusion_common::error::DataFusionError;
 use datafusion_expr::LogicalPlan;
-use datafusion_physical_plan::ExecutionPlan;
+use datafusion_physical_plan::coalesce_partitions::CoalescePartitionsExec;
+use datafusion_physical_plan::{ExecutionPlan, ExecutionPlanProperties};
 use delta_kernel::engine::arrow_conversion::TryFromArrow;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
 use delta_kernel::log_segment::LogSegment;
@@ -351,9 +352,19 @@ impl DataFusionExecutor {
         ctx: &CompileContext,
     ) -> Result<FinishedHandle, DataFusionError> {
         let mut handle = sink.new_handle(ctx.sm_id, ctx.sm_kind, ctx.step_name);
-        // Consume sinks are single-partition by construction; read partition 0 directly without
-        // coalesce.
-        let mut stream = physical.execute(0, session.task_ctx())?;
+        // The consumer must see the whole result as one ordered stream, so coalesce to a single
+        // partition before reading. This makes the drain correct for *any* input partitioning
+        // rather than assuming one — so single-partition is a structural guarantee of the drain,
+        // not something the session config must force globally (`target_partitions=1` is now only a
+        // wasm/perf knob, applied via `DeltaEngineSessionOptions::disable_repartition`). Coalescing
+        // an already-single-partition plan is a cheap passthrough.
+        let coalesced: Arc<dyn ExecutionPlan> =
+            if physical.output_partitioning().partition_count() > 1 {
+                Arc::new(CoalescePartitionsExec::new(physical))
+            } else {
+                physical
+            };
+        let mut stream = coalesced.execute(0, session.task_ctx())?;
         while let Some(batch) = stream.try_next().await? {
             let arrow = ArrowEngineData::new(batch);
             match handle
