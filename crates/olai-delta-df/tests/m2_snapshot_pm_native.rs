@@ -220,11 +220,8 @@ async fn snapshot_from_manifest_matches_eager_commit_only() {
 /// (the #116 fix) — the P&M replay must read the checkpoint parquet.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn snapshot_from_manifest_matches_eager_classic_checkpoint() {
-    // `<kernel>/kernel/tests/data/app-txn-checkpoint` — a small classic-checkpointed table.
-    let table_dir = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../delta-kernel-rs/kernel/tests/data/app-txn-checkpoint"
-    );
+    // Vendored classic-checkpointed table (from delta-kernel-rs `kernel/tests/data`); see tests/data.
+    let table_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/app-txn-checkpoint");
     let canonical = std::fs::canonicalize(table_dir)
         .unwrap_or_else(|e| panic!("app-txn-checkpoint fixture not found at {table_dir}: {e}"));
     let table_url = Url::from_directory_path(&canonical).unwrap();
@@ -317,10 +314,7 @@ async fn deep_table_root_without_trailing_slash_resolves() {
 /// case, which `query-wasm`'s `resolve.rs` discovers rather than gates. apache/datafusion#20432.)
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn scan_on_classic_checkpoint_succeeds() {
-    let table_dir = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../../delta-kernel-rs/kernel/tests/data/app-txn-checkpoint"
-    );
+    let table_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/app-txn-checkpoint");
     let canonical = std::fs::canonicalize(table_dir)
         .unwrap_or_else(|e| panic!("app-txn-checkpoint fixture not found at {table_dir}: {e}"));
     let table_url = Url::from_directory_path(&canonical).unwrap();
