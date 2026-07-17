@@ -24,6 +24,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use common::SumRowsConsumer;
+use datafusion::execution::context::SessionContext;
 use delta_kernel::arrow::array::{AsArray, RecordBatch};
 use delta_kernel::arrow::compute::concat_batches;
 use delta_kernel::arrow::datatypes::Int64Type;
@@ -36,12 +37,25 @@ use delta_kernel::sm_plans::ir::plan::ResultPlan;
 use delta_kernel::sm_plans::state_machines::framework::plan_context::{Context, LoadSpec};
 use delta_kernel::sm_plans::state_machines::framework::step::EngineRequest;
 use delta_kernel::sm_plans::state_machines::framework::step_payload::EngineResponse;
-use olai_delta_df::{DataFusionExecutor, testing};
+use olai_delta_df::{
+    DataFusionExecutor, DeltaEngineSessionOptions, delta_engine_session_config, testing,
+};
+
+/// An engine-configured, store-free session for the compile-only SSA tests (they lower + drive SSA
+/// plans with no object-store reads). The executor borrows this session's `SessionState`, so keep
+/// the returned context alive for the executor's lifetime.
+fn engine_session() -> SessionContext {
+    SessionContext::new_with_config(delta_engine_session_config(
+        &DeltaEngineSessionOptions::wasm(),
+    ))
+}
 
 /// Drive a `ResultPlan` to a single concatenated batch on a current-thread runtime (the SSA SM
 /// drive future is `!Send`).
 fn run_to_one_batch(rp: ResultPlan) -> RecordBatch {
-    let exec = DataFusionExecutor::new();
+    let ctx = engine_session();
+    let state = ctx.state();
+    let exec = DataFusionExecutor::new(&state);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -295,7 +309,9 @@ async fn step_consume_drains_ssa_into_consumer_handle() {
     let sink = ConsumeSink::new_consumer(SumRowsConsumer::new("ssa.consume_test"));
     let token = sink.token.clone();
 
-    let executor = DataFusionExecutor::new();
+    let session = engine_session();
+    let state = session.state();
+    let executor = DataFusionExecutor::new(&state);
     let payload = executor
         .execute_step(EngineRequest::Consume {
             stmts,
@@ -378,7 +394,9 @@ async fn load_node_reads_files_and_broadcasts_passthrough() {
         .unwrap();
     let rp = ctx.into_result_plan(builder).unwrap();
 
-    let exec = DataFusionExecutor::new();
+    let session = engine_session();
+    let state = session.state();
+    let exec = DataFusionExecutor::new(&state);
     let batches = testing::collect_ssa_result(&exec, rp).await.unwrap();
     assert!(!batches.is_empty(), "expected at least one batch");
     // Two upstream rows, each broadcasting onto two file rows -> 4 emitted rows.

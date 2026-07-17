@@ -73,21 +73,18 @@ async fn load_over_in_memory_store_runs_on_wasm() {
         .await
         .unwrap();
 
-    // Build the session-backed executor and register the store so the compiled plan resolves
-    // `memory://` reads.
-    use datafusion::execution::context::SessionContext;
-    use datafusion::execution::runtime_env::RuntimeEnv;
-    use datafusion::prelude::SessionConfig;
-    let mut config = SessionConfig::new();
-    config.options_mut().execution.target_partitions = 1;
-    config
-        .options_mut()
-        .execution
-        .parquet
-        .schema_force_view_types = false;
-    let session = SessionContext::new_with_config_rt(config, Arc::new(RuntimeEnv::default()));
-    session.runtime_env().register_object_store(&base, store);
-    let exec = DataFusionExecutor::from_session(session);
+    // Build the engine-configured session (browser preset) with the store registered so the
+    // compiled plan resolves `memory://` reads, then an executor over its state. The `state`
+    // binding outlives `exec`, which borrows it.
+    use object_store::ObjectStore;
+    use olai_delta_df::{DeltaEngineSessionOptions, delta_engine_session};
+    let session = delta_engine_session(
+        store as Arc<dyn ObjectStore>,
+        &base,
+        &DeltaEngineSessionOptions::wasm(),
+    );
+    let state = session.state();
+    let exec = DataFusionExecutor::new(&state);
 
     // Hand-build an SSA plan: a Values upstream (one row: the file path + a broadcast tag) fed
     // into a Load node reading the parquet file. This is the shape a scan replay produces, minus
