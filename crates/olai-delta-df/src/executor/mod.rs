@@ -184,29 +184,37 @@ impl DataFusionExecutor {
     /// (`Scan::scan_stats_metadata_state_machine`), whose small terminal (one row per live file) the
     /// provider consumes directly to build per-file [`Statistics`].
     ///
-    /// # `!Send` / IO caveat
+    /// Returns `Ok(None)` — **skipped, not an error** — when the compiled plan would perform
+    /// object-store IO (a [`LoadExec`]/[`FileListingExec`] leaf; see [`plan_reads_no_files`]).
+    /// Because this method *executes* the plan, running it under `block_on` on a browser worker
+    /// would starve the `fetch` event loop; the guard degrades to `None` so the caller proceeds
+    /// without stats rather than hanging. The stats terminal drains the reconciled live-action rows
+    /// (resident by the time the SM terminates), so it is CPU-only for the tables that reach it
+    /// today and this guard almost never fires — it is a correctness backstop.
     ///
-    /// Like every SM drive here the future is `!Send`. Unlike [`drive_ssa_to_plan`] it also
-    /// *executes* a physical plan, so callers that `block_on` it (rather than `.await`) must first
-    /// confirm the compiled plan performs **no object-store IO** — see
-    /// [`plan_reads_no_files`]. The stats terminal drains the reconciled live-action rows (already
-    /// resident by the time the SM terminates), so it is CPU-only for the tables that reach it
-    /// today; the guard keeps that invariant honest on the wasm `block_on` path.
+    /// # `!Send`
+    ///
+    /// Like every SM drive here the future is `!Send`; nothing `!Send` is held across the internal
+    /// `.await`s and the returned `Vec<RecordBatch>` is `Send`.
     ///
     /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
     /// [`RecordBatch`]: delta_kernel::arrow::array::RecordBatch
-    // Consumed by the provider `scan()` stats drive in a following commit.
-    #[allow(dead_code)]
     pub async fn drive_ssa_to_batches(
         &self,
         session: &dyn Session,
         sm: CoroutineSM<delta_kernel::sm_plans::ir::plan::ResultPlan>,
-    ) -> Result<Vec<RecordBatch>, DeltaError> {
+    ) -> Result<Option<Vec<RecordBatch>>, DeltaError> {
         let logical = self.drive_ssa_to_plan(session, sm).await?;
         let physical = session.create_physical_plan(&logical).await.into_delta()?;
-        datafusion_physical_plan::collect(physical, session.task_ctx())
+        if !plan_reads_no_files(&physical) {
+            // The stats terminal compiled to an IO-performing plan (e.g. a checkpoint whose stats
+            // live in parquet rows). Skip rather than block on `fetch` under a browser worker.
+            return Ok(None);
+        }
+        let batches = datafusion_physical_plan::collect(physical, session.task_ctx())
             .await
-            .into_delta()
+            .into_delta()?;
+        Ok(Some(batches))
     }
 
     /// Drive a combined metadata + data scan against `session` and compile it to a bare
@@ -441,8 +449,6 @@ impl DataFusionExecutor {
 /// two node types appears anywhere in the tree. Used by the provider to gate the `block_on` stats
 /// drive: if a stats terminal ever compiles to an IO leaf (e.g. a checkpoint whose stats live in
 /// parquet rows), the provider skips stats rather than block on `fetch`.
-// Consumed by the provider `scan()` stats drive in a following commit.
-#[allow(dead_code)]
 pub(crate) fn plan_reads_no_files(plan: &Arc<dyn ExecutionPlan>) -> bool {
     let any: &dyn std::any::Any = plan.as_ref();
     if any.is::<crate::exec::LoadExec>() || any.is::<crate::exec::FileListingExec>() {

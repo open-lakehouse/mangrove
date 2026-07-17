@@ -73,8 +73,6 @@ pub(crate) type FileStatsMap = HashMap<String, Arc<Statistics>>;
 ///
 /// Files whose `stats` struct is null (no stats recorded) are omitted from the map — the per-file
 /// layer then leaves `PartitionedFile.statistics = None`, which is correct (unknown).
-// Wired into the provider `scan()` path in a following commit (the threading seam lands first).
-#[allow(dead_code)]
 pub(crate) fn build_file_statistics(scan: &Scan, stats_batches: &[RecordBatch]) -> FileStatsMap {
     let resolver = ColumnMappingResolver::from_scan(scan);
     let top_level: Vec<String> = scan
