@@ -2,9 +2,10 @@
 //! `handover-wasm-async-native-table-provider.md`).
 //!
 //! Each test builds a [`Plan`](delta_kernel::sm_plans::ir::plan::Plan) via the SSA
-//! [`Context`] builder, wraps it in a [`ResultPlan`], and runs it through
-//! [`DataFusionExecutor::ssa_result_to_dataframe`] — exercising the per-`NodeKind` lowerings
-//! **without a kernel `Engine`**, proving that the DV-free port:
+//! [`Context`] builder, wraps it in a [`ResultPlan`], and runs it through the `testing`
+//! collector ([`DataFusionExecutor::compile_result_plan`] + execute against a session) —
+//! exercising the per-`NodeKind` lowerings **without a kernel `Engine`**, proving that the
+//! DV-free port:
 //!
 //!   * compiles a hand-built `ResultPlan` via `compile_ssa`, and
 //!   * runs it over a `LocalFileSystem` store producing correct batches (the `Load` test),
@@ -55,13 +56,12 @@ fn engine_session() -> SessionContext {
 fn run_to_one_batch(rp: ResultPlan) -> RecordBatch {
     let ctx = engine_session();
     let state = ctx.state();
-    let exec = DataFusionExecutor::new(&state);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .expect("tokio runtime");
     let batches = runtime
-        .block_on(testing::collect_ssa_result(&state, &exec, rp))
+        .block_on(testing::collect_ssa_result(&state, rp))
         .expect("collect");
     assert!(!batches.is_empty(), "expected at least one batch");
     let schema = batches[0].schema();
@@ -311,13 +311,15 @@ async fn step_consume_drains_ssa_into_consumer_handle() {
 
     let session = engine_session();
     let state = session.state();
-    let executor = DataFusionExecutor::new(&state);
-    let payload = executor
-        .execute_step(EngineRequest::Consume {
-            stmts,
-            terminal,
-            sink,
-        })
+    let payload = DataFusionExecutor::new()
+        .execute_step(
+            &state,
+            EngineRequest::Consume {
+                stmts,
+                terminal,
+                sink,
+            },
+        )
         .await
         .expect("EngineRequest::Consume execution");
 
@@ -396,10 +398,7 @@ async fn load_node_reads_files_and_broadcasts_passthrough() {
 
     let session = engine_session();
     let state = session.state();
-    let exec = DataFusionExecutor::new(&state);
-    let batches = testing::collect_ssa_result(&state, &exec, rp)
-        .await
-        .unwrap();
+    let batches = testing::collect_ssa_result(&state, rp).await.unwrap();
     assert!(!batches.is_empty(), "expected at least one batch");
     // Two upstream rows, each broadcasting onto two file rows -> 4 emitted rows.
     let total_rows: usize = batches.iter().map(|b| b.num_rows()).sum();

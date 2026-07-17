@@ -164,28 +164,26 @@ impl TableProvider for DeltaSsaTableProvider {
         // the scan SM at snapshot-open time (an async, `!Send`-tolerant context; see `snapshot_build`)
         // and hand this provider a resolved `ResultPlan`. Not required today.
         //
-        // The executor drives against the *caller's* `session` (not a throwaway) — so the drive's
-        // object store, scalar functions, and `execution_props` (the `now()` anchor) match the
-        // final scan plan the same session runs at `create_physical_plan` below. The executor
-        // borrows `session` (a `&dyn Session`, which is `Send`) and, along with the `!Send` SM
-        // future, is confined to this synchronous `block_on` and dropped before the `.await` at the
-        // end of `scan`, so nothing `!Send` is held across an `.await` and the returned future
-        // stays `Send`. The session must disable `enable_leaf_expression_pushdown` (validated
-        // above) — the FSR replay shape otherwise trips `push_down_leaf_projections` with a
-        // `scan.add`/`add` ambiguity on checkpointed tables (see
-        // `session::configure_delta_engine_config`, apache/datafusion#20432).
+        // The drive runs against the *caller's* `session` (passed per call, not a throwaway) — so
+        // the drive's object store, scalar functions, and `execution_props` (the `now()` anchor)
+        // match the final scan plan the same session runs at `create_physical_plan` below. The
+        // `!Send` SM future is confined to this synchronous `block_on` and dropped before the
+        // `.await` at the end of `scan`, so nothing `!Send` is held across an `.await` and the
+        // returned future stays `Send` (`session` itself, a `&dyn Session`, is `Send`). The session
+        // must disable `enable_leaf_expression_pushdown` (validated above) — the FSR replay shape
+        // otherwise trips `push_down_leaf_projections` with a `scan.add`/`add` ambiguity on
+        // checkpointed tables (see `session::configure_delta_engine_config`, apache/datafusion#20432).
         let scan = build_scan(&self.snapshot)?;
         let sm = scan
             .scan_state_machine()
             .map_err(crate::error::wrap_delta_err)?;
-        let executor = DataFusionExecutor::new(session);
-        let result_plan = futures::executor::block_on(executor.drive_to_completion(sm))
+        let executor = DataFusionExecutor::new();
+        let result_plan = futures::executor::block_on(executor.drive_to_completion(session, sm))
             .map_err(crate::error::wrap_delta_err)?;
 
         // Compile the SSA result plan to a bare LogicalPlan, then plan it against the *caller's*
         // session so file reads go through the caller's object store + runtime.
-        let logical = executor
-            .compile_result_plan(&result_plan)
+        let logical = DataFusionExecutor::compile_result_plan(&result_plan)
             .map_err(crate::error::wrap_delta_err)?;
 
         // Apply projection + limit at the logical level so DataFusion pushes them into the

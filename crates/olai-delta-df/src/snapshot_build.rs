@@ -112,9 +112,8 @@ pub async fn build_snapshot_from_manifest(
     // the thread and hang (see module docs). The `!Send` SM future is awaited directly here — the
     // whole `build_snapshot_from_manifest` future is `!Send`, which is fine on wasm-bindgen-futures
     // and the native current-thread test runtime.
-    let executor = DataFusionExecutor::new(&state);
-    let snapshot = executor
-        .build_snapshot_pm(Arc::new(log_segment), table_root)
+    let snapshot = DataFusionExecutor::new()
+        .build_snapshot_pm(&state, Arc::new(log_segment), table_root)
         .await
         .map_err(wrap_delta_err)?;
     Ok(snapshot)

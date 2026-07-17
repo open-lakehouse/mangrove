@@ -31,7 +31,7 @@ use delta_kernel::sm_plans::state_machines::framework::plan_context::{Context, L
 use object_store::ObjectStoreExt;
 use object_store::memory::InMemory;
 use object_store::path::Path;
-use olai_delta_df::{DataFusionExecutor, testing};
+use olai_delta_df::testing;
 use url::Url;
 use wasm_bindgen_test::wasm_bindgen_test;
 
@@ -84,7 +84,6 @@ async fn load_over_in_memory_store_runs_on_wasm() {
         &DeltaEngineSessionOptions::wasm(),
     );
     let state = session.state();
-    let exec = DataFusionExecutor::new(&state);
 
     // Hand-build an SSA plan: a Values upstream (one row: the file path + a broadcast tag) fed
     // into a Load node reading the parquet file. This is the shape a scan replay produces, minus
@@ -126,9 +125,7 @@ async fn load_over_in_memory_store_runs_on_wasm() {
     let rp = ctx.into_result_plan(builder).unwrap();
 
     // Drive compile + async parquet read on wasm.
-    let batches = testing::collect_ssa_result(&state, &exec, rp)
-        .await
-        .unwrap();
+    let batches = testing::collect_ssa_result(&state, rp).await.unwrap();
     let total: usize = batches.iter().map(|b| b.num_rows()).sum();
     assert_eq!(
         total, 3,

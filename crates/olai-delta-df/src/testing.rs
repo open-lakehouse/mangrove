@@ -21,21 +21,20 @@ use futures::TryStreamExt;
 use crate::DataFusionExecutor;
 use crate::error::DfResultIntoDelta;
 
-/// Compile a [`ResultPlan`] via `executor`, plan + execute it against `session`, and **eagerly**
-/// drain the resulting stream into a `Vec<RecordBatch>`. Suitable for SSA plans constructed
-/// directly in tests (no coroutine required).
+/// Compile a [`ResultPlan`], plan + execute it against `session`, and **eagerly** drain the
+/// resulting stream into a `Vec<RecordBatch>`. Suitable for SSA plans constructed directly in
+/// tests (no coroutine required).
 ///
 /// The library layer returns lazy `LogicalPlan`s /
 /// [`SendableRecordBatchStream`](datafusion_physical_plan::SendableRecordBatchStream)s and never
-/// buffers; this test-only helper is where eager materialization belongs. `session` is passed
-/// explicitly (every call site has one) rather than reaching into the executor — the executor
-/// tracks its session only for the internal SM drive.
+/// buffers; this test-only helper is where eager materialization belongs. It needs only the
+/// `session` (compilation via [`DataFusionExecutor::compile_result_plan`] is session-free), then
+/// plans + executes against it — the same pattern a production caller uses.
 pub async fn collect_ssa_result(
     session: &dyn Session,
-    executor: &DataFusionExecutor<'_>,
     rp: ResultPlan,
 ) -> Result<Vec<RecordBatch>, DeltaError> {
-    let logical = executor.compile_result_plan(&rp)?;
+    let logical = DataFusionExecutor::compile_result_plan(&rp)?;
     let physical = session.create_physical_plan(&logical).await.into_delta()?;
     datafusion_physical_plan::execute_stream(physical, session.task_ctx())
         .into_delta()?
