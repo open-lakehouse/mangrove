@@ -1,6 +1,11 @@
 //! [`DeltaSsaTableProvider`]: the async-native, engine-free Delta [`TableProvider`] that
 //! replaces the eager inline-executor scan path.
 //!
+//! This is the crate's **one public, table-level provider** — the type callers register for a
+//! Delta table. The only other `TableProvider` in the crate, [`crate::exec::LoadTableProvider`], is
+//! a `pub(crate)` internal leaf the SSA compiler emits *inside* the plan this provider produces;
+//! see its module docs. There is no second table-level provider to choose between.
+//!
 //! Holds only a kernel [`SnapshotRef`] plus a small [`DeltaSsaScanConfig`] — **no engine**. At
 //! `scan()` time it:
 //!
@@ -213,8 +218,9 @@ impl TableProvider for DeltaSsaTableProvider {
         &self,
         filters: &[&Expr],
     ) -> DfResult<Vec<TableProviderFilterPushDown>> {
-        // Filter pushdown is off for v1 (mirrors the POC's LoadTableProvider); projection and
-        // limit flow through. DataFusion re-applies filters above the scan.
+        // Filter pushdown is off for v1 (as it is for the internal per-file `LoadTableProvider`
+        // leaves this scan compiles to); projection and limit flow through. DataFusion re-applies
+        // filters above the scan.
         Ok(vec![
             TableProviderFilterPushDown::Unsupported;
             filters.len()

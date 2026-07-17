@@ -19,8 +19,9 @@
 //! the fetch never settles, and construction hangs forever. So this builder is genuinely `async`
 //! and `.await`s the drive; nothing here blocks. The future is `!Send` (the kernel SM is `!Send`),
 //! which is fine on every driver we use — `wasm-bindgen-futures` in the browser, a current-thread
-//! runtime in the native tests. Contrast the *scan* path ([`crate::DeltaSsaTableProvider::scan`]),
-//! whose SM yields a `ResultPlan` without ever awaiting IO, so `block_on` is still correct there.
+//! runtime in the native tests. Contrast the *scan* path ([`crate::DeltaSsaTableProvider`]), whose
+//! SM drive performs no store IO for the tables that reach it and so is still driven with `block_on`
+//! (see that type's `scan` for the exact caveat).
 //!
 //! [`SnapshotPm`]: delta_kernel::sm_plans::state_machines::snapshot::SnapshotPm
 
