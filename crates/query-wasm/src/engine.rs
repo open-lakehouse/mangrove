@@ -189,15 +189,20 @@ pub async fn open_table(
 
 /// Build the single-partition query [`SessionContext`] the preview runs on: the vended-credential
 /// `store` registered under `table_url`'s origin, configured for the Delta engine via
-/// [`olai_delta_df::delta_engine_session`]. This crate compiles to `wasm32`, so
-/// [`DeltaEngineSessionOptions::default`] resolves to the browser preset (`schema_force_view_types
-/// = false` — the browser arrow-js IPC reader can't decode `Utf8View`/`BinaryView`, mangrove #28 —
-/// and every repartition pass disabled, since the wasm runtime is single-threaded). The
-/// load-bearing reconciliation config (leaf-pushdown off etc.) that the async-native provider's
-/// scan plan requires is applied by the same helper, so it stays in sync with the engine
-/// automatically instead of being hand-copied here.
+/// [`olai_delta_df::delta_engine_session`] with the browser (`::wasm()`) preset:
+/// `schema_force_view_types = false` (the browser arrow-js IPC reader can't decode
+/// `Utf8View`/`BinaryView`, mangrove #28) and every repartition pass disabled (the wasm runtime is
+/// single-threaded). The load-bearing reconciliation config (leaf-pushdown off etc.) the
+/// async-native provider's scan plan requires is applied by the same helper, so it stays in sync
+/// with the engine automatically instead of being hand-copied here.
+///
+/// The preview always targets the browser regardless of build target — the native test binary
+/// (`tests/native.rs`) exercises this exact browser-shaped session — so we pass `::wasm()`
+/// explicitly rather than the build-target-dependent [`DeltaEngineSessionOptions::default`], which
+/// would resolve to the native preset (view types on) off `wasm32` and disagree with the provider's
+/// `schema_force_view_types = false` scan config.
 fn build_query_session(store: Arc<dyn ObjectStore>, table_url: &Url) -> SessionContext {
-    delta_engine_session(store, table_url, &DeltaEngineSessionOptions::default())
+    delta_engine_session(store, table_url, &DeltaEngineSessionOptions::wasm())
 }
 
 /// Register the opened table's scan under exactly the name `reference` resolves
