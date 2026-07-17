@@ -1,8 +1,7 @@
 //! Test-only buffered collectors for [`DataFusionExecutor`].
 //!
-//! Thin wrappers around the SSA result-plan APIs that drain a
-//! [`DataFrame`](datafusion::dataframe::DataFrame) into a `Vec<RecordBatch>`. Returned batches
-//! carry whatever schema the SSA plan terminates at;
+//! Thin wrappers around the SSA result-plan APIs that collect a `Vec<RecordBatch>`. Returned
+//! batches carry whatever schema the SSA plan terminates at;
 //! plans that need column-mapping renames / Delta field metadata bake those into the
 //! terminal projection upstream of `Context::into_result_plan`.
 //!
@@ -18,18 +17,13 @@ use delta_kernel::sm_plans::errors::DeltaError;
 use delta_kernel::sm_plans::ir::plan::ResultPlan;
 
 use crate::DataFusionExecutor;
-use crate::error::DfResultIntoDelta;
 
-/// Compile an [`ResultPlan`] to a [`DataFrame`](datafusion::dataframe::DataFrame) via
-/// [`DataFusionExecutor::ssa_result_to_dataframe`] and drain it into a `Vec`. Suitable for
-/// SSA plans constructed directly in tests (no coroutine required).
+/// Compile a [`ResultPlan`] and collect it into a `Vec<RecordBatch>` via
+/// [`DataFusionExecutor::collect_result_plan`]. Suitable for SSA plans constructed directly in
+/// tests (no coroutine required).
 pub async fn collect_ssa_result(
     executor: &DataFusionExecutor<'_>,
     rp: ResultPlan,
 ) -> Result<Vec<RecordBatch>, DeltaError> {
-    executor
-        .ssa_result_to_dataframe(&rp)?
-        .collect()
-        .await
-        .into_delta()
+    executor.collect_result_plan(&rp).await
 }
