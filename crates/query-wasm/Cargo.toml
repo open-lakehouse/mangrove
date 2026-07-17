@@ -3,13 +3,18 @@
 # credential storage access, and a wasm-bindgen surface implementing the
 # `open_lakehouse.query.v1` runner contract.
 #
-# This is a STANDALONE workspace, deliberately excluded from the repo root
-# workspace: the wasm dependency graph pins deltalake-core/delta_kernel to the
-# wasm-compat forks and — crucially — carries a `[patch.crates-io]` on the arrow
-# family whose parquet build drops the C-backed zstd/brotli codecs. Patches are
-# workspace-global, so folding this crate into the root workspace would strip
-# zstd/brotli parquet support from mangrove's NATIVE server. Keeping a separate
-# workspace (own Cargo.lock) contains the fork pins to this crate.
+# This is a STANDALONE workspace, currently excluded from the repo root workspace:
+# the wasm dependency graph pins deltalake-core/delta_kernel to the wasm-compat
+# forks and carries a `[patch.crates-io]` on the arrow family (the roeap arrow-rs
+# fork). As of the `dc2acae8` fork rev, that patch's parquet keeps `zstd` in its
+# default features and backs it per-target — the C `zstd` crate on native, pure-Rust
+# `ruzstd` (decode-only) on wasm — so the patch is no longer NATIVE-hostile: folding
+# this into the root workspace would no longer strip zstd from the native server.
+# `brotli` remains dropped from wasm (unneeded there; native opts back in).
+#
+# The remaining blocker to collapsing the split is the delta_kernel rev divergence
+# (this workspace pins `c70137e7`; the root pins `2cf01549`); once those converge the
+# workspaces can merge. Until then this stays separate with its own Cargo.lock.
 #
 # `delta-df-provider` is a sibling member of this same standalone workspace: the
 # async-native (sm_plans-driven) Delta TableProvider that replaces the eager
@@ -129,9 +134,11 @@ tokio = { version = "1.40", features = ["macros", "rt-multi-thread"] }
 
 # wasm-engine: patch parquet (and the arrow family it pins) to the
 # wasm-codec-58.3.0 branch of the arrow-rs fork, pinned by rev — the same patch
-# set as the delta-rs wasm workspace. That fork's parquet `default` features
-# drop the C-backed zstd/brotli codecs and target-gate arrow-ipc's zstd dep, so
-# the graph builds for wasm32-unknown-unknown. Same 58.3.0 version as crates.io.
+# set as the delta-rs wasm workspace. As of rev `dc2acae8` the fork's parquet keeps
+# `zstd` in its `default` features but backs it per-target: the C `zstd` crate on
+# native, pure-Rust `ruzstd` (decode-only) on wasm. So the graph builds for
+# wasm32-unknown-unknown WITH working zstd parquet decode (needed to read
+# zstd-compressed data files in the browser); only `brotli` stays dropped on wasm.
 # This must stay a patch, not a feature flag: datafusion-datasource-parquet and
 # the kernel declare `parquet` without `default-features = false`, and Cargo
 # unions features graph-wide. See ../../WASM_QUERY_PREVIEW.md and delta-rs's
@@ -146,17 +153,17 @@ codegen-units = 1
 strip = "debuginfo"
 
 [patch.crates-io]
-parquet = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "parquet" }
-arrow = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow" }
-arrow-arith = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-arith" }
-arrow-array = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-array" }
-arrow-buffer = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-buffer" }
-arrow-cast = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-cast" }
-arrow-data = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-data" }
-arrow-ipc = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-ipc" }
-arrow-json = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-json" }
-arrow-ord = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-ord" }
-arrow-row = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-row" }
-arrow-schema = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-schema" }
-arrow-select = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-select" }
-arrow-string = { git = "https://github.com/roeap/arrow-rs", rev = "e76f4cfda8efc00f17d810d854cf6cb72412f1ab", package = "arrow-string" }
+parquet = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "parquet" }
+arrow = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow" }
+arrow-arith = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-arith" }
+arrow-array = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-array" }
+arrow-buffer = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-buffer" }
+arrow-cast = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-cast" }
+arrow-data = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-data" }
+arrow-ipc = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-ipc" }
+arrow-json = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-json" }
+arrow-ord = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-ord" }
+arrow-row = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-row" }
+arrow-schema = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-schema" }
+arrow-select = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-select" }
+arrow-string = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-string" }
