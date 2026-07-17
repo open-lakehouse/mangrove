@@ -45,9 +45,11 @@ use crate::error::{plan_compilation, wrap_delta_err};
 /// the caller discovered, as kernel [`FileMeta`]s (absolute URLs + sizes). Entries whose filename
 /// does not parse as a Delta log path are dropped, mirroring what a storage listing would ignore.
 ///
-/// `session` must have the object store registered for `table_url`'s authority (the same session
-/// the scan runs against). The [`SnapshotPm`] SM is driven through a
-/// [`DataFusionExecutor::new_with_store`] so its log-replay reads go through that store.
+/// `session` must have the object store registered for `table_url`'s authority and carry the Delta
+/// engine config (build it via [`crate::delta_engine_session`] / [`crate::DeltaEngineSessionExt`]).
+/// The [`SnapshotPm`] SM is driven through a [`DataFusionExecutor`] over that same session, so its
+/// log-replay reads go through the caller's store and its reconciliation `Consume` plans use the
+/// caller's config.
 ///
 /// This is genuinely `async` and `.await`s the P&M drive — it must NOT be `block_on`-ed by the
 /// caller: the drive awaits real object-store reads (commit `.json`, checkpoint footer), and on a
@@ -89,14 +91,20 @@ pub async fn build_snapshot_from_manifest(
     let log_segment =
         LogSegment::from_listed_files(log_root, paths, Some(version)).map_err(wrap_delta_err)?;
 
-    // Resolve the caller-registered object store for the table's authority, then drive the P&M SM
-    // over a reconciliation-safe executor session that has that store registered. `new_with_store`
-    // (not `from_session`) is required: the P&M `Consume` drain both runs the reconciliation plan
-    // — which needs the leaf-pushdown / single-partition config — and reads the log/checkpoint
-    // files over the store during the drive.
-    let object_store_url =
-        datafusion_datasource::ListingTableUrl::parse(table_root.as_str())?.object_store();
-    let store = session.runtime_env().object_store(&object_store_url)?;
+    // Drive the P&M SM over the caller's own session — it already has the table's object store
+    // registered (that is how the caller reads the log) and, when built via `delta_engine_session`
+    // / `with_delta_engine`, carries the reconciliation config the P&M `Consume` drain needs
+    // (leaf-pushdown off / single partition / no stats). Assert that config here so a
+    // misconfigured caller fails loudly rather than mis-planning the reconciliation. We validate
+    // against the session's own `schema_force_view_types` (construction is view-type-agnostic; the
+    // scan provider enforces its own view-type contract).
+    let state = session.state();
+    let force_view_types = state
+        .config_options()
+        .execution
+        .parquet
+        .schema_force_view_types;
+    crate::validate_delta_engine_session(&state, force_view_types)?;
 
     // Drive the P&M SM by AWAITING it — do NOT `block_on`. The drive services `Consume` /
     // `SchemaQuery` ops that read commit `.json` / checkpoint footers over the store, and on a
@@ -104,7 +112,7 @@ pub async fn build_snapshot_from_manifest(
     // the thread and hang (see module docs). The `!Send` SM future is awaited directly here — the
     // whole `build_snapshot_from_manifest` future is `!Send`, which is fine on wasm-bindgen-futures
     // and the native current-thread test runtime.
-    let executor = DataFusionExecutor::new_with_store(&table_root, store);
+    let executor = DataFusionExecutor::new(&state);
     let snapshot = executor
         .build_snapshot_pm(Arc::new(log_segment), table_root)
         .await

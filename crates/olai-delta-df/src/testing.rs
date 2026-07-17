@@ -24,7 +24,7 @@ use crate::error::DfResultIntoDelta;
 /// [`DataFusionExecutor::ssa_result_to_dataframe`] and drain it into a `Vec`. Suitable for
 /// SSA plans constructed directly in tests (no coroutine required).
 pub async fn collect_ssa_result(
-    executor: &DataFusionExecutor,
+    executor: &DataFusionExecutor<'_>,
     rp: ResultPlan,
 ) -> Result<Vec<RecordBatch>, DeltaError> {
     executor

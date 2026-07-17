@@ -21,11 +21,11 @@
 
 use std::sync::Arc;
 
+use datafusion::catalog::Session;
 use datafusion::dataframe::DataFrame;
-use datafusion::execution::context::SessionContext;
+use datafusion::execution::session_state::SessionState;
 use datafusion_common::error::DataFusionError;
 use datafusion_execution::TaskContext;
-use datafusion_execution::config::SessionConfig;
 use datafusion_physical_plan::ExecutionPlan;
 use delta_kernel::engine::arrow_conversion::TryFromArrow;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
@@ -55,97 +55,33 @@ use uuid::Uuid;
 use crate::compile::{CompileContext, compile_ssa};
 use crate::error::DfResultIntoDelta;
 
-/// Minimal executor: a [`TaskContext`] for [`ExecutionPlan::execute`] calls and a
-/// [`SessionContext`] for DataFusion compile/optimize/lower. Carries no kernel engine.
-pub struct DataFusionExecutor {
+/// Minimal executor over a caller-supplied [`Session`]: the executor borrows the session for
+/// DataFusion compile/optimize/lower (`create_physical_plan`) and caches its [`TaskContext`] for
+/// [`ExecutionPlan::execute`] calls. Carries no kernel engine and owns no session of its own.
+///
+/// Threading the *caller's* session through the drive (rather than a session the executor spins up
+/// itself) is what keeps object store, scalar functions, and `execution_props` (the `now()` /
+/// query-start anchor) consistent between the reconciliation `Consume` plans driven here and the
+/// final scan plan the caller runs against the same session.
+///
+/// The session must carry the Delta engine config — see
+/// [`crate::session::configure_delta_engine_config`]; build one via
+/// [`crate::delta_engine_session`] or [`crate::DeltaEngineSessionExt::with_delta_engine`], and (at
+/// integration boundaries) assert it via [`crate::validate_delta_engine_session`].
+pub struct DataFusionExecutor<'a> {
+    session: &'a dyn Session,
     task_ctx: Arc<TaskContext>,
-    session_ctx: SessionContext,
 }
 
-impl Default for DataFusionExecutor {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl DataFusionExecutor {
-    /// Builds an executor over a single-partition [`SessionContext`] tuned for the kernel SSA
-    /// scan/FSR replay shape, plus a default [`TaskContext`]. For a scan that actually reads
-    /// remote files, drive against a [`SessionContext`] whose runtime env has the object store
-    /// registered (see the `TableProvider` integration in `query-wasm`).
-    pub fn new() -> Self {
-        let session_ctx = SessionContext::new_with_config(Self::replay_session_config());
-        Self {
-            task_ctx: Arc::new(TaskContext::default()),
-            session_ctx,
-        }
-    }
-
-    /// The `SessionConfig` the SSA reconciliation / P&M replay shape requires.
+impl<'a> DataFusionExecutor<'a> {
+    /// Build an executor that drives against `session`, caching its [`TaskContext`].
     ///
-    /// These three overrides are load-bearing for driving the reconciliation `Consume` plans,
-    /// so any executor session that *runs* those plans (not just compiles a `ResultPlan` for the
-    /// caller to run) must apply them — hence [`Self::new`] and [`Self::new_with_store`] share
-    /// this, and callers who hand in their own session via [`Self::from_session`] are responsible
-    /// for matching it.
-    fn replay_session_config() -> SessionConfig {
-        let mut session_config = SessionConfig::new();
-        // DataFusion's leaf-expression-pushdown pass interacts badly with our FSR replay shape
-        // (Filter over a Projection that builds a struct via named_struct): it inlines the full
-        // struct definition into every Filter leaf, and downstream either CommonSubexprEliminate
-        // dedups badly (duplicate `__common_expr_N`) or the qualified/unqualified struct field
-        // refs (`scan."metaData"` vs `"metaData"`) become ambiguous. Keep it disabled
-        // (apache/datafusion#20432).
-        session_config
-            .options_mut()
-            .optimizer
-            .enable_leaf_expression_pushdown = false;
-        // Statistics collection is a session-level setting; disable it -- kernel does its own
-        // file-level data skipping, and DF's parquet stats collector mishandles
-        // column-mapping/field-id renamed columns (it stamps missing-by-logical-name columns as
-        // all-null, which the projection then folds to Literal::NULL before the field-id rename
-        // applies). See compile/logical/scan.rs for the full rationale.
-        session_config.options_mut().execution.collect_statistics = false;
-        // Force single-partition execution at the session level. The consume-sink drain reads
-        // partition 0 only, and scan/FSR correctness does not depend on intra-file parallelism.
-        // (Also required on wasm, where multi-partition repartition tasks never run.)
-        session_config.options_mut().execution.target_partitions = 1;
-        session_config
-    }
-
-    /// Builds an executor over a reconciliation-safe session (see [`Self::replay_session_config`])
-    /// with `store` registered for `table_url`'s authority.
-    ///
-    /// Unlike [`Self::from_session`], this owns the session config, so it is the right constructor
-    /// for **driving** replay SMs (scan/FSR/P&M) that both run the reconciliation `Consume`/
-    /// `SchemaQuery` plans *and* read log/data files over `store` — e.g. snapshot construction,
-    /// where a checkpointed table's P&M replay reads the checkpoint parquet during the drive.
-    pub fn new_with_store(
-        table_url: &url::Url,
-        store: Arc<dyn delta_kernel::object_store::ObjectStore>,
-    ) -> Self {
-        let session_ctx = SessionContext::new_with_config(Self::replay_session_config());
-        session_ctx
-            .runtime_env()
-            .register_object_store(table_url, store);
-        let task_ctx = session_ctx.task_ctx();
-        Self {
-            task_ctx,
-            session_ctx,
-        }
-    }
-
-    /// Builds an executor over a caller-provided [`SessionContext`] (whose runtime env should
-    /// have the scan's object store registered) and its task context.
-    ///
-    /// The caller's session config must match [`Self::replay_session_config`] when this executor
-    /// will *drive* a replay SM (as opposed to only compiling a `ResultPlan`).
-    pub fn from_session(session_ctx: SessionContext) -> Self {
-        let task_ctx = session_ctx.task_ctx();
-        Self {
-            task_ctx,
-            session_ctx,
-        }
+    /// `session` is borrowed for the executor's lifetime; the executor holds nothing `!Send` (a
+    /// `&dyn Session` is `Send + Sync`), so it may be built inside a synchronous `block_on` drive
+    /// without making the surrounding future `!Send`.
+    pub fn new(session: &'a dyn Session) -> Self {
+        let task_ctx = session.task_ctx();
+        Self { session, task_ctx }
     }
 
     // ================================================================
@@ -209,6 +145,13 @@ impl DataFusionExecutor {
     /// `CoroutineSM` wrapping that [`Self::drive_ssa_to_dataframe`] provides; also the
     /// canonical entry point for tests that construct SSA plans directly without an SM.
     ///
+    /// Wrapping a plan in a [`DataFrame`] requires an owned [`SessionState`], which only a
+    /// [`SessionState`]-backed session can supply. The `DataFrame` entry points are test-only
+    /// sugar, and every caller builds its executor over a `SessionState` (via
+    /// `SessionContext::state()`), so this downcasts the borrowed session and errors otherwise.
+    /// Production paths compile to a bare `LogicalPlan` via [`Self::compile_result_plan`] and plan
+    /// it against the caller's session directly.
+    ///
     /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
     pub fn ssa_result_to_dataframe(
         &self,
@@ -220,7 +163,17 @@ impl DataFusionExecutor {
             step_name: "ssa_result_to_dataframe",
         };
         let logical = compile_ssa(&rp.plan.stmts, rp.result, &ctx).into_delta()?;
-        Ok(DataFrame::new(self.session_ctx.state(), logical))
+        let state = self
+            .session
+            .as_any()
+            .downcast_ref::<SessionState>()
+            .ok_or_else(|| {
+                crate::error::df_to_delta(crate::error::internal_error(
+                    "ssa_result_to_dataframe requires a SessionState-backed session (build the \
+                     executor over `SessionContext::state()`)",
+                ))
+            })?;
+        Ok(DataFrame::new(state.clone(), logical))
     }
 
     /// Compile a [`ResultPlan`] to a bare [`LogicalPlan`], unbound to any session.
@@ -345,10 +298,11 @@ impl DataFusionExecutor {
             step_name,
         };
         let logical = compile_ssa(stmts, terminal, &ctx)?;
-        let df_state = self.session_ctx.state();
-        let physical = df_state
-            .create_physical_plan(&df_state.optimize(&logical)?)
-            .await?;
+        // Plan against the caller's session. `Session::create_physical_plan` runs the logical
+        // optimizer first, so this subsumes the previous explicit `optimize` + `create_physical_plan`
+        // — and it uses the caller's config, scalar functions, and execution_props, keeping the
+        // reconciliation drive consistent with the final scan plan the caller runs.
+        let physical = self.session.create_physical_plan(&logical).await?;
         self.drain_consume_sink(physical, sink, &ctx).await
     }
 
