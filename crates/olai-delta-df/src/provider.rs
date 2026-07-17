@@ -1,13 +1,19 @@
 //! [`DeltaSsaTableProvider`]: the async-native, engine-free Delta [`TableProvider`] that
 //! replaces the eager inline-executor scan path.
 //!
+//! This is the crate's **one public, table-level provider** — the type callers register for a
+//! Delta table. The only other `TableProvider` in the crate, [`crate::exec::LoadTableProvider`], is
+//! a `pub(crate)` internal leaf the SSA compiler emits *inside* the plan this provider produces;
+//! see its module docs. There is no second table-level provider to choose between.
+//!
 //! Holds only a kernel [`SnapshotRef`] plus a small [`DeltaSsaScanConfig`] — **no engine**. At
 //! `scan()` time it:
 //!
 //!   1. builds a kernel [`Scan`] from the snapshot (`scan_builder().build_replay()`),
 //!   2. drives the scan's `sm_plans` coroutine state machine
 //!      ([`Scan::scan_state_machine`]) to a [`ResultPlan`] through the engine-free
-//!      [`DataFusionExecutor`] — a `!Send`, IO-free, CPU-only planning step,
+//!      [`DataFusionExecutor`] — a `!Send`, CPU-only planning step for commit-only tables
+//!      (IO-free; see the `scan()` body for the checkpointed-table caveat),
 //!   3. compiles the `ResultPlan` to a DataFusion `LogicalPlan`, and
 //!   4. plans it against the **scan's own `Session`** (so the object store, runtime, and
 //!      config are the caller's), applying projection + limit.
@@ -149,14 +155,30 @@ impl TableProvider for DeltaSsaTableProvider {
         }
 
         // Build the kernel scan and drive its `sm_plans` coroutine state machine to a ResultPlan.
-        // This is the `!Send`, IO-free planning step — no engine, no InlineExecutor.
+        // This is the engine-free, no-InlineExecutor planning step.
         //
-        // The SM future is `!Send` (genawaiter2 `rc`), but the kernel guarantees it never awaits
-        // real IO — every yield is a synchronous trampoline hop. So we drive it to completion
-        // with `futures::executor::block_on`, which needs no `Send` bound and completes without
-        // cooperating with the outer runtime. This confines the entire `!Send` region to a single
-        // synchronous call: nothing `!Send` is ever held across the `#[async_trait]` `scan`
-        // future's `.await` points, so the returned `ExecutionPlan` future stays `Send`.
+        // The SM future is `!Send` (genawaiter2 `rc` — an `Rc<Cell<..>>` airlock), but DataFusion's
+        // `TableProvider::scan` requires the returned future to be `Send`. To keep this `scan`
+        // future `Send`, we confine the `!Send` drive to a single synchronous `block_on`: nothing
+        // `!Send` is held across any `.await` in `scan`, so the returned `ExecutionPlan` future
+        // stays `Send`.
+        //
+        // Blocking here is currently safe: this drive performs no object-store IO for the tables
+        // that reach it. Commit-only tables short-circuit shape resolution and defer add-file
+        // enumeration into the returned `ResultPlan` (commit `.json`s become `Values -> Load` nodes
+        // the *executor* reads lazily, outside this drive); a classic checkpoint's shape resolution
+        // stays entirely CPU-side for this fixture too. If a future kernel shape ever makes the scan
+        // drive `.await` a real store read (a checkpoint-footer `SchemaQuery` / sidecar `Consume`),
+        // this `block_on` would become a browser-hang risk — a `fetch` settles only when the JS
+        // event loop runs, which a blocked worker thread starves — and the fix would be to pre-drive
+        // the scan SM at snapshot-open time (an async, `!Send`-tolerant context; see `snapshot_build`)
+        // and hand this provider a resolved `ResultPlan`. Not required today.
+        //
+        // NOTE: the compiled scan `LogicalPlan` is optimized against the *caller's* session below
+        // (`create_physical_plan`), which MUST disable `enable_leaf_expression_pushdown` — the FSR
+        // replay shape otherwise trips `push_down_leaf_projections` with a `scan.add`/`add`
+        // ambiguity on checkpointed tables. `query-wasm::engine::build_query_session` sets it; see
+        // `DataFusionExecutor::replay_session_config` for the full rationale (apache/datafusion#20432).
         let scan = build_scan(&self.snapshot)?;
         let sm = scan
             .scan_state_machine()
@@ -196,8 +218,9 @@ impl TableProvider for DeltaSsaTableProvider {
         &self,
         filters: &[&Expr],
     ) -> DfResult<Vec<TableProviderFilterPushDown>> {
-        // Filter pushdown is off for v1 (mirrors the POC's LoadTableProvider); projection and
-        // limit flow through. DataFusion re-applies filters above the scan.
+        // Filter pushdown is off for v1 (as it is for the internal per-file `LoadTableProvider`
+        // leaves this scan compiles to); projection and limit flow through. DataFusion re-applies
+        // filters above the scan.
         Ok(vec![
             TableProviderFilterPushDown::Unsupported;
             filters.len()

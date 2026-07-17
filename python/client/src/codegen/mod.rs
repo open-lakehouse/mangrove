@@ -113,7 +113,7 @@ impl PyUnityCatalogClient {
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyAgentSkill::from).collect())
@@ -164,7 +164,7 @@ impl PyUnityCatalogClient {
         }
         request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyAgentSkill::from(result))
@@ -190,7 +190,7 @@ impl PyUnityCatalogClient {
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyAgent::from).collect())
@@ -236,7 +236,7 @@ impl PyUnityCatalogClient {
         request = request.with_input_schema(input_schema);
         request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyAgent::from(result))
@@ -251,7 +251,7 @@ impl PyUnityCatalogClient {
         let mut request = self.client.list_catalogs();
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyCatalog::from).collect())
@@ -286,7 +286,7 @@ impl PyUnityCatalogClient {
         request = request.with_provider_name(provider_name);
         request = request.with_share_name(share_name);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyCatalog::from(result))
@@ -303,7 +303,7 @@ impl PyUnityCatalogClient {
         request = request.with_purpose(purpose.map(::core::convert::Into::into));
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyCredential::from).collect())
@@ -352,7 +352,7 @@ impl PyUnityCatalogClient {
             databricks_gcp_service_account.map(::core::convert::Into::into),
         );
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyCredential::from(result))
@@ -375,7 +375,7 @@ impl PyUnityCatalogClient {
         request = request.with_max_results(max_results);
         request = request.with_page_token(page_token);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyListEntityTagAssignmentsResponse::from(result))
@@ -391,7 +391,7 @@ impl PyUnityCatalogClient {
             .client
             .create_entity_tag_assignment(tag_assignment.into());
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
@@ -409,7 +409,7 @@ impl PyUnityCatalogClient {
             .client
             .get_entity_tag_assignment(entity_type, entity_name, tag_key);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
@@ -441,7 +441,7 @@ impl PyUnityCatalogClient {
         );
         request = request.with_update_mask(update_mask);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
@@ -459,7 +459,7 @@ impl PyUnityCatalogClient {
             .client
             .delete_entity_tag_assignment(entity_type, entity_name, tag_key);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(result)
@@ -476,7 +476,7 @@ impl PyUnityCatalogClient {
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyExternalLocation::from).collect())
@@ -509,7 +509,7 @@ impl PyUnityCatalogClient {
         request = request.with_comment(comment);
         request = request.with_skip_validation(skip_validation);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
@@ -535,7 +535,7 @@ impl PyUnityCatalogClient {
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyFunction::from).collect())
@@ -549,7 +549,7 @@ impl PyUnityCatalogClient {
     ) -> PyUnityCatalogResult<PyFunction> {
         let request = self.client.create_function(function_info.into());
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyFunction::from(result))
@@ -567,7 +567,7 @@ impl PyUnityCatalogClient {
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyModelVersion::from).collect())
@@ -599,7 +599,7 @@ impl PyUnityCatalogClient {
         request = request.with_run_id(run_id);
         request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
@@ -616,7 +616,7 @@ impl PyUnityCatalogClient {
         let mut request = self.client.get_model_version(full_name, version);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
@@ -633,7 +633,7 @@ impl PyUnityCatalogClient {
         let mut request = self.client.update_model_version(full_name, version);
         request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
@@ -648,7 +648,7 @@ impl PyUnityCatalogClient {
     ) -> PyUnityCatalogResult<()> {
         let request = self.client.delete_model_version(full_name, version);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(())
         })
@@ -662,7 +662,7 @@ impl PyUnityCatalogClient {
     ) -> PyUnityCatalogResult<PyModelVersion> {
         let request = self.client.finalize_model_version(full_name, version);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
@@ -677,7 +677,7 @@ impl PyUnityCatalogClient {
         let mut request = self.client.list_providers();
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyProvider::from).collect())
@@ -713,7 +713,7 @@ impl PyUnityCatalogClient {
             request = request.with_properties(properties);
         }
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyProvider::from(result))
@@ -728,7 +728,7 @@ impl PyUnityCatalogClient {
         let mut request = self.client.list_recipients();
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyRecipient::from).collect())
@@ -763,7 +763,7 @@ impl PyUnityCatalogClient {
         }
         request = request.with_expiration_time(expiration_time);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
@@ -791,7 +791,7 @@ impl PyUnityCatalogClient {
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyRegisteredModel::from).collect())
@@ -811,7 +811,7 @@ impl PyUnityCatalogClient {
             .create_registered_model(name, catalog_name, schema_name);
         request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyRegisteredModel::from(result))
@@ -829,7 +829,7 @@ impl PyUnityCatalogClient {
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PySchema::from).collect())
@@ -860,7 +860,7 @@ impl PyUnityCatalogClient {
         }
         request = request.with_storage_root(storage_root);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PySchema::from(result))
@@ -875,7 +875,7 @@ impl PyUnityCatalogClient {
         let mut request = self.client.list_shares();
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyShare::from).collect())
@@ -891,7 +891,7 @@ impl PyUnityCatalogClient {
         let mut request = self.client.create_share(name);
         request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyShare::from(result))
@@ -909,7 +909,7 @@ impl PyUnityCatalogClient {
             .client
             .create_staging_table(name, catalog_name, schema_name);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyStagingTable::from(result))
@@ -950,7 +950,7 @@ impl PyUnityCatalogClient {
         request = request.with_include_browse(include_browse);
         request = request.with_include_manifest_capabilities(include_manifest_capabilities);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyTable::from).collect())
@@ -1010,7 +1010,7 @@ impl PyUnityCatalogClient {
         request =
             request.with_view_dependencies(view_dependencies.map(::core::convert::Into::into));
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyTable::from(result))
@@ -1025,7 +1025,7 @@ impl PyUnityCatalogClient {
         let mut request = self.client.list_tag_policies();
         request = request.with_max_results(max_results);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyTagPolicy::from).collect())
@@ -1039,7 +1039,7 @@ impl PyUnityCatalogClient {
     ) -> PyUnityCatalogResult<PyTagPolicy> {
         let request = self.client.create_tag_policy(tag_policy.into());
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyTagPolicy::from(result))
@@ -1056,7 +1056,7 @@ impl PyUnityCatalogClient {
             .client
             .generate_temporary_table_credentials(table_id, operation.into());
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
@@ -1075,7 +1075,7 @@ impl PyUnityCatalogClient {
             .generate_temporary_path_credentials(url, operation.into());
         request = request.with_dry_run(dry_run);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
@@ -1092,7 +1092,7 @@ impl PyUnityCatalogClient {
             .client
             .generate_temporary_volume_credentials(volume_id, operation.into());
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
@@ -1116,7 +1116,7 @@ impl PyUnityCatalogClient {
             operation.into(),
         );
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
@@ -1142,7 +1142,7 @@ impl PyUnityCatalogClient {
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let result: ::std::vec::Vec<_> =
                 runtime.block_on(async move { request.into_stream().try_collect().await })?;
             Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyVolume::from).collect())
@@ -1174,7 +1174,7 @@ impl PyUnityCatalogClient {
         request = request.with_storage_location(storage_location);
         request = request.with_comment(comment);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyVolume::from(result))

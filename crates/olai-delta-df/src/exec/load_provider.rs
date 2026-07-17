@@ -2,9 +2,22 @@
 //! the upstream `LogicalPlan` and wraps it in a [`super::LoadExec`]. Filter pushdown is
 //! currently off; projection and limit flow through to [`super::LoadExec`].
 //!
+//! # Not a public entry point
+//!
+//! This is a `pub(crate)`, **internal** provider: the SSA compiler ([`lower_load`]) emits one per
+//! `Load` IR node so a per-file read can appear as a table-scan leaf inside a compiled
+//! `LogicalPlan`. It is NOT a table-level provider and is not interchangeable with the crate's one
+//! public provider, [`crate::DeltaSsaTableProvider`] — which is what callers register for a Delta
+//! table, and whose compiled scan plan is itself *built out of* these `LoadTableProvider` leaves.
+//! Both `impl TableProvider` only because a DataFusion table-scan leaf is the idiomatic way to
+//! splice a custom [`ExecutionPlan`] ([`LoadExec`]) into a plan.
+//!
 //! This DV-free port holds **no kernel `Engine`**: file decoding goes entirely through
 //! DataFusion's parquet/json sources over the `Session`/`TaskContext` object store, and the
 //! deletion-vector path (the POC's only engine consumer) is gated out in v1.
+//!
+//! [`lower_load`]: crate::compile
+//! [`LoadExec`]: super::LoadExec
 
 use std::sync::Arc;
 

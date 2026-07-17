@@ -21,7 +21,6 @@
 
 use std::sync::Arc;
 
-use delta_df_provider::{DataFusionExecutor, testing};
 use delta_kernel::arrow::array::{Int64Array, RecordBatch};
 use delta_kernel::arrow::datatypes::{DataType as ArrowDataType, Field, Schema as ArrowSchema};
 use delta_kernel::expressions::{ColumnName, Scalar};
@@ -32,6 +31,7 @@ use delta_kernel::sm_plans::state_machines::framework::plan_context::{Context, L
 use object_store::ObjectStoreExt;
 use object_store::memory::InMemory;
 use object_store::path::Path;
+use olai_delta_df::{DataFusionExecutor, testing};
 use url::Url;
 use wasm_bindgen_test::wasm_bindgen_test;
 

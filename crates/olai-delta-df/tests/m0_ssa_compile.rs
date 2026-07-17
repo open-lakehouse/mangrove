@@ -24,7 +24,6 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use common::SumRowsConsumer;
-use delta_df_provider::{DataFusionExecutor, testing};
 use delta_kernel::arrow::array::{AsArray, RecordBatch};
 use delta_kernel::arrow::compute::concat_batches;
 use delta_kernel::arrow::datatypes::Int64Type;
@@ -37,6 +36,7 @@ use delta_kernel::sm_plans::ir::plan::ResultPlan;
 use delta_kernel::sm_plans::state_machines::framework::plan_context::{Context, LoadSpec};
 use delta_kernel::sm_plans::state_machines::framework::step::EngineRequest;
 use delta_kernel::sm_plans::state_machines::framework::step_payload::EngineResponse;
+use olai_delta_df::{DataFusionExecutor, testing};
 
 /// Drive a `ResultPlan` to a single concatenated batch on a current-thread runtime (the SSA SM
 /// drive future is `!Send`).

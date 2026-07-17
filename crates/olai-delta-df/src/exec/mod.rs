@@ -1,4 +1,6 @@
-//! Custom physical operators and table providers for the DataFusion engine.
+//! Internal (`pub(crate)`) physical operators and the per-file `Load` leaf provider the SSA
+//! compiler splices into a compiled plan. None of these are public entry points — the crate's one
+//! public, table-level provider is [`crate::DeltaSsaTableProvider`].
 
 mod field_id_adapter;
 mod file_listing;

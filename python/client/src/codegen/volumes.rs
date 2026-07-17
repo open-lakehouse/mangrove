@@ -17,7 +17,7 @@ impl PyVolumeClient {
         let mut request = self.client.get();
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyVolume::from(result))
@@ -36,7 +36,7 @@ impl PyVolumeClient {
         request = request.with_comment(comment);
         request = request.with_owner(owner);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyVolume::from(result))
@@ -45,7 +45,7 @@ impl PyVolumeClient {
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(())
         })

@@ -36,7 +36,7 @@ use futures::stream::BoxStream;
 use object_store::ObjectStore;
 use url::Url;
 
-use delta_df_provider::{
+use olai_delta_df::{
     DeltaSsaScanConfig, DeltaSsaTableProvider, FileMeta, SnapshotRef, build_snapshot_from_manifest,
 };
 
@@ -207,6 +207,18 @@ fn build_query_session(store: Arc<dyn ObjectStore>, table_url: &Url) -> SessionC
         .execution
         .parquet
         .schema_force_view_types = false;
+    // The compiled Delta scan `LogicalPlan` is optimized against THIS session (the provider plans
+    // it via `session.create_physical_plan`), so this session must carry the same load-bearing
+    // override the scan executor's own session sets (see `DataFusionExecutor::replay_session_config`
+    // / `from_session`): DataFusion's leaf-expression pushdown inlines the FSR replay's
+    // `named_struct` build into every Filter leaf and produces an ambiguous `scan.add`/`add` schema,
+    // failing `push_down_leaf_projections`. Commit-only previews don't hit the ambiguous shape, but
+    // a classic-checkpointed table's scan plan does — without this the checkpointed preview fails
+    // (apache/datafusion#20432).
+    config
+        .options_mut()
+        .optimizer
+        .enable_leaf_expression_pushdown = false;
     let ctx = SessionContext::new_with_config_rt(config, Arc::new(RuntimeEnv::default()));
 
     // Register the store under the table URL's origin (scheme://authority/), matching how the

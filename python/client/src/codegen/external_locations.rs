@@ -15,7 +15,7 @@ impl PyExternalLocationClient {
     pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyExternalLocation> {
         let request = self.client.get();
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
@@ -55,7 +55,7 @@ impl PyExternalLocationClient {
         request = request.with_force(force);
         request = request.with_skip_validation(skip_validation);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
@@ -66,7 +66,7 @@ impl PyExternalLocationClient {
         let mut request = self.client.delete();
         request = request.with_force(force);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(())
         })

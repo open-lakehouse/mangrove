@@ -85,7 +85,7 @@ impl ScalarUDFImpl for StampFieldUdf {
     }
 
     /// Build the projection's output [`FieldRef`] by merging the kernel target's
-    /// names + metadata with the input's runtime nullability via [`merge_field`]:
+    /// names + metadata with the input's runtime nullability via `merge_field`:
     ///
     /// - The outer field name + metadata + nested field names + nested metadata come from
     ///   `self.target_field` so the projection's schema carries the full kernel logical declaration

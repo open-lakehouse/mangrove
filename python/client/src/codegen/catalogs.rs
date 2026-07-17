@@ -17,7 +17,7 @@ impl PyCatalogClient {
         let mut request = self.client.get();
         request = request.with_include_browse(include_browse);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyCatalog::from(result))
@@ -42,7 +42,7 @@ impl PyCatalogClient {
         }
         request = request.with_new_name(new_name);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyCatalog::from(result))
@@ -53,7 +53,7 @@ impl PyCatalogClient {
         let mut request = self.client.delete();
         request = request.with_force(force);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(())
         })
