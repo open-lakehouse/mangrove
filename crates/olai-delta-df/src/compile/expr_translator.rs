@@ -689,38 +689,6 @@ fn field_needs_rename(source_dt: &ArrowDataType, target_dt: &DataType) -> bool {
     }
 }
 
-/// Build a per-top-level-field projection that maps the underlying provider's raw arrow
-/// schema (physical column-id names on column-mapping tables) into the kernel's logical
-/// schema. Each output expression is rooted at `col(source.name)` and is reshaped
-/// recursively via [`rebuild_field_for_target`] when the field has nested structs or
-/// lists of structs whose names differ between source and target.
-///
-/// Returns one [`Expr`] per top-level kernel field, in order. Callers wrap each result
-/// in an alias (and, if they care about Arrow field metadata, the stamp UDF) before
-/// handing it to [`DataFrame::select`](datafusion::dataframe::DataFrame::select).
-pub fn build_logical_projection(
-    source: &ArrowSchema,
-    target: &StructType,
-) -> Result<Vec<Expr>, DataFusionError> {
-    let source_count = source.fields().len();
-    let target_count = target.fields().count();
-    if source_count != target_count {
-        return Err(crate::error::plan_compilation(format!(
-            "build_logical_projection: source schema has {source_count} top-level field(s); \
-             target schema has {target_count}"
-        )));
-    }
-    source
-        .fields()
-        .iter()
-        .zip(target.fields())
-        .map(|(source_field, target_field)| {
-            let base = Expr::Column(Column::new_unqualified(source_field.name()));
-            rebuild_field_for_target(base, source_field.data_type(), target_field.data_type())
-        })
-        .collect()
-}
-
 fn binary(l: Expr, op: Operator, r: Expr) -> Expr {
     Expr::BinaryExpr(BinaryExpr::new(Box::new(l), op, Box::new(r)))
 }

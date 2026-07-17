@@ -179,8 +179,18 @@ pub(crate) fn build_file_source(
     );
     // Partition-col broadcast (`replace_columns_with_literals` / `ProjectionOpener`) synthesizes
     // each output array's `data_type` from the upstream-extracted `ScalarValue`, which never
-    // carries kernel's `delta.columnMapping.*` / `PARQUET:field_id` metadata; we strip it here
-    // and reapply per-batch in the metadata stamper.
+    // carries kernel's `delta.columnMapping.*` / `PARQUET:field_id` metadata. If we declared the
+    // partition field *with* that metadata, its declared `data_type` would disagree with the
+    // metadata-free array the broadcast produces, and the opener's schema check would reject it. So
+    // we strip the metadata here to keep the declaration consistent with the broadcast output.
+    //
+    // Stripping is safe under column mapping: partition-column values do NOT flow through the
+    // field-id adapter (which only rewrites file-schema columns). They are broadcast per file from
+    // the add action's `partitionValues` and mapped physical→logical by the kernel scan's terminal
+    // `ProjectNode` (`fileConstantValues` → logical names), before this leaf's output ever needs the
+    // metadata. Verified end-to-end for both id and name mode in
+    // `tests/m3_column_mapping_native.rs::partition_column_values_correct_both_modes`. (An earlier
+    // comment here referenced a per-batch "metadata stamper" that never existed in this crate.)
     let stripped_passthrough_fields: Vec<FieldRef> = passthrough_fields
         .iter()
         .map(|f| Arc::new(strip_field_metadata_recursive(f.as_ref())))
