@@ -7,9 +7,9 @@
 //! The equivalence anchor: same `version()` and same logical `schema()` from both build paths
 //! (schema identity proves Metadata's `schemaString` resolved identically; version proves the
 //! P&M log replay reached the right commit). We additionally register a `DeltaSsaTableProvider`
-//! on the manifest-built snapshot and run a `count(*)` to prove the whole pipeline (construction
-//! + scan) works end to end over the async object store, with no `PrimedStore` and no inline
-//! executor.
+//! on the manifest-built snapshot and run a `count(*)` to prove the whole pipeline
+//! (construction + scan) works end to end over the async object store, with no `PrimedStore`
+//! and no inline executor.
 
 #![cfg(not(target_arch = "wasm32"))]
 
@@ -121,7 +121,7 @@ async fn commit_only_store() -> Arc<InMemory> {
 async fn manifest_for(store: &dyn ObjectStore, table_url: &Url) -> Vec<FileMeta> {
     // Join `_delta_log` onto the table path segment-wise (slash-safe) so this works whether or not
     // `table_url` carries a trailing slash — mirrors production discovery's `Path::join`.
-    let log_prefix = Path::from(table_url.path().trim_start_matches('/')).child("_delta_log");
+    let log_prefix = Path::from(table_url.path().trim_start_matches('/')).join("_delta_log");
     let mut out = Vec::new();
     let mut listing = store.list(Some(&log_prefix));
     while let Some(meta) = futures::StreamExt::next(&mut listing).await {
