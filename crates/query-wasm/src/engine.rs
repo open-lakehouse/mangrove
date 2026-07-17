@@ -27,8 +27,6 @@ use arrow_ipc::writer::StreamWriter;
 use arrow_schema::SchemaRef;
 use datafusion::catalog::memory::{MemoryCatalogProvider, MemorySchemaProvider};
 use datafusion::execution::context::SessionContext;
-use datafusion::execution::runtime_env::RuntimeEnv;
-use datafusion::prelude::SessionConfig;
 use datafusion::sql::TableReference;
 use datafusion::sql::parser::DFParserBuilder;
 use futures::StreamExt;
@@ -37,7 +35,8 @@ use object_store::ObjectStore;
 use url::Url;
 
 use olai_delta_df::{
-    DeltaSsaScanConfig, DeltaSsaTableProvider, FileMeta, SnapshotRef, build_snapshot_from_manifest,
+    DeltaEngineSessionOptions, DeltaSsaScanConfig, DeltaSsaTableProvider, FileMeta, SnapshotRef,
+    build_snapshot_from_manifest, delta_engine_session,
 };
 
 use crate::error::{Error, Result};
@@ -189,46 +188,16 @@ pub async fn open_table(
 }
 
 /// Build the single-partition query [`SessionContext`] the preview runs on: the vended-credential
-/// `store` registered under `table_url`'s origin, and `parquet.schema_force_view_types = false` so
-/// the physical reader emits plain `Utf8`/`Binary` (the browser arrow-js IPC reader can't decode
-/// `Utf8View`/`BinaryView`; mangrove #28). Mirrors the former `deltalake_wasm::session` shape minus
-/// the delta-rs-specific planner (the async-native provider needs none).
+/// `store` registered under `table_url`'s origin, configured for the Delta engine via
+/// [`olai_delta_df::delta_engine_session`]. This crate compiles to `wasm32`, so
+/// [`DeltaEngineSessionOptions::default`] resolves to the browser preset (`schema_force_view_types
+/// = false` — the browser arrow-js IPC reader can't decode `Utf8View`/`BinaryView`, mangrove #28 —
+/// and every repartition pass disabled, since the wasm runtime is single-threaded). The
+/// load-bearing reconciliation config (leaf-pushdown off etc.) that the async-native provider's
+/// scan plan requires is applied by the same helper, so it stays in sync with the engine
+/// automatically instead of being hand-copied here.
 fn build_query_session(store: Arc<dyn ObjectStore>, table_url: &Url) -> SessionContext {
-    let mut config = SessionConfig::new()
-        .with_target_partitions(1)
-        .with_round_robin_repartition(false)
-        .with_repartition_joins(false)
-        .with_repartition_aggregations(false)
-        .with_repartition_windows(false)
-        .with_repartition_sorts(false)
-        .with_repartition_file_scans(false);
-    config
-        .options_mut()
-        .execution
-        .parquet
-        .schema_force_view_types = false;
-    // The compiled Delta scan `LogicalPlan` is optimized against THIS session (the provider plans
-    // it via `session.create_physical_plan`), so this session must carry the same load-bearing
-    // override the scan executor's own session sets (see `DataFusionExecutor::replay_session_config`
-    // / `from_session`): DataFusion's leaf-expression pushdown inlines the FSR replay's
-    // `named_struct` build into every Filter leaf and produces an ambiguous `scan.add`/`add` schema,
-    // failing `push_down_leaf_projections`. Commit-only previews don't hit the ambiguous shape, but
-    // a classic-checkpointed table's scan plan does — without this the checkpointed preview fails
-    // (apache/datafusion#20432).
-    config
-        .options_mut()
-        .optimizer
-        .enable_leaf_expression_pushdown = false;
-    let ctx = SessionContext::new_with_config_rt(config, Arc::new(RuntimeEnv::default()));
-
-    // Register the store under the table URL's origin (scheme://authority/), matching how the
-    // kernel/DataFusion resolve object stores by `ObjectStoreUrl` authority.
-    let mut base = table_url.clone();
-    base.set_path("/");
-    base.set_query(None);
-    base.set_fragment(None);
-    ctx.runtime_env().register_object_store(&base, store);
-    ctx
+    delta_engine_session(store, table_url, &DeltaEngineSessionOptions::default())
 }
 
 /// Register the opened table's scan under exactly the name `reference` resolves
