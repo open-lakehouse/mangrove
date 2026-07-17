@@ -24,6 +24,13 @@ use delta_kernel::schema::{DataType as KernelDataType, StructField};
 
 /// Wire into a parquet `FileScanConfig::expr_adapter_factory` so every opened file runs
 /// through field-id-aware schema adaptation.
+///
+// TODO(narrow-waist): the scan-global logical↔physical name relation this adapter recomputes
+// per file (via `find_physical_match`) is also computed once per scan by
+// `crate::compile::column_mapping::ColumnMappingResolver`. This adapter is genuinely *per-file*
+// (schema evolution can shorten/reorder a file's physical schema) and does array-level reshape, so
+// it cannot be fully folded into the resolver — but it could consume the resolver's leaf map as the
+// scan-global baseline and only diff per file. Not refactored now; the resolver is name-only.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct FieldIdPhysicalExprAdapterFactory;
 
