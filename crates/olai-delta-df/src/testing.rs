@@ -12,6 +12,7 @@
 //! crates (e.g. `acceptance`) by enabling `features = ["test-utils"]` on their
 //! dev-dependency on this crate.
 
+use datafusion::catalog::Session;
 use delta_kernel::arrow::record_batch::RecordBatch;
 use delta_kernel::sm_plans::errors::DeltaError;
 use delta_kernel::sm_plans::ir::plan::ResultPlan;
@@ -20,20 +21,24 @@ use futures::TryStreamExt;
 use crate::DataFusionExecutor;
 use crate::error::DfResultIntoDelta;
 
-/// Compile a [`ResultPlan`], execute it via [`DataFusionExecutor::execute_result_plan`], and
-/// **eagerly** drain the resulting stream into a `Vec<RecordBatch>`. Suitable for SSA plans
-/// constructed directly in tests (no coroutine required).
+/// Compile a [`ResultPlan`] via `executor`, plan + execute it against `session`, and **eagerly**
+/// drain the resulting stream into a `Vec<RecordBatch>`. Suitable for SSA plans constructed
+/// directly in tests (no coroutine required).
 ///
-/// Eager materialization lives here, in the test layer, on purpose: the library returns lazy
-/// [`SendableRecordBatchStream`](datafusion_physical_plan::SendableRecordBatchStream)s /
-/// `LogicalPlan`s, and only test harnesses that want a buffered `Vec` collect them.
+/// The library layer returns lazy `LogicalPlan`s /
+/// [`SendableRecordBatchStream`](datafusion_physical_plan::SendableRecordBatchStream)s and never
+/// buffers; this test-only helper is where eager materialization belongs. `session` is passed
+/// explicitly (every call site has one) rather than reaching into the executor — the executor
+/// tracks its session only for the internal SM drive.
 pub async fn collect_ssa_result(
+    session: &dyn Session,
     executor: &DataFusionExecutor<'_>,
     rp: ResultPlan,
 ) -> Result<Vec<RecordBatch>, DeltaError> {
-    executor
-        .execute_result_plan(&rp)
-        .await?
+    let logical = executor.compile_result_plan(&rp)?;
+    let physical = session.create_physical_plan(&logical).await.into_delta()?;
+    datafusion_physical_plan::execute_stream(physical, session.task_ctx())
+        .into_delta()?
         .try_collect()
         .await
         .into_delta()

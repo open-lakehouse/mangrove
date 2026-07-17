@@ -61,7 +61,7 @@ fn run_to_one_batch(rp: ResultPlan) -> RecordBatch {
         .build()
         .expect("tokio runtime");
     let batches = runtime
-        .block_on(testing::collect_ssa_result(&exec, rp))
+        .block_on(testing::collect_ssa_result(&state, &exec, rp))
         .expect("collect");
     assert!(!batches.is_empty(), "expected at least one batch");
     let schema = batches[0].schema();
@@ -397,7 +397,9 @@ async fn load_node_reads_files_and_broadcasts_passthrough() {
     let session = engine_session();
     let state = session.state();
     let exec = DataFusionExecutor::new(&state);
-    let batches = testing::collect_ssa_result(&exec, rp).await.unwrap();
+    let batches = testing::collect_ssa_result(&state, &exec, rp)
+        .await
+        .unwrap();
     assert!(!batches.is_empty(), "expected at least one batch");
     // Two upstream rows, each broadcasting onto two file rows -> 4 emitted rows.
     let total_rows: usize = batches.iter().map(|b| b.num_rows()).sum();

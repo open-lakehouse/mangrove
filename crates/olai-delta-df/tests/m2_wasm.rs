@@ -126,7 +126,9 @@ async fn load_over_in_memory_store_runs_on_wasm() {
     let rp = ctx.into_result_plan(builder).unwrap();
 
     // Drive compile + async parquet read on wasm.
-    let batches = testing::collect_ssa_result(&exec, rp).await.unwrap();
+    let batches = testing::collect_ssa_result(&state, &exec, rp)
+        .await
+        .unwrap();
     let total: usize = batches.iter().map(|b| b.num_rows()).sum();
     assert_eq!(
         total, 3,

@@ -25,7 +25,7 @@ use datafusion::catalog::Session;
 use datafusion_common::error::DataFusionError;
 use datafusion_execution::TaskContext;
 use datafusion_expr::LogicalPlan;
-use datafusion_physical_plan::{ExecutionPlan, SendableRecordBatchStream};
+use datafusion_physical_plan::ExecutionPlan;
 use delta_kernel::engine::arrow_conversion::TryFromArrow;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
 use delta_kernel::log_segment::LogSegment;
@@ -128,8 +128,8 @@ impl<'a> DataFusionExecutor<'a> {
 
     /// Drive a coroutine that yields a [`ResultPlan`] and compile its terminal output to a bare
     /// [`LogicalPlan`]. The plan is unbound and unexecuted — the caller plans + executes it against
-    /// its session (e.g. lazily via [`Self::execute_result_plan`], or after splicing
-    /// projection/limit on top). SSA plans describe a single self-contained dataflow DAG.
+    /// its session (`session.create_physical_plan`, optionally after splicing projection/limit on
+    /// top). SSA plans describe a single self-contained dataflow DAG.
     ///
     /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
     /// [`LogicalPlan`]: datafusion_expr::LogicalPlan
@@ -146,8 +146,8 @@ impl<'a> DataFusionExecutor<'a> {
     /// This is the lazy, no-materialization entry point: it lowers SSA nodes to logical operators
     /// and `LoadTableProvider`s but does **not** plan or execute. Callers plan it against their
     /// session — the [`crate::DeltaSsaTableProvider::scan`] path splices projection/limit and calls
-    /// `session.create_physical_plan`; a caller wanting rows executes it via
-    /// [`Self::execute_result_plan`]. Compilation itself is session-independent.
+    /// `session.create_physical_plan`; a caller wanting rows plans it and executes via
+    /// `datafusion_physical_plan::execute_stream`. Compilation itself is session-independent.
     ///
     /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
     /// [`LogicalPlan`]: datafusion_expr::LogicalPlan
@@ -161,38 +161,6 @@ impl<'a> DataFusionExecutor<'a> {
             step_name: "compile_result_plan",
         };
         compile_ssa(&rp.plan.stmts, rp.result, &ctx).into_delta()
-    }
-
-    /// Plan `logical` against the caller's session and return a lazy
-    /// [`SendableRecordBatchStream`] — the idiomatic, non-materializing way to execute a plan the
-    /// engine produced. Everything flows through the [`Session`] trait (`create_physical_plan` +
-    /// [`execute_stream`](datafusion_physical_plan::execute_stream)); no `DataFrame`, and nothing
-    /// is buffered here (the caller decides whether to stream or collect).
-    pub async fn execute_logical_plan(
-        &self,
-        logical: &LogicalPlan,
-    ) -> Result<SendableRecordBatchStream, DeltaError> {
-        let physical = self
-            .session
-            .create_physical_plan(logical)
-            .await
-            .into_delta()?;
-        datafusion_physical_plan::execute_stream(physical, Arc::clone(&self.task_ctx)).into_delta()
-    }
-
-    /// Compile a [`ResultPlan`] and execute it against the caller's session, returning a lazy
-    /// [`SendableRecordBatchStream`]. Sugar for
-    /// [`compile_result_plan`](Self::compile_result_plan) + [`execute_logical_plan`](Self::execute_logical_plan);
-    /// the canonical entry point for callers (and tests) that hold a `ResultPlan` and want rows
-    /// without the `CoroutineSM` wrapping.
-    ///
-    /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
-    pub async fn execute_result_plan(
-        &self,
-        rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
-    ) -> Result<SendableRecordBatchStream, DeltaError> {
-        let logical = self.compile_result_plan(rp)?;
-        self.execute_logical_plan(&logical).await
     }
 
     /// Drive a combined metadata + data scan and compile it to a bare [`LogicalPlan`].
