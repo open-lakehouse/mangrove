@@ -31,10 +31,11 @@ use datafusion_expr::{Expr, LogicalPlanBuilder, TableProviderFilterPushDown, Tab
 use datafusion_physical_plan::ExecutionPlan;
 use delta_kernel::arrow::datatypes::SchemaRef as ArrowSchemaRef;
 use delta_kernel::engine::arrow_conversion::TryIntoArrow;
-use delta_kernel::scan::{Scan, ScanBuilder};
+use delta_kernel::scan::{Scan, ScanBuilder, StatsOptions};
 use delta_kernel::snapshot::SnapshotRef;
 
 use crate::DataFusionExecutor;
+use crate::compile::stats::build_file_statistics;
 
 /// Scan-time configuration for [`DeltaSsaTableProvider`]. Mirrors the subset of
 /// `deltalake_core::delta_datafusion::DeltaScanConfig` the wasm preview path actually sets.
@@ -108,12 +109,40 @@ impl DeltaSsaTableProvider {
     pub fn snapshot(&self) -> &SnapshotRef {
         &self.snapshot
     }
+
+    /// Drive the metadata-only stats SM and build the per-file `raw add.path -> Arc<Statistics>`
+    /// map, or `None` if stats are unavailable.
+    ///
+    /// Statistics are a pruning **optimization**, never a correctness requirement (the kernel does
+    /// its own file skipping), so every failure mode here degrades to `None` rather than failing the
+    /// scan: the SM can't be built, the `!Send` drive errors, or the guard skips an IO-compiling
+    /// plan. Runs in the same synchronous `block_on` confinement as the primary drive — nothing
+    /// `!Send` escapes.
+    fn build_file_stats(
+        &self,
+        session: &dyn Session,
+        executor: &DataFusionExecutor,
+        scan: &Scan,
+    ) -> Option<Arc<crate::compile::stats::FileStatsMap>> {
+        let sm = scan.scan_stats_metadata_state_machine().ok()?;
+        let batches = futures::executor::block_on(executor.drive_ssa_to_batches(session, sm))
+            .ok()
+            .flatten()?;
+        let map = build_file_statistics(scan, &batches);
+        (!map.is_empty()).then(|| Arc::new(map))
+    }
 }
 
 /// Build the kernel `Scan` used both for `schema()` and for driving the state machine.
 /// `ScanBuilder::new` takes `impl Into<SnapshotRef>`, so we clone the `Arc` (cheap).
+///
+/// `with_stats(StatsOptions::all_struct())` requests per-file struct statistics on the reconciled
+/// terminal (no JSON synthesis — the cheapest option that makes `physical_stats_schema()` non-`None`
+/// so the stats SM's terminal carries a populated `stats` column). It has no effect on the primary
+/// (data) scan drive, which never projects `stats`; only the metadata-stats SM reads it.
 fn build_scan(snapshot: &SnapshotRef) -> DfResult<Scan> {
     ScanBuilder::new(snapshot.clone())
+        .with_stats(StatsOptions::all_struct())
         .build_replay()
         .map_err(crate::error::wrap_delta_err)
 }
@@ -181,9 +210,19 @@ impl TableProvider for DeltaSsaTableProvider {
         let result_plan = futures::executor::block_on(executor.drive_to_completion(session, sm))
             .map_err(crate::error::wrap_delta_err)?;
 
+        // Second drive: the metadata-only *stats* SM. Its small terminal (one row per live file,
+        // with a physical-named `stats` struct) is materialized and remapped to per-file DataFusion
+        // `Statistics`, keyed by raw `add.path`, then threaded onto the compiled `Load` leaf's
+        // per-file `PartitionedFile`s. It reuses the SAME `block_on` confinement as the primary
+        // drive: the stats terminal drains the reconciled live-action rows (resident by SM
+        // termination), so it is CPU-only for the tables that reach here — `drive_ssa_to_batches`
+        // returns `None` (skip stats, no attach) if it ever compiles to an IO leaf, keeping the
+        // wasm `block_on`-can't-`fetch` invariant honest.
+        let file_stats = self.build_file_stats(session, &executor, &scan);
+
         // Compile the SSA result plan to a bare LogicalPlan, then plan it against the *caller's*
         // session so file reads go through the caller's object store + runtime.
-        let logical = DataFusionExecutor::compile_result_plan(&result_plan)
+        let logical = DataFusionExecutor::compile_result_plan_with_stats(&result_plan, file_stats)
             .map_err(crate::error::wrap_delta_err)?;
 
         // Apply projection + limit at the logical level so DataFusion pushes them into the
