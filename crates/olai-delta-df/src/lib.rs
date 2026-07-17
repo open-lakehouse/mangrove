@@ -14,12 +14,18 @@ pub mod error;
 pub mod exec;
 pub mod executor;
 pub mod provider;
+pub mod session;
 pub mod snapshot_build;
 #[cfg(any(test, feature = "test-utils"))]
 pub mod testing;
 
 pub use executor::DataFusionExecutor;
 pub use provider::{DeltaSsaScanConfig, DeltaSsaTableProvider};
+pub use session::{
+    DeltaEngineSessionExt, DeltaEngineSessionOptions, configure_delta_engine_config,
+    delta_engine_session, delta_engine_session_config, install_delta_engine,
+    validate_delta_engine_session,
+};
 pub use snapshot_build::build_snapshot_from_manifest;
 
 // Re-export the kernel types on `build_snapshot_from_manifest`'s public signature so consumers
