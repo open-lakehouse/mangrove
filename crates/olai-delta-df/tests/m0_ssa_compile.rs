@@ -2,9 +2,10 @@
 //! `handover-wasm-async-native-table-provider.md`).
 //!
 //! Each test builds a [`Plan`](delta_kernel::sm_plans::ir::plan::Plan) via the SSA
-//! [`Context`] builder, wraps it in a [`ResultPlan`], and runs it through
-//! [`DataFusionExecutor::ssa_result_to_dataframe`] — exercising the per-`NodeKind` lowerings
-//! **without a kernel `Engine`**, proving that the DV-free port:
+//! [`Context`] builder, wraps it in a [`ResultPlan`], and runs it through the `testing`
+//! collector ([`DataFusionExecutor::compile_result_plan`] + execute against a session) —
+//! exercising the per-`NodeKind` lowerings **without a kernel `Engine`**, proving that the
+//! DV-free port:
 //!
 //!   * compiles a hand-built `ResultPlan` via `compile_ssa`, and
 //!   * runs it over a `LocalFileSystem` store producing correct batches (the `Load` test),
@@ -24,6 +25,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use common::SumRowsConsumer;
+use datafusion::execution::context::SessionContext;
 use delta_kernel::arrow::array::{AsArray, RecordBatch};
 use delta_kernel::arrow::compute::concat_batches;
 use delta_kernel::arrow::datatypes::Int64Type;
@@ -36,18 +38,30 @@ use delta_kernel::sm_plans::ir::plan::ResultPlan;
 use delta_kernel::sm_plans::state_machines::framework::plan_context::{Context, LoadSpec};
 use delta_kernel::sm_plans::state_machines::framework::step::EngineRequest;
 use delta_kernel::sm_plans::state_machines::framework::step_payload::EngineResponse;
-use olai_delta_df::{DataFusionExecutor, testing};
+use olai_delta_df::{
+    DataFusionExecutor, DeltaEngineSessionOptions, delta_engine_session_config, testing,
+};
+
+/// An engine-configured, store-free session for the compile-only SSA tests (they lower + drive SSA
+/// plans with no object-store reads). The executor borrows this session's `SessionState`, so keep
+/// the returned context alive for the executor's lifetime.
+fn engine_session() -> SessionContext {
+    SessionContext::new_with_config(delta_engine_session_config(
+        &DeltaEngineSessionOptions::wasm(),
+    ))
+}
 
 /// Drive a `ResultPlan` to a single concatenated batch on a current-thread runtime (the SSA SM
 /// drive future is `!Send`).
 fn run_to_one_batch(rp: ResultPlan) -> RecordBatch {
-    let exec = DataFusionExecutor::new();
+    let ctx = engine_session();
+    let state = ctx.state();
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .expect("tokio runtime");
     let batches = runtime
-        .block_on(testing::collect_ssa_result(&exec, rp))
+        .block_on(testing::collect_ssa_result(&state, rp))
         .expect("collect");
     assert!(!batches.is_empty(), "expected at least one batch");
     let schema = batches[0].schema();
@@ -295,13 +309,17 @@ async fn step_consume_drains_ssa_into_consumer_handle() {
     let sink = ConsumeSink::new_consumer(SumRowsConsumer::new("ssa.consume_test"));
     let token = sink.token.clone();
 
-    let executor = DataFusionExecutor::new();
-    let payload = executor
-        .execute_step(EngineRequest::Consume {
-            stmts,
-            terminal,
-            sink,
-        })
+    let session = engine_session();
+    let state = session.state();
+    let payload = DataFusionExecutor::new()
+        .execute_step(
+            &state,
+            EngineRequest::Consume {
+                stmts,
+                terminal,
+                sink,
+            },
+        )
         .await
         .expect("EngineRequest::Consume execution");
 
@@ -378,8 +396,9 @@ async fn load_node_reads_files_and_broadcasts_passthrough() {
         .unwrap();
     let rp = ctx.into_result_plan(builder).unwrap();
 
-    let exec = DataFusionExecutor::new();
-    let batches = testing::collect_ssa_result(&exec, rp).await.unwrap();
+    let session = engine_session();
+    let state = session.state();
+    let batches = testing::collect_ssa_result(&state, rp).await.unwrap();
     assert!(!batches.is_empty(), "expected at least one batch");
     // Two upstream rows, each broadcasting onto two file rows -> 4 emitted rows.
     let total_rows: usize = batches.iter().map(|b| b.num_rows()).sum();

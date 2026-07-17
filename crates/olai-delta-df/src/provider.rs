@@ -135,24 +135,14 @@ impl TableProvider for DeltaSsaTableProvider {
         _filters: &[Expr],
         limit: Option<usize>,
     ) -> DfResult<Arc<dyn ExecutionPlan>> {
-        // Belt-and-suspenders: the view-type override is applied through the session config knob
-        // (`datafusion.execution.parquet.schema_force_view_types`). When the provider is
-        // configured for plain types (browser), the caller's session must agree, otherwise the
-        // physical parquet reader would emit `Utf8View` and the browser IPC reader would choke
-        // (mangrove #28). We only warn-by-error on a genuine mismatch to keep the seam explicit.
-        let session_force_view = session
-            .config_options()
-            .execution
-            .parquet
-            .schema_force_view_types;
-        if session_force_view != self.config.schema_force_view_types {
-            return Err(crate::error::plan_compilation(format!(
-                "DeltaSsaTableProvider: session parquet.schema_force_view_types={session_force_view} \
-                 disagrees with provider config schema_force_view_types={} — set them to match \
-                 (the wasm preview path uses false so the browser arrow IPC reader can decode)",
-                self.config.schema_force_view_types
-            )));
-        }
+        // Assert the caller's session carries the full Delta engine config, not just the
+        // view-type knob: the SM drive below and the final `create_physical_plan` both run against
+        // this session, so it must have leaf-pushdown off / single partition / no stats, and its
+        // `schema_force_view_types` must match this provider's config (a mismatch would emit
+        // `Utf8View` the browser IPC reader can't decode — mangrove #28). Hard error, not
+        // auto-repair: the fix is to build the session via `delta_engine_session` /
+        // `with_delta_engine`, not to silently rewrite it here.
+        crate::validate_delta_engine_session(session, self.config.schema_force_view_types)?;
 
         // Build the kernel scan and drive its `sm_plans` coroutine state machine to a ResultPlan.
         // This is the engine-free, no-InlineExecutor planning step.
@@ -174,23 +164,26 @@ impl TableProvider for DeltaSsaTableProvider {
         // the scan SM at snapshot-open time (an async, `!Send`-tolerant context; see `snapshot_build`)
         // and hand this provider a resolved `ResultPlan`. Not required today.
         //
-        // NOTE: the compiled scan `LogicalPlan` is optimized against the *caller's* session below
-        // (`create_physical_plan`), which MUST disable `enable_leaf_expression_pushdown` — the FSR
-        // replay shape otherwise trips `push_down_leaf_projections` with a `scan.add`/`add`
-        // ambiguity on checkpointed tables. `query-wasm::engine::build_query_session` sets it; see
-        // `DataFusionExecutor::replay_session_config` for the full rationale (apache/datafusion#20432).
+        // The drive runs against the *caller's* `session` (passed per call, not a throwaway) — so
+        // the drive's object store, scalar functions, and `execution_props` (the `now()` anchor)
+        // match the final scan plan the same session runs at `create_physical_plan` below. The
+        // `!Send` SM future is confined to this synchronous `block_on` and dropped before the
+        // `.await` at the end of `scan`, so nothing `!Send` is held across an `.await` and the
+        // returned future stays `Send` (`session` itself, a `&dyn Session`, is `Send`). The session
+        // must disable `enable_leaf_expression_pushdown` (validated above) — the FSR replay shape
+        // otherwise trips `push_down_leaf_projections` with a `scan.add`/`add` ambiguity on
+        // checkpointed tables (see `session::configure_delta_engine_config`, apache/datafusion#20432).
         let scan = build_scan(&self.snapshot)?;
         let sm = scan
             .scan_state_machine()
             .map_err(crate::error::wrap_delta_err)?;
         let executor = DataFusionExecutor::new();
-        let result_plan = futures::executor::block_on(executor.drive_to_completion(sm))
+        let result_plan = futures::executor::block_on(executor.drive_to_completion(session, sm))
             .map_err(crate::error::wrap_delta_err)?;
 
         // Compile the SSA result plan to a bare LogicalPlan, then plan it against the *caller's*
         // session so file reads go through the caller's object store + runtime.
-        let logical = executor
-            .compile_result_plan(&result_plan)
+        let logical = DataFusionExecutor::compile_result_plan(&result_plan)
             .map_err(crate::error::wrap_delta_err)?;
 
         // Apply projection + limit at the logical level so DataFusion pushes them into the

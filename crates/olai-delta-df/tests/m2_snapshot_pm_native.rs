@@ -16,8 +16,6 @@
 use std::sync::Arc;
 
 use datafusion::execution::context::SessionContext;
-use datafusion::execution::runtime_env::RuntimeEnv;
-use datafusion::prelude::SessionConfig;
 use delta_kernel::arrow::array::{ArrayRef, AsArray, Int64Array, RecordBatch, StringArray};
 use delta_kernel::arrow::datatypes::{DataType, Field, Int64Type, Schema};
 use delta_kernel::parquet::arrow::ArrowWriter;
@@ -30,7 +28,10 @@ use object_store::local::LocalFileSystem;
 use object_store::memory::InMemory;
 use object_store::path::Path;
 use object_store::{ObjectStore, ObjectStoreExt};
-use olai_delta_df::{DeltaSsaScanConfig, DeltaSsaTableProvider, build_snapshot_from_manifest};
+use olai_delta_df::{
+    DeltaEngineSessionOptions, DeltaSsaScanConfig, DeltaSsaTableProvider,
+    build_snapshot_from_manifest, delta_engine_session,
+};
 use url::Url;
 
 const TABLE_PREFIX: &str = "tbl";
@@ -148,23 +149,12 @@ async fn manifest_for(store: &dyn ObjectStore, table_url: &Url) -> Vec<FileMeta>
 }
 
 fn session_with_store(table_url: &Url, store: Arc<dyn ObjectStore>) -> SessionContext {
-    let mut config = SessionConfig::new();
-    config.options_mut().execution.target_partitions = 1;
-    config
-        .options_mut()
-        .execution
-        .parquet
-        .schema_force_view_types = false;
-    // Mirror the real query session (`query-wasm::engine::build_query_session`): the compiled Delta
-    // scan plan is optimized against this caller session, and its FSR replay shape trips
-    // `push_down_leaf_projections` unless leaf-expression pushdown is disabled here too.
-    config
-        .options_mut()
-        .optimizer
-        .enable_leaf_expression_pushdown = false;
-    let ctx = SessionContext::new_with_config_rt(config, Arc::new(RuntimeEnv::default()));
-    ctx.runtime_env().register_object_store(table_url, store);
-    ctx
+    // The `wasm` preset mirrors the real query session (`query-wasm::engine::build_query_session`):
+    // it configures the Delta engine, including disabling leaf-expression pushdown — the compiled
+    // scan plan is optimized against this caller session and its FSR replay shape otherwise trips
+    // `push_down_leaf_projections`. Explicit `::wasm()` (not `Default`) because this is a native
+    // test binary emulating the browser view-types-off shape.
+    delta_engine_session(store, table_url, &DeltaEngineSessionOptions::wasm())
 }
 
 fn eager_snapshot(store: Arc<dyn ObjectStore>, table_url: &Url, version: Version) -> SnapshotRef {
@@ -244,6 +234,40 @@ async fn snapshot_from_manifest_matches_eager_classic_checkpoint() {
     let built = build_snapshot_from_manifest(&session, &table_url, manifest, 1)
         .await
         .expect("build_snapshot_from_manifest (checkpointed)");
+
+    assert_eq!(built.version(), eager.version(), "version must match");
+    assert_eq!(built.schema(), eager.schema(), "logical schema must match");
+}
+
+/// The checkpoint P&M reconciliation drive is correct on a **native, multi-partition** session
+/// (`DeltaEngineSessionOptions::native()` — `target_partitions` = host cores, NOT forced to 1).
+/// This exercises the structural single-partition guarantee: `run_consume`'s drain coalesces the
+/// reconciliation plan's partitions before reading, so the drive does not depend on the session
+/// forcing single-partition. If the drain still read only partition 0, a fanned-out plan would drop
+/// rows and the resolved `(Protocol, Metadata)` — hence schema/version — would diverge from the
+/// eager oracle.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn snapshot_from_manifest_matches_eager_classic_checkpoint_native_multi_partition() {
+    let table_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/app-txn-checkpoint");
+    let canonical = std::fs::canonicalize(table_dir)
+        .unwrap_or_else(|e| panic!("app-txn-checkpoint fixture not found at {table_dir}: {e}"));
+    let table_url = Url::from_directory_path(&canonical).unwrap();
+    let store: Arc<dyn ObjectStore> = Arc::new(LocalFileSystem::new());
+
+    let eager = eager_snapshot(Arc::clone(&store), &table_url, 1);
+    let manifest = manifest_for(store.as_ref(), &table_url).await;
+
+    // Native preset: multi-partition (leaves `target_partitions` at host parallelism). The only
+    // difference from `session_with_store` is that single-partition is NOT forced. View types are
+    // off just to keep the session shape identical to the wasm helper; irrelevant to this drive.
+    let session = delta_engine_session(
+        Arc::clone(&store),
+        &table_url,
+        &DeltaEngineSessionOptions::native().with_schema_force_view_types(false),
+    );
+    let built = build_snapshot_from_manifest(&session, &table_url, manifest, 1)
+        .await
+        .expect("build_snapshot_from_manifest (checkpointed, native multi-partition)");
 
     assert_eq!(built.version(), eager.version(), "version must match");
     assert_eq!(built.schema(), eager.schema(), "logical schema must match");

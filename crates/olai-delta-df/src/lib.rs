@@ -14,12 +14,18 @@ pub mod error;
 pub mod exec;
 pub mod executor;
 pub mod provider;
+pub mod session;
 pub mod snapshot_build;
 #[cfg(any(test, feature = "test-utils"))]
 pub mod testing;
 
 pub use executor::DataFusionExecutor;
 pub use provider::{DeltaSsaScanConfig, DeltaSsaTableProvider};
+pub use session::{
+    DeltaEngineSessionExt, DeltaEngineSessionOptions, configure_delta_engine_config,
+    delta_engine_session, delta_engine_session_config, install_delta_engine,
+    validate_delta_engine_session,
+};
 pub use snapshot_build::build_snapshot_from_manifest;
 
 // Re-export the kernel types on `build_snapshot_from_manifest`'s public signature so consumers
@@ -29,7 +35,7 @@ pub use delta_kernel::snapshot::SnapshotRef;
 pub use delta_kernel::{FileMeta, Version};
 
 /// A process-monotonic state-machine identity, replacing the POC's `uuid::Uuid::new_v4()` at
-/// this crate's *SM-less* compile entry points (`ssa_result_to_dataframe`, `execute_step`).
+/// this crate's *SM-less* compile entry points (`compile_result_plan`, `execute_step`).
 ///
 /// The `sm_id` is an opaque `(sm_id)` label the kernel stamps onto `Consume` handles for
 /// tracing; its only requirement is uniqueness within a run. `Uuid::new_v4()` pulls

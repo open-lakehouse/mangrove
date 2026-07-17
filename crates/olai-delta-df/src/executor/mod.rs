@@ -21,12 +21,11 @@
 
 use std::sync::Arc;
 
-use datafusion::dataframe::DataFrame;
-use datafusion::execution::context::SessionContext;
+use datafusion::catalog::Session;
 use datafusion_common::error::DataFusionError;
-use datafusion_execution::TaskContext;
-use datafusion_execution::config::SessionConfig;
-use datafusion_physical_plan::ExecutionPlan;
+use datafusion_expr::LogicalPlan;
+use datafusion_physical_plan::coalesce_partitions::CoalescePartitionsExec;
+use datafusion_physical_plan::{ExecutionPlan, ExecutionPlanProperties};
 use delta_kernel::engine::arrow_conversion::TryFromArrow;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
 use delta_kernel::log_segment::LogSegment;
@@ -55,109 +54,63 @@ use uuid::Uuid;
 use crate::compile::{CompileContext, compile_ssa};
 use crate::error::DfResultIntoDelta;
 
-/// Minimal executor: a [`TaskContext`] for [`ExecutionPlan::execute`] calls and a
-/// [`SessionContext`] for DataFusion compile/optimize/lower. Carries no kernel engine.
-pub struct DataFusionExecutor {
-    task_ctx: Arc<TaskContext>,
-    session_ctx: SessionContext,
-}
-
-impl Default for DataFusionExecutor {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+/// Minimal, **stateless** executor that drives kernel SSA state machines against a
+/// caller-supplied [`Session`]. Carries no kernel engine and holds no session of its own — the
+/// session is passed in per call (like [`TableProvider::scan`](datafusion::catalog::TableProvider::scan)),
+/// and the [`TaskContext`](datafusion_execution::TaskContext) for
+/// [`ExecutionPlan::execute`] calls is derived from it.
+///
+/// Threading the *caller's* session through the drive (rather than a session the executor spins up
+/// itself) is what keeps object store, scalar functions, and `execution_props` (the `now()` /
+/// query-start anchor) consistent between the reconciliation `Consume` plans driven here and the
+/// final scan plan the caller runs against the same session.
+///
+/// The session must carry the Delta engine config — see
+/// [`crate::session::configure_delta_engine_config`]; build one via
+/// [`crate::delta_engine_session`] or [`crate::DeltaEngineSessionExt::with_delta_engine`], and (at
+/// integration boundaries) assert it via [`crate::validate_delta_engine_session`].
+#[derive(Debug, Default, Clone, Copy)]
+pub struct DataFusionExecutor;
 
 impl DataFusionExecutor {
-    /// Builds an executor over a single-partition [`SessionContext`] tuned for the kernel SSA
-    /// scan/FSR replay shape, plus a default [`TaskContext`]. For a scan that actually reads
-    /// remote files, drive against a [`SessionContext`] whose runtime env has the object store
-    /// registered (see the `TableProvider` integration in `query-wasm`).
+    /// Construct the (stateless) executor. Drive methods take the [`Session`] per call.
     pub fn new() -> Self {
-        let session_ctx = SessionContext::new_with_config(Self::replay_session_config());
-        Self {
-            task_ctx: Arc::new(TaskContext::default()),
-            session_ctx,
-        }
+        Self
     }
 
-    /// The `SessionConfig` the SSA reconciliation / P&M replay shape requires.
+    /// Compile a [`ResultPlan`] to a bare [`LogicalPlan`], unbound to any session.
     ///
-    /// These three overrides are load-bearing for driving the reconciliation `Consume` plans,
-    /// so any executor session that *runs* those plans (not just compiles a `ResultPlan` for the
-    /// caller to run) must apply them — hence [`Self::new`] and [`Self::new_with_store`] share
-    /// this, and callers who hand in their own session via [`Self::from_session`] are responsible
-    /// for matching it.
-    fn replay_session_config() -> SessionConfig {
-        let mut session_config = SessionConfig::new();
-        // DataFusion's leaf-expression-pushdown pass interacts badly with our FSR replay shape
-        // (Filter over a Projection that builds a struct via named_struct): it inlines the full
-        // struct definition into every Filter leaf, and downstream either CommonSubexprEliminate
-        // dedups badly (duplicate `__common_expr_N`) or the qualified/unqualified struct field
-        // refs (`scan."metaData"` vs `"metaData"`) become ambiguous. Keep it disabled
-        // (apache/datafusion#20432).
-        session_config
-            .options_mut()
-            .optimizer
-            .enable_leaf_expression_pushdown = false;
-        // Statistics collection is a session-level setting; disable it -- kernel does its own
-        // file-level data skipping, and DF's parquet stats collector mishandles
-        // column-mapping/field-id renamed columns (it stamps missing-by-logical-name columns as
-        // all-null, which the projection then folds to Literal::NULL before the field-id rename
-        // applies). See compile/logical/scan.rs for the full rationale.
-        session_config.options_mut().execution.collect_statistics = false;
-        // Force single-partition execution at the session level. The consume-sink drain reads
-        // partition 0 only, and scan/FSR correctness does not depend on intra-file parallelism.
-        // (Also required on wasm, where multi-partition repartition tasks never run.)
-        session_config.options_mut().execution.target_partitions = 1;
-        session_config
-    }
-
-    /// Builds an executor over a reconciliation-safe session (see [`Self::replay_session_config`])
-    /// with `store` registered for `table_url`'s authority.
+    /// Associated (session-free) function: this is pure compilation — it lowers SSA nodes to
+    /// logical operators and `LoadTableProvider`s but does **not** plan or execute — so it needs
+    /// neither an executor instance nor a session. Callers plan it against their session: the
+    /// [`crate::DeltaSsaTableProvider::scan`] path splices projection/limit and calls
+    /// `session.create_physical_plan`; a caller wanting rows plans it and executes via
+    /// `datafusion_physical_plan::execute_stream`. Kept here (rather than as a loose free function)
+    /// so it sits next to the drive methods that produce the `ResultPlan` it consumes.
     ///
-    /// Unlike [`Self::from_session`], this owns the session config, so it is the right constructor
-    /// for **driving** replay SMs (scan/FSR/P&M) that both run the reconciliation `Consume`/
-    /// `SchemaQuery` plans *and* read log/data files over `store` — e.g. snapshot construction,
-    /// where a checkpointed table's P&M replay reads the checkpoint parquet during the drive.
-    pub fn new_with_store(
-        table_url: &url::Url,
-        store: Arc<dyn delta_kernel::object_store::ObjectStore>,
-    ) -> Self {
-        let session_ctx = SessionContext::new_with_config(Self::replay_session_config());
-        session_ctx
-            .runtime_env()
-            .register_object_store(table_url, store);
-        let task_ctx = session_ctx.task_ctx();
-        Self {
-            task_ctx,
-            session_ctx,
-        }
-    }
-
-    /// Builds an executor over a caller-provided [`SessionContext`] (whose runtime env should
-    /// have the scan's object store registered) and its task context.
-    ///
-    /// The caller's session config must match [`Self::replay_session_config`] when this executor
-    /// will *drive* a replay SM (as opposed to only compiling a `ResultPlan`).
-    pub fn from_session(session_ctx: SessionContext) -> Self {
-        let task_ctx = session_ctx.task_ctx();
-        Self {
-            task_ctx,
-            session_ctx,
-        }
+    /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
+    /// [`LogicalPlan`]: datafusion_expr::LogicalPlan
+    pub fn compile_result_plan(
+        rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
+    ) -> Result<LogicalPlan, DeltaError> {
+        let ctx = CompileContext {
+            sm_id: crate::next_sm_id(),
+            sm_kind: "standalone",
+            step_name: "compile_result_plan",
+        };
+        compile_ssa(&rp.plan.stmts, rp.result, &ctx).into_delta()
     }
 
     // ================================================================
     // High-level SM and result-plan driving
     // ================================================================
 
-    /// Drive `sm` until it terminates, executing any intermediate phase operations it yields
-    /// (kernel-side decision plans, schema queries) and returning the SM's terminal value.
+    /// Drive `sm` against `session` until it terminates, executing any intermediate phase
+    /// operations it yields (kernel-side decision plans, schema queries) and returning the SM's
+    /// terminal value.
     ///
     /// The terminal value is whatever `R` the SM was constructed for: for read-style SMs that
-    /// is typically a [`ResultPlan`] the caller compiles via
-    /// [`Self::ssa_result_to_dataframe`].
+    /// is typically a [`ResultPlan`] the caller compiles via [`Self::compile_result_plan`].
     ///
     /// # `!Send` future
     ///
@@ -171,6 +124,7 @@ impl DataFusionExecutor {
     /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
     pub async fn drive_to_completion<R: 'static>(
         &self,
+        session: &dyn Session,
         mut sm: CoroutineSM<R>,
     ) -> Result<R, DeltaError> {
         let sm_id = sm.sm_id();
@@ -181,7 +135,7 @@ impl DataFusionExecutor {
             // `submit` has a valid (unused) input.
             let step_name = sm.step_name();
             let phase_result = match sm.get_step() {
-                Ok(op) => self.run_phase(op, sm_id, sm_kind, step_name).await,
+                Ok(op) => self.run_phase(session, op, sm_id, sm_kind, step_name).await,
                 Err(_) => Ok(EngineResponse::Empty),
             };
             match sm.submit(phase_result)? {
@@ -191,87 +145,62 @@ impl DataFusionExecutor {
         }
     }
 
-    /// Drive a coroutine that yields an [`ResultPlan`] and open its terminal output as a
-    /// [`DataFrame`]. SSA plans describe a single self-contained dataflow DAG; the compiled
-    /// `LogicalPlan` is wrapped directly in a [`DataFrame`] for the caller.
-    ///
-    /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
-    pub async fn drive_ssa_to_dataframe(
-        &self,
-        sm: CoroutineSM<delta_kernel::sm_plans::ir::plan::ResultPlan>,
-    ) -> Result<DataFrame, DeltaError> {
-        let rp = self.drive_to_completion(sm).await?;
-        self.ssa_result_to_dataframe(&rp)
-    }
-
-    /// Compile an [`ResultPlan`] to a [`DataFrame`]. Useful for callers that already hold
-    /// a `ResultPlan` (for example after driving a coroutine by hand) and don't need the
-    /// `CoroutineSM` wrapping that [`Self::drive_ssa_to_dataframe`] provides; also the
-    /// canonical entry point for tests that construct SSA plans directly without an SM.
-    ///
-    /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
-    pub fn ssa_result_to_dataframe(
-        &self,
-        rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
-    ) -> Result<DataFrame, DeltaError> {
-        let ctx = CompileContext {
-            sm_id: crate::next_sm_id(),
-            sm_kind: "standalone",
-            step_name: "ssa_result_to_dataframe",
-        };
-        let logical = compile_ssa(&rp.plan.stmts, rp.result, &ctx).into_delta()?;
-        Ok(DataFrame::new(self.session_ctx.state(), logical))
-    }
-
-    /// Compile a [`ResultPlan`] to a bare [`LogicalPlan`], unbound to any session.
-    ///
-    /// Unlike [`Self::ssa_result_to_dataframe`], this does not wrap the plan in a `DataFrame`
-    /// tied to the executor's own `SessionContext` — the caller (e.g.
-    /// [`crate::DeltaSsaTableProvider::scan`]) plans it against the *scan's* session so the
-    /// object store and config are the caller's, not the executor's. Compilation itself is
-    /// session-independent: it lowers SSA nodes to logical operators and `LoadTableProvider`s.
+    /// Drive a coroutine that yields a [`ResultPlan`] against `session` and compile its terminal
+    /// output to a bare [`LogicalPlan`]. The plan is unbound and unexecuted — the caller plans +
+    /// executes it against its session (`session.create_physical_plan`, optionally after splicing
+    /// projection/limit on top). SSA plans describe a single self-contained dataflow DAG.
     ///
     /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
     /// [`LogicalPlan`]: datafusion_expr::LogicalPlan
-    pub fn compile_result_plan(
+    pub async fn drive_ssa_to_plan(
         &self,
-        rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
-    ) -> Result<datafusion_expr::LogicalPlan, DeltaError> {
-        let ctx = CompileContext {
-            sm_id: crate::next_sm_id(),
-            sm_kind: "standalone",
-            step_name: "compile_result_plan",
-        };
-        compile_ssa(&rp.plan.stmts, rp.result, &ctx).into_delta()
+        session: &dyn Session,
+        sm: CoroutineSM<delta_kernel::sm_plans::ir::plan::ResultPlan>,
+    ) -> Result<LogicalPlan, DeltaError> {
+        let rp = self.drive_to_completion(session, sm).await?;
+        Self::compile_result_plan(&rp)
     }
 
-    /// Drive a combined metadata + data scan and return the data DataFrame.
+    /// Drive a combined metadata + data scan against `session` and compile it to a bare
+    /// [`LogicalPlan`].
     ///
-    /// Sugar for `self.drive_ssa_to_dataframe(scan.scan_state_machine()?)`.
-    pub async fn scan_data(&self, scan: &Scan) -> Result<DataFrame, DeltaError> {
-        self.drive_ssa_to_dataframe(scan.scan_state_machine()?)
+    /// Sugar for `self.drive_ssa_to_plan(session, scan.scan_state_machine()?)`.
+    pub async fn scan_data(
+        &self,
+        session: &dyn Session,
+        scan: &Scan,
+    ) -> Result<LogicalPlan, DeltaError> {
+        self.drive_ssa_to_plan(session, scan.scan_state_machine()?)
             .await
     }
 
-    /// Drive a metadata-only scan and return the live-actions DataFrame.
+    /// Drive a metadata-only scan against `session` and compile it to a bare [`LogicalPlan`].
     ///
-    /// Sugar for `self.drive_ssa_to_dataframe(scan.scan_metadata_state_machine()?)`.
-    pub async fn scan_metadata(&self, scan: &Scan) -> Result<DataFrame, DeltaError> {
-        self.drive_ssa_to_dataframe(scan.scan_metadata_state_machine()?)
+    /// Sugar for `self.drive_ssa_to_plan(session, scan.scan_metadata_state_machine()?)`.
+    pub async fn scan_metadata(
+        &self,
+        session: &dyn Session,
+        scan: &Scan,
+    ) -> Result<LogicalPlan, DeltaError> {
+        self.drive_ssa_to_plan(session, scan.scan_metadata_state_machine()?)
             .await
     }
 
-    /// Drive a Full State Reconstruction and return the reconciled-actions DataFrame.
+    /// Drive a Full State Reconstruction against `session` and compile it to a bare [`LogicalPlan`].
     ///
-    /// Sugar for `self.drive_ssa_to_dataframe(fsr.state_machine()?)`.
-    pub async fn full_state(&self, fsr: &FullState) -> Result<DataFrame, DeltaError> {
-        self.drive_ssa_to_dataframe(fsr.state_machine()?).await
+    /// Sugar for `self.drive_ssa_to_plan(session, fsr.state_machine()?)`.
+    pub async fn full_state(
+        &self,
+        session: &dyn Session,
+        fsr: &FullState,
+    ) -> Result<LogicalPlan, DeltaError> {
+        self.drive_ssa_to_plan(session, fsr.state_machine()?).await
     }
 
     /// Build a kernel [`SnapshotRef`] from a pre-listed [`LogSegment`], **async-native and
     /// engine-free**: drive the [`SnapshotPm`] state machine to resolve `(Protocol, Metadata)`
-    /// (log replay streamed lazily through this executor's session object store — commits + any
-    /// checkpoint parquet, short-circuiting once both are found), then assemble the snapshot via
+    /// (log replay streamed lazily through `session`'s object store — commits + any checkpoint
+    /// parquet, short-circuiting once both are found), then assemble the snapshot via
     /// [`Snapshot::from_parts`].
     ///
     /// This is the async-native replacement for the eager `PrimedStore` + synchronous
@@ -284,43 +213,54 @@ impl DataFusionExecutor {
     /// `!Send`, which every driver we target (wasm-bindgen-futures, native current-thread) accepts.
     pub async fn build_snapshot_pm(
         &self,
+        session: &dyn Session,
         log_segment: Arc<LogSegment>,
         table_root: Url,
     ) -> Result<SnapshotRef, DeltaError> {
         let sm = SnapshotPm::for_log_segment(Arc::clone(&log_segment)).state_machine()?;
-        let (protocol, metadata) = self.drive_to_completion(sm).await?;
+        let (protocol, metadata) = self.drive_to_completion(session, sm).await?;
         let log_segment = Arc::unwrap_or_clone(log_segment);
         let snapshot = Snapshot::from_parts(table_root, log_segment, protocol, metadata)
             .map_err(KernelErrAsDelta::into_delta_default)?;
         Ok(Arc::new(snapshot))
     }
 
-    /// Execute a single [`EngineRequest`] against the executor and return the resulting
+    /// Execute a single [`EngineRequest`] against `session` and return the resulting
     /// [`EngineResponse`]. Used internally by [`Self::drive_to_completion`] and exposed for
     /// callers (typically tests) that need to drive an individual phase op directly.
-    pub async fn execute_step(&self, op: EngineRequest) -> Result<EngineResponse, EngineError> {
-        self.run_phase(op, crate::next_sm_id(), "standalone", "execute")
+    pub async fn execute_step(
+        &self,
+        session: &dyn Session,
+        op: EngineRequest,
+    ) -> Result<EngineResponse, EngineError> {
+        self.run_phase(session, op, crate::next_sm_id(), "standalone", "execute")
             .await
     }
 
-    /// Execute one [`EngineRequest`], stamping any `Consume` handles minted during the run
-    /// with `(sm_id, sm_kind, step_name)`.
+    /// Execute one [`EngineRequest`] against `session`, stamping any `Consume` handles minted
+    /// during the run with `(sm_id, sm_kind, step_name)`.
     async fn run_phase(
         &self,
+        session: &dyn Session,
         op: EngineRequest,
         sm_id: Uuid,
         sm_kind: &'static str,
         step_name: &'static str,
     ) -> Result<EngineResponse, EngineError> {
         match op {
-            EngineRequest::SchemaQuery(node) => self.read_footer_schema(&node).await,
+            EngineRequest::SchemaQuery(node) => self.read_footer_schema(session, &node).await,
             EngineRequest::Consume {
                 stmts,
                 terminal,
                 sink,
             } => {
+                let ctx = CompileContext {
+                    sm_id,
+                    sm_kind,
+                    step_name,
+                };
                 let finished = self
-                    .run_consume(&stmts, terminal, &sink, sm_id, sm_kind, step_name)
+                    .run_consume(session, &stmts, terminal, &sink, &ctx)
                     .await
                     .map_err(EngineError::internal)?;
                 Ok(EngineResponse::Consumer(finished))
@@ -332,24 +272,19 @@ impl DataFusionExecutor {
     /// the consume sink, and return the finalized handle.
     async fn run_consume(
         &self,
+        session: &dyn Session,
         stmts: &[delta_kernel::sm_plans::ir::plan::PlanNode],
         terminal: delta_kernel::sm_plans::ir::plan::Ref,
         sink: &ConsumeSink,
-        sm_id: Uuid,
-        sm_kind: &'static str,
-        step_name: &'static str,
+        ctx: &CompileContext,
     ) -> Result<FinishedHandle, DataFusionError> {
-        let ctx = CompileContext {
-            sm_id,
-            sm_kind,
-            step_name,
-        };
-        let logical = compile_ssa(stmts, terminal, &ctx)?;
-        let df_state = self.session_ctx.state();
-        let physical = df_state
-            .create_physical_plan(&df_state.optimize(&logical)?)
-            .await?;
-        self.drain_consume_sink(physical, sink, &ctx).await
+        let logical = compile_ssa(stmts, terminal, ctx)?;
+        // Plan against the caller's session. `Session::create_physical_plan` runs the logical
+        // optimizer first, so this subsumes the previous explicit `optimize` + `create_physical_plan`
+        // — and it uses the caller's config, scalar functions, and execution_props, keeping the
+        // reconciliation drive consistent with the final scan plan the caller runs.
+        let physical = session.create_physical_plan(&logical).await?;
+        self.drain_consume_sink(session, physical, sink, ctx).await
     }
 
     /// Service a checkpoint-footer [`SchemaQuery`] step: read the parquet file's schema from its
@@ -361,8 +296,12 @@ impl DataFusionExecutor {
     /// groups — keeps this cheap and unaffected by page compression, so it works even for
     /// compressed checkpoints. The arrow schema is converted to a kernel [`StructType`] via
     /// [`TryFromArrow`], matching what the kernel's own footer reader would produce.
-    async fn read_footer_schema(&self, node: &SchemaQuery) -> Result<EngineResponse, EngineError> {
-        self.read_footer_schema_inner(node)
+    async fn read_footer_schema(
+        &self,
+        session: &dyn Session,
+        node: &SchemaQuery,
+    ) -> Result<EngineResponse, EngineError> {
+        self.read_footer_schema_inner(session, node)
             .await
             .map(EngineResponse::Schema)
             .map_err(|e| {
@@ -377,6 +316,7 @@ impl DataFusionExecutor {
 
     async fn read_footer_schema_inner(
         &self,
+        session: &dyn Session,
         node: &SchemaQuery,
     ) -> Result<KernelSchemaRef, DataFusionError> {
         let url =
@@ -385,10 +325,7 @@ impl DataFusionExecutor {
         // scan path reads through), then footer-read via DataFusion's async parquet reader.
         let listing = datafusion_datasource::ListingTableUrl::parse(url.as_str())?;
         let object_store_url = listing.object_store();
-        let store = self
-            .task_ctx
-            .runtime_env()
-            .object_store(&object_store_url)?;
+        let store = session.runtime_env().object_store(&object_store_url)?;
         let path = listing.prefix().clone();
         let meta = {
             use delta_kernel::object_store::ObjectStoreExt;
@@ -409,14 +346,25 @@ impl DataFusionExecutor {
     /// minted from `sink` and return the finalized handle.
     async fn drain_consume_sink(
         &self,
+        session: &dyn Session,
         physical: Arc<dyn ExecutionPlan>,
         sink: &ConsumeSink,
         ctx: &CompileContext,
     ) -> Result<FinishedHandle, DataFusionError> {
         let mut handle = sink.new_handle(ctx.sm_id, ctx.sm_kind, ctx.step_name);
-        // Consume sinks are single-partition by construction; read partition 0 directly without
-        // coalesce.
-        let mut stream = physical.execute(0, Arc::clone(&self.task_ctx))?;
+        // The consumer must see the whole result as one ordered stream, so coalesce to a single
+        // partition before reading. This makes the drain correct for *any* input partitioning
+        // rather than assuming one — so single-partition is a structural guarantee of the drain,
+        // not something the session config must force globally (`target_partitions=1` is now only a
+        // wasm/perf knob, applied via `DeltaEngineSessionOptions::disable_repartition`). Coalescing
+        // an already-single-partition plan is a cheap passthrough.
+        let coalesced: Arc<dyn ExecutionPlan> =
+            if physical.output_partitioning().partition_count() > 1 {
+                Arc::new(CoalescePartitionsExec::new(physical))
+            } else {
+                physical
+            };
+        let mut stream = coalesced.execute(0, session.task_ctx())?;
         while let Some(batch) = stream.try_next().await? {
             let arrow = ArrowEngineData::new(batch);
             match handle

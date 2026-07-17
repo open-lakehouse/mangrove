@@ -14,8 +14,6 @@
 use std::sync::Arc;
 
 use datafusion::execution::context::SessionContext;
-use datafusion::execution::runtime_env::RuntimeEnv;
-use datafusion::prelude::SessionConfig;
 use delta_kernel::arrow::array::{ArrayRef, AsArray, Int64Array, RecordBatch, StringArray};
 use delta_kernel::arrow::datatypes::{DataType, Field, Int64Type, Schema};
 use delta_kernel::parquet::arrow::ArrowWriter;
@@ -23,10 +21,13 @@ use delta_kernel::parquet::basic::Compression;
 use delta_kernel::parquet::file::properties::WriterProperties;
 use delta_kernel::snapshot::{Snapshot, SnapshotRef};
 use delta_kernel_default_engine::DefaultEngineBuilder;
+use object_store::ObjectStore;
 use object_store::ObjectStoreExt;
 use object_store::memory::InMemory;
 use object_store::path::Path;
-use olai_delta_df::{DeltaSsaScanConfig, DeltaSsaTableProvider};
+use olai_delta_df::{
+    DeltaEngineSessionOptions, DeltaSsaScanConfig, DeltaSsaTableProvider, delta_engine_session,
+};
 use url::Url;
 
 const TABLE_PREFIX: &str = "tbl";
@@ -123,21 +124,17 @@ fn build_kernel_snapshot(store: Arc<InMemory>) -> SnapshotRef {
         .expect("kernel snapshot build")
 }
 
-/// A single-partition session with the fixture store registered and view types forced off (the
-/// browser IPC reader cannot decode `Utf8View`; mangrove #28). Mirrors the wasm facade's
-/// single-partition session and the `DeltaScanConfig { schema_force_view_types: false }` the
-/// current path sets.
+/// A session configured for the Delta engine with the fixture store registered. Uses the browser
+/// (`wasm`) preset explicitly — view types forced off (the browser IPC reader cannot decode
+/// `Utf8View`; mangrove #28), matching the `DeltaScanConfig { schema_force_view_types: false }` the
+/// scan path sets — even though this is a native test binary (where `Default` would be the native
+/// preset with view types on).
 fn session_with_store(store: Arc<InMemory>) -> SessionContext {
-    let mut config = SessionConfig::new();
-    config.options_mut().execution.target_partitions = 1;
-    config
-        .options_mut()
-        .execution
-        .parquet
-        .schema_force_view_types = false;
-    let ctx = SessionContext::new_with_config_rt(config, Arc::new(RuntimeEnv::default()));
-    ctx.runtime_env().register_object_store(&table_url(), store);
-    ctx
+    delta_engine_session(
+        store as Arc<dyn ObjectStore>,
+        &table_url(),
+        &DeltaEngineSessionOptions::wasm(),
+    )
 }
 
 /// Byte/row-identical to the `InlineExecutor` oracle: `LIMIT 4 ORDER BY id` yields `[1,2,3,4]`,
