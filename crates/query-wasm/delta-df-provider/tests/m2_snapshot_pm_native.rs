@@ -155,6 +155,13 @@ fn session_with_store(table_url: &Url, store: Arc<dyn ObjectStore>) -> SessionCo
         .execution
         .parquet
         .schema_force_view_types = false;
+    // Mirror the real query session (`query-wasm::engine::build_query_session`): the compiled Delta
+    // scan plan is optimized against this caller session, and its FSR replay shape trips
+    // `push_down_leaf_projections` unless leaf-expression pushdown is disabled here too.
+    config
+        .options_mut()
+        .optimizer
+        .enable_leaf_expression_pushdown = false;
     let ctx = SessionContext::new_with_config_rt(config, Arc::new(RuntimeEnv::default()));
     ctx.runtime_env().register_object_store(table_url, store);
     ctx
@@ -293,5 +300,61 @@ async fn deep_table_root_without_trailing_slash_resolves() {
     assert_eq!(
         n, 6,
         "six rows read back through a slash-less deep table root"
+    );
+}
+
+/// Regression: driving `DeltaSsaTableProvider::scan()` on a **classic-checkpointed** table
+/// succeeds end to end.
+///
+/// The scan's compiled `LogicalPlan` is optimized against the caller session (via
+/// `session.create_physical_plan`). For a checkpointed table the FSR replay shape produces a
+/// `named_struct` build that DataFusion's `push_down_leaf_projections` pass inlines into every
+/// Filter leaf, yielding an ambiguous `scan.add`/`add` schema and failing the optimizer — UNLESS
+/// the caller session disables `enable_leaf_expression_pushdown`, the same load-bearing override
+/// the scan executor's own session sets (`replay_session_config`). `session_with_store` here — like
+/// the real `query-wasm::engine::build_query_session` — sets it, so the checkpointed preview works.
+/// (Commit-only tables never hit the ambiguous shape; regression-guarded here for the checkpoint
+/// case, which `query-wasm`'s `resolve.rs` discovers rather than gates. apache/datafusion#20432.)
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn scan_on_classic_checkpoint_succeeds() {
+    let table_dir = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../../delta-kernel-rs/kernel/tests/data/app-txn-checkpoint"
+    );
+    let canonical = std::fs::canonicalize(table_dir)
+        .unwrap_or_else(|e| panic!("app-txn-checkpoint fixture not found at {table_dir}: {e}"));
+    let table_url = Url::from_directory_path(&canonical).unwrap();
+    let store: Arc<dyn ObjectStore> = Arc::new(LocalFileSystem::new());
+
+    let manifest = manifest_for(store.as_ref(), &table_url).await;
+    let session = session_with_store(&table_url, Arc::clone(&store));
+    let snapshot = build_snapshot_from_manifest(&session, &table_url, manifest, 1)
+        .await
+        .expect("snapshot construction (store-backed) resolves the checkpointed table");
+
+    let provider = DeltaSsaTableProvider::new(
+        snapshot,
+        DeltaSsaScanConfig {
+            schema_force_view_types: false,
+        },
+    )
+    .expect("provider constructs");
+    session
+        .register_table("preview", Arc::new(provider))
+        .unwrap();
+
+    // The scan runs at physical planning; with leaf-pushdown disabled on the caller session the
+    // checkpoint reconciliation plan no longer trips `push_down_leaf_projections`.
+    let batches = session
+        .sql("SELECT count(*) AS n FROM preview")
+        .await
+        .expect("SQL parses/plans")
+        .collect()
+        .await
+        .expect("scanning a classic-checkpointed table succeeds");
+    let n = batches[0].column(0).as_primitive::<Int64Type>().value(0);
+    assert!(
+        n >= 1,
+        "checkpointed fixture must return a non-empty row count, got {n}"
     );
 }
