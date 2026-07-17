@@ -33,6 +33,7 @@ use delta_kernel::engine::arrow_conversion::TryIntoArrow;
 use delta_kernel::schema::SchemaRef;
 use delta_kernel::sm_plans::ir::nodes::LoadNode;
 
+use crate::compile::stats::FileStatsMap;
 use crate::exec::LoadExec;
 
 pub struct LoadTableProvider {
@@ -40,6 +41,9 @@ pub struct LoadTableProvider {
     node: Arc<LoadNode>,
     /// `file_schema_fields ++ passthrough_fields`, pre-materialized so `schema()` is cheap.
     output_schema: ArrowSchemaRef,
+    /// Per-file statistics (keyed by raw `add.path`) to stamp onto each per-file `PartitionedFile`;
+    /// `None` unless the provider drove a stats-enabled scan. Threaded to [`LoadExec`].
+    file_stats: Option<Arc<FileStatsMap>>,
 }
 
 impl LoadTableProvider {
@@ -47,10 +51,12 @@ impl LoadTableProvider {
     /// output schema. The caller (SSA `lower_load`) computes `output_kernel_schema` by
     /// composing the load's `file_schema` with the per-passthrough-column types resolved
     /// against the upstream's kernel schema; this provider just converts it to arrow.
+    /// `file_stats` (raw-`add.path`-keyed) is attached to each per-file plan at scan time.
     pub fn try_new(
         upstream_logical: LogicalPlan,
         node: Arc<LoadNode>,
         output_kernel_schema: SchemaRef,
+        file_stats: Option<Arc<FileStatsMap>>,
     ) -> Result<Self, DataFusionError> {
         let output_schema: ArrowSchemaRef = Arc::new(
             output_kernel_schema
@@ -64,6 +70,7 @@ impl LoadTableProvider {
             upstream_logical,
             node,
             output_schema,
+            file_stats,
         })
     }
 }
@@ -101,6 +108,7 @@ impl TableProvider for LoadTableProvider {
             Arc::clone(&self.output_schema),
             projection.cloned(),
             limit,
+            self.file_stats.clone(),
         )?;
         Ok(Arc::new(load_exec))
     }

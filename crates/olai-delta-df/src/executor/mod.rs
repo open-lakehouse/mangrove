@@ -94,10 +94,23 @@ impl DataFusionExecutor {
     pub fn compile_result_plan(
         rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
     ) -> Result<LogicalPlan, DeltaError> {
+        Self::compile_result_plan_with_stats(rp, None)
+    }
+
+    /// [`compile_result_plan`](Self::compile_result_plan) with per-file [`Statistics`] attached: the
+    /// `file_stats` map (keyed by raw `add.path`) is threaded onto the compiled `Load` leaf so each
+    /// per-file `PartitionedFile` carries its statistics for DataFusion pruning. `None` reproduces
+    /// the plain compile exactly. The provider's stats-enabled scan is the only caller that passes
+    /// `Some`.
+    pub fn compile_result_plan_with_stats(
+        rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
+        file_stats: Option<Arc<crate::compile::stats::FileStatsMap>>,
+    ) -> Result<LogicalPlan, DeltaError> {
         let ctx = CompileContext {
             sm_id: crate::next_sm_id(),
             sm_kind: "standalone",
             step_name: "compile_result_plan",
+            file_stats,
         };
         compile_ssa(&rp.plan.stmts, rp.result, &ctx).into_delta()
     }
@@ -293,6 +306,9 @@ impl DataFusionExecutor {
                     sm_id,
                     sm_kind,
                     step_name,
+                    // Consume-phase compiles (kernel decision plans) never build a data-file Load
+                    // leaf, so per-file stats do not apply here.
+                    file_stats: None,
                 };
                 let finished = self
                     .run_consume(session, &stmts, terminal, &sink, &ctx)
