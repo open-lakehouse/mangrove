@@ -137,7 +137,9 @@ pub fn configure_delta_engine_config(
     config.options_mut().execution.target_partitions = 1;
     config.options_mut().execution.collect_statistics = false;
 
-    // --- Kernel-integration compiler workaround (NOT wasm-specific); see fn docs + #20432 ---
+    // --- Kernel-integration compiler workaround (NOT wasm-specific); see fn docs, #20432, and
+    // the compiler-fix follow-up mangrove#123 (fixing the qualified/unqualified collision there
+    // lets this flag be removed) ---
     config
         .options_mut()
         .optimizer
