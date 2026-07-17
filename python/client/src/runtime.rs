@@ -1,10 +1,12 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::sync::GILOnceCell;
+// pyo3 0.28 made `GILOnceCell` private; `PyOnceLock` is its drop-in successor (same
+// `new()` / `get_or_init(py, ..)` / `get_or_try_init(py, ..)` API).
+use pyo3::sync::PyOnceLock;
 use tokio::runtime::Runtime;
 
-static RUNTIME: GILOnceCell<Runtime> = GILOnceCell::new();
-static PID: GILOnceCell<u32> = GILOnceCell::new();
+static RUNTIME: PyOnceLock<Runtime> = PyOnceLock::new();
+static PID: PyOnceLock<u32> = PyOnceLock::new();
 
 /// Construct a tokio runtime for sync requests
 ///

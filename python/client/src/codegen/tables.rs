@@ -31,7 +31,7 @@ impl PyTableClient {
         request = request.with_include_browse(include_browse);
         request = request.with_include_manifest_capabilities(include_manifest_capabilities);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyTable::from(result))
@@ -40,7 +40,7 @@ impl PyTableClient {
     pub fn get_table_exists(&self, py: Python) -> PyUnityCatalogResult<PyGetTableExistsResponse> {
         let request = self.client.get_table_exists();
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyGetTableExistsResponse::from(result))
@@ -49,7 +49,7 @@ impl PyTableClient {
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(())
         })

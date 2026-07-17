@@ -15,7 +15,7 @@ impl PyFunctionClient {
     pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyFunction> {
         let request = self.client.get();
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyFunction::from(result))
@@ -26,7 +26,7 @@ impl PyFunctionClient {
         let mut request = self.client.update();
         request = request.with_owner(owner);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyFunction::from(result))
@@ -37,7 +37,7 @@ impl PyFunctionClient {
         let mut request = self.client.delete();
         request = request.with_force(force);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(())
         })

@@ -66,11 +66,10 @@ sqlx = { workspace = true, optional = true, features = [
 ] }
 
 # PyO3 boundary for generated models: trestle emits `Py*` wrapper `#[pyclass]`
-# types in `models/_gen/pyo3_impls.rs` that convert to/from the buffa models via
-# pythonize (buffa has no attribute opt, so `#[pyclass]` can't be injected onto
-# the models directly the way the old prost stack did).
+# types in `models/_gen/pyo3_impls.rs` that convert to/from the buffa models. The
+# conversion is emitted directly by the codegen now; the old `pythonize` bridge is
+# gone (no source references anywhere).
 pyo3 = { workspace = true, optional = true }
-pythonize = { workspace = true, optional = true }
 
 # derive #[napi] for generated enums (used by node/client)
 napi-derive = { workspace = true, optional = true }
@@ -109,8 +108,10 @@ rest-client = ["dep:futures", "olai-http"]
 # exposes functionality that help testing cutom handler / router implementations.
 integration = ["http-body-util", "mime", "axum"]
 
-# PyO3 wrapper layer for generated messages (Py* types + pythonize bridges).
-python = ["pyo3", "pythonize"]
+# PyO3 wrapper layer for generated messages (Py* types). Conversion is emitted by the trestle
+# codegen directly now; the old `pythonize` bridge is no longer used (zero references), so it is
+# not part of this feature.
+python = ["pyo3"]
 
 # derives #[napi] for generated enums (used by node/client)
 node = ["napi-derive"]

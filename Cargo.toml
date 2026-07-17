@@ -1,10 +1,15 @@
 [workspace]
 resolver = "2"
 members = ["crates/*", "python/client", "node/client", "examples/rust"]
-# The wasm query engine is its own workspace: its dependency graph patches the
-# arrow family (dropping C-backed parquet codecs) via [patch.crates-io], which
-# is workspace-global and must not leak into the native server build. See
-# crates/query-wasm/Cargo.toml.
+# The wasm query engine (`crates/query-wasm`) stays its own workspace: its cdylib
+# needs a size-tuned `[profile.release]` and wasm-only glue that shouldn't affect
+# the native server build. But its async-native Delta TableProvider —
+# `crates/olai-delta-df` — is a native-buildable library, so it lives HERE as a
+# top-level member (picked up by `crates/*`); query-wasm consumes it via a
+# cross-workspace `path = "../olai-delta-df"` dep. Both workspaces pin the same
+# arrow fork (`[patch.crates-io]` below / in query-wasm) and the same kernel rev,
+# so the crate resolves identically in each. `crates/query-wasm` is excluded so its
+# own arrow patch + profile don't leak into the native graph.
 exclude = ["crates/query-wasm"]
 
 [workspace.package]
@@ -35,35 +40,41 @@ keywords = [
 # drifts on any CI job that re-resolves instead of `--locked` (napi build,
 # `cargo llvm-cov --doc`), which is exactly how the old `buoyant/main` pin broke.
 #
-# The native server and the wasm preview engine (`crates/query-wasm`, its own
-# workspace) share ONE kernel fork: roeap `delta_kernel` v0.25.0. The default
-# engine (`DefaultEngineBuilder`) moved into its own `delta_kernel_default_engine`
-# crate in v0.25 — depend on it explicitly. Bump all four revs in lock-step; the
-# `delta-rs` and `delta-kernel-rs` revs must be a matched set.
+# The native server and the wasm preview engine (`crates/query-wasm`, now a member
+# of this same workspace) share ONE kernel fork: roeap `delta_kernel` v0.25.0. The
+# default engine (`DefaultEngineBuilder`) moved into its own
+# `delta_kernel_default_engine` crate in v0.25 — depend on it explicitly. Bump all
+# four revs in lock-step; the `delta-rs` and `delta-kernel-rs` revs must be a
+# matched set.
 # The `version =` on these git deps is required for `release-plz`'s
 # `cargo package` version-determination step: `cargo package` rejects any
 # dependency (git-sourced included) that lacks a version requirement. The
 # `git`+`rev` still governs the actual build; `version` only satisfies the
 # packaging check and matches each fork's declared version. See release-plz#2595.
-# Pinned to the delta-kernel-rs `sm-plans-consolidation` line (rev 2cf01549) and
-# the matching delta-rs durable `olai/sm-plans` branch (rev a686c3be), converging
-# native + wasm (crates/query-wasm) on ONE delta-rs rev — the single-rev
-# invariant. a686c3be = the sm-plans-consolidation kernel bump plus the additive
-# `Snapshot::kernel_snapshot()` accessor; the wasm crate pins the same rev.
+# Pinned to the delta-kernel-rs `sm-plans-consolidation` TIP (rev c70137e7 =
+# 2cf01549 plus 3 additive, `sm-plans`-gated commits: the list-free snapshot
+# construction seam, the SnapshotPm P&M state machine, and the checkpoint-only
+# reconciliation fix) and the matching delta-rs rev 1b0ad42a (= the olai/sm-plans
+# tip a686c3be plus a one-line Cargo bump of delta-rs's own kernel pin to
+# c70137e7). This is the rev the wasm query engine (`crates/query-wasm` +
+# `delta-df-provider`) requires for its async-native sm_plans path, and it is
+# now the WHOLE repo's rev — native + wasm share ONE kernel and ONE delta-rs rev
+# (the single-rev invariant). The 3 extra commits are inside the `sm-plans`
+# feature the native build never enables, so the native surface is unchanged.
 # `default-features = false` +
 # explicit `arrow-58` is REQUIRED: the kernel's `arrow` default alias is arrow-59
 # and delta_kernel_default_engine's `default` enables it, so leaving defaults on
 # unions arrow-59 into this arrow-58 graph and splits the two `Schema` types.
-delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "2cf015496d437859e836aaffa39cc128507b5f52", default-features = false, features = [
+delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "c70137e7c99552e2ac531e873d4dc4499476f3b6", default-features = false, features = [
   "internal-api",
   "default-engine-base",
   "arrow-58",
 ] }
-delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "2cf015496d437859e836aaffa39cc128507b5f52", package = "delta_kernel_default_engine", default-features = false, features = [
+delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "c70137e7c99552e2ac531e873d4dc4499476f3b6", package = "delta_kernel_default_engine", default-features = false, features = [
   "arrow-58",
   "rustls",
 ] }
-deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "a686c3be5720c036efb80dded5fdaa995ebaab0c", features = [
+deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "1b0ad42ad10d02def901986c45fd1fbd07b9b8f3", features = [
   "datafusion",
   "cloud",
 ] }
@@ -102,11 +113,7 @@ pbjson = { version = "0.9" }
 pbjson-types = "0.9"
 prost = { version = "0.14.1" }
 prost-types = { version = "0.14.1" }
-pyo3 = { version = "0.24", features = ["macros", "indexmap"] }
-# Bridges generated buffa models across the PyO3 boundary (serde <-> Python
-# objects) in the trestle-generated `models/_gen/pyo3_impls.rs`. Behind the
-# `python` feature on `common`.
-pythonize = { version = "0.24" }
+pyo3 = { version = "0.28", features = ["macros", "indexmap"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 serde_yml = { version = "0.0.12" }
@@ -134,6 +141,32 @@ reqwest = { version = "0.12", default-features = false, features = [
   "json",
   "stream",
 ] }
+
+[patch.crates-io]
+# arrow family + parquet: the roeap arrow-rs fork (branch wasm-codec-58.3.0, rev
+# dc2acae8). Same 58.3.0 version as crates.io. This is what lets the wasm query
+# engine build for wasm32-unknown-unknown: the fork's parquet backs `zstd`
+# per-target (the C `zstd` crate on native — full encode+decode — and pure-Rust
+# `ruzstd` decode-only on wasm), and `brotli` is dropped from wasm. Native builds
+# keep full C zstd, so this patch is native-safe. Applied workspace-wide (native +
+# wasm now share one graph). MUST stay a patch, not feature flags: the kernel and
+# datafusion-datasource-parquet declare `parquet` without `default-features =
+# false`, and Cargo unions features graph-wide. Keep in lock-step with the pin in
+# crates/query-wasm/Cargo.toml.
+parquet = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "parquet" }
+arrow = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow" }
+arrow-arith = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-arith" }
+arrow-array = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-array" }
+arrow-buffer = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-buffer" }
+arrow-cast = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-cast" }
+arrow-data = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-data" }
+arrow-ipc = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-ipc" }
+arrow-json = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-json" }
+arrow-ord = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-ord" }
+arrow-row = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-row" }
+arrow-schema = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-schema" }
+arrow-select = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-select" }
+arrow-string = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-string" }
 
 [workspace.metadata.typos]
 default.extend-ignore-re = [

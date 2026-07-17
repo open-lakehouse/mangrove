@@ -71,7 +71,7 @@ impl PyTemporaryCredentialClient {
             }
         };
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let (credential, uuid) =
                 runtime.block_on(self.client.temporary_table_credential(table_ref, op))?;
             Ok::<_, PyUnityCatalogError>((
@@ -107,7 +107,7 @@ impl PyTemporaryCredentialClient {
             }
         };
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let (credential, uuid) =
                 runtime.block_on(self.client.temporary_volume_credential(volume_ref, op))?;
             Ok::<_, PyUnityCatalogError>((
@@ -139,7 +139,7 @@ impl PyTemporaryCredentialClient {
                 ));
             }
         };
-        py.allow_threads(|| {
+        py.detach(|| {
             let (credential, url) =
                 runtime.block_on(self.client.temporary_path_credential(path, op, dry_run))?;
             Ok::<_, PyUnityCatalogError>((PyTemporaryCredential::from(credential), url.to_string()))
@@ -173,7 +173,7 @@ impl PyTemporaryCredentialClient {
             }
         };
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             let credential = runtime.block_on(
                 self.client
                     .temporary_model_version_credential(full_name, version, op),

@@ -20,7 +20,7 @@ impl PyPolicyClient {
     ) -> PyUnityCatalogResult<PyPolicyInfo> {
         let request = self.client.create_policy(policy_info.into());
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyPolicyInfo::from(result))
@@ -29,7 +29,7 @@ impl PyPolicyClient {
     pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyPolicyInfo> {
         let request = self.client.get();
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyPolicyInfo::from(result))
@@ -45,7 +45,7 @@ impl PyPolicyClient {
         let mut request = self.client.update(policy_info.into());
         request = request.with_update_mask(update_mask);
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             #[allow(clippy::let_unit_value)]
             let result = runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(PyPolicyInfo::from(result))
@@ -54,7 +54,7 @@ impl PyPolicyClient {
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
         let runtime = get_runtime(py)?;
-        py.allow_threads(|| {
+        py.detach(|| {
             runtime.block_on(request.into_future())?;
             Ok::<_, PyUnityCatalogError>(())
         })
