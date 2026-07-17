@@ -24,8 +24,8 @@ use std::sync::Arc;
 use datafusion::catalog::Session;
 use datafusion_common::error::DataFusionError;
 use datafusion_execution::TaskContext;
-use datafusion_physical_plan::ExecutionPlan;
-use delta_kernel::arrow::array::RecordBatch;
+use datafusion_expr::LogicalPlan;
+use datafusion_physical_plan::{ExecutionPlan, SendableRecordBatchStream};
 use delta_kernel::engine::arrow_conversion::TryFromArrow;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
 use delta_kernel::log_segment::LogSegment;
@@ -126,61 +126,35 @@ impl<'a> DataFusionExecutor<'a> {
         }
     }
 
-    /// Drive a coroutine that yields a [`ResultPlan`] and collect its terminal output into a
-    /// `Vec<RecordBatch>`. SSA plans describe a single self-contained dataflow DAG; the compiled
-    /// `LogicalPlan` is planned + executed against the caller's session.
+    /// Drive a coroutine that yields a [`ResultPlan`] and compile its terminal output to a bare
+    /// [`LogicalPlan`]. The plan is unbound and unexecuted — the caller plans + executes it against
+    /// its session (e.g. lazily via [`Self::execute_result_plan`], or after splicing
+    /// projection/limit on top). SSA plans describe a single self-contained dataflow DAG.
     ///
     /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
-    pub async fn drive_ssa_to_batches(
+    /// [`LogicalPlan`]: datafusion_expr::LogicalPlan
+    pub async fn drive_ssa_to_plan(
         &self,
         sm: CoroutineSM<delta_kernel::sm_plans::ir::plan::ResultPlan>,
-    ) -> Result<Vec<RecordBatch>, DeltaError> {
+    ) -> Result<LogicalPlan, DeltaError> {
         let rp = self.drive_to_completion(sm).await?;
-        self.collect_result_plan(&rp).await
-    }
-
-    /// Compile a [`ResultPlan`] to a `LogicalPlan`, plan it against the caller's session, and
-    /// collect the results into a `Vec<RecordBatch>`. Useful for callers that already hold a
-    /// `ResultPlan` (for example after driving a coroutine by hand) and don't need the
-    /// `CoroutineSM` wrapping that [`Self::drive_ssa_to_batches`] provides; also the canonical
-    /// entry point for tests that construct SSA plans directly without an SM.
-    ///
-    /// This drives everything through the [`Session`] trait (`create_physical_plan` +
-    /// [`collect`](datafusion_physical_plan::collect)) — no `DataFrame`, so it never needs to
-    /// recover a concrete `SessionState` from the borrowed `&dyn Session`. Callers that want the
-    /// bare plan instead (to apply projection/limit and plan it themselves) use
-    /// [`Self::compile_result_plan`].
-    ///
-    /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
-    pub async fn collect_result_plan(
-        &self,
-        rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
-    ) -> Result<Vec<RecordBatch>, DeltaError> {
-        let logical = self.compile_result_plan(rp)?;
-        let physical = self
-            .session
-            .create_physical_plan(&logical)
-            .await
-            .into_delta()?;
-        datafusion_physical_plan::collect(physical, Arc::clone(&self.task_ctx))
-            .await
-            .into_delta()
+        self.compile_result_plan(&rp)
     }
 
     /// Compile a [`ResultPlan`] to a bare [`LogicalPlan`], unbound to any session.
     ///
-    /// Unlike [`Self::collect_result_plan`], this does not plan or execute — the caller (e.g.
-    /// [`crate::DeltaSsaTableProvider::scan`]) plans it against the *scan's* session so the
-    /// object store and config are the caller's, and can splice projection/limit on top first.
-    /// Compilation itself is session-independent: it lowers SSA nodes to logical operators and
-    /// `LoadTableProvider`s.
+    /// This is the lazy, no-materialization entry point: it lowers SSA nodes to logical operators
+    /// and `LoadTableProvider`s but does **not** plan or execute. Callers plan it against their
+    /// session — the [`crate::DeltaSsaTableProvider::scan`] path splices projection/limit and calls
+    /// `session.create_physical_plan`; a caller wanting rows executes it via
+    /// [`Self::execute_result_plan`]. Compilation itself is session-independent.
     ///
     /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
     /// [`LogicalPlan`]: datafusion_expr::LogicalPlan
     pub fn compile_result_plan(
         &self,
         rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
-    ) -> Result<datafusion_expr::LogicalPlan, DeltaError> {
+    ) -> Result<LogicalPlan, DeltaError> {
         let ctx = CompileContext {
             sm_id: crate::next_sm_id(),
             sm_kind: "standalone",
@@ -189,26 +163,58 @@ impl<'a> DataFusionExecutor<'a> {
         compile_ssa(&rp.plan.stmts, rp.result, &ctx).into_delta()
     }
 
-    /// Drive a combined metadata + data scan and collect the data rows.
-    ///
-    /// Sugar for `self.drive_ssa_to_batches(scan.scan_state_machine()?)`.
-    pub async fn scan_data(&self, scan: &Scan) -> Result<Vec<RecordBatch>, DeltaError> {
-        self.drive_ssa_to_batches(scan.scan_state_machine()?).await
+    /// Plan `logical` against the caller's session and return a lazy
+    /// [`SendableRecordBatchStream`] — the idiomatic, non-materializing way to execute a plan the
+    /// engine produced. Everything flows through the [`Session`] trait (`create_physical_plan` +
+    /// [`execute_stream`](datafusion_physical_plan::execute_stream)); no `DataFrame`, and nothing
+    /// is buffered here (the caller decides whether to stream or collect).
+    pub async fn execute_logical_plan(
+        &self,
+        logical: &LogicalPlan,
+    ) -> Result<SendableRecordBatchStream, DeltaError> {
+        let physical = self
+            .session
+            .create_physical_plan(logical)
+            .await
+            .into_delta()?;
+        datafusion_physical_plan::execute_stream(physical, Arc::clone(&self.task_ctx)).into_delta()
     }
 
-    /// Drive a metadata-only scan and collect the live-actions rows.
+    /// Compile a [`ResultPlan`] and execute it against the caller's session, returning a lazy
+    /// [`SendableRecordBatchStream`]. Sugar for
+    /// [`compile_result_plan`](Self::compile_result_plan) + [`execute_logical_plan`](Self::execute_logical_plan);
+    /// the canonical entry point for callers (and tests) that hold a `ResultPlan` and want rows
+    /// without the `CoroutineSM` wrapping.
     ///
-    /// Sugar for `self.drive_ssa_to_batches(scan.scan_metadata_state_machine()?)`.
-    pub async fn scan_metadata(&self, scan: &Scan) -> Result<Vec<RecordBatch>, DeltaError> {
-        self.drive_ssa_to_batches(scan.scan_metadata_state_machine()?)
+    /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
+    pub async fn execute_result_plan(
+        &self,
+        rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
+    ) -> Result<SendableRecordBatchStream, DeltaError> {
+        let logical = self.compile_result_plan(rp)?;
+        self.execute_logical_plan(&logical).await
+    }
+
+    /// Drive a combined metadata + data scan and compile it to a bare [`LogicalPlan`].
+    ///
+    /// Sugar for `self.drive_ssa_to_plan(scan.scan_state_machine()?)`.
+    pub async fn scan_data(&self, scan: &Scan) -> Result<LogicalPlan, DeltaError> {
+        self.drive_ssa_to_plan(scan.scan_state_machine()?).await
+    }
+
+    /// Drive a metadata-only scan and compile it to a bare [`LogicalPlan`].
+    ///
+    /// Sugar for `self.drive_ssa_to_plan(scan.scan_metadata_state_machine()?)`.
+    pub async fn scan_metadata(&self, scan: &Scan) -> Result<LogicalPlan, DeltaError> {
+        self.drive_ssa_to_plan(scan.scan_metadata_state_machine()?)
             .await
     }
 
-    /// Drive a Full State Reconstruction and collect the reconciled-actions rows.
+    /// Drive a Full State Reconstruction and compile it to a bare [`LogicalPlan`].
     ///
-    /// Sugar for `self.drive_ssa_to_batches(fsr.state_machine()?)`.
-    pub async fn full_state(&self, fsr: &FullState) -> Result<Vec<RecordBatch>, DeltaError> {
-        self.drive_ssa_to_batches(fsr.state_machine()?).await
+    /// Sugar for `self.drive_ssa_to_plan(fsr.state_machine()?)`.
+    pub async fn full_state(&self, fsr: &FullState) -> Result<LogicalPlan, DeltaError> {
+        self.drive_ssa_to_plan(fsr.state_machine()?).await
     }
 
     /// Build a kernel [`SnapshotRef`] from a pre-listed [`LogSegment`], **async-native and

@@ -15,15 +15,26 @@
 use delta_kernel::arrow::record_batch::RecordBatch;
 use delta_kernel::sm_plans::errors::DeltaError;
 use delta_kernel::sm_plans::ir::plan::ResultPlan;
+use futures::TryStreamExt;
 
 use crate::DataFusionExecutor;
+use crate::error::DfResultIntoDelta;
 
-/// Compile a [`ResultPlan`] and collect it into a `Vec<RecordBatch>` via
-/// [`DataFusionExecutor::collect_result_plan`]. Suitable for SSA plans constructed directly in
-/// tests (no coroutine required).
+/// Compile a [`ResultPlan`], execute it via [`DataFusionExecutor::execute_result_plan`], and
+/// **eagerly** drain the resulting stream into a `Vec<RecordBatch>`. Suitable for SSA plans
+/// constructed directly in tests (no coroutine required).
+///
+/// Eager materialization lives here, in the test layer, on purpose: the library returns lazy
+/// [`SendableRecordBatchStream`](datafusion_physical_plan::SendableRecordBatchStream)s /
+/// `LogicalPlan`s, and only test harnesses that want a buffered `Vec` collect them.
 pub async fn collect_ssa_result(
     executor: &DataFusionExecutor<'_>,
     rp: ResultPlan,
 ) -> Result<Vec<RecordBatch>, DeltaError> {
-    executor.collect_result_plan(&rp).await
+    executor
+        .execute_result_plan(&rp)
+        .await?
+        .try_collect()
+        .await
+        .into_delta()
 }
