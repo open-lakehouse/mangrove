@@ -5,10 +5,14 @@ use std::sync::Arc;
 use datafusion_common::error::DataFusionError;
 use uuid::Uuid;
 
+// The column-mapping resolver has no consumers yet (it lands ahead of the filter-pushdown and
+// statistics stages that will read it). Allow dead code crate-wide for this module until those
+// stages wire it in; its unit tests are the current exercise.
+#[allow(dead_code)]
+pub mod column_mapping;
 pub mod expr_translator;
 mod json_parse;
 pub mod logical;
-pub mod stamp_udf;
 
 pub use logical::compile_ssa;
 

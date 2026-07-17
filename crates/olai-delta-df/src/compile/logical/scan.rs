@@ -47,8 +47,10 @@ pub(super) fn scan_to_listing_logical_plan(
         |files: &[delta_kernel::FileMeta]| -> Result<LogicalPlan, DataFusionError> {
             // File-source planning rejects schemas stricter than the physical files (parquet
             // checkpoints commonly write `add.path` as nullable; JSON drops declared NOT NULL
-            // on nested children). Relax before passing in; `NullabilityEnforcingTableProvider`
-            // re-asserts the strict contract per-batch.
+            // on nested children). Relax to the file-observed nullability before passing in. The
+            // downstream kernel consumers tolerate the relaxed nullability, so nothing re-asserts
+            // the strict NOT NULL contract on this path. (An earlier comment here referenced a
+            // `NullabilityEnforcingTableProvider` that never existed in this crate.)
             let file_schema = Arc::new(full_schema.clone());
             let partition_cols: Vec<(String, ArrowDataType)> = Vec::new();
             let format: Arc<dyn datafusion_datasource::file_format::FileFormat> =
