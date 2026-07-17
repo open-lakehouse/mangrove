@@ -95,7 +95,7 @@ pub async fn build_snapshot_from_manifest(
     // registered (that is how the caller reads the log) and, when built via `delta_engine_session`
     // / `with_delta_engine`, carries the reconciliation config the P&M `Consume` drain needs
     // (leaf-pushdown off / single partition / no stats). Assert that config here so a
-    // misconfigured caller fails loudly rather than mis-planning the reconciliation. We validate
+    // misconfigured caller fails loudly rather than misplanning the reconciliation. We validate
     // against the session's own `schema_force_view_types` (construction is view-type-agnostic; the
     // scan provider enforces its own view-type contract).
     let state = session.state();
