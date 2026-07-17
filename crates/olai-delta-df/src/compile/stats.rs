@@ -58,6 +58,12 @@ const STATS_COLUMN: &str = "stats";
 /// The terminal row's top-level column carrying the raw `add.path`.
 const PATH_COLUMN: &str = "path";
 
+/// Per-file statistics keyed by the **raw `add.path` string** (as the metadata-stats terminal emits
+/// it). The per-file attach layer looks up by the same raw path off its own upstream row, so no URL
+/// resolution round-trip is needed on either side. `Arc<Statistics>` because `PartitionedFile`
+/// stores `Option<Arc<Statistics>>` directly.
+pub(crate) type FileStatsMap = HashMap<String, Arc<Statistics>>;
+
 /// Build a `raw add.path -> Arc<Statistics>` map from the metadata-stats terminal batches.
 ///
 /// The key is the **raw, un-normalized `add.path` string** exactly as the terminal emits it; the
@@ -69,10 +75,7 @@ const PATH_COLUMN: &str = "path";
 /// layer then leaves `PartitionedFile.statistics = None`, which is correct (unknown).
 // Wired into the provider `scan()` path in a following commit (the threading seam lands first).
 #[allow(dead_code)]
-pub(crate) fn build_file_statistics(
-    scan: &Scan,
-    stats_batches: &[RecordBatch],
-) -> HashMap<String, Arc<Statistics>> {
+pub(crate) fn build_file_statistics(scan: &Scan, stats_batches: &[RecordBatch]) -> FileStatsMap {
     let resolver = ColumnMappingResolver::from_scan(scan);
     let top_level: Vec<String> = scan
         .logical_schema()
@@ -88,7 +91,7 @@ fn build_from_parts(
     resolver: &ColumnMappingResolver,
     top_level: &[String],
     stats_batches: &[RecordBatch],
-) -> HashMap<String, Arc<Statistics>> {
+) -> FileStatsMap {
     // Per top-level logical column, the leaves that collapse into it (in resolver leaf order).
     let mut leaves_by_top: HashMap<&str, Vec<&LeafMapping>> = HashMap::new();
     for leaf in resolver.leaves() {
@@ -97,7 +100,7 @@ fn build_from_parts(
         }
     }
 
-    let mut out: HashMap<String, Arc<Statistics>> = HashMap::new();
+    let mut out: FileStatsMap = HashMap::new();
     for batch in stats_batches {
         let Some((path_arr, stats_arr)) = terminal_columns(batch) else {
             continue;

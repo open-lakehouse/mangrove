@@ -32,6 +32,7 @@ use delta_kernel::arrow::datatypes::SchemaRef as ArrowSchemaRef;
 use delta_kernel::sm_plans::ir::nodes::LoadNode;
 use futures::stream::{Stream, StreamExt, TryStreamExt};
 
+use crate::compile::stats::FileStatsMap;
 use crate::exec::load_helpers::{
     RowInputs, build_file_source, build_per_file_plan, extract_row_inputs,
 };
@@ -56,6 +57,9 @@ pub struct LoadExec {
     projected_passthrough: Arc<Vec<usize>>,
     /// File source for the (DV-free) load path.
     file_source: Arc<dyn datafusion_datasource::file::FileSource>,
+    /// Per-file statistics (keyed by raw `add.path`) to stamp onto each per-file `PartitionedFile`;
+    /// `None` unless the provider drove a stats-enabled scan. Cloned across `with_new_children`.
+    file_stats: Option<Arc<FileStatsMap>>,
     properties: Arc<PlanProperties>,
 }
 
@@ -66,6 +70,7 @@ impl LoadExec {
         full_schema: ArrowSchemaRef,
         projection: Option<Vec<usize>>,
         limit: Option<usize>,
+        file_stats: Option<Arc<FileStatsMap>>,
     ) -> DfResult<Self> {
         // v1 is DV-free. Note the scan SSA ALWAYS attaches a `dv_ref` column pointer (see
         // `extract_row_inputs`), so we do NOT reject on `node.dv_ref.is_some()` at construction —
@@ -116,6 +121,7 @@ impl LoadExec {
             limit,
             projected_passthrough: Arc::new(projected_passthrough),
             file_source,
+            file_stats,
             properties,
         })
     }
@@ -178,6 +184,7 @@ impl ExecutionPlan for LoadExec {
             Arc::clone(&self.full_schema),
             self.projection.clone(),
             self.limit,
+            self.file_stats.clone(),
         )?))
     }
 
@@ -215,6 +222,7 @@ impl ExecutionPlan for LoadExec {
             context,
             self.limit,
             concurrency,
+            self.file_stats.clone(),
         );
         Ok(Box::pin(RecordBatchStreamAdapter::new(
             Arc::clone(&self.output_schema),
@@ -236,6 +244,7 @@ fn build_load_stream(
     task_context: Arc<TaskContext>,
     limit: Option<usize>,
     concurrency: usize,
+    file_stats: Option<Arc<FileStatsMap>>,
 ) -> impl Stream<Item = DfResult<RecordBatch>> + Send + 'static {
     // Explode upstream batches into one item per row.
     let row_stream = upstream
@@ -253,10 +262,17 @@ fn build_load_stream(
         let pt = Arc::clone(&projected_passthrough);
         let file_source = Arc::clone(&file_source);
         let output_schema = Arc::clone(&output_schema);
+        let file_stats = file_stats.clone();
 
         async move {
             let (batch, row) = row_result?;
             let inputs: RowInputs = extract_row_inputs(&batch, row, &node, &pt)?;
+
+            // Look up this file's per-file statistics by its raw `add.path` (the map is keyed the
+            // same way). `None` when stats are disabled or the file has no recorded stats.
+            let statistics = file_stats
+                .as_ref()
+                .and_then(|m| m.get(&inputs.raw_path).cloned());
 
             let plan = build_per_file_plan(
                 inputs,
@@ -264,6 +280,7 @@ fn build_load_stream(
                 node.file_type,
                 &output_schema,
                 task_ctx.as_ref(),
+                statistics,
             )
             .await?;
             let stream = plan.execute(0, task_ctx)?;

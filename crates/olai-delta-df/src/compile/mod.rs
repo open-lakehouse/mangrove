@@ -35,6 +35,10 @@ pub struct CompileContext {
     pub sm_id: Uuid,
     pub sm_kind: &'static str,
     pub step_name: &'static str,
+    /// Per-file statistics (keyed by raw `add.path`) to attach to the compiled `Load` leaf's
+    /// per-file `PartitionedFile`s. `None` on every path except the provider's stats-enabled scan;
+    /// `lower_load` clones it into the `LoadTableProvider`. See [`stats::FileStatsMap`].
+    pub file_stats: Option<Arc<stats::FileStatsMap>>,
 }
 
 impl CompileContext {
@@ -45,6 +49,7 @@ impl CompileContext {
             sm_id: crate::next_sm_id(),
             sm_kind: "standalone",
             step_name: "execute",
+            file_stats: None,
         }
     }
 }

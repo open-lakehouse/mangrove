@@ -248,11 +248,13 @@ fn lower_load(
         &node.passthrough_columns,
         &upstream_kernel,
     )?;
-    let _ = ctx; // no engine to thread in the DV-free port; kept for signature symmetry
+    // Thread any per-file statistics (provider stats-enabled scan) onto the Load leaf so each
+    // per-file `PartitionedFile` carries them; `None` on every other compile path.
     let provider: Arc<dyn TableProvider> = Arc::new(LoadTableProvider::try_new(
         upstream_logical,
         Arc::new(node.clone()),
         output_kernel_schema,
+        ctx.file_stats.clone(),
     )?);
     LogicalPlanBuilder::scan("ssa_load", provider_as_source(provider), None)?.build()
 }
