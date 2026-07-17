@@ -26,6 +26,7 @@ use datafusion_common::error::DataFusionError;
 use datafusion_expr::LogicalPlan;
 use datafusion_physical_plan::coalesce_partitions::CoalescePartitionsExec;
 use datafusion_physical_plan::{ExecutionPlan, ExecutionPlanProperties};
+use delta_kernel::arrow::array::RecordBatch;
 use delta_kernel::engine::arrow_conversion::TryFromArrow;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
 use delta_kernel::log_segment::LogSegment;
@@ -159,6 +160,40 @@ impl DataFusionExecutor {
     ) -> Result<LogicalPlan, DeltaError> {
         let rp = self.drive_to_completion(session, sm).await?;
         Self::compile_result_plan(&rp)
+    }
+
+    /// Drive a coroutine that yields a [`ResultPlan`], compile it, plan it against `session`, and
+    /// **execute** it — returning the terminal rows as [`RecordBatch`]es.
+    ///
+    /// This is the rows-collecting sibling of [`drive_ssa_to_plan`](Self::drive_ssa_to_plan): where
+    /// that hands back an unexecuted [`LogicalPlan`] for the caller to splice into a larger scan,
+    /// this one materializes the terminal itself. Its use is the metadata-only *stats* SM
+    /// (`Scan::scan_stats_metadata_state_machine`), whose small terminal (one row per live file) the
+    /// provider consumes directly to build per-file [`Statistics`].
+    ///
+    /// # `!Send` / IO caveat
+    ///
+    /// Like every SM drive here the future is `!Send`. Unlike [`drive_ssa_to_plan`] it also
+    /// *executes* a physical plan, so callers that `block_on` it (rather than `.await`) must first
+    /// confirm the compiled plan performs **no object-store IO** — see
+    /// [`plan_reads_no_files`]. The stats terminal drains the reconciled live-action rows (already
+    /// resident by the time the SM terminates), so it is CPU-only for the tables that reach it
+    /// today; the guard keeps that invariant honest on the wasm `block_on` path.
+    ///
+    /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
+    /// [`RecordBatch`]: delta_kernel::arrow::array::RecordBatch
+    // Consumed by the provider `scan()` stats drive in a following commit.
+    #[allow(dead_code)]
+    pub async fn drive_ssa_to_batches(
+        &self,
+        session: &dyn Session,
+        sm: CoroutineSM<delta_kernel::sm_plans::ir::plan::ResultPlan>,
+    ) -> Result<Vec<RecordBatch>, DeltaError> {
+        let logical = self.drive_ssa_to_plan(session, sm).await?;
+        let physical = session.create_physical_plan(&logical).await.into_delta()?;
+        datafusion_physical_plan::collect(physical, session.task_ctx())
+            .await
+            .into_delta()
     }
 
     /// Drive a combined metadata + data scan against `session` and compile it to a bare
@@ -377,4 +412,25 @@ impl DataFusionExecutor {
         }
         Ok(handle.finish())
     }
+}
+
+/// Whether `plan` performs **no object-store IO** — i.e. it can be executed synchronously under a
+/// `block_on` (even on a browser worker, where a blocked thread would starve the `fetch` event
+/// loop) without hanging.
+///
+/// This crate's SSA compiler emits exactly two IO-performing leaves: [`LoadExec`] (opens per-file
+/// parquet/json readers at runtime) and [`FileListingExec`] (lists a store prefix). Every other
+/// leaf a metadata-only terminal compiles to — the commit-JSON `Values` (an in-memory
+/// `DataSourceExec`), `Project`, `Filter` — is CPU-only. So the plan is IO-free iff neither of those
+/// two node types appears anywhere in the tree. Used by the provider to gate the `block_on` stats
+/// drive: if a stats terminal ever compiles to an IO leaf (e.g. a checkpoint whose stats live in
+/// parquet rows), the provider skips stats rather than block on `fetch`.
+// Consumed by the provider `scan()` stats drive in a following commit.
+#[allow(dead_code)]
+pub(crate) fn plan_reads_no_files(plan: &Arc<dyn ExecutionPlan>) -> bool {
+    let any: &dyn std::any::Any = plan.as_ref();
+    if any.is::<crate::exec::LoadExec>() || any.is::<crate::exec::FileListingExec>() {
+        return false;
+    }
+    plan.children().iter().all(|c| plan_reads_no_files(c))
 }
