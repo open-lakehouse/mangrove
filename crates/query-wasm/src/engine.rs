@@ -26,17 +26,19 @@ use arrow_array::RecordBatch;
 use arrow_ipc::writer::StreamWriter;
 use arrow_schema::SchemaRef;
 use datafusion::catalog::memory::{MemoryCatalogProvider, MemorySchemaProvider};
+use datafusion::catalog::{SchemaProvider, TableProvider};
 use datafusion::execution::context::SessionContext;
-use datafusion::sql::TableReference;
 use datafusion::sql::parser::DFParserBuilder;
+use datafusion::sql::{ResolvedTableReference, TableReference};
 use futures::StreamExt;
 use futures::stream::BoxStream;
 use object_store::ObjectStore;
 use url::Url;
 
 use olai_delta_df::{
-    DeltaEngineSessionOptions, DeltaSsaScanConfig, DeltaSsaTableProvider, FileMeta, SnapshotRef,
-    build_snapshot_from_manifest, delta_engine_session,
+    ActionsLogProvider, DeltaEngineSessionOptions, DeltaSsaScanConfig, DeltaSsaTableProvider,
+    FileMeta, ReconciledLogProvider, SnapshotRef, build_snapshot_from_manifest,
+    delta_engine_session,
 };
 
 use crate::error::{Error, Result};
@@ -122,6 +124,19 @@ pub fn extract_table(
         }
     };
 
+    let address = table_address_from_reference(&reference, default_catalog, default_schema)?;
+    Ok((reference, address))
+}
+
+/// Fill a [`TableReference`]'s missing catalog/schema qualifiers from the
+/// request's session defaults, yielding the fully-qualified Unity Catalog
+/// [`TableAddress`]. Errors — as [`Error::Unsupported`] — when a qualifier is
+/// still missing after applying the defaults.
+fn table_address_from_reference(
+    reference: &TableReference,
+    default_catalog: Option<&str>,
+    default_schema: Option<&str>,
+) -> Result<TableAddress> {
     let qualifier = |explicit: Option<&str>, default: Option<&str>, kind: &str| {
         explicit.or(default).map(str::to_owned).ok_or_else(|| {
             Error::unsupported(format!(
@@ -130,12 +145,27 @@ pub fn extract_table(
             ))
         })
     };
-    let address = TableAddress {
+    Ok(TableAddress {
         catalog: qualifier(reference.catalog(), default_catalog, "catalog")?,
         schema: qualifier(reference.schema(), default_schema, "schema")?,
         table: reference.table().to_owned(),
-    };
-    Ok((reference, address))
+    })
+}
+
+/// Parse a physical table target (`catalog.schema.table`, or a partial name
+/// completed by the request's session defaults) into a Unity Catalog
+/// [`TableAddress`].
+///
+/// The log-query seam carries the physical table out-of-band (not in the SQL,
+/// which references a fixed logical name), so — unlike [`extract_table`] — the
+/// address comes from this string rather than the SQL's `FROM` clause.
+pub fn parse_table_address(
+    target: &str,
+    default_catalog: Option<&str>,
+    default_schema: Option<&str>,
+) -> Result<TableAddress> {
+    let reference = TableReference::parse_str(target);
+    table_address_from_reference(&reference, default_catalog, default_schema)
 }
 
 /// Open the Delta table at `table_url` from `store` by constructing its snapshot from the
@@ -205,19 +235,47 @@ fn build_query_session(store: Arc<dyn ObjectStore>, table_url: &Url) -> SessionC
     delta_engine_session(store, table_url, &DeltaEngineSessionOptions::wasm())
 }
 
-/// Register the opened table's scan under exactly the name `reference` resolves
-/// to on `ctx`, creating the catalog/schema providers as needed.
+/// Which Delta-log surface a log-query registers over the opened snapshot.
 ///
-/// Bare and partial references land in the session's default catalog/schema —
-/// the same resolution `ctx.sql` applies — so the query's `FROM` clause finds
-/// the scan wherever it looks.
-pub fn register_table(
+/// Both variants are engine-free, async-native `TableProvider`s from
+/// `olai-delta-df` reconciled from the same kernel snapshot — they differ only
+/// in what the reconciled log projects to.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LogKind {
+    /// Surviving scan-file rows after log replay (`ReconciledLogProvider`).
+    Reconciled,
+    /// The reconciled full action stream (`ActionsLogProvider`).
+    Actions,
+}
+
+/// The browser scan config shared by every provider registered on the query
+/// session.
+///
+/// Arrow "view" types (Utf8View/BinaryView) are forced off (`schema_force_view_types = false`):
+/// arrow-rs 58 / DataFusion materialize string & binary columns as view types by default, but the
+/// browser-side apache-arrow IPC reader can't decode them in any published release — its `Type`
+/// enum stops at `LargeUtf8 = 20`, so a Utf8View field (id 24) hits no case and throws
+/// "Unrecognized type: undefined (24)". Reading them as plain Utf8/Binary keeps the emitted IPC
+/// within the JS reader's vocabulary. This is an *unreleased* upstream gap (apache/arrow-js PR #320
+/// adds view support on `main`; latest release 21.1.0 lacks it) — drop the override once a release
+/// ships the reader (mangrove #28). The provider config records the same intent and asserts it
+/// against the session (built with `::wasm()`, view types off) at scan time.
+fn wasm_scan_config() -> DeltaSsaScanConfig {
+    DeltaSsaScanConfig {
+        schema_force_view_types: false,
+    }
+}
+
+/// Resolve `reference` the same way `ctx.sql` will — against the session's
+/// configured default catalog and schema — and return the (lazily created)
+/// schema provider it lands in, plus the fully-resolved reference.
+///
+/// Bare and partial references land in the session's default catalog/schema, so
+/// a query's `FROM` clause finds whatever we register wherever it looks.
+fn resolve_and_ensure_schema(
     ctx: &SessionContext,
-    opened: &OpenedTable,
     reference: &TableReference,
-) -> Result<()> {
-    // Resolve bare/partial references the same way `ctx.sql` will: against the
-    // session's configured default catalog and schema.
+) -> Result<(Arc<dyn SchemaProvider>, ResolvedTableReference)> {
     let resolved = {
         let state = ctx.state();
         let options = &state.config().options().catalog;
@@ -242,25 +300,66 @@ pub fn register_table(
             created
         }
     };
+    Ok((schema, resolved))
+}
 
-    // Arrow "view" types (Utf8View/BinaryView) are forced off on the query session at build time
-    // (see `build_query_session`): arrow-rs 58 / DataFusion materialize string & binary columns as
-    // view types by default, but the browser-side apache-arrow IPC reader can't decode them in any
-    // published release — its `Type` enum stops at `LargeUtf8 = 20`, so a Utf8View field (id 24)
-    // hits no case and throws "Unrecognized type: undefined (24)". Reading them as plain
-    // Utf8/Binary keeps the emitted IPC within the JS reader's vocabulary. This is an *unreleased*
-    // upstream gap (apache/arrow-js PR #320 adds view support on `main`; latest release 21.1.0
-    // lacks it) — drop the override once a release ships the reader (mangrove #28). The provider
-    // config records the same intent and asserts it against the session at scan time.
-    let scan_config = DeltaSsaScanConfig {
-        schema_force_view_types: false,
-    };
+/// Register the opened table's data scan under exactly the name `reference`
+/// resolves to on `ctx`, creating the catalog/schema providers as needed.
+pub fn register_table(
+    ctx: &SessionContext,
+    opened: &OpenedTable,
+    reference: &TableReference,
+) -> Result<()> {
+    let (schema, resolved) = resolve_and_ensure_schema(ctx, reference)?;
     // Hand the async-native kernel `SnapshotRef` (built list-free + engine-free from the discovered
     // manifest, no `PrimedStore` prefetch) to the sm_plans-driven provider — the full construction
     // + scan path is now async-native.
-    let scan = DeltaSsaTableProvider::new(opened.snapshot.clone(), scan_config)?;
+    let scan = DeltaSsaTableProvider::new(opened.snapshot.clone(), wasm_scan_config())?;
     schema.register_table(resolved.table.to_string(), Arc::new(scan))?;
     Ok(())
+}
+
+/// Build the Delta-log `TableProvider` for `kind` over the opened snapshot.
+///
+/// Both log providers reconcile the same kernel snapshot and take the same
+/// `(SnapshotRef, DeltaSsaScanConfig)` constructor — they differ only in what
+/// the reconciled log projects to.
+fn log_provider(opened: &OpenedTable, kind: LogKind) -> Result<Arc<dyn TableProvider>> {
+    Ok(match kind {
+        LogKind::Reconciled => Arc::new(ReconciledLogProvider::new(
+            opened.snapshot.clone(),
+            wasm_scan_config(),
+        )?),
+        LogKind::Actions => Arc::new(ActionsLogProvider::new(
+            opened.snapshot.clone(),
+            wasm_scan_config(),
+        )?),
+    })
+}
+
+/// Scan a Delta-log surface (per `kind`) over the opened snapshot, capping at
+/// `limit` rows, and stream self-contained IPC chunks.
+///
+/// Unlike the data path, this drives [`TableProvider::scan`] directly rather
+/// than going through `ctx.sql("SELECT * …")`. The log providers emit camelCase
+/// columns (`deletionVector`, `metaData`, …); DataFusion's SQL wildcard
+/// expansion / analyzer lowercases them and then fails to resolve them against
+/// the provider schema (a SQL-surface quirk orthogonal to the provider, which
+/// scans correctly). The UI's log SQL is always a bare `SELECT * … LIMIT n`, so
+/// projecting all columns with the row cap reproduces it exactly while
+/// sidestepping the SQL surface entirely.
+pub async fn scan_log_chunks(
+    ctx: &SessionContext,
+    opened: &OpenedTable,
+    kind: LogKind,
+    limit: Option<usize>,
+) -> Result<BoxStream<'static, Result<IpcChunk>>> {
+    let provider = log_provider(opened, kind)?;
+    let state = ctx.state();
+    // Full projection, no filters — the UI issues `SELECT * … LIMIT n`.
+    let plan = provider.scan(&state, None, &[], limit).await?;
+    let batches = datafusion::physical_plan::execute_stream(plan, state.task_ctx())?;
+    Ok(frame_ipc_chunks(batches))
 }
 
 /// One result chunk: a self-contained Arrow IPC stream plus its row count.
@@ -298,6 +397,16 @@ pub async fn execute_chunks(
         df = df.limit(0, Some(limit))?;
     }
     let batches = df.execute_stream().await?;
+    Ok(frame_ipc_chunks(batches))
+}
+
+/// Frame a record-batch stream as the self-contained IPC chunks the
+/// `open_lakehouse.query.v1` contract requires: one chunk per non-empty batch,
+/// each independently decodable; an empty stream yields exactly one schema-only
+/// chunk so consumers can still render column headers.
+fn frame_ipc_chunks(
+    batches: datafusion::execution::SendableRecordBatchStream,
+) -> BoxStream<'static, Result<IpcChunk>> {
     let schema = batches.schema();
 
     struct State {
@@ -305,7 +414,7 @@ pub async fn execute_chunks(
         schema: SchemaRef,
         sent_any: bool,
     }
-    let stream = futures::stream::unfold(
+    futures::stream::unfold(
         Some(State {
             batches,
             schema,
@@ -336,8 +445,8 @@ pub async fn execute_chunks(
                 };
             }
         },
-    );
-    Ok(stream.boxed())
+    )
+    .boxed()
 }
 
 // Native-only: unit tests never run on wasm32 (no test runner without
