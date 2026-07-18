@@ -30,30 +30,10 @@ use unitycatalog_client::UnityCatalogClient;
 use unitycatalog_common::services::encryption::EnvelopeEncryptor;
 use unitycatalog_common::store::ObjectStoreAdapter;
 use unitycatalog_common::{Error, Result};
-use unitycatalog_delta_api::DeltaApiHandler;
 use unitycatalog_postgres::PgCommitCoordinator;
 use unitycatalog_sqlite::SqliteCommitCoordinator;
 
 use crate::api::RequestContext;
-use crate::api::agent_skills::AgentSkillHandler;
-use crate::api::agents::AgentHandler;
-use crate::api::catalogs::CatalogHandler;
-use crate::api::credentials::CredentialHandler;
-use crate::api::entity_tag_assignments::EntityTagAssignmentHandler;
-use crate::api::external_locations::ExternalLocationHandler;
-use crate::api::functions::FunctionHandler;
-use crate::api::model_versions::ModelVersionHandler;
-use crate::api::policies::PolicyHandler;
-use crate::api::providers::ProviderHandler;
-use crate::api::recipients::RecipientHandler;
-use crate::api::registered_models::RegisteredModelHandler;
-use crate::api::schemas::SchemaHandler;
-use crate::api::shares::ShareHandler;
-use crate::api::staging_tables::StagingTableHandler;
-use crate::api::tables::TableHandler;
-use crate::api::tag_policies::TagPolicyHandler;
-use crate::api::temporary_credentials::TemporaryCredentialHandler;
-use crate::api::volumes::VolumeHandler;
 use crate::config::PostgresBackendConfig;
 use crate::config::{Backend, Config, SqliteBackendConfig, UiConfig};
 use crate::policy::{ConstantPolicy, Policy};
@@ -238,31 +218,13 @@ pub(crate) fn swagger_api_defs() -> Vec<ApiDefinition<&'static str>> {
 }
 
 /// Build the all-local REST router (every surface served from `handler`).
-pub(crate) fn build_rest_router<T, Cx>(handler: T) -> Router
-where
-    T: CatalogHandler<Cx>
-        + CredentialHandler<Cx>
-        + FunctionHandler<Cx>
-        + ShareHandler<Cx>
-        + SchemaHandler<Cx>
-        + StagingTableHandler<Cx>
-        + TableHandler<Cx>
-        + VolumeHandler<Cx>
-        + AgentSkillHandler<Cx>
-        + AgentHandler<Cx>
-        + ExternalLocationHandler<Cx>
-        + RecipientHandler<Cx>
-        + ProviderHandler<Cx>
-        + DeltaApiHandler<Cx>
-        + TagPolicyHandler<Cx>
-        + EntityTagAssignmentHandler<Cx>
-        + PolicyHandler<Cx>
-        + RegisteredModelHandler<Cx>
-        + ModelVersionHandler<Cx>
-        + TemporaryCredentialHandler<Cx>
-        + Clone,
-    Cx: axum::extract::FromRequestParts<T> + Send + 'static,
-{
+// Concrete over `ServerHandler<RequestContext>` — the only handler/context this is
+// ever built with. The sibling `create_*_router` helpers stay generic over
+// `Cx: FromRequestParts<T>`; `create_delta_router`, however, supplies the
+// Delta router's context via an explicit `Principal → RequestContext` extractor
+// closure (the Delta router is no longer an axum `FromRequestParts` consumer — see
+// issue #135), which pins this builder to the concrete context type.
+pub(crate) fn build_rest_router(handler: ServerHandler<RequestContext>) -> Router {
     let api_routes = create_catalogs_router(handler.clone())
         .merge(create_schemas_router(handler.clone()))
         .merge(create_staging_tables_router(handler.clone()))
