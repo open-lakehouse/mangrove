@@ -1,15 +1,13 @@
-//! M2 verification: async-native, engine-free snapshot construction
-//! ([`build_snapshot_from_manifest`]) resolves the same table state as the eager kernel
-//! `DefaultEngine` build (`Snapshot::builder_for(..).build(engine)`) — for both a **commit-only**
-//! table and a **classic-checkpointed** table (the latter exercises the async checkpoint-footer
-//! `SchemaQuery` read, i.e. the #116 fix).
+//! Async-native, engine-free snapshot construction ([`build_snapshot_from_manifest`]) resolves the
+//! same table state as the eager kernel `DefaultEngine` build (`Snapshot::builder_for(..).build`) —
+//! for both a **commit-only** table and a **classic-checkpointed** table (the latter exercises the
+//! async checkpoint-footer `SchemaQuery` read).
 //!
 //! The equivalence anchor: same `version()` and same logical `schema()` from both build paths
 //! (schema identity proves Metadata's `schemaString` resolved identically; version proves the
 //! P&M log replay reached the right commit). We additionally register a `DeltaSsaTableProvider`
-//! on the manifest-built snapshot and run a `count(*)` to prove the whole pipeline
-//! (construction + scan) works end to end over the async object store, with no `PrimedStore`
-//! and no inline executor.
+//! on the manifest-built snapshot and run a `count(*)` to prove the whole pipeline (construction +
+//! scan) works end to end over the async object store.
 
 #![cfg(not(target_arch = "wasm32"))]
 
@@ -112,23 +110,23 @@ async fn commit_only_store_at(prefix: &str) -> Arc<InMemory> {
     Arc::new(store)
 }
 
-/// Commit-only in-memory fixture under [`TABLE_PREFIX`] (same shape as `native.rs::fixture_store`).
+/// Commit-only in-memory fixture under [`TABLE_PREFIX`].
 async fn commit_only_store() -> Arc<InMemory> {
     commit_only_store_at(TABLE_PREFIX).await
 }
 
 /// Build the `_delta_log` manifest (kernel `FileMeta`s) for `store` under `table_url` by listing
-/// the log directory — standing in for mangrove's HEAD-probe discovery.
+/// the log directory — standing in for the caller's out-of-band log discovery.
 async fn manifest_for(store: &dyn ObjectStore, table_url: &Url) -> Vec<FileMeta> {
     // Join `_delta_log` onto the table path segment-wise (slash-safe) so this works whether or not
-    // `table_url` carries a trailing slash — mirrors production discovery's `Path::join`.
+    // `table_url` carries a trailing slash.
     let log_prefix = Path::from(table_url.path().trim_start_matches('/')).join("_delta_log");
     let mut out = Vec::new();
     let mut listing = store.list(Some(&log_prefix));
     while let Some(meta) = futures::StreamExt::next(&mut listing).await {
         let meta = meta.unwrap();
         // Skip `_last_checkpoint` (not a versioned log file); the manifest names checkpoint parts
-        // directly, as mangrove's discovery does.
+        // directly.
         if meta.location.filename() == Some("_last_checkpoint") {
             continue;
         }
@@ -149,11 +147,9 @@ async fn manifest_for(store: &dyn ObjectStore, table_url: &Url) -> Vec<FileMeta>
 }
 
 fn session_with_store(table_url: &Url, store: Arc<dyn ObjectStore>) -> SessionContext {
-    // The `wasm` preset mirrors the real query session (`query-wasm::engine::build_query_session`):
-    // it configures the Delta engine, including disabling leaf-expression pushdown — the compiled
-    // scan plan is optimized against this caller session and its FSR replay shape otherwise trips
-    // `push_down_leaf_projections`. Explicit `::wasm()` (not `Default`) because this is a native
-    // test binary emulating the browser view-types-off shape.
+    // Disables leaf-expression pushdown: the compiled scan plan is optimized against this caller
+    // session and its FSR replay shape otherwise trips `push_down_leaf_projections`. Uses the
+    // `wasm` preset (view types off) as this native binary emulates the browser shape.
     delta_engine_session(store, table_url, &DeltaEngineSessionOptions::wasm())
 }
 
@@ -206,8 +202,8 @@ async fn snapshot_from_manifest_matches_eager_commit_only() {
 }
 
 /// Classic-checkpointed on-disk fixture (`app-txn-checkpoint`, checkpoint at v1): manifest-built
-/// snapshot matches the eager build. This drives the checkpoint-footer `SchemaQuery` async read
-/// (the #116 fix) — the P&M replay must read the checkpoint parquet.
+/// snapshot matches the eager build. This drives the checkpoint-footer `SchemaQuery` async read —
+/// the P&M replay must read the checkpoint parquet.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn snapshot_from_manifest_matches_eager_classic_checkpoint() {
     // Vendored classic-checkpointed table (from delta-kernel-rs `kernel/tests/data`); see tests/data.
@@ -222,7 +218,7 @@ async fn snapshot_from_manifest_matches_eager_classic_checkpoint() {
     assert_eq!(eager.version(), 1, "checkpoint fixture is at version 1");
 
     let manifest = manifest_for(store.as_ref(), &table_url).await;
-    // Sanity: the manifest carries the checkpoint parquet (else this wouldn't exercise #116).
+    // Sanity: the manifest carries the checkpoint parquet (else the footer read isn't exercised).
     assert!(
         manifest
             .iter()
@@ -330,12 +326,10 @@ async fn deep_table_root_without_trailing_slash_resolves() {
 /// The scan's compiled `LogicalPlan` is optimized against the caller session (via
 /// `session.create_physical_plan`). For a checkpointed table the FSR replay shape produces a
 /// `named_struct` build that DataFusion's `push_down_leaf_projections` pass inlines into every
-/// Filter leaf, yielding an ambiguous `scan.add`/`add` schema and failing the optimizer — UNLESS
-/// the caller session disables `enable_leaf_expression_pushdown`, the same load-bearing override
-/// the scan executor's own session sets (`replay_session_config`). `session_with_store` here — like
-/// the real `query-wasm::engine::build_query_session` — sets it, so the checkpointed preview works.
-/// (Commit-only tables never hit the ambiguous shape; regression-guarded here for the checkpoint
-/// case, which `query-wasm`'s `resolve.rs` discovers rather than gates. apache/datafusion#20432.)
+/// Filter leaf, yielding an ambiguous `scan.add`/`add` schema and failing the optimizer — unless
+/// the caller session disables `enable_leaf_expression_pushdown` (`replay_session_config`).
+/// `session_with_store` here sets it, so the checkpointed preview works. Commit-only tables never
+/// hit the ambiguous shape; this guards the checkpoint case (apache/datafusion#20432).
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn scan_on_classic_checkpoint_succeeds() {
     let table_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/app-txn-checkpoint");

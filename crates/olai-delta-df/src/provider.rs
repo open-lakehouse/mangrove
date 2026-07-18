@@ -1,5 +1,4 @@
-//! [`DeltaSsaTableProvider`]: the async-native, engine-free Delta [`TableProvider`] that
-//! replaces the eager inline-executor scan path.
+//! [`DeltaSsaTableProvider`]: the async-native, engine-free Delta [`TableProvider`].
 //!
 //! This is the crate's **one public, table-level provider** — the type callers register for a
 //! Delta table. The only other `TableProvider` in the crate, [`crate::exec::LoadTableProvider`], is
@@ -20,7 +19,7 @@
 //!
 //! The `!Send` SM drive happens entirely inside `scan()` (planning); the returned
 //! `ExecutionPlan` is `Send` and streams lazily via DataFusion's own async parquet/object-store
-//! stack. No `ExecutorHandle`/`InlineExecutor` is constructed anywhere on this path.
+//! stack.
 
 use std::sync::Arc;
 
@@ -47,8 +46,8 @@ use crate::compile::stats::build_file_statistics;
 pub struct DeltaSsaScanConfig {
     /// When `false`, the scan emits plain `Utf8`/`Binary` rather than `Utf8View`/`BinaryView`.
     ///
-    /// The browser apache-arrow IPC reader cannot decode view types (mangrove issue #28), so the
-    /// wasm preview path sets this `false`. It is honored via the DataFusion session config knob
+    /// The browser apache-arrow IPC reader cannot decode view types, so the wasm preview path sets
+    /// this `false`. It is honored via the DataFusion session config knob
     /// `datafusion.execution.parquet.schema_force_view_types`: the caller's `Session` (the one
     /// passed to [`TableProvider::scan`]) must have it set to match. This flag records the intent
     /// and is asserted against the session at scan time.
@@ -166,7 +165,7 @@ impl DeltaSsaTableProvider {
 /// so the stats SM's terminal carries a populated `stats` column). It has no effect on the primary
 /// (data) scan drive, which never projects `stats`; only the metadata-stats SM reads it.
 ///
-/// `predicate` is the **Layer 1** data-skipping predicate (logical-named): when `Some`, the
+/// `predicate` is the kernel file-list-skipping predicate (logical-named): when `Some`, the
 /// `sm_plans` SSA scan path inserts a `FilterNode` over the reconciled `add.stats_parsed` rows so
 /// whole files can be pruned from the live-file list *before* they enter the plan. The kernel
 /// rewrites the logical column refs to physical itself (via `Scan::physical_predicate()`). `new()`
@@ -215,13 +214,13 @@ impl TableProvider for DeltaSsaTableProvider {
         // view-type knob: the SM drive below and the final `create_physical_plan` both run against
         // this session, so it must have leaf-pushdown off / single partition / no stats, and its
         // `schema_force_view_types` must match this provider's config (a mismatch would emit
-        // `Utf8View` the browser IPC reader can't decode — mangrove #28). Hard error, not
+        // `Utf8View` the browser IPC reader can't decode). Hard error, not
         // auto-repair: the fix is to build the session via `delta_engine_session` /
         // `with_delta_engine`, not to silently rewrite it here.
         crate::validate_delta_engine_session(session, self.config.schema_force_view_types)?;
 
-        // Build the kernel scan and drive its `sm_plans` coroutine state machine to a ResultPlan.
-        // This is the engine-free, no-InlineExecutor planning step.
+        // Build the kernel scan and drive its `sm_plans` coroutine state machine to a ResultPlan
+        // (engine-free planning).
         //
         // The SM future is `!Send` (genawaiter2 `rc` — an `Rc<Cell<..>>` airlock), but DataFusion's
         // `TableProvider::scan` requires the returned future to be `Send`. To keep this `scan`
@@ -233,12 +232,10 @@ impl TableProvider for DeltaSsaTableProvider {
         // that reach it. Commit-only tables short-circuit shape resolution and defer add-file
         // enumeration into the returned `ResultPlan` (commit `.json`s become `Values -> Load` nodes
         // the *executor* reads lazily, outside this drive); a classic checkpoint's shape resolution
-        // stays entirely CPU-side for this fixture too. If a future kernel shape ever makes the scan
-        // drive `.await` a real store read (a checkpoint-footer `SchemaQuery` / sidecar `Consume`),
-        // this `block_on` would become a browser-hang risk — a `fetch` settles only when the JS
-        // event loop runs, which a blocked worker thread starves — and the fix would be to pre-drive
-        // the scan SM at snapshot-open time (an async, `!Send`-tolerant context; see `snapshot_build`)
-        // and hand this provider a resolved `ResultPlan`. Not required today.
+        // stays entirely CPU-side too. A kernel shape that made the drive `.await` a real store read
+        // would turn this `block_on` into a browser-hang risk (a `fetch` settles only when the JS
+        // event loop runs, which a blocked worker thread starves); the fix would be to pre-drive the
+        // scan SM at snapshot-open time (see `snapshot_build`) and hand this provider a resolved plan.
         //
         // The drive runs against the *caller's* `session` (passed per call, not a throwaway) — so
         // the drive's object store, scalar functions, and `execution_props` (the `now()` anchor)
@@ -312,7 +309,7 @@ impl TableProvider for DeltaSsaTableProvider {
         filters: &[&Expr],
     ) -> DfResult<Vec<TableProviderFilterPushDown>> {
         // `Inexact`: `scan()` lowers these filters to a logical pushdown predicate handed to the
-        // per-file parquet source for row-group / page pruning (against the Stage-4 per-file
+        // per-file parquet source for row-group / page pruning (against the per-file
         // statistics), but pruning is conservative and some filters may not lower — so DataFusion
         // must still re-apply a `FilterExec` above the scan for correctness. Only this top-level
         // provider's report matters: the internal `LoadTableProvider` leaves receive no `Expr`
@@ -557,7 +554,7 @@ mod stats_e2e_tests {
         assert_stats_correct("id").await;
     }
 
-    // === Stage 5: filter pushdown / file skipping ========================================
+    // === Filter pushdown / file skipping =================================================
 
     /// End-to-end: register the provider and run `SELECT ... WHERE id >= 4` over the two-file CM
     /// fixture (file A `id∈[1,3]`, file B `id∈[4,6]`). With filter pushdown live the provider lowers

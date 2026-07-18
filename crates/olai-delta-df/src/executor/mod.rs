@@ -7,8 +7,8 @@
 //!
 //! # Engine-free
 //!
-//! Unlike the POC, this executor holds **no kernel `Engine`**. Both POC touch-points that needed
-//! one are handled without it:
+//! This executor holds no kernel `Engine`. The two operations that would need one are handled
+//! without it:
 //!
 //!   1. deletion-vector reads — dropped entirely (DVs are gated to `Unsupported` upstream), and
 //!   2. checkpoint-footer `SchemaQuery` — serviced async over the session object store via
@@ -268,9 +268,6 @@ impl DataFusionExecutor {
     /// (log replay streamed lazily through `session`'s object store — commits + any checkpoint
     /// parquet, short-circuiting once both are found), then assemble the snapshot via
     /// [`Snapshot::from_parts`].
-    ///
-    /// This is the async-native replacement for the eager `PrimedStore` + synchronous
-    /// `DataFusionEngine` snapshot build: no up-front log prime, no `InlineExecutor`, no CRC.
     ///
     /// The `SnapshotPm` SM is `!Send` (like the scan SM), but — unlike the scan SM — its drive
     /// awaits real object-store reads (commit `.json`, checkpoint footer). Callers must therefore

@@ -12,9 +12,8 @@
 //! Both `impl TableProvider` only because a DataFusion table-scan leaf is the idiomatic way to
 //! splice a custom [`ExecutionPlan`] ([`LoadExec`]) into a plan.
 //!
-//! This DV-free port holds **no kernel `Engine`**: file decoding goes entirely through
-//! DataFusion's parquet/json sources over the `Session`/`TaskContext` object store, and the
-//! deletion-vector path (the POC's only engine consumer) is gated out in v1.
+//! Holds no kernel `Engine`: file decoding goes entirely through DataFusion's parquet/json
+//! sources over the `Session`/`TaskContext` object store, and deletion vectors are gated out.
 //!
 //! [`lower_load`]: crate::compile
 //! [`LoadExec`]: super::LoadExec

@@ -44,8 +44,7 @@ fn generate_primitive_extract(
     prim: &PrimitiveType,
     path: &[String],
 ) -> Result<Expr, DataFusionError> {
-    // Types with no JSON-stats representation in this scaffold (added to kernel's PrimitiveType
-    // upstream). They never appear in data-skipping stats JSON, so reject rather than guess.
+    // These types never appear in data-skipping stats JSON; reject rather than guess.
     if matches!(
         prim,
         PrimitiveType::Void | PrimitiveType::IntervalYearMonth | PrimitiveType::IntervalDayTime

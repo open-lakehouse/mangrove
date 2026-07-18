@@ -3,18 +3,15 @@
 //!
 //! The engine drives kernel SSA reconciliation plans against a caller-supplied [`Session`], and
 //! the same session then plans the compiled scan `LogicalPlan`. For that to be correct the session
-//! must carry a specific config; historically every caller (`query-wasm`'s `build_query_session`,
-//! the integration-test helpers) hand-copied that config and kept it in sync by comment. This
-//! module centralizes it:
+//! must carry a specific config; this module is the single place that config is built, so callers
+//! don't hand-copy it:
 //!
 //!   * [`configure_delta_engine_config`] / [`delta_engine_session_config`] — build the config.
 //!   * [`install_delta_engine`] — fold the config into an existing [`SessionState`], preserving its
-//!     registered object stores / catalogs / UDFs (mirrors the sibling headwaters
-//!     `with_lineage` installer).
+//!     registered object stores / catalogs / UDFs.
 //!   * [`DeltaEngineSessionExt::with_delta_engine`] — the ergonomic consume-and-return
 //!     `SessionContext -> SessionContext` extension, mirroring `SessionContext::enable_url_table`.
-//!   * [`delta_engine_session`] — one-call build-config-and-register-store, the replacement for the
-//!     hand-rolled `build_query_session` / `session_with_store` helpers.
+//!   * [`delta_engine_session`] — one-call build-config-and-register-store.
 //!   * [`validate_delta_engine_session`] — assert a session carries the load-bearing config.
 //!
 //! # WASM awareness
@@ -24,9 +21,6 @@
 //! types) and `disable_repartition` (on in the browser — no threads). [`DeltaEngineSessionOptions`]
 //! `::default()` picks the browser-safe preset on `wasm32` and the DataFusion-native preset
 //! elsewhere, so `with_delta_engine(None)` "just works" per target.
-//!
-//! The load-bearing knobs applied unconditionally are NOT all wasm concerns — see
-//! [`configure_delta_engine_config`].
 
 use std::sync::Arc;
 
@@ -49,8 +43,8 @@ use crate::error::plan_compilation;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DeltaEngineSessionOptions {
     /// `datafusion.execution.parquet.schema_force_view_types`. `false` on the browser path —
-    /// arrow-js's IPC reader can't decode `Utf8View`/`BinaryView` in any published release
-    /// (mangrove #28) — and `true` for native DataFusion, which handles view types natively.
+    /// arrow-js's IPC reader can't decode `Utf8View`/`BinaryView` in any published release — and
+    /// `true` for native DataFusion, which handles view types natively.
     pub schema_force_view_types: bool,
     /// Disable every repartition pass plus round-robin repartition. Required on wasm, where
     /// multi-partition repartition tasks never run (no threads); harmless-but-unnecessary
@@ -67,7 +61,7 @@ impl DeltaEngineSessionOptions {
         }
     }
 
-    /// Browser / wasm preset: view types off (arrow-js IPC can't decode them; #28), repartition
+    /// Browser / wasm preset: view types off (arrow-js IPC can't decode them), repartition
     /// off (single-threaded runtime).
     pub const fn wasm() -> Self {
         Self {
@@ -135,9 +129,8 @@ impl Default for DeltaEngineSessionOptions {
 /// that builds the Delta action structs via `named_struct`, and DataFusion's leaf-expression-pushdown
 /// pass inlines the whole struct into every filter leaf, producing a schema that carries both the
 /// qualified `scan."metaData"` (from the scan alias) and the unqualified `"metaData"` (the projection
-/// output) — an `AmbiguousReference` (apache/datafusion#20432). The proper fix is at the compile
-/// layer (neutralize the collision); until then we disable the pass, which costs essentially nothing
-/// on these plans. Tracked in mangrove#123.
+/// output) — an `AmbiguousReference` (apache/datafusion#20432). Disabling the pass avoids the
+/// collision and costs essentially nothing on these plans.
 ///
 /// # Single-partition
 ///
@@ -157,7 +150,7 @@ pub fn configure_delta_engine_config(
     // field-id renamed columns). Data-file stats come from the kernel via `PartitionedFile`,
     // independent of this flag (`crate::compile::stats`).
     config.options_mut().execution.collect_statistics = false;
-    // Kernel-integration compiler workaround (apache/datafusion#20432, mangrove#123).
+    // Kernel-integration compiler workaround (apache/datafusion#20432).
     config
         .options_mut()
         .optimizer
@@ -170,9 +163,7 @@ pub fn configure_delta_engine_config(
         .parquet
         .schema_force_view_types = options.schema_force_view_types;
     if options.disable_repartition {
-        // Single-threaded runtime: force one partition and disable every repartition pass. Not a
-        // correctness requirement (the drain coalesces structurally); native leaves this off to
-        // keep parallelism.
+        // Single-threaded runtime: force one partition, disable repartition passes.
         config.options_mut().execution.target_partitions = 1;
         config = config
             .with_round_robin_repartition(false)

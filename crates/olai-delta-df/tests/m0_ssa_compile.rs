@@ -1,21 +1,13 @@
-//! M0 reconciliation-spike verification (see
-//! `handover-wasm-async-native-table-provider.md`).
-//!
-//! Each test builds a [`Plan`](delta_kernel::sm_plans::ir::plan::Plan) via the SSA
-//! [`Context`] builder, wraps it in a [`ResultPlan`], and runs it through the `testing`
-//! collector ([`DataFusionExecutor::compile_result_plan`] + execute against a session) —
-//! exercising the per-`NodeKind` lowerings **without a kernel `Engine`**, proving that the
-//! DV-free port:
+//! Engine-free SSA lowering. Each test builds a [`Plan`](delta_kernel::sm_plans::ir::plan::Plan)
+//! via the SSA [`Context`] builder, wraps it in a [`ResultPlan`], and runs it through the `testing`
+//! collector ([`DataFusionExecutor::compile_result_plan`] + execute against a session) — exercising
+//! the per-`NodeKind` lowerings without a kernel `Engine`:
 //!
 //!   * compiles a hand-built `ResultPlan` via `compile_ssa`, and
-//!   * runs it over a `LocalFileSystem` store producing correct batches (the `Load` test),
+//!   * runs it over a `LocalFileSystem` store producing correct batches (the `Load` test).
 //!
-//! against DataFusion 54.0.0 + arrow-58 (roeap fork) + kernel `2cf01549` (sm-plans, arrow-58),
-//! with no tokio runtime dependency in the crate itself (the harness spins a current-thread
-//! runtime purely to drive the `!Send` futures — the crate has no tokio dep).
-//!
-//! Native-only: the harness uses tokio (a native-only dev-dep). The wasm equivalent lives in
-//! `m2_wasm.rs`, driven under `wasm-bindgen-futures`.
+//! Native-only: the harness drives the `!Send` futures on a current-thread tokio runtime (a
+//! native-only dev-dep). The wasm equivalent lives in `m2_wasm.rs`.
 
 #![cfg(not(target_arch = "wasm32"))]
 
@@ -340,8 +332,7 @@ async fn step_consume_drains_ssa_into_consumer_handle() {
 
 /// `NodeKind::Load` reads each upstream row's path-column file over a `LocalFileSystem` store,
 /// broadcasts the `passthrough_columns` onto every emitted file row, and lifts the
-/// `file_schema` columns alongside. This is the M0 "runs over a LocalFileSystem store producing
-/// correct batches" proof — engine-free, DV-free.
+/// `file_schema` columns alongside — engine-free.
 #[tokio::test]
 async fn load_node_reads_files_and_broadcasts_passthrough() {
     use url::Url;
