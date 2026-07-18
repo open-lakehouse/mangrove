@@ -5,6 +5,7 @@
 
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { useLogQueryService } from "./context";
+import type { LogKind } from "./runner";
 import type { LogPreviewHandle, LogQueryService } from "./types";
 
 /** What `useLogPreview` returns — a live view of the current run. */
@@ -27,19 +28,20 @@ export interface LogPreviewState {
  * composition).
  */
 export function useLogPreview(
-  req: { target: string; limit?: number },
+  req: { target: string; limit?: number; kind?: LogKind },
   service?: LogQueryService,
 ): LogPreviewState {
   const ctxService = useLogQueryService();
   const svc = service ?? ctxService;
 
-  // One handle per (service, target, limit). Recreating it here (in render,
-  // memoized) rather than in an effect means the store/subscribe are stable for
-  // the initial commit's `useSyncExternalStore`.
-  const { target, limit } = req;
+  // One handle per (service, target, limit, kind). Recreating it here (in
+  // render, memoized) rather than in an effect means the store/subscribe are
+  // stable for the initial commit's `useSyncExternalStore`; adding `kind` to the
+  // deps means toggling reconciled/actions starts a fresh run.
+  const { target, limit, kind } = req;
   const handle = useMemo(
-    () => svc.preview({ target, limit }),
-    [svc, target, limit],
+    () => svc.preview({ target, limit, kind }),
+    [svc, target, limit, kind],
   );
 
   // Cancel the run when the handle is replaced or the component unmounts.

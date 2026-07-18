@@ -14,12 +14,17 @@
 
 import type { LogSupportsInput } from "./types";
 
+/** Which reconciled-Delta-log surface to scan. `reconciled` = the surviving
+ *  scan-file rows after log replay; `actions` = the reconciled full action
+ *  stream (add/remove/metaData/protocol/domainMetadata/txn). */
+export type LogKind = "reconciled" | "actions";
+
 /**
  * A reconciled-log query to execute. `sql` targets the fixed logical table name
- * the runner binds the provider to (see api.ts); `target` carries the physical
- * table (fully-qualified name or storage path) the runner resolves and binds —
- * it travels out-of-band from the SQL. A later log-query-wasm impl may swap this
- * for a generated contract type.
+ * the runner binds the provider to (see api.ts, one name per `kind`); `target`
+ * carries the physical table (fully-qualified name or storage path) the runner
+ * resolves and binds — it travels out-of-band from the SQL. A later
+ * log-query-wasm impl may swap this for a generated contract type.
  */
 export interface LogQueryRequest {
   /** SQL over the fixed logical table the runner registers. */
@@ -28,6 +33,8 @@ export interface LogQueryRequest {
   limit?: number;
   /** The table whose reconciled log to scan — resolved by the runner. */
   target?: string;
+  /** Which log surface to project (default `reconciled`). */
+  kind?: LogKind;
 }
 
 /**
