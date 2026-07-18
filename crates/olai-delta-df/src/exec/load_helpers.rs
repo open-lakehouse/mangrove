@@ -17,6 +17,7 @@ use datafusion_datasource::source::DataSourceExec;
 use datafusion_datasource::{ListingTableUrl, PartitionedFile, TableSchema};
 use datafusion_datasource_json::source::JsonSource;
 use datafusion_datasource_parquet::source::ParquetSource;
+use datafusion_physical_expr_common::physical_expr::PhysicalExpr;
 use datafusion_execution::TaskContext;
 use datafusion_execution::object_store::ObjectStoreUrl;
 use datafusion_physical_plan::ExecutionPlan;
@@ -178,6 +179,7 @@ pub(crate) fn build_file_source(
     full_schema: &ArrowSchemaRef,
     file_field_count: usize,
     projection: Option<&[usize]>,
+    predicate: Option<Arc<dyn PhysicalExpr>>,
 ) -> DfResult<Arc<dyn FileSource>> {
     let (file_fields, passthrough_fields) = full_schema.fields().split_at(file_field_count);
     let file_arrow_schema: ArrowSchemaRef = Arc::new(
@@ -204,7 +206,19 @@ pub(crate) fn build_file_source(
     let table_schema = TableSchema::from_file_schema(file_arrow_schema)
         .with_table_partition_cols(stripped_passthrough_fields);
     let source: Arc<dyn FileSource> = match file_type {
-        FileType::Parquet => Arc::new(ParquetSource::new(table_schema)),
+        FileType::Parquet => {
+            let mut parquet = ParquetSource::new(table_schema);
+            // Attach the scan-global, logical-named pushdown predicate so the parquet opener builds
+            // a `FilePruner` (row-group / page skipping) against each `PartitionedFile`'s attached
+            // statistics. Pruning runs in *logical* file-schema space; the wired
+            // `FieldIdPhysicalExprAdapterFactory` reconciles logical↔physical at decode time, after
+            // pruning — so this predicate stays logical (no column-mapping rewrite here). JSON has no
+            // predicate seam and is left untouched.
+            if let Some(pred) = predicate {
+                parquet = parquet.with_predicate(pred);
+            }
+            Arc::new(parquet)
+        }
         FileType::Json => Arc::new(JsonSource::new(table_schema)),
     };
     let source = source.with_batch_size(DEFAULT_OPENER_BATCH_SIZE);

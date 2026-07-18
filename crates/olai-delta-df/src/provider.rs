@@ -222,8 +222,13 @@ impl TableProvider for DeltaSsaTableProvider {
 
         // Compile the SSA result plan to a bare LogicalPlan, then plan it against the *caller's*
         // session so file reads go through the caller's object store + runtime.
-        let logical = DataFusionExecutor::compile_result_plan_with_stats(&result_plan, file_stats)
-            .map_err(crate::error::wrap_delta_err)?;
+        let channels = crate::compile::SideChannels {
+            file_stats,
+            predicate: None,
+        };
+        let logical =
+            DataFusionExecutor::compile_result_plan_with_side_channels(&result_plan, channels)
+                .map_err(crate::error::wrap_delta_err)?;
 
         // Apply projection + limit at the logical level so DataFusion pushes them into the
         // per-file parquet sources.

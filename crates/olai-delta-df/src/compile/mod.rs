@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use datafusion_common::error::DataFusionError;
+use datafusion_physical_expr_common::physical_expr::PhysicalExpr;
 use uuid::Uuid;
 
 // The statistics side channel (`stats`) is the resolver's first consumer — it reads `leaves()` +
@@ -39,6 +40,24 @@ pub struct CompileContext {
     /// per-file `PartitionedFile`s. `None` on every path except the provider's stats-enabled scan;
     /// `lower_load` clones it into the `LoadTableProvider`. See [`stats::FileStatsMap`].
     pub file_stats: Option<Arc<stats::FileStatsMap>>,
+    /// Scan-global, **logical-named** filter-pushdown predicate to hand the per-file parquet
+    /// `ParquetSource` (row-group / page pruning against the attached `file_stats`). `None` unless
+    /// the provider lowered query filters to a `PhysicalExpr`; `lower_load` clones it into the
+    /// `LoadTableProvider`, which applies it once onto the shared parquet source. Unlike
+    /// [`Self::file_stats`] this is one expr shared by all files, not a per-file map.
+    pub predicate: Option<Arc<dyn PhysicalExpr>>,
+}
+
+/// Optional per-scan side channels the provider threads into the compiled `Load` leaf.
+///
+/// Both default to `None`; a `Default`/empty value reproduces the plain compile exactly. Grouped
+/// into one struct (rather than a growing positional argument list) so future channels are additive.
+#[derive(Clone, Default)]
+pub struct SideChannels {
+    /// Per-file statistics keyed by raw `add.path`. See [`CompileContext::file_stats`].
+    pub file_stats: Option<Arc<stats::FileStatsMap>>,
+    /// Scan-global logical-named parquet pruning predicate. See [`CompileContext::predicate`].
+    pub predicate: Option<Arc<dyn PhysicalExpr>>,
 }
 
 impl CompileContext {
@@ -50,6 +69,7 @@ impl CompileContext {
             sm_kind: "standalone",
             step_name: "execute",
             file_stats: None,
+            predicate: None,
         }
     }
 }

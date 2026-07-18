@@ -248,13 +248,15 @@ fn lower_load(
         &node.passthrough_columns,
         &upstream_kernel,
     )?;
-    // Thread any per-file statistics (provider stats-enabled scan) onto the Load leaf so each
-    // per-file `PartitionedFile` carries them; `None` on every other compile path.
+    // Thread the provider's per-scan side channels onto the Load leaf: per-file statistics
+    // (attached to each `PartitionedFile`) and the scan-global pushdown predicate (applied once
+    // onto the shared parquet source). Both `None` on every other compile path.
     let provider: Arc<dyn TableProvider> = Arc::new(LoadTableProvider::try_new(
         upstream_logical,
         Arc::new(node.clone()),
         output_kernel_schema,
         ctx.file_stats.clone(),
+        ctx.predicate.clone(),
     )?);
     LogicalPlanBuilder::scan("ssa_load", provider_as_source(provider), None)?.build()
 }
