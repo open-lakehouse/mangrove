@@ -22,8 +22,10 @@ use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use url::Url;
 
+use query_wasm::catalog::InMemoryResolver;
 use query_wasm::engine::{
-    LogKind, execute_chunks, extract_table, open_table, register_table, scan_log_chunks,
+    LogKind, execute_chunks, extract_table, open_table, register_table, run_unified,
+    scan_log_chunks,
 };
 use query_wasm::resolve::discover_log;
 
@@ -480,4 +482,141 @@ async fn action_log_registers_and_scans() {
     // protocol row.
     let rows: usize = chunks.iter().map(|c| c.num_rows).sum();
     assert!(rows >= 1, "reconciled action stream must carry rows");
+}
+
+// =====================================================================
+// Unified resolve-pass end-to-end (via the native `InMemoryResolver`)
+// =====================================================================
+
+/// Build an [`InMemoryResolver`] mapping `uc.sales.orders` to the shared fixture
+/// table (external/filesystem shape: no catalog version).
+async fn unified_resolver() -> InMemoryResolver {
+    let store = fixture_store().await;
+    InMemoryResolver::new().with_table("uc.sales.orders", store, table_url(), None)
+}
+
+/// `run_unified` drives the full pass — parse, resolve through the resolver,
+/// register the data table, execute via `ctx.sql` — for a data query, producing
+/// the same `[1,2,3,4]` oracle as the inline path.
+#[tokio::test]
+async fn run_unified_data_query_end_to_end() {
+    let resolver = unified_resolver().await;
+    let sql = "SELECT * FROM `uc`.`sales`.`orders` ORDER BY `id`";
+
+    let (chunks, version) = run_unified(&resolver, sql, Some(4), None, None)
+        .await
+        .expect("unified data query resolves and executes");
+    assert_eq!(version, 0, "pinned table version threads through");
+
+    let chunks: Vec<_> = chunks.try_collect().await.unwrap();
+    let mut ids = Vec::new();
+    for chunk in &chunks {
+        for b in decode_chunk(&chunk.ipc) {
+            let col = b.column(0).as_any().downcast_ref::<Int64Array>().unwrap();
+            ids.extend(col.iter().flatten());
+        }
+    }
+    assert_eq!(ids, vec![1, 2, 3, 4], "LIMIT 4 over ORDER BY id");
+}
+
+/// A bare table name in the SQL is completed by the request's session defaults —
+/// the resolver and DataFusion registration both land on `uc.sales.orders`.
+#[tokio::test]
+async fn run_unified_data_query_fills_session_defaults() {
+    let resolver = unified_resolver().await;
+    let sql = "SELECT count(*) AS n FROM orders";
+
+    let (chunks, _) = run_unified(&resolver, sql, None, Some("uc"), Some("sales"))
+        .await
+        .expect("bare name resolves via defaults");
+    let chunks: Vec<_> = chunks.try_collect().await.unwrap();
+    let n = decode_chunk(&chunks[0].ipc)[0]
+        .column(0)
+        .as_any()
+        .downcast_ref::<Int64Array>()
+        .unwrap()
+        .value(0);
+    assert_eq!(n, 6);
+}
+
+/// `run_unified` over a `delta_reconciled_log('…')` UDTF call scans the log
+/// provider directly (not `ctx.sql`), so the flat scan-file-row schema comes
+/// through with camelCase names intact and no Arrow view types.
+#[tokio::test]
+async fn run_unified_reconciled_log_udtf_end_to_end() {
+    let resolver = unified_resolver().await;
+    let sql = "SELECT * FROM delta_reconciled_log('uc.sales.orders') LIMIT 100";
+
+    let (chunks, _) = run_unified(&resolver, sql, Some(100), None, None)
+        .await
+        .expect("reconciled-log UDTF resolves and scans");
+    let chunks: Vec<_> = chunks.try_collect().await.unwrap();
+
+    let ipc_schema = StreamReader::try_new(std::io::Cursor::new(&chunks[0].ipc), None)
+        .unwrap()
+        .schema();
+    assert_no_view_types(ipc_schema.fields());
+    assert_eq!(
+        ipc_schema.field_with_name("path").unwrap().data_type(),
+        &DataType::Utf8,
+        "reconciled `path` must be plain Utf8"
+    );
+    let rows: usize = chunks.iter().map(|c| c.num_rows).sum();
+    assert_eq!(
+        rows, 2,
+        "one row per surviving add file (two adds, no removes)"
+    );
+}
+
+/// `run_unified` over a `delta_log_actions('…')` UDTF call emits the reconciled
+/// six-slot action stream with camelCase slot names intact and no view types.
+#[tokio::test]
+async fn run_unified_action_log_udtf_end_to_end() {
+    let resolver = unified_resolver().await;
+    let sql = "SELECT * FROM delta_log_actions('uc.sales.orders') LIMIT 100";
+
+    let (chunks, _) = run_unified(&resolver, sql, Some(100), None, None)
+        .await
+        .expect("action-log UDTF resolves and scans");
+    let chunks: Vec<_> = chunks.try_collect().await.unwrap();
+
+    let ipc_schema = StreamReader::try_new(std::io::Cursor::new(&chunks[0].ipc), None)
+        .unwrap()
+        .schema();
+    assert_no_view_types(ipc_schema.fields());
+    for slot in [
+        "add",
+        "remove",
+        "metaData",
+        "protocol",
+        "domainMetadata",
+        "txn",
+    ] {
+        let field = ipc_schema
+            .field_with_name(slot)
+            .unwrap_or_else(|_| panic!("action_log missing slot `{slot}`"));
+        assert!(
+            matches!(field.data_type(), DataType::Struct(_)),
+            "slot `{slot}` must be a struct, got {:?}",
+            field.data_type()
+        );
+    }
+    let rows: usize = chunks.iter().map(|c| c.num_rows).sum();
+    assert!(rows >= 1, "reconciled action stream must carry rows");
+}
+
+/// The single-table guard fires when a query addresses more than one table
+/// (here: a data table and a log UDTF together).
+#[tokio::test]
+async fn run_unified_rejects_more_than_one_addressed_table() {
+    let resolver = unified_resolver().await;
+    // A data ref joined with a log-UDTF call: two addressed tables.
+    let sql = "SELECT * FROM `uc`.`sales`.`orders` \
+               JOIN delta_log_actions('uc.sales.orders') ON true";
+    // The Ok half is a (stream, version) tuple that isn't `Debug`, so match
+    // rather than `expect_err`.
+    match run_unified(&resolver, sql, None, None, None).await {
+        Ok(_) => panic!("two addressed tables must be rejected"),
+        Err(err) => assert!(err.is_unsupported(), "{err}"),
+    }
 }
