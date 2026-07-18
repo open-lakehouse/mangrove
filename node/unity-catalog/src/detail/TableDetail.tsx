@@ -13,14 +13,21 @@ import { DeltaLogTab } from "./DeltaLogTab";
 import { DetailStates } from "./DetailStates";
 import { FormatIcon } from "./FormatIcon";
 import { formatTimestamp, Meta, MetaGrid } from "./Meta";
-import { TablePreview } from "./TablePreview";
+import { TablePreview, useTablePreviewVisible } from "./TablePreview";
 import { TypePill } from "./TypePill";
 
-type TableView = "overview" | "details" | "delta-log";
+type TableView = "overview" | "details" | "preview" | "delta-log";
 
 export function TableDetail({ fullName }: { fullName: string }) {
   const { data: table, isLoading, error } = useTableDetail(fullName);
   const [view, setView] = useState<TableView>("overview");
+  // Hooks must run unconditionally, so compute preview visibility before the
+  // early return; the fields are undefined until `table` loads, which the gate
+  // treats as unsupported.
+  const showPreview = useTablePreviewVisible({
+    format: table?.data_source_format,
+    tableType: table?.table_type,
+  });
   if (!table) return <DetailStates isLoading={isLoading} error={error} />;
 
   // The Delta-log tab appears only when a log-query runner is registered (the
@@ -40,6 +47,7 @@ export function TableDetail({ fullName }: { fullName: string }) {
       <TabsList>
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="details">Details</TabsTrigger>
+        {showPreview && <TabsTrigger value="preview">Preview</TabsTrigger>}
         {showLog && <TabsTrigger value="delta-log">Delta log</TabsTrigger>}
       </TabsList>
 
@@ -88,12 +96,6 @@ export function TableDetail({ fullName }: { fullName: string }) {
             <p className="text-sm text-muted-foreground">No column metadata.</p>
           )}
         </div>
-
-        <TablePreview
-          fullName={fullName}
-          format={table.data_source_format}
-          tableType={table.table_type}
-        />
       </TabsContent>
 
       <TabsContent value="details">
@@ -143,6 +145,16 @@ export function TableDetail({ fullName }: { fullName: string }) {
           </MetaGrid>
         </section>
       </TabsContent>
+
+      {showPreview && (
+        <TabsContent value="preview">
+          <TablePreview
+            fullName={fullName}
+            format={table.data_source_format}
+            tableType={table.table_type}
+          />
+        </TabsContent>
+      )}
 
       {showLog && (
         <TabsContent value="delta-log">
