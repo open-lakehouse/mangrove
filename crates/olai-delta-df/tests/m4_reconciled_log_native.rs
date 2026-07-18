@@ -251,3 +251,57 @@ async fn reconciled_log_schema_is_flat_scan_file_row_with_logical_names() {
     }
     assert_no_physical_names(schema.fields());
 }
+
+/// A predicate over an emitted column (`path`) is applied exactly — the provider reports `Exact`
+/// and splices a `Filter` over the scan-file rows, so only the matching row survives. Proves the
+/// no-translation filter pushdown works end-to-end.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn reconciled_log_filters_on_emitted_path_column() {
+    let store = fixture_store().await;
+    let ctx = session_with_store(Arc::clone(&store));
+    ctx.register_table("reconciled_log", Arc::new(provider(&store)))
+        .unwrap();
+
+    // Equality on `path` selects exactly f2 (a surviving add).
+    let batches = ctx
+        .sql("SELECT path FROM reconciled_log WHERE path = 'f2.snappy.parquet'")
+        .await
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    let paths: Vec<String> = batches
+        .iter()
+        .flat_map(|b| {
+            b.column(b.schema().index_of("path").unwrap())
+                .as_string::<i32>()
+                .iter()
+                .map(|s| s.unwrap().to_string())
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    assert_eq!(paths, vec!["f2.snappy.parquet".to_string()]);
+
+    // A predicate that also excludes the tombstoned file's path is a no-op (f0 already gone):
+    // count stays 2. `size > 0` holds for both surviving files.
+    let batches = ctx
+        .sql("SELECT count(*) AS n FROM reconciled_log WHERE size > 0")
+        .await
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    let n = batches[0].column(0).as_primitive::<Int64Type>().value(0);
+    assert_eq!(n, 2, "both surviving files have size > 0");
+
+    // A predicate that matches nothing yields zero rows (the filter really runs).
+    let batches = ctx
+        .sql("SELECT count(*) AS n FROM reconciled_log WHERE path = 'does-not-exist'")
+        .await
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    let n = batches[0].column(0).as_primitive::<Int64Type>().value(0);
+    assert_eq!(n, 0, "no file matches; filter is applied");
+}

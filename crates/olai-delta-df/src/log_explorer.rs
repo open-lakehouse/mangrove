@@ -42,6 +42,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use datafusion::catalog::{Session, TableProvider};
 use datafusion_common::Result as DfResult;
+use datafusion_expr::utils::conjunction;
 use datafusion_expr::{Expr, LogicalPlanBuilder, TableProviderFilterPushDown, TableType};
 use datafusion_physical_plan::ExecutionPlan;
 use delta_kernel::arrow::datatypes::SchemaRef as ArrowSchemaRef;
@@ -125,23 +126,20 @@ impl TableProvider for ReconciledLogProvider {
         &self,
         filters: &[&Expr],
     ) -> DfResult<Vec<TableProviderFilterPushDown>> {
-        // The emitted rows are scan-file metadata, not table data, so a query predicate over these
-        // columns has no data-skipping meaning here. Report `Unsupported` (matching the eager
-        // crate's `ReconciledLogProvider`); DataFusion applies any filter as a `FilterExec` above.
-        //
-        // (A future option: lower a *table-data* predicate onto `build_scan`'s predicate arg to
-        // prune the live-file list by stats, reporting `Inexact`. Kept `Unsupported` for now.)
-        Ok(vec![
-            TableProviderFilterPushDown::Unsupported;
-            filters.len()
-        ])
+        // `Exact`: unlike the data provider (whose filters are over *table* columns and must be
+        // translated into a stats/parquet pruning predicate — hence `Inexact`), this provider
+        // exposes the scan-file-row schema *directly as its query schema*. So a query predicate is
+        // already expressed in the exact columns we emit (`path`, `size`, `stats.minValues.…`, …);
+        // no translation is needed. `scan()` splices it as a `Filter` node over the emitted rows,
+        // applying it completely — so DataFusion can drop its own redundant `FilterExec`.
+        Ok(vec![TableProviderFilterPushDown::Exact; filters.len()])
     }
 
     async fn scan(
         &self,
         session: &dyn Session,
         projection: Option<&Vec<usize>>,
-        _filters: &[Expr],
+        filters: &[Expr],
         limit: Option<usize>,
     ) -> DfResult<Arc<dyn ExecutionPlan>> {
         // Same session contract as the data provider: the SM drive and the final
@@ -169,8 +167,17 @@ impl TableProvider for ReconciledLogProvider {
         let logical = futures::executor::block_on(executor.drive_ssa_to_plan(session, sm))
             .map_err(crate::error::wrap_delta_err)?;
 
-        // Apply projection + limit at the logical level (copy of the data provider's splice).
+        // Splice filter -> projection -> limit at the logical level.
+        //
+        // Filter first, and over the FULL emitted schema (before projection prunes columns): a
+        // predicate may reference a column the query doesn't select. Because our query schema *is*
+        // the scan-file-row schema, each `Expr` already references the emitted columns verbatim —
+        // no translation — so a plain conjoined `Filter` node applies it exactly. We reported
+        // `Exact`, so DataFusion adds no `FilterExec` of its own; this is the sole application.
         let mut builder = LogicalPlanBuilder::from(logical);
+        if let Some(predicate) = conjunction(filters.iter().cloned()) {
+            builder = builder.filter(predicate)?;
+        }
         if let Some(proj) = projection {
             let exprs = proj
                 .iter()
