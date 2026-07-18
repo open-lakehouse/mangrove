@@ -84,6 +84,11 @@ datafusion-datasource-parquet = { version = "54", default-features = false }
 
 async-stream = "0.3"
 async-trait = "0.1"
+# Used by `RoutingObjectStore` for the `ObjectStore::get_ranges` return type
+# (`Vec<Bytes>`). `delta_kernel::object_store` (= object_store 0.13) does not
+# re-export `bytes`, so take it directly; the 1.10 floor matches the kernel's pin
+# so a single `bytes` resolves across the graph.
+bytes = "1.10"
 futures = "0.3"
 chrono = "0.4"
 url = "2"
