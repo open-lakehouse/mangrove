@@ -31,6 +31,38 @@
 //! # }
 //! ```
 //!
+//! [`get_router`] returns a fully-stated `Router<()>`, convenient for a host whose
+//! whole router tree is `Router<()>`. To mount the surface **inside a host that
+//! carries its own axum state** (its own middleware, its own `.with_state`), use
+//! [`router_with_context`] (or [`router_from_extension`]): both return an
+//! *unstated* `Router<S>` you compose with plain `.nest`/`.merge` and state
+//! yourself. The context `Cx` is produced by a host-supplied closure rather than an
+//! axum `FromRequestParts` impl, so no context glue is required:
+//!
+//! ```
+//! # #[cfg(feature = "testing")] {
+//! use std::sync::Arc;
+//! use unitycatalog_delta_api::{ContextExtractor, router_with_context_at};
+//! use unitycatalog_delta_api::testing::InMemoryDeltaBackend;
+//!
+//! // The host's own axum state (any `Clone + Send + Sync + 'static`).
+//! #[derive(Clone)]
+//! struct AppState;
+//!
+//! let extract_cx: ContextExtractor<()> = Arc::new(|_parts| Ok(()));
+//! // `base = ""` yields relative routes; the host adds the `/delta/v1` prefix via
+//! // `.nest`. (Pass `"/delta/v1"` instead to `.merge` the surface directly.)
+//! let delta: axum::Router<AppState> =
+//!     router_with_context_at("", Arc::new(InMemoryDeltaBackend::new()), extract_cx);
+//!
+//! // Compose into the host tree *before* `.with_state`.
+//! let app: axum::Router = axum::Router::new()
+//!     .nest("/delta/v1", delta)
+//!     .with_state(AppState);
+//! # let _ = app;
+//! # }
+//! ```
+//!
 //! # Layout
 //! - [`models`] — hand-written serde wire DTOs (kebab-case JSON).
 //! - [`error`] — the decoupled error contract ([`DeltaApiError`] +
@@ -43,7 +75,8 @@
 //! - [`authz`] — the [`DeltaAction`] vocabulary the handler authorizes with.
 //! - [`backend`] — the `DeltaBackend` port trait + its coordinate/request types.
 //! - [`handler`] — the `DeltaApiHandler` trait + the generic blanket impl.
-//! - [`router`] — the axum router mounting all 12 operations.
+//! - [`router`] — the state-agnostic, host-composable axum router mounting all 12
+//!   operations.
 
 pub mod authz;
 pub mod backend;
@@ -62,4 +95,7 @@ pub use authz::DeltaAction;
 pub use backend::{DeltaBackend, DeltaCapabilities};
 pub use error::{DeltaApiError, DeltaApiResult, DeltaBackendError};
 pub use handler::DeltaApiHandler;
-pub use router::get_router;
+pub use router::{
+    ContextExtractor, get_router, router_from_extension, router_from_extension_at,
+    router_with_context, router_with_context_at,
+};
