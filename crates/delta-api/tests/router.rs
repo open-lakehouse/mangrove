@@ -15,7 +15,9 @@ use std::sync::Arc;
 
 use axum::Router;
 use axum::body::{Body, to_bytes};
+use axum::extract::{FromRequestParts, Path};
 use axum::http::{Request, StatusCode};
+use axum::response::IntoResponse;
 use tower::ServiceExt; // oneshot
 
 use unitycatalog_delta_api::testing::InMemoryDeltaBackend;
@@ -26,7 +28,7 @@ type Cx = ();
 
 /// A trivial always-anonymous extractor.
 fn unit_extractor() -> ContextExtractor<Cx> {
-    Arc::new(|_parts| Ok(()))
+    Arc::new(|_parts| Box::pin(async { Ok(()) }))
 }
 
 /// A host state distinct from `()` — the router must build over it without ever
@@ -129,4 +131,77 @@ async fn extension_router_without_context_is_401() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+/// The #142 acceptance case: a host whose context depends on a **URL path
+/// segment** builds it inside the async extractor by awaiting `Path`, with no
+/// pre-staging middleware. This mirrors the Lakekeeper mount shape
+/// `/catalog/v1/{prefix}/delta/v1/...`, where `{prefix}` (the warehouse
+/// coordinate) is only reachable via an async extractor.
+///
+/// The router's own `Cx` is `()`; the extractor awaits the matched `{warehouse}`
+/// segment and enforces it — a request whose prefix is not the expected warehouse
+/// is short-circuited with 403 from *inside* the extractor. The observed status
+/// therefore proves the path segment was read there.
+#[derive(serde::Deserialize)]
+struct WarehousePrefix {
+    warehouse: String,
+}
+
+fn app_with_path_derived_context() -> Router {
+    let extract_cx: ContextExtractor<Cx> = Arc::new(|parts| {
+        Box::pin(async move {
+            // `Path` is async — only awaitable now that the extractor is async.
+            let Path(WarehousePrefix { warehouse }) =
+                Path::<WarehousePrefix>::from_request_parts(parts, &())
+                    .await
+                    .map_err(IntoResponse::into_response)?;
+            if warehouse != "acme" {
+                return Err((StatusCode::FORBIDDEN, "unknown warehouse").into_response());
+            }
+            Ok(())
+        })
+    });
+
+    let delta: Router<()> = router_with_context_at(
+        "", // relative; the host mounts the prefix-scoped base via `.nest`
+        Arc::new(InMemoryDeltaBackend::new()),
+        extract_cx,
+    );
+
+    Router::new()
+        .nest("/catalog/v1/{warehouse}/delta/v1", delta)
+        .with_state(())
+}
+
+#[tokio::test]
+async fn path_segment_derived_context_builds_in_extractor() {
+    // Known warehouse prefix → extractor builds `Cx`, request reaches the handler
+    // and the in-memory backend answers `getConfig` with 200.
+    let response = app_with_path_derived_context()
+        .oneshot(
+            Request::builder()
+                .uri("/catalog/v1/acme/delta/v1/config?catalog=catalog&protocol-versions=1.1,2.3")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn path_segment_derived_context_can_reject() {
+    // Unknown warehouse prefix → the extractor short-circuits with 403, proving it
+    // read `{warehouse}` from the path via the async `Path` extractor.
+    let response = app_with_path_derived_context()
+        .oneshot(
+            Request::builder()
+                .uri("/catalog/v1/other/delta/v1/config?catalog=catalog&protocol-versions=1.1,2.3")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
 }

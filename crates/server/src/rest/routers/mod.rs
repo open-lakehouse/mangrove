@@ -34,7 +34,7 @@ pub fn create_delta_router(
             .get::<Principal>()
             .cloned()
             .unwrap_or_else(Principal::anonymous);
-        Ok(RequestContext { recipient })
+        Box::pin(async move { Ok(RequestContext { recipient }) })
     });
     router_with_context::<(), _>(Arc::new(handler), extract_cx).with_state(())
 }

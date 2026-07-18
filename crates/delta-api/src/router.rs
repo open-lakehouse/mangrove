@@ -33,6 +33,8 @@
 // lint does not apply meaningfully here.
 #![allow(clippy::result_large_err)]
 
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use axum::extract::{FromRequest, FromRequestParts, Path, Query, Request};
@@ -49,12 +51,23 @@ use crate::models::*;
 
 /// Produces the per-request context `Cx` from the request head.
 ///
-/// Called once per request with the request [`Parts`]; return `Ok(cx)` to proceed
-/// or `Err(response)` to short-circuit with an HTTP response (e.g. 401). The
-/// closure is stored in an [`Arc`] and cloned once per request, so it must be
-/// `Send + Sync + 'static`.
-pub type ContextExtractor<Cx> =
-    Arc<dyn Fn(&mut Parts) -> Result<Cx, Response> + Send + Sync + 'static>;
+/// Called once per request with the request [`Parts`]; the returned future
+/// resolves to `Ok(cx)` to proceed or `Err(response)` to short-circuit with an
+/// HTTP response (e.g. 401). The closure is stored in an [`Arc`] and cloned once
+/// per request, so it must be `Send + Sync + 'static`.
+///
+/// The extractor is **async** so a host can build `Cx` from data that is only
+/// reachable through an async axum extractor — most notably a matched URL path
+/// segment via [`Path`](axum::extract::Path) /
+/// [`RawPathParams`](axum::extract::RawPathParams), whose `FromRequestParts`
+/// impls are `async`. Extractors sourcing `Cx` from a request extension can
+/// return a ready future (`async move { Ok(..) }`). See issue #142.
+pub type ContextExtractor<Cx> = Arc<
+    dyn for<'a> Fn(&'a mut Parts) -> Pin<Box<dyn Future<Output = Result<Cx, Response>> + Send + 'a>>
+        + Send
+        + Sync
+        + 'static,
+>;
 
 /// Build a [`Router<S>`] for the Delta REST API over an arbitrary host state `S`.
 ///
@@ -97,7 +110,7 @@ where
                 async move {
                     #[allow(unused_mut, unused_variables)]
                     let (mut $parts, $body) = req.into_parts();
-                    let $cx = match extract_cx(&mut $parts) {
+                    let $cx = match extract_cx(&mut $parts).await {
                         Ok(cx) => cx,
                         Err(resp) => return resp,
                     };
@@ -223,9 +236,10 @@ where
     Cx: Clone + Send + Sync + 'static,
 {
     let extract_cx: ContextExtractor<Cx> = Arc::new(|parts: &mut Parts| {
-        parts.extensions.get::<Cx>().cloned().ok_or_else(|| {
+        let cx = parts.extensions.get::<Cx>().cloned().ok_or_else(|| {
             crate::error::DeltaApiError::unauthenticated("missing request context").into_response()
-        })
+        });
+        Box::pin(async move { cx })
     });
     router_with_context_at(base, handler, extract_cx)
 }
