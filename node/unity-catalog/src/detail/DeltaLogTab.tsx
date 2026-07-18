@@ -16,10 +16,13 @@
 import { DataGrid } from "@open-lakehouse/data-grid";
 import {
   hasLogQueryRunner,
+  type LogKind,
   useLogPreview,
   useLogQueryService,
 } from "@open-lakehouse/log-query";
+import { Tabs, TabsList, TabsTrigger } from "@open-lakehouse/ui-kit";
 import { ScrollText } from "lucide-react";
+import { useState } from "react";
 
 export function DeltaLogTab({
   fullName,
@@ -31,6 +34,9 @@ export function DeltaLogTab({
   tableType?: string;
 }) {
   const svc = useLogQueryService();
+  // Which log surface is shown: the surviving files (`reconciled`) or the full
+  // reconciled action stream (`actions`). Toggling re-runs the query.
+  const [kind, setKind] = useState<LogKind>("reconciled");
 
   // Gate before touching the hook: a registered runner + capability. TableDetail
   // gates the trigger on the same conditions, so this is defence in depth.
@@ -39,19 +45,28 @@ export function DeltaLogTab({
 
   return (
     <div>
-      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        <ScrollText className="h-4 w-4" />
-        Reconciled Delta log
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <ScrollText className="h-4 w-4" />
+          Delta log
+        </div>
+        <Tabs value={kind} onValueChange={(v) => setKind(v as LogKind)}>
+          <TabsList>
+            <TabsTrigger value="reconciled">Reconciled</TabsTrigger>
+            <TabsTrigger value="actions">Actions</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
-      <DeltaLogGrid target={fullName} />
+      <DeltaLogGrid target={fullName} kind={kind} />
     </div>
   );
 }
 
-function DeltaLogGrid({ target }: { target: string }) {
+function DeltaLogGrid({ target, kind }: { target: string; kind: LogKind }) {
   const { store, version, running, error } = useLogPreview({
     target,
     limit: 100,
+    kind,
   });
 
   if (error) {
