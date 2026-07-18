@@ -6,12 +6,10 @@ use datafusion_common::error::DataFusionError;
 use datafusion_physical_expr_common::physical_expr::PhysicalExpr;
 use uuid::Uuid;
 
-// The statistics side channel (`stats`) is the resolver's live consumer — it reads `leaves()`,
-// `LeafMapping`, and the `physical_*_path` stats helpers. The `logical_to_physical` /
-// predicate-rewrite helpers remain unused on the DataFusion path: Stage-5 filter pushdown prunes in
-// *logical* space (the parquet `FilePruner` + `FieldIdPhysicalExprAdapterFactory` own the
-// logical↔physical rename), so no in-crate logical→physical predicate rewrite is needed. Kept as a
-// documented, tested part of the narrow-waist artifact; `allow(dead_code)` covers the unused halves.
+// `stats` is the resolver's only live consumer. The `logical_to_physical` / predicate-rewrite
+// helpers are unused on the DataFusion pushdown path (it prunes in *logical* space — the parquet
+// `FilePruner` + `FieldIdPhysicalExprAdapterFactory` own the logical↔physical rename), but are kept
+// and tested for a future kernel-predicate consumer; `allow(dead_code)` covers the unused halves.
 #[allow(dead_code)]
 pub mod column_mapping;
 pub mod expr_translator;
@@ -23,10 +21,9 @@ pub use logical::compile_ssa;
 
 /// Context shared by the compiler for leaf nodes that need runtime side state.
 ///
-/// Carries only static / shared bits -- there is no per-phase mutable accumulator here, and (in
-/// this DV-free port) **no kernel `Engine`**: the only leaf that consumed one was
-/// `NodeKind::Load`'s deletion-vector resolution, which v1 gates out. The `Load` provider now
-/// builds its file sources from the DataFusion `Session`'s object store at scan time. Drained
+/// Carries only static / shared bits — no per-phase mutable accumulator and no kernel `Engine`
+/// (nothing on this path resolves deletion vectors). The `Load` provider builds its file sources
+/// from the DataFusion `Session`'s object store at scan time. Drained
 /// consumer state for `Consume` steps flows directly out of
 /// [`DataFusionExecutor::run_phase`](crate::executor::DataFusionExecutor) as a
 /// [`EngineResponse::Consumer`](delta_kernel::sm_plans::state_machines::framework::step_payload::EngineResponse::Consumer)

@@ -1,13 +1,10 @@
-//! M1 verification: the `sm_plans` SSA scan runs async-native, with **no inline executor**,
-//! producing output identical to what the current `DeltaScanNext` + `InlineExecutor` path yields
-//! for the `query-wasm` `tests/native.rs` oracle (see
-//! `handover-wasm-async-native-table-provider.md`).
+//! The `sm_plans` SSA scan runs engine-free over an in-memory two-file fixture table (ids
+//! `[1..6]`, `id: long / name: string`).
 //!
-//! Builds a kernel `SnapshotRef` directly over an in-memory fixture Delta table (the same
-//! two-file, ids `[1..6]`, `id: long / name: string` shape as `native.rs::fixture_store`),
-//! registers a [`DeltaSsaTableProvider`] on a single-partition DataFusion session, and runs
-//! preview SQL. The provider drives the scan state machine engine-free; the physical plan reads
-//! the parquet data files lazily through DataFusion's own async object-store stack.
+//! Builds a kernel `SnapshotRef` directly over the fixture, registers a
+//! [`DeltaSsaTableProvider`] on a single-partition DataFusion session, and runs preview SQL. The
+//! provider drives the scan state machine engine-free; the physical plan reads the parquet data
+//! files lazily through DataFusion's own async object-store stack.
 
 #![cfg(not(target_arch = "wasm32"))]
 
@@ -63,8 +60,7 @@ fn parquet_bytes(batch: &RecordBatch) -> Vec<u8> {
 
 const SCHEMA_STRING: &str = r#"{\"type\":\"struct\",\"fields\":[{\"name\":\"id\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"name\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}]}"#;
 
-/// Build a one-commit Delta table in an in-memory store under [`TABLE_PREFIX`] — byte-for-byte
-/// the same fixture as `query-wasm/tests/native.rs::fixture_store`.
+/// Build a one-commit Delta table in an in-memory store under [`TABLE_PREFIX`].
 async fn fixture_store() -> Arc<InMemory> {
     let store = InMemory::new();
     let files = [
@@ -124,11 +120,8 @@ fn build_kernel_snapshot(store: Arc<InMemory>) -> SnapshotRef {
         .expect("kernel snapshot build")
 }
 
-/// A session configured for the Delta engine with the fixture store registered. Uses the browser
-/// (`wasm`) preset explicitly — view types forced off (the browser IPC reader cannot decode
-/// `Utf8View`; mangrove #28), matching the `DeltaScanConfig { schema_force_view_types: false }` the
-/// scan path sets — even though this is a native test binary (where `Default` would be the native
-/// preset with view types on).
+/// Delta-engine session with the fixture store registered. Uses the `wasm` preset (view types off
+/// — the browser IPC reader cannot decode `Utf8View`) even though this is a native test binary.
 fn session_with_store(store: Arc<InMemory>) -> SessionContext {
     delta_engine_session(
         store as Arc<dyn ObjectStore>,
@@ -137,9 +130,8 @@ fn session_with_store(store: Arc<InMemory>) -> SessionContext {
     )
 }
 
-/// Byte/row-identical to the `InlineExecutor` oracle: `LIMIT 4 ORDER BY id` yields `[1,2,3,4]`,
-/// and the `name` column is plain `Utf8` (never `Utf8View`) — proving the async-native scan runs
-/// with no inline executor in the path.
+/// `LIMIT 4 ORDER BY id` yields `[1,2,3,4]` and the `name` column is plain `Utf8` (never
+/// `Utf8View`).
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn ssa_scan_matches_inline_executor_oracle() {
     let store = fixture_store().await;
@@ -179,7 +171,7 @@ async fn ssa_scan_matches_inline_executor_oracle() {
         "LIMIT 4 ORDER BY id yields [1,2,3,4]"
     );
 
-    // View-type override: name must be plain Utf8, never Utf8View/BinaryView (mangrove #28).
+    // View-type override: name must be plain Utf8, never Utf8View/BinaryView.
     let name_field = batches[0].schema().field_with_name("name").unwrap().clone();
     assert_eq!(
         name_field.data_type(),

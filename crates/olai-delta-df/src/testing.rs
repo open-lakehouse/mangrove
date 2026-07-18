@@ -6,11 +6,7 @@
 //! terminal projection upstream of `Context::into_result_plan`.
 //!
 //! Named `testing` rather than `test_utils` to avoid colliding with the workspace
-//! `test_utils` crate at import sites in tests that consume both. Gated by
-//! `#[cfg(any(test, feature = "test-utils"))]`. The feature is activated for this crate's
-//! own integration tests via a self dev-dependency in `Cargo.toml`, and for external test
-//! crates (e.g. `acceptance`) by enabling `features = ["test-utils"]` on their
-//! dev-dependency on this crate.
+//! `test_utils` crate at import sites in tests that consume both.
 
 use datafusion::catalog::Session;
 use delta_kernel::arrow::record_batch::RecordBatch;

@@ -1,9 +1,8 @@
 //! Async-native, engine-free Delta snapshot construction from a discovered `_delta_log` manifest.
 //!
-//! [`build_snapshot_from_manifest`] is the list-free / prime-free replacement for the eager
-//! `deltalake-wasm` facade path (`PrimedStore::prime` + a synchronous `DataFusionEngine` driven by
-//! `InlineExecutor`). The caller discovers the log file set out-of-band (mangrove's `resolve.rs`
-//! HEAD-probes it, since plain HTTP has no listing) and hands it here as kernel [`FileMeta`]s; this
+//! [`build_snapshot_from_manifest`] takes a caller-discovered `_delta_log` file set — the caller
+//! lists it out-of-band (over plain HTTP, which has no listing, this is a HEAD probe) and hands it
+//! here as kernel [`FileMeta`]s; this
 //! builds the kernel [`LogSegment`] with **no directory listing** ([`LogSegment::from_listed_files`])
 //! and resolves Protocol & Metadata by driving the [`SnapshotPm`] state machine through the
 //! engine-free [`DataFusionExecutor`] over the caller's own async object store — the same store the
@@ -51,11 +50,9 @@ use crate::error::{plan_compilation, wrap_delta_err};
 /// log-replay reads go through the caller's store and its reconciliation `Consume` plans use the
 /// caller's config.
 ///
-/// This is genuinely `async` and `.await`s the P&M drive — it must NOT be `block_on`-ed by the
-/// caller: the drive awaits real object-store reads (commit `.json`, checkpoint footer), and on a
-/// browser worker a blocked thread starves the event loop that a `fetch` needs to complete, so
-/// construction would hang forever (see the module docs). The future is `!Send` (the kernel SM is
-/// `!Send`), which every driver we target tolerates.
+/// Genuinely `async`: must NOT be `block_on`-ed — the drive awaits real object-store reads and a
+/// blocked worker thread starves the `fetch` event loop and hangs (see the module docs). The
+/// future is `!Send` (the kernel SM is `!Send`), which every driver we target tolerates.
 ///
 /// [`SnapshotPm`]: delta_kernel::sm_plans::state_machines::snapshot::SnapshotPm
 pub async fn build_snapshot_from_manifest(
@@ -66,8 +63,8 @@ pub async fn build_snapshot_from_manifest(
 ) -> DfResult<SnapshotRef> {
     // Normalize the table root to a directory URL (trailing `/`) BEFORE any `join`. `Url::join`
     // treats the last path segment as a file and REPLACES it unless the base ends in `/`, so a
-    // caller-supplied root like `…/tables/<uuid>` (no trailing slash — how `creds::resolve_storage`
-    // builds Azure/Azurite/GCS URLs) would otherwise drop the `<uuid>` segment: `join("_delta_log/")`
+    // caller-supplied root like `…/tables/<uuid>` (no trailing slash) would otherwise drop the
+    // `<uuid>` segment: `join("_delta_log/")`
     // yields `…/tables/_delta_log/`, and the kernel then resolves every commit/data file against that
     // truncated root, producing a doubled `…/tables/_delta_log/…/tables/<uuid>/_delta_log/…json`
     // 404. Anchoring the trailing slash here fixes both the log root and the `Snapshot::from_parts`
@@ -106,12 +103,8 @@ pub async fn build_snapshot_from_manifest(
         .schema_force_view_types;
     crate::validate_delta_engine_session(&state, force_view_types)?;
 
-    // Drive the P&M SM by AWAITING it — do NOT `block_on`. The drive services `Consume` /
-    // `SchemaQuery` ops that read commit `.json` / checkpoint footers over the store, and on a
-    // browser worker those `fetch`es only settle when the event loop runs; `block_on` would park
-    // the thread and hang (see module docs). The `!Send` SM future is awaited directly here — the
-    // whole `build_snapshot_from_manifest` future is `!Send`, which is fine on wasm-bindgen-futures
-    // and the native current-thread test runtime.
+    // Await the drive (never `block_on` — see module docs). The `!Send` SM future is awaited
+    // directly here, making the whole `build_snapshot_from_manifest` future `!Send`.
     let snapshot = DataFusionExecutor::new()
         .build_snapshot_pm(&state, Arc::new(log_segment), table_root)
         .await

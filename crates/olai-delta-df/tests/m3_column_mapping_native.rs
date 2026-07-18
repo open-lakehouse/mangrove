@@ -1,9 +1,8 @@
-//! M3 verification: the async-native `sm_plans` scan reads **column-mapped** Delta tables
-//! correctly through the live [`FieldIdPhysicalExprAdapterFactory`] path (the deferred "M3"
-//! verification from `handover-wasm-async-native-table-provider.md`).
+//! The async-native `sm_plans` scan reads **column-mapped** Delta tables correctly through the live
+//! [`FieldIdPhysicalExprAdapterFactory`] path.
 //!
-//! This is the first end-to-end exercise of column mapping against a *real* column-mapped table
-//! (the crate's field-id adapter unit tests only use hand-built schemas). Each fixture writes
+//! Exercises column mapping against a *real* column-mapped table (the crate's field-id adapter unit
+//! tests only use hand-built schemas). Each fixture writes
 //! parquet files whose **physical** column names differ from the table's **logical** names, stamps
 //! `PARQUET:field_id` on the parquet fields, and declares the logical↔physical relation in the
 //! Delta `schemaString` via `delta.columnMapping.id` + `delta.columnMapping.physicalName`.
@@ -305,7 +304,7 @@ async fn schema_exposes_logical_names_both_modes() {
 }
 
 /// A `SELECT id, name` over the column-mapped table is byte/row-identical to the non-column-mapped
-/// twin (`m1`'s `[1..6]` / `id: long, name: string` shape), under **both** name and id mode.
+/// twin (`[1..6]` / `id: long, name: string`), under **both** name and id mode.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn select_matches_non_cm_twin_both_modes() {
     let expected = vec![
@@ -330,7 +329,7 @@ async fn select_matches_non_cm_twin_both_modes() {
             .await
             .unwrap();
 
-        // Output columns are plain Utf8 (never Utf8View — mangrove #28), through the rename chain.
+        // Output columns are plain Utf8 (never Utf8View), through the rename chain.
         let name_field = batches[0].schema().field_with_name("name").unwrap().clone();
         assert_eq!(
             name_field.data_type(),

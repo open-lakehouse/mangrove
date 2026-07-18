@@ -1,9 +1,7 @@
 //! Shared helpers for the streaming [`super::LoadExec`].
 //!
-//! DV-free (v1): the deletion-vector read path (kernel `DeletionVectorDescriptor::read` under
-//! `spawn_blocking`, the `not_in_dv` UDF, and the parquet `_row_number` virtual column) is
-//! dropped — v1 gates deletion vectors to `Unsupported` upstream. What remains is the plain
-//! per-file `DataSourceExec` over DataFusion's async parquet/json source.
+//! Deletion vectors are gated to unsupported upstream, so this is the plain per-file
+//! `DataSourceExec` over DataFusion's async parquet/json source.
 
 use std::sync::Arc;
 
@@ -119,12 +117,10 @@ pub(crate) fn extract_row_inputs(
     let raw_path = path_arr.as_string::<i32>().value(row).to_string();
     let url = resolve_file_location(node, &raw_path)?;
 
-    // v1 is DV-free. The scan SSA ALWAYS attaches a `dv_ref` (a pointer to the
-    // `deletionVector` descriptor column on the upstream), so its mere presence does NOT mean a
-    // deletion vector is in use — the descriptor is null per-row for files without one. Reject
-    // only if a row actually carries a non-null descriptor (belt-and-suspenders: `resolve.rs`
-    // gates `delta.enableDeletionVectors` tables to Unsupported upstream, so this should never
-    // fire; if it does, error rather than silently returning deleted rows).
+    // The scan SSA always attaches a `dv_ref` (a pointer to the `deletionVector` descriptor
+    // column on the upstream), but its presence does not mean a deletion vector is in use — the
+    // descriptor is null per-row for files without one. Reject only a row that carries a non-null
+    // descriptor, so we error rather than silently return deleted rows.
     if let Some(dv_ref) = node.dv_ref.as_ref() {
         let dv_arr = extract_column_array(batch, &dv_ref.column)?;
         if !dv_arr.is_null(row) {
@@ -168,12 +164,6 @@ pub(crate) fn extract_row_inputs(
 /// `full_schema`; passthrough fields become DataFusion *partition columns* (the per-file
 /// constant-broadcast mechanism via `PartitionedFile.partition_values`). Projection is pushed
 /// into the source via `with_projection_indices`.
-///
-/// Reconciled to DataFusion 54.0.0: the POC used the DF-main `TableSchema::builder(..)` plus a
-/// `.with_virtual_columns(..)` call for the parquet `_row_number` virtual column. 54.0.0's
-/// `TableSchema` is `from_file_schema(..).with_table_partition_cols(..)` (no `builder`), and it
-/// has no `with_virtual_columns` — but the virtual column was deletion-vector-only, so the
-/// DV-free path needs neither.
 pub(crate) fn build_file_source(
     file_type: FileType,
     full_schema: &ArrowSchemaRef,
@@ -196,9 +186,7 @@ pub(crate) fn build_file_source(
     // field-id adapter (which only rewrites file-schema columns). They are broadcast per file from
     // the add action's `partitionValues` and mapped physical→logical by the kernel scan's terminal
     // `ProjectNode` (`fileConstantValues` → logical names), before this leaf's output ever needs the
-    // metadata. Verified end-to-end for both id and name mode in
-    // `tests/m3_column_mapping_native.rs::partition_column_values_correct_both_modes`. (An earlier
-    // comment here referenced a per-batch "metadata stamper" that never existed in this crate.)
+    // metadata.
     let stripped_passthrough_fields: Vec<FieldRef> = passthrough_fields
         .iter()
         .map(|f| Arc::new(strip_field_metadata_recursive(f.as_ref())))
@@ -310,8 +298,6 @@ pub(crate) async fn resolve_size_if_unknown(
 }
 
 /// Per-file [`ExecutionPlan`]: a bare `DataSourceExec` over the projection-pushed `file_source`.
-/// (The POC also had a DV branch — `DataSourceExec (+_row_number)` → `FilterExec(not_in_dv)` →
-/// `ProjectionExec` — which this v1 DV-free port omits.)
 pub(crate) async fn build_per_file_plan(
     inputs: RowInputs,
     file_source: Arc<dyn FileSource>,

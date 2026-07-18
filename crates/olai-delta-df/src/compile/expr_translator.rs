@@ -199,8 +199,7 @@ fn transform_to_df(
     transform: &ExpressionStructPatch,
     cx: &TranslationContext<'_>,
 ) -> Result<Expr, DataFusionError> {
-    // An identity struct-patch (no field edits) is the column-mapping physical->logical rename;
-    // `is_empty()` is the upstream successor to the old `Transform::is_identity()`.
+    // An identity struct-patch (no field edits) is the column-mapping physical->logical rename.
     if !transform.is_empty() {
         return Err(unsupported(
             "Non-identity Transform expressions are not yet supported",
@@ -1047,9 +1046,9 @@ mod forward_tests {
         )
     }
 
-    // Note on rendered form: the kernel's `Predicate::{ge,le}` builders desugar to the canonical
-    // `NOT(a < b)` / `NOT(a > b)`, and `is_not_null` to `NOT(a IS NULL)`. The data-skipping
-    // rewriter handles those negated forms; the assertions below match the kernel's Display.
+    // The kernel's `Predicate::{ge,le}` builders desugar to the canonical `NOT(a < b)` /
+    // `NOT(a > b)`, and `is_not_null` to `NOT(a IS NULL)`. The data-skipping rewriter handles those
+    // negated forms; the assertions below match the kernel's Display.
 
     #[test]
     fn lowers_comparisons() {

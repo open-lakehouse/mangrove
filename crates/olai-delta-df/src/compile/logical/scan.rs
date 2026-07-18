@@ -49,8 +49,7 @@ pub(super) fn scan_to_listing_logical_plan(
             // checkpoints commonly write `add.path` as nullable; JSON drops declared NOT NULL
             // on nested children). Relax to the file-observed nullability before passing in. The
             // downstream kernel consumers tolerate the relaxed nullability, so nothing re-asserts
-            // the strict NOT NULL contract on this path. (An earlier comment here referenced a
-            // `NullabilityEnforcingTableProvider` that never existed in this crate.)
+            // the strict NOT NULL contract on this path.
             let file_schema = Arc::new(full_schema.clone());
             let partition_cols: Vec<(String, ArrowDataType)> = Vec::new();
             let format: Arc<dyn datafusion_datasource::file_format::FileFormat> =
@@ -64,9 +63,8 @@ pub(super) fn scan_to_listing_logical_plan(
                     FileType::Json => ".json",
                 })
                 .with_table_partition_cols(partition_cols)
-                // Statistics collection and single-partition execution are set at the SessionConfig
-                // level (DF main removed `ListingOptions::with_collect_stat` /
-                // `with_target_partitions`); see the executor's session setup for the rationale.
+                // Statistics collection and partitioning are configured at the SessionConfig level,
+                // not here; see `session.rs`.
                 ;
             let paths = files
                 .iter()

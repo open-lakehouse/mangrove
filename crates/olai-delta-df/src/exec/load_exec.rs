@@ -5,14 +5,9 @@
 //! over DataFusion's async parquet/json source) and drains it. Output ordering across files is
 //! unspecified; intra-file order is preserved.
 //!
-//! # DV-free (v1)
-//!
-//! The deletion-vector path is gated out upstream in `query-wasm`'s `resolve.rs`, so this exec
-//! carries **no kernel `Engine`** (the POC's engine existed only for DV bitmap reads via
-//! `spawn_blocking`, which is not wasm-compatible) and no `_row_number` virtual column. The
-//! scan SSA always attaches a `dv_ref` *column pointer*, so the guard is per-row: a row bearing
-//! a non-null DV descriptor errors in `extract_row_inputs`, belt-and-suspenders with the
-//! `resolve.rs` `delta.enableDeletionVectors` gate.
+//! Deletion vectors are gated to unsupported upstream, so this exec carries no kernel `Engine`
+//! and no `_row_number` virtual column. The scan SSA always attaches a `dv_ref` column pointer,
+//! so the guard is per-row: a row bearing a non-null DV descriptor errors in `extract_row_inputs`.
 
 use std::fmt;
 use std::sync::Arc;
@@ -78,11 +73,9 @@ impl LoadExec {
         file_stats: Option<Arc<FileStatsMap>>,
         predicate: Option<Arc<dyn PhysicalExpr>>,
     ) -> DfResult<Self> {
-        // v1 is DV-free. Note the scan SSA ALWAYS attaches a `dv_ref` column pointer (see
-        // `extract_row_inputs`), so we do NOT reject on `node.dv_ref.is_some()` at construction —
-        // that would reject every commit-only table. The real guard is per-row: a non-null DV
-        // descriptor errors during the stream (belt-and-suspenders with the `resolve.rs`
-        // `delta.enableDeletionVectors` gate).
+        // The scan SSA always attaches a `dv_ref` column pointer (see `extract_row_inputs`), so
+        // rejecting on `node.dv_ref.is_some()` here would reject every commit-only table. The
+        // guard is per-row instead: a non-null DV descriptor errors during the stream.
         let file_count = node.file_schema.fields().len();
         let passthrough_count = node.passthrough_columns.len();
         debug_assert_eq!(full_schema.fields().len(), file_count + passthrough_count);

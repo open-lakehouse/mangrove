@@ -1,21 +1,15 @@
-//! M2 verification: the DV-free SSA compile + Load path compiles **and runs on
-//! `wasm32-unknown-unknown`**, driven under `wasm-bindgen-futures` (headless, Node runner) —
-//! no tokio, no `spawn_blocking`, no local filesystem. See
-//! `handover-wasm-async-native-table-provider.md`.
+//! The SSA compile + Load path compiles and runs on `wasm32-unknown-unknown`, driven under
+//! `wasm-bindgen-futures` (headless, Node runner) — no tokio, no `spawn_blocking`, no local
+//! filesystem.
 //!
 //! This proves the wasm-critical pieces at the crate boundary:
 //!   * `compile_ssa` lowers a hand-built `ResultPlan` on wasm, and
 //!   * a `NodeKind::Load` reads parquet bytes back out of an in-memory `object_store` over
 //!     DataFusion's async parquet source — the same code path a browser scan takes, minus the
-//!     network fetch (which the `deltalake-wasm` facade + `UcFetchStore` supply in production,
-//!     exercised by the M3 browser smoke test).
+//!     network fetch.
 //!
-//! This test drives the engine-free planning + Load execution directly — the part that previously
-//! forced the inline executor. Snapshot *construction* is now async-native on this crate too
-//! (`build_snapshot_from_manifest` awaits the P&M drive); its browser fetch behavior is covered by
-//! the M3 browser smoke test, since an in-memory `object_store` resolves synchronously and would
-//! not exercise the event-loop cooperation that a real `fetch` (and the async `.await`, not
-//! `block_on`) requires.
+//! Scope caveat: an in-memory `object_store` resolves synchronously, so this does not exercise the
+//! event-loop cooperation a real `fetch` (awaited, not `block_on`-ed) requires.
 
 #![cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 
@@ -59,7 +53,7 @@ fn parquet_i64(field: &str, values: &[i64]) -> Vec<u8> {
 
 /// The engine-free SSA compile + Load path runs on wasm32: a `NodeKind::Load` reads parquet
 /// bytes back out of an in-memory object store over DataFusion's async parquet source, driven
-/// under `wasm-bindgen-futures`. No tokio, no inline executor.
+/// under `wasm-bindgen-futures`. No tokio.
 #[wasm_bindgen_test]
 async fn load_over_in_memory_store_runs_on_wasm() {
     // Register an in-memory store on a DataFusion session under a `memory://` URL and write a

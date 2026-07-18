@@ -14,7 +14,7 @@
 //! ```
 //!
 //! This module remaps those **physical** leaf names to their **logical** output positions (via the
-//! Stage-3 [`ColumnMappingResolver`]) and collapses nested-struct leaf stats to **top-level logical
+//! [`ColumnMappingResolver`]) and collapses nested-struct leaf stats to **top-level logical
 //! columns** (matching delta-rs), producing one [`ColumnStatistics`] per top-level logical column in
 //! `scan.logical_schema()` order. DataFusion prunes against these once they are attached to each
 //! file's [`PartitionedFile`](datafusion_datasource::PartitionedFile); the outer projection is
