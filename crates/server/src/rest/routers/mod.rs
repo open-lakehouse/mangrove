@@ -6,7 +6,38 @@ use crate::api::{
 };
 use axum::routing::{delete, get, patch, post};
 
-pub use unitycatalog_delta_api::get_router as create_delta_router;
+/// Router for the UC Delta v1 API (`/delta/v1/...`).
+///
+/// The `unitycatalog-delta-api` crate builds a state-agnostic router from a handler
+/// plus a context extractor; here we supply the same `Principal → RequestContext`
+/// extraction the auth middleware + [`RequestContext`](crate::api::RequestContext)
+/// extractor perform elsewhere (read the [`Principal`](crate::policy::Principal)
+/// that `AuthenticationMiddleware` inserted into the request extensions, falling
+/// back to anonymous). Returns a fully-stated `Router<()>` so it `.merge`s into the
+/// rest of the server's router tree unchanged.
+// The extractor's `Err` is an axum `Response` (never produced here — extraction is
+// infallible with an anonymous fallback), so the size lint does not apply.
+#[allow(clippy::result_large_err)]
+pub fn create_delta_router(
+    handler: crate::services::ServerHandler<crate::api::RequestContext>,
+) -> axum::Router {
+    use std::sync::Arc;
+
+    use unitycatalog_delta_api::router::{ContextExtractor, router_with_context};
+
+    use crate::api::RequestContext;
+    use crate::policy::Principal;
+
+    let extract_cx: ContextExtractor<RequestContext> = Arc::new(|parts| {
+        let recipient = parts
+            .extensions
+            .get::<Principal>()
+            .cloned()
+            .unwrap_or_else(Principal::anonymous);
+        Ok(RequestContext { recipient })
+    });
+    router_with_context::<(), _>(Arc::new(handler), extract_cx).with_state(())
+}
 
 pub fn create_catalogs_router<T, Cx>(handler: T) -> axum::Router
 where

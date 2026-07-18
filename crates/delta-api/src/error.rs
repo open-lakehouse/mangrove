@@ -107,6 +107,11 @@ impl DeltaApiError {
         DeltaApiError(DeltaBackendError::NotImplemented(what))
     }
 
+    /// A 401 `NotAuthorizedException`.
+    pub fn unauthenticated(message: impl Into<String>) -> Self {
+        DeltaApiError(DeltaBackendError::Unauthenticated(message.into()))
+    }
+
     /// The `(status, error-type)` pair for the wrapped error. Reproduces the
     /// previous server-side `DeltaError::parts` mapping exactly.
     fn parts(&self) -> (StatusCode, DeltaErrorType) {
