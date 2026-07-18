@@ -103,9 +103,81 @@ post /external-locations "$(cat <<JSON
 JSON
 )" "external location azurite_loc"
 
-# ── 5. Catalog + schema (managed root inherited from server config) ────────
-log "creating catalog '${CATALOG}' + schema '${SCHEMA}'…"
-post /catalogs "{\"name\":\"${CATALOG}\"}" "catalog ${CATALOG}"
-post /schemas "{\"name\":\"${SCHEMA}\",\"catalogName\":\"${CATALOG}\"}" "schema ${CATALOG}.${SCHEMA}"
+# ── 5. Catalogs + schemas (managed root inherited from server config) ──────
+# Two catalogs with a handful of schemas, all commented, to give the UI a
+# non-trivial namespace tree. The `${CATALOG}`/`${SCHEMA}` env pair still
+# seeds its own catalog+schema (defaults demo/default) for standalone use; the
+# richer `demo`/`ml` layout below is what the managed-table seed writes into.
+log "creating catalogs + schemas…"
+post /catalogs \
+  "{\"name\":\"${CATALOG}\",\"comment\":\"Demo analytics catalog (customers, orders, sales).\"}" \
+  "catalog ${CATALOG}"
+post /schemas \
+  "{\"name\":\"${SCHEMA}\",\"catalogName\":\"${CATALOG}\",\"comment\":\"Default schema — core demo tables.\"}" \
+  "schema ${CATALOG}.${SCHEMA}"
+post /schemas \
+  "{\"name\":\"sales\",\"catalogName\":\"${CATALOG}\",\"comment\":\"Sales aggregates and region dimensions.\"}" \
+  "schema ${CATALOG}.sales"
 
-log "done. managed tables written under ${CATALOG}.${SCHEMA} will be preview-able."
+post /catalogs \
+  "{\"name\":\"ml\",\"comment\":\"Machine-learning assets (features + registered models).\"}" \
+  "catalog ml"
+post /schemas \
+  "{\"name\":\"features\",\"catalogName\":\"ml\",\"comment\":\"Feature tables and model registry.\"}" \
+  "schema ml.features"
+
+# ── 6. Volumes (MANAGED — location derived under the managed root) ─────────
+log "seeding volumes…"
+post /volumes \
+  "{\"catalogName\":\"${CATALOG}\",\"schemaName\":\"${SCHEMA}\",\"name\":\"raw_files\",\"volumeType\":\"MANAGED\",\"comment\":\"Landing zone for raw uploads.\"}" \
+  "volume ${CATALOG}.${SCHEMA}.raw_files"
+post /volumes \
+  "{\"catalogName\":\"ml\",\"schemaName\":\"features\",\"name\":\"artifacts\",\"volumeType\":\"MANAGED\",\"comment\":\"Model artifacts and training outputs.\"}" \
+  "volume ml.features.artifacts"
+
+# ── 7. Functions (SQL, metadata-only; body wrapped in `functionInfo`) ──────
+log "seeding functions…"
+post /functions "$(cat <<JSON
+{"functionInfo":{
+  "name":"add_tax","catalogName":"${CATALOG}","schemaName":"${SCHEMA}",
+  "dataType":"DOUBLE","fullDataType":"DOUBLE","parameterStyle":"S",
+  "isDeterministic":true,"sqlDataAccess":"NO_SQL","isNullCall":false,
+  "securityType":"DEFINER","routineBody":"SQL",
+  "routineDefinition":"amount * 1.2",
+  "comment":"Gross-up an amount by a flat 20% tax rate."}}
+JSON
+)" "function ${CATALOG}.${SCHEMA}.add_tax"
+post /functions "$(cat <<JSON
+{"functionInfo":{
+  "name":"fiscal_quarter","catalogName":"${CATALOG}","schemaName":"sales",
+  "dataType":"INT","fullDataType":"INT","parameterStyle":"S",
+  "isDeterministic":true,"sqlDataAccess":"NO_SQL","isNullCall":false,
+  "securityType":"DEFINER","routineBody":"SQL",
+  "routineDefinition":"floor((month(d) - 1) / 3) + 1",
+  "comment":"Fiscal quarter (1-4) for a given date."}}
+JSON
+)" "function ${CATALOG}.sales.fiscal_quarter"
+
+# ── 8. Registered models + versions (metadata-only) ────────────────────────
+log "seeding registered models + versions…"
+post /models \
+  "{\"name\":\"churn_predictor\",\"catalogName\":\"ml\",\"schemaName\":\"features\",\"comment\":\"Predicts customer churn probability.\"}" \
+  "model ml.features.churn_predictor"
+post /models \
+  "{\"name\":\"recommender\",\"catalogName\":\"ml\",\"schemaName\":\"features\",\"comment\":\"Product recommendation model.\"}" \
+  "model ml.features.recommender"
+
+# `source` is a stand-in artifact URI — no artifact upload is needed for the
+# metadata-only create. Versions start in PENDING_REGISTRATION, which the UI
+# lists fine; no finalize call required.
+post /models/versions \
+  "{\"modelName\":\"churn_predictor\",\"catalogName\":\"ml\",\"schemaName\":\"features\",\"source\":\"azurite://lakehouse/models/churn_predictor/1\",\"comment\":\"Baseline logistic regression.\"}" \
+  "model version churn_predictor/1"
+post /models/versions \
+  "{\"modelName\":\"churn_predictor\",\"catalogName\":\"ml\",\"schemaName\":\"features\",\"source\":\"azurite://lakehouse/models/churn_predictor/2\",\"comment\":\"Gradient-boosted retrain.\"}" \
+  "model version churn_predictor/2"
+post /models/versions \
+  "{\"modelName\":\"recommender\",\"catalogName\":\"ml\",\"schemaName\":\"features\",\"source\":\"azurite://lakehouse/models/recommender/1\",\"comment\":\"Initial collaborative-filtering model.\"}" \
+  "model version recommender/1"
+
+log "done. managed tables written under demo/ml will be preview-able."

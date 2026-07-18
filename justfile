@@ -213,9 +213,9 @@ rest-ui *args: ui-build
 # Everything else matches `ui-dev`: an ephemeral Postgres `uc_dev` database
 # (dropped + recreated per run), a freshly re-created Azurite container, the
 # `seed-azurite.sh` infra step, and the `seed_managed_tables` sample data. Open
-# the printed URL (http://localhost:3003) and browse to demo.default.customers /
-# demo.default.orders to run the in-browser query preview; source edits
-# hot-reload without a rebuild.
+# the printed URL (http://localhost:3003) and browse the demo/ml catalogs (e.g.
+# demo.default.customers, or demo.default.events for multi-commit Delta history)
+# to run the in-browser query preview; source edits hot-reload without a rebuild.
 #
 # On Ctrl-C it tears down exactly like `ui-dev`: stops the UC server, tears down
 # the Azurite container, and DROPS the `uc_dev` database. The shared Postgres
@@ -307,13 +307,12 @@ ui-dev-wasm: build-query-wasm
     #    nested-runtime panic that blocks the in-process datagen).
     echo "[ui-dev-wasm] seeding sample managed tables…"
     UC_ENDPOINT="http://localhost:8080/api/2.1/unity-catalog/" \
-    UC_CATALOG="${UC_CATALOG:-demo}" UC_SCHEMA="${UC_SCHEMA:-default}" \
         cargo run -p olai-uc-datafusion --features delta --example seed_managed_tables
 
     echo ""
     echo "[ui-dev-wasm] backend ready on http://localhost:8080 — starting Vite dev server (wasm preview enabled)…"
     echo "[ui-dev-wasm] open the printed URL (http://localhost:3003); /api proxies to :8080"
-    echo "[ui-dev-wasm] browse to demo.default.customers / demo.default.orders to run the in-browser query preview"
+    echo "[ui-dev-wasm] browse the demo/ml catalogs (e.g. demo.default.customers, or demo.default.events for multi-commit history) to run the in-browser query preview"
     echo "[ui-dev-wasm] (Ctrl-C to stop the dev server + UC server, tear down Azurite, drop ${PGDATABASE})"
     # Foreground: Ctrl-C ends the dev server, then the EXIT trap cleans up. The two
     # VITE_* flags swap in the real wasm query engine + un-gate the preview UI.
@@ -425,7 +424,6 @@ ui-dev:
     #    `azurite://` scheme, which Hadoop/Spark has no FileSystem for.
     echo "[ui-dev] seeding sample managed tables…"
     UC_ENDPOINT="http://localhost:8080/api/2.1/unity-catalog/" \
-    UC_CATALOG="${UC_CATALOG:-demo}" UC_SCHEMA="${UC_SCHEMA:-default}" \
         cargo run -p olai-uc-datafusion --features delta --example seed_managed_tables
 
     echo ""
