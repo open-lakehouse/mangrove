@@ -6,9 +6,12 @@ use datafusion_common::error::DataFusionError;
 use datafusion_physical_expr_common::physical_expr::PhysicalExpr;
 use uuid::Uuid;
 
-// The statistics side channel (`stats`) is the resolver's first consumer — it reads `leaves()` +
-// `LeafMapping`. The predicate-rewrite helpers (`logical_to_physical`, `physical_*_path`) land a
-// consumer in Stage 5 (filter pushdown); allow dead code on the module until then.
+// The statistics side channel (`stats`) is the resolver's live consumer — it reads `leaves()`,
+// `LeafMapping`, and the `physical_*_path` stats helpers. The `logical_to_physical` /
+// predicate-rewrite helpers remain unused on the DataFusion path: Stage-5 filter pushdown prunes in
+// *logical* space (the parquet `FilePruner` + `FieldIdPhysicalExprAdapterFactory` own the
+// logical↔physical rename), so no in-crate logical→physical predicate rewrite is needed. Kept as a
+// documented, tested part of the narrow-waist artifact; `allow(dead_code)` covers the unused halves.
 #[allow(dead_code)]
 pub mod column_mapping;
 pub mod expr_translator;

@@ -6,8 +6,11 @@
 //! columns as it emits rows — see `crate::compile::logical::project`). But two *side channels* also
 //! need the logical↔physical name relation:
 //!
-//!   * **predicate rewrite** (filter pushdown): a filter written against logical names must be
-//!     rewritten to physical names before it is handed to the kernel scan builder;
+//!   * **predicate rewrite** (kernel-side data skipping, future): a filter handed to the *kernel*
+//!     scan builder is rewritten logical→physical by the kernel itself (`Scan::physical_predicate`);
+//!     the *DataFusion* filter-pushdown path (Stage 5) instead prunes in **logical** space — the
+//!     parquet `FilePruner` + `FieldIdPhysicalExprAdapterFactory` own that rename — so it needs no
+//!     rewrite here. `logical_to_physical` is retained for a future kernel-predicate consumer;
 //!   * **statistics remap**: per-file stats the kernel carries under **physical** leaf names
 //!     (`add.stats_parsed.{minValues,maxValues,nullCount}.<physical>`) must be placed at the
 //!     **logical** output positions DataFusion prunes against.
@@ -25,8 +28,11 @@
 //!   genuinely *per-file* (schema evolution can shorten the physical schema file-to-file) and does
 //!   array-level reshape. See the `// TODO(narrow-waist)` note there — the honest waist is *two
 //!   mechanisms, with the name relation computed once and shared by the side channels*, not one.
-//! * It has **no consumers yet** (landed ahead of the predicate-rewrite and stats stages). Its unit
-//!   tests are the only exercise for now.
+//! * The **statistics remap** side channel (`crate::compile::stats`) is its live consumer — it
+//!   reads [`Self::leaves`], [`LeafMapping`], and the `physical_*_path` helpers. The
+//!   `logical_to_physical` / `physical_to_logical` name-only helpers are retained (and unit-tested)
+//!   for a future kernel-side data-skipping predicate; the DataFusion filter-pushdown path (Stage 5)
+//!   prunes in logical space and does not use them.
 //!
 //! # How the relation is built
 //!
@@ -124,8 +130,9 @@ impl ColumnMappingResolver {
     /// Map a logical leaf column to its physical name. Returns `None` if `logical` is not a known
     /// leaf (e.g. a non-leaf struct path, or a name not in the table).
     ///
-    /// Used by the filter-pushdown side channel to rewrite predicates written against logical names
-    /// into physical names.
+    /// Rewrites a logical column name to its physical name. Retained for a future kernel-side
+    /// data-skipping predicate; the DataFusion filter-pushdown path (Stage 5) prunes in logical
+    /// space and does not use this (see the module docs).
     pub(crate) fn logical_to_physical(&self, logical: &ColumnName) -> Option<ColumnName> {
         self.by_logical
             .get(logical.path())
