@@ -113,12 +113,21 @@ impl Default for DeltaEngineSessionOptions {
 ///
 /// These are correctness requirements, not preferences, and are **not** wasm-specific:
 ///
-/// **`collect_statistics = false` — column-mapping correctness.** DataFusion's parquet stats
-/// collector mishandles Delta column-mapping / field-id renamed columns: it stamps
-/// missing-by-logical-name columns as all-null, which the projection folds to `Literal::NULL`
-/// *before* the field-id rename applies — producing wrong results. That bug hits native reads just
-/// as much as wasm, so the knob is unconditional. (The kernel does its own file-level data skipping,
-/// so we lose nothing by disabling DF's stats.)
+/// **`collect_statistics = false` — keep DataFusion's collector off the `ListingTable` path.**
+/// DataFusion's parquet stats collector mishandles Delta column-mapping / field-id renamed columns:
+/// it stamps missing-by-logical-name columns as all-null, which the projection folds to
+/// `Literal::NULL` *before* the field-id rename applies — producing wrong results. This flag governs
+/// only DataFusion's own `ListingTableProvider` collector, which is live on this crate's scan path
+/// **only** for checkpoint / manifest *metadata* parquet reads (`NodeKind::Scan` ->
+/// `scan_to_listing_logical_plan`, reached whenever the scanned table has a checkpoint); the
+/// user-data files never use it (they read through the crate's own `LoadExec`). We keep it off so
+/// that metadata `ListingTable` never runs DF's collector.
+///
+/// Per-file statistics for the **data** files are now sourced directly from the kernel's
+/// metadata-stats state machine, remapped physical->logical, and attached to each
+/// `PartitionedFile` (`crate::compile::stats`, wired in `provider::scan`) — a path entirely
+/// independent of this flag. So disabling DF's collector costs nothing: correct data-file stats
+/// still flow, and the kernel additionally does its own file-level data skipping.
 ///
 /// **`enable_leaf_expression_pushdown = false` — kernel-integration compiler workaround.** Runs
 /// identically native and wasm. It works around a name-qualification collision in *our own* SSA ->
@@ -144,7 +153,9 @@ pub fn configure_delta_engine_config(
     options: &DeltaEngineSessionOptions,
 ) -> SessionConfig {
     // --- Unconditional, load-bearing (both targets); see fn docs ---
-    // Column-mapping correctness (DF stats collector mishandles field-id renamed columns).
+    // Keep DF's ListingTable stats collector off the checkpoint-metadata scan path (it mishandles
+    // field-id renamed columns). Data-file stats come from the kernel via `PartitionedFile`,
+    // independent of this flag (`crate::compile::stats`).
     config.options_mut().execution.collect_statistics = false;
     // Kernel-integration compiler workaround (apache/datafusion#20432, mangrove#123).
     config
@@ -259,8 +270,9 @@ pub fn validate_delta_engine_session(
     }
     if options.execution.collect_statistics {
         problems.push(
-            "execution.collect_statistics=true (must be false; DF stats mishandle Delta \
-             column-mapping/field-id renamed columns and produce wrong results)"
+            "execution.collect_statistics=true (must be false; keeps DF's ListingTable collector \
+             off the checkpoint-metadata scan path, which mishandles column-mapping/field-id \
+             renamed columns — data-file stats come from the kernel via PartitionedFile)"
                 .to_string(),
         );
     }

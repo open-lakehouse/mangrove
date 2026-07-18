@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use chrono::TimeZone;
 use datafusion_common::error::DataFusionError;
-use datafusion_common::{Result as DfResult, ScalarValue};
+use datafusion_common::{Result as DfResult, ScalarValue, Statistics};
 use datafusion_datasource::file::FileSource;
 use datafusion_datasource::file_groups::FileGroup;
 use datafusion_datasource::file_scan_config::FileScanConfigBuilder;
@@ -93,6 +93,10 @@ pub(crate) struct RowInputs {
     pub url: Url,
     pub size: i64,
     pub partition_values: Vec<ScalarValue>,
+    /// The raw, un-resolved `add.path` string this row came from — the join key into the per-file
+    /// statistics map (which the metadata-stats terminal keys the same way). Kept alongside the
+    /// resolved [`url`](Self::url) so the stats lookup needs no URL round-trip.
+    pub raw_path: String,
 }
 
 /// Extract one upstream row into a [`RowInputs`]. `projected_passthrough` is the precomputed
@@ -111,7 +115,8 @@ pub(crate) fn extract_row_inputs(
         )));
     }
     // Path columns are always Utf8 per kernel's scan_live_actions_schema.
-    let url = resolve_file_location(node, path_arr.as_string::<i32>().value(row))?;
+    let raw_path = path_arr.as_string::<i32>().value(row).to_string();
+    let url = resolve_file_location(node, &raw_path)?;
 
     // v1 is DV-free. The scan SSA ALWAYS attaches a `dv_ref` (a pointer to the
     // `deletionVector` descriptor column on the upstream), so its mere presence does NOT mean a
@@ -154,6 +159,7 @@ pub(crate) fn extract_row_inputs(
         url,
         size,
         partition_values,
+        raw_path,
     })
 }
 
@@ -298,14 +304,20 @@ pub(crate) async fn build_per_file_plan(
     file_type: FileType,
     output_schema: &ArrowSchemaRef,
     task_context: &TaskContext,
+    statistics: Option<Arc<Statistics>>,
 ) -> Result<Arc<dyn ExecutionPlan>, DataFusionError> {
     let RowInputs {
         url,
         size,
         partition_values,
+        raw_path: _,
     } = inputs;
     let (object_store_url, mut partitioned_file) = into_partitioned_file(&url, size)?;
     partitioned_file.partition_values = partition_values;
+    // DataFusion prunes row-groups/files from these once the parquet `DataSourceExec` sees them
+    // (they index-align to the full pre-projection logical schema; the outer projection is spliced
+    // above this leaf, so DataFusion projects the statistics itself).
+    partitioned_file.statistics = statistics;
     let object_store = task_context.runtime_env().object_store(&object_store_url)?;
     resolve_size_if_unknown(&mut partitioned_file, object_store).await?;
     let config = FileScanConfigBuilder::new(object_store_url, file_source)

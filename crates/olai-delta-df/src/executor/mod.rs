@@ -26,6 +26,7 @@ use datafusion_common::error::DataFusionError;
 use datafusion_expr::LogicalPlan;
 use datafusion_physical_plan::coalesce_partitions::CoalescePartitionsExec;
 use datafusion_physical_plan::{ExecutionPlan, ExecutionPlanProperties};
+use delta_kernel::arrow::array::RecordBatch;
 use delta_kernel::engine::arrow_conversion::TryFromArrow;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
 use delta_kernel::log_segment::LogSegment;
@@ -93,10 +94,23 @@ impl DataFusionExecutor {
     pub fn compile_result_plan(
         rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
     ) -> Result<LogicalPlan, DeltaError> {
+        Self::compile_result_plan_with_stats(rp, None)
+    }
+
+    /// [`compile_result_plan`](Self::compile_result_plan) with per-file [`Statistics`] attached: the
+    /// `file_stats` map (keyed by raw `add.path`) is threaded onto the compiled `Load` leaf so each
+    /// per-file `PartitionedFile` carries its statistics for DataFusion pruning. `None` reproduces
+    /// the plain compile exactly. The provider's stats-enabled scan is the only caller that passes
+    /// `Some`.
+    pub fn compile_result_plan_with_stats(
+        rp: &delta_kernel::sm_plans::ir::plan::ResultPlan,
+        file_stats: Option<Arc<crate::compile::stats::FileStatsMap>>,
+    ) -> Result<LogicalPlan, DeltaError> {
         let ctx = CompileContext {
             sm_id: crate::next_sm_id(),
             sm_kind: "standalone",
             step_name: "compile_result_plan",
+            file_stats,
         };
         compile_ssa(&rp.plan.stmts, rp.result, &ctx).into_delta()
     }
@@ -159,6 +173,52 @@ impl DataFusionExecutor {
     ) -> Result<LogicalPlan, DeltaError> {
         let rp = self.drive_to_completion(session, sm).await?;
         Self::compile_result_plan(&rp)
+    }
+
+    /// Drive a coroutine that yields a [`ResultPlan`], compile it, plan it against `session`, and
+    /// **execute** it — returning the terminal rows as [`RecordBatch`]es.
+    ///
+    /// This is the rows-collecting sibling of [`drive_ssa_to_plan`](Self::drive_ssa_to_plan): where
+    /// that hands back an unexecuted [`LogicalPlan`] for the caller to splice into a larger scan,
+    /// this one materializes the terminal itself. Its use is the metadata-only *stats* SM
+    /// (`Scan::scan_stats_metadata_state_machine`), whose small terminal (one row per live file) the
+    /// provider consumes directly to build per-file [`Statistics`].
+    ///
+    /// Returns `Ok(None)` — **skipped, not an error** — **only on wasm32** when the compiled plan
+    /// would perform object-store IO (a [`LoadExec`]/[`FileListingExec`] leaf; see
+    /// [`plan_reads_no_files`]). Because this method *executes* the plan, running IO under
+    /// `block_on` on a browser worker starves the `fetch` event loop and hangs. The stats terminal
+    /// always reads the commit log (`Values -> LoadExec(JSON)`), so the guard *would* fire on every
+    /// table — but native callers `block_on` real IO safely, so the guard is scoped to wasm32:
+    /// there we forgo stats (a pruning optimization) rather than hang. On native the plan always
+    /// executes.
+    ///
+    /// # `!Send`
+    ///
+    /// Like every SM drive here the future is `!Send`; nothing `!Send` is held across the internal
+    /// `.await`s and the returned `Vec<RecordBatch>` is `Send`.
+    ///
+    /// [`ResultPlan`]: delta_kernel::sm_plans::ir::plan::ResultPlan
+    /// [`RecordBatch`]: delta_kernel::arrow::array::RecordBatch
+    pub async fn drive_ssa_to_batches(
+        &self,
+        session: &dyn Session,
+        sm: CoroutineSM<delta_kernel::sm_plans::ir::plan::ResultPlan>,
+    ) -> Result<Option<Vec<RecordBatch>>, DeltaError> {
+        let logical = self.drive_ssa_to_plan(session, sm).await?;
+        let physical = session.create_physical_plan(&logical).await.into_delta()?;
+        // On wasm32 a `block_on` that performs object-store IO starves the `fetch` event loop and
+        // hangs. The stats terminal always reads the commit log (`Values -> LoadExec(JSON)`), and a
+        // checkpointed table additionally reads checkpoint parquet — both IO leaves. Native callers
+        // `block_on` real IO safely (a blocking runtime), so only wasm skips; on wasm we forgo stats
+        // (a pruning optimization) rather than hang. See `plan_reads_no_files`.
+        if cfg!(target_arch = "wasm32") && !plan_reads_no_files(&physical) {
+            return Ok(None);
+        }
+        let batches = datafusion_physical_plan::collect(physical, session.task_ctx())
+            .await
+            .into_delta()?;
+        Ok(Some(batches))
     }
 
     /// Drive a combined metadata + data scan against `session` and compile it to a bare
@@ -258,6 +318,9 @@ impl DataFusionExecutor {
                     sm_id,
                     sm_kind,
                     step_name,
+                    // Consume-phase compiles (kernel decision plans) never build a data-file Load
+                    // leaf, so per-file stats do not apply here.
+                    file_stats: None,
                 };
                 let finished = self
                     .run_consume(session, &stmts, terminal, &sink, &ctx)
@@ -377,4 +440,23 @@ impl DataFusionExecutor {
         }
         Ok(handle.finish())
     }
+}
+
+/// Whether `plan` performs **no object-store IO** — i.e. it can be executed synchronously under a
+/// `block_on` on a browser worker (where a blocked thread would starve the `fetch` event loop)
+/// without hanging.
+///
+/// This crate's SSA compiler emits exactly two IO-performing leaves: [`LoadExec`] (opens per-file
+/// parquet/json readers at runtime — including the commit-`.json` log replay) and
+/// [`FileListingExec`] (lists a store prefix). Every other node — `Values`, `Project`, `Filter`,
+/// coalesce — is CPU-only. So the plan is IO-free iff neither of those two node types appears
+/// anywhere in the tree. Used **on wasm32 only** by [`drive_ssa_to_batches`](DataFusionExecutor::drive_ssa_to_batches)
+/// to gate its `block_on`: the stats terminal always reads the commit log, so on wasm we skip stats
+/// rather than `fetch` under a blocked worker. Native executes regardless.
+pub(crate) fn plan_reads_no_files(plan: &Arc<dyn ExecutionPlan>) -> bool {
+    let any: &dyn std::any::Any = plan.as_ref();
+    if any.is::<crate::exec::LoadExec>() || any.is::<crate::exec::FileListingExec>() {
+        return false;
+    }
+    plan.children().iter().all(|c| plan_reads_no_files(c))
 }

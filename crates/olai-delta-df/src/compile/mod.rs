@@ -5,14 +5,15 @@ use std::sync::Arc;
 use datafusion_common::error::DataFusionError;
 use uuid::Uuid;
 
-// The column-mapping resolver has no consumers yet (it lands ahead of the filter-pushdown and
-// statistics stages that will read it). Allow dead code crate-wide for this module until those
-// stages wire it in; its unit tests are the current exercise.
+// The statistics side channel (`stats`) is the resolver's first consumer — it reads `leaves()` +
+// `LeafMapping`. The predicate-rewrite helpers (`logical_to_physical`, `physical_*_path`) land a
+// consumer in Stage 5 (filter pushdown); allow dead code on the module until then.
 #[allow(dead_code)]
 pub mod column_mapping;
 pub mod expr_translator;
 mod json_parse;
 pub mod logical;
+pub mod stats;
 
 pub use logical::compile_ssa;
 
@@ -34,6 +35,10 @@ pub struct CompileContext {
     pub sm_id: Uuid,
     pub sm_kind: &'static str,
     pub step_name: &'static str,
+    /// Per-file statistics (keyed by raw `add.path`) to attach to the compiled `Load` leaf's
+    /// per-file `PartitionedFile`s. `None` on every path except the provider's stats-enabled scan;
+    /// `lower_load` clones it into the `LoadTableProvider`. See [`stats::FileStatsMap`].
+    pub file_stats: Option<Arc<stats::FileStatsMap>>,
 }
 
 impl CompileContext {
@@ -44,6 +49,7 @@ impl CompileContext {
             sm_id: crate::next_sm_id(),
             sm_kind: "standalone",
             step_name: "execute",
+            file_stats: None,
         }
     }
 }
