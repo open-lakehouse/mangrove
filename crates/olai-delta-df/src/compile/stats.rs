@@ -282,7 +282,10 @@ mod tests {
     fn terminal_batch(path: &str, stats_children: Vec<(&str, ArrayRef)>) -> RecordBatch {
         let stats = struct_arr(stats_children);
         RecordBatch::try_from_iter(vec![
-            (PATH_COLUMN, Arc::new(StringArray::from(vec![path])) as ArrayRef),
+            (
+                PATH_COLUMN,
+                Arc::new(StringArray::from(vec![path])) as ArrayRef,
+            ),
             (STATS_COLUMN, stats),
         ])
         .unwrap()
@@ -330,14 +333,20 @@ mod tests {
                     MIN_VALUES,
                     struct_arr(vec![
                         ("col-a", i64_arr(1)),
-                        ("col-b", Arc::new(StringArray::from(vec!["apple"])) as ArrayRef),
+                        (
+                            "col-b",
+                            Arc::new(StringArray::from(vec!["apple"])) as ArrayRef,
+                        ),
                     ]),
                 ),
                 (
                     MAX_VALUES,
                     struct_arr(vec![
                         ("col-a", i64_arr(9)),
-                        ("col-b", Arc::new(StringArray::from(vec!["pear"])) as ArrayRef),
+                        (
+                            "col-b",
+                            Arc::new(StringArray::from(vec!["pear"])) as ArrayRef,
+                        ),
                     ]),
                 ),
                 (TIGHT_BOUNDS, bool_arr(true)),
@@ -359,10 +368,7 @@ mod tests {
         // Column 1 == logical `name` (physical col-b).
         let name = &stats.column_statistics[1];
         assert_eq!(name.null_count, Precision::Exact(0));
-        assert_eq!(
-            name.min_value,
-            Precision::Exact(ScalarValue::from("apple"))
-        );
+        assert_eq!(name.min_value, Precision::Exact(ScalarValue::from("apple")));
         assert_eq!(name.max_value, Precision::Exact(ScalarValue::from("pear")));
     }
 
@@ -386,8 +392,14 @@ mod tests {
         let stats = map.get("f.parquet").unwrap();
         let id = &stats.column_statistics[0];
         assert_eq!(id.null_count, Precision::Exact(1)); // exact regardless of tightBounds
-        assert_eq!(id.min_value, Precision::Inexact(ScalarValue::Int64(Some(0))));
-        assert_eq!(id.max_value, Precision::Inexact(ScalarValue::Int64(Some(5))));
+        assert_eq!(
+            id.min_value,
+            Precision::Inexact(ScalarValue::Int64(Some(0)))
+        );
+        assert_eq!(
+            id.max_value,
+            Precision::Inexact(ScalarValue::Int64(Some(5)))
+        );
     }
 
     #[test]
@@ -515,7 +527,10 @@ mod tests {
             Some(vec![false].into()), // the struct itself is null at row 0
         )) as ArrayRef;
         let batch = RecordBatch::try_from_iter(vec![
-            (PATH_COLUMN, Arc::new(StringArray::from(vec!["z.parquet"])) as ArrayRef),
+            (
+                PATH_COLUMN,
+                Arc::new(StringArray::from(vec!["z.parquet"])) as ArrayRef,
+            ),
             (STATS_COLUMN, stats_arr),
         ])
         .unwrap();

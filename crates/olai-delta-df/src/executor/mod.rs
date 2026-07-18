@@ -184,13 +184,14 @@ impl DataFusionExecutor {
     /// (`Scan::scan_stats_metadata_state_machine`), whose small terminal (one row per live file) the
     /// provider consumes directly to build per-file [`Statistics`].
     ///
-    /// Returns `Ok(None)` — **skipped, not an error** — when the compiled plan would perform
-    /// object-store IO (a [`LoadExec`]/[`FileListingExec`] leaf; see [`plan_reads_no_files`]).
-    /// Because this method *executes* the plan, running it under `block_on` on a browser worker
-    /// would starve the `fetch` event loop; the guard degrades to `None` so the caller proceeds
-    /// without stats rather than hanging. The stats terminal drains the reconciled live-action rows
-    /// (resident by the time the SM terminates), so it is CPU-only for the tables that reach it
-    /// today and this guard almost never fires — it is a correctness backstop.
+    /// Returns `Ok(None)` — **skipped, not an error** — **only on wasm32** when the compiled plan
+    /// would perform object-store IO (a [`LoadExec`]/[`FileListingExec`] leaf; see
+    /// [`plan_reads_no_files`]). Because this method *executes* the plan, running IO under
+    /// `block_on` on a browser worker starves the `fetch` event loop and hangs. The stats terminal
+    /// always reads the commit log (`Values -> LoadExec(JSON)`), so the guard *would* fire on every
+    /// table — but native callers `block_on` real IO safely, so the guard is scoped to wasm32:
+    /// there we forgo stats (a pruning optimization) rather than hang. On native the plan always
+    /// executes.
     ///
     /// # `!Send`
     ///
@@ -206,9 +207,12 @@ impl DataFusionExecutor {
     ) -> Result<Option<Vec<RecordBatch>>, DeltaError> {
         let logical = self.drive_ssa_to_plan(session, sm).await?;
         let physical = session.create_physical_plan(&logical).await.into_delta()?;
-        if !plan_reads_no_files(&physical) {
-            // The stats terminal compiled to an IO-performing plan (e.g. a checkpoint whose stats
-            // live in parquet rows). Skip rather than block on `fetch` under a browser worker.
+        // On wasm32 a `block_on` that performs object-store IO starves the `fetch` event loop and
+        // hangs. The stats terminal always reads the commit log (`Values -> LoadExec(JSON)`), and a
+        // checkpointed table additionally reads checkpoint parquet — both IO leaves. Native callers
+        // `block_on` real IO safely (a blocking runtime), so only wasm skips; on wasm we forgo stats
+        // (a pruning optimization) rather than hang. See `plan_reads_no_files`.
+        if cfg!(target_arch = "wasm32") && !plan_reads_no_files(&physical) {
             return Ok(None);
         }
         let batches = datafusion_physical_plan::collect(physical, session.task_ctx())
@@ -439,16 +443,16 @@ impl DataFusionExecutor {
 }
 
 /// Whether `plan` performs **no object-store IO** — i.e. it can be executed synchronously under a
-/// `block_on` (even on a browser worker, where a blocked thread would starve the `fetch` event
-/// loop) without hanging.
+/// `block_on` on a browser worker (where a blocked thread would starve the `fetch` event loop)
+/// without hanging.
 ///
 /// This crate's SSA compiler emits exactly two IO-performing leaves: [`LoadExec`] (opens per-file
-/// parquet/json readers at runtime) and [`FileListingExec`] (lists a store prefix). Every other
-/// leaf a metadata-only terminal compiles to — the commit-JSON `Values` (an in-memory
-/// `DataSourceExec`), `Project`, `Filter` — is CPU-only. So the plan is IO-free iff neither of those
-/// two node types appears anywhere in the tree. Used by the provider to gate the `block_on` stats
-/// drive: if a stats terminal ever compiles to an IO leaf (e.g. a checkpoint whose stats live in
-/// parquet rows), the provider skips stats rather than block on `fetch`.
+/// parquet/json readers at runtime — including the commit-`.json` log replay) and
+/// [`FileListingExec`] (lists a store prefix). Every other node — `Values`, `Project`, `Filter`,
+/// coalesce — is CPU-only. So the plan is IO-free iff neither of those two node types appears
+/// anywhere in the tree. Used **on wasm32 only** by [`drive_ssa_to_batches`](DataFusionExecutor::drive_ssa_to_batches)
+/// to gate its `block_on`: the stats terminal always reads the commit log, so on wasm we skip stats
+/// rather than `fetch` under a blocked worker. Native executes regardless.
 pub(crate) fn plan_reads_no_files(plan: &Arc<dyn ExecutionPlan>) -> bool {
     let any: &dyn std::any::Any = plan.as_ref();
     if any.is::<crate::exec::LoadExec>() || any.is::<crate::exec::FileListingExec>() {
