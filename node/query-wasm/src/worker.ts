@@ -8,32 +8,46 @@
 // node/app/vite.config.ts — only in wasm-enabled builds (default builds alias
 // the whole package to ./stub.ts and never bundle this worker).
 import init, { UcQueryEngine } from "query-wasm-pkg";
-import type { RunMessage, WorkerResponse } from "./protocol";
+import type { LogRunMessage, RunMessage, WorkerResponse } from "./protocol";
 
 const post = (message: WorkerResponse, transfer: Transferable[] = []) =>
   (self as unknown as Worker).postMessage(message, transfer);
 
-self.onmessage = async (event: MessageEvent<RunMessage>) => {
+self.onmessage = async (event: MessageEvent<RunMessage | LogRunMessage>) => {
   const request = event.data;
-  if (request.type !== "run") return;
+  if (request.type !== "run" && request.type !== "run-log") return;
   try {
     await init();
     const engine = new UcQueryEngine(request.baseUrl, {
       authToken: request.authToken,
     });
-    const stats = await engine.runQuery(
-      request.sql,
-      {
-        limit: request.limit,
-        catalog: request.catalog,
-        schema: request.schema,
-      },
-      (ipc, numRows) => {
-        // The Uint8Array views wasm memory; copy before transferring.
-        const copy = ipc.slice();
-        post({ type: "chunk", ipc: copy, numRows }, [copy.buffer]);
-      },
-    );
+    // The Uint8Array views wasm memory; copy before transferring.
+    const onBatch = (ipc: Uint8Array, numRows: number) => {
+      const copy = ipc.slice();
+      post({ type: "chunk", ipc: copy, numRows }, [copy.buffer]);
+    };
+    const stats =
+      request.type === "run"
+        ? await engine.runQuery(
+            request.sql,
+            {
+              limit: request.limit,
+              catalog: request.catalog,
+              schema: request.schema,
+            },
+            onBatch,
+          )
+        : await engine.runLogQuery(
+            request.sql,
+            {
+              limit: request.limit,
+              catalog: request.catalog,
+              schema: request.schema,
+              target: request.target,
+              kind: request.kind,
+            },
+            onBatch,
+          );
     post({ type: "done", stats });
   } catch (error) {
     const err = error as { message?: unknown; code?: unknown };

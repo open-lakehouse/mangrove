@@ -23,6 +23,20 @@ declare module "query-wasm-pkg" {
       opts: { limit?: number; catalog?: string; schema?: string },
       onBatch: (ipc: Uint8Array, numRows: number) => void,
     ): Promise<RunStats>;
+    /** Execute a reconciled-Delta-log query. `opts.target` names the physical
+     *  table (the SQL references a fixed logical name); `kind` selects the log
+     *  surface. */
+    runLogQuery(
+      sql: string,
+      opts: {
+        limit?: number;
+        catalog?: string;
+        schema?: string;
+        target: string;
+        kind: "reconciled" | "actions";
+      },
+      onBatch: (ipc: Uint8Array, numRows: number) => void,
+    ): Promise<RunStats>;
     free(): void;
   }
 

@@ -1,9 +1,10 @@
-// The message protocol between `createWasmQueryRunner` (main thread) and the
-// wasm worker. One worker per run: the main thread posts a single `run`, the
-// worker streams `chunk` messages and finishes with `done` or `error`;
-// cancellation is `Worker.terminate()` (the engine holds no cross-run state).
+// The message protocol between the runners (`createWasmQueryRunner` /
+// `createWasmLogQueryRunner`, main thread) and the wasm worker. One worker per
+// run: the main thread posts a single `run` or `run-log`, the worker streams
+// `chunk` messages and finishes with `done` or `error`; cancellation is
+// `Worker.terminate()` (the engine holds no cross-run state).
 
-/** Main → worker: start the (single) query this worker exists for. */
+/** Main → worker: start the (single) table query this worker exists for. */
 export interface RunMessage {
   type: "run";
   /** Unity Catalog REST base, e.g. `${origin}/api/2.1/unity-catalog`. */
@@ -14,6 +15,25 @@ export interface RunMessage {
   limit?: number;
   catalog?: string;
   schema?: string;
+}
+
+/** Main → worker: start the (single) reconciled-Delta-log query this worker
+ *  exists for. Unlike `RunMessage`, the physical table rides on `target` (the
+ *  SQL references a fixed logical name), and `kind` selects the log surface. */
+export interface LogRunMessage {
+  type: "run-log";
+  /** Unity Catalog REST base, e.g. `${origin}/api/2.1/unity-catalog`. */
+  baseUrl: string;
+  /** Optional bearer for the UC API (same-origin cookies flow regardless). */
+  authToken?: string;
+  sql: string;
+  limit?: number;
+  catalog?: string;
+  schema?: string;
+  /** The physical table whose log to scan. */
+  target: string;
+  /** Which log surface to project. */
+  kind: "reconciled" | "actions";
 }
 
 /** Worker → main: one self-contained Arrow IPC chunk (transferred, not copied). */
