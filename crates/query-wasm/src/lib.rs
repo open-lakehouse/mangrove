@@ -14,11 +14,13 @@
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 mod bindings;
+pub mod catalog;
 pub mod creds;
 pub mod engine;
 pub mod error;
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 pub mod fetch_store;
+pub mod log_udtf;
 pub mod resolve;
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 pub mod uc;

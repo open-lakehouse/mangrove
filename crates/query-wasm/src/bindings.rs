@@ -14,23 +14,14 @@
 //! Host this in a Web Worker: the kernel's inline-executor bursts run
 //! synchronously against primed data and would jank the main thread.
 
-use std::sync::Arc;
-
 use futures::TryStreamExt;
 use js_sys::{Function, Uint8Array};
-use object_store::ObjectStore;
-use object_store::path::Path;
 use url::Url;
 use wasm_bindgen::prelude::*;
 
-use crate::engine::{
-    LogKind, OpenedTable, TableAddress, execute_chunks, extract_table, open_table,
-    parse_table_address, register_table, scan_log_chunks,
-};
+use crate::catalog::UcRestResolver;
+use crate::engine::{ACTIONS_LOG_UDTF, LogKind, RECONCILED_LOG_UDTF, run_unified};
 use crate::error::Error;
-use crate::fetch_store::UcFetchStore;
-use crate::resolve::{discover_log, plan_table};
-use crate::uc::UcClient;
 
 // Named uniquely: `deltalake-wasm` (also a cdylib-capable dependency) exports
 // its own `#[wasm_bindgen(start)] fn init`, and identically-named start
@@ -246,15 +237,19 @@ impl UcQueryEngine {
         opts: RunOptions,
         on_batch: &Function,
     ) -> Result<JsValue, Error> {
-        // Which table does the SQL read?
-        let (reference, address) =
-            extract_table(sql, opts.catalog.as_deref(), opts.schema.as_deref())?;
-        let opened = self.open_for(&address).await?;
-        // Register the data scan under exactly the name the SQL resolves to, then
-        // execute the SQL through DataFusion.
-        register_table(&opened.ctx, &opened, &reference)?;
-        let chunks = execute_chunks(&opened.ctx, sql, opts.limit.map(|l| l as usize)).await?;
-        stream_to_callback(chunks, opened.snapshot.version(), on_batch).await
+        // The unified resolve pass parses the SQL, resolves each referenced table
+        // (data or log UDTF) through Unity Catalog, registers the routed store +
+        // providers, and returns the framed chunk stream + pinned version.
+        let resolver = UcRestResolver::new(self.base_url.clone(), self.auth_token.clone());
+        let (chunks, table_version) = run_unified(
+            &resolver,
+            sql,
+            opts.limit.map(|l| l as usize),
+            opts.catalog.as_deref(),
+            opts.schema.as_deref(),
+        )
+        .await?;
+        stream_to_callback(chunks, table_version, on_batch).await
     }
 
     async fn run_log_query_inner(
@@ -264,52 +259,31 @@ impl UcQueryEngine {
         on_batch: &Function,
     ) -> Result<JsValue, Error> {
         // The physical table rides on `target`, not the SQL (which references a
-        // fixed logical name). Resolve UC from `target`, then scan the log
-        // provider directly — the log providers' camelCase columns don't survive
-        // DataFusion's SQL wildcard expansion, so `_sql` is intentionally unused
-        // beyond conveying the row cap (already parsed into `opts.limit`).
-        let address = parse_table_address(
-            &opts.target,
+        // fixed logical name). Address the log surface collision-free via the
+        // matching UDTF and run it through the same unified pass — which scans the
+        // log provider directly (the log providers' camelCase columns don't
+        // survive DataFusion's SQL wildcard expansion), so `_sql` is unused beyond
+        // the row cap (already parsed into `opts.limit`).
+        let kind: LogKind = opts.kind.into();
+        let udtf = match kind {
+            LogKind::Reconciled => RECONCILED_LOG_UDTF,
+            LogKind::Actions => ACTIONS_LOG_UDTF,
+        };
+        // Single-quote the target as the UDTF's string literal; escape any quote
+        // in the identifier so the synthesized SQL parses.
+        let escaped = opts.target.replace('\'', "''");
+        let log_sql = format!("SELECT * FROM {udtf}('{escaped}')");
+
+        let resolver = UcRestResolver::new(self.base_url.clone(), self.auth_token.clone());
+        let (chunks, table_version) = run_unified(
+            &resolver,
+            &log_sql,
+            opts.limit.map(|l| l as usize),
             opts.catalog.as_deref(),
             opts.schema.as_deref(),
-        )?;
-        let kind: LogKind = opts.kind.into();
-        let opened = self.open_for(&address).await?;
-        let chunks =
-            scan_log_chunks(&opened.ctx, &opened, kind, opts.limit.map(|l| l as usize)).await?;
-        stream_to_callback(chunks, opened.snapshot.version(), on_batch).await
-    }
-
-    /// The shared resolve → credentials → store → open pipeline: resolve the
-    /// Unity Catalog table at `address`, gate on the v1 envelope, vend
-    /// credentials, build the fetch-backed store, register it on a browser-shaped
-    /// DataFusion session, discover the `_delta_log`, and build the async-native
-    /// snapshot. This single-sources the credential/store/session setup for both
-    /// `runQuery` and `runLogQuery`; only the execution over the returned
-    /// [`OpenedTable`] differs (data scan vs. log provider).
-    async fn open_for(&self, address: &TableAddress) -> Result<OpenedTable, Error> {
-        // 1. Resolve the table through Unity Catalog and gate on the v1 envelope.
-        let uc = UcClient::new(self.base_url.clone(), self.auth_token.clone());
-        let loaded = uc
-            .load_table(&address.catalog, &address.schema, &address.table)
-            .await?;
-        let plan = plan_table(&loaded)?;
-        let credential = uc.read_table_credentials(&plan.table_uuid).await?;
-
-        // 2. Vended credential → browser-fetchable store.
-        let storage = crate::creds::resolve_storage(&plan.location, &credential)?;
-        let table_path = Path::from_url_path(storage.table_url.path())
-            .map_err(|e| Error::InvalidUrl(format!("table path: {e}")))?;
-        let store: Arc<dyn ObjectStore> = Arc::new(UcFetchStore::try_new(
-            storage.table_url.clone(),
-            &storage.headers,
-        )?);
-
-        // 3. Discover the log, build the snapshot async-native (no prime).
-        //    `latest_version` is `Some` only for catalog-managed tables, which is
-        //    exactly when the kernel needs it as `max_catalog_version`.
-        let log = discover_log(&store, &table_path, plan.latest_version).await?;
-        open_table(store, &storage.table_url, log, plan.latest_version).await
+        )
+        .await?;
+        stream_to_callback(chunks, table_version, on_batch).await
     }
 }
 

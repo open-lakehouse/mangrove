@@ -87,6 +87,9 @@ datafusion = { version = "54.0.0", default-features = false, features = [
 ] }
 object_store = { version = "0.13.2" }
 
+# Common (native + wasm): the `?Send` async resolve trait lives in `catalog.rs`,
+# which is native-visible for tests, so `async-trait` cannot stay wasm-only.
+async-trait = { version = "0.1" }
 futures = { version = "0.3" }
 percent-encoding = { version = "2" }
 serde = { version = "1.0", features = ["derive"] }
@@ -107,7 +110,6 @@ deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "c6abd5c0c3e
 # surface only exist on wasm32-unknown-unknown; everything else compiles (and is
 # tested) natively.
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
-async-trait = { version = "0.1" }
 bytes = { version = "1" }
 chrono = { version = "0.4" }
 console_error_panic_hook = "0.1"

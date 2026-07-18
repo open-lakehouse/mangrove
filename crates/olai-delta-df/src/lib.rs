@@ -11,6 +11,7 @@ pub mod exec;
 pub mod executor;
 pub mod log_explorer;
 pub mod provider;
+pub mod routing_store;
 pub mod session;
 pub mod snapshot_build;
 #[cfg(any(test, feature = "test-utils"))]
@@ -19,6 +20,7 @@ pub mod testing;
 pub use executor::DataFusionExecutor;
 pub use log_explorer::{ActionsLogProvider, ReconciledLogProvider};
 pub use provider::{DeltaSsaScanConfig, DeltaSsaTableProvider};
+pub use routing_store::{RoutingObjectStore, bucket_key};
 pub use session::{
     DeltaEngineSessionExt, DeltaEngineSessionOptions, configure_delta_engine_config,
     delta_engine_session, delta_engine_session_config, install_delta_engine,
