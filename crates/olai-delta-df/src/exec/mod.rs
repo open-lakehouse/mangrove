@@ -5,7 +5,7 @@
 mod field_id_adapter;
 mod file_listing;
 mod load_exec;
-mod load_helpers;
+pub(crate) mod load_helpers;
 mod load_provider;
 
 pub(crate) use field_id_adapter::FieldIdPhysicalExprAdapterFactory;

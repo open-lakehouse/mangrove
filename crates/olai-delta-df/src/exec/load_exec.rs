@@ -21,6 +21,7 @@ use datafusion_common::Result as DfResult;
 use datafusion_common::error::DataFusionError;
 use datafusion_execution::TaskContext;
 use datafusion_physical_expr::equivalence::EquivalenceProperties;
+use datafusion_physical_expr_common::physical_expr::PhysicalExpr;
 use datafusion_physical_plan::execution_plan::EmissionType;
 use datafusion_physical_plan::stream::RecordBatchStreamAdapter;
 use datafusion_physical_plan::{
@@ -55,11 +56,15 @@ pub struct LoadExec {
     /// Indices into `node.passthrough_columns` to materialize, in projected order. `Arc` so
     /// per-row open futures can clone cheaply.
     projected_passthrough: Arc<Vec<usize>>,
-    /// File source for the (DV-free) load path.
+    /// File source for the (DV-free) load path. Carries the scan-global pushdown predicate (parquet
+    /// only) when one was threaded in — see [`build_file_source`].
     file_source: Arc<dyn datafusion_datasource::file::FileSource>,
     /// Per-file statistics (keyed by raw `add.path`) to stamp onto each per-file `PartitionedFile`;
     /// `None` unless the provider drove a stats-enabled scan. Cloned across `with_new_children`.
     file_stats: Option<Arc<FileStatsMap>>,
+    /// Scan-global, logical-named parquet pruning predicate; `None` unless the provider lowered
+    /// query filters. Kept as a field so `with_new_children` can rebuild `file_source` with it.
+    predicate: Option<Arc<dyn PhysicalExpr>>,
     properties: Arc<PlanProperties>,
 }
 
@@ -71,6 +76,7 @@ impl LoadExec {
         projection: Option<Vec<usize>>,
         limit: Option<usize>,
         file_stats: Option<Arc<FileStatsMap>>,
+        predicate: Option<Arc<dyn PhysicalExpr>>,
     ) -> DfResult<Self> {
         // v1 is DV-free. Note the scan SSA ALWAYS attaches a `dv_ref` column pointer (see
         // `extract_row_inputs`), so we do NOT reject on `node.dv_ref.is_some()` at construction —
@@ -86,6 +92,7 @@ impl LoadExec {
             &full_schema,
             file_count,
             projection.as_deref(),
+            predicate.clone(),
         )?;
 
         let output_schema = match projection.as_ref() {
@@ -122,6 +129,7 @@ impl LoadExec {
             projected_passthrough: Arc::new(projected_passthrough),
             file_source,
             file_stats,
+            predicate,
             properties,
         })
     }
@@ -185,6 +193,7 @@ impl ExecutionPlan for LoadExec {
             self.projection.clone(),
             self.limit,
             self.file_stats.clone(),
+            self.predicate.clone(),
         )?))
     }
 

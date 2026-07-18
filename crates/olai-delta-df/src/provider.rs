@@ -26,8 +26,10 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use datafusion::catalog::{Session, TableProvider};
-use datafusion_common::Result as DfResult;
+use datafusion_common::{DFSchema, Result as DfResult};
+use datafusion_expr::utils::conjunction;
 use datafusion_expr::{Expr, LogicalPlanBuilder, TableProviderFilterPushDown, TableType};
+use datafusion_physical_expr_common::physical_expr::PhysicalExpr;
 use datafusion_physical_plan::ExecutionPlan;
 use delta_kernel::arrow::datatypes::SchemaRef as ArrowSchemaRef;
 use delta_kernel::engine::arrow_conversion::TryIntoArrow;
@@ -131,6 +133,26 @@ impl DeltaSsaTableProvider {
         let map = build_file_statistics(scan, &batches);
         (!map.is_empty()).then(|| Arc::new(map))
     }
+
+    /// Lower the scan's query `filters` to a single scan-global, **logical-named**
+    /// [`PhysicalExpr`] for parquet row-group / page pruning (threaded onto the compiled `Load`
+    /// leaf's parquet source). `None` when there are no filters or none lower cleanly.
+    ///
+    /// Like statistics, the pushdown predicate is a pruning **optimization**, never a correctness
+    /// requirement: `supports_filters_pushdown` reports `Inexact`, so DataFusion re-applies a
+    /// `FilterExec` above the scan regardless. Any lowering failure therefore degrades to `None`
+    /// rather than failing the scan. The predicate is built against this provider's *logical* arrow
+    /// schema; the per-file `FieldIdPhysicalExprAdapterFactory` reconciles it to each file's physical
+    /// schema at decode time, after pruning — so no column-mapping rewrite happens here.
+    fn build_pushdown_predicate(
+        &self,
+        session: &dyn Session,
+        filters: &[Expr],
+    ) -> Option<Arc<dyn PhysicalExpr>> {
+        let conjoined = conjunction(filters.iter().cloned())?;
+        let df_schema = DFSchema::try_from(self.arrow_schema.as_ref().clone()).ok()?;
+        session.create_physical_expr(conjoined, &df_schema).ok()
+    }
 }
 
 /// Build the kernel `Scan` used both for `schema()` and for driving the state machine.
@@ -161,7 +183,7 @@ impl TableProvider for DeltaSsaTableProvider {
         &self,
         session: &dyn Session,
         projection: Option<&Vec<usize>>,
-        _filters: &[Expr],
+        filters: &[Expr],
         limit: Option<usize>,
     ) -> DfResult<Arc<dyn ExecutionPlan>> {
         // Assert the caller's session carries the full Delta engine config, not just the
@@ -222,8 +244,16 @@ impl TableProvider for DeltaSsaTableProvider {
 
         // Compile the SSA result plan to a bare LogicalPlan, then plan it against the *caller's*
         // session so file reads go through the caller's object store + runtime.
-        let logical = DataFusionExecutor::compile_result_plan_with_stats(&result_plan, file_stats)
-            .map_err(crate::error::wrap_delta_err)?;
+        // Lower the query filters to a logical-named pushdown predicate for parquet pruning. A
+        // pruning optimization only (reported `Inexact` below), so a `None` here just skips pruning.
+        let predicate = self.build_pushdown_predicate(session, filters);
+        let channels = crate::compile::SideChannels {
+            file_stats,
+            predicate,
+        };
+        let logical =
+            DataFusionExecutor::compile_result_plan_with_side_channels(&result_plan, channels)
+                .map_err(crate::error::wrap_delta_err)?;
 
         // Apply projection + limit at the logical level so DataFusion pushes them into the
         // per-file parquet sources.
@@ -250,13 +280,14 @@ impl TableProvider for DeltaSsaTableProvider {
         &self,
         filters: &[&Expr],
     ) -> DfResult<Vec<TableProviderFilterPushDown>> {
-        // Filter pushdown is off for v1 (as it is for the internal per-file `LoadTableProvider`
-        // leaves this scan compiles to); projection and limit flow through. DataFusion re-applies
-        // filters above the scan.
-        Ok(vec![
-            TableProviderFilterPushDown::Unsupported;
-            filters.len()
-        ])
+        // `Inexact`: `scan()` lowers these filters to a logical pushdown predicate handed to the
+        // per-file parquet source for row-group / page pruning (against the Stage-4 per-file
+        // statistics), but pruning is conservative and some filters may not lower — so DataFusion
+        // must still re-apply a `FilterExec` above the scan for correctness. Only this top-level
+        // provider's report matters: the internal `LoadTableProvider` leaves receive no `Expr`
+        // filters (the predicate reaches them via the explicit side channel), so they stay
+        // `Unsupported`. Projection and limit continue to flow through separately.
+        Ok(vec![TableProviderFilterPushDown::Inexact; filters.len()])
     }
 }
 
@@ -271,12 +302,14 @@ mod stats_e2e_tests {
 
     use datafusion_common::stats::Precision;
     use datafusion_common::{ScalarValue, Statistics};
-    use delta_kernel::arrow::array::{ArrayRef, Int64Array, RecordBatch, StringArray};
+    use delta_kernel::arrow::array::types::Int64Type;
+    use delta_kernel::arrow::array::{ArrayRef, AsArray, Int64Array, RecordBatch, StringArray};
     use delta_kernel::arrow::datatypes::{DataType, Field, Schema};
     use delta_kernel::parquet::arrow::ArrowWriter;
     use delta_kernel::parquet::arrow::PARQUET_FIELD_ID_META_KEY;
     use delta_kernel::snapshot::Snapshot;
     use delta_kernel_default_engine::DefaultEngineBuilder;
+    use futures::StreamExt;
     use object_store::memory::InMemory;
     use object_store::path::Path;
     use object_store::{ObjectStore, ObjectStoreExt, PutPayload};
@@ -491,5 +524,201 @@ mod stats_e2e_tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn per_file_stats_correct_id_mode() {
         assert_stats_correct("id").await;
+    }
+
+    // === Stage 5: filter pushdown / file skipping ========================================
+
+    /// End-to-end: register the provider and run `SELECT ... WHERE id >= 4` over the two-file CM
+    /// fixture (file A `id∈[1,3]`, file B `id∈[4,6]`). With filter pushdown live the provider lowers
+    /// the predicate onto the per-file parquet source; DataFusion re-applies the `Inexact` filter
+    /// above the scan, so the result is correct regardless of how aggressively pruning fired. Proves
+    /// the whole pushdown path runs correctly under **both** id and name mode.
+    async fn assert_pushdown_result_correct(mode: &str) {
+        use datafusion::execution::context::SessionContext;
+
+        let store = fixture(mode).await;
+        let ctx: SessionContext = delta_engine_session(
+            Arc::clone(&store) as Arc<dyn ObjectStore>,
+            &table_url(),
+            &DeltaEngineSessionOptions::wasm(),
+        );
+        let provider = DeltaSsaTableProvider::new(
+            snapshot(store),
+            DeltaSsaScanConfig {
+                schema_force_view_types: false,
+            },
+        )
+        .expect("provider");
+        ctx.register_table("preview", Arc::new(provider)).unwrap();
+
+        let batches = ctx
+            .sql("SELECT id, name FROM preview WHERE id >= 4 ORDER BY id")
+            .await
+            .unwrap()
+            .collect()
+            .await
+            .unwrap();
+
+        let mut rows: Vec<(i64, String)> = Vec::new();
+        for b in &batches {
+            let ids = b.column(0).as_primitive::<Int64Type>();
+            let names = b.column(1).as_string::<i32>();
+            for i in 0..b.num_rows() {
+                rows.push((ids.value(i), names.value(i).to_string()));
+            }
+        }
+        assert_eq!(
+            rows,
+            vec![
+                (4, "d".to_string()),
+                (5, "e".to_string()),
+                (6, "f".to_string())
+            ],
+            "[{mode}] `WHERE id >= 4` must return only file B's rows"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn filter_pushdown_result_correct_name_mode() {
+        assert_pushdown_result_correct("name").await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn filter_pushdown_result_correct_id_mode() {
+        assert_pushdown_result_correct("id").await;
+    }
+
+    /// Direct proof that the wired predicate + attached per-file `Statistics` actually *prune*: build
+    /// a single-file parquet `DataSourceExec` through the exact seam `scan()` uses
+    /// (`build_file_source(..., predicate)` → `build_per_file_plan(..., statistics)`), execute it,
+    /// and read the source's own `files_ranges_pruned_statistics` metric (unreachable through the
+    /// top-level plan, since `LoadExec` builds per-file execs lazily). An out-of-range predicate
+    /// prunes the file (0 rows, 1 pruned); an in-range predicate keeps it (rows, 0 pruned).
+    ///
+    /// The predicate is logical-named (`id`), matching the logical file schema the pruner sees; the
+    /// parquet is written with logical names here (no CM rename) since this test isolates the
+    /// pruning mechanism, not column mapping (covered by the e2e tests above).
+    async fn assert_per_file_pruning(predicate_lo: i64, expect_pruned: bool, expect_rows: usize) {
+        use datafusion::prelude::{col, lit};
+        use datafusion_datasource::file::FileSource;
+        use datafusion_physical_plan::metrics::MetricValue;
+        use delta_kernel::sm_plans::ir::nodes::FileType;
+
+        // Logical single-column file schema `id: Int64`, one data file `id ∈ [10, 20]`.
+        let file_schema = Arc::new(Schema::new(vec![Field::new("id", DataType::Int64, true)]));
+        let batch = RecordBatch::try_new(
+            file_schema.clone(),
+            vec![Arc::new(Int64Array::from(vec![10i64, 15, 20])) as ArrayRef],
+        )
+        .unwrap();
+        let mut buf = Vec::new();
+        let mut w = ArrowWriter::try_new(&mut buf, file_schema.clone(), None).unwrap();
+        w.write(&batch).unwrap();
+        w.close().unwrap();
+        let size = buf.len();
+
+        let store = InMemory::new();
+        store
+            .put(&Path::from("data.parquet"), PutPayload::from(buf))
+            .await
+            .unwrap();
+        let store = Arc::new(store);
+        let base = Url::parse("memory:///").unwrap();
+
+        // Build the file source with the logical pushdown predicate `id >= predicate_lo`.
+        let df_schema =
+            datafusion_common::DFSchema::try_from(file_schema.as_ref().clone()).unwrap();
+        let ctx = datafusion::execution::context::SessionContext::new();
+        ctx.runtime_env()
+            .register_object_store(&base, Arc::clone(&store) as Arc<dyn ObjectStore>);
+        let predicate = ctx
+            .create_physical_expr(col("id").gt_eq(lit(predicate_lo)), &df_schema)
+            .unwrap();
+        let file_source = crate::exec::load_helpers::build_file_source(
+            FileType::Parquet,
+            &file_schema,
+            1,
+            None,
+            Some(predicate),
+        )
+        .unwrap();
+
+        // Attach per-file stats matching the data (id ∈ [10,20], tight, no nulls).
+        let stats = Arc::new(Statistics {
+            num_rows: Precision::Exact(3),
+            total_byte_size: Precision::Absent,
+            column_statistics: vec![datafusion_common::ColumnStatistics {
+                null_count: Precision::Exact(0),
+                min_value: Precision::Exact(ScalarValue::Int64(Some(10))),
+                max_value: Precision::Exact(ScalarValue::Int64(Some(20))),
+                sum_value: Precision::Absent,
+                distinct_count: Precision::Absent,
+                byte_size: Precision::Absent,
+            }],
+        });
+
+        let inputs = crate::exec::load_helpers::RowInputs {
+            url: base.join("data.parquet").unwrap(),
+            size: size as i64,
+            partition_values: vec![],
+            raw_path: "data.parquet".to_string(),
+        };
+        let task_ctx = ctx.task_ctx();
+        let plan = crate::exec::load_helpers::build_per_file_plan(
+            inputs,
+            Arc::<dyn FileSource>::clone(&file_source),
+            FileType::Parquet,
+            &file_schema,
+            task_ctx.as_ref(),
+            Some(stats),
+        )
+        .await
+        .unwrap();
+
+        // Execute and count rows.
+        let mut stream = plan.execute(0, task_ctx).unwrap();
+        let mut rows = 0usize;
+        while let Some(b) = stream.next().await {
+            rows += b.unwrap().num_rows();
+        }
+        assert_eq!(
+            rows, expect_rows,
+            "row count (predicate id >= {predicate_lo})"
+        );
+
+        // Read `files_ranges_pruned_statistics` off the exec's own metrics.
+        let pruned = plan
+            .metrics()
+            .map(|m| {
+                m.iter()
+                    .filter_map(|mv| match mv.value() {
+                        MetricValue::PruningMetrics {
+                            name,
+                            pruning_metrics,
+                        } if name.as_ref() == "files_ranges_pruned_statistics" => {
+                            Some(pruning_metrics.pruned())
+                        }
+                        _ => None,
+                    })
+                    .sum::<usize>()
+            })
+            .unwrap_or(0);
+        if expect_pruned {
+            assert_eq!(pruned, 1, "out-of-range predicate must prune the file");
+        } else {
+            assert_eq!(pruned, 0, "in-range predicate must not prune the file");
+        }
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn per_file_predicate_prunes_out_of_range_file() {
+        // `id >= 100` vs a file with id ∈ [10,20] → pruned, 0 rows.
+        assert_per_file_pruning(100, true, 0).await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn per_file_predicate_keeps_in_range_file() {
+        // `id >= 5` vs a file with id ∈ [10,20] → kept, 3 rows, 0 pruned.
+        assert_per_file_pruning(5, false, 3).await;
     }
 }
