@@ -57,19 +57,15 @@ keywords = [
 # reconciliation fix, the stats-on-terminal scan metadata SM, the SSA
 # data-skipping FilterNode on the scan terminal, and the logical scan-file-row
 # terminal + `Scan::scan_file_row_schema` accessor) and the
-# matching delta-rs rev e6a80cbe (= the olai/sm-plans
-# tip a686c3be plus one-line Cargo bumps of delta-rs's own kernel pin to
-# 1c1bf21b). This is the rev the wasm query engine (`crates/query-wasm` +
-# `delta-df-provider`) requires for its async-native sm_plans path.
-#
-# NOTE: this bump to 583d6963 currently applies only to `olai-delta-df`'s own
-# kernel dep; delta-rs (`deltalake-core`, rev e6a80cbe) still pins its internal
-# kernel at 1c1bf21b, so the WHOLE-repo single-rev invariant is temporarily
-# relaxed. `olai-delta-df`'s native tests build their own snapshot at 583d6963,
-# so they are self-consistent; wasm SnapshotRef unification with deltalake-wasm
-# needs delta-rs bumped to 583d6963 too (a follow-up one-line delta-rs pin bump).
-# The extra commits are inside the `sm-plans` feature the native build never
-# enables, so the native surface is unchanged.
+# matching delta-rs rev 269f83c4 (= the olai/sm-plans
+# tip a686c3be plus one-line Cargo bumps of delta-rs's own kernel pin, most
+# recently to 583d6963). This is the rev the wasm query engine (`crates/query-wasm`
+# + `delta-df-provider`) requires for its async-native sm_plans path, and it is
+# now the WHOLE repo's rev — native + wasm share ONE kernel and ONE delta-rs rev
+# (the single-rev invariant): delta-rs's internal kernel pin was bumped to 583d6963
+# in lock-step with this bump, so `deltalake-core` and `delta_kernel` resolve to the
+# same kernel rev and their `Snapshot` types unify. The extra commits are inside the
+# `sm-plans` feature the native build never enables, so the native surface is unchanged.
 # `default-features = false` +
 # explicit `arrow-58` is REQUIRED: the kernel's `arrow` default alias is arrow-59
 # and delta_kernel_default_engine's `default` enables it, so leaving defaults on
@@ -83,7 +79,7 @@ delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/ro
   "arrow-58",
   "rustls",
 ] }
-deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "e6a80cbe712586b6b50a165dfa8a1487859336df", features = [
+deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "269f83c4", features = [
   "datafusion",
   "cloud",
 ] }
