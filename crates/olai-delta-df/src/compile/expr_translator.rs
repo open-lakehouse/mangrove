@@ -693,6 +693,181 @@ fn binary(l: Expr, op: Operator, r: Expr) -> Expr {
     Expr::BinaryExpr(BinaryExpr::new(Box::new(l), op, Box::new(r)))
 }
 
+// === Forward direction: DataFusion `Expr` -> kernel `Predicate` ===
+
+/// Best-effort lowering of a DataFusion boolean [`Expr`] to a kernel [`Predicate`] for
+/// **data skipping** on the `sm_plans` SSA scan path.
+///
+/// Column references are emitted as **logical** kernel column names (the leaf field name); the
+/// kernel rewrites logical -> physical itself when it derives the data-skipping predicate from
+/// `Scan::physical_predicate()`, so no column-mapping rename happens here.
+///
+/// This is deliberately *partial*: it returns `None` for any expression it cannot faithfully
+/// represent (opaque functions, unsupported scalar types, non-column comparison shapes, …).
+/// Dropping an untranslatable predicate is always **safe for correctness** because the provider
+/// reports `TableProviderFilterPushDown::Inexact` — DataFusion re-applies a `FilterExec` above the
+/// scan regardless, so a missed skip only costs a wasted file read, never a wrong answer. For the
+/// same reason, a conjunction lowers each conjunct independently and keeps the arms that *do*
+/// translate (`AND` of a translatable and an untranslatable arm becomes just the translatable arm),
+/// while an `OR` with any untranslatable arm must drop the *whole* disjunction (keeping one arm of
+/// an `OR` would wrongly prune rows the dropped arm would have kept).
+pub fn df_expr_to_kernel_pred(expr: &Expr) -> Option<Predicate> {
+    match expr {
+        Expr::BinaryExpr(BinaryExpr { left, op, right }) => match op {
+            Operator::And => {
+                // Independent conjuncts: keep whichever arms translate.
+                let arms: Vec<Predicate> = [left.as_ref(), right.as_ref()]
+                    .into_iter()
+                    .filter_map(df_expr_to_kernel_pred)
+                    .collect();
+                match arms.len() {
+                    0 => None,
+                    1 => arms.into_iter().next(),
+                    _ => Some(Predicate::and_from(arms)),
+                }
+            }
+            Operator::Or => {
+                // Disjunction is all-or-nothing: a dropped arm would under-constrain the OR.
+                let l = df_expr_to_kernel_pred(left)?;
+                let r = df_expr_to_kernel_pred(right)?;
+                Some(Predicate::or(l, r))
+            }
+            Operator::Eq
+            | Operator::NotEq
+            | Operator::Lt
+            | Operator::LtEq
+            | Operator::Gt
+            | Operator::GtEq
+            | Operator::IsDistinctFrom => df_comparison_to_kernel(*op, left, right),
+            _ => None,
+        },
+        Expr::Not(inner) => Some(Predicate::not(df_expr_to_kernel_pred(inner)?)),
+        Expr::IsNull(inner) => Some(Predicate::is_null(df_column_to_kernel(inner)?)),
+        Expr::IsNotNull(inner) => Some(Predicate::is_not_null(df_column_to_kernel(inner)?)),
+        // `col BETWEEN lo AND hi` == `col >= lo AND col <= hi`; expand when the range endpoints
+        // are literals so data skipping sees a bound on both sides.
+        Expr::Between(between) if !between.negated => {
+            let col = df_column_to_kernel(&between.expr)?;
+            let low = df_literal_to_kernel(&between.low)?;
+            let high = df_literal_to_kernel(&between.high)?;
+            Some(Predicate::and(
+                Predicate::ge(col.clone(), Expression::literal(low)),
+                Predicate::le(col, Expression::literal(high)),
+            ))
+        }
+        // Anything else (functions, opaque UDFs, casts, arithmetic, IN lists, …) is not
+        // representable in the data-skipping subset — drop it (safe under `Inexact`).
+        _ => None,
+    }
+}
+
+/// Lower a binary comparison `left <op> right` where exactly one side is a bare column reference
+/// and the other is a literal. Normalizes `literal <op> column` to `column <flipped op> literal`.
+fn df_comparison_to_kernel(op: Operator, left: &Expr, right: &Expr) -> Option<Predicate> {
+    // Resolve which side is the column and which is the literal, flipping the op if reversed.
+    let (col, lit_scalar, op) = match (df_column_to_kernel(left), df_literal_to_kernel(right)) {
+        (Some(col), Some(scalar)) => (col, scalar, op),
+        _ => {
+            let col = df_column_to_kernel(right)?;
+            let scalar = df_literal_to_kernel(left)?;
+            (col, scalar, flip_comparison_op(op))
+        }
+    };
+    let value = Expression::literal(lit_scalar);
+    Some(match op {
+        Operator::Eq => Predicate::eq(col, value),
+        Operator::NotEq => Predicate::ne(col, value),
+        Operator::Lt => Predicate::lt(col, value),
+        Operator::LtEq => Predicate::le(col, value),
+        Operator::Gt => Predicate::gt(col, value),
+        Operator::GtEq => Predicate::ge(col, value),
+        Operator::IsDistinctFrom => Predicate::distinct(col, value),
+        _ => return None,
+    })
+}
+
+/// Mirror a comparison operator for operand-order normalization (`a < b` <-> `b > a`).
+fn flip_comparison_op(op: Operator) -> Operator {
+    match op {
+        Operator::Lt => Operator::Gt,
+        Operator::LtEq => Operator::GtEq,
+        Operator::Gt => Operator::Lt,
+        Operator::GtEq => Operator::LtEq,
+        // Symmetric operators are unchanged.
+        other => other,
+    }
+}
+
+/// Extract a kernel column [`Expression`] from a DataFusion column reference, following
+/// `get_field` chains for nested columns (`a.b.c`). The emitted name is the **logical** column
+/// path — the kernel handles the logical -> physical rewrite. Returns `None` for anything that
+/// is not a pure column path.
+fn df_column_to_kernel(expr: &Expr) -> Option<Expression> {
+    let mut parts = Vec::new();
+    if !collect_column_path(expr, &mut parts) {
+        return None;
+    }
+    parts.reverse();
+    Some(Expression::column(parts))
+}
+
+/// Walk a (possibly nested) column reference, pushing field names **leaf-first**. Returns `false`
+/// on any non-column node. `get_field(inner, "field")` is DataFusion's nested-field accessor —
+/// the same shape [`column_to_df`] emits in the reverse direction.
+fn collect_column_path(expr: &Expr, parts: &mut Vec<String>) -> bool {
+    match expr {
+        Expr::Column(col) => {
+            parts.push(col.name.clone());
+            true
+        }
+        Expr::ScalarFunction(func) if func.name() == "get_field" => {
+            // args: [inner_expr, Utf8(field_name)]
+            let [inner, Expr::Literal(ScalarValue::Utf8(Some(field)), _)] = func.args.as_slice()
+            else {
+                return false;
+            };
+            parts.push(field.clone());
+            collect_column_path(inner, parts)
+        }
+        _ => false,
+    }
+}
+
+/// Convert a DataFusion literal [`Expr`] to a kernel [`Scalar`]. Returns `None` for a non-literal
+/// or a `ScalarValue` variant outside the data-skipping-relevant primitive set.
+fn df_literal_to_kernel(expr: &Expr) -> Option<Scalar> {
+    let Expr::Literal(value, _) = expr else {
+        return None;
+    };
+    df_scalar_value_to_kernel(value)
+}
+
+/// Mirror of [`scalar_value_to_df`]: DataFusion [`ScalarValue`] -> kernel [`Scalar`]. Covers the
+/// primitive types data skipping can compare on; complex/unsupported variants yield `None`.
+fn df_scalar_value_to_kernel(value: &ScalarValue) -> Option<Scalar> {
+    Some(match value {
+        ScalarValue::Int8(Some(v)) => Scalar::Byte(*v),
+        ScalarValue::Int16(Some(v)) => Scalar::Short(*v),
+        ScalarValue::Int32(Some(v)) => Scalar::Integer(*v),
+        ScalarValue::Int64(Some(v)) => Scalar::Long(*v),
+        ScalarValue::Float32(Some(v)) => Scalar::Float(*v),
+        ScalarValue::Float64(Some(v)) => Scalar::Double(*v),
+        ScalarValue::Utf8(Some(v))
+        | ScalarValue::LargeUtf8(Some(v))
+        | ScalarValue::Utf8View(Some(v)) => Scalar::String(v.clone()),
+        ScalarValue::Boolean(Some(v)) => Scalar::Boolean(*v),
+        ScalarValue::Date32(Some(v)) => Scalar::Date(*v),
+        ScalarValue::TimestampMicrosecond(Some(v), Some(_)) => Scalar::Timestamp(*v),
+        ScalarValue::TimestampMicrosecond(Some(v), None) => Scalar::TimestampNtz(*v),
+        ScalarValue::Binary(Some(v)) | ScalarValue::LargeBinary(Some(v)) => {
+            Scalar::Binary(v.clone())
+        }
+        // NULL literals, decimals (need precise scale reconstruction), and complex/other variants
+        // are not lowered — a comparison against them can't drive useful skipping anyway.
+        _ => return None,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
@@ -853,5 +1028,102 @@ mod tests {
     fn opaque_predicate_returns_unsupported() {
         let err = kernel_pred_to_df(&Pred::unknown("mystery")).unwrap_err();
         assert!(format!("{err}").contains("Unknown"));
+    }
+}
+
+/// Forward direction: DataFusion [`Expr`] -> kernel [`Predicate`] data-skipping lowering.
+#[cfg(test)]
+mod forward_tests {
+    use datafusion_expr::{col, lit};
+    use datafusion_functions::core::expr_fn::get_field;
+
+    use super::df_expr_to_kernel_pred;
+
+    /// Lower a DataFusion boolean `Expr` and render the kernel predicate for assertion.
+    fn lower(e: datafusion_expr::Expr) -> String {
+        format!(
+            "{}",
+            df_expr_to_kernel_pred(&e).expect("expected a lowered predicate")
+        )
+    }
+
+    // Note on rendered form: the kernel's `Predicate::{ge,le}` builders desugar to the canonical
+    // `NOT(a < b)` / `NOT(a > b)`, and `is_not_null` to `NOT(a IS NULL)`. The data-skipping
+    // rewriter handles those negated forms; the assertions below match the kernel's Display.
+
+    #[test]
+    fn lowers_comparisons() {
+        assert_eq!(lower(col("id").eq(lit(4i64))), "Column(id) = 4");
+        assert_eq!(lower(col("id").gt_eq(lit(4i64))), "NOT(Column(id) < 4)");
+        assert_eq!(lower(col("id").lt(lit(10i64))), "Column(id) < 10");
+        assert_eq!(lower(col("id").not_eq(lit(4i64))), "NOT(Column(id) = 4)");
+    }
+
+    #[test]
+    fn normalizes_literal_on_the_left() {
+        // `4 <= id` must become `id >= 4` (column on the left), not silently drop.
+        assert_eq!(lower(lit(4i64).lt_eq(col("id"))), "NOT(Column(id) < 4)");
+        assert_eq!(lower(lit(4i64).gt(col("id"))), "Column(id) < 4");
+    }
+
+    #[test]
+    fn lowers_and_or_not_and_null_checks() {
+        assert_eq!(
+            lower(col("id").gt_eq(lit(4i64)).and(col("id").lt(lit(6i64)))),
+            "AND(NOT(Column(id) < 4), Column(id) < 6)"
+        );
+        assert_eq!(
+            lower(col("id").eq(lit(1i64)).or(col("id").eq(lit(9i64)))),
+            "OR(Column(id) = 1, Column(id) = 9)"
+        );
+        assert_eq!(lower(col("id").is_null()), "Column(id) IS NULL");
+        assert_eq!(lower(col("id").is_not_null()), "NOT(Column(id) IS NULL)");
+        assert_eq!(
+            lower(datafusion_expr::not(col("id").eq(lit(4i64)))),
+            "NOT(Column(id) = 4)"
+        );
+    }
+
+    #[test]
+    fn between_expands_to_bounded_and() {
+        assert_eq!(
+            lower(col("id").between(lit(2i64), lit(5i64))),
+            "AND(NOT(Column(id) < 2), NOT(Column(id) > 5))"
+        );
+    }
+
+    #[test]
+    fn nested_column_path_lowers_to_dotted_ref() {
+        assert_eq!(
+            lower(get_field(col("addr"), "zip").eq(lit(90210i64))),
+            "Column(addr.zip) = 90210"
+        );
+    }
+
+    #[test]
+    fn and_keeps_translatable_arm_drops_untranslatable() {
+        // `id >= 4 AND upper(name) = 'X'`: the function arm can't lower, but the range arm must
+        // survive (AND is independently prunable).
+        let func = datafusion_functions::string::expr_fn::upper(col("name")).eq(lit("X"));
+        let e = col("id").gt_eq(lit(4i64)).and(func);
+        assert_eq!(lower(e), "NOT(Column(id) < 4)");
+    }
+
+    #[test]
+    fn or_with_untranslatable_arm_drops_whole_disjunction() {
+        // Keeping just one arm of an OR would under-constrain it and wrongly prune — must be None.
+        let func = datafusion_functions::string::expr_fn::upper(col("name")).eq(lit("X"));
+        let e = col("id").eq(lit(4i64)).or(func);
+        assert!(df_expr_to_kernel_pred(&e).is_none());
+    }
+
+    #[test]
+    fn untranslatable_expressions_return_none() {
+        // A bare function predicate, an arithmetic comparison, and a column-vs-column comparison
+        // are all outside the data-skipping subset.
+        let func = datafusion_functions::string::expr_fn::upper(col("name")).eq(lit("X"));
+        assert!(df_expr_to_kernel_pred(&func).is_none());
+        assert!(df_expr_to_kernel_pred(&(col("a") + lit(1i64)).gt(lit(5i64))).is_none());
+        assert!(df_expr_to_kernel_pred(&col("a").eq(col("b"))).is_none());
     }
 }
