@@ -171,7 +171,7 @@ impl DeltaSsaTableProvider {
 /// rewrites the logical column refs to physical itself (via `Scan::physical_predicate()`). `new()`
 /// passes `None` (schema only); `scan()` passes the lowered query filters. A `None` predicate
 /// produces a byte-identical plan to before.
-fn build_scan(snapshot: &SnapshotRef, predicate: Option<Predicate>) -> DfResult<Scan> {
+pub(crate) fn build_scan(snapshot: &SnapshotRef, predicate: Option<Predicate>) -> DfResult<Scan> {
     ScanBuilder::new(snapshot.clone())
         .with_stats(StatsOptions::all_struct())
         .with_predicate(predicate.map(Arc::new))

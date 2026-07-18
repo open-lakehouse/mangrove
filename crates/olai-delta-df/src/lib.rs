@@ -9,6 +9,7 @@ pub mod compile;
 pub mod error;
 pub mod exec;
 pub mod executor;
+pub mod log_explorer;
 pub mod provider;
 pub mod session;
 pub mod snapshot_build;
@@ -16,6 +17,7 @@ pub mod snapshot_build;
 pub mod testing;
 
 pub use executor::DataFusionExecutor;
+pub use log_explorer::ReconciledLogProvider;
 pub use provider::{DeltaSsaScanConfig, DeltaSsaTableProvider};
 pub use session::{
     DeltaEngineSessionExt, DeltaEngineSessionOptions, configure_delta_engine_config,
