@@ -7,10 +7,11 @@
 // `logQueryRunner` throws `NoLogQueryRunnerError`, and the UI keeps its Delta-log
 // tab gated off (`hasLogQueryRunner()` reads false).
 //
-// The eventual runner registers the async-native `ReconciledLogProvider`
-// (crates/olai-delta-df) under a fixed logical table name and streams Arrow IPC.
-// There is no generated proto contract for this surface yet, so the request
-// shape is defined locally rather than derived from protobuf.
+// The runner addresses the log surface by `target` (the physical table) + `kind`,
+// binds the async-native `ReconciledLogProvider` / `ActionsLogProvider`
+// (crates/olai-delta-df), and streams Arrow IPC. There is no generated proto
+// contract for this surface yet, so the request shape is defined locally rather
+// than derived from protobuf.
 
 import type { LogSupportsInput } from "./types";
 
@@ -20,15 +21,14 @@ import type { LogSupportsInput } from "./types";
 export type LogKind = "reconciled" | "actions";
 
 /**
- * A reconciled-log query to execute. `sql` targets the fixed logical table name
- * the runner binds the provider to (see api.ts, one name per `kind`); `target`
- * carries the physical table (fully-qualified name or storage path) the runner
- * resolves and binds — it travels out-of-band from the SQL. A later
- * log-query-wasm impl may swap this for a generated contract type.
+ * A reconciled-log query to execute. The surface is addressed by `target` (the
+ * physical table, fully-qualified name or storage path) + `kind` (which log
+ * surface) — the runner resolves `target` and synthesizes its own execution (the
+ * wasm engine builds a `delta_reconciled_log('target')` / `delta_log_actions('target')`
+ * table-function query). A later log-query-wasm impl may swap this for a generated
+ * contract type.
  */
 export interface LogQueryRequest {
-  /** SQL over the fixed logical table the runner registers. */
-  sql: string;
   /** Row cap (narrowed for the UI); the service applies a default. */
   limit?: number;
   /** The table whose reconciled log to scan — resolved by the runner. */
