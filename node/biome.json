@@ -92,6 +92,26 @@
           }
         }
       }
+    },
+    {
+      "includes": ["log-query/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@open-lakehouse/unity-catalog"],
+                    "message": "log-query is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on log-query (renders a Delta-log tab), never the reverse."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }
