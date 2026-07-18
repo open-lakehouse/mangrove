@@ -1,3 +1,5 @@
+import { LogQueryServiceProvider } from "@open-lakehouse/log-query";
+import { registerStubLogPreview } from "@open-lakehouse/log-query/testing";
 import { QueryServiceProvider } from "@open-lakehouse/query";
 import { registerWasmPreview } from "@open-lakehouse/query-wasm";
 import {
@@ -35,6 +37,13 @@ registerWasmPreview({
   baseUrl: `${window.location.origin}/api/2.1/unity-catalog`,
 });
 
+// Register the dev stub log-query runner so the Delta-log tab (in TableDetail)
+// renders a canned reconciled-log dataset end-to-end without wasm. This is the
+// scaffold's data source; the real ReconciledLogProvider wasm runner is a
+// follow-up. The tab is gated on hasLogQueryRunner(), so registering here is
+// what lights it up for Delta tables.
+registerStubLogPreview();
+
 const queryClient = new QueryClient();
 const router = createAppRouter(queryClient);
 
@@ -50,15 +59,20 @@ createRoot(rootElement).render(
             gated off (see @open-lakehouse/query). A host or the future wasm engine
             registers a runner via registerQueryRunner to light it up. */}
         <QueryServiceProvider>
-          {/* Single-environment app: one stable scope namespace for the UC tree. */}
-          <EnvironmentScopeProvider scopeId="uc">
-            <ThemeProvider>
-              <TooltipProvider delayDuration={300}>
-                <RouterProvider router={router} />
-                <Toaster position="bottom-right" />
-              </TooltipProvider>
-            </ThemeProvider>
-          </EnvironmentScopeProvider>
+          {/* The Delta-log seam, beside the preview seam. The stub runner above
+              backs it in this build; a host / the future wasm engine swaps in a
+              real runner via registerLogQueryRunner (see @open-lakehouse/log-query). */}
+          <LogQueryServiceProvider>
+            {/* Single-environment app: one stable scope namespace for the UC tree. */}
+            <EnvironmentScopeProvider scopeId="uc">
+              <ThemeProvider>
+                <TooltipProvider delayDuration={300}>
+                  <RouterProvider router={router} />
+                  <Toaster position="bottom-right" />
+                </TooltipProvider>
+              </ThemeProvider>
+            </EnvironmentScopeProvider>
+          </LogQueryServiceProvider>
         </QueryServiceProvider>
       </UnityCatalogProvider>
     </QueryClientProvider>

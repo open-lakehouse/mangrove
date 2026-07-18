@@ -1,9 +1,10 @@
-// The data-preview section of TableDetail. Additive and dark-launched: it
-// renders nothing unless (1) the preview feature flag is on, (2) a query runner
-// has been registered (the standalone build registers none — see
+// The data-preview surface of TableDetail (its own "Preview" tab). Additive and
+// dark-launched: it's shown only when (1) the preview feature flag is on, (2) a
+// query runner has been registered (the standalone build registers none — see
 // @open-lakehouse/query), and (3) the service supports this table. So the
-// standalone website ships with no preview shown, and a host / the future wasm
-// engine lights it up by registering a runner.
+// standalone website ships with no preview, and a host / the future wasm engine
+// lights it up by registering a runner. `useTablePreviewVisible` exposes that
+// gate so TableDetail can hide the tab trigger too (no empty, inert pane).
 //
 // The `usePreview` hook must run unconditionally, so the gate lives in
 // `TablePreview` and the hook lives in the inner `PreviewGrid`.
@@ -19,6 +20,21 @@ import { Table2 } from "lucide-react";
 // Vite statically replaces import.meta.env.*; undefined/"false" → off.
 const PREVIEW_ENABLED = import.meta.env.VITE_ENABLE_PREVIEW === "true";
 
+/** Whether the preview tab should be offered for this table: feature flag +
+ *  a registered runner + the runner's capability probe. A hook because the
+ *  capability check reads the query service from context. */
+export function useTablePreviewVisible({
+  format,
+  tableType,
+}: {
+  format?: string;
+  tableType?: string;
+}): boolean {
+  const svc = useQueryService();
+  if (!PREVIEW_ENABLED || !hasQueryRunner()) return false;
+  return svc.supports({ format, tableType });
+}
+
 export function TablePreview({
   fullName,
   format,
@@ -28,11 +44,10 @@ export function TablePreview({
   format?: string;
   tableType?: string;
 }) {
-  const svc = useQueryService();
-
-  // Gate before touching the hook: flag + a registered runner + capability.
-  if (!PREVIEW_ENABLED || !hasQueryRunner()) return null;
-  if (!svc.supports({ format, tableType })) return null;
+  // Defence in depth: the tab trigger is gated on useTablePreviewVisible, but
+  // guard here too so an unconditional render never touches the hook when off.
+  const visible = useTablePreviewVisible({ format, tableType });
+  if (!visible) return null;
 
   return (
     <div>

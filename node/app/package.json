@@ -11,6 +11,7 @@
     "lint": "biome check ."
   },
   "dependencies": {
+    "@open-lakehouse/log-query": "^0.1.0",
     "@open-lakehouse/query": "^0.1.0",
     "@open-lakehouse/query-wasm": "^0.1.0",
     "@open-lakehouse/ui-kit": "^0.1.0",

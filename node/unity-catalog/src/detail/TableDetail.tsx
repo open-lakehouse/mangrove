@@ -1,3 +1,4 @@
+import { hasLogQueryRunner } from "@open-lakehouse/log-query";
 import {
   Tabs,
   TabsContent,
@@ -8,16 +9,33 @@ import { useTableDetail } from "@open-lakehouse/unity-catalog-client";
 import { useState } from "react";
 
 import { SectionLabel } from "../SectionLabel";
+import { DeltaLogTab } from "./DeltaLogTab";
 import { DetailStates } from "./DetailStates";
 import { FormatIcon } from "./FormatIcon";
 import { formatTimestamp, Meta, MetaGrid } from "./Meta";
-import { TablePreview } from "./TablePreview";
+import { TablePreview, useTablePreviewVisible } from "./TablePreview";
 import { TypePill } from "./TypePill";
+
+type TableView = "overview" | "details" | "preview" | "delta-log";
 
 export function TableDetail({ fullName }: { fullName: string }) {
   const { data: table, isLoading, error } = useTableDetail(fullName);
-  const [view, setView] = useState<"overview" | "details">("overview");
+  const [view, setView] = useState<TableView>("overview");
+  // Hooks must run unconditionally, so compute preview visibility before the
+  // early return; the fields are undefined until `table` loads, which the gate
+  // treats as unsupported.
+  const showPreview = useTablePreviewVisible({
+    format: table?.data_source_format,
+    tableType: table?.table_type,
+  });
   if (!table) return <DetailStates isLoading={isLoading} error={error} />;
+
+  // The Delta-log tab appears only when a log-query runner is registered (the
+  // standalone build registers none) and the table is Delta — otherwise the
+  // trigger would open onto an empty, inert pane.
+  const showLog =
+    hasLogQueryRunner() &&
+    (table.data_source_format ?? "").toUpperCase() === "DELTA";
 
   // A managed table's storage_location is a UC-internal path under the
   // metastore root (a long UUID-laden URI that's noise to the user). We surface
@@ -25,13 +43,12 @@ export function TableDetail({ fullName }: { fullName: string }) {
   const managed = table.table_type === "MANAGED";
 
   return (
-    <Tabs
-      value={view}
-      onValueChange={(v) => setView(v as "overview" | "details")}
-    >
+    <Tabs value={view} onValueChange={(v) => setView(v as TableView)}>
       <TabsList>
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="details">Details</TabsTrigger>
+        {showPreview && <TabsTrigger value="preview">Preview</TabsTrigger>}
+        {showLog && <TabsTrigger value="delta-log">Delta log</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="overview" className="space-y-6">
@@ -79,12 +96,6 @@ export function TableDetail({ fullName }: { fullName: string }) {
             <p className="text-sm text-muted-foreground">No column metadata.</p>
           )}
         </div>
-
-        <TablePreview
-          fullName={fullName}
-          format={table.data_source_format}
-          tableType={table.table_type}
-        />
       </TabsContent>
 
       <TabsContent value="details">
@@ -134,6 +145,26 @@ export function TableDetail({ fullName }: { fullName: string }) {
           </MetaGrid>
         </section>
       </TabsContent>
+
+      {showPreview && (
+        <TabsContent value="preview">
+          <TablePreview
+            fullName={fullName}
+            format={table.data_source_format}
+            tableType={table.table_type}
+          />
+        </TabsContent>
+      )}
+
+      {showLog && (
+        <TabsContent value="delta-log">
+          <DeltaLogTab
+            fullName={fullName}
+            format={table.data_source_format}
+            tableType={table.table_type}
+          />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
