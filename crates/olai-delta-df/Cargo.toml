@@ -10,10 +10,11 @@
 #   * arrow-58 via the kernel `arrow-58` feature alias (the roeap arrow-rs fork,
 #     patched workspace-globally by the parent query-wasm Cargo.toml). Arrow is
 #     imported through `delta_kernel::arrow::…` so there is ONE arrow in the graph.
-#   * `delta_kernel` at the sm-plans-consolidation tip (1c1bf21b — 2cf01549 plus the
+#   * `delta_kernel` at the sm-plans-consolidation tip (583d6963 — 2cf01549 plus the
 #     list-free snapshot-construction seam, the SnapshotPm P&M state machine, the
-#     checkpoint-only reconciliation fix, the stats-on-terminal scan metadata SM, and
-#     the SSA data-skipping FilterNode on the scan terminal)
+#     checkpoint-only reconciliation fix, the stats-on-terminal scan metadata SM, the
+#     SSA data-skipping FilterNode on the scan terminal, and the logical scan-file-row
+#     terminal + `Scan::scan_file_row_schema` accessor this crate's `ReconciledLogProvider` uses)
 #     with `sm-plans` + `internal-api` + `arrow-58`.
 #     A workspace `[patch]` (parent query-wasm Cargo.toml) redirects `deltalake-wasm`'s
 #     transitive kernel onto the same rev, so kernel `SnapshotRef` unifies across the graph.
@@ -47,7 +48,7 @@ test-utils = []
 # `internal-api` exposes the plan IR the compiler walks; `arrow-58` selects the
 # roeap arrow major (paired with `need-arrow`, kernel designs this to pair
 # sm-plans with any arrow major). NO default-engine: v1 needs no kernel Engine.
-delta_kernel = { git = "https://github.com/roeap/delta-kernel-rs", rev = "1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023", package = "delta_kernel", default-features = false, features = [
+delta_kernel = { git = "https://github.com/roeap/delta-kernel-rs", rev = "583d6963dfa5acfe070f9cae602ecf89a6804bf8", package = "delta_kernel", default-features = false, features = [
   "sm-plans",
   "internal-api",
   "need-arrow",
@@ -107,7 +108,7 @@ olai_delta_df = { package = "olai-delta-df", path = ".", features = ["test-utils
 tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
 rstest = "0.23"
 tempfile = "3"
-delta_kernel_default_engine = { git = "https://github.com/roeap/delta-kernel-rs", rev = "1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023", package = "delta_kernel_default_engine", default-features = false, features = [
+delta_kernel_default_engine = { git = "https://github.com/roeap/delta-kernel-rs", rev = "583d6963dfa5acfe070f9cae602ecf89a6804bf8", package = "delta_kernel_default_engine", default-features = false, features = [
   "arrow-58",
   "rustls",
 ] }

@@ -51,28 +51,35 @@ keywords = [
 # dependency (git-sourced included) that lacks a version requirement. The
 # `git`+`rev` still governs the actual build; `version` only satisfies the
 # packaging check and matches each fork's declared version. See release-plz#2595.
-# Pinned to the delta-kernel-rs `sm-plans-consolidation` TIP (rev 1c1bf21b =
-# 2cf01549 plus 5 additive, `sm-plans`-gated commits: the list-free snapshot
+# Pinned to the delta-kernel-rs `sm-plans-consolidation` TIP (rev 583d6963 =
+# 2cf01549 plus 6 additive, `sm-plans`-gated commits: the list-free snapshot
 # construction seam, the SnapshotPm P&M state machine, the checkpoint-only
-# reconciliation fix, the stats-on-terminal scan metadata SM, and the SSA
-# data-skipping FilterNode on the scan terminal) and the
+# reconciliation fix, the stats-on-terminal scan metadata SM, the SSA
+# data-skipping FilterNode on the scan terminal, and the logical scan-file-row
+# terminal + `Scan::scan_file_row_schema` accessor) and the
 # matching delta-rs rev e6a80cbe (= the olai/sm-plans
 # tip a686c3be plus one-line Cargo bumps of delta-rs's own kernel pin to
 # 1c1bf21b). This is the rev the wasm query engine (`crates/query-wasm` +
-# `delta-df-provider`) requires for its async-native sm_plans path, and it is
-# now the WHOLE repo's rev — native + wasm share ONE kernel and ONE delta-rs rev
-# (the single-rev invariant). The 5 extra commits are inside the `sm-plans`
-# feature the native build never enables, so the native surface is unchanged.
+# `delta-df-provider`) requires for its async-native sm_plans path.
+#
+# NOTE: this bump to 583d6963 currently applies only to `olai-delta-df`'s own
+# kernel dep; delta-rs (`deltalake-core`, rev e6a80cbe) still pins its internal
+# kernel at 1c1bf21b, so the WHOLE-repo single-rev invariant is temporarily
+# relaxed. `olai-delta-df`'s native tests build their own snapshot at 583d6963,
+# so they are self-consistent; wasm SnapshotRef unification with deltalake-wasm
+# needs delta-rs bumped to 583d6963 too (a follow-up one-line delta-rs pin bump).
+# The extra commits are inside the `sm-plans` feature the native build never
+# enables, so the native surface is unchanged.
 # `default-features = false` +
 # explicit `arrow-58` is REQUIRED: the kernel's `arrow` default alias is arrow-59
 # and delta_kernel_default_engine's `default` enables it, so leaving defaults on
 # unions arrow-59 into this arrow-58 graph and splits the two `Schema` types.
-delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023", default-features = false, features = [
+delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "583d6963dfa5acfe070f9cae602ecf89a6804bf8", default-features = false, features = [
   "internal-api",
   "default-engine-base",
   "arrow-58",
 ] }
-delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023", package = "delta_kernel_default_engine", default-features = false, features = [
+delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "583d6963dfa5acfe070f9cae602ecf89a6804bf8", package = "delta_kernel_default_engine", default-features = false, features = [
   "arrow-58",
   "rustls",
 ] }

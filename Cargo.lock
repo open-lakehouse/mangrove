@@ -2043,7 +2043,39 @@ dependencies = [
  "bytes",
  "chrono",
  "crc",
- "delta_kernel_derive",
+ "delta_kernel_derive 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023)",
+ "getrandom 0.3.4",
+ "indexmap",
+ "itertools 0.14.0",
+ "js-sys",
+ "object_store",
+ "parquet",
+ "percent-encoding",
+ "rand 0.9.4",
+ "reqwest 0.13.4",
+ "roaring",
+ "rustc_version",
+ "serde",
+ "serde_json",
+ "strum 0.28.0",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+ "z85",
+]
+
+[[package]]
+name = "delta_kernel"
+version = "0.25.0"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8#583d6963dfa5acfe070f9cae602ecf89a6804bf8"
+dependencies = [
+ "arrow",
+ "bytes",
+ "chrono",
+ "crc",
+ "delta_kernel_derive 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8)",
  "dyn-clone",
  "genawaiter2",
  "getrandom 0.3.4",
@@ -2077,7 +2109,27 @@ dependencies = [
  "async-trait",
  "bytes",
  "chrono",
- "delta_kernel",
+ "delta_kernel 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023)",
+ "futures",
+ "itertools 0.14.0",
+ "reqwest 0.13.4",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "delta_kernel_default_engine"
+version = "0.25.0"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8#583d6963dfa5acfe070f9cae602ecf89a6804bf8"
+dependencies = [
+ "async-stream",
+ "async-trait",
+ "bytes",
+ "chrono",
+ "delta_kernel 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8)",
  "futures",
  "itertools 0.14.0",
  "reqwest 0.13.4",
@@ -2092,6 +2144,16 @@ dependencies = [
 name = "delta_kernel_derive"
 version = "0.25.0"
 source = "git+https://github.com/roeap/delta-kernel-rs?rev=1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023#1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "delta_kernel_derive"
+version = "0.25.0"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8#583d6963dfa5acfe070f9cae602ecf89a6804bf8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2125,8 +2187,8 @@ dependencies = [
  "datafusion-datasource",
  "datafusion-physical-expr-adapter",
  "datafusion-proto",
- "delta_kernel",
- "delta_kernel_default_engine",
+ "delta_kernel 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023)",
+ "delta_kernel_default_engine 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023)",
  "deltalake-derive",
  "dirs",
  "either",
@@ -3828,8 +3890,8 @@ dependencies = [
  "datafusion-physical-expr-common",
  "datafusion-physical-optimizer",
  "datafusion-physical-plan",
- "delta_kernel",
- "delta_kernel_default_engine",
+ "delta_kernel 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8)",
+ "delta_kernel_default_engine 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8)",
  "futures",
  "object_store",
  "olai-delta-df",
@@ -3845,8 +3907,6 @@ dependencies = [
 [[package]]
 name = "olai-http"
 version = "0.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bf398776b5250009536d524aa3f6339a7bd623893a8a0c958e42e96783bad38"
 dependencies = [
  "async-trait",
  "base64",
@@ -3874,8 +3934,6 @@ dependencies = [
 [[package]]
 name = "olai-store"
 version = "0.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "114a5f83c8734b7917c5ab4ddbda3a76b8facca507961e3bf8f8a576c9ad1bc6"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -3995,8 +4053,8 @@ dependencies = [
  "bytes",
  "dashmap",
  "datafusion",
- "delta_kernel",
- "delta_kernel_default_engine",
+ "delta_kernel 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8)",
+ "delta_kernel_default_engine 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8)",
  "deltalake-core",
  "futures",
  "object_store",
@@ -4120,8 +4178,8 @@ dependencies = [
  "bytes",
  "chrono",
  "datafusion",
- "delta_kernel",
- "delta_kernel_default_engine",
+ "delta_kernel 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8)",
+ "delta_kernel_default_engine 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8)",
  "itertools 0.14.0",
  "object_store",
  "olai-uc-common",
@@ -4145,7 +4203,7 @@ dependencies = [
  "buffa",
  "buffa-types",
  "chrono",
- "delta_kernel",
+ "delta_kernel 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8)",
  "futures",
  "itertools 0.14.0",
  "olai-http",
@@ -6588,7 +6646,7 @@ name = "unitycatalog-client-py"
 version = "0.0.1"
 dependencies = [
  "chrono",
- "delta_kernel",
+ "delta_kernel 0.25.0 (git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8)",
  "futures",
  "olai-http",
  "olai-uc-client",
