@@ -142,8 +142,9 @@ export function createWasmQueryRunner(options: WasmQueryOptions): QueryRunner {
 /**
  * Build a {@link LogQueryRunner} executing reconciled-Delta-log previews in the
  * browser, mirroring {@link createWasmQueryRunner}. The physical table rides on
- * `req.target` (the SQL references a fixed logical name), and `req.kind` selects
- * the log surface (reconciled files vs. the reconciled action stream).
+ * `req.target` and `req.kind` selects the log surface (reconciled files vs. the
+ * reconciled action stream); the engine synthesizes its own
+ * `delta_*_log('target')` table-function query, so no SQL is sent.
  */
 export function createWasmLogQueryRunner(
   options: WasmQueryOptions,
@@ -154,7 +155,6 @@ export function createWasmLogQueryRunner(
         type: "run-log",
         baseUrl: options.baseUrl,
         authToken: options.authToken,
-        sql: req.sql,
         limit: req.limit,
         target: req.target ?? "",
         kind: req.kind ?? "reconciled",

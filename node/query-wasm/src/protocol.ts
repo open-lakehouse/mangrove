@@ -18,17 +18,19 @@ export interface RunMessage {
 }
 
 /** Main → worker: start the (single) reconciled-Delta-log query this worker
- *  exists for. Unlike `RunMessage`, the physical table rides on `target` (the
- *  SQL references a fixed logical name), and `kind` selects the log surface. */
+ *  exists for. Unlike `RunMessage`, there is no SQL — the physical table rides on
+ *  `target` and `kind` selects the log surface; the engine synthesizes its own
+ *  `delta_*_log('target')` table-function query. */
 export interface LogRunMessage {
   type: "run-log";
   /** Unity Catalog REST base, e.g. `${origin}/api/2.1/unity-catalog`. */
   baseUrl: string;
   /** Optional bearer for the UC API (same-origin cookies flow regardless). */
   authToken?: string;
-  sql: string;
   limit?: number;
+  /** Default catalog for a bare `target` (a fully-qualified target ignores it). */
   catalog?: string;
+  /** Default schema for a bare `target` (a fully-qualified target ignores it). */
   schema?: string;
   /** The physical table whose log to scan. */
   target: string;

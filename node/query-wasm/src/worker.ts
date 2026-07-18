@@ -37,8 +37,12 @@ self.onmessage = async (event: MessageEvent<RunMessage | LogRunMessage>) => {
             },
             onBatch,
           )
-        : await engine.runLogQuery(
-            request.sql,
+        : // The log surface is addressed by `target` + `kind`; the engine
+          // synthesizes its own `delta_*_log('target')` query, so the `sql`
+          // parameter is vestigial (kept in the wasm-bindgen signature to avoid a
+          // crate rebuild) — pass an empty string.
+          await engine.runLogQuery(
+            "",
             {
               limit: request.limit,
               catalog: request.catalog,

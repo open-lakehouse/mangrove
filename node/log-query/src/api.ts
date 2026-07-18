@@ -1,11 +1,11 @@
 // The default `LogQueryService` implementation and its mutable default slot.
 //
-// `createLogQueryService` is transport-agnostic: it builds SQL over the fixed
-// logical reconciled-log table, drives the low-level `logQueryRunner` seam
-// (runner.ts), and streams the resulting Arrow IPC chunks into an
-// `ArrowResultStore` for `<DataGrid>`. Which runner actually executes is the
-// host's / a later phase's decision — this file never imports a transport.
-// Mirrors @open-lakehouse/query's api.ts.
+// `createLogQueryService` is transport-agnostic: it addresses the log surface by
+// `target` (the physical table) + `kind` (reconciled files vs. the action stream),
+// drives the low-level `logQueryRunner` seam (runner.ts), and streams the resulting
+// Arrow IPC chunks into an `ArrowResultStore` for `<DataGrid>`. Which runner
+// actually executes is the host's / a later phase's decision — this file never
+// imports a transport. Mirrors @open-lakehouse/query's api.ts.
 //
 // The default slot (`setDefaultLogQueryService` / `defaultLogQueryService`)
 // mirrors `setDefaultQueryService`: a host can repoint the app-wide service once
@@ -23,21 +23,6 @@ import type {
 
 /** Default row cap when a request omits `limit`. */
 const DEFAULT_LOG_LIMIT = 100;
-
-// The fixed logical table name the runner binds each log surface's provider to,
-// keyed by kind. The target table is NOT interpolated into the FROM clause — it
-// rides on the request (see LogQueryRequest.target) so the runner registers the
-// provider for that table under this name. These names must match the ones the
-// wasm engine registers under (crates/query-wasm bindings.rs).
-const LOG_TABLE: Record<LogKind, string> = {
-  reconciled: "reconciled_log",
-  actions: "action_log",
-};
-
-// Build `SELECT * FROM <kind's table> LIMIT <n>`.
-function buildLogSql(kind: LogKind, limit: number): string {
-  return `SELECT * FROM ${LOG_TABLE[kind]} LIMIT ${limit}`;
-}
 
 // Internal handle: owns the store, a subscriber set, and the run lifecycle. A
 // single monotonic `version` is the `useSyncExternalStore` snapshot; it bumps on
@@ -61,7 +46,7 @@ class LogPreviewRun implements LogPreviewHandle {
         once: true,
       });
     }
-    void this.drive(buildLogSql(kind, limit), req.target, kind);
+    void this.drive(req.target, kind, limit);
   }
 
   get version(): number {
@@ -89,13 +74,15 @@ class LogPreviewRun implements LogPreviewHandle {
   }
 
   private async drive(
-    sql: string,
     target: string,
     kind: LogKind,
+    limit: number,
   ): Promise<void> {
     try {
+      // The surface is addressed by `target` + `kind`; the runner synthesizes the
+      // execution (the wasm engine builds a `delta_*_log('target')` UDTF query).
       for await (const chunk of logQueryRunner(
-        { sql, limit: undefined, target, kind },
+        { target, kind, limit },
         { signal: this.controller.signal },
       )) {
         this.store.append(chunk.arrowIpc);
