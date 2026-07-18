@@ -1551,7 +1551,7 @@ dependencies = [
 [[package]]
 name = "delta_kernel"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023#1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8#583d6963dfa5acfe070f9cae602ecf89a6804bf8"
 dependencies = [
  "arrow",
  "bytes",
@@ -1585,7 +1585,7 @@ dependencies = [
 [[package]]
 name = "delta_kernel_default_engine"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023#1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8#583d6963dfa5acfe070f9cae602ecf89a6804bf8"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -1605,7 +1605,7 @@ dependencies = [
 [[package]]
 name = "delta_kernel_derive"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023#1c1bf21b4259b873c1c3cbcfdfe79d1da82ea023"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=583d6963dfa5acfe070f9cae602ecf89a6804bf8#583d6963dfa5acfe070f9cae602ecf89a6804bf8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1615,7 +1615,7 @@ dependencies = [
 [[package]]
 name = "deltalake-core"
 version = "0.32.4"
-source = "git+https://github.com/roeap/delta-rs?rev=e6a80cbe712586b6b50a165dfa8a1487859336df#e6a80cbe712586b6b50a165dfa8a1487859336df"
+source = "git+https://github.com/roeap/delta-rs?rev=269f83c452517fb6b95d32940175f9f46d3c1314#269f83c452517fb6b95d32940175f9f46d3c1314"
 dependencies = [
  "alloc-stdlib",
  "arrow",
@@ -1673,7 +1673,7 @@ dependencies = [
 [[package]]
 name = "deltalake-derive"
 version = "0.32.4"
-source = "git+https://github.com/roeap/delta-rs?rev=e6a80cbe712586b6b50a165dfa8a1487859336df#e6a80cbe712586b6b50a165dfa8a1487859336df"
+source = "git+https://github.com/roeap/delta-rs?rev=269f83c452517fb6b95d32940175f9f46d3c1314#269f83c452517fb6b95d32940175f9f46d3c1314"
 dependencies = [
  "convert_case",
  "itertools",
@@ -1685,7 +1685,7 @@ dependencies = [
 [[package]]
 name = "deltalake-wasm"
 version = "0.1.0"
-source = "git+https://github.com/roeap/delta-rs?rev=e6a80cbe712586b6b50a165dfa8a1487859336df#e6a80cbe712586b6b50a165dfa8a1487859336df"
+source = "git+https://github.com/roeap/delta-rs?rev=269f83c452517fb6b95d32940175f9f46d3c1314#269f83c452517fb6b95d32940175f9f46d3c1314"
 dependencies = [
  "arrow-ipc",
  "async-trait",

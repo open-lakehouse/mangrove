@@ -40,12 +40,12 @@ name = "query_wasm"
 crate-type = ["cdylib", "rlib"]
 
 # The delta-rs wasm engine, pinned by immutable rev to the roeap fork's
-# `feat/kernel-snapshot-accessor` branch (rev e6a80cbe): the sm-plans/wasm line
+# `feat/kernel-snapshot-accessor` branch (rev 269f83c4): the sm-plans/wasm line
 # with `feat/wasm-max-catalog-version` (so `OpenOptions.max_catalog_version` — the
 # discovery-version thread — is retained) and its `delta_kernel` bumped to the
-# sm-plans-consolidation tip `1c1bf21b` (adds the SSA data-skipping FilterNode).
-# Both deps resolve from one git source and
-# pin the SAME kernel rev the `delta-df-provider` sibling pins directly, so exactly
+# sm-plans-consolidation tip `583d6963` (adds the logical scan-file-row terminal +
+# `Scan::scan_file_row_schema` accessor). Both deps resolve from one git source and
+# pin the SAME kernel rev the `olai-delta-df` sibling pins directly, so exactly
 # one `delta_kernel` is in the graph and `SnapshotRef` unifies across it.
 #
 # NOTE (follow-up): async-native construction no longer uses the facade's
@@ -53,8 +53,8 @@ crate-type = ["cdylib", "rlib"]
 # deltalake-wasm/-core deps remain only for a now-dead `Error::Delta` variant and
 # are slated for removal (see the M3 follow-up issue).
 [dependencies]
-deltalake-wasm = { git = "https://github.com/roeap/delta-rs", rev = "e6a80cbe712586b6b50a165dfa8a1487859336df" }
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "e6a80cbe712586b6b50a165dfa8a1487859336df", default-features = false, features = [
+deltalake-wasm = { git = "https://github.com/roeap/delta-rs", rev = "269f83c452517fb6b95d32940175f9f46d3c1314" }
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "269f83c452517fb6b95d32940175f9f46d3c1314", default-features = false, features = [
   "datafusion",
 ] }
 
@@ -97,7 +97,7 @@ url = { version = "2.5" }
 # needs none (the browser supplies fetch), so re-add it natively only. Mirrors
 # deltalake-wasm's own manifest.
 [target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "e6a80cbe712586b6b50a165dfa8a1487859336df", default-features = false, features = [
+deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "269f83c452517fb6b95d32940175f9f46d3c1314", default-features = false, features = [
   "datafusion",
   "rustls",
 ] }

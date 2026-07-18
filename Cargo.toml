@@ -79,7 +79,7 @@ delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/ro
   "arrow-58",
   "rustls",
 ] }
-deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "269f83c4", features = [
+deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "269f83c452517fb6b95d32940175f9f46d3c1314", features = [
   "datafusion",
   "cloud",
 ] }
