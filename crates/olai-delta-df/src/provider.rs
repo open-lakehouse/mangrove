@@ -33,10 +33,12 @@ use datafusion_physical_expr_common::physical_expr::PhysicalExpr;
 use datafusion_physical_plan::ExecutionPlan;
 use delta_kernel::arrow::datatypes::SchemaRef as ArrowSchemaRef;
 use delta_kernel::engine::arrow_conversion::TryIntoArrow;
+use delta_kernel::expressions::Predicate;
 use delta_kernel::scan::{Scan, ScanBuilder, StatsOptions};
 use delta_kernel::snapshot::SnapshotRef;
 
 use crate::DataFusionExecutor;
+use crate::compile::expr_translator::df_expr_to_kernel_pred;
 use crate::compile::stats::build_file_statistics;
 
 /// Scan-time configuration for [`DeltaSsaTableProvider`]. Mirrors the subset of
@@ -88,8 +90,9 @@ impl DeltaSsaTableProvider {
     /// caller (natively, or via the `deltalake-wasm` facade on wasm); this provider derives
     /// everything else from the `Session` at scan time.
     pub fn new(snapshot: SnapshotRef, config: DeltaSsaScanConfig) -> DfResult<Self> {
-        // The logical schema is fixed by the snapshot; convert once for `schema()`.
-        let scan = build_scan(&snapshot)?;
+        // The logical schema is fixed by the snapshot; convert once for `schema()`. No predicate:
+        // this scan is only used to derive the logical schema, never driven.
+        let scan = build_scan(&snapshot, None)?;
         let arrow_schema: ArrowSchemaRef = Arc::new(
             scan.logical_schema()
                 .as_ref()
@@ -162,11 +165,33 @@ impl DeltaSsaTableProvider {
 /// terminal (no JSON synthesis — the cheapest option that makes `physical_stats_schema()` non-`None`
 /// so the stats SM's terminal carries a populated `stats` column). It has no effect on the primary
 /// (data) scan drive, which never projects `stats`; only the metadata-stats SM reads it.
-fn build_scan(snapshot: &SnapshotRef) -> DfResult<Scan> {
+///
+/// `predicate` is the **Layer 1** data-skipping predicate (logical-named): when `Some`, the
+/// `sm_plans` SSA scan path inserts a `FilterNode` over the reconciled `add.stats_parsed` rows so
+/// whole files can be pruned from the live-file list *before* they enter the plan. The kernel
+/// rewrites the logical column refs to physical itself (via `Scan::physical_predicate()`). `new()`
+/// passes `None` (schema only); `scan()` passes the lowered query filters. A `None` predicate
+/// produces a byte-identical plan to before.
+fn build_scan(snapshot: &SnapshotRef, predicate: Option<Predicate>) -> DfResult<Scan> {
     ScanBuilder::new(snapshot.clone())
         .with_stats(StatsOptions::all_struct())
+        .with_predicate(predicate.map(Arc::new))
         .build_replay()
         .map_err(crate::error::wrap_delta_err)
+}
+
+/// Lower a slice of DataFusion query `filters` to a single conjoined kernel data-skipping
+/// [`Predicate`] (Layer 1), or `None` if none of them translate. Each filter is lowered
+/// independently via [`df_expr_to_kernel_pred`] and the translatable ones are `AND`-ed — a filter
+/// that can't be represented in the data-skipping subset is simply omitted, which is safe because
+/// the provider reports `Inexact` (DataFusion re-applies the full filter above the scan).
+fn lower_skipping_predicate(filters: &[Expr]) -> Option<Predicate> {
+    let preds: Vec<Predicate> = filters.iter().filter_map(df_expr_to_kernel_pred).collect();
+    match preds.len() {
+        0 => None,
+        1 => preds.into_iter().next(),
+        _ => Some(Predicate::and_from(preds)),
+    }
 }
 
 #[async_trait]
@@ -224,7 +249,13 @@ impl TableProvider for DeltaSsaTableProvider {
         // must disable `enable_leaf_expression_pushdown` (validated above) — the FSR replay shape
         // otherwise trips `push_down_leaf_projections` with a `scan.add`/`add` ambiguity on
         // checkpointed tables (see `session::configure_delta_engine_config`, apache/datafusion#20432).
-        let scan = build_scan(&self.snapshot)?;
+        // Layer 1 (kernel file-list skipping): lower the query filters to a logical-named kernel
+        // data-skipping predicate. Best-effort — untranslatable filters drop to a coarser (or
+        // absent) predicate, which only forgoes a skip, never changes results (`Inexact` above +
+        // the kernel re-checks stats conservatively). The kernel's SSA scan path applies this as a
+        // `FilterNode` over `add.stats_parsed`, pruning whole files before they enter the plan.
+        let skipping_predicate = lower_skipping_predicate(filters);
+        let scan = build_scan(&self.snapshot, skipping_predicate)?;
         let sm = scan
             .scan_state_machine()
             .map_err(crate::error::wrap_delta_err)?;
@@ -450,7 +481,7 @@ mod stats_e2e_tests {
         )
         .expect("provider");
 
-        let scan = build_scan(provider.snapshot()).expect("scan");
+        let scan = build_scan(provider.snapshot(), None).expect("scan");
         let executor = DataFusionExecutor::new();
         let state = session.state();
         let map = provider
@@ -720,5 +751,76 @@ mod stats_e2e_tests {
     async fn per_file_predicate_keeps_in_range_file() {
         // `id >= 5` vs a file with id ∈ [10,20] → kept, 3 rows, 0 pruned.
         assert_per_file_pruning(5, false, 3).await;
+    }
+
+    /// **Layer 1** (kernel file-list skipping): with a lowered `id >= 4` predicate on the scan, the
+    /// `sm_plans` SSA path inserts a data-skipping `FilterNode` over `add.stats_parsed`, so file A
+    /// (`id ∈ [1,3]`) is dropped from the **kernel's live-file terminal** before it enters the plan.
+    ///
+    /// The metadata-stats SM emits one terminal row per *surviving* live file, so the per-file stats
+    /// map is the direct observation point: with the predicate the map holds only file B; without it
+    /// (`None`, the control) both files survive. This proves the kernel — not just DataFusion's
+    /// per-file pruner — skips the file. Asserted under both column-mapping modes since the kernel
+    /// rewrites the logical `id` ref to the physical name itself.
+    async fn assert_layer1_file_skipping(mode: &str) {
+        use datafusion::prelude::{col, lit};
+
+        let store = fixture(mode).await;
+        let session = delta_engine_session(
+            Arc::clone(&store) as Arc<dyn ObjectStore>,
+            &table_url(),
+            &DeltaEngineSessionOptions::wasm(),
+        );
+        let provider = DeltaSsaTableProvider::new(
+            snapshot(store),
+            DeltaSsaScanConfig {
+                schema_force_view_types: false,
+            },
+        )
+        .expect("provider");
+        let executor = DataFusionExecutor::new();
+        let state = session.state();
+
+        // Control: no predicate → the kernel enumerates both live files.
+        let scan_all = build_scan(provider.snapshot(), None).expect("scan (no predicate)");
+        let all = provider
+            .build_file_stats(&state, &executor, &scan_all)
+            .unwrap_or_else(|| panic!("[{mode}] expected stats for both files"));
+        assert_eq!(all.len(), 2, "[{mode}] control: both files live");
+
+        // With `id >= 4`: the kernel's data-skipping FilterNode drops file A (id ∈ [1,3]).
+        let filters = [col("id").gt_eq(lit(4i64))];
+        let predicate = lower_skipping_predicate(&filters);
+        assert!(
+            predicate.is_some(),
+            "[{mode}] `id >= 4` must lower to a skipping predicate"
+        );
+        let scan_pruned = build_scan(provider.snapshot(), predicate).expect("scan (predicate)");
+        let pruned = provider
+            .build_file_stats(&state, &executor, &scan_pruned)
+            .unwrap_or_else(|| panic!("[{mode}] file B still lives"));
+        assert_eq!(
+            pruned.len(),
+            1,
+            "[{mode}] kernel skipping must drop file A from the live-file list"
+        );
+        assert!(
+            pruned.contains_key("part-b.parquet"),
+            "[{mode}] the surviving file must be file B"
+        );
+        assert!(
+            !pruned.contains_key("part-a.parquet"),
+            "[{mode}] file A must be pruned by the kernel"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn layer1_file_skipping_name_mode() {
+        assert_layer1_file_skipping("name").await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn layer1_file_skipping_id_mode() {
+        assert_layer1_file_skipping("id").await;
     }
 }
