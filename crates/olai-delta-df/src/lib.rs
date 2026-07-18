@@ -17,7 +17,7 @@ pub mod snapshot_build;
 pub mod testing;
 
 pub use executor::DataFusionExecutor;
-pub use log_explorer::ReconciledLogProvider;
+pub use log_explorer::{ActionsLogProvider, ReconciledLogProvider};
 pub use provider::{DeltaSsaScanConfig, DeltaSsaTableProvider};
 pub use session::{
     DeltaEngineSessionExt, DeltaEngineSessionOptions, configure_delta_engine_config,

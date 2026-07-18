@@ -47,6 +47,7 @@ use datafusion_expr::{Expr, LogicalPlanBuilder, TableProviderFilterPushDown, Tab
 use datafusion_physical_plan::ExecutionPlan;
 use delta_kernel::arrow::datatypes::SchemaRef as ArrowSchemaRef;
 use delta_kernel::engine::arrow_conversion::TryIntoArrow;
+use delta_kernel::sm_plans::state_machines::scan::FullState;
 use delta_kernel::snapshot::SnapshotRef;
 
 use crate::DataFusionExecutor;
@@ -174,6 +175,173 @@ impl TableProvider for ReconciledLogProvider {
         // the scan-file-row schema, each `Expr` already references the emitted columns verbatim —
         // no translation — so a plain conjoined `Filter` node applies it exactly. We reported
         // `Exact`, so DataFusion adds no `FilterExec` of its own; this is the sole application.
+        let mut builder = LogicalPlanBuilder::from(logical);
+        if let Some(predicate) = conjunction(filters.iter().cloned()) {
+            builder = builder.filter(predicate)?;
+        }
+        if let Some(proj) = projection {
+            let exprs = proj
+                .iter()
+                .map(|&i| {
+                    let field = self.arrow_schema.field(i);
+                    datafusion_expr::col(field.name())
+                })
+                .collect::<Vec<_>>();
+            builder = builder.project(exprs)?;
+        }
+        if let Some(n) = limit {
+            builder = builder.limit(0, Some(n))?;
+        }
+        let logical = builder.build()?;
+
+        session.create_physical_plan(&logical).await
+    }
+}
+
+/// A DataFusion [`TableProvider`] over a Delta table's *reconciled actions* — the log replayed to
+/// its effective state as the full set of surviving actions, not just the surviving files.
+///
+/// Where [`ReconciledLogProvider`] projects the reconciled log down to the flat scan-file-row shape
+/// (surviving add-files only), this provider emits the reconciled **action stream**: the six
+/// reconciled action slots the kernel's Full State Reconstruction produces —
+/// `add` / `remove` / `metaData` / `protocol` / `domainMetadata` / `txn` (transaction IDs). Each
+/// emitted row carries at most one populated slot (the log-replay winners), so the view surfaces the
+/// table's current protocol, metadata, domain metadata, and per-app transaction versions alongside
+/// the live files — the log inspection surface behind the Delta Log Explorer's "actions" mode.
+///
+/// This is *reconciled*, not the raw as-written history: add/remove tombstoning and
+/// protocol/metadata resolution are already applied, and per-commit `commitInfo` / `cdc` /
+/// checkpoint-only actions are not surfaced (that raw, un-reconciled stream is a separate follow-up).
+///
+/// Engine-free and async-native — like [`ReconciledLogProvider`] and [`crate::DeltaSsaTableProvider`]
+/// it holds only a [`SnapshotRef`] plus a [`DeltaSsaScanConfig`], drives the kernel `sm_plans` Full
+/// State coroutine through the stateless [`DataFusionExecutor`], and derives everything else from the
+/// `Session` at scan time, so it works natively and on wasm.
+///
+/// # Schema
+///
+/// The emitted rows are the kernel [`FullState::output_schema`] shape: the six `FSR_BASE` action
+/// structs, with `add.stats` surfaced as the parsed `add.stats_parsed: STRUCT<…>` (this provider
+/// always builds the Full State with per-file struct stats). Each top-level action field is a
+/// nullable struct; a given row populates exactly one.
+pub struct ActionsLogProvider {
+    snapshot: SnapshotRef,
+    config: DeltaSsaScanConfig,
+    /// Pre-materialized arrow schema so `schema()` is cheap and infallible. Computed once in
+    /// [`Self::new`] from the kernel [`FullState::output_schema`] accessor — the exact schema the
+    /// Full State terminal emits, without driving the state machine.
+    arrow_schema: ArrowSchemaRef,
+}
+
+impl std::fmt::Debug for ActionsLogProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ActionsLogProvider")
+            .field("version", &self.snapshot.version())
+            .field(
+                "schema_force_view_types",
+                &self.config.schema_force_view_types,
+            )
+            .finish_non_exhaustive()
+    }
+}
+
+impl ActionsLogProvider {
+    /// Construct from a kernel [`SnapshotRef`] and scan config.
+    ///
+    /// Session-free: the reconciled action-stream schema is a pure function of the table
+    /// configuration, so it is materialized once here from the kernel [`FullState::output_schema`]
+    /// accessor (no planning drive, no session needed). Mirrors [`ReconciledLogProvider::new`].
+    pub fn new(snapshot: SnapshotRef, config: DeltaSsaScanConfig) -> DfResult<Self> {
+        // Build the Full State the same way `scan()` does (with per-file struct stats), so the
+        // schema we declare here matches what the driven FSR terminal emits, including
+        // `add.stats_parsed`.
+        let full_state = FullState::for_table(Arc::clone(&snapshot))
+            .with_stats()
+            .build()
+            .map_err(crate::error::wrap_delta_err)?;
+        let arrow_schema: ArrowSchemaRef = Arc::new(
+            full_state
+                .output_schema()
+                .as_ref()
+                .try_into_arrow()
+                .map_err(|e| {
+                    crate::error::plan_compilation(format!("reconciled-actions schema: {e}"))
+                })?,
+        );
+        Ok(Self {
+            snapshot,
+            config,
+            arrow_schema,
+        })
+    }
+
+    /// The kernel snapshot this provider reflects.
+    pub fn snapshot(&self) -> &SnapshotRef {
+        &self.snapshot
+    }
+}
+
+#[async_trait]
+impl TableProvider for ActionsLogProvider {
+    fn schema(&self) -> ArrowSchemaRef {
+        Arc::clone(&self.arrow_schema)
+    }
+
+    fn table_type(&self) -> TableType {
+        TableType::Base
+    }
+
+    fn supports_filters_pushdown(
+        &self,
+        filters: &[&Expr],
+    ) -> DfResult<Vec<TableProviderFilterPushDown>> {
+        // `Exact`, for the same reason as `ReconciledLogProvider`: this provider exposes the
+        // reconciled action-stream schema *directly as its query schema*, so a query predicate
+        // already references the emitted columns verbatim (`metaData.id`, `txn.appId`, …). `scan()`
+        // splices it as a `Filter` node over the emitted rows, applying it completely — so
+        // DataFusion can drop its own redundant `FilterExec`.
+        Ok(vec![TableProviderFilterPushDown::Exact; filters.len()])
+    }
+
+    async fn scan(
+        &self,
+        session: &dyn Session,
+        projection: Option<&Vec<usize>>,
+        filters: &[Expr],
+        limit: Option<usize>,
+    ) -> DfResult<Arc<dyn ExecutionPlan>> {
+        // Same session contract as the data / reconciled-log providers: the SM drive and the final
+        // `create_physical_plan` both run against this session, so it must carry the Delta engine
+        // config and a matching `schema_force_view_types`. Build it via `delta_engine_session` /
+        // `with_delta_engine`.
+        crate::validate_delta_engine_session(session, self.config.schema_force_view_types)?;
+
+        // Drive the Full State Reconstruction coroutine to a bare `LogicalPlan`. As with
+        // `ReconciledLogProvider::scan`, this is planning only (`drive_ssa_to_plan` runs
+        // `drive_to_completion` + `compile_result_plan`, never `create_physical_plan` / `collect`),
+        // so the `!Send` coroutine drive is confined to this synchronous `block_on` — nothing
+        // `!Send` is held across the `.await` below, keeping the returned future `Send` — and
+        // performs no object-store IO. Real reads happen later, on the returned `ExecutionPlan`, via
+        // DataFusion's async stack, so this works on native and wasm alike. (The `full_state`
+        // executor sugar `.await`s the drive, which would make this future `!Send`; drive it via
+        // `block_on` like the reconciled provider instead.) Built `.with_stats()` so the terminal
+        // carries the `add.stats_parsed` the schema advertises.
+        let full_state = FullState::for_table(Arc::clone(&self.snapshot))
+            .with_stats()
+            .build()
+            .map_err(crate::error::wrap_delta_err)?;
+        let sm = full_state
+            .state_machine()
+            .map_err(crate::error::wrap_delta_err)?;
+        let executor = DataFusionExecutor::new();
+        let logical = futures::executor::block_on(executor.drive_ssa_to_plan(session, sm))
+            .map_err(crate::error::wrap_delta_err)?;
+
+        // Splice filter -> projection -> limit at the logical level, exactly as
+        // `ReconciledLogProvider::scan`: filter first over the FULL emitted schema (a predicate may
+        // reference a column the query doesn't select), then project, then limit. Our query schema
+        // *is* the reconciled action-stream schema, so each `Expr` references the emitted columns
+        // verbatim and a plain conjoined `Filter` applies it exactly (we reported `Exact`).
         let mut builder = LogicalPlanBuilder::from(logical);
         if let Some(predicate) = conjunction(filters.iter().cloned()) {
             builder = builder.filter(predicate)?;
