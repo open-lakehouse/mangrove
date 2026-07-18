@@ -1,7 +1,10 @@
 import { LogQueryServiceProvider } from "@open-lakehouse/log-query";
 import { registerStubLogPreview } from "@open-lakehouse/log-query/testing";
 import { QueryServiceProvider } from "@open-lakehouse/query";
-import { registerWasmPreview } from "@open-lakehouse/query-wasm";
+import {
+  registerWasmLogPreview,
+  registerWasmPreview,
+} from "@open-lakehouse/query-wasm";
 import {
   ThemeProvider,
   Toaster,
@@ -37,12 +40,20 @@ registerWasmPreview({
   baseUrl: `${window.location.origin}/api/2.1/unity-catalog`,
 });
 
-// Register the dev stub log-query runner so the Delta-log tab (in TableDetail)
-// renders a canned reconciled-log dataset end-to-end without wasm. This is the
-// scaffold's data source; the real ReconciledLogProvider wasm runner is a
-// follow-up. The tab is gated on hasLogQueryRunner(), so registering here is
-// what lights it up for Delta tables.
-registerStubLogPreview();
+// The Delta-log tab (in TableDetail) is gated on hasLogQueryRunner(); registering
+// a runner here lights it up for Delta tables. In wasm-enabled builds we register
+// the REAL in-browser log runner (reconciled files + reconciled action stream,
+// backed by crates/query-wasm) — resolving through the same @open-lakehouse/query-wasm
+// package the table preview uses. In default builds that package is aliased to a
+// no-op stub, so we fall back to the dev fixture stub runner, which renders a
+// canned reconciled-log dataset end-to-end without wasm.
+if (import.meta.env.VITE_ENABLE_WASM_QUERY === "true") {
+  registerWasmLogPreview({
+    baseUrl: `${window.location.origin}/api/2.1/unity-catalog`,
+  });
+} else {
+  registerStubLogPreview();
+}
 
 const queryClient = new QueryClient();
 const router = createAppRouter(queryClient);

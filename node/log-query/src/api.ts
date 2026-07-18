@@ -13,7 +13,7 @@
 // mounted.
 
 import { ArrowResultStore } from "@open-lakehouse/data-grid";
-import { logQueryRunner, logQueryRunnerSupports } from "./runner";
+import { type LogKind, logQueryRunner, logQueryRunnerSupports } from "./runner";
 import type {
   LogPreviewHandle,
   LogPreviewRequest,
@@ -24,15 +24,19 @@ import type {
 /** Default row cap when a request omits `limit`. */
 const DEFAULT_LOG_LIMIT = 100;
 
-// The fixed logical table name the runner binds the reconciled-log provider to.
-// The target table is NOT interpolated into the FROM clause — it rides on the
-// request (see LogQueryRequest.target) so the runner registers the provider for
-// that table under this name.
-const RECONCILED_LOG_TABLE = "reconciled_log";
+// The fixed logical table name the runner binds each log surface's provider to,
+// keyed by kind. The target table is NOT interpolated into the FROM clause — it
+// rides on the request (see LogQueryRequest.target) so the runner registers the
+// provider for that table under this name. These names must match the ones the
+// wasm engine registers under (crates/query-wasm bindings.rs).
+const LOG_TABLE: Record<LogKind, string> = {
+  reconciled: "reconciled_log",
+  actions: "action_log",
+};
 
-// Build `SELECT * FROM reconciled_log LIMIT <n>`.
-function buildLogSql(limit: number): string {
-  return `SELECT * FROM ${RECONCILED_LOG_TABLE} LIMIT ${limit}`;
+// Build `SELECT * FROM <kind's table> LIMIT <n>`.
+function buildLogSql(kind: LogKind, limit: number): string {
+  return `SELECT * FROM ${LOG_TABLE[kind]} LIMIT ${limit}`;
 }
 
 // Internal handle: owns the store, a subscriber set, and the run lifecycle. A
@@ -46,7 +50,7 @@ class LogPreviewRun implements LogPreviewHandle {
   private _running = true;
   private _error: Error | null = null;
 
-  constructor(req: LogPreviewRequest, limit: number) {
+  constructor(req: LogPreviewRequest, kind: LogKind, limit: number) {
     // Chain an external abort signal into our controller. Handle the
     // already-aborted case explicitly: `addEventListener` never fires for an
     // event that has already passed.
@@ -57,7 +61,7 @@ class LogPreviewRun implements LogPreviewHandle {
         once: true,
       });
     }
-    void this.drive(buildLogSql(limit), req.target);
+    void this.drive(buildLogSql(kind, limit), req.target, kind);
   }
 
   get version(): number {
@@ -84,10 +88,14 @@ class LogPreviewRun implements LogPreviewHandle {
     for (const cb of this.subscribers) cb();
   }
 
-  private async drive(sql: string, target: string): Promise<void> {
+  private async drive(
+    sql: string,
+    target: string,
+    kind: LogKind,
+  ): Promise<void> {
     try {
       for await (const chunk of logQueryRunner(
-        { sql, limit: undefined, target },
+        { sql, limit: undefined, target, kind },
         { signal: this.controller.signal },
       )) {
         this.store.append(chunk.arrowIpc);
@@ -113,7 +121,8 @@ export function createLogQueryService(): LogQueryService {
   return {
     preview(req: LogPreviewRequest): LogPreviewHandle {
       const limit = req.limit ?? DEFAULT_LOG_LIMIT;
-      return new LogPreviewRun(req, limit);
+      const kind = req.kind ?? "reconciled";
+      return new LogPreviewRun(req, kind, limit);
     },
     // Delegate to the registered runner's capability probe (permissive when it
     // declares none): the runner knows what it can read — e.g. a wasm engine

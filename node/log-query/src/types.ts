@@ -5,6 +5,7 @@
 // registered runner does. Mirrors @open-lakehouse/query's types.ts.
 
 import type { ArrowResultStore } from "@open-lakehouse/data-grid";
+import type { LogKind } from "./runner";
 
 /** A request to explore a table's reconciled Delta log. */
 export interface LogPreviewRequest {
@@ -14,6 +15,8 @@ export interface LogPreviewRequest {
   target: string;
   /** Row cap (default applied by the service). */
   limit?: number;
+  /** Which log surface to explore (default `reconciled`). */
+  kind?: LogKind;
   /** Aborts the underlying run when triggered. */
   signal?: AbortSignal;
 }

@@ -11,3 +11,8 @@ import type { WasmQueryOptions } from "./index";
 
 /** No-op: the wasm engine is not part of this build. */
 export function registerWasmPreview(_options: WasmQueryOptions): void {}
+
+/** No-op: the wasm engine is not part of this build. The log-query seam keeps
+ *  its throwing default runner, so `hasLogQueryRunner()` stays false and the
+ *  Delta-log tab stays hidden (unless a dev stub is registered separately). */
+export function registerWasmLogPreview(_options: WasmQueryOptions): void {}

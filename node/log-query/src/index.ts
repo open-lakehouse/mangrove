@@ -24,6 +24,7 @@ export { LogQueryServiceProvider, useLogQueryService } from "./context";
 export {
   getLogQueryRunner,
   hasLogQueryRunner,
+  type LogKind,
   type LogQueryChunk,
   type LogQueryRequest,
   type LogQueryRunner,
