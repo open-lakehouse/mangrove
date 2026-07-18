@@ -49,7 +49,7 @@
 //! #[derive(Clone)]
 //! struct AppState;
 //!
-//! let extract_cx: ContextExtractor<()> = Arc::new(|_parts| Ok(()));
+//! let extract_cx: ContextExtractor<()> = Arc::new(|_parts| Box::pin(async { Ok(()) }));
 //! // `base = ""` yields relative routes; the host adds the `/delta/v1` prefix via
 //! // `.nest`. (Pass `"/delta/v1"` instead to `.merge` the surface directly.)
 //! let delta: axum::Router<AppState> =
