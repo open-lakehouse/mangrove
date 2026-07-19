@@ -1,6 +1,6 @@
 import { cn } from "@open-lakehouse/ui-kit";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useRef } from "react";
+import { useLayoutEffect, useState } from "react";
 import { DataGridCell } from "./data-grid-cell";
 import { DataGridHeader } from "./data-grid-header";
 import type { ArrowResultStore } from "./lib/arrowResultStore";
@@ -30,7 +30,16 @@ export function DataGrid({
   running,
   className,
 }: DataGridProps) {
-  const parentRef = useRef<HTMLDivElement>(null);
+  // Track the scroll element in state (via a callback ref) rather than a plain
+  // ref. A ref is null on the mount render and populating it does NOT trigger a
+  // re-render — so the virtualizer, first constructed with a null scroll element
+  // (and often count 0, since the grid frequently mounts only once the first
+  // chunk lands and the stream has already ended), never gets the render tick it
+  // needs to emit virtual items once the element attaches. That left the grid
+  // blank until an unrelated re-render (switching tables, toggling the log mode)
+  // happened to flush it. A state-backed callback ref re-renders the instant the
+  // node mounts, giving the virtualizer a live scroll element to measure.
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const {
     columns,
     rowCount,
@@ -42,10 +51,20 @@ export function DataGrid({
 
   const rowVirtualizer = useVirtualizer({
     count: rowCount,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => scrollEl,
     estimateSize: () => ROW_HEIGHT,
     overscan: 12,
   });
+
+  // Re-measure whenever the row count grows or the scroll element (re)attaches.
+  // Covers the case where rows arrive after the virtualizer first measured an
+  // empty / detached element: `measure()` invalidates its size cache so the next
+  // paint windows the now-present rows. `useLayoutEffect` runs before the browser
+  // paints, so there is no visible empty flash.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `scrollEl` is a re-run trigger (remeasure when the element attaches), not read in the body
+  useLayoutEffect(() => {
+    rowVirtualizer.measure();
+  }, [rowVirtualizer, rowCount, scrollEl]);
 
   // Build the CSS grid column template from the (resizable) column sizes.
   const headers = headerGroups[0]?.headers ?? [];
@@ -57,7 +76,7 @@ export function DataGrid({
 
   return (
     <div
-      ref={parentRef}
+      ref={setScrollEl}
       className={cn(
         "min-h-0 flex-1 overflow-auto rounded border bg-background",
         className,
