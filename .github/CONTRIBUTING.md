@@ -28,7 +28,6 @@ aliases; the recipes live in `just/*.just` (and the promoted sibling justfiles):
 | `test`        | `just/test.just`           | unit / integration / conformance + CI gates     |
 | `meta`        | `just/meta.just`           | `fmt`, `fix*`, `lint-node`, `docs`, `run`        |
 | `dev`         | `dev/justfile`             | docker-compose env + UC server / UI dev flows   |
-| `common`      | `crates/common/justfile`   | `olai-uc-common` proto ext generation           |
 | `postgres`    | `crates/postgres/justfile` | sharing migrations helpers                       |
 | `node_client` | `node/client/justfile`     | node client external-type generation            |
 

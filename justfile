@@ -17,8 +17,6 @@ mod test 'just/test.just'
 mod meta 'just/meta.just'
 # docker-compose dev environment + UC server / UI dev flows
 mod dev 'dev/justfile'
-# olai-uc-common proto ext generation
-mod common 'crates/common/justfile'
 # postgres sharing migrations helpers
 mod postgres 'crates/postgres/justfile'
 # node client external-type generation

@@ -137,13 +137,6 @@ generate-code-sharing:
     rm {{ justfile_directory() }}/sharing-descriptors.bin
     just meta fmt
 
-# CURRENTLY not used, but we may need it again come validation ...
-#
-# generate olai-uc-common proto extension types (delegates to `just common generate`)
-[group('codegen')]
-generate-common-ext:
-    just common generate
-
 # generate types for the node client (slow-changing external types)
 [group('codegen')]
 generate-node: generate-query-contract

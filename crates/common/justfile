@@ -1,6 +1,0 @@
-_default:
-    @just --list
-
-# generate olai-uc-common proto extension types (google.protobuf types)
-generate:
-    @buf generate ./protos/google/protobuf/types.proto --template {{ source_directory() }}/buf.gen.yaml
