@@ -78,23 +78,42 @@
 //! - [`router`] — the state-agnostic, host-composable axum router mounting all 12
 //!   operations.
 
-pub mod authz;
-pub mod backend;
-pub mod column;
-pub mod config;
-pub mod contract;
-pub mod coordinator;
-pub mod error;
-pub mod handler;
+// `models` is the portable wire-DTO layer (no axum); it is the only part a wasm
+// client needs, so it is always available. Everything else is the server-side
+// surface (the `DeltaBackend` port, handler, axum router, error IntoResponse) and
+// lives behind the default-on `server` feature.
 pub mod models;
+
+#[cfg(feature = "server")]
+pub mod authz;
+#[cfg(feature = "server")]
+pub mod backend;
+#[cfg(feature = "server")]
+pub mod column;
+#[cfg(feature = "server")]
+pub mod config;
+#[cfg(feature = "server")]
+pub mod contract;
+#[cfg(feature = "server")]
+pub mod coordinator;
+#[cfg(feature = "server")]
+pub mod error;
+#[cfg(feature = "server")]
+pub mod handler;
+#[cfg(feature = "server")]
 pub mod router;
 #[cfg(feature = "testing")]
 pub mod testing;
 
+#[cfg(feature = "server")]
 pub use authz::DeltaAction;
+#[cfg(feature = "server")]
 pub use backend::{DeltaBackend, DeltaCapabilities};
+#[cfg(feature = "server")]
 pub use error::{DeltaApiError, DeltaApiResult, DeltaBackendError};
+#[cfg(feature = "server")]
 pub use handler::DeltaApiHandler;
+#[cfg(feature = "server")]
 pub use router::{
     ContextExtractor, get_router, router_from_extension, router_from_extension_at,
     router_with_context, router_with_context_at,
