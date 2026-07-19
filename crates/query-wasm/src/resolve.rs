@@ -10,7 +10,10 @@
 //! requests until the first miss.
 //!
 //! Everything here is transport-agnostic (`Arc<dyn ObjectStore>` + parsed JSON),
-//! so it is tested natively; the wasm-only REST client in [`crate::uc`] feeds it.
+//! so it is tested natively. [`plan_table`] gates the canonical
+//! `olai-uc-client` `delta_v1().load_table` response ([`DeltaLoadTableResponse`]);
+//! [`discover_log`] then derives the `_delta_log` manifest through the resolved
+//! object store.
 
 use std::sync::Arc;
 
@@ -18,6 +21,7 @@ use futures::{StreamExt, TryStreamExt};
 use object_store::path::Path;
 use object_store::{ObjectMeta, ObjectStore, ObjectStoreExt as _};
 use serde::Deserialize;
+use unitycatalog_delta_api::models::DeltaLoadTableResponse;
 
 use crate::error::{Error, Result};
 
@@ -30,41 +34,8 @@ const DISCOVER_CONCURRENCY: usize = 8;
 const MAX_COMMIT_FILES: u64 = 1024;
 
 // =====================================================================
-// `/delta/v1` loadTable wire DTOs (kebab-case, per delta.yaml)
+// loadTable gating
 // =====================================================================
-
-/// Minimal projection of `DeltaLoadTableResponse`.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct LoadTableResponse {
-    pub metadata: TableMetadata,
-    /// All unbackfilled CCv2 commits (managed tables only).
-    #[serde(default)]
-    pub commits: Option<Vec<Commit>>,
-    /// The latest ratified table version tracked by the server.
-    #[serde(default)]
-    pub latest_table_version: Option<i64>,
-}
-
-/// Minimal projection of `DeltaTableMetadata`.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct TableMetadata {
-    pub table_uuid: String,
-    pub table_type: String,
-    pub location: String,
-    #[serde(default)]
-    pub properties: std::collections::BTreeMap<String, String>,
-}
-
-/// Minimal projection of `DeltaCommit`.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct Commit {
-    pub version: i64,
-    pub file_name: String,
-    pub file_size: i64,
-}
 
 /// What log discovery needs to know from the catalog, after gating.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -87,7 +58,7 @@ pub struct TablePlan {
 /// - **unbackfilled CCv2 commits** — the wasm facade replays the filesystem
 ///   `_delta_log/` only; a non-empty staged-commit tail means the filesystem
 ///   view is behind the catalog's ratified state.
-pub fn plan_table(loaded: &LoadTableResponse) -> Result<TablePlan> {
+pub fn plan_table(loaded: &DeltaLoadTableResponse) -> Result<TablePlan> {
     let dv_enabled = loaded
         .metadata
         .properties
@@ -290,7 +261,7 @@ mod tests {
 
     use super::*;
 
-    fn loaded(json: serde_json::Value) -> LoadTableResponse {
+    fn loaded(json: serde_json::Value) -> DeltaLoadTableResponse {
         serde_json::from_value(json).unwrap()
     }
 
@@ -321,7 +292,9 @@ mod tests {
     fn plan_gates_deletion_vectors_and_unbackfilled_commits() {
         let dv = loaded(serde_json::json!({
             "metadata": {
-                "table-type": "EXTERNAL", "table-uuid": "u", "location": "gs://b/t",
+                "etag": "e", "table-type": "EXTERNAL", "table-uuid": "u",
+                "location": "gs://b/t", "created-time": 0, "updated-time": 0,
+                "columns": {"type": "struct", "fields": []},
                 "properties": {"delta.enableDeletionVectors": "true"}
             }
         }));
@@ -329,7 +302,9 @@ mod tests {
 
         let staged = loaded(serde_json::json!({
             "metadata": {
-                "table-type": "MANAGED", "table-uuid": "u", "location": "gs://b/t",
+                "etag": "e", "table-type": "MANAGED", "table-uuid": "u",
+                "location": "gs://b/t", "created-time": 0, "updated-time": 0,
+                "columns": {"type": "struct", "fields": []},
                 "properties": {}
             },
             "commits": [{"version": 9, "timestamp": 1, "file-name": "x.json",
