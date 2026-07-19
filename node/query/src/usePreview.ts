@@ -42,15 +42,23 @@ export function usePreview(
 
   // One handle per (service, table, limit, columns). Recreating it here (in
   // render, memoized) rather than in an effect means the store/subscribe are
-  // stable for the initial commit's `useSyncExternalStore`.
+  // stable for the initial commit's `useSyncExternalStore`. The handle is built
+  // idle: it doesn't start streaming until `start()` below.
   const { tableFullName, limit } = req;
   const handle = useMemo(
     () => svc.preview({ tableFullName, limit, columns }),
     [svc, tableFullName, limit, columns],
   );
 
-  // Cancel the run when the handle is replaced or the component unmounts.
-  useEffect(() => () => handle.cancel(), [handle]);
+  // Start the run and arrange cleanup. This effect runs *after* the
+  // `useSyncExternalStore` subscription is committed, so no chunk can be
+  // appended before a subscriber exists to observe its bump — the race that
+  // left a full store unrendered until a table switch. `start()` is idempotent
+  // (Strict Mode double-invokes effects).
+  useEffect(() => {
+    handle.start();
+    return () => handle.cancel();
+  }, [handle]);
 
   // Re-render whenever the handle bumps; snapshot is the monotonic version.
   useSyncExternalStore(

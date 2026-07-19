@@ -37,15 +37,23 @@ export function useLogPreview(
   // One handle per (service, target, limit, kind). Recreating it here (in
   // render, memoized) rather than in an effect means the store/subscribe are
   // stable for the initial commit's `useSyncExternalStore`; adding `kind` to the
-  // deps means toggling reconciled/actions starts a fresh run.
+  // deps means toggling reconciled/actions starts a fresh run. The handle is
+  // built idle: it doesn't start streaming until `start()` below.
   const { target, limit, kind } = req;
   const handle = useMemo(
     () => svc.preview({ target, limit, kind }),
     [svc, target, limit, kind],
   );
 
-  // Cancel the run when the handle is replaced or the component unmounts.
-  useEffect(() => () => handle.cancel(), [handle]);
+  // Start the run and arrange cleanup. This effect runs *after* the
+  // `useSyncExternalStore` subscription is committed, so no chunk can be
+  // appended before a subscriber exists to observe its bump — the race that
+  // left a full store unrendered until a table switch or reconciled/actions
+  // toggle. `start()` is idempotent (Strict Mode double-invokes effects).
+  useEffect(() => {
+    handle.start();
+    return () => handle.cancel();
+  }, [handle]);
 
   // Re-render whenever the handle bumps; snapshot is the monotonic version.
   useSyncExternalStore(
