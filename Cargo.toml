@@ -124,6 +124,9 @@ pyo3 = { version = "0.28", features = ["macros", "indexmap"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 serde_yml = { version = "0.0.12" }
+# Bridges a `!Send` future so it satisfies a `Send` trait bound; used on wasm to
+# adapt the browser Fetch credential future onto object_store's `CredentialProvider`.
+send_wrapper = { version = "0.6", features = ["futures"] }
 strum = { version = "0.27", features = ["derive"] }
 sqlx = { version = "0.8.3" }
 # Standalone SQL parser. DataFusion only re-exports this crate, so we depend on it
@@ -141,6 +144,8 @@ url = { version = "2.5.2", features = [
   "std",
 ], default-features = false }
 uuid = { version = "1", features = ["serde"] }
+# Non-panicking `Instant`/`SystemTime` on `wasm32-unknown-unknown` (std's panics).
+web-time = { version = "1" }
 zeroize = { version = "1.8", features = ["derive"] }
 reqwest = { version = "0.12", default-features = false, features = [
   "rustls-tls-native-roots",

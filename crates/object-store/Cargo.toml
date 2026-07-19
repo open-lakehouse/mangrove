@@ -23,11 +23,27 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
 async-trait = { workspace = true }
 chrono = { workspace = true }
 object_store = { workspace = true }
-olai-http = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true, features = ["rt"] }
 url = { workspace = true }
 uuid = { workspace = true }
+
+# Native transport: the full `olai-http` cloud client plus a tokio runtime for
+# the dedicated I/O handle. Neither compiles on `wasm32-unknown-unknown`.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+olai-http = { workspace = true }
+tokio = { workspace = true, features = ["rt"] }
+
+# Browser transport (Azure-first): the `olai-http-wasm` Fetch client and its
+# wasm-safe `TokenCache`/`TemporaryToken`. `web-time` supplies a non-panicking
+# `Instant`, and `send_wrapper` bridges the `!Send` credential future onto
+# object_store's `Send`-bounded `CredentialProvider` trait. The workspace
+# `reqwest` enables native-only TLS/http2 features, so pin a minimal build.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+olai-http-wasm = { workspace = true }
+web-time = { workspace = true }
+send_wrapper = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+getrandom = { version = "0.2", features = ["js"] }
 
 [dev-dependencies]
 futures = { workspace = true }

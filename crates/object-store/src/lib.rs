@@ -44,17 +44,35 @@
 
 use std::sync::Arc;
 
-use object_store::aws::AmazonS3Builder;
 use object_store::azure::MicrosoftAzureBuilder;
-use object_store::client::SpawnedReqwestConnector;
-use object_store::gcp::GoogleCloudStorageBuilder;
-use object_store::local::LocalFileSystem;
 use object_store::path::Path;
 use object_store::prefix::PrefixStore;
 use object_store::{ObjectStore, Result};
-use olai_http::CloudClient;
-use tokio::runtime::Handle;
 use unitycatalog_client::{TemporaryCredentialClient, UnityCatalogClient};
+
+// Native-only object_store backends and I/O handle. On `wasm32` the AWS/GCP
+// stores are unsupported (Azure-first), `LocalFileSystem` is absent from
+// object_store, and there is no tokio runtime.
+#[cfg(not(target_arch = "wasm32"))]
+use object_store::aws::AmazonS3Builder;
+#[cfg(not(target_arch = "wasm32"))]
+use object_store::client::SpawnedReqwestConnector;
+#[cfg(not(target_arch = "wasm32"))]
+use object_store::gcp::GoogleCloudStorageBuilder;
+#[cfg(not(target_arch = "wasm32"))]
+use object_store::local::LocalFileSystem;
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::runtime::Handle;
+
+/// HTTP transport for credential vending, selected per target — mirrors the
+/// alias in `unitycatalog-client` (`crates/client/src/lib.rs`). Native builds
+/// use `olai_http::CloudClient`; `wasm32` builds use the browser Fetch
+/// `olai_http_wasm::WasmClient`. The per-service clients
+/// (`TemporaryCredentialClient`, `UnityCatalogClient`) hold this same type.
+#[cfg(not(target_arch = "wasm32"))]
+use olai_http::CloudClient as Transport;
+#[cfg(target_arch = "wasm32")]
+use olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::tables::v1::GetTableRequest;
 use unitycatalog_common::temporary_credentials::v1::TemporaryCredential;
 use unitycatalog_common::volumes::v1::GetVolumeRequest;
@@ -93,6 +111,7 @@ pub struct UnityObjectStoreFactoryBuilder {
     /// runtime instead of the ambient one. See [`with_io_runtime`].
     ///
     /// [`with_io_runtime`]: UnityObjectStoreFactoryBuilder::with_io_runtime
+    #[cfg(not(target_arch = "wasm32"))]
     io_handle: Option<Handle>,
 }
 
@@ -160,22 +179,47 @@ impl UnityObjectStoreFactoryBuilder {
     ///
     /// Pass `None` to clear a previously set handle (e.g. when reusing the
     /// builder).
+    ///
+    /// Not available on `wasm32`: the browser has a single-threaded executor
+    /// and no tokio runtime to route I/O onto.
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn with_io_runtime(mut self, handle: impl Into<Option<Handle>>) -> Self {
         self.io_handle = handle.into();
         self
     }
 
     pub async fn build(self) -> Result<UnityObjectStoreFactory> {
-        let url = if let Some(uri) = self.uri {
-            url::Url::parse(&uri).map_err(Error::from)?
+        let url = if let Some(uri) = self.uri.as_ref() {
+            url::Url::parse(uri).map_err(Error::from)?
         } else {
             return Err(Error::invalid_config("missing `uri` for Unity Catalog endpoint").into());
         };
 
-        let cloud_client = if let Some(token) = self.token {
-            CloudClient::new_with_token(token)
+        let transport = self.build_transport()?;
+
+        let creds = TemporaryCredentialClient::new_with_url(transport.clone(), url.clone());
+        let uc = UnityCatalogClient::new(transport, url);
+        Ok(UnityObjectStoreFactory {
+            creds,
+            uc,
+            aws_region: self.aws_region,
+            #[cfg(not(target_arch = "wasm32"))]
+            io_handle: self.io_handle,
+        })
+    }
+
+    /// Build the credential-vending transport for the current target.
+    ///
+    /// Native: the `olai-http` cloud client, optionally routed onto the
+    /// dedicated I/O runtime. `wasm32`: the browser Fetch client, carrying a
+    /// bearer token via `with_auth` when one was supplied (otherwise it relies
+    /// on the ambient browser session — cookies / forwarded auth).
+    #[cfg(not(target_arch = "wasm32"))]
+    fn build_transport(&self) -> Result<Transport> {
+        let cloud_client = if let Some(token) = &self.token {
+            Transport::new_with_token(token)
         } else if self.allow_unauthenticated {
-            CloudClient::new_unauthenticated()
+            Transport::new_unauthenticated()
         } else {
             return Err(Error::invalid_config(
                 "no token and `allow_unauthenticated` not set: cannot build credential client",
@@ -185,18 +229,36 @@ impl UnityObjectStoreFactoryBuilder {
 
         // Route credential-vending HTTP onto the dedicated I/O runtime when one
         // was supplied; otherwise leave it on the ambient runtime.
-        let cloud_client = match &self.io_handle {
+        Ok(match &self.io_handle {
             Some(handle) => cloud_client.with_runtime(handle.clone()),
             None => cloud_client,
-        };
+        })
+    }
 
-        let creds = TemporaryCredentialClient::new_with_url(cloud_client.clone(), url.clone());
-        let uc = UnityCatalogClient::new(cloud_client, url);
-        Ok(UnityObjectStoreFactory {
-            creds,
-            uc,
-            aws_region: self.aws_region,
-            io_handle: self.io_handle,
+    #[cfg(target_arch = "wasm32")]
+    fn build_transport(&self) -> Result<Transport> {
+        use olai_http_wasm::CredentialsMode;
+        use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
+
+        // No `allow_unauthenticated` gate on wasm: a bare browser session is a
+        // valid unauthenticated mode (cookies / same-origin forwarded auth).
+        let client = Transport::new();
+        Ok(match &self.token {
+            Some(token) => {
+                let token = token.clone();
+                // Bearer auth: attach the header per request and stop the
+                // browser from shadowing it with a stale cookie.
+                client
+                    .with_credentials(CredentialsMode::Omit)
+                    .with_auth(move || {
+                        let mut headers = HeaderMap::new();
+                        if let Ok(value) = HeaderValue::from_str(&format!("Bearer {token}")) {
+                            headers.insert(AUTHORIZATION, value);
+                        }
+                        headers
+                    })
+            }
+            None => client,
         })
     }
 }
@@ -260,7 +322,8 @@ pub struct UnityObjectStoreFactory {
     uc: UnityCatalogClient,
     aws_region: Option<String>,
     /// Dedicated runtime for object-store HTTP I/O, if configured via
-    /// [`UnityObjectStoreFactoryBuilder::with_io_runtime`].
+    /// [`UnityObjectStoreFactoryBuilder::with_io_runtime`]. Absent on `wasm32`.
+    #[cfg(not(target_arch = "wasm32"))]
     io_handle: Option<Handle>,
 }
 
@@ -516,30 +579,54 @@ impl UnityObjectStoreFactory {
                         "Azurite store requires a SAS-token credential".to_string(),
                     )
                 })?;
+                #[allow(unused_mut)]
                 let mut builder = MicrosoftAzureBuilder::new()
                     .with_use_emulator(true)
                     .with_account(loc.account)
                     .with_container_name(loc.container)
                     .with_config(object_store::azure::AzureConfigKey::SasKey, sas);
+                // Native: route object-store HTTP onto the dedicated I/O runtime
+                // when one was supplied. On wasm, use object_store's default
+                // browser-Fetch connector (no runtime to route onto).
+                #[cfg(not(target_arch = "wasm32"))]
                 if let Some(handle) = &self.io_handle {
                     builder =
                         builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
+                }
+                // Belt-and-braces: object_store's retry path panics on wasm
+                // without a timer, so disable retries on the browser store.
+                #[cfg(target_arch = "wasm32")]
+                {
+                    builder = builder.with_retry(object_store::RetryConfig {
+                        max_retries: 0,
+                        ..Default::default()
+                    });
                 }
                 let store = builder.build()?;
                 return Ok(Arc::new(store));
             }
 
             let provider = new_azure(self.creds.clone(), &credential, securable).await?;
+            #[allow(unused_mut)]
             let mut builder = MicrosoftAzureBuilder::new()
                 .with_url(url.to_string())
                 .with_credentials(Arc::new(provider));
+            #[cfg(not(target_arch = "wasm32"))]
             if let Some(handle) = &self.io_handle {
                 builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                builder = builder.with_retry(object_store::RetryConfig {
+                    max_retries: 0,
+                    ..Default::default()
+                });
             }
             let store = builder.build()?;
             return Ok(Arc::new(store));
         }
 
+        #[cfg(not(target_arch = "wasm32"))]
         if as_aws(&credential).is_ok() {
             let access_point = aws_access_point(&credential);
             let provider = new_aws(self.creds.clone(), &credential, securable).await?;
@@ -568,6 +655,7 @@ impl UnityObjectStoreFactory {
             return Ok(Arc::new(store));
         }
 
+        #[cfg(not(target_arch = "wasm32"))]
         if as_gcp(&credential).is_ok() {
             let provider = new_gcp(self.creds.clone(), &credential, securable).await?;
             let url = Url::parse(&credential.url).map_err(Error::from)?;
@@ -579,6 +667,16 @@ impl UnityObjectStoreFactory {
             }
             let store = builder.build()?;
             return Ok(Arc::new(store));
+        }
+
+        // wasm is Azure-first: AWS/GCP stores are gated out above, so a
+        // non-Azure credential here is unsupported rather than unmatched.
+        #[cfg(target_arch = "wasm32")]
+        if as_aws(&credential).is_ok() || as_gcp(&credential).is_ok() {
+            return Err(Error::invalid_config(
+                "AWS/GCP object stores are not supported on wasm (Azure-first)",
+            )
+            .into());
         }
 
         Err(
@@ -668,6 +766,10 @@ impl From<Operation> for PathOperation {
 /// (the drive-letter colon is percent-encoded), so an unrooted
 /// [`LocalFileSystem`] addressed by full path does not resolve back to the real
 /// on-disk location. Tracked for a follow-up; cloud schemes are unaffected.
+///
+/// Not available on `wasm32`: object_store has no `LocalFileSystem` there and a
+/// browser has no local filesystem — a `file://` reference returns an error.
+#[cfg(not(target_arch = "wasm32"))]
 fn local_store(url: &Url, operation: PathOperation) -> Result<UCStore> {
     if cfg!(windows) {
         return Err(Error::invalid_config(format!(
@@ -699,6 +801,15 @@ fn local_store(url: &Url, operation: PathOperation) -> Result<UCStore> {
         url: url.clone(),
         path,
     })
+}
+
+/// wasm has no local filesystem; a `file://` reference is unsupported.
+#[cfg(target_arch = "wasm32")]
+fn local_store(url: &Url, _operation: PathOperation) -> Result<UCStore> {
+    Err(Error::invalid_config(format!(
+        "local (file://) storage is not supported on wasm: {url}"
+    ))
+    .into())
 }
 
 /// Parsed components of an Azurite (Azure Blob emulator) storage URL.
@@ -791,7 +902,10 @@ fn extend_prefix(store: UCStore, extra: &str) -> UCStore {
     }
 }
 
-#[cfg(test)]
+// Tests use tokio/tempfile/mockito and the native transport; there is no wasm
+// test runner in this crate's CI (the wasm build is proven in the query-wasm
+// workspace).
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use futures::TryStreamExt;
     // `put`/`PutPayload` are only used by the POSIX-only local-storage tests.
