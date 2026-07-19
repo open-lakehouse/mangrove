@@ -73,7 +73,7 @@ jobs:
       # contains files under the crate, so the crate keeps byte-identical copies in
       # crates/server/openapi/. Fail the PR if those copies drifted from the
       # canonical openapi/*.yaml — else the published crate would ship a stale spec.
-      # See `just sync-server-openapi`.
+      # See `just codegen sync-server-openapi`.
       - name: Check server OpenAPI copies are in sync
         run: just sync-server-openapi-check
 
@@ -395,7 +395,7 @@ jobs:
       # binary and the test process are built under the same instrumentation
       # (cargo llvm-cov show-env) and write profiles to a shared directory, so
       # `report` merges cross-process coverage — unlike the OSS-Java job, which
-      # can only cover the Rust client. See `just conformance-oss-rust`.
+      # can only cover the Rust client. See `just test conformance-oss-rust`.
       - name: Run conformance battery against our uc-server (with coverage)
         env:
           SQLX_OFFLINE: "true"

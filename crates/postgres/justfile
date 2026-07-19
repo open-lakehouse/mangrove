@@ -1,7 +1,12 @@
+_default:
+    @just --list
+
+# run the sharing sqlx migrations against a local Postgres
 run-migrations:
     DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres \
         sqlx migrate run --source {{ source_directory() }}/migrations
 
+# start a throwaway Postgres container for sharing migrations
 docker:
   docker run \
     --name postgres-sharing \
@@ -13,5 +18,6 @@ docker:
     -p 5432:5432 \
     postgres
 
+# regenerate the offline sqlx query cache for the workspace
 prepare:
     cargo sqlx prepare --workspace

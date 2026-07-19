@@ -15,6 +15,29 @@ stores the mirror host in each tarball URL, so installs go through the proxy
 instead of hitting `registry.npmjs.org` directly (which fails TLS inspection).
 CI and Docker builds rewrite those URLs to the public registry at install time.
 
+### Task runner layout (`just`)
+
+Recipes are organized into [`just` modules](https://just.systems/man/en/modules.html)
+by concern. The root `justfile` only declares the modules and a few back-compat
+aliases; the recipes live in `just/*.just` (and the promoted sibling justfiles):
+
+| Module        | File                       | Covers                                          |
+| ------------- | -------------------------- | ----------------------------------------------- |
+| `codegen`     | `just/codegen.just`        | proto / OpenAPI / client generation             |
+| `build`       | `just/build.just`          | UI, bindings, wasm engine, Docker, sqlx caches  |
+| `test`        | `just/test.just`           | unit / integration / conformance + CI gates     |
+| `meta`        | `just/meta.just`           | `fmt`, `fix*`, `lint-node`, `docs`, `run`        |
+| `dev`         | `dev/justfile`             | docker-compose env + UC server / UI dev flows   |
+| `postgres`    | `crates/postgres/justfile` | sharing migrations helpers                       |
+| `node_client` | `node/client/justfile`     | node client external-type generation            |
+
+Invoke recipes namespaced — `just codegen generate`, `just build ui-build`,
+`just test test-node`, `just dev rest`, `just meta fmt`. List a module's recipes
+with `just --list <module>` (e.g. `just --list codegen`) or the whole tree with
+`just --list`. A handful of names CI and this guide depend on (`just generate`,
+`just ui-fingerprint-check`, …) are kept working flat via aliases in the root
+`justfile`; new usage should prefer the namespaced form.
+
 ## Generated Code
 
 We heavily rely on code generation to ensure consistency with the API spec and to reduce the maintenance burden.
