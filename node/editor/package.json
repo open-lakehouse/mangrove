@@ -1,0 +1,32 @@
+{
+  "name": "@open-lakehouse/editor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": { "types": "./src/index.ts", "import": "./src/index.ts" },
+    "./session": { "types": "./src/session.ts", "import": "./src/session.ts" },
+    "./fixtures": { "types": "./src/fixtures.ts", "import": "./src/fixtures.ts" }
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@open-lakehouse/ui-kit": "^0.1.0",
+    "dompurify": "^3.2.7",
+    "dt-sql-parser": "^4.5.0",
+    "lucide-react": "^1.17.0",
+    "marked": "^18.0.5",
+    "monaco-editor": "0.52.2",
+    "monaco-sql-languages": "^1.1.0"
+  },
+  "peerDependencies": {
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "typescript": "^5"
+  }
+}
