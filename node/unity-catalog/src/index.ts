@@ -29,6 +29,11 @@ export { Meta, MetaGrid } from "./detail/Meta";
 // Dialog orchestration the environment manager mounts around catalog actions.
 export { CatalogDialogsProvider } from "./dialogs";
 export { ExternalDataPage } from "./ExternalDataPage";
+// ── Editor integration ───────────────────────────────────────────────────────
+// The UC-backed CatalogProvider for @open-lakehouse/editor's SQL completion; the
+// app registers it via registerCatalogProvider (see node/app/src/main.tsx). Lives
+// here because it uses the UC client — the editor package stays UC-agnostic.
+export { ucCatalogProvider } from "./editor/ucCatalogProvider";
 // The host feeds the environment scope id (namespaces per-env tree expansion).
 export { EnvironmentScopeProvider } from "./env-seam";
 export { StorageLocationPicker } from "./storage/StorageLocationPicker";

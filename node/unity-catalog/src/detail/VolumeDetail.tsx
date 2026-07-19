@@ -1,12 +1,28 @@
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@open-lakehouse/ui-kit";
 import { useVolumeDetail } from "@open-lakehouse/unity-catalog-client";
+import { useState } from "react";
 
 import { SectionLabel } from "../SectionLabel";
 import { DetailStates } from "./DetailStates";
 import { formatTimestamp, Meta, MetaGrid } from "./Meta";
 import { TypePill } from "./TypePill";
+import { VolumeEditor } from "./VolumeEditor";
+
+type VolumeView = "overview" | "files";
+
+// The volume file editor is additive and dark-launched behind a flag (mirrors
+// the preview/delta-log gating on TableDetail). Vite statically replaces
+// import.meta.env.*; undefined/"false" → off.
+const FILES_ENABLED = import.meta.env.VITE_ENABLE_VOLUME_FILES === "true";
 
 export function VolumeDetail({ fullName }: { fullName: string }) {
   const { data: volume, isLoading, error } = useVolumeDetail(fullName);
+  const [view, setView] = useState<VolumeView>("overview");
   if (!volume) return <DetailStates isLoading={isLoading} error={error} />;
 
   // A managed volume's storage_location is a UC-internal path under the
@@ -15,7 +31,7 @@ export function VolumeDetail({ fullName }: { fullName: string }) {
   // whole point.
   const managed = volume.volume_type === "MANAGED";
 
-  return (
+  const overview = (
     <section className="space-y-3">
       <SectionLabel>About this volume</SectionLabel>
       <MetaGrid>
@@ -45,5 +61,21 @@ export function VolumeDetail({ fullName }: { fullName: string }) {
         <Meta label="Comment" value={volume.comment} wide />
       </MetaGrid>
     </section>
+  );
+
+  // Without the flag there's only metadata — render it directly (no lone tab).
+  if (!FILES_ENABLED) return overview;
+
+  return (
+    <Tabs value={view} onValueChange={(v) => setView(v as VolumeView)}>
+      <TabsList>
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="files">Files</TabsTrigger>
+      </TabsList>
+      <TabsContent value="overview">{overview}</TabsContent>
+      <TabsContent value="files">
+        <VolumeEditor fullName={fullName} />
+      </TabsContent>
+    </Tabs>
   );
 }
