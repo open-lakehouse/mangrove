@@ -1,18 +1,21 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
 use crate::Result;
-use olai_http::CloudClient;
+#[cfg(not(target_arch = "wasm32"))]
+use ::olai_http::CloudClient as Transport;
+#[cfg(target_arch = "wasm32")]
+use ::olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::models::staging_tables::v1::*;
 use url::Url;
 /// HTTP client for service operations
 #[derive(Clone)]
 pub struct StagingTableServiceClient {
-    pub(crate) client: CloudClient,
+    pub(crate) client: Transport,
     pub(crate) base_url: Url,
 }
 impl StagingTableServiceClient {
     /// Create a new client instance
-    pub fn new(client: CloudClient, mut base_url: Url) -> Self {
+    pub fn new(client: Transport, mut base_url: Url) -> Self {
         if !base_url.path().ends_with('/') {
             base_url.set_path(&format!("{}/", base_url.path()));
         }

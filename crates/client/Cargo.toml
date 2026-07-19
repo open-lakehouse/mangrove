@@ -15,14 +15,15 @@ keywords.workspace = true
 name = "unitycatalog_client"
 
 [dependencies]
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.3" }
-unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.3" }
+# The client uses only the wire DTOs from these crates, not their server-side
+# surfaces — so disable default features (delta-api's `server`/axum,
+# common's `rest-client`/`store`) to keep the wasm build free of axum/tokio/olai-store.
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.3", default-features = false }
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.3", default-features = false }
 
 # Generated request builders wrap enum query params in `buffa::EnumValue::Known`.
 buffa = { workspace = true }
-olai-http = { workspace = true }
 percent-encoding = "2.3"
-reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -31,6 +32,24 @@ url = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 
 futures = { version = "0.3" }
+
+# HTTP transport, selected per target. Native uses olai-http's CloudClient
+# (cloud credential discovery, signing, retry). wasm32 uses olai-http-wasm's
+# WasmClient (browser Fetch) — the workspace `reqwest` enables native-only
+# features (rustls-tls-native-roots/http2/stream) that don't compile on wasm, so
+# reqwest is target-gated too (the crate uses it for types only).
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+olai-http = { workspace = true }
+reqwest = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+olai-http-wasm = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+# `uuid`'s v4 generator needs a wasm randomness source: its own `js` feature wires
+# the browser RNG on wasm32-unknown-unknown. `getrandom` js/wasm_js cover the two
+# getrandom majors that may be in the graph transitively.
+uuid = { workspace = true, features = ["v4", "js"] }
+getrandom = { version = "0.2", features = ["js"] }
 
 [dev-dependencies]
 rstest = "0.18"

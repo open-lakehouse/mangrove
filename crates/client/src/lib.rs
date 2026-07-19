@@ -58,6 +58,16 @@ mod delta_v1;
 pub mod error;
 mod temporary_credentials;
 
+/// The HTTP transport the client is built on, selected per target. Native builds
+/// use `olai_http::CloudClient`; `wasm32` builds use `olai_http_wasm::WasmClient`
+/// (the browser Fetch transport). This mirrors the alias the generated code emits
+/// (see `codegen/client.rs`) so the hand-written [`delta_v1`] and
+/// [`temporary_credentials`] surfaces hold the same transport type.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use olai_http::CloudClient as Transport;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use olai_http_wasm::WasmClient as Transport;
+
 impl UnityCatalogClient {
     /// Ergonomic accessor for the temporary credential vending client.
     ///

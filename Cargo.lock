@@ -3873,6 +3873,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "olai-http-wasm"
+version = "0.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "348e03daaf902c4271eef1b733ce00825b549cb1e3ce329d80d351efd873b71c"
+dependencies = [
+ "futures",
+ "reqwest 0.12.28",
+ "serde",
+ "url",
+ "web-sys",
+ "web-time",
+]
+
+[[package]]
 name = "olai-store"
 version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3926,10 +3940,12 @@ dependencies = [
  "chrono",
  "env_logger 0.10.2",
  "futures",
+ "getrandom 0.2.17",
  "http",
  "log",
  "mockito",
  "olai-http",
+ "olai-http-wasm",
  "olai-uc-common",
  "olai-uc-delta-api",
  "percent-encoding",

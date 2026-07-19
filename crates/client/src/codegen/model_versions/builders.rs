@@ -1,8 +1,14 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
 #![allow(unused_imports)]
+#[cfg(not(target_arch = "wasm32"))]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
+#[cfg(target_arch = "wasm32")]
+type BoxFut<'a, T> = ::futures::future::LocalBoxFuture<'a, T>;
+#[cfg(not(target_arch = "wasm32"))]
 type BoxStr<'a, T> = ::futures::stream::BoxStream<'a, T>;
+#[cfg(target_arch = "wasm32")]
+type BoxStr<'a, T> = ::futures::stream::LocalBoxStream<'a, T>;
 use super::super::stream_paginated;
 use super::client::*;
 use crate::Result;
@@ -61,7 +67,11 @@ impl ListModelVersionsBuilder {
         )
         .map_ok(|resp| futures::stream::iter(resp.model_versions.into_iter().map(Ok)))
         .try_flatten();
-        stream.boxed()
+        #[cfg(not(target_arch = "wasm32"))]
+        let stream = stream.boxed();
+        #[cfg(target_arch = "wasm32")]
+        let stream = stream.boxed_local();
+        stream
     }
 }
 impl IntoFuture for ListModelVersionsBuilder {

@@ -24,7 +24,10 @@ name = "unitycatalog_delta_api"
 
 [dependencies]
 async-trait = { workspace = true }
-axum = { workspace = true }
+# axum backs the server-side surface (handler/router/backend port + the error
+# IntoResponse). It is native-only; gate it behind the default-on `server`
+# feature so `models` (the wire DTOs) can be consumed on wasm without it.
+axum = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -56,12 +59,16 @@ name = "router"
 required-features = ["testing"]
 
 [features]
-default = []
+default = ["server"]
+# The server-side surface: the `DeltaBackend` port, handler, axum router, and the
+# `IntoResponse` error mapping. Pulls `axum` (native-only). Default-on so existing
+# consumers are unaffected; a wasm client turns it off and uses only `models`.
+server = ["dep:axum"]
 # Exposes `InMemoryDeltaBackend`, an in-memory `DeltaBackend` implementation for
 # testing the Delta business logic without a real backend. Downstream servers
 # (e.g. lakekeeper) can enable it to test their own port wiring against
 # known-good Delta semantics.
-testing = []
+testing = ["server"]
 
 # docs.rs builds with default features only; enable all features there so the
 # `testing` module (and the crate-root example that uses `InMemoryDeltaBackend`)

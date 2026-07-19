@@ -27,6 +27,10 @@ generate:
   clients:
     rust:
       output: crates/client/src
+      # Emit the cfg-gated CloudClient/WasmClient `Transport` alias so the client
+      # crate builds for both native and wasm32, without the #[wasm_bindgen] JS
+      # binding layer (which is gated on a node.wasm output).
+      dual_transport: true
     python:
       output: python/client/src
       error_type: PyUnityCatalogError

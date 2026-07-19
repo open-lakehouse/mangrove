@@ -10,7 +10,6 @@
 //! (`getTableCredentials`, `getStagingTableCredentials`,
 //! `getTemporaryPathCredentials`), and commit-metrics reporting (`reportMetrics`).
 
-use olai_http::CloudClient;
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use unitycatalog_delta_api::models::{
     DeltaCatalogConfig, DeltaCreateStagingTableRequest, DeltaCreateTableRequest,
@@ -20,7 +19,7 @@ use unitycatalog_delta_api::models::{
 };
 use url::Url;
 
-use crate::Result;
+use crate::{Result, Transport};
 
 /// Percent-encode a single path segment so names containing `/ ? # space ..`
 /// route to the intended resource instead of being interpreted as path
@@ -41,18 +40,19 @@ fn operation_param(operation: DeltaCredentialOperation) -> &'static str {
 
 /// Client for the `/delta/v1/` Delta REST API.
 ///
-/// Constructed from a [`CloudClient`] (carrying auth) and the Unity Catalog base
-/// URL. Prefer [`UnityCatalogClient::delta_v1`](crate::UnityCatalogClient::delta_v1).
+/// Constructed from the per-target [`Transport`] (carrying auth) and the Unity
+/// Catalog base URL. Prefer
+/// [`UnityCatalogClient::delta_v1`](crate::UnityCatalogClient::delta_v1).
 #[derive(Clone)]
 pub struct DeltaV1Client {
-    client: CloudClient,
+    client: Transport,
     base_url: Url,
 }
 
 impl DeltaV1Client {
     /// Create a new Delta v1 client. `base_url` is normalized to end in `/` so it
     /// joins cleanly with the relative endpoint paths.
-    pub fn new(client: CloudClient, mut base_url: Url) -> Self {
+    pub fn new(client: Transport, mut base_url: Url) -> Self {
         if !base_url.path().ends_with('/') {
             base_url.set_path(&format!("{}/", base_url.path()));
         }
@@ -88,6 +88,7 @@ impl DeltaV1Client {
             .send_raw()
             .await
             .map_err(crate::Error::from_delta_send)?;
+        let response = crate::error::check_delta_response(response).await?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -117,6 +118,7 @@ impl DeltaV1Client {
             .send_raw()
             .await
             .map_err(crate::Error::from_delta_send)?;
+        let response = crate::error::check_delta_response(response).await?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -146,6 +148,7 @@ impl DeltaV1Client {
             .send_raw()
             .await
             .map_err(crate::Error::from_delta_send)?;
+        let response = crate::error::check_delta_response(response).await?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -169,6 +172,7 @@ impl DeltaV1Client {
             .send_raw()
             .await
             .map_err(crate::Error::from_delta_send)?;
+        let response = crate::error::check_delta_response(response).await?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -195,6 +199,7 @@ impl DeltaV1Client {
             .send_raw()
             .await
             .map_err(crate::Error::from_delta_send)?;
+        let response = crate::error::check_delta_response(response).await?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -204,11 +209,13 @@ impl DeltaV1Client {
     /// The server responds `204 No Content` on success.
     pub async fn delete_table(&self, catalog: &str, schema: &str, table: &str) -> Result<()> {
         let url = self.table_url(catalog, schema, table, "")?;
-        self.client
+        let response = self
+            .client
             .delete(url)
             .send_raw()
             .await
             .map_err(crate::Error::from_delta_send)?;
+        crate::error::check_delta_response(response).await?;
         Ok(())
     }
 
@@ -220,17 +227,41 @@ impl DeltaV1Client {
     /// is mapped directly rather than parsed as a Delta error envelope.
     pub async fn table_exists(&self, catalog: &str, schema: &str, table: &str) -> Result<bool> {
         let url = self.table_url(catalog, schema, table, "")?;
-        match self.client.head(url).send_raw().await {
-            // Any 2xx (the server responds 204) means the table exists.
-            Ok(_) => Ok(true),
-            // A 404 is the documented "does not exist" signal — a HEAD carries no
-            // body, so map it directly rather than parsing an error envelope.
-            Err(olai_http::SendRawError::Retry(ref e))
-                if e.status() == Some(reqwest::StatusCode::NOT_FOUND) =>
-            {
-                Ok(false)
+        // The two transports classify a 404 differently: CloudClient's retry layer
+        // surfaces it as `Err(SendRawError::Retry)` with the status attached,
+        // whereas WasmClient's `send_raw` is a plain send with no `error_for_status`
+        // so a 404 comes back as `Ok(Response)` with a 404 status.
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            match self.client.head(url).send_raw().await {
+                // Any 2xx (the server responds 204) means the table exists.
+                Ok(_) => Ok(true),
+                // A 404 is the documented "does not exist" signal — a HEAD carries
+                // no body, so map it directly rather than parsing an error envelope.
+                Err(olai_http::SendRawError::Retry(ref e))
+                    if e.status() == Some(reqwest::StatusCode::NOT_FOUND) =>
+                {
+                    Ok(false)
+                }
+                Err(e) => Err(crate::Error::from_delta_send(e)),
             }
-            Err(e) => Err(crate::Error::from_delta_send(e)),
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            let response = self
+                .client
+                .head(url)
+                .send_raw()
+                .await
+                .map_err(crate::Error::from_delta_send)?;
+            let status = response.status();
+            if status == reqwest::StatusCode::NOT_FOUND {
+                Ok(false)
+            } else if status.is_success() {
+                Ok(true)
+            } else {
+                Err(crate::Error::delta_status(status))
+            }
         }
     }
 
@@ -247,12 +278,14 @@ impl DeltaV1Client {
         request: &DeltaRenameTableRequest,
     ) -> Result<()> {
         let url = self.table_url(catalog, schema, table, "/rename")?;
-        self.client
+        let response = self
+            .client
             .post(url)
             .json(request)
             .send_raw()
             .await
             .map_err(crate::Error::from_delta_send)?;
+        crate::error::check_delta_response(response).await?;
         Ok(())
     }
 
@@ -275,6 +308,7 @@ impl DeltaV1Client {
             .send_raw()
             .await
             .map_err(crate::Error::from_delta_send)?;
+        let response = crate::error::check_delta_response(response).await?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -299,6 +333,7 @@ impl DeltaV1Client {
             .send_raw()
             .await
             .map_err(crate::Error::from_delta_send)?;
+        let response = crate::error::check_delta_response(response).await?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -324,6 +359,7 @@ impl DeltaV1Client {
             .send_raw()
             .await
             .map_err(crate::Error::from_delta_send)?;
+        let response = crate::error::check_delta_response(response).await?;
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
@@ -341,12 +377,14 @@ impl DeltaV1Client {
         request: &DeltaReportMetricsRequest,
     ) -> Result<()> {
         let url = self.table_url(catalog, schema, table, "/metrics")?;
-        self.client
+        let response = self
+            .client
             .post(url)
             .json(request)
             .send_raw()
             .await
             .map_err(crate::Error::from_delta_send)?;
+        crate::error::check_delta_response(response).await?;
         Ok(())
     }
 
@@ -362,7 +400,9 @@ impl DeltaV1Client {
     }
 }
 
-#[cfg(test)]
+// Native-only: these tests use mockito + `CloudClient::new_unauthenticated` and a
+// tokio runtime, none of which exist on wasm32.
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use super::*;
     use mockito::Server;
@@ -370,7 +410,7 @@ mod tests {
 
     fn test_client(server: &Server) -> DeltaV1Client {
         let base = Url::parse(&server.url()).unwrap();
-        DeltaV1Client::new(CloudClient::new_unauthenticated(), base)
+        DeltaV1Client::new(Transport::new_unauthenticated(), base)
     }
 
     /// A minimal `DeltaLoadTableResponse` JSON body for happy-path assertions.

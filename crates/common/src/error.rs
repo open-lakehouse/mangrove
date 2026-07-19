@@ -30,6 +30,9 @@ pub enum Error {
     #[error("Conflict")]
     Conflict,
 
+    // The resource-store error is native-only (feature `store`); on wasm the store
+    // backend is absent so this variant does not exist.
+    #[cfg(feature = "store")]
     #[error(transparent)]
     ResourceStore(olai_store::Error),
 }
@@ -37,6 +40,7 @@ pub enum Error {
 /// Flatten the store's common error variants onto the native ones so callers can
 /// match `Error::NotFound` / `Error::AlreadyExists` / `Error::Conflict` uniformly
 /// regardless of which backend raised them; anything else is wrapped verbatim.
+#[cfg(feature = "store")]
 impl From<olai_store::Error> for Error {
     fn from(e: olai_store::Error) -> Self {
         match e {
@@ -73,6 +77,7 @@ impl Error {
             Error::Generic(_) => "INTERNAL_ERROR",
             // Common store variants are flattened onto the native ones by
             // `From<olai_store::Error>`; only the residual (Generic/SerDe) reach here.
+            #[cfg(feature = "store")]
             Error::ResourceStore(_) => "INTERNAL_ERROR",
         }
     }
@@ -125,6 +130,7 @@ impl Error {
             }
             // Common store variants are flattened onto the native ones by
             // `From<olai_store::Error>`; only the residual (Generic/SerDe) reach here.
+            #[cfg(feature = "store")]
             Error::ResourceStore(e) => {
                 tracing::error!("Resource store error: {e}");
                 (StatusCode::INTERNAL_SERVER_ERROR, INTERNAL)
