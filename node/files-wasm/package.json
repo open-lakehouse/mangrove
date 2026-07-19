@@ -1,0 +1,26 @@
+{
+  "name": "@open-lakehouse/files-wasm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./stub": {
+      "types": "./src/stub.ts",
+      "import": "./src/stub.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@open-lakehouse/files": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "vite": "^8.0.14"
+  }
+}

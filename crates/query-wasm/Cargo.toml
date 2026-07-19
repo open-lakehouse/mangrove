@@ -90,6 +90,9 @@ object_store = { version = "0.13.2" }
 # Common (native + wasm): the `?Send` async resolve trait lives in `catalog.rs`,
 # which is native-visible for tests, so `async-trait` cannot stay wasm-only.
 async-trait = { version = "0.1" }
+# RFC 1123 / RFC 3339 date parsing in the native-testable directory-list parsers
+# (`files/lister.rs`) needs chrono natively too, not just in the wasm fetch store.
+chrono = { version = "0.4" }
 futures = { version = "0.3" }
 percent-encoding = { version = "2" }
 serde = { version = "1.0", features = ["derive"] }
@@ -111,7 +114,6 @@ deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "c6abd5c0c3e
 # tested) natively.
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
 bytes = { version = "1" }
-chrono = { version = "0.4" }
 console_error_panic_hook = "0.1"
 js-sys = "0.3"
 # Kept at 0.13 to match the delta-rs wasm harness; wasm backend = browser fetch.

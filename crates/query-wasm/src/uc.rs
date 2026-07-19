@@ -125,4 +125,49 @@ impl UcClient {
         )
         .await
     }
+
+    /// `GET /volumes/{name}` — volume metadata, where `full_name` is the dotted
+    /// three-level `catalog.schema.volume` name as ONE path segment (dots
+    /// preserved, percent-encoded via [`encode_segment`]).
+    pub async fn get_volume(&self, full_name: &str) -> Result<VolumeInfo> {
+        let url = self
+            .base_url
+            .join(&format!("volumes/{}", encode_segment(full_name)))
+            .map_err(|e| Error::InvalidUrl(e.to_string()))?;
+        self.send_json(self.request(reqwest::Method::GET, url), "getVolume")
+            .await
+    }
+
+    /// `POST /temporary-volume-credentials` with `operation: READ_VOLUME`. Keyed
+    /// by the volume's UUID (from [`get_volume`](Self::get_volume)), it returns
+    /// the same [`TemporaryCredential`] shape the table path parses.
+    pub async fn read_volume_credentials(&self, volume_id: &str) -> Result<TemporaryCredential> {
+        let url = self
+            .base_url
+            .join("temporary-volume-credentials")
+            .map_err(|e| Error::InvalidUrl(e.to_string()))?;
+        let body = serde_json::json!({ "volumeId": volume_id, "operation": "READ_VOLUME" });
+        self.send_json(
+            self.request(reqwest::Method::POST, url).json(&body),
+            "temporary-volume-credentials",
+        )
+        .await
+    }
+}
+
+/// Minimal projection of `VolumeInfo` (the `GetVolume` response) — enough to vend
+/// a read credential and resolve the storage location. camelCase with
+/// snake_case tolerated, mirroring [`crate::creds::TemporaryCredential`].
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeInfo {
+    /// The volume's UUID — the `temporary-volume-credentials` request key.
+    #[serde(alias = "volume_id")]
+    pub volume_id: String,
+    /// The volume's cloud storage-location root (e.g. `abfss://…`, `gs://…`).
+    #[serde(alias = "storage_location")]
+    pub storage_location: String,
+    /// The volume type (`MANAGED` / `EXTERNAL`); optional and informational.
+    #[serde(default, alias = "volume_type")]
+    pub volume_type: Option<String>,
 }
