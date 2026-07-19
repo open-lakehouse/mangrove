@@ -34,22 +34,13 @@ class LogPreviewRun implements LogPreviewHandle {
   private _version = 0;
   private _running = true;
   private _error: Error | null = null;
-  private _started = false;
+  private _active = false;
   private readonly target: string;
   private readonly kind: LogKind;
   private readonly limit: number;
+  private readonly externalSignal?: AbortSignal;
 
   constructor(req: LogPreviewRequest, kind: LogKind, limit: number) {
-    // Chain an external abort signal into our controller. Handle the
-    // already-aborted case explicitly: `addEventListener` never fires for an
-    // event that has already passed.
-    if (req.signal?.aborted) {
-      this.cancel();
-    } else {
-      req.signal?.addEventListener("abort", () => this.cancel(), {
-        once: true,
-      });
-    }
     // Defer the run: `start()` is invoked from the hook's mount effect so the
     // stream can't emit before the `useSyncExternalStore` subscription is
     // attached. Otherwise fast (warm-cache) runs finish before subscribe and
@@ -58,11 +49,30 @@ class LogPreviewRun implements LogPreviewHandle {
     this.target = req.target;
     this.kind = kind;
     this.limit = limit;
+    this.externalSignal = req.signal;
   }
 
+  // Begin (or re-begin) the run. Called from the hook's mount effect; must be
+  // resilient to React StrictMode's mount → cleanup → mount cycle, which invokes
+  // start() → cancel() → start() on this same handle. A cancel() aborts the
+  // controller, so the second start() has to spin up a FRESH controller and run
+  // rather than no-op — otherwise the run stays dead and the grid shows "No rows"
+  // until an unrelated dep change (kind toggle) builds a new handle. That dead-
+  // handle trap was the real first-view-empty bug.
   start(): void {
-    if (this._started || this.controller.signal.aborted) return;
-    this._started = true;
+    if (this._active) return;
+    if (this.externalSignal?.aborted) return;
+    this._active = true;
+    // Fresh controller so a prior cancel() (StrictMode throwaway, or a resumed
+    // mount) doesn't leave us permanently aborted. Reset per-run state; the
+    // store is cleared so a restart can't double-append rows.
+    this.controller = new AbortController();
+    this.store.reset();
+    this._error = null;
+    this._running = true;
+    this.externalSignal?.addEventListener("abort", () => this.cancel(), {
+      once: true,
+    });
     void this.drive(this.target, this.kind, this.limit);
   }
 
@@ -82,6 +92,9 @@ class LogPreviewRun implements LogPreviewHandle {
   }
 
   cancel(): void {
+    // Clearing `_active` lets a later start() (e.g. StrictMode's second mount)
+    // spin up a fresh run instead of no-opping on the aborted controller.
+    this._active = false;
     if (!this.controller.signal.aborted) this.controller.abort();
   }
 
@@ -95,24 +108,35 @@ class LogPreviewRun implements LogPreviewHandle {
     kind: LogKind,
     limit: number,
   ): Promise<void> {
+    // Capture the controller for THIS run: cancel()/start() may swap
+    // `this.controller` for a later run, but this generator must observe the
+    // signal it was launched with.
+    const { signal } = this.controller;
     try {
       // The surface is addressed by `target` + `kind`; the runner synthesizes the
       // execution (the wasm engine builds a `delta_*_log('target')` UDTF query).
       for await (const chunk of logQueryRunner(
         { target, kind, limit },
-        { signal: this.controller.signal },
+        { signal },
       )) {
+        if (signal.aborted) return;
         this.store.append(chunk.arrowIpc);
         this.bump();
       }
     } catch (err) {
       // An abort is an intentional teardown, not a surfaced error.
-      if (!this.controller.signal.aborted) {
+      if (!signal.aborted) {
         this._error = err instanceof Error ? err : new Error(String(err));
       }
     } finally {
-      this._running = false;
-      this.bump();
+      // Only the currently-live run reports completion. If this run was aborted
+      // and superseded by a fresh start() (StrictMode remount), its controller
+      // is no longer `this.controller`; skip so it can't flip `running` false or
+      // bump on behalf of the live run.
+      if (signal === this.controller.signal) {
+        this._running = false;
+        this.bump();
+      }
     }
   }
 }

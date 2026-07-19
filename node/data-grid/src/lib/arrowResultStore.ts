@@ -73,6 +73,20 @@ export class ArrowResultStore {
   }
 
   /**
+   * Drop all accumulated rows and reset to the pre-`append` state. Used when a
+   * run restarts (e.g. a React StrictMode remount re-invokes the producer) so a
+   * fresh stream can't double-append onto a store that already holds the same
+   * rows. Keeps the store instance stable for `useSyncExternalStore` consumers.
+   */
+  reset(): void {
+    this.schema = null;
+    this.batches = [];
+    this.total = 0;
+    this.bytes = 0;
+    this.vectorCache.clear();
+  }
+
+  /**
    * A cheap, read-only summary of what the store currently holds: schema, row /
    * column / batch counts, and approximate in-memory footprint. No row scan and
    * no copy — safe to call on every render or for memory accounting across
