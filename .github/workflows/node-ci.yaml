@@ -92,6 +92,6 @@ jobs:
       - name: Fail if uc-api.d.ts is stale
         run: |
           if ! git diff --exit-code -- node/unity-catalog-client/src/uc-api.d.ts; then
-            echo "::error::node/unity-catalog-client/src/uc-api.d.ts is out of sync with openapi/openapi.yaml — run \`just generate-node-openapi\` (or \`bun run gen:api\` in the package) and commit the result." >&2
+            echo "::error::node/unity-catalog-client/src/uc-api.d.ts is out of sync with openapi/openapi.yaml — run \`just codegen generate-node-openapi\` (or \`bun run gen:api\` in the package) and commit the result." >&2
             exit 1
           fi
