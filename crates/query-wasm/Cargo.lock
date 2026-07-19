@@ -4960,3 +4960,11 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
+
+[[patch.unused]]
+name = "olai-http"
+version = "0.0.6"
+
+[[patch.unused]]
+name = "olai-store"
+version = "0.0.6"
