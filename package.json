@@ -8,6 +8,8 @@
     "node/query",
     "node/query-wasm",
     "node/log-query",
+    "node/files",
+    "node/files-wasm",
     "node/unity-catalog-client",
     "node/unity-catalog",
     "node/app",

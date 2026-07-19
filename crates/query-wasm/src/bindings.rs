@@ -22,6 +22,8 @@ use wasm_bindgen::prelude::*;
 use crate::catalog::UcRestResolver;
 use crate::engine::{ACTIONS_LOG_UDTF, LogKind, RECONCILED_LOG_UDTF, run_unified};
 use crate::error::Error;
+use crate::files::path::VolumePath;
+use crate::uc::UcClient;
 
 // Named uniquely: `deltalake-wasm` (also a cdylib-capable dependency) exports
 // its own `#[wasm_bindgen(start)] fn init`, and identically-named start
@@ -312,4 +314,177 @@ async fn stream_to_callback(
             .map_err(|e| Error::InvalidResponse(format!("on_batch callback threw: {e:?}")))?;
     }
     serde_wasm_bindgen::to_value(&stats).map_err(|e| Error::InvalidResponse(format!("stats: {e}")))
+}
+
+// =====================================================================
+// Files: the read-only volume file-browser surface (`UcFilesEngine`).
+// =====================================================================
+
+/// Options accepted by `listDirectory`, mirroring `ListDirectoryRequest`.
+#[derive(serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ListDirectoryOptions {
+    /// Page size; the provider applies its own cap when omitted.
+    max_results: Option<u32>,
+    /// Opaque continuation token from a previous page's `nextPageToken`.
+    page_token: Option<String>,
+}
+
+/// Options accepted by `readFile`, mirroring `ReadFileRequest`.
+#[derive(serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ReadFileOptions {
+    /// Byte offset to start from (defaults to 0).
+    offset: Option<u64>,
+    /// Number of bytes to read (defaults to the rest of the file).
+    length: Option<u64>,
+}
+
+/// Summary returned by `readFile`.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ReadStats {
+    bytes_read: u64,
+}
+
+/// The in-browser Unity Catalog **volume files** engine: read-only directory
+/// listing, ranged reads, and stat over UC-vended volume credentials.
+///
+/// Errors are `js_sys::Error`s with the same `code` contract as
+/// [`UcQueryEngine`] (`UNSUPPORTED` / `NETWORK` / `FAILED`). Azure + GCP are
+/// supported; AWS / R2 surface `UNSUPPORTED`.
+#[wasm_bindgen]
+pub struct UcFilesEngine {
+    base_url: Url,
+    auth_token: Option<String>,
+}
+
+#[wasm_bindgen]
+impl UcFilesEngine {
+    /// Create an engine talking to the UC REST API at `base_url`
+    /// (e.g. `${origin}/api/2.1/unity-catalog`). `opts`: `{ authToken? }`.
+    #[wasm_bindgen(constructor)]
+    pub fn new(base_url: String, opts: JsValue) -> Result<UcFilesEngine, JsValue> {
+        let opts: EngineOptions = if opts.is_undefined() || opts.is_null() {
+            EngineOptions::default()
+        } else {
+            serde_wasm_bindgen::from_value(opts)
+                .map_err(|e| js_error(Error::InvalidResponse(format!("engine options: {e}"))))?
+        };
+        let base_url = Url::parse(&base_url)
+            .map_err(|e| js_error(Error::InvalidUrl(format!("unity catalog base url: {e}"))))?;
+        Ok(UcFilesEngine {
+            base_url,
+            auth_token: opts.auth_token,
+        })
+    }
+
+    /// List one bounded page of a directory's immediate children.
+    ///
+    /// `path`: a canonical `/Volumes/<c>/<s>/<v>[/<rest>]` path. `opts`:
+    /// `{ maxResults?, pageToken? }`. Returns
+    /// `{ entries: [{ path, isDirectory, fileSize, lastModified }], nextPageToken? }`.
+    #[wasm_bindgen(js_name = listDirectory)]
+    pub async fn list_directory(&self, path: String, opts: JsValue) -> Result<JsValue, JsValue> {
+        let opts: ListDirectoryOptions = if opts.is_undefined() || opts.is_null() {
+            ListDirectoryOptions::default()
+        } else {
+            serde_wasm_bindgen::from_value(opts).map_err(|e| {
+                js_error(Error::InvalidResponse(format!(
+                    "listDirectory options: {e}"
+                )))
+            })?
+        };
+        self.list_directory_inner(&path, opts)
+            .await
+            .map_err(js_error)
+    }
+
+    /// Read a file (or byte range), calling `on_chunk(Uint8Array)` per body chunk
+    /// in file order.
+    ///
+    /// `path`: a canonical `/Volumes/…` file path. `opts`: `{ offset?, length? }`.
+    /// Returns `{ bytesRead }`.
+    #[wasm_bindgen(js_name = readFile)]
+    pub async fn read_file(
+        &self,
+        path: String,
+        opts: JsValue,
+        on_chunk: Function,
+    ) -> Result<JsValue, JsValue> {
+        let opts: ReadFileOptions = if opts.is_undefined() || opts.is_null() {
+            ReadFileOptions::default()
+        } else {
+            serde_wasm_bindgen::from_value(opts)
+                .map_err(|e| js_error(Error::InvalidResponse(format!("readFile options: {e}"))))?
+        };
+        self.read_file_inner(&path, opts, &on_chunk)
+            .await
+            .map_err(js_error)
+    }
+
+    /// Metadata for a single file (the analog of an HTTP HEAD).
+    ///
+    /// `path`: a canonical `/Volumes/…` file path. Returns
+    /// `{ path, fileSize, lastModified, contentType?, etag? }`.
+    #[wasm_bindgen(js_name = stat)]
+    pub async fn stat(&self, path: String) -> Result<JsValue, JsValue> {
+        self.stat_inner(&path).await.map_err(js_error)
+    }
+}
+
+impl UcFilesEngine {
+    fn uc(&self) -> UcClient {
+        UcClient::new(self.base_url.clone(), self.auth_token.clone())
+    }
+
+    async fn list_directory_inner(
+        &self,
+        path: &str,
+        opts: ListDirectoryOptions,
+    ) -> Result<JsValue, Error> {
+        let parsed = VolumePath::parse(path)?;
+        let page = crate::files::engine::list_directory(
+            &self.uc(),
+            &parsed,
+            opts.max_results,
+            opts.page_token,
+        )
+        .await?;
+        serde_wasm_bindgen::to_value(&page)
+            .map_err(|e| Error::InvalidResponse(format!("directory page: {e}")))
+    }
+
+    async fn read_file_inner(
+        &self,
+        path: &str,
+        opts: ReadFileOptions,
+        on_chunk: &Function,
+    ) -> Result<JsValue, Error> {
+        let parsed = VolumePath::parse(path)?;
+        let bytes_read = crate::files::engine::read_file(
+            &self.uc(),
+            &parsed,
+            opts.offset,
+            opts.length,
+            |chunk| {
+                let array = Uint8Array::from(chunk.as_ref());
+                on_chunk.call1(&JsValue::NULL, &array.into()).map_err(|e| {
+                    Error::InvalidResponse(format!("on_chunk callback threw: {e:?}"))
+                })?;
+                Ok(())
+            },
+        )
+        .await?;
+        let stats = ReadStats { bytes_read };
+        serde_wasm_bindgen::to_value(&stats)
+            .map_err(|e| Error::InvalidResponse(format!("read stats: {e}")))
+    }
+
+    async fn stat_inner(&self, path: &str) -> Result<JsValue, Error> {
+        let parsed = VolumePath::parse(path)?;
+        let meta = crate::files::engine::stat(&self.uc(), &parsed).await?;
+        serde_wasm_bindgen::to_value(&meta)
+            .map_err(|e| Error::InvalidResponse(format!("file metadata: {e}")))
+    }
 }
