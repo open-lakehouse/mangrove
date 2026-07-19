@@ -94,6 +94,26 @@
       }
     },
     {
+      "includes": ["files-wasm/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@open-lakehouse/unity-catalog"],
+                    "message": "files-wasm implements the @open-lakehouse/files runner contract and must not import Unity Catalog UI: the app composes them, never the packages themselves."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["log-query/src/**"],
       "linter": {
         "rules": {
@@ -105,6 +125,26 @@
                   {
                     "group": ["@open-lakehouse/unity-catalog"],
                     "message": "log-query is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on log-query (renders a Delta-log tab), never the reverse."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["files/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@open-lakehouse/unity-catalog"],
+                    "message": "files is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on files (renders a volume Files tab), never the reverse."
                   }
                 ]
               }
