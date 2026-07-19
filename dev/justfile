@@ -1,33 +1,35 @@
+set dotenv-load
+
 _default:
     @just --list
 
 # basic setup
 setup:
-  {{ source_directory() }}/dev/scripts/configure-trestle-deps.sh
-  uvx pre-commit install
+    {{ source_directory() }}/dev/scripts/configure-trestle-deps.sh
+    uvx pre-commit install
 
 # Update pre-commit hooks
 update-hooks:
-  uvx pre-commit autoupdate
+    uvx pre-commit autoupdate
 
 # Run local development environment
 start profile='':
     #!/bin/bash
-    if [ '{{profile}}' == '' ]
+    if [ '{{ profile }}' == '' ]
     then
         just _start
     else
-        just _start_profile {{profile}}
+        just _start_profile {{ profile }}
     fi
 
 # Stop local development environment
 stop profile='':
     #!/bin/bash
-    if [ '{{profile}}' == '' ]
+    if [ '{{ profile }}' == '' ]
     then
         just _stop
     else
-        just _stop_profile {{profile}}
+        just _stop_profile {{ profile }}
     fi
 
 # run interactive notebook server (marimo)
@@ -41,7 +43,273 @@ _stop:
     docker compose -p unitycatalog-rs -f {{ source_directory() }}/compose.yaml stop
 
 _start_profile profile:
-    docker compose --profile {{profile}} -p unitycatalog-rs -f {{ source_directory() }}/compose.yaml up -d
+    docker compose --profile {{ profile }} -p unitycatalog-rs -f {{ source_directory() }}/compose.yaml up -d
 
 _stop_profile profile:
-    docker compose --profile {{profile}} -p unitycatalog-rs -f {{ source_directory() }}/compose.yaml stop
+    docker compose --profile {{ profile }} -p unitycatalog-rs -f {{ source_directory() }}/compose.yaml stop
+
+# ─── UC server + UI dev flows ─────────────────────────────────────────────────
+# These anchor paths on `{{ justfile_directory() }}` (repo root) and carry
+# `[no-cd]` so their bare relative paths (dev/scripts, dev/config-*) resolve from
+# the repo root regardless of this module file living in dev/.
+
+# Patch olai-http / olai-store from the local trestle checkout (.cargo/config.toml,
+# gitignored). Run once per clone when crates.io or a corporate proxy cannot
+# resolve the published versions. Requires `trestle` on PATH and a source checkout
+# (../trestle or TRESTLE_ROOT).
+#
+# patch olai-http / olai-store from the local trestle checkout
+[group('dev')]
+[no-cd]
+configure-trestle-deps:
+    {{ justfile_directory() }}/dev/scripts/configure-trestle-deps.sh
+
+# run the development REST server (ephemeral in-memory SQLite; auto-migrated)
+[group('dev')]
+rest:
+    @RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- serve
+
+# Durable backends are not auto-migrated by `serve`, so migrate first. Needs a
+# running Postgres + a config file (dev/config.yaml) selecting the postgres backend.
+#
+# run the server against Postgres (migrate, then serve)
+[group('dev')]
+[no-cd]
+rest-db config="dev/config.yaml":
+    cargo run -p olai-uc-server --features bin --bin uc-server -- migrate -c {{ config }}
+    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- serve -c {{ config }}
+
+# Builds the bundled UI, stages it at ./web where the server looks (see UI_DIR in
+# crates/server/src/run.rs), then serves both the API and the SPA on one origin —
+# the way the Docker image does.
+#
+# build the UI and serve API + SPA on one origin
+[group('dev')]
+[no-cd]
+rest-ui *args:
+    just build ui-build
+    rm -rf web && cp -r node/app/dist web
+    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- serve {{ args }}
+
+# Fast inner loop for UI work: runs the Vite dev server (HMR) on :3003 and proxies
+# `/api` to a live, seeded uc-server on :8080 (see node/app/vite.config.ts), so
+# source edits hot-reload without a rebuild. No wasm — the default (non-preview)
+# UI build.
+#
+# Backend is EPHEMERAL: every run starts clean. Postgres backend on a dedicated
+# `uc_dev` database (DROPPED + RECREATED each run) inside the shared compose
+# container, plus a freshly re-created Azurite container. After the demo
+# catalog/schema are seeded it writes a few managed Delta tables (via the
+# `seed_managed_tables` example) so the UI has data to browse. On Ctrl-C it stops
+# the UC server, tears down Azurite, and DROPS `uc_dev` — the shared Postgres
+# CONTAINER is left running (stop it with
+# `docker compose -f dev/compose.yaml stop postgres_uc_dev`).
+#
+# Requires Docker (Postgres + Azurite) and bun.
+#
+# Vite UI dev server (HMR) against a live, seeded, ephemeral backend
+[group('dev')]
+[no-cd]
+ui-dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export AZURITE_BLOB_STORAGE_URL="http://127.0.0.1:10000"
+    # Ephemeral, dedicated database inside the shared Postgres container — NOT the
+    # `postgres` default DB (kept intact for other flows). Dropped + recreated per run.
+    export PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres PGDATABASE=uc_dev
+    compose_file="{{ justfile_directory() }}/dev/compose.yaml"
+    config="{{ justfile_directory() }}/dev/config-azurite-pg.yaml"
+
+    # Run a psql command against the container's default `postgres` DB (used to
+    # drop/create the ephemeral `uc_dev` database — you cannot drop the DB you are
+    # connected to).
+    admin_psql() {
+        docker compose -f "$compose_file" exec -T \
+            -e PGPASSWORD="$PGPASSWORD" postgres_uc_dev \
+            psql -U "$PGUSER" -d postgres -v ON_ERROR_STOP=1 "$@"
+    }
+
+    # Graceful shutdown: stop the background UC server (SIGTERM → it flushes via
+    # `with_graceful_shutdown`), tear down the Azurite container, and drop the
+    # ephemeral `uc_dev` database so the next run starts clean. The shared Postgres
+    # container is left running. Idempotent guard since EXIT also fires after INT/TERM.
+    cleaned=""
+    cleanup() {
+        [ -n "$cleaned" ] && return
+        cleaned=1
+        echo ""
+        echo "[ui-dev] shutting down…"
+        if [ -n "${server_pid:-}" ] && kill -0 "$server_pid" 2>/dev/null; then
+            echo "[ui-dev]   stopping UC server (pid $server_pid)…"
+            kill -TERM "$server_pid" 2>/dev/null || true
+            for _ in $(seq 1 100); do
+                kill -0 "$server_pid" 2>/dev/null || break
+                sleep 0.1
+            done
+            kill -KILL "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+        fi
+        echo "[ui-dev]   tearing down Azurite (docker compose rm -sf azurite_uc_dev)…"
+        docker compose -f "$compose_file" --profile azurite rm -sfv azurite_uc_dev >/dev/null 2>&1 || true
+        echo "[ui-dev]   dropping ephemeral database ${PGDATABASE}…"
+        admin_psql -c "DROP DATABASE IF EXISTS ${PGDATABASE} WITH (FORCE);" >/dev/null 2>&1 || true
+        echo "[ui-dev] done. (Postgres container left running: docker compose -f dev/compose.yaml stop postgres_uc_dev)"
+    }
+    trap cleanup EXIT INT TERM
+
+    # 1. Ephemeral backend: start the shared Postgres container, then drop +
+    #    recreate the dedicated `uc_dev` database so this run starts empty. A stale
+    #    Azurite container from a prior run is torn down + recreated the same way
+    #    (its blobs live in the container FS, so recreation = empty storage).
+    echo "[ui-dev] starting Postgres…"
+    docker compose -f "$compose_file" up -d --wait postgres_uc_dev
+    echo "[ui-dev] recreating ephemeral database ${PGDATABASE}…"
+    admin_psql -c "DROP DATABASE IF EXISTS ${PGDATABASE} WITH (FORCE);"
+    admin_psql -c "CREATE DATABASE ${PGDATABASE};"
+    echo "[ui-dev] recreating Azurite (clean blob storage)…"
+    docker compose -f "$compose_file" --profile azurite rm -sfv azurite_uc_dev >/dev/null 2>&1 || true
+
+    # 2. Migrate the fresh DB — `serve` does not migrate a durable backend.
+    echo "[ui-dev] applying migrations…"
+    cargo run -p olai-uc-server --features bin --bin uc-server -- migrate -c "$config"
+
+    echo "[ui-dev] starting UC server (Postgres + Azurite) in the background…"
+    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- \
+        serve -c "$config" &
+    server_pid=$!
+
+    # 3. Seed Azurite + UC infra: (re)starts the Azurite container, creates the
+    #    lakehouse container + CORS, seeds the storage credential + external
+    #    location that credential vending requires, and creates the demo catalog +
+    #    schema. Waits for the server's /catalogs to answer.
+    bash dev/scripts/seed-azurite.sh
+
+    # 4. Seed sample data: write a couple of managed Delta tables with interesting
+    #    rows so the UI has something to browse. This uses the Rust write path
+    #    (create + append only — no read-back, so it avoids the delta-rs
+    #    nested-runtime panic that blocks the in-process datagen). External engines
+    #    (e.g. PySpark) cannot write here yet — the server vends the repo's custom
+    #    `azurite://` scheme, which Hadoop/Spark has no FileSystem for.
+    echo "[ui-dev] seeding sample managed tables…"
+    UC_ENDPOINT="http://localhost:8080/api/2.1/unity-catalog/" \
+        cargo run -p olai-uc-datafusion --features delta --example seed_managed_tables
+
+    echo ""
+    echo "[ui-dev] backend ready on http://localhost:8080 — starting Vite dev server…"
+    echo "[ui-dev] open the printed URL (http://localhost:3003); /api proxies to :8080"
+    echo "[ui-dev] (Ctrl-C to stop the dev server + UC server, tear down Azurite, drop ${PGDATABASE})"
+    # Foreground: Ctrl-C ends the dev server, then the EXIT trap cleans up.
+    bun run --filter @open-lakehouse/uc-app dev
+
+# Like `ui-dev`, but with the in-browser wasm query engine + preview UI enabled —
+# the fast inner loop for working on the query-preview UI against real managed
+# Delta data. It is `ui-dev` plus:
+#   1. a `build::build-query-wasm` dep, so the gitignored wasm-bindgen artifact
+#      under crates/query-wasm/pkg/ exists for the dev server's alias to resolve;
+#   2. `VITE_ENABLE_WASM_QUERY=true VITE_ENABLE_PREVIEW=true` on the Vite dev
+#      server, which swaps the no-op query-wasm stub for the real engine and
+#      un-gates the table preview UI (see node/app/vite.config.ts + main.tsx).
+# Everything else (ephemeral Postgres `uc_dev`, fresh Azurite, seeding, teardown)
+# matches `ui-dev`. Browse the demo/ml catalogs (e.g. demo.default.customers, or
+# demo.default.events for multi-commit Delta history) to run the in-browser query
+# preview; source edits hot-reload without a rebuild.
+#
+# Requires the wasm toolchain (`just build setup-wasm` once) + Docker + bun.
+#
+# `ui-dev` with the in-browser wasm query engine + preview UI enabled
+[group('dev')]
+[no-cd]
+ui-dev-wasm:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Build the wasm artifact first (sibling module — called in-body because just
+    # cannot declare a dependency across sibling modules).
+    just build build-query-wasm
+    export AZURITE_BLOB_STORAGE_URL="http://127.0.0.1:10000"
+    # Ephemeral, dedicated database inside the shared Postgres container — NOT the
+    # `postgres` default DB (kept intact for other flows). Dropped + recreated per run.
+    export PGHOST=localhost PGPORT=5432 PGUSER=postgres PGPASSWORD=postgres PGDATABASE=uc_dev
+    compose_file="{{ justfile_directory() }}/dev/compose.yaml"
+    config="{{ justfile_directory() }}/dev/config-azurite-pg.yaml"
+
+    # Run a psql command against the container's default `postgres` DB (used to
+    # drop/create the ephemeral `uc_dev` database — you cannot drop the DB you are
+    # connected to).
+    admin_psql() {
+        docker compose -f "$compose_file" exec -T \
+            -e PGPASSWORD="$PGPASSWORD" postgres_uc_dev \
+            psql -U "$PGUSER" -d postgres -v ON_ERROR_STOP=1 "$@"
+    }
+
+    # Graceful shutdown: stop the background UC server (SIGTERM → it flushes via
+    # `with_graceful_shutdown`), tear down the Azurite container, and drop the
+    # ephemeral `uc_dev` database so the next run starts clean. The shared Postgres
+    # container is left running. Idempotent guard since EXIT also fires after INT/TERM.
+    cleaned=""
+    cleanup() {
+        [ -n "$cleaned" ] && return
+        cleaned=1
+        echo ""
+        echo "[ui-dev-wasm] shutting down…"
+        if [ -n "${server_pid:-}" ] && kill -0 "$server_pid" 2>/dev/null; then
+            echo "[ui-dev-wasm]   stopping UC server (pid $server_pid)…"
+            kill -TERM "$server_pid" 2>/dev/null || true
+            for _ in $(seq 1 100); do
+                kill -0 "$server_pid" 2>/dev/null || break
+                sleep 0.1
+            done
+            kill -KILL "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+        fi
+        echo "[ui-dev-wasm]   tearing down Azurite (docker compose rm -sf azurite_uc_dev)…"
+        docker compose -f "$compose_file" --profile azurite rm -sfv azurite_uc_dev >/dev/null 2>&1 || true
+        echo "[ui-dev-wasm]   dropping ephemeral database ${PGDATABASE}…"
+        admin_psql -c "DROP DATABASE IF EXISTS ${PGDATABASE} WITH (FORCE);" >/dev/null 2>&1 || true
+        echo "[ui-dev-wasm] done. (Postgres container left running: docker compose -f dev/compose.yaml stop postgres_uc_dev)"
+    }
+    trap cleanup EXIT INT TERM
+
+    # 1. Ephemeral backend: start the shared Postgres container, then drop +
+    #    recreate the dedicated `uc_dev` database so this run starts empty. A stale
+    #    Azurite container from a prior run is torn down + recreated the same way
+    #    (its blobs live in the container FS, so recreation = empty storage).
+    echo "[ui-dev-wasm] starting Postgres…"
+    docker compose -f "$compose_file" up -d --wait postgres_uc_dev
+    echo "[ui-dev-wasm] recreating ephemeral database ${PGDATABASE}…"
+    admin_psql -c "DROP DATABASE IF EXISTS ${PGDATABASE} WITH (FORCE);"
+    admin_psql -c "CREATE DATABASE ${PGDATABASE};"
+    echo "[ui-dev-wasm] recreating Azurite (clean blob storage)…"
+    docker compose -f "$compose_file" --profile azurite rm -sfv azurite_uc_dev >/dev/null 2>&1 || true
+
+    # 2. Migrate the fresh DB — `serve` does not migrate a durable backend.
+    echo "[ui-dev-wasm] applying migrations…"
+    cargo run -p olai-uc-server --features bin --bin uc-server -- migrate -c "$config"
+
+    echo "[ui-dev-wasm] starting UC server (Postgres + Azurite) in the background…"
+    RUST_LOG=INFO cargo run -p olai-uc-server --features bin --bin uc-server -- \
+        serve -c "$config" &
+    server_pid=$!
+
+    # 3. Seed Azurite + UC infra: (re)starts the Azurite container, creates the
+    #    lakehouse container + CORS, seeds the storage credential + external
+    #    location that credential vending requires, and creates the demo catalog +
+    #    schema. Waits for the server's /catalogs to answer.
+    bash dev/scripts/seed-azurite.sh
+
+    # 4. Seed sample data: write a couple of managed Delta tables with interesting
+    #    rows so the preview has something to query. This uses the Rust write path
+    #    (create + append only — no read-back, so it avoids the delta-rs
+    #    nested-runtime panic that blocks the in-process datagen).
+    echo "[ui-dev-wasm] seeding sample managed tables…"
+    UC_ENDPOINT="http://localhost:8080/api/2.1/unity-catalog/" \
+        cargo run -p olai-uc-datafusion --features delta --example seed_managed_tables
+
+    echo ""
+    echo "[ui-dev-wasm] backend ready on http://localhost:8080 — starting Vite dev server (wasm preview enabled)…"
+    echo "[ui-dev-wasm] open the printed URL (http://localhost:3003); /api proxies to :8080"
+    echo "[ui-dev-wasm] browse the demo/ml catalogs (e.g. demo.default.customers, or demo.default.events for multi-commit history) to run the in-browser query preview"
+    echo "[ui-dev-wasm] (Ctrl-C to stop the dev server + UC server, tear down Azurite, drop ${PGDATABASE})"
+    # Foreground: Ctrl-C ends the dev server, then the EXIT trap cleans up. The two
+    # VITE_* flags swap in the real wasm query engine + un-gate the preview UI.
+    VITE_ENABLE_WASM_QUERY=true VITE_ENABLE_PREVIEW=true \
+        bun run --filter @open-lakehouse/uc-app dev
