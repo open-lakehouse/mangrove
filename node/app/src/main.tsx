@@ -1,3 +1,4 @@
+import { registerCatalogProvider } from "@open-lakehouse/editor";
 import { LogQueryServiceProvider } from "@open-lakehouse/log-query";
 import { registerStubLogPreview } from "@open-lakehouse/log-query/testing";
 import { QueryServiceProvider } from "@open-lakehouse/query";
@@ -10,7 +11,10 @@ import {
   Toaster,
   TooltipProvider,
 } from "@open-lakehouse/ui-kit";
-import { EnvironmentScopeProvider } from "@open-lakehouse/unity-catalog";
+import {
+  EnvironmentScopeProvider,
+  ucCatalogProvider,
+} from "@open-lakehouse/unity-catalog";
 import {
   createUnityCatalogClient,
   UnityCatalogProvider,
@@ -54,6 +58,13 @@ if (import.meta.env.VITE_ENABLE_WASM_QUERY === "true") {
 } else {
   registerStubLogPreview();
 }
+
+// The volume file editor's SQL completion sources catalog/schema/table/column
+// names from Unity Catalog. Register the UC-backed provider (the editor package
+// itself is UC-agnostic — it ships an empty default and degrades to keyword-only
+// completion until a provider is registered here). Late-bound, so ordering vs
+// the editor's own bootstrap doesn't matter.
+registerCatalogProvider(ucCatalogProvider);
 
 const queryClient = new QueryClient();
 const router = createAppRouter(queryClient);
