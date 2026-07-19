@@ -84,6 +84,38 @@ impl From<unitycatalog_object_store::Error> for Error {
 }
 
 impl Error {
+    /// Map a raw `object_store::Error` from a storage op (list / get / head),
+    /// re-tagging a browser transport failure with the `network/CORS:` marker.
+    ///
+    /// Unlike credential vending — which flows through `olai-uc-client` and gets
+    /// its `network/CORS:` tag from the [`From<unitycatalog_client::Error>`] impl
+    /// above — a storage-IO failure surfaces as `object_store::Error::Generic`
+    /// (e.g. `Generic MicrosoftAzure error: error sending request …`) with no
+    /// `network/cors` substring, so [`crate::bindings::classify`] would otherwise
+    /// misclassify a blocked read/list as `FAILED` instead of the `NETWORK`
+    /// fallback code. Detect the wasm Fetch transport failure by its message and
+    /// re-tag; every other storage error flows through as [`Error::ObjectStore`].
+    ///
+    /// This is scoped to the volume files path; the table read path keeps the
+    /// blanket `#[from] object_store::Error` and shares this latent gap (a
+    /// separate follow-up).
+    pub fn from_object_store(err: object_store::Error) -> Self {
+        let text = err.to_string().to_ascii_lowercase();
+        // reqwest / browser-Fetch transport failure strings. `error sending
+        // request` is reqwest's connect/send failure; the others cover the
+        // browser's `TypeError: Failed to fetch` (opaque CORS) and DNS/connect.
+        let is_transport = text.contains("error sending request")
+            || text.contains("failed to fetch")
+            || text.contains("cors")
+            || text.contains("network")
+            || text.contains("connect");
+        if is_transport {
+            Error::UnityCatalog(format!("network/CORS: {err}"))
+        } else {
+            Error::ObjectStore(err)
+        }
+    }
+
     /// Shorthand for an [`Error::Unsupported`] with a formatted reason.
     pub fn unsupported(reason: impl Into<String>) -> Self {
         Self::Unsupported(reason.into())
@@ -93,5 +125,46 @@ impl Error {
     /// surface this as a failure.
     pub fn is_unsupported(&self) -> bool {
         matches!(self, Self::Unsupported(_))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A `Generic` store error whose message reads like a reqwest transport
+    /// failure is re-tagged with the `network/CORS:` marker so the bindings
+    /// classify it as `NETWORK`.
+    #[test]
+    fn from_object_store_retags_transport_failure() {
+        let raw = object_store::Error::Generic {
+            store: "MicrosoftAzure",
+            source: "error sending request for url (https://acct.blob.core.windows.net/…)".into(),
+        };
+        let mapped = Error::from_object_store(raw);
+        match mapped {
+            Error::UnityCatalog(msg) => {
+                assert!(
+                    msg.to_ascii_lowercase().contains("network/cors"),
+                    "expected a network/CORS tag, got: {msg}"
+                );
+            }
+            other => panic!("expected UnityCatalog(network/CORS), got {other:?}"),
+        }
+    }
+
+    /// A genuine storage error (e.g. a missing object) is NOT re-tagged — it
+    /// flows through as `ObjectStore` so it classifies as `FAILED`.
+    #[test]
+    fn from_object_store_passes_through_not_found() {
+        let raw = object_store::Error::NotFound {
+            path: "some/object".to_string(),
+            source: "blob not found".into(),
+        };
+        let mapped = Error::from_object_store(raw);
+        assert!(
+            matches!(mapped, Error::ObjectStore(_)),
+            "a NotFound must stay ObjectStore, got {mapped:?}"
+        );
     }
 }
