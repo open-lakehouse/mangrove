@@ -1,3 +1,7 @@
+import { registerCatalogProvider } from "@open-lakehouse/editor";
+import { FilesServiceProvider } from "@open-lakehouse/files";
+import { registerStubFiles } from "@open-lakehouse/files/testing";
+import { registerWasmFiles } from "@open-lakehouse/files-wasm";
 import { LogQueryServiceProvider } from "@open-lakehouse/log-query";
 import { registerStubLogPreview } from "@open-lakehouse/log-query/testing";
 import { QueryServiceProvider } from "@open-lakehouse/query";
@@ -10,7 +14,10 @@ import {
   Toaster,
   TooltipProvider,
 } from "@open-lakehouse/ui-kit";
-import { EnvironmentScopeProvider } from "@open-lakehouse/unity-catalog";
+import {
+  EnvironmentScopeProvider,
+  ucCatalogProvider,
+} from "@open-lakehouse/unity-catalog";
 import {
   createUnityCatalogClient,
   UnityCatalogProvider,
@@ -55,6 +62,28 @@ if (import.meta.env.VITE_ENABLE_WASM_QUERY === "true") {
   registerStubLogPreview();
 }
 
+// The volume file editor's SQL completion sources catalog/schema/table/column
+// names from Unity Catalog. Register the UC-backed provider (the editor package
+// itself is UC-agnostic — it ships an empty default and degrades to keyword-only
+// completion until a provider is registered here). Late-bound, so ordering vs
+// the editor's own bootstrap doesn't matter.
+registerCatalogProvider(ucCatalogProvider);
+
+// The volume Files tab (in VolumeDetail) is gated on hasFilesRunner(). In
+// wasm-enabled builds we register the REAL in-browser files backend (direct-to-
+// cloud listing over CORS, backed by crates/query-wasm); in default builds
+// @open-lakehouse/files-wasm is aliased to a no-op stub (vite.config.ts), so we
+// fall back to the dev fixture stub runner, which renders a canned volume file
+// tree end-to-end without wasm. The backend is read-only (canWrite() is false),
+// so the editor session opens files read-only until write verbs land.
+if (import.meta.env.VITE_ENABLE_WASM_QUERY === "true") {
+  registerWasmFiles({
+    baseUrl: `${window.location.origin}/api/2.1/unity-catalog`,
+  });
+} else {
+  registerStubFiles();
+}
+
 const queryClient = new QueryClient();
 const router = createAppRouter(queryClient);
 
@@ -74,15 +103,20 @@ createRoot(rootElement).render(
               backs it in this build; a host / the future wasm engine swaps in a
               real runner via registerLogQueryRunner (see @open-lakehouse/log-query). */}
           <LogQueryServiceProvider>
-            {/* Single-environment app: one stable scope namespace for the UC tree. */}
-            <EnvironmentScopeProvider scopeId="uc">
-              <ThemeProvider>
-                <TooltipProvider delayDuration={300}>
-                  <RouterProvider router={router} />
-                  <Toaster position="bottom-right" />
-                </TooltipProvider>
-              </ThemeProvider>
-            </EnvironmentScopeProvider>
+            {/* The volume-files seam, backing the VolumeDetail Files tab. The
+                stub (or wasm) runner registered above serves it; the editor reads
+                files through this service. */}
+            <FilesServiceProvider>
+              {/* Single-environment app: one stable scope namespace for the UC tree. */}
+              <EnvironmentScopeProvider scopeId="uc">
+                <ThemeProvider>
+                  <TooltipProvider delayDuration={300}>
+                    <RouterProvider router={router} />
+                    <Toaster position="bottom-right" />
+                  </TooltipProvider>
+                </ThemeProvider>
+              </EnvironmentScopeProvider>
+            </FilesServiceProvider>
           </LogQueryServiceProvider>
         </QueryServiceProvider>
       </UnityCatalogProvider>

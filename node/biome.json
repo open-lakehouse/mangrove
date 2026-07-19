@@ -24,7 +24,12 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.stories.tsx", "**/vite.config.ts", "**/.storybook/**"],
+      "includes": [
+        "**/*.stories.tsx",
+        "**/vite.config.ts",
+        "**/.storybook/**",
+        "**/*.d.ts"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -145,6 +150,30 @@
                   {
                     "group": ["@open-lakehouse/unity-catalog"],
                     "message": "files is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on files (renders a volume Files tab), never the reverse."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["editor/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@open-lakehouse/unity-catalog",
+                      "@open-lakehouse/query",
+                      "@open-lakehouse/data-grid"
+                    ],
+                    "message": "editor is a leaf: it must not import Unity Catalog, query, or data-grid. The Unity Catalog package builds on the editor and pushes catalog context in via registerCatalogProvider; run/results are wired by the consumer via an injected onRun callback. Never the reverse."
                   }
                 ]
               }

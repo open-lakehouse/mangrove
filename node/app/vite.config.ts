@@ -41,7 +41,14 @@ export default defineConfig({
             "../../crates/query-wasm/pkg/query_wasm.js",
           ),
         }
-      : { "@open-lakehouse/query-wasm": "@open-lakehouse/query-wasm/stub" },
+      : {
+          // Default builds ship no wasm: alias both wasm engines to their no-op
+          // stubs so neither tries to resolve the gitignored wasm-bindgen artifact
+          // under crates/query-wasm/pkg/. The query preview + volume Files tab then
+          // fall back to their dev stub runners (see main.tsx).
+          "@open-lakehouse/query-wasm": "@open-lakehouse/query-wasm/stub",
+          "@open-lakehouse/files-wasm": "@open-lakehouse/files-wasm/stub",
+        },
   },
   server: {
     port: 3003,
