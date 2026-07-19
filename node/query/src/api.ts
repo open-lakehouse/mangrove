@@ -51,31 +51,42 @@ class PreviewRun implements PreviewHandle {
   private _version = 0;
   private _running = true;
   private _error: Error | null = null;
-  private _started = false;
+  private _active = false;
   private readonly sql: string;
+  private readonly externalSignal?: AbortSignal;
 
   constructor(req: PreviewRequest, limit: number) {
-    // Chain an external abort signal into our controller. Handle the
-    // already-aborted case explicitly: `addEventListener` never fires for an
-    // event that has already passed.
-    if (req.signal?.aborted) {
-      this.cancel();
-    } else {
-      req.signal?.addEventListener("abort", () => this.cancel(), {
-        once: true,
-      });
-    }
     // Build the SQL now (cheap, synchronous) but defer the run: `start()` is
     // invoked from the hook's mount effect so the stream can't emit before the
     // `useSyncExternalStore` subscription is attached. Otherwise fast (warm-
     // cache) runs finish before subscribe and their bumps are lost, leaving the
     // grid holding a full store it was never told to re-read.
     this.sql = buildPreviewSql(req, limit);
+    this.externalSignal = req.signal;
   }
 
+  // Begin (or re-begin) the run. Called from the hook's mount effect; must be
+  // resilient to React StrictMode's mount → cleanup → mount cycle, which invokes
+  // start() → cancel() → start() on this same handle. A cancel() aborts the
+  // controller, so the second start() has to spin up a FRESH controller and run
+  // rather than no-op — otherwise the run stays dead and the grid shows "No rows"
+  // until an unrelated dep change (table switch) builds a new handle. That dead-
+  // handle trap was the real first-view-empty bug.
   start(): void {
-    if (this._started || this.controller.signal.aborted) return;
-    this._started = true;
+    if (this._active) return;
+    // Honour an already-aborted external signal: nothing to run.
+    if (this.externalSignal?.aborted) return;
+    this._active = true;
+    // Fresh controller so a prior cancel() (StrictMode throwaway, or a resumed
+    // mount) doesn't leave us permanently aborted. Reset per-run state; the
+    // store is cleared so a restart can't double-append rows.
+    this.controller = new AbortController();
+    this.store.reset();
+    this._error = null;
+    this._running = true;
+    this.externalSignal?.addEventListener("abort", () => this.cancel(), {
+      once: true,
+    });
     void this.drive(this.sql);
   }
 
@@ -95,6 +106,9 @@ class PreviewRun implements PreviewHandle {
   }
 
   cancel(): void {
+    // Clearing `_active` lets a later start() (e.g. StrictMode's second mount)
+    // spin up a fresh run instead of no-opping on the aborted controller.
+    this._active = false;
     if (!this.controller.signal.aborted) this.controller.abort();
   }
 
@@ -104,22 +118,33 @@ class PreviewRun implements PreviewHandle {
   }
 
   private async drive(sql: string): Promise<void> {
+    // Capture the controller for THIS run: cancel()/start() may swap
+    // `this.controller` for a later run, but this generator must observe the
+    // signal it was launched with.
+    const { signal } = this.controller;
     try {
       for await (const chunk of queryRunner(
         { sql, limit: undefined },
-        { signal: this.controller.signal },
+        { signal },
       )) {
+        if (signal.aborted) return;
         this.store.append(chunk.arrowIpc);
         this.bump();
       }
     } catch (err) {
       // An abort is an intentional teardown, not a surfaced error.
-      if (!this.controller.signal.aborted) {
+      if (!signal.aborted) {
         this._error = err instanceof Error ? err : new Error(String(err));
       }
     } finally {
-      this._running = false;
-      this.bump();
+      // Only the currently-live run reports completion. If this run was aborted
+      // and superseded by a fresh start() (StrictMode remount), its controller
+      // is no longer `this.controller`; skip so it can't flip `running` false or
+      // bump on behalf of the live run.
+      if (signal === this.controller.signal) {
+        this._running = false;
+        this.bump();
+      }
     }
   }
 }

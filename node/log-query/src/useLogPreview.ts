@@ -47,9 +47,11 @@ export function useLogPreview(
 
   // Start the run and arrange cleanup. This effect runs *after* the
   // `useSyncExternalStore` subscription is committed, so no chunk can be
-  // appended before a subscriber exists to observe its bump — the race that
-  // left a full store unrendered until a table switch or reconciled/actions
-  // toggle. `start()` is idempotent (Strict Mode double-invokes effects).
+  // appended before a subscriber exists to observe its bump. Under React
+  // StrictMode this fires start() → cancel() → start() on the same handle;
+  // `LogPreviewRun` handles that by re-running on the second start() with a
+  // fresh AbortController (a plain "already started/aborted" guard would leave
+  // the run dead and the grid empty until a kind toggle built a new handle).
   useEffect(() => {
     handle.start();
     return () => handle.cancel();
