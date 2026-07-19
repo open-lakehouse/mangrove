@@ -34,6 +34,10 @@ class LogPreviewRun implements LogPreviewHandle {
   private _version = 0;
   private _running = true;
   private _error: Error | null = null;
+  private _started = false;
+  private readonly target: string;
+  private readonly kind: LogKind;
+  private readonly limit: number;
 
   constructor(req: LogPreviewRequest, kind: LogKind, limit: number) {
     // Chain an external abort signal into our controller. Handle the
@@ -46,7 +50,20 @@ class LogPreviewRun implements LogPreviewHandle {
         once: true,
       });
     }
-    void this.drive(req.target, kind, limit);
+    // Defer the run: `start()` is invoked from the hook's mount effect so the
+    // stream can't emit before the `useSyncExternalStore` subscription is
+    // attached. Otherwise fast (warm-cache) runs finish before subscribe and
+    // their bumps are lost, leaving the grid holding a full store it was never
+    // told to re-read.
+    this.target = req.target;
+    this.kind = kind;
+    this.limit = limit;
+  }
+
+  start(): void {
+    if (this._started || this.controller.signal.aborted) return;
+    this._started = true;
+    void this.drive(this.target, this.kind, this.limit);
   }
 
   get version(): number {

@@ -27,6 +27,11 @@ export interface PreviewRequest {
 export interface PreviewHandle {
   /** The grid's input contract — chunks are appended here as they stream in. */
   readonly store: ArrowResultStore;
+  /** Begin the run. Idempotent and deferred: the hook calls this from a mount
+   *  effect — i.e. *after* `subscribe` is attached — so no chunk can be appended
+   *  (and bumped) before a subscriber exists to observe it. A no-op if already
+   *  started or cancelled. */
+  start(): void;
   /** Register a change callback; returns an unsubscribe. Fires per append and
    *  on running/error transitions. */
   subscribe(cb: () => void): () => void;

@@ -150,6 +150,7 @@
       "name": "@open-lakehouse/query-wasm",
       "version": "0.1.0",
       "dependencies": {
+        "@open-lakehouse/log-query": "^0.1.0",
         "@open-lakehouse/query": "^0.1.0",
       },
       "devDependencies": {

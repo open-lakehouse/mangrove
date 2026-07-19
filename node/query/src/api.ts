@@ -51,6 +51,8 @@ class PreviewRun implements PreviewHandle {
   private _version = 0;
   private _running = true;
   private _error: Error | null = null;
+  private _started = false;
+  private readonly sql: string;
 
   constructor(req: PreviewRequest, limit: number) {
     // Chain an external abort signal into our controller. Handle the
@@ -63,7 +65,18 @@ class PreviewRun implements PreviewHandle {
         once: true,
       });
     }
-    void this.drive(buildPreviewSql(req, limit));
+    // Build the SQL now (cheap, synchronous) but defer the run: `start()` is
+    // invoked from the hook's mount effect so the stream can't emit before the
+    // `useSyncExternalStore` subscription is attached. Otherwise fast (warm-
+    // cache) runs finish before subscribe and their bumps are lost, leaving the
+    // grid holding a full store it was never told to re-read.
+    this.sql = buildPreviewSql(req, limit);
+  }
+
+  start(): void {
+    if (this._started || this.controller.signal.aborted) return;
+    this._started = true;
+    void this.drive(this.sql);
   }
 
   get version(): number {
