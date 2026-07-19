@@ -16,14 +16,27 @@
 //! credentials can never silently widen privileges across renewals.
 
 use std::sync::Arc;
-use std::time::Instant;
 
 use chrono::{DateTime, Utc};
 use object_store::aws::AwsCredential;
 use object_store::azure::AzureCredential;
 use object_store::gcp::GcpCredential;
 use object_store::{CredentialProvider, Result};
+
+// The token cache and its `Instant` are selected per target, mirroring the
+// transport alias in `lib.rs`. `olai_http_wasm`'s cache is API-compatible with
+// `olai_http`'s, but its `TemporaryToken.expiry` is a `web_time::Instant` —
+// `std::time::Instant::now()` panics on `wasm32-unknown-unknown`.
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
+
+#[cfg(not(target_arch = "wasm32"))]
 use olai_http::{TemporaryToken, TokenCache};
+#[cfg(target_arch = "wasm32")]
+use olai_http_wasm::{TemporaryToken, TokenCache};
 use unitycatalog_client::{
     PathOperation, TableOperation, TemporaryCredentialClient, VolumeOperation,
 };
@@ -129,14 +142,31 @@ impl<T> std::fmt::Debug for UCCredentialProvider<T> {
     }
 }
 
+// The credential future on `wasm32` awaits the browser Fetch transport, which
+// is `!Send`, yet `object_store::CredentialProvider` boxes a `Send` future.
+// `send_wrapper::SendWrapper` makes it satisfy the bound: the wrapped future is
+// only ever polled on its creating thread (true in the browser's single-thread
+// model). The whole cache future is wrapped, not just the vending closure,
+// because `TokenCache::get_or_insert_with`'s own future is `!Send` too.
 #[async_trait::async_trait]
 impl CredentialProvider for UCCredentialProvider<AzureCredential> {
     type Credential = AzureCredential;
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn get_credential(&self) -> Result<Arc<AzureCredential>> {
         self.cache
             .get_or_insert_with(|| async { as_azure(&self.get_credential_inner().await?) })
             .await
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    async fn get_credential(&self) -> Result<Arc<AzureCredential>> {
+        send_wrapper::SendWrapper::new(async move {
+            self.cache
+                .get_or_insert_with(|| async { as_azure(&self.get_credential_inner().await?) })
+                .await
+        })
+        .await
     }
 }
 
@@ -144,10 +174,21 @@ impl CredentialProvider for UCCredentialProvider<AzureCredential> {
 impl CredentialProvider for UCCredentialProvider<AwsCredential> {
     type Credential = AwsCredential;
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn get_credential(&self) -> Result<Arc<AwsCredential>> {
         self.cache
             .get_or_insert_with(|| async { as_aws(&self.get_credential_inner().await?) })
             .await
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    async fn get_credential(&self) -> Result<Arc<AwsCredential>> {
+        send_wrapper::SendWrapper::new(async move {
+            self.cache
+                .get_or_insert_with(|| async { as_aws(&self.get_credential_inner().await?) })
+                .await
+        })
+        .await
     }
 }
 
@@ -155,10 +196,21 @@ impl CredentialProvider for UCCredentialProvider<AwsCredential> {
 impl CredentialProvider for UCCredentialProvider<GcpCredential> {
     type Credential = GcpCredential;
 
+    #[cfg(not(target_arch = "wasm32"))]
     async fn get_credential(&self) -> Result<Arc<GcpCredential>> {
         self.cache
             .get_or_insert_with(|| async { as_gcp(&self.get_credential_inner().await?) })
             .await
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    async fn get_credential(&self) -> Result<Arc<GcpCredential>> {
+        send_wrapper::SendWrapper::new(async move {
+            self.cache
+                .get_or_insert_with(|| async { as_gcp(&self.get_credential_inner().await?) })
+                .await
+        })
+        .await
     }
 }
 
