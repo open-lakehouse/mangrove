@@ -1,4 +1,4 @@
-use olai_http::CloudClient;
+use crate::Transport;
 use reqwest::IntoUrl;
 use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
 use unitycatalog_common::{
@@ -205,11 +205,11 @@ pub struct TemporaryCredentialClient {
 }
 
 impl TemporaryCredentialClient {
-    /// Creates a client from a [`CloudClient`] (carrying auth) and a base URL.
+    /// Creates a client from the per-target [`Transport`] (carrying auth) and a base URL.
     ///
     /// The base URL is normalized to end in `/` so it joins cleanly with the
     /// relative endpoint paths.
-    pub fn new_with_url(client: CloudClient, mut base_url: Url) -> Self {
+    pub fn new_with_url(client: Transport, mut base_url: Url) -> Self {
         if !base_url.path().ends_with('/') {
             base_url.set_path(&format!("{}/", base_url.path()));
         }
@@ -251,6 +251,7 @@ impl TemporaryCredentialClient {
             .send_raw()
             .await
             .map_err(crate::Error::from_api_send)?;
+        let response = crate::error::check_api_response(response).await?;
         let bytes = response.bytes().await?;
 
         // Drop any `credentials` oneof member whose value is null, so the

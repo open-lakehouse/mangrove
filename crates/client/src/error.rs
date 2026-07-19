@@ -13,6 +13,9 @@ pub enum Error {
     #[error("Delta API error {}: [{:?}] {}", .0.code, .0.error_type, .0.message)]
     Delta(DeltaErrorModel),
 
+    // `olai_http::Error` is a native-only transport error (olai-http is not a wasm
+    // dependency). On wasm, transport failures surface as `RequestError` instead.
+    #[cfg(not(target_arch = "wasm32"))]
     #[error("Client Error: {source}")]
     ClientError {
         #[from]
@@ -54,6 +57,7 @@ impl Error {
     /// (a [`olai_http::RetryError`]) is parsed as a Delta error envelope via
     /// [`parse_delta_error`]. A transport failure with no status also maps to
     /// [`Error::ClientError`].
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn from_delta_send(err: olai_http::SendRawError) -> Self {
         match err {
             olai_http::SendRawError::Sign(e) => Error::ClientError { source: e },
@@ -68,6 +72,7 @@ impl Error {
     /// Map a failed UC API request into a typed [`Error`], mirroring
     /// [`from_delta_send`](Self::from_delta_send) but parsing the UC API error
     /// body (`{ error_code, message }`) via [`parse_error`].
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn from_api_send(err: olai_http::SendRawError) -> Self {
         match err {
             olai_http::SendRawError::Sign(e) => Error::ClientError { source: e },
@@ -78,6 +83,76 @@ impl Error {
         }
     }
 
+    /// wasm counterpart of [`from_delta_send`](Self::from_delta_send).
+    ///
+    /// `WasmClient::send_raw` returns a plain `reqwest::Error`, which is only ever
+    /// a transport/CORS failure (the browser Fetch backend has no retry layer and
+    /// does not classify HTTP status). Non-2xx responses come back as
+    /// `Ok(Response)` and are handled at the call site (see
+    /// [`Error::delta_status`] / the wasm `table_exists` path), so here we only map
+    /// the transport error.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn from_delta_send(err: reqwest::Error) -> Self {
+        Error::RequestError(err)
+    }
+
+    /// wasm counterpart of [`from_api_send`](Self::from_api_send).
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn from_api_send(err: reqwest::Error) -> Self {
+        Error::RequestError(err)
+    }
+
+    /// Build a [`Error::Delta`] from a bare HTTP status with no error body.
+    ///
+    /// Used on the wasm path where a non-2xx `Ok(Response)` carries no parsed Delta
+    /// envelope (e.g. a HEAD response) — mirrors [`parse_delta_error`] with an
+    /// empty body.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn delta_status(status: reqwest::StatusCode) -> Self {
+        parse_delta_error(status.as_u16(), None)
+    }
+}
+
+/// Status-check a `reqwest::Response` and parse a non-2xx body as a Delta error
+/// envelope, on wasm only.
+///
+/// On native, `CloudClient::send_raw` already fails a non-2xx with a
+/// `SendRawError::Retry` (handled by [`Error::from_delta_send`]), so a `Response`
+/// in hand is already successful — this is a passthrough. On wasm, `WasmClient`'s
+/// Fetch backend returns `Ok(Response)` for every status, so we must classify it
+/// here to match native semantics.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) async fn check_delta_response(response: reqwest::Response) -> Result<reqwest::Response> {
+    Ok(response)
+}
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) async fn check_delta_response(response: reqwest::Response) -> Result<reqwest::Response> {
+    let status = response.status();
+    if status.is_success() {
+        return Ok(response);
+    }
+    let body = response.bytes().await.map_err(Error::RequestError)?;
+    Err(parse_delta_error(status.as_u16(), Some(&body)))
+}
+
+/// wasm/native twin of [`check_delta_response`] parsing the UC API error body.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) async fn check_api_response(response: reqwest::Response) -> Result<reqwest::Response> {
+    Ok(response)
+}
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) async fn check_api_response(response: reqwest::Response) -> Result<reqwest::Response> {
+    let status = response.status();
+    if status.is_success() {
+        return Ok(response);
+    }
+    let body = response.bytes().await.map_err(Error::RequestError)?;
+    Err(parse_error(status.as_u16(), Some(&body)))
+}
+
+impl Error {
     pub fn is_not_found(&self) -> bool {
         match self {
             Error::Api(UcApiError::NotFound { .. }) => true,
