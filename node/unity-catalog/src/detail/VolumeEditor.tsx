@@ -1,45 +1,55 @@
 // The volume file editor — the "Files" tab of VolumeDetail.
 //
-// Composes the reusable editor package: a file list on the left, the persistent
-// Monaco editor + tab strip in the middle (SQL highlighting, catalog-aware
-// completion via the UC-backed provider registered in main.tsx, live pgsql
-// diagnostics), a live markdown preview for `.md`, and — when a query runner is
-// registered — a results grid driven by running the buffer's SQL.
+// Composes two seam packages the app wires up, keeping UC decoupled from both:
+//   - @open-lakehouse/files — browse the volume (useDirectory) and read file
+//     bytes (FilesService.readFile). Read-only in v1 (canWrite() is false).
+//   - @open-lakehouse/editor — the Monaco editor + tab session. SQL highlighting,
+//     catalog-aware completion (via the UC-backed CatalogProvider registered in
+//     main.tsx), live pgsql diagnostics, and a markdown preview for `.md`.
 //
-// This is where the editor's seams are pushed in: the FileStore is injected as a
-// prop, and `onRun` drives @open-lakehouse/query. The editor package itself
-// never imports query / data-grid / unity-catalog — that composition lives here.
+// Because the files backend is read-only, the editor session runs in read-only
+// mode: files open and are editable in the buffer, but nothing is persisted
+// (autosave disabled) until the files seam gains write verbs. When a query runner
+// is registered, running a SQL buffer streams results into a grid.
 //
-// ⚠️ The UC volume Files API is not yet implemented server-side (see
-// ./editor/ucFileStore), so this seeds an in-memory store with a couple of demo
-// files. Swap `memoryFileStore(...)` for `createUcFileStore(...)` once the Files
-// API lands.
+// The editor's FileStore seam is satisfied by a thin read-only adapter over the
+// FilesService — no writeFile, so the session is read-only by construction.
 
 import { ArrowResultStore, DataGrid } from "@open-lakehouse/data-grid";
 import { MonacoHost } from "@open-lakehouse/editor";
 import {
   EditorSessionProvider,
+  type FileStore,
   MarkdownPreview,
   type RunRequest,
   TabStrip,
   useEditorSession,
 } from "@open-lakehouse/editor/session";
+import {
+  type DirectoryEntry,
+  type FilesService,
+  formatVolumePath,
+  hasFilesRunner,
+  useDirectory,
+  useFilesService,
+} from "@open-lakehouse/files";
 import { hasQueryRunner, queryRunner } from "@open-lakehouse/query";
 import { cn } from "@open-lakehouse/ui-kit";
-import { FileText } from "lucide-react";
+import { FileText, Folder } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { memoryFileStore } from "../editor/ucFileStore";
 
-// Demo files until the volume Files API lands. Keyed by an in-volume path.
-const DEMO_FILES: Record<string, string> = {
-  "query.sql": `-- Catalog-aware completion + live validation.
-select id, email
-from main.default.users
-where events > 10;
-`,
-  "README.md": `# Volume files\n\nThis is a **markdown** preview rendered from the editor buffer.\n`,
-  "notes.txt": "Plain text opens in a Monaco buffer.\n",
-};
+/** Adapt the files seam's FilesService to the editor's (read-only) FileStore:
+ *  readFile drains the file bytes; no writeFile, so the editor session is
+ *  read-only (autosave disabled) — matching the files backend's canWrite()=false. */
+function filesReadOnlyStore(svc: FilesService): FileStore {
+  return {
+    async readFile(path) {
+      const bytes = await svc.readFile({ path });
+      // The files seam doesn't surface an etag on read; read-only needs none.
+      return { bytes, stat: { etag: "" } };
+    },
+  };
+}
 
 /** A tiny run/results controller: streams the buffer's SQL through the query
  *  runner into an ArrowResultStore. Kept minimal and local — the reusable query
@@ -80,12 +90,30 @@ function useRunResults() {
 }
 
 export function VolumeEditor({ fullName }: { fullName: string }) {
-  // The Volumes root this editor is rooted at. A real FileStore would address
-  // `/Volumes/<catalog>/<schema>/<volume>/...` (via createUcFileStore); the demo
-  // store ignores the root, but we surface it so the intent is visible.
-  const volumeRoot = `/Volumes/${fullName.split(".").join("/")}`;
-  // One in-memory file store per mounted volume editor (until the Files API lands).
-  const fileStore = useMemo(() => memoryFileStore(DEMO_FILES), []);
+  // The Files tab is only offered when a files runner is registered (the app
+  // wires the dev stub / wasm backend); otherwise there's nothing to browse.
+  if (!hasFilesRunner()) {
+    return (
+      <p className="p-4 text-sm text-muted-foreground">
+        File browsing isn't available in this build.
+      </p>
+    );
+  }
+  return <VolumeEditorInner fullName={fullName} />;
+}
+
+function VolumeEditorInner({ fullName }: { fullName: string }) {
+  // The volume root: /Volumes/<catalog>/<schema>/<volume> from the dotted name.
+  const [catalog, schema, volume] = fullName.split(".");
+  const volumeRoot = useMemo(
+    () => formatVolumePath({ catalog, schema, volume, relativePath: "" }),
+    [catalog, schema, volume],
+  );
+
+  const svc = useFilesService();
+  // Read-only FileStore over the files service (no writeFile → session is
+  // read-only). Rebuilt only when the service instance changes.
+  const fileStore = useMemo(() => filesReadOnlyStore(svc), [svc]);
   const results = useRunResults();
 
   const onRun = useCallback(
@@ -99,7 +127,7 @@ export function VolumeEditor({ fullName }: { fullName: string }) {
   return (
     <EditorSessionProvider fileStore={fileStore} onRun={onRun}>
       <div className="flex h-[32rem] overflow-hidden rounded-md border">
-        <FileList paths={Object.keys(DEMO_FILES)} root={volumeRoot} />
+        <FileList root={volumeRoot} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TabStrip />
           <EditorSurface results={results} />
@@ -109,33 +137,75 @@ export function VolumeEditor({ fullName }: { fullName: string }) {
   );
 }
 
-function FileList({ paths, root }: { paths: string[]; root: string }) {
+function FileList({ root }: { root: string }) {
   const { openFile, activeId } = useEditorSession();
+  const { entries, isLoading, error, hasMore, loadMore } = useDirectory(root);
+
   return (
-    <nav className="w-48 shrink-0 overflow-y-auto border-r bg-sidebar p-1 text-sm">
+    <nav className="w-56 shrink-0 overflow-y-auto border-r bg-sidebar p-1 text-sm">
       <div
         className="truncate px-2 py-1 font-mono text-xs text-muted-foreground"
         title={root}
       >
         {root}
       </div>
-      {paths.map((path) => (
-        <button
-          key={path}
-          type="button"
-          onClick={() => void openFile(path)}
-          className={cn(
-            "flex w-full items-center gap-1.5 rounded px-2 py-1 text-left",
-            activeId === path
-              ? "bg-accent text-foreground"
-              : "text-muted-foreground hover:bg-accent/50",
-          )}
-        >
-          <FileText className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{path}</span>
-        </button>
+      {error && (
+        <p className="px-2 py-1 text-xs text-destructive">{error.message}</p>
+      )}
+      {entries.map((entry) => (
+        <FileRow
+          key={entry.path}
+          entry={entry}
+          active={activeId === entry.path}
+          onOpen={() => {
+            // Files open in the editor; directories are inert in this first cut.
+            if (!entry.isDirectory) void openFile(entry.path);
+          }}
+        />
       ))}
+      {isLoading && (
+        <p className="px-2 py-1 text-xs text-muted-foreground">Loading…</p>
+      )}
+      {hasMore && !isLoading && (
+        <button
+          type="button"
+          onClick={loadMore}
+          className="w-full rounded px-2 py-1 text-left text-xs text-muted-foreground hover:bg-accent/50"
+        >
+          Load more…
+        </button>
+      )}
     </nav>
+  );
+}
+
+function FileRow({
+  entry,
+  active,
+  onOpen,
+}: {
+  entry: DirectoryEntry;
+  active: boolean;
+  onOpen: () => void;
+}) {
+  const name = entry.path.replace(/\/+$/, "").split("/").pop() ?? entry.path;
+  const Icon = entry.isDirectory ? Folder : FileText;
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={cn(
+        "flex w-full items-center gap-1.5 rounded px-2 py-1 text-left",
+        active
+          ? "bg-accent text-foreground"
+          : "text-muted-foreground hover:bg-accent/50",
+        entry.isDirectory && "cursor-default",
+      )}
+      title={entry.path}
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0" />
+      <span className="truncate">{name}</span>
+    </button>
   );
 }
 
@@ -144,43 +214,50 @@ function EditorSurface({
 }: {
   results: ReturnType<typeof useRunResults>;
 }) {
-  const { activeId, runActive, attachMonaco } = useEditorSession();
+  const { activeId, runActive, attachMonaco, readOnly } = useEditorSession();
   const isMarkdown = activeId?.toLowerCase().endsWith(".md") ?? false;
   const showResults = hasQueryRunner();
 
   return (
-    <div className="flex min-h-0 flex-1">
-      <div className="min-w-0 flex-1">
-        <MonacoHost
-          activeId={activeId}
-          onRun={runActive}
-          onEditorMount={attachMonaco}
-          emptyState="Open a file from the list to start editing."
-        />
+    <div className="flex min-h-0 flex-1 flex-col">
+      {readOnly && activeId && (
+        <div className="border-b bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+          Read-only — edits aren't saved (volume writes aren't available yet).
+        </div>
+      )}
+      <div className="flex min-h-0 flex-1">
+        <div className="min-w-0 flex-1">
+          <MonacoHost
+            activeId={activeId}
+            onRun={runActive}
+            onEditorMount={attachMonaco}
+            emptyState="Open a file from the list to view it."
+          />
+        </div>
+        {isMarkdown && activeId && (
+          <div className="w-1/2 min-w-0">
+            <MarkdownPreview activePath={activeId} />
+          </div>
+        )}
+        {!isMarkdown && showResults && (
+          <div className="flex w-1/2 min-w-0 flex-col border-l">
+            <div className="border-b px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Results
+            </div>
+            <div className="min-h-0 flex-1">
+              {results.error ? (
+                <p className="p-3 text-sm text-destructive">{results.error}</p>
+              ) : (
+                <DataGrid
+                  store={results.store}
+                  version={results.version}
+                  running={results.running}
+                />
+              )}
+            </div>
+          </div>
+        )}
       </div>
-      {isMarkdown && activeId && (
-        <div className="w-1/2 min-w-0">
-          <MarkdownPreview activePath={activeId} />
-        </div>
-      )}
-      {!isMarkdown && showResults && (
-        <div className="flex w-1/2 min-w-0 flex-col border-l">
-          <div className="border-b px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Results
-          </div>
-          <div className="min-h-0 flex-1">
-            {results.error ? (
-              <p className="p-3 text-sm text-destructive">{results.error}</p>
-            ) : (
-              <DataGrid
-                store={results.store}
-                version={results.version}
-                running={results.running}
-              />
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

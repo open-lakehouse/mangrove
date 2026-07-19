@@ -12,6 +12,7 @@
   "dependencies": {
     "@open-lakehouse/data-grid": "^0.1.0",
     "@open-lakehouse/editor": "^0.1.0",
+    "@open-lakehouse/files": "^0.1.0",
     "@open-lakehouse/log-query": "^0.1.0",
     "@open-lakehouse/query": "^0.1.0",
     "@open-lakehouse/ui-kit": "^0.1.0",
