@@ -9,6 +9,12 @@
 //
 // The store deals in bytes; the editor encodes/decodes text at its boundary
 // (Monaco needs whole strings), so binary handling stays possible later.
+//
+// READ-ONLY MODE: `writeFile` is OPTIONAL. When the host omits it (a store that
+// can only read — e.g. the current volume files backend, whose writes are
+// deferred), the session runs read-only: tabs open and are editable in the
+// buffer, but autosave is disabled (no dirty→save cycle, no persistence). The
+// session exposes this via `isReadOnly`.
 
 /** File metadata returned alongside a read (the proto/HTTP analog of a stat). */
 export interface FileStat {
@@ -21,10 +27,12 @@ export interface ReadResult {
   stat: FileStat;
 }
 
-/** Byte-level file access the editor session persists tabs through. */
+/** Byte-level file access the editor session reads tabs through, and — when the
+ *  host supports writes — persists them through. `writeFile` absent ⇒ read-only. */
 export interface FileStore {
   readFile(path: string): Promise<ReadResult>;
-  writeFile(
+  /** Persist a file. OPTIONAL: omit for a read-only store (autosave disabled). */
+  writeFile?(
     path: string,
     bytes: Uint8Array,
     opts: { ifMatchEtag?: string; contentType: string },

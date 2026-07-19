@@ -60,6 +60,9 @@ interface EditorSessionValue {
   activeId: TabId | null;
   /** True once the Monaco editor has mounted (openFile needs it). */
   editorReady: boolean;
+  /** True when the file store cannot write (no `writeFile`): tabs open and edit
+   *  in-buffer, but changes are never persisted and autosave is disabled. */
+  readOnly: boolean;
   /** Open (or focus, if already open) a file in a tab. */
   openFile: (path: string) => Promise<void>;
   activate: (id: TabId) => void;
@@ -111,15 +114,24 @@ export function EditorSessionProvider({
   onRunRef.current = onRun;
   const fileStoreRef = useRef(fileStore);
   fileStoreRef.current = fileStore;
+  // Read-only when the store can't write: no autosave, tabs are view/edit-only.
+  const readOnly = !fileStore.writeFile;
+  const readOnlyRef = useRef(readOnly);
+  readOnlyRef.current = readOnly;
 
   // Build the autosave instance once; its callbacks dispatch into the reducer.
   // The store is read through the ref so a changed prop is picked up on the next
-  // write without rebuilding the (timer-holding) autosave instance.
+  // write without rebuilding the (timer-holding) autosave instance. The write
+  // fn is forwarded only when the store has one (read-only stores omit it, and
+  // autosave then no-ops).
   if (autosaveRef.current === null) {
     autosaveRef.current = createAutosave(
       {
-        writeFile: (path, bytes, opts) =>
-          fileStoreRef.current.writeFile(path, bytes, opts),
+        writeFile: fileStoreRef.current.writeFile
+          ? (path, bytes, opts) =>
+              // biome-ignore lint/style/noNonNullAssertion: guarded by the ternary above.
+              fileStoreRef.current.writeFile!(path, bytes, opts)
+          : undefined,
         readFile: (path) => fileStoreRef.current.readFile(path),
       },
       {
@@ -159,11 +171,14 @@ export function EditorSessionProvider({
     etagsRef.current.set(path, stat.etag);
 
     // Mark dirty on edits; the autosave instance derives clean/dirty/saving.
-    const listener = entry.model.onDidChangeContent(() =>
-      autosaveRef.current?.noteEdit(path),
-    );
-    listenersRef.current.get(path)?.dispose();
-    listenersRef.current.set(path, listener);
+    // Skipped in read-only mode — there's nothing to save, so no dirty cycle.
+    if (!readOnlyRef.current) {
+      const listener = entry.model.onDidChangeContent(() =>
+        autosaveRef.current?.noteEdit(path),
+      );
+      listenersRef.current.get(path)?.dispose();
+      listenersRef.current.set(path, listener);
+    }
 
     const name = path.replace(/\/+$/, "").split("/").pop() ?? path;
     dispatch({
@@ -256,6 +271,7 @@ export function EditorSessionProvider({
       tabs: state.tabs,
       activeId: state.activeId,
       editorReady,
+      readOnly,
       openFile,
       activate,
       close,
@@ -268,6 +284,7 @@ export function EditorSessionProvider({
       state.tabs,
       state.activeId,
       editorReady,
+      readOnly,
       openFile,
       activate,
       close,

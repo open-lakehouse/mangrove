@@ -81,6 +81,9 @@ export function createAutosave(
     if (!entry || entry.model.isDisposed()) return;
     if (!isDirty(path)) return;
 
+    // Read-only store (no writeFile): nothing to persist — leave the tab dirty.
+    if (!fileStore.writeFile) return;
+
     // Snapshot BEFORE the write so edits during the write keep the tab dirty.
     const versionAtFlush = entry.model.getAlternativeVersionId();
     const content = entry.model.getValue();
