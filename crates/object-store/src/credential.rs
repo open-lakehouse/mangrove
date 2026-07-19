@@ -77,6 +77,10 @@ pub async fn new_azure(
     })
 }
 
+// AWS/GCP providers are never constructed on `wasm32` (the store is Azure-first
+// there; `to_store` returns `unsupported` for them), so gate the constructors
+// out of the wasm build to avoid dead-code warnings under `-D warnings`.
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn new_aws(
     client: TemporaryCredentialClient,
     cred: &TemporaryCredential,
@@ -91,6 +95,7 @@ pub async fn new_aws(
     })
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub async fn new_gcp(
     client: TemporaryCredentialClient,
     cred: &TemporaryCredential,
@@ -308,6 +313,9 @@ pub(super) fn as_gcp(cred: &TemporaryCredential) -> Result<TemporaryToken<Arc<Gc
 /// factory can use it when constructing the [`AmazonS3Builder`] — STS-vended
 /// credentials are often only valid against the S3 access-point URL, not the
 /// raw `s3://bucket/...` path.
+///
+/// Only used by the native AWS store branch (Azure-first on wasm).
+#[cfg(not(target_arch = "wasm32"))]
 pub(super) fn aws_access_point(cred: &TemporaryCredential) -> Option<String> {
     match cred.credentials.as_ref()? {
         Credentials::AwsTempCredentials(aws) if !aws.access_point.is_empty() => {

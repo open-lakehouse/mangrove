@@ -78,9 +78,11 @@ use unitycatalog_common::temporary_credentials::v1::TemporaryCredential;
 use unitycatalog_common::volumes::v1::GetVolumeRequest;
 use url::Url;
 
-use crate::credential::{
-    SecurableRef, as_aws, as_azure, as_gcp, aws_access_point, new_aws, new_azure, new_gcp,
-};
+use crate::credential::{SecurableRef, as_aws, as_azure, as_gcp, new_azure};
+// AWS/GCP provider constructors + the access-point helper are native-only: on
+// wasm the store is Azure-first and these are never constructed.
+#[cfg(not(target_arch = "wasm32"))]
+use crate::credential::{aws_access_point, new_aws, new_gcp};
 pub use crate::error::Error;
 pub use unitycatalog_common::UCReference;
 // Re-export the reference / operation enums so consumers do not need a direct
@@ -320,6 +322,10 @@ impl UCStore {
 pub struct UnityObjectStoreFactory {
     creds: TemporaryCredentialClient,
     uc: UnityCatalogClient,
+    // Read only by the native AWS store branch; the wasm build is Azure-first and
+    // never consults it, but keeping the field (and `with_aws_region`) uniform
+    // across targets avoids splitting the builder API.
+    #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
     aws_region: Option<String>,
     /// Dedicated runtime for object-store HTTP I/O, if configured via
     /// [`UnityObjectStoreFactoryBuilder::with_io_runtime`]. Absent on `wasm32`.

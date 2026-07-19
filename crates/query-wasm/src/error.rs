@@ -48,6 +48,41 @@ pub enum Error {
     InvalidResponse(String),
 }
 
+/// Map a canonical `olai-uc-client` error into a query-wasm [`Error`].
+///
+/// A `reqwest`-transport failure (the wasm Fetch backend) is tagged with the
+/// `network/CORS:` marker so [`crate::bindings::classify`] surfaces it as
+/// `NETWORK` — the same discriminant the hand-rolled REST client produced. Every
+/// other client error is a genuine catalog/protocol failure.
+impl From<unitycatalog_client::Error> for Error {
+    fn from(err: unitycatalog_client::Error) -> Self {
+        match err {
+            unitycatalog_client::Error::RequestError(e) => {
+                Error::UnityCatalog(format!("network/CORS: {e}"))
+            }
+            other => Error::UnityCatalog(other.to_string()),
+        }
+    }
+}
+
+/// Map a canonical `olai-uc-object-store` error into a query-wasm [`Error`].
+///
+/// Credential-vending goes through the same wasm Fetch transport, so a client
+/// transport failure nested inside is likewise tagged `network/CORS:`. Storage
+/// I/O errors flow through as [`Error::ObjectStore`] (its own `From` already
+/// covers the raw `object_store::Error` path from `get`/`list`).
+impl From<unitycatalog_object_store::Error> for Error {
+    fn from(err: unitycatalog_object_store::Error) -> Self {
+        match err {
+            unitycatalog_object_store::Error::ClientError { source } => source.into(),
+            unitycatalog_object_store::Error::UnityCatalogError { source } => {
+                Error::UnityCatalog(source.to_string())
+            }
+            other => Error::UnityCatalog(other.to_string()),
+        }
+    }
+}
+
 impl Error {
     /// Shorthand for an [`Error::Unsupported`] with a formatted reason.
     pub fn unsupported(reason: impl Into<String>) -> Self {

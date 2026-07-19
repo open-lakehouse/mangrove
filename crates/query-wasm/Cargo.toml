@@ -67,6 +67,20 @@ deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "c6abd5c0c3e
 # unifying its `delta_kernel` types with what `deltalake-wasm` returns.
 olai-delta-df = { path = "../olai-delta-df" }
 
+# The canonical Unity Catalog crates, now wasm-capable (PRs #150/#151): the
+# object-store factory drives the real MicrosoftAzure store over object_store's
+# browser-Fetch transport, and the client vends credentials + loads Delta table
+# metadata. These live in the repo ROOT workspace, so they are cross-workspace
+# `path` deps (like olai-delta-df); their `workspace = true` deps resolve against
+# the root workspace that owns their manifests, and this workspace's object_store
+# `[patch.crates-io]` unifies the store type across the whole graph. Default
+# features off mirrors how the object-store crate itself depends on the client.
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", default-features = false }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", default-features = false }
+# The Delta v1 wire models (DeltaLoadTableResponse) the loadTable gate reads.
+# default-features = false drops the `server` (axum) surface — models only.
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", default-features = false }
+
 arrow-array = { version = "58" }
 arrow-ipc = { version = "58" }
 arrow-schema = { version = "58" }
@@ -170,3 +184,9 @@ arrow-row = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f
 arrow-schema = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-schema" }
 arrow-select = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-select" }
 arrow-string = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-string" }
+
+# object_store: the roeap fork's 0.13.2-based wasm integration branch (per-target
+# reqwest split + wasm-guarded retry sleep). Keeps 0.13.2 semver so delta-rs /
+# datafusion resolve; enables the real MicrosoftAzure store on wasm32 (browser
+# Fetch transport) so query-wasm can drive canonical `olai-uc-object-store`.
+object_store = { git = "https://github.com/roeap/arrow-rs-object-store", branch = "feat/wasm-0.13" }

@@ -6,15 +6,16 @@
 //! This mirrors the *shape* of the native resolver (`crates/datafusion`'s
 //! `UnityCatalogProviderList` chain) without implementing DataFusion's
 //! `AsyncCatalogProviderList` traits: those are `Send + Sync` under
-//! `#[async_trait]`, but the browser fetch backend (`UcFetchStore`, reqwest-wasm)
-//! is `!Send`, so the resolve pass runs off a `?Send` trait of our own. The
-//! mechanics carry over unchanged — ad-hoc per-session resolution, store
-//! registration *inside* the resolve pass, a routing store behind DataFusion's
-//! coarse `scheme://host` registry key.
+//! `#[async_trait]`, but the browser Fetch transport (the canonical
+//! `olai-uc-object-store` / `olai-uc-client` on wasm, reqwest-wasm) is `!Send`,
+//! so the resolve pass runs off a `?Send` trait of our own. The mechanics carry
+//! over unchanged — ad-hoc per-session resolution, store registration *inside*
+//! the resolve pass, a routing store behind DataFusion's coarse `scheme://host`
+//! registry key.
 //!
 //! [`UcTableResolver`] is transport-abstracted so native tests drive the full
 //! resolve/register path with an [`InMemoryResolver`] instead of the wasm-only
-//! [`UcRestResolver`].
+//! [`UcRestResolver`], which drives the canonical `UnityObjectStoreFactory`.
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -158,7 +159,7 @@ impl SessionRouters {
 /// Resolves a Unity Catalog [`TableAddress`] to a [`ResolvedTable`] against a
 /// shared session.
 ///
-/// `#[async_trait(?Send)]` because the wasm transport (`UcFetchStore` /
+/// `#[async_trait(?Send)]` because the wasm transport (the canonical crates over
 /// reqwest-wasm) is `!Send`; the native [`InMemoryResolver`] is `Send` but the
 /// trait stays `?Send` so both fit one signature. Implementations MUST register
 /// the per-table store on `ctx` (via `routers.register`) before building the
@@ -266,8 +267,9 @@ impl UcTableResolver for InMemoryResolver {
 // wasm REST resolver
 // =====================================================================
 
-/// The browser resolver: runs the UC REST resolve → credentials → store → open
-/// pipeline (the body of the old `open_for`) against a live Unity Catalog.
+/// The browser resolver: drives the canonical `UnityObjectStoreFactory`
+/// (loadTable gate → credential vend → real object_store store → snapshot) over
+/// the wasm Fetch transport against a live Unity Catalog.
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 pub struct UcRestResolver {
     base_url: Url,
@@ -294,37 +296,51 @@ impl UcTableResolver for UcRestResolver {
         routers: &SessionRouters,
         addr: &TableAddress,
     ) -> Result<ResolvedTable> {
-        use crate::fetch_store::UcFetchStore;
         use crate::resolve::{discover_log, plan_table};
-        use crate::uc::UcClient;
+        use unitycatalog_client::TableOperation;
+        use unitycatalog_object_store::UnityObjectStoreFactory;
 
-        // 1. Resolve the table through Unity Catalog and gate on the v1 envelope.
-        let uc = UcClient::new(self.base_url.clone(), self.auth_token.clone());
-        let loaded = uc
+        // 1. Build the canonical Unity Catalog factory once. On wasm it drives a
+        //    browser Fetch transport (bearer via `with_auth` when a token is set,
+        //    otherwise the ambient browser session).
+        let factory = UnityObjectStoreFactory::builder()
+            .with_uri(self.base_url.as_str())
+            .with_token(self.auth_token.clone())
+            .with_allow_unauthenticated(self.auth_token.is_none())
+            .build()
+            .await?;
+
+        // 2. Load the table through the `/delta/v1` surface and gate on the v1
+        //    envelope (deletion vectors, unbackfilled commits, version) BEFORE
+        //    vending credentials or touching storage.
+        let full_name = format!("{}.{}.{}", addr.catalog, addr.schema, addr.table);
+        let loaded = factory
+            .unity_client()
+            .delta_v1()
             .load_table(&addr.catalog, &addr.schema, &addr.table)
             .await?;
         let plan = plan_table(&loaded)?;
-        let credential = uc.read_table_credentials(&plan.table_uuid).await?;
 
-        // 2. Vended credential → browser-fetchable store.
-        let storage = crate::creds::resolve_storage(&plan.location, &credential)?;
-        let table_path = Path::from_url_path(storage.table_url.path())
+        // 3. Vend credentials + build the real object_store cloud store in one
+        //    call. `UCStore::url()` is the fetchable table root; `as_dyn()` is the
+        //    prefix-scoped `Arc<dyn ObjectStore>` (rooted at the table location,
+        //    matching the old `Path::from_url_path(table_url.path())` contract).
+        let uc_store = factory.for_table(full_name, TableOperation::Read).await?;
+        let table_url = uc_store.url().clone();
+        let store = uc_store.as_dyn();
+        let table_path = Path::from_url_path(table_url.path())
             .map_err(|e| Error::InvalidUrl(format!("table path: {e}")))?;
-        let store: Arc<dyn ObjectStore> = Arc::new(UcFetchStore::try_new(
-            storage.table_url.clone(),
-            &storage.headers,
-        )?);
 
-        // 3. Register the routed store on the shared session, discover the log,
+        // 4. Register the routed store on the shared session, discover the log,
         //    and build the snapshot async-native (no prime). `latest_version` is
         //    `Some` only for catalog-managed tables — exactly when the kernel
         //    needs it as `max_catalog_version`.
-        routers.register(ctx, &storage.table_url, Arc::clone(&store));
+        routers.register(ctx, &table_url, Arc::clone(&store));
         let log = discover_log(&store, &table_path, plan.latest_version).await?;
         let version = log.version;
-        let snapshot = open_snapshot(ctx, &storage.table_url, log, plan.latest_version).await?;
+        let snapshot = open_snapshot(ctx, &table_url, log, plan.latest_version).await?;
         Ok(ResolvedTable {
-            table_url: storage.table_url,
+            table_url,
             store,
             snapshot,
             table_version: version,

@@ -1,18 +1,22 @@
-//! Minimal Unity Catalog REST client for the browser (wasm-only).
+//! Minimal Unity Catalog REST client for the browser (wasm-only), for the volume
+//! files path.
 //!
-//! Exactly the two calls table resolution needs — `/delta/v1` `loadTable` and
-//! `POST temporary-table-credentials` — over reqwest's fetch backend. Requests
+//! Exactly the two calls volume resolution needs — `GET /volumes/{name}` and
+//! `POST temporary-volume-credentials` — over reqwest's fetch backend. Requests
 //! ride the browser's same-origin credentials (cookies) plus an optional
-//! explicit bearer token. This is intentionally NOT `unitycatalog-client`:
-//! that crate's `olai-http` transport stack is native, and this standalone
-//! workspace only needs a thin projection (see [`crate::resolve`] for the DTOs).
+//! explicit bearer token.
+//!
+//! The table/query path no longer uses this client: it drives the canonical
+//! wasm-capable `olai-uc-object-store` / `olai-uc-client` crates (see
+//! [`crate::catalog::UcRestResolver`]). Migrating the volume path onto the same
+//! canonical crates is a deferred follow-up; until then this thin projection
+//! stays.
 
 use serde::Deserialize;
 use url::Url;
 
 use crate::creds::TemporaryCredential;
 use crate::error::{Error, Result};
-use crate::resolve::LoadTableResponse;
 
 /// Percent-encode one path segment (matches `unitycatalog-client`'s
 /// `encode_segment`: every non-alphanumeric byte, a superset of RFC 3986's
@@ -89,41 +93,6 @@ impl UcClient {
             )));
         }
         serde_json::from_slice(&bytes).map_err(|e| Error::InvalidResponse(format!("{what}: {e}")))
-    }
-
-    /// `GET /delta/v1/catalogs/{c}/schemas/{s}/tables/{t}` — table metadata,
-    /// commit tail, and latest ratified version.
-    pub async fn load_table(
-        &self,
-        catalog: &str,
-        schema: &str,
-        table: &str,
-    ) -> Result<LoadTableResponse> {
-        let url = self
-            .base_url
-            .join(&format!(
-                "delta/v1/catalogs/{}/schemas/{}/tables/{}",
-                encode_segment(catalog),
-                encode_segment(schema),
-                encode_segment(table),
-            ))
-            .map_err(|e| Error::InvalidUrl(e.to_string()))?;
-        self.send_json(self.request(reqwest::Method::GET, url), "loadTable")
-            .await
-    }
-
-    /// `POST /temporary-table-credentials` with `operation: READ`.
-    pub async fn read_table_credentials(&self, table_uuid: &str) -> Result<TemporaryCredential> {
-        let url = self
-            .base_url
-            .join("temporary-table-credentials")
-            .map_err(|e| Error::InvalidUrl(e.to_string()))?;
-        let body = serde_json::json!({ "tableId": table_uuid, "operation": "READ" });
-        self.send_json(
-            self.request(reqwest::Method::POST, url).json(&body),
-            "temporary-table-credentials",
-        )
-        .await
     }
 
     /// `GET /volumes/{name}` — volume metadata, where `full_name` is the dotted
