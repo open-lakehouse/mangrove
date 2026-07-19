@@ -50,7 +50,10 @@ zeroize = { workspace = true }
 axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }
 futures = { version = "0.3", optional = true }
-olai-store = { workspace = true, features = ["encryption"] }
+# The ResourceStore backend layer (registry types, `Object`, `ResourceName`,
+# `Label`/descriptors). Native-only; optional so the wire-DTO models compile on
+# wasm without it. Pulled in by the `store` feature.
+olai-store = { workspace = true, features = ["encryption"], optional = true }
 
 # grpc server specific dependencies (in alphabetical order)
 tonic = { workspace = true, optional = true }
@@ -97,10 +100,10 @@ metric-view = ["dep:serde_yml", "dep:sqlparser"]
 # and `FromRequestParts` for request types.
 axum = ["dep:axum", "dep:axum-extra", "http"]
 
-sqlx = ["dep:sqlx", "olai-store/sqlx"]
+sqlx = ["dep:sqlx", "store", "olai-store/sqlx"]
 
 # storage abstraction trait (ResourceStore) implemented by backends
-store = ["dep:futures"]
+store = ["dep:futures", "dep:olai-store"]
 
 # enable client implementation to interact with Unity REST APIs
 rest-client = ["dep:futures", "olai-http"]

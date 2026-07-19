@@ -397,9 +397,13 @@ impl TryFrom<Resource> for super::volumes::v1::Volume {
         }
     }
 }
+#[cfg(feature = "store")]
 use crate::Error;
+#[cfg(feature = "store")]
 use crate::models::object::Object;
+#[cfg(feature = "store")]
 use crate::models::resources::{ResourceExt, ResourceIdent, ResourceName, ResourceRef};
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::agents::v0alpha1::Agent {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -412,6 +416,7 @@ impl TryFrom<Object> for super::agents::v0alpha1::Agent {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::agents::v0alpha1::Agent> for Object {
     type Error = Error;
     fn try_from(obj: super::agents::v0alpha1::Agent) -> Result<Self, Self::Error> {
@@ -432,6 +437,7 @@ impl TryFrom<super::agents::v0alpha1::Agent> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::agents::v0alpha1::Agent {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
@@ -446,6 +452,7 @@ impl ResourceExt for super::agents::v0alpha1::Agent {
         (ObjectLabel::Agent).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::agent_skills::v0alpha1::AgentSkill {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -458,6 +465,7 @@ impl TryFrom<Object> for super::agent_skills::v0alpha1::AgentSkill {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::agent_skills::v0alpha1::AgentSkill> for Object {
     type Error = Error;
     fn try_from(obj: super::agent_skills::v0alpha1::AgentSkill) -> Result<Self, Self::Error> {
@@ -479,6 +487,7 @@ impl TryFrom<super::agent_skills::v0alpha1::AgentSkill> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::agent_skills::v0alpha1::AgentSkill {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
@@ -493,6 +502,7 @@ impl ResourceExt for super::agent_skills::v0alpha1::AgentSkill {
         (ObjectLabel::AgentSkill).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::catalogs::v1::Catalog {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -504,6 +514,7 @@ impl TryFrom<Object> for super::catalogs::v1::Catalog {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::catalogs::v1::Catalog> for Object {
     type Error = Error;
     fn try_from(obj: super::catalogs::v1::Catalog) -> Result<Self, Self::Error> {
@@ -526,6 +537,7 @@ impl TryFrom<super::catalogs::v1::Catalog> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::catalogs::v1::Catalog {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
@@ -541,6 +553,7 @@ impl ResourceExt for super::catalogs::v1::Catalog {
         (ObjectLabel::Catalog).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::tables::v1::Column {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -552,6 +565,7 @@ impl TryFrom<Object> for super::tables::v1::Column {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::tables::v1::Column> for Object {
     type Error = Error;
     fn try_from(obj: super::tables::v1::Column) -> Result<Self, Self::Error> {
@@ -574,6 +588,7 @@ impl TryFrom<super::tables::v1::Column> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::tables::v1::Column {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
@@ -589,6 +604,7 @@ impl ResourceExt for super::tables::v1::Column {
         (ObjectLabel::Column).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::credentials::v1::Credential {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -601,6 +617,7 @@ impl TryFrom<Object> for super::credentials::v1::Credential {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::credentials::v1::Credential> for Object {
     type Error = Error;
     fn try_from(obj: super::credentials::v1::Credential) -> Result<Self, Self::Error> {
@@ -626,6 +643,7 @@ impl TryFrom<super::credentials::v1::Credential> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::credentials::v1::Credential {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
@@ -641,6 +659,7 @@ impl ResourceExt for super::credentials::v1::Credential {
         (ObjectLabel::Credential).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::external_locations::v1::ExternalLocation {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -653,6 +672,7 @@ impl TryFrom<Object> for super::external_locations::v1::ExternalLocation {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::external_locations::v1::ExternalLocation> for Object {
     type Error = Error;
     fn try_from(obj: super::external_locations::v1::ExternalLocation) -> Result<Self, Self::Error> {
@@ -675,6 +695,7 @@ impl TryFrom<super::external_locations::v1::ExternalLocation> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::external_locations::v1::ExternalLocation {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
@@ -690,6 +711,7 @@ impl ResourceExt for super::external_locations::v1::ExternalLocation {
         (ObjectLabel::ExternalLocation).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::functions::v1::Function {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -702,6 +724,7 @@ impl TryFrom<Object> for super::functions::v1::Function {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::functions::v1::Function> for Object {
     type Error = Error;
     fn try_from(obj: super::functions::v1::Function) -> Result<Self, Self::Error> {
@@ -727,6 +750,7 @@ impl TryFrom<super::functions::v1::Function> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::functions::v1::Function {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
@@ -742,6 +766,7 @@ impl ResourceExt for super::functions::v1::Function {
         (ObjectLabel::Function).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::model_versions::v1::ModelVersion {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -753,6 +778,7 @@ impl TryFrom<Object> for super::model_versions::v1::ModelVersion {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::model_versions::v1::ModelVersion> for Object {
     type Error = Error;
     fn try_from(obj: super::model_versions::v1::ModelVersion) -> Result<Self, Self::Error> {
@@ -775,6 +801,7 @@ impl TryFrom<super::model_versions::v1::ModelVersion> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::model_versions::v1::ModelVersion {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([
@@ -795,6 +822,7 @@ impl ResourceExt for super::model_versions::v1::ModelVersion {
         (ObjectLabel::ModelVersion).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::policies::v1::PolicyInfo {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -806,6 +834,7 @@ impl TryFrom<Object> for super::policies::v1::PolicyInfo {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::policies::v1::PolicyInfo> for Object {
     type Error = Error;
     fn try_from(obj: super::policies::v1::PolicyInfo) -> Result<Self, Self::Error> {
@@ -828,6 +857,7 @@ impl TryFrom<super::policies::v1::PolicyInfo> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::policies::v1::PolicyInfo {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
@@ -843,6 +873,7 @@ impl ResourceExt for super::policies::v1::PolicyInfo {
         (ObjectLabel::PolicyInfo).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::providers::v1::Provider {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -854,6 +885,7 @@ impl TryFrom<Object> for super::providers::v1::Provider {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::providers::v1::Provider> for Object {
     type Error = Error;
     fn try_from(obj: super::providers::v1::Provider) -> Result<Self, Self::Error> {
@@ -876,6 +908,7 @@ impl TryFrom<super::providers::v1::Provider> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::providers::v1::Provider {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
@@ -891,6 +924,7 @@ impl ResourceExt for super::providers::v1::Provider {
         (ObjectLabel::Provider).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::recipients::v1::Recipient {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -902,6 +936,7 @@ impl TryFrom<Object> for super::recipients::v1::Recipient {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::recipients::v1::Recipient> for Object {
     type Error = Error;
     fn try_from(obj: super::recipients::v1::Recipient) -> Result<Self, Self::Error> {
@@ -924,6 +959,7 @@ impl TryFrom<super::recipients::v1::Recipient> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::recipients::v1::Recipient {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
@@ -939,6 +975,7 @@ impl ResourceExt for super::recipients::v1::Recipient {
         (ObjectLabel::Recipient).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::registered_models::v1::RegisteredModel {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -952,6 +989,7 @@ impl TryFrom<Object> for super::registered_models::v1::RegisteredModel {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::registered_models::v1::RegisteredModel> for Object {
     type Error = Error;
     fn try_from(obj: super::registered_models::v1::RegisteredModel) -> Result<Self, Self::Error> {
@@ -977,6 +1015,7 @@ impl TryFrom<super::registered_models::v1::RegisteredModel> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::registered_models::v1::RegisteredModel {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
@@ -992,6 +1031,7 @@ impl ResourceExt for super::registered_models::v1::RegisteredModel {
         (ObjectLabel::RegisteredModel).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::schemas::v1::Schema {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -1004,6 +1044,7 @@ impl TryFrom<Object> for super::schemas::v1::Schema {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::schemas::v1::Schema> for Object {
     type Error = Error;
     fn try_from(obj: super::schemas::v1::Schema) -> Result<Self, Self::Error> {
@@ -1029,6 +1070,7 @@ impl TryFrom<super::schemas::v1::Schema> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::schemas::v1::Schema {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.name])
@@ -1044,6 +1086,7 @@ impl ResourceExt for super::schemas::v1::Schema {
         (ObjectLabel::Schema).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::shares::v1::Share {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -1055,6 +1098,7 @@ impl TryFrom<Object> for super::shares::v1::Share {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::shares::v1::Share> for Object {
     type Error = Error;
     fn try_from(obj: super::shares::v1::Share) -> Result<Self, Self::Error> {
@@ -1077,6 +1121,7 @@ impl TryFrom<super::shares::v1::Share> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::shares::v1::Share {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
@@ -1092,6 +1137,7 @@ impl ResourceExt for super::shares::v1::Share {
         (ObjectLabel::Share).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::staging_tables::v1::StagingTable {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -1103,6 +1149,7 @@ impl TryFrom<Object> for super::staging_tables::v1::StagingTable {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::staging_tables::v1::StagingTable> for Object {
     type Error = Error;
     fn try_from(obj: super::staging_tables::v1::StagingTable) -> Result<Self, Self::Error> {
@@ -1120,6 +1167,7 @@ impl TryFrom<super::staging_tables::v1::StagingTable> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::staging_tables::v1::StagingTable {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
@@ -1134,6 +1182,7 @@ impl ResourceExt for super::staging_tables::v1::StagingTable {
         (ObjectLabel::StagingTable).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::tables::v1::Table {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -1146,6 +1195,7 @@ impl TryFrom<Object> for super::tables::v1::Table {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::tables::v1::Table> for Object {
     type Error = Error;
     fn try_from(obj: super::tables::v1::Table) -> Result<Self, Self::Error> {
@@ -1171,6 +1221,7 @@ impl TryFrom<super::tables::v1::Table> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::tables::v1::Table {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
@@ -1186,6 +1237,7 @@ impl ResourceExt for super::tables::v1::Table {
         (ObjectLabel::Table).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::tags::v1::TagPolicy {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -1197,6 +1249,7 @@ impl TryFrom<Object> for super::tags::v1::TagPolicy {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::tags::v1::TagPolicy> for Object {
     type Error = Error;
     fn try_from(obj: super::tags::v1::TagPolicy) -> Result<Self, Self::Error> {
@@ -1219,6 +1272,7 @@ impl TryFrom<super::tags::v1::TagPolicy> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::tags::v1::TagPolicy {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.tag_key])
@@ -1234,6 +1288,7 @@ impl ResourceExt for super::tags::v1::TagPolicy {
         (ObjectLabel::TagPolicy).to_ident(self.resource_ref())
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<Object> for super::volumes::v1::Volume {
     type Error = Error;
     fn try_from(object: Object) -> Result<Self, Self::Error> {
@@ -1246,6 +1301,7 @@ impl TryFrom<Object> for super::volumes::v1::Volume {
         Ok(res)
     }
 }
+#[cfg(feature = "store")]
 impl TryFrom<super::volumes::v1::Volume> for Object {
     type Error = Error;
     fn try_from(obj: super::volumes::v1::Volume) -> Result<Self, Self::Error> {
@@ -1266,6 +1322,7 @@ impl TryFrom<super::volumes::v1::Volume> for Object {
         })
     }
 }
+#[cfg(feature = "store")]
 impl ResourceExt for super::volumes::v1::Volume {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
@@ -1391,11 +1448,13 @@ impl super::volumes::v1::Volume {
         format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
     }
 }
+#[cfg(feature = "store")]
 impl ::olai_store::Label for ObjectLabel {
     fn as_str(&self) -> &str {
         self.as_ref()
     }
 }
+#[cfg(feature = "store")]
 /// Static resource type descriptors derived from proto annotations.
 ///
 /// Each entry describes a resource type's fields (with roles: data, identifier,
