@@ -1,22 +1,23 @@
-//! Read-only in-browser Unity Catalog **volume files** backend: the "dedicated
-//! store" path (mirroring the table path's hand-rolled `uc.rs` / `fetch_store.rs`
-//! / `creds.rs`, because `olai-uc-object-store` cannot compile for wasm32 without
-//! a large cross-repo refactor).
+//! Read-only in-browser Unity Catalog **volume files** backend.
+//!
+//! Volume browsing is driven by the canonical `olai-uc-object-store`
+//! [`UnityObjectStoreFactory`](unitycatalog_object_store::UnityObjectStoreFactory):
+//! `for_volume` vends `READ_VOLUME` credentials and builds the real cloud
+//! `object_store` (a `MicrosoftAzure` store on wasm), so listing / reading /
+//! stat all go through one shared store impl — no hand-rolled fetch store or
+//! cloud-list REST parsing.
 //!
 //! Layers, matching the crate's native-vs-wasm split:
 //! - [`path`]: the [`VolumePath`](path::VolumePath) model — parse/format
 //!   canonical `/Volumes/<c>/<s>/<v>/…` paths and map between store keys and
 //!   Volumes paths. Native-compilable + tested.
-//! - [`lister`]: build the container/bucket-scoped cloud list REST endpoint from
-//!   a resolved storage location, and parse the Azure (XML) / GCS (JSON) list
-//!   bodies into normalized entries. Native-compilable + tested.
-//! - [`engine`] (wasm-only): resolve a volume through Unity Catalog
-//!   (`GetVolume` → `temporary-volume-credentials` READ_VOLUME →
-//!   [`crate::creds::resolve_storage`]), then list / read / stat over the vended
-//!   credential. Uses [`crate::fetch_store::UcFetchStore`] for reads and stats and
-//!   the browser's `fetch` for the list REST call.
+//! - [`page`]: the directory-listing DTOs + in-engine offset pagination over a
+//!   fully-collected `list_with_delimiter` result. Native-compilable + tested.
+//! - [`engine`] (wasm-only): resolve a volume through the factory
+//!   (`for_volume` → prefix-scoped `Arc<dyn ObjectStore>`), then list / read /
+//!   stat over the vended store.
 
-pub mod lister;
+pub mod page;
 pub mod path;
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]

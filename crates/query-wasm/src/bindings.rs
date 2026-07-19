@@ -19,11 +19,12 @@ use js_sys::{Function, Uint8Array};
 use url::Url;
 use wasm_bindgen::prelude::*;
 
+use unitycatalog_object_store::UnityObjectStoreFactory;
+
 use crate::catalog::UcRestResolver;
 use crate::engine::{ACTIONS_LOG_UDTF, LogKind, RECONCILED_LOG_UDTF, run_unified};
 use crate::error::Error;
 use crate::files::path::VolumePath;
-use crate::uc::UcClient;
 
 // Named uniquely: `deltalake-wasm` (also a cdylib-capable dependency) exports
 // its own `#[wasm_bindgen(start)] fn init`, and identically-named start
@@ -434,8 +435,17 @@ impl UcFilesEngine {
 }
 
 impl UcFilesEngine {
-    fn uc(&self) -> UcClient {
-        UcClient::new(self.base_url.clone(), self.auth_token.clone())
+    /// Build the canonical Unity Catalog factory once per op. On wasm it drives a
+    /// browser Fetch transport (bearer via `with_auth` when a token is set,
+    /// otherwise the ambient browser session) — same construction as the table
+    /// path's [`UcRestResolver`](crate::catalog::UcRestResolver).
+    async fn factory(&self) -> Result<UnityObjectStoreFactory, Error> {
+        Ok(UnityObjectStoreFactory::builder()
+            .with_uri(self.base_url.as_str())
+            .with_token(self.auth_token.clone())
+            .with_allow_unauthenticated(self.auth_token.is_none())
+            .build()
+            .await?)
     }
 
     async fn list_directory_inner(
@@ -444,8 +454,9 @@ impl UcFilesEngine {
         opts: ListDirectoryOptions,
     ) -> Result<JsValue, Error> {
         let parsed = VolumePath::parse(path)?;
+        let factory = self.factory().await?;
         let page = crate::files::engine::list_directory(
-            &self.uc(),
+            &factory,
             &parsed,
             opts.max_results,
             opts.page_token,
@@ -462,20 +473,16 @@ impl UcFilesEngine {
         on_chunk: &Function,
     ) -> Result<JsValue, Error> {
         let parsed = VolumePath::parse(path)?;
-        let bytes_read = crate::files::engine::read_file(
-            &self.uc(),
-            &parsed,
-            opts.offset,
-            opts.length,
-            |chunk| {
+        let factory = self.factory().await?;
+        let bytes_read =
+            crate::files::engine::read_file(&factory, &parsed, opts.offset, opts.length, |chunk| {
                 let array = Uint8Array::from(chunk.as_ref());
                 on_chunk.call1(&JsValue::NULL, &array.into()).map_err(|e| {
                     Error::InvalidResponse(format!("on_chunk callback threw: {e:?}"))
                 })?;
                 Ok(())
-            },
-        )
-        .await?;
+            })
+            .await?;
         let stats = ReadStats { bytes_read };
         serde_wasm_bindgen::to_value(&stats)
             .map_err(|e| Error::InvalidResponse(format!("read stats: {e}")))
@@ -483,7 +490,8 @@ impl UcFilesEngine {
 
     async fn stat_inner(&self, path: &str) -> Result<JsValue, Error> {
         let parsed = VolumePath::parse(path)?;
-        let meta = crate::files::engine::stat(&self.uc(), &parsed).await?;
+        let factory = self.factory().await?;
+        let meta = crate::files::engine::stat(&factory, &parsed).await?;
         serde_wasm_bindgen::to_value(&meta)
             .map_err(|e| Error::InvalidResponse(format!("file metadata: {e}")))
     }
