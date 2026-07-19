@@ -38,6 +38,9 @@
       "name": "@open-lakehouse/uc-app",
       "version": "0.1.0",
       "dependencies": {
+        "@open-lakehouse/editor": "^0.1.0",
+        "@open-lakehouse/files": "^0.1.0",
+        "@open-lakehouse/files-wasm": "^0.1.0",
         "@open-lakehouse/log-query": "^0.1.0",
         "@open-lakehouse/query": "^0.1.0",
         "@open-lakehouse/query-wasm": "^0.1.0",
@@ -243,6 +246,8 @@
       "version": "0.1.0",
       "dependencies": {
         "@open-lakehouse/data-grid": "^0.1.0",
+        "@open-lakehouse/editor": "^0.1.0",
+        "@open-lakehouse/files": "^0.1.0",
         "@open-lakehouse/log-query": "^0.1.0",
         "@open-lakehouse/query": "^0.1.0",
         "@open-lakehouse/ui-kit": "^0.1.0",
