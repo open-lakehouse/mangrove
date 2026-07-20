@@ -180,6 +180,15 @@ arrow-schema = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be75
 arrow-select = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-select" }
 arrow-string = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-string" }
 
+# object_store: the roeap fork's 0.13.2-based wasm integration branch. Same
+# 0.13.2 version as crates.io, so every `object_store = "0.13.2"` dep resolves
+# unchanged. Patched workspace-wide so native + wasm share ONE object_store
+# build (rev e4676ee). The fork's additions are per-target `cfg` (browser Fetch
+# transport, wasm-guarded retry sleep, wasm `no-store` fetch cache); native
+# builds are unaffected. Keep the rev in lock-step with the pin in
+# crates/query-wasm/Cargo.toml.
+object_store = { git = "https://github.com/roeap/arrow-rs-object-store", rev = "e4676ee087161681413a059b38aa1687bcf1a3c2", package = "object_store" }
+
 [workspace.metadata.typos]
 default.extend-ignore-re = [
   # Custom ignore regex patterns: https://github.com/crate-ci/typos/blob/master/docs/reference.md#example-configurations
