@@ -10,7 +10,11 @@
 // Catalog package may build on it in the future, never the reverse.
 // See ../README.md.
 
+// The rich Delta-log actions view — a virtualized, color-coded, expandable
+// action-per-row surface that replaces the flat grid for the `actions` log.
+export { ActionsLog } from "./actions-log";
 export { DataGrid } from "./data-grid";
+export { isActionsSchema } from "./lib/actionSlots";
 // The grid's input contract. Consumers (the editor's run controller, the import
 // preview, Storybook fixtures) construct an `ArrowResultStore` and hand it to
 // `<DataGrid store={…}>`. Kept Arrow-specific by design — generalizing the grid

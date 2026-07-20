@@ -13,7 +13,7 @@
 // The `useLogPreview` hook must run unconditionally, so the gate lives in
 // `DeltaLogTab` and the hook lives in the inner `DeltaLogGrid`.
 
-import { DataGrid } from "@open-lakehouse/data-grid";
+import { ActionsLog, DataGrid } from "@open-lakehouse/data-grid";
 import {
   hasLogQueryRunner,
   type LogKind,
@@ -73,16 +73,20 @@ function DeltaLogGrid({ target, kind }: { target: string; kind: LogKind }) {
     return <p className="text-sm text-destructive">{error.message}</p>;
   }
 
-  return (
-    <>
-      {running && store.rowCount === 0 ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted border-t-primary" />
-          Loading Delta log…
-        </div>
-      ) : (
-        <DataGrid store={store} version={version} running={running} />
-      )}
-    </>
-  );
+  if (running && store.rowCount === 0) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted border-t-primary" />
+        Loading Delta log…
+      </div>
+    );
+  }
+
+  // The reconciled action stream reads far better as rich, color-coded action
+  // rows than as a grid where 5/6 of every row is null.
+  if (kind === "actions") {
+    return <ActionsLog store={store} version={version} running={running} />;
+  }
+
+  return <DataGrid store={store} version={version} running={running} />;
 }

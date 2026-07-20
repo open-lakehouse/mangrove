@@ -70,6 +70,39 @@ export function formatCell(value: unknown, type: DataType): CellRender {
   }
 }
 
+/**
+ * A compact plain-string rendering of a scalar Arrow value, for dense inline
+ * contexts (the ActionsLog rows) where a ReactNode + alignment is overkill.
+ * Nulls become the literal `"null"`. Nested types are JSON-stringified. Reuses
+ * the same number / decimal / temporal logic as {@link formatCell}.
+ */
+export function formatScalarText(value: unknown, type: DataType): string {
+  if (value === null || value === undefined) return "null";
+  switch (type.typeId) {
+    case Type.Int:
+    case Type.Float:
+      return formatNumber(value);
+    case Type.Decimal:
+      return formatDecimal(value, type);
+    case Type.Bool:
+      return value ? "true" : "false";
+    case Type.Timestamp: {
+      const ms = timestampToEpochMs(value, type as Timestamp);
+      if (!Number.isFinite(ms)) return String(value);
+      const d = new Date(ms);
+      return Number.isNaN(d.getTime()) ? String(value) : d.toISOString();
+    }
+    case Type.List:
+    case Type.FixedSizeList:
+    case Type.Struct:
+    case Type.Map:
+    case Type.Union:
+      return stringifyArrow(value);
+    default:
+      return String(value);
+  }
+}
+
 function formatNumber(value: unknown): string {
   if (typeof value === "bigint") return value.toLocaleString();
   if (typeof value === "number") return numberFmt.format(value);
