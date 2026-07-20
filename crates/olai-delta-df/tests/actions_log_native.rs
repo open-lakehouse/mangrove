@@ -182,12 +182,15 @@ async fn all_rows(ctx: &SessionContext, provider: &ActionsLogProvider) -> Vec<Re
 
 /// Count rows belonging to an action slot, discriminated by an inner leaf field being non-null.
 ///
-/// The reconciled stream materializes every top-level action slot as a *present* (non-null) struct
-/// on every row, null-filling the inactive slots' inner fields (kernel reconciliation keys rows on
-/// `add.path IS NOT NULL` / `remove.path IS NOT NULL`, not slot-level nullability). So "is this an
-/// `add` row" is "`add`'s inner `path` leaf is non-null", not "`add` is non-null" — the latter is
-/// true on every row. Evaluated at the Arrow level (the Delta engine session's `ExprPlanner` does
-/// not register nested struct-field access, so `slot['leaf']` SQL is unavailable here).
+/// The reconciled stream is faithful to the on-disk log: each row populates exactly one top-level
+/// action slot (a real Delta commit line carries one action), and the other slots are top-level
+/// NULL. So "is this an `add` row" can be read as either "`add`'s top-level struct is non-null" or
+/// "`add`'s required `path` leaf is non-null" — post-fix the two agree. This helper counts by the
+/// inner leaf; [`count_present_slots`] counts by top-level struct validity, and
+/// [`actions_log_reconciles_add_files`] asserts they match (the regression guard for the kernel
+/// nested-`replace_col` nullability fix — before it, `add` alone was a present, all-inner-null
+/// struct on every row). Evaluated at the Arrow level (the Delta engine session's `ExprPlanner`
+/// does not register nested struct-field access, so `slot['leaf']` SQL is unavailable here).
 fn count_by_leaf(batches: &[RecordBatch], slot: &str, leaf: &str) -> usize {
     batches
         .iter()
@@ -198,6 +201,21 @@ fn count_by_leaf(batches: &[RecordBatch], slot: &str, leaf: &str) -> usize {
             (0..leaf_col.len())
                 .filter(|&i| leaf_col.is_valid(i))
                 .count()
+        })
+        .sum()
+}
+
+/// Count rows where a top-level action slot's struct is itself non-null (present).
+///
+/// Post-fix this equals [`count_by_leaf`] on the slot's required key leaf: a slot is present iff
+/// the row is that action. Before the kernel fix, `add` was present on every row (a rebuilt struct
+/// with no null buffer), so this would return the total row count for `add`.
+fn count_present_slots(batches: &[RecordBatch], slot: &str) -> usize {
+    batches
+        .iter()
+        .map(|b| {
+            let col = b.column(b.schema().index_of(slot).unwrap());
+            (0..col.len()).filter(|&i| col.is_valid(i)).count()
         })
         .sum()
 }
@@ -288,6 +306,24 @@ async fn actions_log_reconciles_add_files() {
     let rows = all_rows(&ctx, &provider).await;
     let n_add = count_by_leaf(&rows, "add", "path");
     assert_eq!(n_add, 2, "surviving adds f1, f2 (f0 tombstoned)");
+
+    // Faithful-to-disk shape (kernel nested-`replace_col` nullability fix): the top-level `add`
+    // struct is present only on real add rows — NOT on the remove/metaData/protocol/txn/
+    // domainMetadata rows. Before the fix `add` was rebuilt (for stats/partitions parsing) into a
+    // present, all-inner-null struct on every row, so this count was the whole row count.
+    assert_eq!(
+        count_present_slots(&rows, "add"),
+        n_add,
+        "top-level `add` struct present only on the {n_add} add rows, NULL on the others",
+    );
+    // The four non-file singleton actions each occupy their own row, so `add` is top-level NULL
+    // there; total rows = 2 adds + protocol + metaData + txn + domainMetadata = 6.
+    let total: usize = rows.iter().map(|b| b.num_rows()).sum();
+    assert_eq!(
+        count_present_slots(&rows, "add"),
+        total - 4,
+        "`add` is NULL on the 4 non-file action rows",
+    );
 }
 
 /// The reconciled non-file actions surface: exactly one `protocol`, one `metaData`, one `txn`, and
