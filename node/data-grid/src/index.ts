@@ -19,3 +19,15 @@ export {
   ArrowResultStore,
   type ArrowStoreInfo,
 } from "./lib/arrowResultStore";
+// Zero-copy nested-struct navigation + ordered-value coercion, shared by the
+// Arrow-backed visualizations built on the store (min/max boxes, action rows).
+export {
+  resolveChildPath,
+  structChildren,
+  structFieldByName,
+} from "./lib/nestedAccess";
+export {
+  isOrderableType,
+  timestampToEpochMs,
+  toAxisNumber,
+} from "./lib/temporal";

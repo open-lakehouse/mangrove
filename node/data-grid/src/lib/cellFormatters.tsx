@@ -1,5 +1,6 @@
-import { type DataType, type Timestamp, TimeUnit, Type } from "apache-arrow";
+import { type DataType, type Timestamp, Type } from "apache-arrow";
 import type { ReactNode } from "react";
+import { timestampToEpochMs } from "./temporal";
 
 // Type-aware cell rendering driven by the Arrow schema. Each formatter takes a
 // raw value read zero-copy from the store plus the column's `DataType`, and
@@ -99,25 +100,6 @@ function formatDecimal(value: unknown, type: DataType): string {
   const intPart = digits.slice(0, digits.length - scale);
   const fracPart = digits.slice(digits.length - scale);
   return `${neg ? "-" : ""}${intPart}.${fracPart}`;
-}
-
-/** Convert an Arrow timestamp value (per its unit) to epoch milliseconds. */
-function timestampToEpochMs(value: unknown, type: Timestamp): number {
-  // Values may be number or bigint depending on unit/precision.
-  const asBig =
-    typeof value === "bigint" ? value : BigInt(Math.trunc(Number(value)));
-  switch (type.unit) {
-    case TimeUnit.SECOND:
-      return Number(asBig) * 1000;
-    case TimeUnit.MILLISECOND:
-      return Number(asBig);
-    case TimeUnit.MICROSECOND:
-      return Number(asBig / 1000n);
-    case TimeUnit.NANOSECOND:
-      return Number(asBig / 1_000_000n);
-    default:
-      return Number(asBig);
-  }
 }
 
 function formatTimestamp(value: unknown, type: Timestamp): ReactNode {
