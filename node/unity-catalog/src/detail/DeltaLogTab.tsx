@@ -13,7 +13,12 @@
 // The `useLogPreview` hook must run unconditionally, so the gate lives in
 // `DeltaLogTab` and the hook lives in the inner `DeltaLogGrid`.
 
-import { ActionsLog, DataGrid } from "@open-lakehouse/data-grid";
+import {
+  ActionsLog,
+  DataGrid,
+  hasMinMaxAxes,
+  MinMaxView,
+} from "@open-lakehouse/data-grid";
 import {
   hasLogQueryRunner,
   type LogKind,
@@ -62,12 +67,18 @@ export function DeltaLogTab({
   );
 }
 
+// Reconciled sub-view: the raw file grid, or the min/max-box visualization over
+// the same rows.
+type ReconciledView = "grid" | "boxes";
+
 function DeltaLogGrid({ target, kind }: { target: string; kind: LogKind }) {
   const { store, version, running, error } = useLogPreview({
     target,
     limit: 100,
     kind,
   });
+  // Grid vs. Boxes lens on the reconciled data (ignored for the actions view).
+  const [view, setView] = useState<ReconciledView>("grid");
 
   if (error) {
     return <p className="text-sm text-destructive">{error.message}</p>;
@@ -88,5 +99,31 @@ function DeltaLogGrid({ target, kind }: { target: string; kind: LogKind }) {
     return <ActionsLog store={store} version={version} running={running} />;
   }
 
-  return <DataGrid store={store} version={version} running={running} />;
+  // Offer the Boxes lens only when the reconciled stats carry orderable min/max
+  // columns (otherwise there is nothing to plot).
+  const boxesAvailable = hasMinMaxAxes(store.schema?.fields);
+  const showBoxes = boxesAvailable && view === "boxes";
+
+  return (
+    <div>
+      {boxesAvailable && (
+        <div className="mb-2 flex justify-end">
+          <Tabs
+            value={view}
+            onValueChange={(v) => setView(v as ReconciledView)}
+          >
+            <TabsList>
+              <TabsTrigger value="grid">Grid</TabsTrigger>
+              <TabsTrigger value="boxes">Boxes</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
+      {showBoxes ? (
+        <MinMaxView store={store} version={version} />
+      ) : (
+        <DataGrid store={store} version={version} running={running} />
+      )}
+    </div>
+  );
 }

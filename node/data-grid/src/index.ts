@@ -23,6 +23,7 @@ export {
   ArrowResultStore,
   type ArrowStoreInfo,
 } from "./lib/arrowResultStore";
+export { hasMinMaxAxes } from "./lib/minMaxAxes";
 // Zero-copy nested-struct navigation + ordered-value coercion, shared by the
 // Arrow-backed visualizations built on the store (min/max boxes, action rows).
 export {
@@ -35,3 +36,7 @@ export {
   timestampToEpochMs,
   toAxisNumber,
 } from "./lib/temporal";
+// The min/max-box view — plots per-file [min,max] intervals (1D) / bounding
+// boxes (2D) from the reconciled-log stats, so file overlap / data-skipping is
+// visible. `hasMinMaxAxes` gates whether the "Boxes" sub-view is worth offering.
+export { MinMaxView } from "./min-max-view";
