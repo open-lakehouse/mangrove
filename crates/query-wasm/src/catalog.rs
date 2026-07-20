@@ -322,12 +322,17 @@ impl UcTableResolver for UcRestResolver {
         let plan = plan_table(&loaded)?;
 
         // 3. Vend credentials + build the real object_store cloud store in one
-        //    call. `UCStore::url()` is the fetchable table root; `as_dyn()` is the
-        //    prefix-scoped `Arc<dyn ObjectStore>` (rooted at the table location,
-        //    matching the old `Path::from_url_path(table_url.path())` contract).
+        //    call. `UCStore::url()` is the fetchable table root; `root()` is the
+        //    bucket-rooted `Arc<dyn ObjectStore>`. We deliberately take `root()`,
+        //    not `as_dyn()`: `discover_log` joins the full
+        //    `Path::from_url_path(table_url.path())` onto `_delta_log/...`, and
+        //    the `RoutingObjectStore` forwards the full request path unchanged —
+        //    both expect a bucket-rooted store. Handing them the prefix-scoped
+        //    `as_dyn()` store would apply the table prefix a second time and
+        //    double every log/data key.
         let uc_store = factory.for_table(full_name, TableOperation::Read).await?;
         let table_url = uc_store.url().clone();
-        let store = uc_store.as_dyn();
+        let store = uc_store.root();
         let table_path = Path::from_url_path(table_url.path())
             .map_err(|e| Error::InvalidUrl(format!("table path: {e}")))?;
 
