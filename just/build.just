@@ -34,10 +34,28 @@ ui-build:
 [group('build')]
 [no-cd]
 build-query-wasm:
-    cd crates/query-wasm && cargo build --target wasm32-unknown-unknown --release --locked
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # macOS: ring's C sources are compiled for wasm32 by cc-rs, but Apple's
+    # system clang has no wasm backend ("No available targets are compatible
+    # with triple wasm32-unknown-unknown"). Point cc-rs at a Homebrew LLVM
+    # clang that can. Only set when unset (respect an explicit override) and
+    # only on macOS with an llvm present — Linux/CI clang already targets wasm.
+    if [[ "$(uname)" == "Darwin" ]]; then
+        llvm="$(brew --prefix llvm@21 2>/dev/null || brew --prefix llvm 2>/dev/null || true)"
+        if [[ -n "$llvm" && -x "$llvm/bin/clang" ]]; then
+            : "${CC_wasm32_unknown_unknown:=$llvm/bin/clang}"
+            : "${AR_wasm32_unknown_unknown:=$llvm/bin/llvm-ar}"
+            export CC_wasm32_unknown_unknown AR_wasm32_unknown_unknown
+        fi
+    fi
+    # Anchor on the repo root (this recipe is [no-cd] and may be invoked from a
+    # sibling module like `just dev ui-dev-wasm`, so relative paths aren't safe).
+    root="{{ justfile_directory() }}"
+    cd "$root/crates/query-wasm" && cargo build --target wasm32-unknown-unknown --release --locked
     wasm-bindgen --target web --typescript \
-      --out-dir crates/query-wasm/pkg \
-      crates/query-wasm/target/wasm32-unknown-unknown/release/query_wasm.wasm
+      --out-dir "$root/crates/query-wasm/pkg" \
+      "$root/crates/query-wasm/target/wasm32-unknown-unknown/release/query_wasm.wasm"
 
 # default `ui-build` ships neither the wasm engine nor the preview UI; see
 # node/app/vite.config.ts.
