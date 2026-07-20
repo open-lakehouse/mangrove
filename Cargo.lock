@@ -2037,7 +2037,7 @@ dependencies = [
 [[package]]
 name = "delta_kernel"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=1a9b592c608a4f4c000dddb2bf6134e0ec66f2e6#1a9b592c608a4f4c000dddb2bf6134e0ec66f2e6"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=c7bc425478aeb58b0902bbd88a1f53d0a93c9fd8#c7bc425478aeb58b0902bbd88a1f53d0a93c9fd8"
 dependencies = [
  "arrow",
  "bytes",
@@ -2071,7 +2071,7 @@ dependencies = [
 [[package]]
 name = "delta_kernel_default_engine"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=1a9b592c608a4f4c000dddb2bf6134e0ec66f2e6#1a9b592c608a4f4c000dddb2bf6134e0ec66f2e6"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=c7bc425478aeb58b0902bbd88a1f53d0a93c9fd8#c7bc425478aeb58b0902bbd88a1f53d0a93c9fd8"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -2091,7 +2091,7 @@ dependencies = [
 [[package]]
 name = "delta_kernel_derive"
 version = "0.25.0"
-source = "git+https://github.com/roeap/delta-kernel-rs?rev=1a9b592c608a4f4c000dddb2bf6134e0ec66f2e6#1a9b592c608a4f4c000dddb2bf6134e0ec66f2e6"
+source = "git+https://github.com/roeap/delta-kernel-rs?rev=c7bc425478aeb58b0902bbd88a1f53d0a93c9fd8#c7bc425478aeb58b0902bbd88a1f53d0a93c9fd8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2101,7 +2101,7 @@ dependencies = [
 [[package]]
 name = "deltalake-core"
 version = "0.32.4"
-source = "git+https://github.com/roeap/delta-rs?rev=c6abd5c0c3e0afe288f8cc86cfeb68985f509418#c6abd5c0c3e0afe288f8cc86cfeb68985f509418"
+source = "git+https://github.com/roeap/delta-rs?rev=d2d0cbae3219b04338551949ed7eaf4181255170#d2d0cbae3219b04338551949ed7eaf4181255170"
 dependencies = [
  "alloc-stdlib",
  "arrow",
@@ -2160,7 +2160,7 @@ dependencies = [
 [[package]]
 name = "deltalake-derive"
 version = "0.32.4"
-source = "git+https://github.com/roeap/delta-rs?rev=c6abd5c0c3e0afe288f8cc86cfeb68985f509418#c6abd5c0c3e0afe288f8cc86cfeb68985f509418"
+source = "git+https://github.com/roeap/delta-rs?rev=d2d0cbae3219b04338551949ed7eaf4181255170#d2d0cbae3219b04338551949ed7eaf4181255170"
 dependencies = [
  "convert_case 0.9.0",
  "itertools 0.14.0",

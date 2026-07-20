@@ -51,19 +51,23 @@ keywords = [
 # dependency (git-sourced included) that lacks a version requirement. The
 # `git`+`rev` still governs the actual build; `version` only satisfies the
 # packaging check and matches each fork's declared version. See release-plz#2595.
-# Pinned to the delta-kernel-rs `sm-plans-consolidation` TIP (rev 1a9b592c =
-# 2cf01549 plus 7 additive, `sm-plans`-gated commits: the list-free snapshot
+# Pinned to the delta-kernel-rs `sm-plans-consolidation` TIP (rev c7bc4254 =
+# 2cf01549 plus 8 additive, `sm-plans`-gated commits: the list-free snapshot
 # construction seam, the SnapshotPm P&M state machine, the checkpoint-only
 # reconciliation fix, the stats-on-terminal scan metadata SM, the SSA
 # data-skipping FilterNode on the scan terminal, the logical scan-file-row
-# terminal + `Scan::scan_file_row_schema` accessor, and the
-# `FullState::output_schema` accessor + FSR terminal projection) and the
-# matching delta-rs rev c6abd5c0 (= the olai/sm-plans
+# terminal + `Scan::scan_file_row_schema` accessor, the
+# `FullState::output_schema` accessor + FSR terminal projection, and the
+# nested-`replace_col` ancestor-nullability fix so rebuilt ancestor structs
+# (only `add`, via stats/partitions parsing) keep their top-level null-ness —
+# non-`add` FSR rows now show a top-level-NULL `add` instead of a present,
+# all-inner-null struct) and the
+# matching delta-rs rev d2d0cbae (= the olai/sm-plans
 # tip a686c3be plus one-line Cargo bumps of delta-rs's own kernel pin, most
-# recently to 1a9b592c). This is the rev the wasm query engine (`crates/query-wasm`
+# recently to c7bc4254). This is the rev the wasm query engine (`crates/query-wasm`
 # + `delta-df-provider`) requires for its async-native sm_plans path, and it is
 # now the WHOLE repo's rev — native + wasm share ONE kernel and ONE delta-rs rev
-# (the single-rev invariant): delta-rs's internal kernel pin was bumped to 1a9b592c
+# (the single-rev invariant): delta-rs's internal kernel pin was bumped to c7bc4254
 # in lock-step with this bump, so `deltalake-core` and `delta_kernel` resolve to the
 # same kernel rev and their `Snapshot` types unify. The extra commits are inside the
 # `sm-plans` feature the native build never enables, so the native surface is unchanged.
@@ -71,16 +75,16 @@ keywords = [
 # explicit `arrow-58` is REQUIRED: the kernel's `arrow` default alias is arrow-59
 # and delta_kernel_default_engine's `default` enables it, so leaving defaults on
 # unions arrow-59 into this arrow-58 graph and splits the two `Schema` types.
-delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "1a9b592c608a4f4c000dddb2bf6134e0ec66f2e6", default-features = false, features = [
+delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "c7bc425478aeb58b0902bbd88a1f53d0a93c9fd8", default-features = false, features = [
   "internal-api",
   "default-engine-base",
   "arrow-58",
 ] }
-delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "1a9b592c608a4f4c000dddb2bf6134e0ec66f2e6", package = "delta_kernel_default_engine", default-features = false, features = [
+delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "c7bc425478aeb58b0902bbd88a1f53d0a93c9fd8", package = "delta_kernel_default_engine", default-features = false, features = [
   "arrow-58",
   "rustls",
 ] }
-deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "c6abd5c0c3e0afe288f8cc86cfeb68985f509418", features = [
+deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "d2d0cbae3219b04338551949ed7eaf4181255170", features = [
   "datafusion",
   "cloud",
 ] }
