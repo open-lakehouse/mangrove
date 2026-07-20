@@ -5,6 +5,7 @@ import {
   type Vector,
 } from "apache-arrow";
 import { arrowTypeLabel } from "./arrowTypeLabel";
+import { resolveChildPath } from "./nestedAccess";
 
 /** A read-only summary of what an {@link ArrowResultStore} currently holds.
  *  Cheap to produce (no row scan) — for memory accounting and a "what's in the
@@ -50,6 +51,11 @@ export class ArrowResultStore {
   // Cache column vectors per batch so repeated cell reads in the same batch
   // don't re-call `getChildAt`. Keyed by batch index, then column index.
   private vectorCache = new Map<number, Map<number, Vector | null>>();
+  // Cache resolved nested leaf vectors per batch so tight row loops over a
+  // struct leaf (e.g. stats.minValues.amount) bind the child vector once and
+  // then only `.get(localRow)`. Keyed by batch index, then a "colIndex\0a\0b"
+  // path key. A null entry records "path absent in this batch", still cached.
+  private nestedCache = new Map<number, Map<string, Vector | null>>();
 
   /** Total rows accumulated so far. */
   get rowCount(): number {
@@ -84,6 +90,7 @@ export class ArrowResultStore {
     this.total = 0;
     this.bytes = 0;
     this.vectorCache.clear();
+    this.nestedCache.clear();
   }
 
   /**
@@ -117,6 +124,82 @@ export class ArrowResultStore {
     const entry = this.batches[batchIndex];
     const vec = this.columnVector(batchIndex, colIndex);
     return vec ? vec.get(globalRow - entry.startRow) : null;
+  }
+
+  /**
+   * Read one leaf value from a nested struct path under a top-level column, by
+   * global row, zero-copy. `path` is the chain of struct-child names, e.g.
+   * `["minValues", "amount"]` under the `stats` column. Returns `null` when the
+   * row is out of range, the path is absent (a struct child the writer never
+   * emitted), or the leaf slot is null. The resolved leaf vector is cached per
+   * (batch, colIndex, path).
+   */
+  getNested(
+    globalRow: number,
+    colIndex: number,
+    path: readonly string[],
+  ): unknown {
+    const batchIndex = this.locate(globalRow);
+    if (batchIndex < 0) return null;
+    const leaf = this.getLeafVector(batchIndex, colIndex, path);
+    if (!leaf) return null;
+    return leaf.get(globalRow - this.batches[batchIndex].startRow);
+  }
+
+  /**
+   * Whether a top-level struct column's slot is non-null at `globalRow`. Used to
+   * detect which of several mutually-exclusive struct columns (e.g. the six
+   * Delta action slots) is populated on a row, reading only validity — no value
+   * materialization.
+   */
+  isSlotValid(globalRow: number, colIndex: number): boolean {
+    const batchIndex = this.locate(globalRow);
+    if (batchIndex < 0) return false;
+    const vec = this.columnVector(batchIndex, colIndex);
+    if (!vec) return false;
+    return vec.isValid(globalRow - this.batches[batchIndex].startRow);
+  }
+
+  /**
+   * Bind the leaf child vector for a nested struct path within one batch,
+   * memoized per (batch, colIndex, path). Callers that iterate many rows of the
+   * same batch should resolve the leaf once via this and then read
+   * `leaf.get(localRow)` directly — the zero-copy tight-loop pattern. Returns
+   * `null` if the top-level column or any path segment is absent in this batch.
+   */
+  getLeafVector(
+    batchIndex: number,
+    colIndex: number,
+    path: readonly string[],
+  ): Vector | null {
+    const key = `${colIndex}\0${path.join("\0")}`;
+    let paths = this.nestedCache.get(batchIndex);
+    if (!paths) {
+      paths = new Map();
+      this.nestedCache.set(batchIndex, paths);
+    }
+    let leaf = paths.get(key);
+    if (leaf === undefined) {
+      const root = this.columnVector(batchIndex, colIndex);
+      leaf = resolveChildPath(root, path);
+      paths.set(key, leaf);
+    }
+    return leaf;
+  }
+
+  /**
+   * Iterate the accumulated batches, calling `fn(batchIndex, startRow, length)`
+   * for each. Lets callers drive a per-batch tight loop (bind leaf vectors once,
+   * then read `localRow` values) without exposing the private batch array or the
+   * decoded tables.
+   */
+  forEachBatch(
+    fn: (batchIndex: number, startRow: number, length: number) => void,
+  ): void {
+    for (let i = 0; i < this.batches.length; i++) {
+      const b = this.batches[i];
+      fn(i, b.startRow, b.length);
+    }
   }
 
   /** Resolve a batch's column Vector, memoized. */

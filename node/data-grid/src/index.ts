@@ -8,6 +8,10 @@
 // @open-lakehouse/ui-kit — never on Unity Catalog or any app feature. Both the
 // SQL editor result pane and the import preview build on it today; the Unity
 // Catalog package may build on it in the future, never the reverse.
+//
+// Everything here is SCHEMA-AGNOSTIC. Delta-log-specific views (min/max boxes,
+// action rows) that know about `stats.minValues` / the six action slots live in
+// @open-lakehouse/log-query, built ON these generic primitives — not here.
 // See ../README.md.
 
 export { DataGrid } from "./data-grid";
@@ -19,3 +23,18 @@ export {
   ArrowResultStore,
   type ArrowStoreInfo,
 } from "./lib/arrowResultStore";
+// Generic Arrow cell formatting — a React node + alignment for the grid, and a
+// compact plain-string form for dense inline contexts (used by log-query views).
+export { formatCell, formatScalarText } from "./lib/cellFormatters";
+// Zero-copy nested-struct navigation + ordered-value coercion. Generic Arrow
+// helpers the Arrow-backed visualizations (in log-query) build on.
+export {
+  resolveChildPath,
+  structChildren,
+  structFieldByName,
+} from "./lib/nestedAccess";
+export {
+  isOrderableType,
+  timestampToEpochMs,
+  toAxisNumber,
+} from "./lib/temporal";

@@ -1,5 +1,6 @@
-import { type DataType, type Timestamp, TimeUnit, Type } from "apache-arrow";
+import { type DataType, type Timestamp, Type } from "apache-arrow";
 import type { ReactNode } from "react";
+import { timestampToEpochMs } from "./temporal";
 
 // Type-aware cell rendering driven by the Arrow schema. Each formatter takes a
 // raw value read zero-copy from the store plus the column's `DataType`, and
@@ -69,6 +70,40 @@ export function formatCell(value: unknown, type: DataType): CellRender {
   }
 }
 
+/**
+ * A compact plain-string rendering of a scalar Arrow value, for dense inline
+ * contexts (e.g. a single-line row summary) where a ReactNode + alignment is
+ * overkill. Nulls become the literal `"null"`. Nested types are
+ * JSON-stringified. Reuses the same number / decimal / temporal logic as
+ * {@link formatCell}.
+ */
+export function formatScalarText(value: unknown, type: DataType): string {
+  if (value === null || value === undefined) return "null";
+  switch (type.typeId) {
+    case Type.Int:
+    case Type.Float:
+      return formatNumber(value);
+    case Type.Decimal:
+      return formatDecimal(value, type);
+    case Type.Bool:
+      return value ? "true" : "false";
+    case Type.Timestamp: {
+      const ms = timestampToEpochMs(value, type as Timestamp);
+      if (!Number.isFinite(ms)) return String(value);
+      const d = new Date(ms);
+      return Number.isNaN(d.getTime()) ? String(value) : d.toISOString();
+    }
+    case Type.List:
+    case Type.FixedSizeList:
+    case Type.Struct:
+    case Type.Map:
+    case Type.Union:
+      return stringifyArrow(value);
+    default:
+      return String(value);
+  }
+}
+
 function formatNumber(value: unknown): string {
   if (typeof value === "bigint") return value.toLocaleString();
   if (typeof value === "number") return numberFmt.format(value);
@@ -99,25 +134,6 @@ function formatDecimal(value: unknown, type: DataType): string {
   const intPart = digits.slice(0, digits.length - scale);
   const fracPart = digits.slice(digits.length - scale);
   return `${neg ? "-" : ""}${intPart}.${fracPart}`;
-}
-
-/** Convert an Arrow timestamp value (per its unit) to epoch milliseconds. */
-function timestampToEpochMs(value: unknown, type: Timestamp): number {
-  // Values may be number or bigint depending on unit/precision.
-  const asBig =
-    typeof value === "bigint" ? value : BigInt(Math.trunc(Number(value)));
-  switch (type.unit) {
-    case TimeUnit.SECOND:
-      return Number(asBig) * 1000;
-    case TimeUnit.MILLISECOND:
-      return Number(asBig);
-    case TimeUnit.MICROSECOND:
-      return Number(asBig / 1000n);
-    case TimeUnit.NANOSECOND:
-      return Number(asBig / 1_000_000n);
-    default:
-      return Number(asBig);
-  }
 }
 
 function formatTimestamp(value: unknown, type: Timestamp): ReactNode {

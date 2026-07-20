@@ -9,11 +9,12 @@
 
 import { type Table, tableFromJSON, tableToIPC } from "apache-arrow";
 import {
+  type LogKind,
   type LogQueryChunk,
   type LogQueryRunner,
   registerLogQueryRunner,
 } from "../runner";
-import { reconciledLogFixtureRows } from "./fixtures";
+import { actionsLogFixtureRows, reconciledLogFixtureRows } from "./fixtures";
 
 // Rows per streamed record batch. Small enough that the ~40-row fixture arrives
 // in several chunks, exercising progressive render, virtualization and the
@@ -21,13 +22,15 @@ import { reconciledLogFixtureRows } from "./fixtures";
 const BATCH_ROWS = 12;
 
 // Build the full fixture as ONE Arrow table first, so type inference sees a
-// non-null deletion vector and settles the nested struct schema; then stream it
-// out batch-by-batch. `tableFromJSON` maps bigint -> Int64, nested objects ->
-// Struct, and null -> nullable, matching the reconciled scan-file-row shape.
-function buildFixtureTable(): Table {
-  const rows = reconciledLogFixtureRows();
+// non-null example of every nested struct (deletion vector, each action slot)
+// and settles the nested struct schema; then stream it out batch-by-batch.
+// `tableFromJSON` maps bigint -> Int64, nested objects -> Struct, and null ->
+// nullable, matching the reconciled scan-file-row / action-stream shapes.
+function buildFixtureTable(kind: LogKind): Table {
   // tableFromJSON is typed for Record<string, unknown>; the fixture rows carry
   // bigints and nested structs it handles at runtime.
+  const rows =
+    kind === "actions" ? actionsLogFixtureRows() : reconciledLogFixtureRows();
   return tableFromJSON(rows as unknown as Record<string, unknown>[]);
 }
 
@@ -37,14 +40,14 @@ function sliceToIpc(table: Table, offset: number, length: number): Uint8Array {
 }
 
 /**
- * A stub runner streaming the canned reconciled-log dataset in several batches,
- * then completing. Ignores `req` (target/SQL) — it always serves the fixture —
- * and honours abort between batches.
+ * A stub runner streaming the canned log dataset in several batches, then
+ * completing. Serves the reconciled or action-stream fixture per `req.kind`
+ * (ignoring `target`), and honours abort between batches.
  */
-export const stubLogQueryRunner: LogQueryRunner = (_req, { signal }) => ({
+export const stubLogQueryRunner: LogQueryRunner = (req, { signal }) => ({
   async *[Symbol.asyncIterator](): AsyncIterator<LogQueryChunk> {
     signal.throwIfAborted();
-    const table = buildFixtureTable();
+    const table = buildFixtureTable(req.kind ?? "reconciled");
     for (let offset = 0; offset < table.numRows; offset += BATCH_ROWS) {
       if (signal.aborted) throw signal.reason ?? new Error("aborted");
       const length = Math.min(BATCH_ROWS, table.numRows - offset);

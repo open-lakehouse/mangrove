@@ -15,8 +15,11 @@
 
 import { DataGrid } from "@open-lakehouse/data-grid";
 import {
+  ActionsLog,
   hasLogQueryRunner,
+  hasMinMaxAxes,
   type LogKind,
+  MinMaxView,
   useLogPreview,
   useLogQueryService,
 } from "@open-lakehouse/log-query";
@@ -62,27 +65,63 @@ export function DeltaLogTab({
   );
 }
 
+// Reconciled sub-view: the raw file grid, or the min/max-box visualization over
+// the same rows.
+type ReconciledView = "grid" | "boxes";
+
 function DeltaLogGrid({ target, kind }: { target: string; kind: LogKind }) {
   const { store, version, running, error } = useLogPreview({
     target,
     limit: 100,
     kind,
   });
+  // Grid vs. Boxes lens on the reconciled data (ignored for the actions view).
+  const [view, setView] = useState<ReconciledView>("grid");
 
   if (error) {
     return <p className="text-sm text-destructive">{error.message}</p>;
   }
 
+  if (running && store.rowCount === 0) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted border-t-primary" />
+        Loading Delta log…
+      </div>
+    );
+  }
+
+  // The reconciled action stream reads far better as rich, color-coded action
+  // rows than as a grid where 5/6 of every row is null.
+  if (kind === "actions") {
+    return <ActionsLog store={store} version={version} running={running} />;
+  }
+
+  // Offer the Boxes lens only when the reconciled stats carry orderable min/max
+  // columns (otherwise there is nothing to plot).
+  const boxesAvailable = hasMinMaxAxes(store.schema?.fields);
+  const showBoxes = boxesAvailable && view === "boxes";
+
   return (
-    <>
-      {running && store.rowCount === 0 ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted border-t-primary" />
-          Loading Delta log…
+    <div>
+      {boxesAvailable && (
+        <div className="mb-2 flex justify-end">
+          <Tabs
+            value={view}
+            onValueChange={(v) => setView(v as ReconciledView)}
+          >
+            <TabsList>
+              <TabsTrigger value="grid">Grid</TabsTrigger>
+              <TabsTrigger value="boxes">Boxes</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
+      )}
+      {showBoxes ? (
+        <MinMaxView store={store} version={version} />
       ) : (
         <DataGrid store={store} version={version} running={running} />
       )}
-    </>
+    </div>
   );
 }

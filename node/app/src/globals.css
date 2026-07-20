@@ -41,6 +41,17 @@
   --color-status-done: hsl(var(--status-done));
   --color-status-in-progress: hsl(var(--status-in-progress));
   --color-status-blocked: hsl(var(--status-blocked));
+  /* Delta-log action-slot hues (data-grid ActionsLog). add/remove reuse the
+     reserved good/critical status hues; the four neutral slots take distinct
+     categorical hues. Validated (adjacent CVD ΔE ≥ 8, contrast, chroma) via the
+     dataviz palette validator; always paired with an icon + slot label so hue
+     never carries meaning alone. */
+  --color-action-add: hsl(var(--action-add));
+  --color-action-remove: hsl(var(--action-remove));
+  --color-action-metadata: hsl(var(--action-metadata));
+  --color-action-protocol: hsl(var(--action-protocol));
+  --color-action-txn: hsl(var(--action-txn));
+  --color-action-domain: hsl(var(--action-domain));
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono:
     "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -82,6 +93,13 @@
     --status-done: 137 55% 36%;
     --status-in-progress: 212 92% 45%;
     --status-blocked: 0 100% 50%;
+
+    --action-add: 137 55% 36%;
+    --action-remove: 0 72% 48%;
+    --action-metadata: 212 85% 45%;
+    --action-protocol: 38 92% 40%;
+    --action-txn: 295 55% 50%;
+    --action-domain: 185 96% 35%;
   }
 
   .dark {
@@ -117,6 +135,13 @@
     --status-done: 128 55% 58%;
     --status-in-progress: 212 100% 67%;
     --status-blocked: 2 92% 63%;
+
+    --action-add: 130 50% 50%;
+    --action-remove: 2 85% 58%;
+    --action-metadata: 212 90% 60%;
+    --action-protocol: 38 88% 52%;
+    --action-txn: 290 62% 60%;
+    --action-domain: 186 72% 48%;
   }
 }
 
