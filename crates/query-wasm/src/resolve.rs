@@ -440,4 +440,51 @@ mod tests {
             .unwrap_err();
         assert!(!err.is_unsupported(), "{err}");
     }
+
+    // Regression pin for the #152 double-prefix bug (fixed by taking
+    // `UCStore::root()`, not `as_dyn()`, in the wasm resolver).
+    //
+    // `discover_log` joins the FULL table path onto `_delta_log/...`, so it must
+    // be handed a bucket-rooted store. The wasm resolver used to hand it the
+    // prefix-scoped `as_dyn()` store instead, which re-applies the table prefix
+    // and doubles every key (e.g. `<table>/<table>/_delta_log/00...json`), 404s,
+    // and gets misreported as "not backfilled". This test encodes the contract:
+    // full path + bucket-rooted store succeeds; full path + prefix-scoped store
+    // fails on the doubled key.
+    #[tokio::test]
+    async fn discover_log_requires_bucket_rooted_store_not_prefix_scoped() {
+        use object_store::prefix::PrefixStore;
+
+        const TABLE_PREFIX: &str = "__unitystorage/catalogs/cid/tables/tid";
+        let table_path = Path::from(TABLE_PREFIX);
+
+        // The commit lives at its real, single-prefix key.
+        let mem = InMemory::new();
+        put(
+            &mem,
+            &format!("{TABLE_PREFIX}/_delta_log/00000000000000000000.json"),
+            b"{}",
+        )
+        .await;
+        let mem: Arc<InMemory> = Arc::new(mem);
+
+        // Bucket-rooted store (what `UCStore::root()` yields): full-path join is
+        // correct — discovery finds the commit.
+        let bucket_rooted: Arc<dyn ObjectStore> = mem.clone();
+        let log = discover_log(&bucket_rooted, &table_path, Some(0))
+            .await
+            .expect("bucket-rooted store + full path must find the backfilled commit");
+        assert_eq!(log.version, 0);
+        assert_eq!(log.manifest.len(), 1);
+
+        // Prefix-scoped store (what `UCStore::as_dyn()` yields, the old bug):
+        // the same full-path join doubles the prefix, so the HEAD 404s and
+        // surfaces as the misleading "not backfilled" unsupported error.
+        let prefix_scoped: Arc<dyn ObjectStore> =
+            Arc::new(PrefixStore::new(mem, Path::from(TABLE_PREFIX)));
+        let err = discover_log(&prefix_scoped, &table_path, Some(0))
+            .await
+            .expect_err("prefix-scoped store + full path must double the key and miss");
+        assert!(err.is_unsupported(), "{err}");
+    }
 }

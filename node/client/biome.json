@@ -3,7 +3,6 @@
   "extends": ["../../biome.json"],
   "files": {
     "includes": [
-      "**",
       "!**/dist/**/*",
       "!**/native.js",
       "!**/native.d.ts",
