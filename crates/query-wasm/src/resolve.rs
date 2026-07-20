@@ -448,7 +448,7 @@ mod tests {
     // be handed a bucket-rooted store. The wasm resolver used to hand it the
     // prefix-scoped `as_dyn()` store instead, which re-applies the table prefix
     // and doubles every key (e.g. `<table>/<table>/_delta_log/00...json`), 404s,
-    // and gets mis-reported as "not backfilled". This test encodes the contract:
+    // and gets misreported as "not backfilled". This test encodes the contract:
     // full path + bucket-rooted store succeeds; full path + prefix-scoped store
     // fails on the doubled key.
     #[tokio::test]
