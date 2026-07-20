@@ -4,9 +4,12 @@
 // axis iff it appears as an orderable leaf under BOTH minValues and maxValues.
 // Pure schema walk — no data touched.
 
+import {
+  isOrderableType,
+  structChildren,
+  structFieldByName,
+} from "@open-lakehouse/data-grid";
 import type { DataType, Field } from "apache-arrow";
-import { structChildren, structFieldByName } from "./nestedAccess";
-import { isOrderableType } from "./temporal";
 
 /** The top-level column holding the per-file stats struct. */
 export const STATS_COLUMN = "stats";

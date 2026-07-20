@@ -4,8 +4,8 @@
 // a real Arrow IPC round-trip.
 
 import { expect, test } from "bun:test";
+import { ArrowResultStore } from "@open-lakehouse/data-grid";
 import { type Table, tableFromJSON, tableToIPC } from "apache-arrow";
-import { ArrowResultStore } from "./arrowResultStore";
 import { enumerateMinMaxAxes, hasMinMaxAxes } from "./minMaxAxes";
 
 // A reconciled-shaped fixture with numeric min/max leaves (id, amount) plus a

@@ -166,11 +166,14 @@
       "version": "0.1.0",
       "dependencies": {
         "@open-lakehouse/data-grid": "^0.1.0",
+        "@open-lakehouse/ui-kit": "^0.1.0",
+        "@tanstack/react-virtual": "^3.14.2",
+        "apache-arrow": "^21.0.0",
+        "lucide-react": "^1.17.0",
       },
       "devDependencies": {
         "@types/react": "^19.2.15",
         "@types/react-dom": "^19.2.3",
-        "apache-arrow": "^21.0.0",
         "react": "^19.2.6",
         "react-dom": "^19.2.6",
         "typescript": "^5",

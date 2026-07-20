@@ -1,11 +1,13 @@
+import {
+  type ArrowResultStore,
+  formatScalarText,
+  structChildren,
+} from "@open-lakehouse/data-grid";
 import { cn } from "@open-lakehouse/ui-kit";
 import type { DataType, Field } from "apache-arrow";
 import { ChevronRight } from "lucide-react";
 import { memo, useMemo } from "react";
 import type { SlotSpec } from "./lib/actionSlots";
-import type { ArrowResultStore } from "./lib/arrowResultStore";
-import { formatScalarText } from "./lib/cellFormatters";
-import { structChildren } from "./lib/nestedAccess";
 
 // One rendered action row. The collapsed row keeps the console look — monospace,
 // tabular figures, single line — prefixed by a color-and-glyph badge that names

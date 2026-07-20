@@ -72,9 +72,10 @@ export function formatCell(value: unknown, type: DataType): CellRender {
 
 /**
  * A compact plain-string rendering of a scalar Arrow value, for dense inline
- * contexts (the ActionsLog rows) where a ReactNode + alignment is overkill.
- * Nulls become the literal `"null"`. Nested types are JSON-stringified. Reuses
- * the same number / decimal / temporal logic as {@link formatCell}.
+ * contexts (e.g. a single-line row summary) where a ReactNode + alignment is
+ * overkill. Nulls become the literal `"null"`. Nested types are
+ * JSON-stringified. Reuses the same number / decimal / temporal logic as
+ * {@link formatCell}.
  */
 export function formatScalarText(value: unknown, type: DataType): string {
   if (value === null || value === undefined) return "null";

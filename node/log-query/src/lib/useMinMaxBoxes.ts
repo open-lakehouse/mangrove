@@ -5,11 +5,10 @@
 // temporal→epoch ms, decimal→scaled). Null / absent leaves become NaN so a file
 // with no stats on an axis is simply not plotted on it.
 
+import { type ArrowResultStore, toAxisNumber } from "@open-lakehouse/data-grid";
 import { useMemo } from "react";
-import type { ArrowResultStore } from "./arrowResultStore";
 import type { MinMaxAxis } from "./minMaxAxes";
 import { maxPath, minPath, STATS_COLUMN } from "./minMaxAxes";
-import { toAxisNumber } from "./temporal";
 
 /** Per-axis extracted intervals plus its numeric domain. */
 export interface AxisData {

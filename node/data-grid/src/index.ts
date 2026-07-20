@@ -8,13 +8,13 @@
 // @open-lakehouse/ui-kit — never on Unity Catalog or any app feature. Both the
 // SQL editor result pane and the import preview build on it today; the Unity
 // Catalog package may build on it in the future, never the reverse.
+//
+// Everything here is SCHEMA-AGNOSTIC. Delta-log-specific views (min/max boxes,
+// action rows) that know about `stats.minValues` / the six action slots live in
+// @open-lakehouse/log-query, built ON these generic primitives — not here.
 // See ../README.md.
 
-// The rich Delta-log actions view — a virtualized, color-coded, expandable
-// action-per-row surface that replaces the flat grid for the `actions` log.
-export { ActionsLog } from "./actions-log";
 export { DataGrid } from "./data-grid";
-export { isActionsSchema } from "./lib/actionSlots";
 // The grid's input contract. Consumers (the editor's run controller, the import
 // preview, Storybook fixtures) construct an `ArrowResultStore` and hand it to
 // `<DataGrid store={…}>`. Kept Arrow-specific by design — generalizing the grid
@@ -23,9 +23,11 @@ export {
   ArrowResultStore,
   type ArrowStoreInfo,
 } from "./lib/arrowResultStore";
-export { hasMinMaxAxes } from "./lib/minMaxAxes";
-// Zero-copy nested-struct navigation + ordered-value coercion, shared by the
-// Arrow-backed visualizations built on the store (min/max boxes, action rows).
+// Generic Arrow cell formatting — a React node + alignment for the grid, and a
+// compact plain-string form for dense inline contexts (used by log-query views).
+export { formatCell, formatScalarText } from "./lib/cellFormatters";
+// Zero-copy nested-struct navigation + ordered-value coercion. Generic Arrow
+// helpers the Arrow-backed visualizations (in log-query) build on.
 export {
   resolveChildPath,
   structChildren,
@@ -36,7 +38,3 @@ export {
   timestampToEpochMs,
   toAxisNumber,
 } from "./lib/temporal";
-// The min/max-box view — plots per-file [min,max] intervals (1D) / bounding
-// boxes (2D) from the reconciled-log stats, so file overlap / data-skipping is
-// visible. `hasMinMaxAxes` gates whether the "Boxes" sub-view is worth offering.
-export { MinMaxView } from "./min-max-view";

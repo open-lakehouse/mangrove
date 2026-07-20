@@ -1,6 +1,6 @@
+import type { ArrowResultStore } from "@open-lakehouse/data-grid";
 import { cn } from "@open-lakehouse/ui-kit";
 import { useMemo, useState } from "react";
-import type { ArrowResultStore } from "./lib/arrowResultStore";
 import type { MinMaxAxis } from "./lib/minMaxAxes";
 import { type AxisData, useMinMaxBoxes } from "./lib/useMinMaxBoxes";
 

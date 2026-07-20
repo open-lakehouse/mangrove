@@ -4,6 +4,7 @@
 // through a real Arrow IPC round-trip so we exercise the decoded Vector graph.
 
 import { expect, test } from "bun:test";
+import { ArrowResultStore } from "@open-lakehouse/data-grid";
 import { type Table, tableFromJSON, tableToIPC } from "apache-arrow";
 import {
   ACTION_SLOTS,
@@ -11,7 +12,6 @@ import {
   isActionsSchema,
   resolveSlotColumns,
 } from "./actionSlots";
-import { ArrowResultStore } from "./arrowResultStore";
 
 const EMPTY = {
   add: null as { path: string; size: bigint } | null,

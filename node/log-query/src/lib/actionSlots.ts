@@ -5,7 +5,7 @@
 // slot per row (reading only struct validity, zero-copy) and render a compact,
 // type-colored summary of its key fields.
 
-import type { ArrowResultStore } from "./arrowResultStore";
+import type { ArrowResultStore } from "@open-lakehouse/data-grid";
 
 /** The six reconciled action slots, in canonical (schema) order. */
 export const ACTION_SLOTS = [

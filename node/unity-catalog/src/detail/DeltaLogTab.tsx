@@ -13,15 +13,13 @@
 // The `useLogPreview` hook must run unconditionally, so the gate lives in
 // `DeltaLogTab` and the hook lives in the inner `DeltaLogGrid`.
 
+import { DataGrid } from "@open-lakehouse/data-grid";
 import {
   ActionsLog,
-  DataGrid,
-  hasMinMaxAxes,
-  MinMaxView,
-} from "@open-lakehouse/data-grid";
-import {
   hasLogQueryRunner,
+  hasMinMaxAxes,
   type LogKind,
+  MinMaxView,
   useLogPreview,
   useLogQueryService,
 } from "@open-lakehouse/log-query";
