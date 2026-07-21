@@ -3187,6 +3187,7 @@ dependencies = [
  "deltalake-core",
  "deltalake-wasm",
  "futures",
+ "http",
  "http-body",
  "js-sys",
  "object_store",

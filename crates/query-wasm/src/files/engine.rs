@@ -343,6 +343,47 @@ pub async fn create_dir(
     })
 }
 
+/// Delete a directory: remove every object under the directory prefix (and the
+/// `<dir>/` sentinel, if present) in one best-effort sweep.
+///
+/// Object stores have no directory to unlink — a directory is just the common
+/// prefix of some keys — so "delete a directory" means "delete everything under
+/// its prefix". The prefix listing is driven to exhaustion (matching
+/// [`list_directory`]'s reliance on `object_store`'s internal continuation), then
+/// each object is deleted. An empty directory (only the sentinel, or nothing)
+/// deletes cleanly.
+pub async fn delete_dir(factory: &UnityObjectStoreFactory, path: &VolumePath) -> Result<()> {
+    if path.is_root() {
+        return Err(Error::InvalidUrl(
+            "a directory path is required (got a volume root)".to_string(),
+        ));
+    }
+    let store = resolve_volume_rw(factory, path).await?;
+
+    // Volume-relative directory prefix (the store is prefix-scoped to the volume
+    // root). The object keys under a directory all start with `<dir>/`.
+    let dir_key = path.object_key("");
+    let prefix = StorePath::from(dir_key.as_str());
+
+    // `list` walks the whole subtree (recursive, no delimiter rollup); every key
+    // beneath the directory — including the `<dir>/` sentinel — is deleted.
+    let mut listing = SendWrapper::new(store.list(Some(&prefix)));
+    let mut locations = Vec::new();
+    while let Some(meta) = listing.next().await {
+        let meta = meta.map_err(Error::from_object_store)?;
+        locations.push(meta.location);
+    }
+    drop(listing);
+
+    for location in locations {
+        store
+            .delete(&location)
+            .await
+            .map_err(Error::from_object_store)?;
+    }
+    Ok(())
+}
+
 /// Map a `put_opts` error, re-tagging a failed precondition (conditional write
 /// lost the race) so the bindings surface it as the `CONFLICT` code; everything
 /// else defers to [`Error::from_object_store`] (transport re-tagging + passthrough).

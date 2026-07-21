@@ -22,3 +22,6 @@ pub mod path;
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 pub mod engine;
+
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+pub mod service;

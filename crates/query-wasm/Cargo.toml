@@ -151,6 +151,11 @@ deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "d2d0cbae321
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
 bytes = { version = "1" }
 console_error_panic_hook = "0.1"
+# The in-wasm ConnectRPC dispatcher (files/service.rs) builds a `RequestContext`
+# from an `http::HeaderMap`; connectrpc takes `http` types in its API but does not
+# re-export the crate. Pure traits + types — wasm-safe, already in the graph via
+# connectrpc.
+http = "1"
 js-sys = "0.3"
 # Kept at 0.13 to match the delta-rs wasm harness; wasm backend = browser fetch.
 reqwest = { version = "0.13", default-features = false, features = ["json"] }
