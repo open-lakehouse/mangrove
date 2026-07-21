@@ -1,7 +1,8 @@
 // The wasm worker: hosts `UcFilesEngine` (crates/query-wasm) off the main
-// thread. Listing issues native cloud list REST calls and parses the response;
-// reading streams file bytes — kept off the UI thread to match the query worker
-// and to avoid janking on large reads.
+// thread. Metadata RPCs dispatch through the engine's `connectUnary` (the in-wasm
+// connect Router) as binary proto; file bytes stream through `readFileBytes` /
+// `writeFileBytes` — kept off the UI thread to match the query worker and to
+// avoid janking on large transfers.
 //
 // "query-wasm-pkg" is a BARE specifier for the gitignored wasm-bindgen output of
 // `just build-query-wasm` (crates/query-wasm/pkg/query_wasm.js) — the SAME
@@ -19,9 +20,9 @@ const post = (message: WorkerResponse, transfer: Transferable[] = []) =>
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const request = event.data;
   if (
-    request.type !== "list" &&
+    request.type !== "connectUnary" &&
     request.type !== "read" &&
-    request.type !== "stat"
+    request.type !== "write"
   ) {
     return;
   }
@@ -31,17 +32,14 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
       authToken: request.authToken,
     });
     switch (request.type) {
-      case "list": {
-        const page = await engine.listDirectory(request.path, {
-          maxResults: request.maxResults,
-          pageToken: request.pageToken,
-        });
-        post({ type: "page", page });
-        break;
-      }
-      case "stat": {
-        const meta = await engine.stat(request.path);
-        post({ type: "meta", meta });
+      case "connectUnary": {
+        const responseBytes = await engine.connectUnary(
+          request.path,
+          request.requestBytes,
+        );
+        // The response views wasm memory; copy before transferring.
+        const copy = responseBytes.slice();
+        post({ type: "unary", responseBytes: copy }, [copy.buffer]);
         break;
       }
       case "read": {
@@ -50,11 +48,23 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
           const copy = bytes.slice();
           post({ type: "chunk", bytes: copy }, [copy.buffer]);
         };
-        await engine.readFile(
+        await engine.readFileBytes(
           request.path,
           { offset: request.offset, length: request.length },
           onChunk,
         );
+        break;
+      }
+      case "write": {
+        const result = await engine.writeFileBytes(
+          request.path,
+          request.bytes,
+          {
+            contentType: request.contentType,
+            ifMatchEtag: request.ifMatchEtag,
+          },
+        );
+        post({ type: "writeResult", result });
         break;
       }
     }

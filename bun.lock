@@ -150,11 +150,25 @@
         "react-dom": "^19.2.6",
       },
     },
+    "node/files-connect": {
+      "name": "@open-lakehouse/files-connect",
+      "version": "0.1.0",
+      "dependencies": {
+        "@bufbuild/protobuf": "^2.11.0",
+        "@connectrpc/connect": "^2.1.0",
+      },
+      "devDependencies": {
+        "typescript": "^5",
+      },
+    },
     "node/files-wasm": {
       "name": "@open-lakehouse/files-wasm",
       "version": "0.1.0",
       "dependencies": {
+        "@bufbuild/protobuf": "^2.11.0",
+        "@connectrpc/connect": "^2.1.0",
         "@open-lakehouse/files": "^0.1.0",
+        "@open-lakehouse/files-connect": "^0.1.0",
       },
       "devDependencies": {
         "typescript": "^5",
@@ -454,6 +468,8 @@
     "@clack/core": ["@clack/core@1.4.3", "", { "dependencies": { "fast-wrap-ansi": "^0.2.0", "sisteransi": "^1.0.5" } }, "sha512-/kr3UWNtdJfxZtPgDqUOmG2pvwlmcLGheex5yiZKdwbzZJxhV+HMNR9QNmyY5cGwTNV6LrR7Jtp+KjhUAP1qBQ=="],
 
     "@clack/prompts": ["@clack/prompts@1.7.0", "", { "dependencies": { "@clack/core": "1.4.3", "fast-string-width": "^3.0.2", "fast-wrap-ansi": "^0.2.0", "sisteransi": "^1.0.5" } }, "sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A=="],
+
+    "@connectrpc/connect": ["@connectrpc/connect@2.1.2", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0" } }, "sha512-MXkBijtcX09R10Eb6sFeIetc6w6746eio6xtfuyVOH7oQAacT1X0GzMIQFux6Qy8cq3W/T5qX5Bei8YbFtmRGA=="],
 
     "@ctrl/tinycolor": ["@ctrl/tinycolor@4.2.0", "", {}, "sha512-kzyuwOAQnXJNLS9PSyrk0CWk35nWJW/zl/6KvnTBMFK65gm7U1/Z5BqjxeapjZCIhQcM/DsrEmcbRwDyXyXK4A=="],
 
@@ -838,6 +854,8 @@
     "@open-lakehouse/editor": ["@open-lakehouse/editor@workspace:node/editor"],
 
     "@open-lakehouse/files": ["@open-lakehouse/files@workspace:node/files"],
+
+    "@open-lakehouse/files-connect": ["@open-lakehouse/files-connect@workspace:node/files-connect"],
 
     "@open-lakehouse/files-wasm": ["@open-lakehouse/files-wasm@workspace:node/files-wasm"],
 

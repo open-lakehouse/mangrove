@@ -17,7 +17,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@open-lakehouse/files": "^0.1.0"
+    "@bufbuild/protobuf": "^2.11.0",
+    "@connectrpc/connect": "^2.1.0",
+    "@open-lakehouse/files": "^0.1.0",
+    "@open-lakehouse/files-connect": "^0.1.0"
   },
   "devDependencies": {
     "typescript": "^5",

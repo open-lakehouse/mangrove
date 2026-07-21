@@ -1,27 +1,31 @@
 // The message protocol between the files runner (`createWasmFilesRunner`, main
 // thread) and the wasm worker. One worker per operation: the main thread posts a
-// single `list` / `read` / `stat`, the worker replies and finishes with `done` /
-// `error` (`read` streams `chunk` messages first); cancellation is
-// `Worker.terminate()` (the engine holds no cross-operation state). Mirrors
-// @open-lakehouse/query-wasm's protocol.ts, adapted for the files verbs — list
-// and stat are request→single-response, read is a chunk stream.
+// single `connectUnary` / `read` / `write`, the worker replies and finishes with
+// `done` / `error` (`read` streams `chunk` messages first); cancellation is
+// `Worker.terminate()` (the engine holds no cross-operation state).
+//
+// The split mirrors hydrofoil's Tauri backend exactly: unary METADATA RPCs go
+// through the generic `connectUnary` binary-proto dispatch (the wasm connect
+// Router), and file BYTES bypass proto — `read` / `write` are native byte
+// transfers. Metadata request/response bodies are opaque protobuf `Uint8Array`s
+// here; the connect client (in `@open-lakehouse/files-connect`) encodes/decodes
+// them.
 
-/** Main → worker: list one bounded page of a directory. */
-export interface ListMessage {
-  type: "list";
+/** Main → worker: dispatch one unary FilesService RPC as binary proto. */
+export interface ConnectUnaryMessage {
+  type: "connectUnary";
   /** Unity Catalog REST base, e.g. `${origin}/api/2.1/unity-catalog`. */
   baseUrl: string;
   /** Optional bearer for the UC API (same-origin cookies flow regardless). */
   authToken?: string;
-  /** Directory to list (canonical `/Volumes/<c>/<s>/<v>/<rest>`). */
+  /** Full RPC path, e.g. `portal.files.v1.FilesService/GetFileMetadata`. */
   path: string;
-  /** Page size; the engine applies its own cap when omitted. */
-  maxResults?: number;
-  /** Opaque continuation token from a previous page. */
-  pageToken?: string;
+  /** Binary-proto request body. */
+  requestBytes: Uint8Array;
 }
 
-/** Main → worker: read a file (or byte range) as a chunk stream. */
+/** Main → worker: read a file (or byte range) as a chunk stream (bytes bypass
+ *  the connect dispatcher). */
 export interface ReadMessage {
   type: "read";
   /** Unity Catalog REST base, e.g. `${origin}/api/2.1/unity-catalog`. */
@@ -36,58 +40,50 @@ export interface ReadMessage {
   length?: number;
 }
 
-/** Main → worker: stat a single file (HTTP HEAD analog). */
-export interface StatMessage {
-  type: "stat";
+/** Main → worker: write (create or overwrite) a file from one buffered body
+ *  (bytes bypass the connect dispatcher). */
+export interface WriteMessage {
+  type: "write";
   /** Unity Catalog REST base, e.g. `${origin}/api/2.1/unity-catalog`. */
   baseUrl: string;
   /** Optional bearer for the UC API (same-origin cookies flow regardless). */
   authToken?: string;
-  /** File to stat (canonical `/Volumes/<c>/<s>/<v>/<rest>`). */
+  /** Destination file (canonical `/Volumes/<c>/<s>/<v>/<rest>`). */
   path: string;
+  /** The whole file body. */
+  bytes: Uint8Array;
+  /** MIME type recorded as the object's Content-Type (optional). */
+  contentType?: string;
+  /** Optional if-match etag: a conditional overwrite (lost-update guard). */
+  ifMatchEtag?: string;
 }
 
 /** Any request the worker accepts. */
-export type WorkerRequest = ListMessage | ReadMessage | StatMessage;
+export type WorkerRequest = ConnectUnaryMessage | ReadMessage | WriteMessage;
 
-/** The directory-page shape the engine's `listDirectory` serializes to (the
- *  @open-lakehouse/files `DirectoryPage`). */
-export interface DirectoryPagePayload {
-  entries: Array<{
-    path: string;
-    isDirectory: boolean;
-    fileSize: number;
-    lastModified: number;
-  }>;
-  nextPageToken?: string;
-}
-
-/** The file-metadata shape the engine's `stat` serializes to (the
- *  @open-lakehouse/files `FileMetadata`). */
-export interface FileMetadataPayload {
+/** The post-write metadata `writeFileBytes` resolves to. */
+export interface WriteResultPayload {
   path: string;
   fileSize: number;
-  lastModified: number;
-  contentType?: string;
   etag?: string;
 }
 
-/** Worker → main: the resolved directory page (answers a `list`). */
-export interface PageMessage {
-  type: "page";
-  page: DirectoryPagePayload;
-}
-
-/** Worker → main: the resolved file metadata (answers a `stat`). */
-export interface MetaMessage {
-  type: "meta";
-  meta: FileMetadataPayload;
+/** Worker → main: the binary-proto response for a `connectUnary`. */
+export interface UnaryMessage {
+  type: "unary";
+  responseBytes: Uint8Array;
 }
 
 /** Worker → main: one chunk of a `read` stream (transferred, not copied). */
 export interface ChunkMessage {
   type: "chunk";
   bytes: Uint8Array;
+}
+
+/** Worker → main: the resolved write metadata (answers a `write`). */
+export interface WriteResultMessage {
+  type: "writeResult";
+  result: WriteResultPayload;
 }
 
 /** Worker → main: the operation finished successfully. */
@@ -105,8 +101,8 @@ export interface ErrorMessage {
 }
 
 export type WorkerResponse =
-  | PageMessage
-  | MetaMessage
+  | UnaryMessage
   | ChunkMessage
+  | WriteResultMessage
   | DoneMessage
   | ErrorMessage;
