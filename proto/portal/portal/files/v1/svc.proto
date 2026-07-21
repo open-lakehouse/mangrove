@@ -1,0 +1,169 @@
+syntax = "proto3";
+
+package portal.files.v1;
+
+import "google/protobuf/empty.proto";
+
+// ---------------------------------------------------------------------------
+// Files
+// ---------------------------------------------------------------------------
+
+// A single message in an UploadFile client stream.
+//
+// The first message in the stream MUST set `path` (and may set `content_type`).
+// Every message carries a `chunk` of file bytes; chunks are concatenated in
+// stream order to form the file contents. An empty trailing chunk is allowed.
+message UploadFileRequest {
+  // Destination path. Required on the first message; ignored thereafter.
+  string path = 1;
+
+  // MIME type of the file. Optional; only honored on the first message.
+  optional string content_type = 2;
+
+  // A chunk of the file contents.
+  bytes chunk = 3;
+}
+
+// The result of an upload, returned once the stream completes.
+message UploadFileResponse {
+  string path = 1;
+  int64 file_size = 2;
+  string etag = 3;
+}
+
+message DownloadFileRequest {
+  // Path of the file to download.
+  string path = 1;
+
+  // Byte offset to start reading from (optional; defaults to 0).
+  optional int64 offset = 2;
+
+  // Number of bytes to read (optional; defaults to the rest of the file).
+  optional int64 length = 3;
+}
+
+// A chunk of a DownloadFile server stream. Chunks arrive in file order.
+message DownloadFileResponse {
+  bytes chunk = 1;
+}
+
+message DeleteFileRequest {
+  string path = 1;
+}
+
+message GetFileMetadataRequest {
+  string path = 1;
+}
+
+// Metadata describing a single file (the proto analog of an HTTP HEAD).
+message FileMetadata {
+  string path = 1;
+  int64 file_size = 2;
+
+  // Last-modified time in epoch milliseconds.
+  int64 last_modified = 3;
+  string content_type = 4;
+  string etag = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Directories
+// ---------------------------------------------------------------------------
+
+message CreateDirectoryRequest {
+  string path = 1;
+}
+
+message DeleteDirectoryRequest {
+  string path = 1;
+}
+
+message GetDirectoryMetadataRequest {
+  string path = 1;
+}
+
+// Metadata describing a directory.
+message DirectoryMetadata {
+  string path = 1;
+
+  // Last-modified time in epoch milliseconds.
+  int64 last_modified = 2;
+}
+
+// A single entry within a directory listing.
+message DirectoryEntry {
+  string path = 1;
+  bool is_directory = 2;
+  int64 file_size = 3;
+  int64 last_modified = 4;
+}
+
+message ListDirectoryContentsRequest {
+  string path = 1;
+  optional int32 max_results = 2;
+  optional string page_token = 3;
+}
+
+message ListDirectoryContentsResponse {
+  repeated DirectoryEntry contents = 1;
+  optional string next_page_token = 2;
+}
+
+// Request for the server-streaming directory listing.
+//
+// Unlike the unary, paged ListDirectoryContents (one bounded page, suitable for
+// a UI), this streams entries lazily so a directory with many files is never
+// fully materialized.
+message ListDirectoryStreamRequest {
+  // Directory whose contents to list.
+  string path = 1;
+
+  // When true, list every file beneath `path` recursively (flat entries, no
+  // subdirectory rollup). When false (default), list immediate children with
+  // subdirectories rolled up as directory entries.
+  bool recursive = 2;
+
+  // Resume listing strictly after this absolute path (exclusive). Lets a caller
+  // page through a large listing without re-walking what it has already seen.
+  optional string start_after = 3;
+
+  // Stop after yielding this many entries. Optional; unset lists everything.
+  optional int32 max_results = 4;
+}
+
+// File and directory operations.
+//
+// Binary transfer uses streaming RPCs: UploadFile is a client stream (chunks in)
+// and DownloadFile is a server stream (chunks out). Metadata and directory
+// operations are unary.
+service FilesService {
+  // Upload a file. Client-streaming: send the path on the first message, then
+  // stream the contents as chunks.
+  rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
+
+  // Download a file. Server-streaming: the contents arrive as ordered chunks.
+  rpc DownloadFile(DownloadFileRequest) returns (stream DownloadFileResponse);
+
+  // Delete a file.
+  rpc DeleteFile(DeleteFileRequest) returns (google.protobuf.Empty);
+
+  // Get file metadata (the proto analog of an HTTP HEAD on a file).
+  rpc GetFileMetadata(GetFileMetadataRequest) returns (FileMetadata);
+
+  // Create a directory.
+  rpc CreateDirectory(CreateDirectoryRequest) returns (DirectoryMetadata);
+
+  // Delete a directory.
+  rpc DeleteDirectory(DeleteDirectoryRequest) returns (google.protobuf.Empty);
+
+  // List the contents of a directory. Unary + paged: returns one bounded page,
+  // suitable for a UI. For a large directory, prefer StreamDirectory.
+  rpc ListDirectoryContents(ListDirectoryContentsRequest) returns (ListDirectoryContentsResponse);
+
+  // Stream the contents of a directory. Server-streaming: entries arrive lazily
+  // so a directory with many files is never fully materialized.
+  rpc ListDirectoryStream(ListDirectoryStreamRequest) returns (stream DirectoryEntry);
+
+  // Get directory metadata (the proto analog of an HTTP HEAD on a directory).
+  rpc GetDirectoryMetadata(GetDirectoryMetadataRequest) returns (DirectoryMetadata);
+}

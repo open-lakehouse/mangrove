@@ -114,6 +114,28 @@ serde_json = { version = "1.0" }
 thiserror = { version = "2" }
 url = { version = "2.5" }
 
+# The proto runtime backing the generated `portal.files.v1` message types
+# (src/generated/buffa) — the files API contract vendored from portal's
+# `files/v1/svc.proto` and generated via buf (buf.gen.files.yaml, the same
+# remote buffa plugin the root buf.gen.yaml uses). `json` gives the serde impls
+# the wasm-bindgen surface serializes through; the message types are pure and
+# build for wasm32.
+buffa = { version = "0.7", features = ["json"] }
+buffa-types = { version = "0.7", features = ["json"] }
+
+# ConnectRPC runtime for the in-wasm files dispatcher (src/generated/connect +
+# files/service.rs). default-features = false drops `server`/`axum`/`streaming`
+# (hyper + tokio-net + async-compression, none of which build for
+# wasm32-unknown-unknown); the router/dispatcher/codec/handler modules are always
+# compiled, and the crate has a cfg(wasm32) path, so the dispatcher runs in the
+# browser. Bytes bypass this (native path), so no streaming feature is needed.
+connectrpc = { version = "0.7", default-features = false }
+# The generated ConnectRPC *client* (FilesServiceClient<T>) names `::http_body::Body`
+# in a trait bound; http-body is a pure-traits crate (wasm-safe) already in the
+# connectrpc graph. Needed at the crate root even though the wasm module drives
+# the server-side dispatcher, because the client type is emitted unconditionally.
+http-body = "1"
+
 # Native builds of deltalake-core require a TLS backend feature; the wasm target
 # needs none (the browser supplies fetch), so re-add it natively only. Mirrors
 # deltalake-wasm's own manifest.

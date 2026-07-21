@@ -1,0 +1,37 @@
+version: v2
+# The volume-files contract (proto/portal/portal/files/v1) generates Rust MESSAGE
+# TYPES ONLY for the in-browser files engine (crates/query-wasm) — no ConnectRPC
+# service / transport. The wasm `UcFilesEngine` drives an object_store directly
+# over UC-vended credentials; it only needs the proto message shapes
+# (FileMetadata, DirectoryMetadata, DirectoryEntry, UploadFileResponse,
+# ListDirectoryContentsResponse, …) so its wasm-bindgen surface serializes the
+# canonical `portal.files.v1` JSON the `@open-lakehouse/files` seam already
+# mirrors.
+#
+# Uses the same remote buffa plugin as the root buf.gen.yaml (buffa is the
+# proto runtime + the crate already depends on it transitively). `json=true`
+# gives the serde impls serde_wasm_bindgen needs; `file_per_package=true` groups
+# the package into one module tree. The packaging plugin emits the mod.rs so the
+# `generated/buffa` tree is `include!`-able.
+managed:
+  enabled: true
+plugins:
+  # Message types + zero-copy views (views=true is required by connect-rust's
+  # borrowed request decoding). json=true gives serde impls; file_per_package
+  # emits one self-contained module per proto package.
+  - remote: buf.build/anthropics/buffa:v0.7.0
+    out: crates/query-wasm/src/generated/buffa
+    opt:
+      - views=true
+      - json=true
+      - file_per_package=true
+  # The ConnectRPC service trait + dispatcher (FilesService,
+  # FilesServiceServer<T>). Same remote-plugin convention as the buffa plugin
+  # above (and trestle's golden-path). Points at the buffa module the message
+  # types land in.
+  - remote: buf.build/anthropics/connect-rust:v0.7.0
+    out: crates/query-wasm/src/generated/connect
+    opt:
+      - buffa_module=crate::generated::buffa
+inputs:
+  - directory: proto/portal

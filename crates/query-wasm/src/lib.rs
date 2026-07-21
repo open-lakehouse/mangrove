@@ -18,6 +18,7 @@ pub mod catalog;
 pub mod engine;
 pub mod error;
 pub mod files;
+pub mod generated;
 pub mod log_udtf;
 pub mod resolve;
 

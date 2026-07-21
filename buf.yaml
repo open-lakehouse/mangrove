@@ -6,6 +6,8 @@ modules:
     name: buf.build/unitycatalog/open_sharing
   - path: proto/query
     name: buf.build/unitycatalog/query
+  - path: proto/portal
+    name: buf.build/unitycatalog/portal
 deps:
   - buf.build/bufbuild/protovalidate
   - buf.build/gnostic/gnostic

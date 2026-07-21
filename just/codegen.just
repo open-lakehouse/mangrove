@@ -152,6 +152,16 @@ generate-node: generate-query-contract
 generate-query-contract:
     buf generate proto/query --template {{ justfile_directory() }}/buf.gen.query.yaml
 
+# Generate the volume-files contract (proto/portal/portal/files/v1) into
+# crates/query-wasm/src/generated: buffa message types + the connect-rust
+# FilesService trait/dispatcher (the in-wasm files engine implements it). Types +
+# service only — no transport (the wasm module IS the transport). See
+# buf.gen.files.yaml.
+[group('codegen')]
+[no-cd]
+generate-files-proto:
+    buf generate --template {{ justfile_directory() }}/buf.gen.files.yaml
+
 # regenerate proto-gen test fixture descriptors from proto/ source files
 [group('codegen')]
 [no-cd]
