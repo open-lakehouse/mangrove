@@ -154,13 +154,23 @@ generate-query-contract:
 
 # Generate the volume-files contract (proto/portal/portal/files/v1) into
 # crates/query-wasm/src/generated: buffa message types + the connect-rust
-# FilesService trait/dispatcher (the in-wasm files engine implements it). Types +
-# service only — no transport (the wasm module IS the transport). See
-# buf.gen.files.yaml.
+# FilesService trait/dispatcher (the in-wasm files engine implements it), AND the
+# connect-es TypeScript client (message types + FilesService descriptor) into
+# @open-lakehouse/files-connect. See buf.gen.files.yaml / buf.gen.files-es.yaml.
 [group('codegen')]
 [no-cd]
-generate-files-proto:
+generate-files-proto: generate-files-es
     buf generate --template {{ justfile_directory() }}/buf.gen.files.yaml
+
+# Generate the connect-es TypeScript client for the volume-files contract
+# (message types + the FilesService service descriptor) into the
+# @open-lakehouse/files-connect package. protoc-gen-es v2 emits the service
+# descriptor directly; createClient(FilesService, transport) reads it. See
+# buf.gen.files-es.yaml.
+[group('codegen')]
+[no-cd]
+generate-files-es:
+    buf generate --template {{ justfile_directory() }}/buf.gen.files-es.yaml
 
 # regenerate proto-gen test fixture descriptors from proto/ source files
 [group('codegen')]

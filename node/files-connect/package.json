@@ -1,0 +1,23 @@
+{
+  "name": "@open-lakehouse/files-connect",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "gen": "just generate-files-es",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.11.0",
+    "@connectrpc/connect": "^2.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

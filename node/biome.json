@@ -8,7 +8,8 @@
       "!**/node_modules/**/*",
       "!**/unity-catalog-client/src/uc-api.d.ts",
       "!**/unity-catalog/src/forms/schemas/**/*",
-      "!**/query/src/gen/**/*"
+      "!**/query/src/gen/**/*",
+      "!**/files-connect/src/gen/**/*"
     ]
   },
   "linter": {
@@ -110,6 +111,26 @@
                   {
                     "group": ["@open-lakehouse/unity-catalog"],
                     "message": "files-wasm implements the @open-lakehouse/files runner contract and must not import Unity Catalog UI: the app composes them, never the packages themselves."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["files-connect/src/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@open-lakehouse/unity-catalog"],
+                    "message": "files-connect is the write-capable ConnectRPC surface for the @open-lakehouse/files seam and must not import Unity Catalog UI: the app composes them, never the packages themselves."
                   }
                 ]
               }
