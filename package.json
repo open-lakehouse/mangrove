@@ -9,6 +9,7 @@
     "node/query-wasm",
     "node/log-query",
     "node/files",
+    "node/files-connect",
     "node/files-wasm",
     "node/editor",
     "node/unity-catalog-client",

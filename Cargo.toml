@@ -206,6 +206,10 @@ files.extend-exclude = [
   "crates/sharing-client/src/models/_gen/**/*",
   "openapi/**/*",
   "node/client/unitycatalog/codegen/models/gen/**/*",
+  # protoc-gen-es output (`@generated`, never hand-edited): the base64 `fileDesc`
+  # descriptor blob contains random substrings the spellchecker flags as typos
+  # (MKE/GES/Muc/…). Excludes the query + files-connect connect-es gen dirs.
+  "node/*/src/gen/**/*",
   "../trestle/crates/trestle-codegen/src/gen/**/*",
 ]
 

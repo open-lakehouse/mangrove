@@ -30,20 +30,6 @@ pub struct DirectoryPage {
     pub next_page_token: Option<String>,
 }
 
-/// File metadata (serializes to the TS `FileMetadata`).
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FileMetadata {
-    pub path: String,
-    pub file_size: u64,
-    /// Epoch millis.
-    pub last_modified: i64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub content_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub etag: Option<String>,
-}
-
 /// Window a fully-collected, sorted entry list by `max_results` starting at the
 /// offset decoded from `page_token`, returning the window plus the next offset
 /// token (when more entries remain).

@@ -318,20 +318,19 @@ async fn stream_to_callback(
 }
 
 // =====================================================================
-// Files: the read-only volume file-browser surface (`UcFilesEngine`).
+// Files: the volume file-browser surface (`UcFilesEngine`).
+//
+// Mirrors hydrofoil's Tauri backend split exactly:
+//  - the unary METADATA RPCs (GetFileMetadata / ListDirectoryContents /
+//    DeleteFile / CreateDirectory / DeleteDirectory / GetDirectoryMetadata) go
+//    through ONE generic dispatch export, `connectUnary`, as binary proto
+//    (crate::files::service dispatches them through a connectrpc Router); and
+//  - file BYTES bypass proto entirely — `readFileBytes` / `writeFileBytes` are
+//    dedicated native exports with a raw binary body, since streaming file bytes
+//    through the connect envelope is what hydrofoil deliberately avoids.
 // =====================================================================
 
-/// Options accepted by `listDirectory`, mirroring `ListDirectoryRequest`.
-#[derive(serde::Deserialize, Default)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct ListDirectoryOptions {
-    /// Page size; the provider applies its own cap when omitted.
-    max_results: Option<u32>,
-    /// Opaque continuation token from a previous page's `nextPageToken`.
-    page_token: Option<String>,
-}
-
-/// Options accepted by `readFile`, mirroring `ReadFileRequest`.
+/// Options accepted by `readFileBytes`, mirroring `DownloadFileRequest`.
 #[derive(serde::Deserialize, Default)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ReadFileOptions {
@@ -341,15 +340,43 @@ struct ReadFileOptions {
     length: Option<u64>,
 }
 
-/// Summary returned by `readFile`.
+/// Summary returned by `readFileBytes`.
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ReadStats {
     bytes_read: u64,
 }
 
-/// The in-browser Unity Catalog **volume files** engine: read-only directory
-/// listing, ranged reads, and stat over UC-vended volume credentials.
+/// Options accepted by `writeFileBytes`.
+#[derive(serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct WriteFileOptions {
+    /// MIME type recorded as the object's `Content-Type` attribute.
+    content_type: Option<String>,
+    /// Optional if-match etag: when set, the put is a conditional overwrite that
+    /// only succeeds if the object still carries this etag (a lost-update guard);
+    /// a failed precondition surfaces as the `CONFLICT`-classed error. Absent =
+    /// unconditional overwrite. (A local extension: the proto has no such field.)
+    if_match_etag: Option<String>,
+}
+
+/// The post-write metadata `writeFileBytes` resolves to (the `UploadFileResponse`
+/// shape: path + size + etag).
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WriteStats {
+    path: String,
+    file_size: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    etag: Option<String>,
+}
+
+/// The in-browser Unity Catalog **volume files** engine.
+///
+/// Metadata operations flow through the [`connectUnary`](UcFilesEngine::connect_unary)
+/// dispatch export as binary proto (`portal.files.v1.FilesService`); file bytes
+/// flow through the dedicated [`readFileBytes`](UcFilesEngine::read_file_bytes) /
+/// [`writeFileBytes`](UcFilesEngine::write_file_bytes) exports.
 ///
 /// Errors are `js_sys::Error`s with the same `code` contract as
 /// [`UcQueryEngine`] (`UNSUPPORTED` / `NETWORK` / `FAILED`). Azure + GCP are
@@ -380,23 +407,24 @@ impl UcFilesEngine {
         })
     }
 
-    /// List one bounded page of a directory's immediate children.
+    /// Dispatch one unary `portal.files.v1.FilesService` RPC through the in-wasm
+    /// connect Router, as binary proto.
     ///
-    /// `path`: a canonical `/Volumes/<c>/<s>/<v>[/<rest>]` path. `opts`:
-    /// `{ maxResults?, pageToken? }`. Returns
-    /// `{ entries: [{ path, isDirectory, fileSize, lastModified }], nextPageToken? }`.
-    #[wasm_bindgen(js_name = listDirectory)]
-    pub async fn list_directory(&self, path: String, opts: JsValue) -> Result<JsValue, JsValue> {
-        let opts: ListDirectoryOptions = if opts.is_undefined() || opts.is_null() {
-            ListDirectoryOptions::default()
-        } else {
-            serde_wasm_bindgen::from_value(opts).map_err(|e| {
-                js_error(Error::InvalidResponse(format!(
-                    "listDirectory options: {e}"
-                )))
-            })?
-        };
-        self.list_directory_inner(&path, opts)
+    /// `path` is the full RPC path (e.g.
+    /// `portal.files.v1.FilesService/GetFileMetadata`); `request_bytes` is the
+    /// binary-proto request body; the returned `Uint8Array` is the binary-proto
+    /// response body. The TS `createWasmFilesTransport` calls this for every
+    /// metadata RPC (`toBinary(input)` → here → `fromBinary(output)`). Byte RPCs
+    /// (Upload/Download) never reach here — they use the dedicated byte exports.
+    ///
+    /// Mirrors hydrofoil's `connect_unary_proto` Tauri command.
+    #[wasm_bindgen(js_name = connectUnary)]
+    pub async fn connect_unary(
+        &self,
+        path: String,
+        request_bytes: Uint8Array,
+    ) -> Result<Uint8Array, JsValue> {
+        self.connect_unary_inner(&path, request_bytes)
             .await
             .map_err(js_error)
     }
@@ -405,9 +433,9 @@ impl UcFilesEngine {
     /// in file order.
     ///
     /// `path`: a canonical `/Volumes/…` file path. `opts`: `{ offset?, length? }`.
-    /// Returns `{ bytesRead }`.
-    #[wasm_bindgen(js_name = readFile)]
-    pub async fn read_file(
+    /// Returns `{ bytesRead }`. Bytes bypass the connect dispatcher (native path).
+    #[wasm_bindgen(js_name = readFileBytes)]
+    pub async fn read_file_bytes(
         &self,
         path: String,
         opts: JsValue,
@@ -416,27 +444,48 @@ impl UcFilesEngine {
         let opts: ReadFileOptions = if opts.is_undefined() || opts.is_null() {
             ReadFileOptions::default()
         } else {
-            serde_wasm_bindgen::from_value(opts)
-                .map_err(|e| js_error(Error::InvalidResponse(format!("readFile options: {e}"))))?
+            serde_wasm_bindgen::from_value(opts).map_err(|e| {
+                js_error(Error::InvalidResponse(format!(
+                    "readFileBytes options: {e}"
+                )))
+            })?
         };
         self.read_file_inner(&path, opts, &on_chunk)
             .await
             .map_err(js_error)
     }
 
-    /// Metadata for a single file (the analog of an HTTP HEAD).
+    /// Write (create or overwrite) a file from one buffered byte body.
     ///
-    /// `path`: a canonical `/Volumes/…` file path. Returns
-    /// `{ path, fileSize, lastModified, contentType?, etag? }`.
-    #[wasm_bindgen(js_name = stat)]
-    pub async fn stat(&self, path: String) -> Result<JsValue, JsValue> {
-        self.stat_inner(&path).await.map_err(js_error)
+    /// `path`: a canonical `/Volumes/…` file path. `bytes`: the whole file body
+    /// (a client stream degrades to one buffered call, as hydrofoil does). `opts`:
+    /// `{ contentType?, ifMatchEtag? }`. Returns `{ path, fileSize, etag? }`.
+    /// Bytes bypass the connect dispatcher (native path).
+    #[wasm_bindgen(js_name = writeFileBytes)]
+    pub async fn write_file_bytes(
+        &self,
+        path: String,
+        bytes: Uint8Array,
+        opts: JsValue,
+    ) -> Result<JsValue, JsValue> {
+        let opts: WriteFileOptions = if opts.is_undefined() || opts.is_null() {
+            WriteFileOptions::default()
+        } else {
+            serde_wasm_bindgen::from_value(opts).map_err(|e| {
+                js_error(Error::InvalidResponse(format!(
+                    "writeFileBytes options: {e}"
+                )))
+            })?
+        };
+        self.write_file_inner(&path, bytes, opts)
+            .await
+            .map_err(js_error)
     }
 }
 
 impl UcFilesEngine {
     /// Build the canonical Unity Catalog factory once per op. On wasm it drives a
-    /// browser Fetch transport (bearer via `with_auth` when a token is set,
+    /// browser Fetch transport (bearer via `with_token` when a token is set,
     /// otherwise the ambient browser session) — same construction as the table
     /// path's [`UcRestResolver`](crate::catalog::UcRestResolver).
     async fn factory(&self) -> Result<UnityObjectStoreFactory, Error> {
@@ -448,22 +497,25 @@ impl UcFilesEngine {
             .await?)
     }
 
-    async fn list_directory_inner(
+    async fn connect_unary_inner(
         &self,
         path: &str,
-        opts: ListDirectoryOptions,
-    ) -> Result<JsValue, Error> {
-        let parsed = VolumePath::parse(path)?;
-        let factory = self.factory().await?;
-        let page = crate::files::engine::list_directory(
-            &factory,
-            &parsed,
-            opts.max_results,
-            opts.page_token,
+        request_bytes: Uint8Array,
+    ) -> Result<Uint8Array, Error> {
+        let request = bytes::Bytes::from(request_bytes.to_vec());
+        let response = crate::files::service::connect_unary(
+            self.base_url.clone(),
+            self.auth_token.clone(),
+            path,
+            request,
         )
-        .await?;
-        serde_wasm_bindgen::to_value(&page)
-            .map_err(|e| Error::InvalidResponse(format!("directory page: {e}")))
+        .await
+        // The connect error carries the failure class in its code; re-tag it into
+        // the engine `Error` so the JS `code` contract (`classify`) holds — a
+        // conflict maps through the `conflict:` marker, transport through
+        // `network/CORS:`, everything else to `FAILED`.
+        .map_err(connect_error_to_engine)?;
+        Ok(Uint8Array::from(response.as_ref()))
     }
 
     async fn read_file_inner(
@@ -488,11 +540,42 @@ impl UcFilesEngine {
             .map_err(|e| Error::InvalidResponse(format!("read stats: {e}")))
     }
 
-    async fn stat_inner(&self, path: &str) -> Result<JsValue, Error> {
+    async fn write_file_inner(
+        &self,
+        path: &str,
+        bytes: Uint8Array,
+        opts: WriteFileOptions,
+    ) -> Result<JsValue, Error> {
         let parsed = VolumePath::parse(path)?;
         let factory = self.factory().await?;
-        let meta = crate::files::engine::stat(&factory, &parsed).await?;
-        serde_wasm_bindgen::to_value(&meta)
-            .map_err(|e| Error::InvalidResponse(format!("file metadata: {e}")))
+        let meta = crate::files::engine::write_file(
+            &factory,
+            &parsed,
+            bytes.to_vec(),
+            opts.content_type,
+            opts.if_match_etag,
+        )
+        .await?;
+        let stats = WriteStats {
+            path: meta.path,
+            file_size: meta.file_size.max(0) as u64,
+            etag: (!meta.etag.is_empty()).then_some(meta.etag),
+        };
+        serde_wasm_bindgen::to_value(&stats)
+            .map_err(|e| Error::InvalidResponse(format!("write stats: {e}")))
+    }
+}
+
+/// Re-tag a `connectrpc::ConnectError` back into an engine [`Error`] so the JS
+/// boundary's `code` contract (`classify`) still holds after the round trip
+/// through the dispatcher. The service maps a write conflict to `AlreadyExists`
+/// and a transport failure to `Unavailable`; recover those markers here.
+fn connect_error_to_engine(err: connectrpc::ConnectError) -> Error {
+    use connectrpc::ErrorCode;
+    let message = err.message.clone().unwrap_or_default();
+    match err.code {
+        ErrorCode::AlreadyExists => Error::UnityCatalog(format!("conflict: {message}")),
+        ErrorCode::Unavailable => Error::UnityCatalog(format!("network/CORS: {message}")),
+        _ => Error::InvalidResponse(message),
     }
 }

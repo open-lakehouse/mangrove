@@ -29,14 +29,18 @@ use std::sync::Arc;
 use bytes::Bytes;
 use futures::StreamExt;
 use object_store::path::Path as StorePath;
-use object_store::{GetOptions, GetRange, ObjectStore};
+use object_store::{
+    Attribute, Attributes, GetOptions, GetRange, ObjectStore, ObjectStoreExt, PutMode, PutOptions,
+    PutPayload, UpdateVersion,
+};
 use send_wrapper::SendWrapper;
 use unitycatalog_client::VolumeOperation;
 use unitycatalog_object_store::UnityObjectStoreFactory;
 
 use crate::error::{Error, Result};
-use crate::files::page::{DirectoryPage, FileEntry, FileMetadata, paginate};
+use crate::files::page::{DirectoryPage, FileEntry, paginate};
 use crate::files::path::VolumePath;
+use crate::generated::portal::files::v1::{DirectoryMetadata, FileMetadata};
 
 /// Vend `READ_VOLUME` credentials for `path`'s volume and return the real cloud
 /// store, prefix-scoped to the volume root (so callers address it with
@@ -47,6 +51,23 @@ pub async fn resolve_volume(
 ) -> Result<Arc<dyn ObjectStore>> {
     let uc_store = factory
         .for_volume(path.full_name(), VolumeOperation::Read)
+        .await?;
+    Ok(uc_store.as_dyn())
+}
+
+/// Vend `WRITE_VOLUME` credentials for `path`'s volume and return the real cloud
+/// store, prefix-scoped to the volume root (so callers address it with
+/// volume-relative keys).
+///
+/// The read-only [`resolve_volume`] stays the vend path for list/read/stat so
+/// browsing keeps the least-privilege `READ_VOLUME` credential; only the write
+/// verbs (`write_file`/`delete_file`/`create_dir`) reach for `ReadWrite`.
+pub async fn resolve_volume_rw(
+    factory: &UnityObjectStoreFactory,
+    path: &VolumePath,
+) -> Result<Arc<dyn ObjectStore>> {
+    let uc_store = factory
+        .for_volume(path.full_name(), VolumeOperation::ReadWrite)
         .await?;
     Ok(uc_store.as_dyn())
 }
@@ -183,11 +204,196 @@ pub async fn stat(factory: &UnityObjectStoreFactory, path: &VolumePath) -> Resul
 
     Ok(FileMetadata {
         path: path.to_canonical(),
-        file_size: result.meta.size,
+        file_size: result.meta.size as i64,
         last_modified: result.meta.last_modified.timestamp_millis(),
-        content_type: None,
-        etag: result.meta.e_tag,
+        // The store's HEAD doesn't surface a content type here; proto empty
+        // string == absent (buffa skips empty on the wire).
+        content_type: String::new(),
+        etag: result.meta.e_tag.unwrap_or_default(),
+        ..Default::default()
     })
+}
+
+/// Write (create or overwrite) a file, returning its post-write metadata.
+///
+/// `content_type` is recorded as the object's `Content-Type` attribute when
+/// supplied. `if_match_etag` opts into a conditional write: when `Some`, the put
+/// only succeeds if the current object still carries that etag (an optimistic
+/// lock against a lost update), otherwise it is an unconditional overwrite.
+///
+/// A failed precondition (the object moved on under a conditional write) is
+/// re-tagged with the `conflict:` marker so the bindings' `classify()` maps it
+/// to the `CONFLICT` code, distinct from a hard `FAILED`. Every other storage
+/// error flows through [`Error::from_object_store`] like the read path.
+pub async fn write_file(
+    factory: &UnityObjectStoreFactory,
+    path: &VolumePath,
+    bytes: Vec<u8>,
+    content_type: Option<String>,
+    if_match_etag: Option<String>,
+) -> Result<FileMetadata> {
+    if path.is_root() {
+        return Err(Error::InvalidUrl(
+            "a file path is required (got a volume root)".to_string(),
+        ));
+    }
+    let store = resolve_volume_rw(factory, path).await?;
+    write_file_on_store(&store, path, bytes, content_type, if_match_etag).await
+}
+
+/// The store-level half of [`write_file`]: everything after credential vending.
+/// Split out so native `InMemory`-backed tests exercise the key construction,
+/// `PutMode` selection, and conflict mapping without a live factory.
+async fn write_file_on_store(
+    store: &Arc<dyn ObjectStore>,
+    path: &VolumePath,
+    bytes: Vec<u8>,
+    content_type: Option<String>,
+    if_match_etag: Option<String>,
+) -> Result<FileMetadata> {
+    let location = StorePath::from(path.object_key("").as_str());
+
+    let size = bytes.len() as u64;
+    let payload = PutPayload::from(bytes);
+
+    let mode = match &if_match_etag {
+        Some(etag) => PutMode::Update(UpdateVersion {
+            e_tag: Some(etag.clone()),
+            version: None,
+        }),
+        None => PutMode::Overwrite,
+    };
+    let mut attributes = Attributes::new();
+    if let Some(ct) = content_type.clone() {
+        attributes.insert(Attribute::ContentType, ct.into());
+    }
+    let options = PutOptions {
+        mode,
+        attributes,
+        ..Default::default()
+    };
+
+    let result = store
+        .put_opts(&location, payload, options)
+        .await
+        .map_err(map_write_error)?;
+
+    Ok(FileMetadata {
+        path: path.to_canonical(),
+        file_size: size as i64,
+        last_modified: 0,
+        content_type: content_type.unwrap_or_default(),
+        etag: result.e_tag.unwrap_or_default(),
+        ..Default::default()
+    })
+}
+
+/// Delete a file. A missing file surfaces as the store's `NotFound` (classified
+/// `FAILED`) rather than being swallowed.
+pub async fn delete_file(factory: &UnityObjectStoreFactory, path: &VolumePath) -> Result<()> {
+    if path.is_root() {
+        return Err(Error::InvalidUrl(
+            "a file path is required (got a volume root)".to_string(),
+        ));
+    }
+    let store = resolve_volume_rw(factory, path).await?;
+    let location = StorePath::from(path.object_key("").as_str());
+    store
+        .delete(&location)
+        .await
+        .map_err(Error::from_object_store)?;
+    Ok(())
+}
+
+/// Create a directory by writing a zero-byte sentinel object keyed on the
+/// directory path with a trailing `/`.
+///
+/// Object stores have no real directories — a directory only exists as the
+/// common prefix of some object's key. The `<dir>/` sentinel makes an otherwise
+/// empty folder show up in `list_directory` (which rolls up common prefixes,
+/// [`list_directory`]) and is invisible to that rollup (unlike a visible
+/// `.keep` file). This is a best-effort UX marker; some backends materialize
+/// prefixes lazily.
+pub async fn create_dir(
+    factory: &UnityObjectStoreFactory,
+    path: &VolumePath,
+) -> Result<DirectoryMetadata> {
+    if path.is_root() {
+        return Err(Error::InvalidUrl(
+            "a directory path is required (got a volume root)".to_string(),
+        ));
+    }
+    let store = resolve_volume_rw(factory, path).await?;
+    // The sentinel key is the directory key with a trailing slash.
+    let marker = format!("{}/", path.object_key(""));
+    let location = StorePath::from(marker.as_str());
+    store
+        .put_opts(
+            &location,
+            PutPayload::from_static(b""),
+            PutOptions::default(),
+        )
+        .await
+        .map_err(Error::from_object_store)?;
+
+    Ok(DirectoryMetadata {
+        path: path.to_canonical(),
+        last_modified: 0,
+        ..Default::default()
+    })
+}
+
+/// Delete a directory: remove every object under the directory prefix (and the
+/// `<dir>/` sentinel, if present) in one best-effort sweep.
+///
+/// Object stores have no directory to unlink — a directory is just the common
+/// prefix of some keys — so "delete a directory" means "delete everything under
+/// its prefix". The prefix listing is driven to exhaustion (matching
+/// [`list_directory`]'s reliance on `object_store`'s internal continuation), then
+/// each object is deleted. An empty directory (only the sentinel, or nothing)
+/// deletes cleanly.
+pub async fn delete_dir(factory: &UnityObjectStoreFactory, path: &VolumePath) -> Result<()> {
+    if path.is_root() {
+        return Err(Error::InvalidUrl(
+            "a directory path is required (got a volume root)".to_string(),
+        ));
+    }
+    let store = resolve_volume_rw(factory, path).await?;
+
+    // Volume-relative directory prefix (the store is prefix-scoped to the volume
+    // root). The object keys under a directory all start with `<dir>/`.
+    let dir_key = path.object_key("");
+    let prefix = StorePath::from(dir_key.as_str());
+
+    // `list` walks the whole subtree (recursive, no delimiter rollup); every key
+    // beneath the directory — including the `<dir>/` sentinel — is deleted.
+    let mut listing = SendWrapper::new(store.list(Some(&prefix)));
+    let mut locations = Vec::new();
+    while let Some(meta) = listing.next().await {
+        let meta = meta.map_err(Error::from_object_store)?;
+        locations.push(meta.location);
+    }
+    drop(listing);
+
+    for location in locations {
+        store
+            .delete(&location)
+            .await
+            .map_err(Error::from_object_store)?;
+    }
+    Ok(())
+}
+
+/// Map a `put_opts` error, re-tagging a failed precondition (conditional write
+/// lost the race) so the bindings surface it as the `CONFLICT` code; everything
+/// else defers to [`Error::from_object_store`] (transport re-tagging + passthrough).
+fn map_write_error(err: object_store::Error) -> Error {
+    match err {
+        object_store::Error::Precondition { path, source } => Error::UnityCatalog(format!(
+            "conflict: precondition failed for {path}: {source}"
+        )),
+        other => Error::from_object_store(other),
+    }
 }
 
 /// Translate an optional offset/length into a [`GetRange`]. Both unset reads the

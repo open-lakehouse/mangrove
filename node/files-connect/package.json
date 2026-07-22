@@ -1,5 +1,5 @@
 {
-  "name": "@open-lakehouse/files-wasm",
+  "name": "@open-lakehouse/files-connect",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,23 +7,17 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
-    },
-    "./stub": {
-      "types": "./src/stub.ts",
-      "import": "./src/stub.ts"
     }
   },
   "scripts": {
+    "gen": "just generate-files-es",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.11.0",
-    "@connectrpc/connect": "^2.1.0",
-    "@open-lakehouse/files": "^0.1.0",
-    "@open-lakehouse/files-connect": "^0.1.0"
+    "@connectrpc/connect": "^2.1.0"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "vite": "^8.0.14"
+    "typescript": "^5"
   }
 }

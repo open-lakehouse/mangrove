@@ -1,0 +1,25 @@
+version: v2
+# The volume-files contract (proto/portal/portal/files/v1) generates TypeScript
+# message types AND the `FilesService` service descriptor into the new
+# `@open-lakehouse/files-connect` package — the write-capable ConnectRPC surface
+# for the in-browser wasm files engine.
+#
+# Unlike buf.gen.query.yaml (message types only — mangrove states that contract
+# upstream and does not own its transport), this DOES emit the service descriptor:
+# `@open-lakehouse/files-connect` builds a `createClient(FilesService, transport)`
+# over a wasm-backed connect `Transport`, mirroring hydrofoil's connect-es client.
+# protoc-gen-es v2 emits the service descriptor directly (the old
+# protoc-gen-connect-es is not needed); `createClient` reads `FilesService`.
+#
+# Regenerate with `just generate-files-es` (or `just generate-files-proto`, which
+# runs both the Rust and the TS templates). Never hand-edit the `gen/*` files.
+managed:
+  enabled: true
+plugins:
+  - remote: buf.build/bufbuild/es:v2.12.1
+    out: node/files-connect/src/gen
+    opt:
+      - target=ts
+      - json_types=false
+inputs:
+  - directory: proto/portal
