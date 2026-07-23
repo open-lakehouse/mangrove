@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.3...olai-uc-server-v0.0.4) - 2026-07-23
+
+### Added
+
+- *(query-wasm)* volume-files write path — in-wasm ConnectRPC transport + connect-es client (#162)
+- folder drill-down, breadcrumb & download in the volume Files tab (#161)
+- Delta-log visualizations — min/max boxes + rich action rows (#160)
+- *(editor)* reusable Monaco editor package for the volumes integration (#149)
+- volume files/browsing seam + read-only wasm backend (#148)
+- make ContextExtractor async for path-segment-derived contexts (#142) (#143)
+- make the Delta router state-agnostic and host-composable (#135) (#140)
+- in-browser wasm runner for the Delta log explorer (reconciled + actions) (#137)
+- Delta-log explorer tab in Table detail (log-query seam scaffold) (#134)
+
+### Changed
+
+- *(just)* split the root justfile into task modules (#147)
+- *(log-query)* drop vestigial fixed-logical-name SQL from the log seam (#139)
+
+### Documentation
+
+- move trait reference to rustdoc; repair pruned site links (#105)
+
+### Fixed
+
+- *(query-wasm)* stop doubled _delta_log paths in the wasm resolver (#157)
+- *(query)* survive StrictMode remount so preview/log grids fill on first view (#146)
+- *(data-grid)* flush virtualizer when the grid mounts after the stream ends (#145)
+- defer wasm preview/log-query run start to mount effect (#144)
+
 ## [0.0.3](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.2...olai-uc-server-v0.0.3) - 2026-07-16
 
 ### Changed

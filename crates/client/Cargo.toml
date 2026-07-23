@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-client"
-version = "0.0.3"
+version = "0.0.4"
 description = "Async Rust client for the Unity Catalog REST API."
 edition.workspace = true
 license.workspace = true
@@ -18,8 +18,8 @@ name = "unitycatalog_client"
 # The client uses only the wire DTOs from these crates, not their server-side
 # surfaces — so disable default features (delta-api's `server`/axum,
 # common's `rest-client`/`store`) to keep the wasm build free of axum/tokio/olai-store.
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.3", default-features = false }
-unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.3", default-features = false }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.4", default-features = false }
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.4", default-features = false }
 
 # Generated request builders wrap enum query params in `buffa::EnumValue::Known`.
 buffa = { workspace = true }

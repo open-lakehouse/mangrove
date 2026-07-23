@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4](https://github.com/open-lakehouse/mangrove/compare/olai-uc-object-store-v0.0.3...olai-uc-object-store-v0.0.4) - 2026-07-23
+
+### Added
+
+- consolidate query-wasm onto the canonical UC crates (table path) (#152)
+- make olai-uc-object-store wasm-capable (Azure-first) (#151)
+
 ## [0.0.3](https://github.com/open-lakehouse/mangrove/compare/olai-uc-object-store-v0.0.2...olai-uc-object-store-v0.0.3) - 2026-07-16
 
 ### Added

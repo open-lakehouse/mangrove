@@ -3932,7 +3932,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-client"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "buffa",
  "bytes",
@@ -3963,7 +3963,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-common"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -4033,7 +4033,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-delta-api"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "async-trait",
  "axum",
@@ -4048,7 +4048,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-object-store"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -4072,7 +4072,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-postgres"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4092,7 +4092,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-server"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "async-trait",
  "axum",
@@ -4184,7 +4184,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-sqlite"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "async-trait",
  "bytes",

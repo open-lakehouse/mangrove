@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-server"
-version = "0.0.3"
+version = "0.0.4"
 description = "Unity Catalog REST server with pluggable storage backends."
 edition.workspace = true
 license.workspace = true
@@ -29,15 +29,15 @@ path = "src/main.rs"
 required-features = ["bin"]
 
 [dependencies]
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.3", features = [
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.4", features = [
   "axum",
   "store",
   "metric-view",
 ] }
-unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.3" }
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.4" }
 # buffa runtime: generated handler glue constructs/matches buffa model types.
 buffa = { workspace = true }
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.3", optional = true }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.4", optional = true }
 
 async-trait = { workspace = true }
 bytes = { workspace = true }
@@ -75,8 +75,8 @@ uuid = { workspace = true, optional = true, features = ["v4", "v7"] }
 
 # `bin` (deployable `uc-server` binary) dependencies — all optional so a library
 # build of this crate doesn't pull the CLI / storage-backend / serve stack.
-unitycatalog-postgres = { package = "olai-uc-postgres", path = "../postgres", version = "0.0.3", optional = true }
-unitycatalog-sqlite = { package = "olai-uc-sqlite", path = "../sqlite", version = "0.0.3", optional = true }
+unitycatalog-postgres = { package = "olai-uc-postgres", path = "../postgres", version = "0.0.4", optional = true }
+unitycatalog-sqlite = { package = "olai-uc-sqlite", path = "../sqlite", version = "0.0.4", optional = true }
 base64 = { version = "0.22", optional = true }
 clap = { version = "4.5", features = ["derive", "env", "wrap_help"], optional = true }
 # `healthcheck` subcommand probes /health with a blocking client off the tokio

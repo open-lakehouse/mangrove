@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4](https://github.com/open-lakehouse/mangrove/compare/olai-uc-delta-api-v0.0.3...olai-uc-delta-api-v0.0.4) - 2026-07-23
+
+### Added
+
+- make olai-uc-client wasm-capable via dual transport (Azure-first) (#150)
+- make ContextExtractor async for path-segment-derived contexts (#142) (#143)
+- make the Delta router state-agnostic and host-composable (#135) (#140)
+
 ## [0.0.3](https://github.com/open-lakehouse/mangrove/compare/olai-uc-delta-api-v0.0.2...olai-uc-delta-api-v0.0.3) - 2026-07-16
 
 ### Changed

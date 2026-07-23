@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4](https://github.com/open-lakehouse/mangrove/compare/olai-uc-common-v0.0.3...olai-uc-common-v0.0.4) - 2026-07-23
+
+### Added
+
+- make olai-uc-client wasm-capable via dual transport (Azure-first) (#150)
+- *(workspace)* converge native+wasm graph, move Delta provider to olai-delta-df, pyo3 0.28 (#122)
+
+### Changed
+
+- *(just)* split the root justfile into task modules (#147)
+
 ## [0.0.3](https://github.com/open-lakehouse/mangrove/compare/olai-uc-common-v0.0.2...olai-uc-common-v0.0.3) - 2026-07-16
 
 ### Added

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4](https://github.com/open-lakehouse/mangrove/compare/olai-uc-postgres-v0.0.3...olai-uc-postgres-v0.0.4) - 2026-07-23
+
+### Changed
+
+- *(just)* split the root justfile into task modules (#147)
+
+### Documentation
+
+- move trait reference to rustdoc; repair pruned site links (#105)
+
 ## [0.0.2](https://github.com/open-lakehouse/mangrove/compare/olai-uc-postgres-v0.0.1...olai-uc-postgres-v0.0.2) - 2026-07-12
 
 ### Added
