@@ -4,7 +4,7 @@
 # `unitycatalog(_)common` via each dependent's `package =` alias, so no source
 # changes. See release-plz.toml / CONTRIBUTING.md.
 name = "olai-uc-common"
-version = "0.0.3"
+version = "0.0.4"
 description = "Shared types, generated Unity Catalog models, and storage/REST abstractions for the Unity Catalog server and client crates."
 edition.workspace = true
 homepage.workspace = true

@@ -24,7 +24,7 @@ name = "unitycatalog_sharing_api"
 
 [dependencies]
 # local dependencies in alphabetical order
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.3" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.4" }
 unitycatalog-datafusion = { package = "olai-uc-datafusion", path = "../datafusion", version = "0.1.0", default-features = false, features = [
     "delta",
 ] }
