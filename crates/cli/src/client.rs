@@ -4,7 +4,7 @@ use unitycatalog_client::UnityCatalogClient;
 
 use crate::GlobalOpts;
 use crate::error::Result;
-use crate::render::{ResolvedFormat, render_list, render_one, status};
+use crate::render::{RenderCtx, ResolvedFormat, render_list, render_one, status};
 
 #[derive(Debug, Args)]
 pub struct ClientCommand {
@@ -162,14 +162,15 @@ enum FunctionCommands {
 
 pub async fn handle_client(cmd: &ClientCommand, opts: GlobalOpts) -> Result<()> {
     let fmt = opts.output.resolve();
+    let ctx = opts.render_ctx();
     let client = opts.client()?;
 
     match &cmd.command {
-        Some(ClientCommands::Catalogs(args)) => handle_catalogs(&client, args, fmt).await,
-        Some(ClientCommands::Schemas(args)) => handle_schemas(&client, args, fmt).await,
-        Some(ClientCommands::Tables(args)) => handle_tables(&client, args, fmt).await,
-        Some(ClientCommands::Volumes(args)) => handle_volumes(&client, args, fmt).await,
-        Some(ClientCommands::Functions(args)) => handle_functions(&client, args, fmt).await,
+        Some(ClientCommands::Catalogs(args)) => handle_catalogs(&client, args, fmt, ctx).await,
+        Some(ClientCommands::Schemas(args)) => handle_schemas(&client, args, fmt, ctx).await,
+        Some(ClientCommands::Tables(args)) => handle_tables(&client, args, fmt, ctx).await,
+        Some(ClientCommands::Volumes(args)) => handle_volumes(&client, args, fmt, ctx).await,
+        Some(ClientCommands::Functions(args)) => handle_functions(&client, args, fmt, ctx).await,
         None => {
             status::error("no subcommand provided; see `uc client --help`");
             Ok(())
@@ -181,6 +182,7 @@ async fn handle_catalogs(
     client: &UnityCatalogClient,
     args: &CatalogArgs,
     fmt: ResolvedFormat,
+    ctx: RenderCtx,
 ) -> Result<()> {
     match &args.command {
         Some(CatalogCommands::List) => {
@@ -189,16 +191,16 @@ async fn handle_catalogs(
                 .into_stream()
                 .try_collect::<Vec<_>>()
                 .await?;
-            render_list(&catalogs, fmt)?;
+            render_list(&catalogs, fmt, ctx)?;
         }
         Some(CatalogCommands::Create { name }) => {
             let catalog = client.create_catalog(name).await?;
             status::success(&format!("created catalog `{name}`"));
-            render_one(&catalog, fmt)?;
+            render_one(&catalog, fmt, ctx)?;
         }
         Some(CatalogCommands::Get { name }) => {
             let catalog = client.catalog(name).get().await?;
-            render_one(&catalog, fmt)?;
+            render_one(&catalog, fmt, ctx)?;
         }
         Some(CatalogCommands::Delete { name, force }) => {
             client.catalog(name).delete().with_force(*force).await?;
@@ -213,6 +215,7 @@ async fn handle_schemas(
     client: &UnityCatalogClient,
     args: &SchemaArgs,
     fmt: ResolvedFormat,
+    ctx: RenderCtx,
 ) -> Result<()> {
     match &args.command {
         Some(SchemaCommands::List { catalog_name }) => {
@@ -222,12 +225,12 @@ async fn handle_schemas(
                 .into_stream()
                 .try_collect::<Vec<_>>()
                 .await?;
-            render_list(&schemas, fmt)?;
+            render_list(&schemas, fmt, ctx)?;
         }
         Some(SchemaCommands::Create { catalog_name, name }) => {
             let schema = client.catalog(catalog_name).create_schema(name).await?;
             status::success(&format!("created schema `{catalog_name}.{name}`"));
-            render_one(&schema, fmt)?;
+            render_one(&schema, fmt, ctx)?;
         }
         Some(SchemaCommands::Delete { catalog_name, name }) => {
             client.catalog(catalog_name).schema(name).delete().await?;
@@ -242,6 +245,7 @@ async fn handle_tables(
     client: &UnityCatalogClient,
     args: &TableArgs,
     fmt: ResolvedFormat,
+    ctx: RenderCtx,
 ) -> Result<()> {
     match &args.command {
         Some(TableCommands::List {
@@ -253,7 +257,7 @@ async fn handle_tables(
                 .into_stream()
                 .try_collect::<Vec<_>>()
                 .await?;
-            render_list(&tables, fmt)?;
+            render_list(&tables, fmt, ctx)?;
         }
         Some(TableCommands::Get {
             catalog_name,
@@ -261,7 +265,7 @@ async fn handle_tables(
             name,
         }) => {
             let table = client.table(catalog_name, schema_name, name).get().await?;
-            render_one(&table, fmt)?;
+            render_one(&table, fmt, ctx)?;
         }
         None => status::error("no subcommand provided; see `uc client tables --help`"),
     }
@@ -272,6 +276,7 @@ async fn handle_volumes(
     client: &UnityCatalogClient,
     args: &VolumeArgs,
     fmt: ResolvedFormat,
+    ctx: RenderCtx,
 ) -> Result<()> {
     match &args.command {
         Some(VolumeCommands::List {
@@ -283,7 +288,7 @@ async fn handle_volumes(
                 .into_stream()
                 .try_collect::<Vec<_>>()
                 .await?;
-            render_list(&volumes, fmt)?;
+            render_list(&volumes, fmt, ctx)?;
         }
         Some(VolumeCommands::Get {
             catalog_name,
@@ -291,7 +296,7 @@ async fn handle_volumes(
             name,
         }) => {
             let volume = client.volume(catalog_name, schema_name, name).get().await?;
-            render_one(&volume, fmt)?;
+            render_one(&volume, fmt, ctx)?;
         }
         None => status::error("no subcommand provided; see `uc client volumes --help`"),
     }
@@ -302,6 +307,7 @@ async fn handle_functions(
     client: &UnityCatalogClient,
     args: &FunctionArgs,
     fmt: ResolvedFormat,
+    ctx: RenderCtx,
 ) -> Result<()> {
     match &args.command {
         Some(FunctionCommands::List {
@@ -313,7 +319,7 @@ async fn handle_functions(
                 .into_stream()
                 .try_collect::<Vec<_>>()
                 .await?;
-            render_list(&functions, fmt)?;
+            render_list(&functions, fmt, ctx)?;
         }
         None => status::error("no subcommand provided; see `uc client functions --help`"),
     }
