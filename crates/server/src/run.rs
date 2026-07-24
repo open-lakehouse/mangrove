@@ -35,7 +35,7 @@ use unitycatalog_sqlite::SqliteCommitCoordinator;
 
 use crate::api::RequestContext;
 use crate::config::PostgresBackendConfig;
-use crate::config::{Backend, Config, SqliteBackendConfig, UiConfig};
+use crate::config::{Backend, Config, SqliteBackendConfig, StorageProxyConfig, UiConfig};
 use crate::policy::{ConstantPolicy, Policy};
 use crate::rest::{
     AnonymousAuthenticator, AuthenticationLayer, create_agent_skills_router, create_agents_router,
@@ -128,6 +128,10 @@ pub async fn serve(config: Config) -> Result<()> {
         .with_local_storage_policy(local_storage_policy)
         .with_managed_storage_root(config.managed_storage_root.clone());
 
+    // Keep a handle for the (optional) storage-proxy local arm, which is a
+    // separate surface from the hybrid-routed UC API below.
+    let proxy_handler = handler.clone();
+
     // Build the API surface — locally, or with selected surfaces proxied upstream.
     let api_router = if config.routing.any_upstream() {
         let unsupported = config.routing.unsupported_upstream();
@@ -153,9 +157,63 @@ pub async fn serve(config: Config) -> Result<()> {
         build_rest_router(handler)
     };
 
+    // Optionally mount the same-origin storage byte-proxy at the server root
+    // (`/storage-proxy/...`) — its own surface, not under `/api/2.1/unity-catalog`.
+    // Refuse to start on an incoherent config (client arm with no client block).
+    if let Some(err) = config.storage_proxy.startup_error() {
+        return Err(Error::Generic(format!("storage-proxy config: {err}")));
+    }
+    let api_router = if config.storage_proxy.enabled {
+        let proxy = build_storage_proxy_router(&config, proxy_handler).await?;
+        api_router.merge(proxy)
+    } else {
+        api_router
+    };
+
     let app = api_router.layer(AuthenticationLayer::new(AnonymousAuthenticator));
 
-    run(app, &config.ui, &host, port).await
+    run(app, &config.ui, &config.storage_proxy, &host, port).await
+}
+
+/// Build the storage byte-proxy router for the configured arm.
+///
+/// - [`ProxyArm::Local`](crate::config::ProxyArm::Local): the in-process
+///   `ServerHandler` (authorize + vend + stream locally).
+/// - [`ProxyArm::Client`](crate::config::ProxyArm::Client): a portable backend
+///   pointed at any UC server via `{base_url, token}`.
+async fn build_storage_proxy_router(
+    config: &Config,
+    handler: ServerHandler<RequestContext>,
+) -> Result<Router> {
+    use crate::config::ProxyArm;
+
+    match config.storage_proxy.arm {
+        ProxyArm::Local => Ok(crate::rest::create_storage_proxy_router(handler)),
+        ProxyArm::Client => {
+            let client = config.storage_proxy.client.as_ref().ok_or_else(|| {
+                Error::Generic("storage-proxy client arm requires a `client` block".into())
+            })?;
+            let token = client.token.as_ref().and_then(|t| t.value());
+            let backend = unitycatalog_storage_proxy::UnityFactoryProxyBackend::connect(
+                &client.base_url,
+                token,
+            )
+            .await
+            .map_err(|e| Error::Generic(format!("storage-proxy client connect: {e}")))?;
+            use crate::policy::Principal;
+            use std::sync::Arc;
+            use unitycatalog_storage_proxy::{ContextExtractor, router_with_context};
+            let extract_cx: ContextExtractor<RequestContext> = Arc::new(|parts| {
+                let recipient = parts
+                    .extensions
+                    .get::<Principal>()
+                    .cloned()
+                    .unwrap_or_else(Principal::anonymous);
+                Box::pin(async move { Ok(RequestContext { recipient }) })
+            });
+            Ok(router_with_context::<(), _>(Arc::new(backend), extract_cx).with_state(()))
+        }
+    }
 }
 
 /// Connect the configured backend and apply any pending migrations, then return.
@@ -256,16 +314,49 @@ pub(crate) fn build_rest_router(handler: ServerHandler<RequestContext>) -> Route
 /// `/health` returns the literal `OK` body the `healthcheck` subcommand (and the
 /// Docker `HEALTHCHECK`) expects; `/version` returns the crate version so a
 /// running service can be matched to a release (binary + bundled UI).
-fn operational_router() -> Router {
+///
+/// `/capabilities` is a server-level discovery endpoint announcing the
+/// `storageAccess` posture (`"direct"` when the proxy is off, `"proxy"` when on).
+/// It is mounted at the root alongside `/health`/`/version` — server-level, not a
+/// UC securable surface, and reachable independent of `ui.base_path`.
+fn operational_router(storage_proxy: &StorageProxyConfig) -> Router {
+    let capabilities = capabilities_body(storage_proxy);
     Router::new()
         .route("/health", get(|| async { "OK" }))
         .route("/version", get(|| async { env!("CARGO_PKG_VERSION") }))
+        .route(
+            "/capabilities",
+            get(move || async move {
+                (
+                    [(axum::http::header::CONTENT_TYPE, "application/json")],
+                    capabilities,
+                )
+            }),
+        )
+}
+
+/// The `/capabilities` JSON body for the configured storage-proxy posture.
+fn capabilities_body(storage_proxy: &StorageProxyConfig) -> String {
+    if storage_proxy.enabled {
+        // `basePath` is the byte-proxy mount; `conditionalWrites` advertises the
+        // server-enforced `If-Match` relay.
+        r#"{"storageAccess":"proxy","storageProxy":{"basePath":"/storage-proxy","conditionalWrites":true}}"#
+            .to_string()
+    } else {
+        r#"{"storageAccess":"direct"}"#.to_string()
+    }
 }
 
 /// Assemble the final service — API + operational + Swagger UI + (optional) SPA —
 /// mount it under the configured base path, add the trace layer, bind, and serve
 /// until shutdown.
-pub(crate) async fn run(api_router: Router, ui: &UiConfig, host: &str, port: u16) -> Result<()> {
+pub(crate) async fn run(
+    api_router: Router,
+    ui: &UiConfig,
+    storage_proxy: &StorageProxyConfig,
+    host: &str,
+    port: u16,
+) -> Result<()> {
     // Swagger UI asset routes are merged onto the API router.
     let mut router = swagger_api_defs()
         .into_iter()
@@ -291,7 +382,7 @@ pub(crate) async fn run(api_router: Router, ui: &UiConfig, host: &str, port: u16
     // subcommand and the Docker `HEALTHCHECK` probe (both target root `/health`
     // via `Config::health_url`), and it keeps liveness independent of the gateway
     // routing. Merged last so nothing (including the SPA fallback) can shadow them.
-    let router = operational_router().merge(router);
+    let router = operational_router(storage_proxy).merge(router);
 
     let router = router.layer(
         TraceLayer::new_for_http()

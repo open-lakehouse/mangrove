@@ -13,6 +13,11 @@ mod delta_backend;
 pub mod location;
 pub mod location_policy;
 pub(crate) mod object_store;
+// The storage byte-proxy local arm impl. Gated on `bin`, where the
+// `unitycatalog-storage-proxy` dependency (and the serve stack that mounts it) is
+// available.
+#[cfg(feature = "bin")]
+mod storage_proxy_backend;
 
 pub use location_policy::LocalStoragePolicy;
 

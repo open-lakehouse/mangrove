@@ -81,6 +81,13 @@ pub struct Config {
     /// Bundled web-UI serving settings (see [`UiConfig`]).
     #[serde(default)]
     pub ui: UiConfig,
+
+    /// Same-origin storage byte-proxy settings (see [`StorageProxyConfig`]).
+    ///
+    /// Defaults to disabled: the server announces `storageAccess: "direct"` and
+    /// mounts no proxy surface, so existing deployments are unaffected.
+    #[serde(default)]
+    pub storage_proxy: StorageProxyConfig,
 }
 
 /// Default bind host used when neither the config file nor a CLI flag sets one.
@@ -210,6 +217,74 @@ impl Default for Config {
             local_storage: LocalStorageConfig::default(),
             managed_storage_root: None,
             ui: UiConfig::default(),
+            storage_proxy: StorageProxyConfig::default(),
+        }
+    }
+}
+
+/// Which backend arm serves the storage byte-proxy.
+#[derive(Debug, Deserialize, Serialize, Default, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ProxyArm {
+    /// Serve from the in-process server handler: authorize + vend + stream
+    /// locally (default). Requires no extra configuration.
+    #[default]
+    Local,
+    /// Serve via a [`UnityObjectStoreFactory`] pointed at any UC server, using
+    /// [`StorageProxyClientConfig`]. Portable, UC-server-agnostic.
+    Client,
+}
+
+/// Same-origin storage byte-proxy configuration.
+///
+/// When [`enabled`](Self::enabled) is `false` (the default) the server announces
+/// `storageAccess: "direct"` at `/capabilities` and mounts no `/storage-proxy`
+/// surface — no behavior change for existing deployments. Enabling it announces
+/// `"proxy"` and mounts the surface served by the selected [`arm`](Self::arm).
+#[derive(Debug, Deserialize, Serialize, Default, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct StorageProxyConfig {
+    /// Master switch. Default `false`.
+    #[serde(default)]
+    pub enabled: bool,
+
+    /// Which backend arm serves the proxy. Defaults to [`ProxyArm::Local`].
+    #[serde(default)]
+    pub arm: ProxyArm,
+
+    /// Upstream connection, **required** when [`arm`](Self::arm) is
+    /// [`ProxyArm::Client`]; ignored otherwise.
+    #[serde(default)]
+    pub client: Option<StorageProxyClientConfig>,
+}
+
+/// Upstream connection for the client arm of the storage proxy.
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct StorageProxyClientConfig {
+    /// Base URL of the UC server to resolve + vend through, e.g.
+    /// `http://uc-java:8080/api/2.1/unity-catalog/`.
+    pub base_url: String,
+
+    /// Optional bearer token (inline or `{env: ...}`). Absent = unauthenticated
+    /// (same-origin cookie forwarding).
+    #[serde(default)]
+    pub token: Option<ConfigValue>,
+}
+
+impl StorageProxyConfig {
+    /// Whether a client-arm configuration is present.
+    pub fn has_client(&self) -> bool {
+        self.client.is_some()
+    }
+
+    /// The config error (if any) that should refuse server startup: the client
+    /// arm is selected but no `client` block is configured. Returns the offending
+    /// message, or `None` when the config is coherent.
+    pub fn startup_error(&self) -> Option<&'static str> {
+        if self.enabled && self.arm == ProxyArm::Client && self.client.is_none() {
+            Some("storage-proxy arm is `client` but no `client` block is configured")
+        } else {
+            None
         }
     }
 }
@@ -568,6 +643,11 @@ mod tests {
         let enc = config.encryption.as_ref().expect("dev encryption present");
         assert_eq!(enc.active.id, "dev");
         assert!(enc.build_encryptor().is_ok());
+        // The storage proxy is off by default: announces "direct", no mount.
+        assert_eq!(config.storage_proxy, StorageProxyConfig::default());
+        assert!(!config.storage_proxy.enabled);
+        assert_eq!(config.storage_proxy.arm, ProxyArm::Local);
+        assert!(config.storage_proxy.startup_error().is_none());
     }
 
     #[test]
@@ -733,6 +813,80 @@ mod tests {
         let reparsed: Config = serde_yml::from_str(&serialized).unwrap();
         assert_eq!(reparsed.routing, config.routing);
         assert_eq!(reparsed.upstream, config.upstream);
+    }
+
+    #[test]
+    fn test_storage_proxy_config_roundtrips() {
+        // Enabled + local arm.
+        let yaml = r#"
+            backend:
+              engine: sqlite
+              path: ":memory:"
+            storage_proxy:
+              enabled: true
+              arm: local
+        "#;
+        let config: Config = serde_yml::from_str(yaml).unwrap();
+        assert!(config.storage_proxy.enabled);
+        assert_eq!(config.storage_proxy.arm, ProxyArm::Local);
+        assert!(config.storage_proxy.startup_error().is_none());
+
+        // Enabled + client arm with an env-sourced token.
+        let yaml = r#"
+            backend:
+              engine: sqlite
+              path: ":memory:"
+            storage_proxy:
+              enabled: true
+              arm: client
+              client:
+                base_url: "http://uc-java:8080/api/2.1/unity-catalog/"
+                token:
+                  env: "UC_TOKEN"
+        "#;
+        let config: Config = serde_yml::from_str(yaml).unwrap();
+        assert_eq!(config.storage_proxy.arm, ProxyArm::Client);
+        let client = config.storage_proxy.client.as_ref().expect("client block");
+        assert_eq!(
+            client.base_url,
+            "http://uc-java:8080/api/2.1/unity-catalog/"
+        );
+        assert_eq!(
+            client.token,
+            Some(ConfigValue::Environment(EnvValue {
+                env: "UC_TOKEN".to_string()
+            }))
+        );
+        assert!(config.storage_proxy.startup_error().is_none());
+
+        // Round-trips through YAML.
+        let reparsed: Config =
+            serde_yml::from_str(&serde_yml::to_string(&config).unwrap()).unwrap();
+        assert_eq!(reparsed.storage_proxy, config.storage_proxy);
+    }
+
+    #[test]
+    fn test_storage_proxy_client_arm_without_client_is_startup_error() {
+        let yaml = r#"
+            backend:
+              engine: sqlite
+              path: ":memory:"
+            storage_proxy:
+              enabled: true
+              arm: client
+        "#;
+        let config: Config = serde_yml::from_str(yaml).unwrap();
+        assert!(config.storage_proxy.startup_error().is_some());
+
+        // Disabled + client arm (no client block) is NOT an error — the proxy is
+        // not mounted at all.
+        let yaml = r#"
+            storage_proxy:
+              enabled: false
+              arm: client
+        "#;
+        let config: Config = serde_yml::from_str(yaml).unwrap();
+        assert!(config.storage_proxy.startup_error().is_none());
     }
 
     #[test]
