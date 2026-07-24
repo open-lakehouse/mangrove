@@ -1,0 +1,144 @@
+name: Release Python wheels
+
+# Build the `unitycatalog-client` maturin wheels for each supported platform and
+# attach them (+ SLSA build-provenance attestations) to the GitHub Release that
+# release-plz publishes for each `unitycatalog-client-py-v*` tag. This makes the
+# prebuilt wheels installable straight off the release
+# (`uv pip install <release-asset-url>` / `gh release download`) without a PyPI
+# account — the crate is `git_only` in release-plz.toml (never published to a
+# registry), so the GitHub Release is its distribution channel.
+#
+# abi3: `pyo3/abi3-py39` (python/client/Cargo.toml) means ONE wheel per platform
+# covers every CPython >= 3.9 — the matrix is platform-only, no per-Python fan-out.
+#
+# sdist is intentionally NOT built: `maturin sdist` cannot package this crate's
+# workspace path-dependencies (`olai-uc-client` / `olai-uc-common` pull the
+# repo-root README into the sdist and collide). Wheels are the shipped artifact.
+#
+# How this runs:
+#   Primary trigger is `workflow_call` from release-plz.yml. When release-plz
+#   tags + releases a new `unitycatalog-client-py` version, the caller detects it
+#   and calls this workflow with that version + the release tag to build from.
+#   Running it inline as a downstream job keeps the build explicitly gated on
+#   "the python client was released this run" and passes the tag in directly —
+#   no `release:`/tag event to reason about (release-plz creates the Release with
+#   a token whose events would not reliably start a new workflow), and no
+#   re-discovery of the freshly-created release. `workflow_dispatch` remains for
+#   manual rebuilds against an existing tag (e.g. a toolchain refresh, or the
+#   one-time initial `unitycatalog-client-py-v0.0.1` baseline release).
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Released unitycatalog-client-py version, e.g. 0.0.1 (no v prefix)."
+        required: true
+        type: string
+      ref:
+        description: "Git ref/tag to build from (the release-plz tag, e.g. unitycatalog-client-py-v0.0.1)."
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "unitycatalog-client-py version, e.g. 0.0.1 (no v prefix)."
+        required: true
+        type: string
+      ref:
+        description: "Existing unitycatalog-client-py-v* tag to build + attach wheels to."
+        required: true
+        type: string
+
+# Least privilege: nothing at the top level.
+permissions: {}
+
+# Both triggers provide `inputs.ref`; key concurrency off it. Do NOT cancel in
+# progress — a superseded run may have partially uploaded assets, and cancelling
+# mid-upload would leave the release with a subset of the platform wheels.
+concurrency:
+  group: python-wheels-${{ inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Build one abi3 wheel per platform on its native/appropriate runner (no QEMU),
+  # upload it to the existing GitHub Release, and attest its build provenance.
+  wheels:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    # Publish only from the canonical repo (a fork calling this workflow must not
+    # push to our releases). The triggers are already release-only, so no
+    # event-name gate is needed.
+    if: ${{ github.repository == 'open-lakehouse/mangrove' }}
+
+    # Protected environment mirrors the release-plz job boundary. No secrets are
+    # consumed here (attestations use OIDC), but keeping the boundary consistent
+    # guards future signing credentials.
+    environment: release
+    permissions:
+      contents: write # attach wheel assets to the existing GitHub Release
+      id-token: write # OIDC for build-provenance attestation
+      attestations: write # write the attestation to the attestations store
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm # native arm64 hosted runner
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          # Intel macOS: cross-compiled from the arm64 macos-latest runner
+          # (GitHub's Intel macOS runners are deprecated). Building both Darwin
+          # targets on the same runner keeps the matrix on supported hardware.
+          - target: x86_64-apple-darwin
+            os: macos-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Build the exact commit the release tag points at, not the branch tip.
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          # Matches the rest of CI; stays above the workspace floor.
+          toolchain: "1.97"
+          targets: ${{ matrix.target }}
+
+      # Build a release abi3 wheel for this target into dist/. maturin-action
+      # provides the manylinux container + toolchain for the Linux legs; the
+      # `manylinux` input is a no-op on the macOS legs. `--frozen` builds against
+      # the committed Cargo.lock for reproducibility (implies --locked). One wheel
+      # per platform (abi3), so no interpreter list.
+      - name: Build wheel
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
+        with:
+          command: build
+          target: ${{ matrix.target }}
+          manylinux: "2_28"
+          sccache: "true"
+          args: --release --frozen --out dist --manifest-path python/client/Cargo.toml
+
+      # Attach the wheel(s) to the release release-plz already created for this
+      # tag. `--clobber` makes re-runs (a workflow_dispatch rebuild) idempotent.
+      # GH_REPO lets `gh` resolve the repo without relying on git remote inference.
+      - name: Upload wheel to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          gh release upload "$REF" dist/*.whl --clobber
+
+      # Key-free SLSA build provenance over the built wheel(s), verifiable with
+      # `gh attestation verify <wheel> --repo open-lakehouse/mangrove`.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: dist/*.whl
