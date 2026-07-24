@@ -89,10 +89,6 @@ jobs:
       # empty — the Docker job keys off this.
       server_version: ${{ steps.server.outputs.version }}
       server_tag: ${{ steps.server.outputs.tag }}
-      # python-client version + tag IF release-plz released it this run, else
-      # empty — the python-wheels job keys off this.
-      pyclient_version: ${{ steps.pyclient.outputs.version }}
-      pyclient_tag: ${{ steps.pyclient.outputs.tag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -133,35 +129,6 @@ jobs:
           else
             echo "Server not released this run — Docker build skipped."
           fi
-      # Did release-plz release the python client this run? Unlike the server,
-      # `unitycatalog-client-py` is `git_only` in release-plz.toml, so release-plz
-      # OMITS it from the `releases` JSON above — we cannot filter that array for
-      # it. release-plz DOES create its tag + GitHub Release though (git_only only
-      # skips `cargo publish`), so we detect the release by checking whether the
-      # `unitycatalog-client-py-v<version>` tag now sits on the current commit.
-      # The version comes from the manifest the merged Release PR already bumped.
-      # A tag left from a prior release points at an older commit, so this is
-      # idempotent — re-runs and pushes that did not bump the crate emit nothing.
-      # (The initial `unitycatalog-client-py-v0.0.1` baseline tag is created once
-      # by hand; release-plz owns every bump after that.)
-      - name: Detect python-client release
-        id: pyclient
-        run: |
-          version=$(grep -m1 '^version = ' python/client/Cargo.toml \
-            | sed -E 's/^version = "([^"]+)".*/\1/')
-          if [ -z "$version" ]; then
-            echo "::error::could not parse version from python/client/Cargo.toml"
-            exit 1
-          fi
-          tag="unitycatalog-client-py-v${version}"
-          if git cat-file -e "refs/tags/${tag}" 2>/dev/null \
-            && [ "$(git rev-list -n1 "${tag}")" = "$GITHUB_SHA" ]; then
-            echo "Python client released this run: ${version} (tag ${tag})."
-            echo "version=$version" >> "$GITHUB_OUTPUT"
-            echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          else
-            echo "Python client not released this run — wheel build skipped."
-          fi
 
   # --- Build + push the server (mangrove) Docker image, iff it was released ---
   docker:
@@ -181,21 +148,3 @@ jobs:
     with:
       version: ${{ needs.release-plz-release.outputs.server_version }}
       ref: ${{ needs.release-plz-release.outputs.server_tag }}
-
-  # --- Build + attach the python client wheels, iff it was released ---
-  python-wheels:
-    name: Python wheels
-    needs: release-plz-release
-    if: ${{ needs.release-plz-release.outputs.pyclient_version != '' }}
-    permissions:
-      # The reusable workflow's job attaches wheel assets to the GitHub Release
-      # (contents: write) and writes a build-provenance attestation via OIDC
-      # (id-token + attestations: write). A called workflow's jobs may request at
-      # most what the caller grants, so all three must be granted here.
-      contents: write
-      id-token: write
-      attestations: write
-    uses: ./.github/workflows/python-wheels.yml
-    with:
-      version: ${{ needs.release-plz-release.outputs.pyclient_version }}
-      ref: ${{ needs.release-plz-release.outputs.pyclient_tag }}
