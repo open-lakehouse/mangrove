@@ -28,6 +28,3 @@ authorization.
 - `client` (feature `client-arm`) — a portable backend backed by a
   `UnityObjectStoreFactory`, working against any UC server given `{baseUrl, token}`.
 - `testing` (feature `testing`) — an in-memory backend for the wire-contract tests.
-
-This crate is part of the [mangrove](https://github.com/open-lakehouse/mangrove)
-Unity Catalog implementation.

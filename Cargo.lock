@@ -4206,7 +4206,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-storage-proxy"
-version = "0.0.3"
+version = "0.0.1"
 dependencies = [
  "async-trait",
  "axum",
@@ -6639,7 +6639,6 @@ name = "unitycatalog-client-py"
 version = "0.0.1"
 dependencies = [
  "chrono",
- "delta_kernel",
  "futures",
  "olai-http",
  "olai-uc-client",

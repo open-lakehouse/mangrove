@@ -144,11 +144,22 @@ name = "olai-uc-server"
 changelog_path = "crates/server/CHANGELOG.md"
 
 [[package]]
+name = "olai-uc-storage-proxy"
+changelog_path = "crates/storage-proxy/CHANGELOG.md"
+release = false
+
+[[package]]
 name = "olai-uc-cli"
 changelog_path = "crates/cli/CHANGELOG.md"
 # Publishable (no git deps; its deps client/common are live), but intentionally
 # held out of crates.io for now. Remove this line to release the `uc` CLI crate.
 release = false
+
+[[package]]
+name = "unitycatalog-client-py"
+changelog_path = "python/client/CHANGELOG.md"
+git_only = true
+publish = false
 
 [[package]]
 name = "unitycatalog-acceptance"

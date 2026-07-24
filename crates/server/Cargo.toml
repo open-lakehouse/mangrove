@@ -29,26 +29,21 @@ path = "src/main.rs"
 required-features = ["bin"]
 
 [dependencies]
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.3", optional = true }
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.3", features = [
   "axum",
   "store",
   "metric-view",
 ] }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.3" }
-# Same-origin storage byte-proxy: the `StorageProxyBackend` port + streaming
-# router. `client-arm` pulls the portable UnityObjectStoreFactory-backed backend
-# for the `arm: client` config. Optional + gated behind the `bin` serve stack.
-unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.3", features = [
+unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.1", features = [
   "client-arm",
 ], optional = true }
-# The storage-proxy local arm turns an in-process-vended credential into an
-# object store via `store_from_vended_credential`. Optional + gated behind `bin`.
 unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.3", optional = true }
-# buffa runtime: generated handler glue constructs/matches buffa model types.
-buffa = { workspace = true }
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.3", optional = true }
 
+# workspace dependencies in alphabetical order
 async-trait = { workspace = true }
+buffa = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
 percent-encoding = "2.1"
@@ -71,15 +66,9 @@ http = { version = "1.2", optional = true }
 olai-store = { workspace = true, features = ["encryption"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "net"] }
 tower = { workspace = true, features = ["make"], optional = true }
-# Trace layer for the served router + `ServeDir`/`ServeFile` for the bundled SPA
-# (`bin` only). `fs` carries the static-file services; `trace` the HTTP tracing.
 tower-http = { version = "0.6", features = ["trace", "fs"], optional = true }
 
 # in-memory handler dependencies (in alphabetical order)
-# `v4` for random ids (in-memory store, staging tables) and `v7` for
-# time-ordered ids (volumes, agents, model versions). Both are used directly;
-# declaring them here rather than relying on feature unification from a sibling
-# crate keeps the build correct in isolation.
 uuid = { workspace = true, optional = true, features = ["v4", "v7"] }
 
 # `bin` (deployable `uc-server` binary) dependencies — all optional so a library

@@ -1,18 +1,12 @@
 [package]
-# Published to crates.io under a provisional `olai-uc-*` name while the design
-# settles; the in-workspace dependency key + crate identifier stay
-# `unitycatalog(_)storage_proxy` via each dependent's `package =` alias, so no
-# source changes. See release-plz.toml / CONTRIBUTING.md.
 name = "olai-uc-storage-proxy"
-version = "0.0.3"
-description = "Same-origin Unity Catalog storage byte-proxy: a backend-agnostic StorageProxyBackend port plus an axum router that authorizes, vends scoped credentials, and streams object bytes (read + write) so browser/wasm engines never speak a cloud-native protocol."
+version = "0.0.1"
+description = "Same-origin Unity Catalog storage byte-proxy based on governed Volumes."
 edition.workspace = true
 homepage.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
-# Crate-local README (shown on crates.io / docs.rs), overriding the inherited
-# workspace-root README which describes the whole project rather than this crate.
 readme = "README.md"
 rust-version.workspace = true
 
@@ -23,14 +17,12 @@ rust-version.workspace = true
 name = "unitycatalog_storage_proxy"
 
 [dependencies]
+# local dependencies
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.3", optional = true }
+
+# workspace dependecies in alphabetical order
 async-trait = { workspace = true }
-# axum backs the server-side surface (the streaming handler/router + the error
-# IntoResponse). Gate it behind the default-on `server` feature so the port types
-# stay usable without pulling axum.
 axum = { workspace = true, optional = true }
-# The port returns `Arc<dyn ObjectStore>` and the handler drives get_opts/put_opts
-# + streams GetResult / WriteMultipart. object_store resolves to the roeap fork
-# workspace-wide via `[patch.crates-io]`.
 object_store = { workspace = true }
 bytes = { workspace = true }
 futures = { workspace = true }
@@ -38,14 +30,9 @@ url = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-# The portable CLIENT arm wraps UnityObjectStoreFactory; optional so a pure-port
-# or testing consumer need not compile the object-store stack.
-unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.3", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
-# The router/backend tests drive the composed router over HTTP via
-# `ServiceExt::oneshot`.
 tower = { workspace = true }
 futures = { workspace = true }
 
@@ -69,11 +56,8 @@ server = ["dep:axum"]
 # The portable client arm: a `StorageProxyBackend` backed by a
 # `UnityObjectStoreFactory`, working against any UC server given {baseUrl, token}.
 client-arm = ["server", "dep:unitycatalog-object-store"]
-# Exposes `InMemoryStorageProxyBackend`, an in-memory `StorageProxyBackend` over
-# `object_store::memory::InMemory` for testing the wire contract without a cloud.
+# Exposes `InMemoryStorageProxyBackend`, an in-memory `StorageProxyBackend`
 testing = ["server"]
 
-# docs.rs builds with default features only; enable all features there so the
-# client arm and testing module are documented.
 [package.metadata.docs.rs]
 all-features = true
