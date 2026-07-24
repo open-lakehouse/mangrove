@@ -134,3 +134,9 @@ bin = [
 # (`tests/credential_vending_azurite.rs`). Requires a running Azurite blob
 # emulator; run with `just integration-azurite`.
 integration-azurite = ["memory"]
+
+# Gates the storage byte-proxy end-to-end integration test
+# (`tests/storage_proxy_azurite.rs`): drives the proxy router over HTTP against a
+# live Azurite, exercising the local arm (authorize → vend → stream). Needs the
+# proxy mount (`bin`) + the in-memory store (`memory`) + a running Azurite.
+integration-storage-proxy-azurite = ["memory", "bin"]
