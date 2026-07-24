@@ -6650,19 +6650,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unitycatalog-examples"
-version = "0.0.1"
-dependencies = [
- "futures",
- "object_store",
- "olai-uc-client",
- "olai-uc-common",
- "olai-uc-object-store",
- "tokio",
- "url",
-]
-
-[[package]]
 name = "unitycatalog_client"
 version = "0.0.0"
 dependencies = [
