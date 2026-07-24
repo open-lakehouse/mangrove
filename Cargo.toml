@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/*", "python/client", "node/client", "examples/rust"]
+members = ["crates/*", "python/client", "node/client"]
 # The wasm query engine (`crates/query-wasm`) stays its own workspace: its cdylib
 # needs a size-tuned `[profile.release]` and wasm-only glue that shouldn't affect
 # the native server build. But its async-native Delta TableProvider —

@@ -14,9 +14,7 @@
     "node/editor",
     "node/unity-catalog-client",
     "node/unity-catalog",
-    "node/app",
-    "docs",
-    "examples/typescript"
+    "node/app"
   ],
   "scripts": {
     "openapi": "prettier --write openapi/openapi.yaml",
