@@ -1,13 +1,13 @@
 [package]
 name = "olai-uc-object-store"
 version = "0.0.3"
-description = "object_store implementation backed by Unity Catalog credential vending. Read and write data governed by UC volumes, tables, and external locations."
-categories = ["filesystem"]
+description = "object_store implementation backed by Unity Catalog credential vending."
+readme = "README.md"
+categories = ["filesystem", "object_store", "unity_catalog"]
 documentation = "https://docs.rs/olai-uc-object-store"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-readme.workspace = true
 rust-version.workspace = true
 homepage.workspace = true
 keywords.workspace = true
@@ -17,9 +17,11 @@ keywords.workspace = true
 name = "unitycatalog_object_store"
 
 [dependencies]
+# local dependencies in alphabetical order
 unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.3", default-features = false }
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.3", default-features = false }
 
+# workspace dependencies in alphabetical order
 async-trait = { workspace = true }
 chrono = { workspace = true }
 object_store = { workspace = true }
@@ -27,17 +29,12 @@ thiserror = { workspace = true }
 url = { workspace = true }
 uuid = { workspace = true }
 
-# Native transport: the full `olai-http` cloud client plus a tokio runtime for
-# the dedicated I/O handle. Neither compiles on `wasm32-unknown-unknown`.
+# Native transport
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 olai-http = { workspace = true }
 tokio = { workspace = true, features = ["rt"] }
 
-# Browser transport (Azure-first): the `olai-http-wasm` Fetch client and its
-# wasm-safe `TokenCache`/`TemporaryToken`. `web-time` supplies a non-panicking
-# `Instant`, and `send_wrapper` bridges the `!Send` credential future onto
-# object_store's `Send`-bounded `CredentialProvider` trait. The workspace
-# `reqwest` enables native-only TLS/http2 features, so pin a minimal build.
+# Browser transport
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 olai-http-wasm = { workspace = true }
 web-time = { workspace = true }
