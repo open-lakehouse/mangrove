@@ -18,7 +18,6 @@ unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client"
 unitycatalog-common = { package = "olai-uc-common", path = "../../crates/common", version = "0.0.3", features = ["python"] }
 
 chrono = { workspace = true }
-delta_kernel = { workspace = true }
 futures = { workspace = true }
 olai-http = { workspace = true }
 pyo3 = { workspace = true, features = ["abi3-py39"] }

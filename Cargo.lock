@@ -6639,7 +6639,6 @@ name = "unitycatalog-client-py"
 version = "0.0.1"
 dependencies = [
  "chrono",
- "delta_kernel",
  "futures",
  "olai-http",
  "olai-uc-client",
