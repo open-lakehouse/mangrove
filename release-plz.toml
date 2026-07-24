@@ -158,8 +158,21 @@ release = false
 [[package]]
 name = "unitycatalog-client-py"
 changelog_path = "python/client/CHANGELOG.md"
+# The wheel artifacts ship via the `python-wheels.yml` workflow, keyed off a
+# manually-pushed `unitycatalog-client-py-v*` tag — release-plz does NOT drive
+# this crate's release. It must be fully excluded from release-plz processing:
+# once a baseline tag exists, release-plz runs `cargo package` on it to diff
+# versions, and that packaging pass walks the workspace path-dep graph into
+# `olai-uc-datafusion`, whose optional `delta_kernel`/`deltalake-core` GIT deps
+# carry no registry `version` — `cargo package` rejects a git dep without one
+# (the same standing git-dep block that keeps datafusion/sharing-* off crates.io,
+# reason (b) above). `release = false` skips update/release-pr/release for this
+# crate entirely, so the packaging pass never runs. `git_only`/`publish` are now
+# redundant but kept for intent. Push the `unitycatalog-client-py-v<version>` tag
+# by hand to cut a wheel release (the workflow's detect step keys off the tag).
 git_only = true
 publish = false
+release = false
 
 [[package]]
 name = "unitycatalog-acceptance"
