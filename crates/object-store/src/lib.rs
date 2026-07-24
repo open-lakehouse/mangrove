@@ -809,6 +809,133 @@ fn local_store(url: &Url, operation: PathOperation) -> Result<UCStore> {
     })
 }
 
+/// A [`CredentialProvider`] that always hands back a fixed, already-materialized
+/// credential. Unlike `object_store::StaticCredentialProvider` (which takes the
+/// credential by value), this holds an `Arc<T>` directly — the shape
+/// [`as_azure`]/[`as_aws`]/[`as_gcp`] already produce — so no `Clone` on the
+/// (non-`Clone`) cloud credential types is required.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Debug)]
+struct StaticArcProvider<T>(Arc<T>);
+
+#[cfg(not(target_arch = "wasm32"))]
+#[async_trait::async_trait]
+impl<T: std::fmt::Debug + Send + Sync> object_store::CredentialProvider for StaticArcProvider<T> {
+    type Credential = T;
+    async fn get_credential(&self) -> Result<Arc<T>> {
+        Ok(self.0.clone())
+    }
+}
+
+/// Build a [`UCStore`] from a credential that has **already been vended**
+/// out-of-band, using a *static* credential provider (no Unity Catalog client,
+/// no auto-refresh).
+///
+/// This is the escape hatch for an in-process caller — e.g. a server-side storage
+/// byte-proxy — that authorizes and vends the credential itself and then only
+/// needs it turned into an [`ObjectStore`]. Unlike [`UnityObjectStoreFactory`]'s
+/// `for_*` entry points, this takes no factory and constructs no
+/// [`UnityCatalogClient`]: the store is bound to the exact `credential` passed,
+/// valid for that credential's lifetime. A single short-lived proxy request never
+/// outlives the vended credential, so the lack of refresh is fine; a caller that
+/// needs long-lived refresh should use the factory `for_*` methods instead.
+///
+/// The returned [`UCStore`] is scoped exactly as [`UnityObjectStoreFactory::for_path`]
+/// would produce it; call [`UCStore::as_dyn`] for a store prefixed at the
+/// credential-scoped root. `io_handle` (when `Some`) routes object-store HTTP onto
+/// a dedicated I/O runtime; `aws_region` overrides the S3 region (else `AWS_REGION`
+/// / the object_store default).
+///
+/// A `file://` URL yields a [`LocalFileSystem`] store and needs no credential.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn store_from_vended_credential(
+    credential: &TemporaryCredential,
+    io_handle: Option<tokio::runtime::Handle>,
+    aws_region: Option<String>,
+) -> Result<UCStore> {
+    let url = Url::parse(&credential.url).map_err(Error::from)?;
+
+    // Local storage: no cloud credential to apply.
+    if url.scheme() == "file" {
+        let store = LocalFileSystem::new();
+        let path = Path::from_url_path(url.path())?;
+        return Ok(UCStore {
+            root: Arc::new(store),
+            url,
+            path,
+        });
+    }
+
+    // The credential-scoped prefix within the bucket/container root. For
+    // path-style Azurite the store is rooted at the container, so the prefix is
+    // the blob path only (not the full `/<account>/<container>/...` URL path).
+    let path = match parse_azurite(&url) {
+        Some(loc) => Path::from(loc.prefix),
+        None => Path::from_url_path(url.path())?,
+    };
+
+    let root: Arc<dyn ObjectStore> = if as_azure(credential).is_ok() {
+        // Azurite: the emulator ignores a credentials provider — set account +
+        // container explicitly and pass the vended SAS via `SasKey` (identical to
+        // the factory path).
+        if let Some(loc) = parse_azurite(&url) {
+            let sas = azure_sas_token(credential).ok_or_else(|| {
+                Error::invalid_config("Azurite store requires a SAS-token credential".to_string())
+            })?;
+            let mut builder = MicrosoftAzureBuilder::new()
+                .with_use_emulator(true)
+                .with_account(loc.account)
+                .with_container_name(loc.container)
+                .with_config(object_store::azure::AzureConfigKey::SasKey, sas);
+            if let Some(handle) = &io_handle {
+                builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
+            }
+            Arc::new(builder.build()?)
+        } else {
+            let token = as_azure(credential)?.token;
+            let mut builder = MicrosoftAzureBuilder::new()
+                .with_url(url.to_string())
+                .with_credentials(Arc::new(StaticArcProvider(token)));
+            if let Some(handle) = &io_handle {
+                builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
+            }
+            Arc::new(builder.build()?)
+        }
+    } else if as_aws(credential).is_ok() {
+        let access_point = aws_access_point(credential);
+        let token = as_aws(credential)?.token;
+        let mut builder = AmazonS3Builder::new()
+            .with_url(url.to_string())
+            .with_credentials(Arc::new(StaticArcProvider(token)));
+        if let Some(region) = aws_region.or_else(|| std::env::var("AWS_REGION").ok()) {
+            builder = builder.with_region(region);
+        }
+        if let Some(ap) = access_point {
+            builder = builder.with_bucket_name(ap);
+        }
+        if let Some(handle) = &io_handle {
+            builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
+        }
+        Arc::new(builder.build()?)
+    } else if as_gcp(credential).is_ok() {
+        let token = as_gcp(credential)?.token;
+        let mut builder = GoogleCloudStorageBuilder::new()
+            .with_url(url.to_string())
+            .with_credentials(Arc::new(StaticArcProvider(token)));
+        if let Some(handle) = &io_handle {
+            builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
+        }
+        Arc::new(builder.build()?)
+    } else {
+        return Err(Error::InvalidCredential(
+            "Failed to match credential with storage type".to_string(),
+        )
+        .into());
+    };
+
+    Ok(UCStore { root, url, path })
+}
+
 /// wasm has no local filesystem; a `file://` reference is unsupported.
 #[cfg(target_arch = "wasm32")]
 fn local_store(url: &Url, _operation: PathOperation) -> Result<UCStore> {

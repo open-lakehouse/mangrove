@@ -150,6 +150,27 @@ integration-azurite:
     cargo test -p olai-uc-server --features integration-azurite \
         --test credential_vending_azurite -- --ignored --test-threads=1 --nocapture
 
+# run the storage byte-proxy end-to-end test against an Azurite sidecar
+#
+# Same Azurite setup as `integration-azurite`, but drives the storage-proxy
+# router over HTTP (local arm: authorize → vend → stream) instead of the raw
+# vend path.
+[group('test')]
+[no-cd]
+integration-storage-proxy-azurite:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    docker compose -f dev/compose.yaml --profile azurite up -d --wait
+    account="{{ AZURITE_ACCOUNT }}"
+    key="{{ AZURITE_KEY_A }}{{ AZURITE_KEY_B }}"
+    conn="DefaultEndpointsProtocol=http;AccountName=${account};AccountKey=${key};BlobEndpoint=http://host.docker.internal:10000/${account};"
+    docker run --rm mcr.microsoft.com/azure-cli:2.64.0 \
+        az storage container create --name lakehouse --connection-string "$conn"
+    UC_AZURITE_BLOB_ENDPOINT="http://127.0.0.1:10000" \
+    UC_AZURITE_CONTAINER="lakehouse" \
+    cargo test -p olai-uc-server --features integration-storage-proxy-azurite \
+        --test storage_proxy_azurite -- --ignored --test-threads=1 --nocapture
+
 # record managed-table acceptance fixtures against a live Databricks workspace
 [group('test')]
 [no-cd]

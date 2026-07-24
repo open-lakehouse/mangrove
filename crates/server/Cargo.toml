@@ -35,6 +35,15 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
   "metric-view",
 ] }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.3" }
+# Same-origin storage byte-proxy: the `StorageProxyBackend` port + streaming
+# router. `client-arm` pulls the portable UnityObjectStoreFactory-backed backend
+# for the `arm: client` config. Optional + gated behind the `bin` serve stack.
+unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.3", features = [
+  "client-arm",
+], optional = true }
+# The storage-proxy local arm turns an in-process-vended credential into an
+# object store via `store_from_vended_credential`. Optional + gated behind `bin`.
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.3", optional = true }
 # buffa runtime: generated handler glue constructs/matches buffa model types.
 buffa = { workspace = true }
 unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.3", optional = true }
@@ -117,9 +126,17 @@ bin = [
   "dep:serde_yml",
   "dep:swagger-ui-dist",
   "dep:tower-http",
+  "dep:unitycatalog-storage-proxy",
+  "dep:unitycatalog-object-store",
 ]
 
 # Gates the Azurite credential-vending integration test
 # (`tests/credential_vending_azurite.rs`). Requires a running Azurite blob
 # emulator; run with `just integration-azurite`.
 integration-azurite = ["memory"]
+
+# Gates the storage byte-proxy end-to-end integration test
+# (`tests/storage_proxy_azurite.rs`): drives the proxy router over HTTP against a
+# live Azurite, exercising the local arm (authorize → vend → stream). Needs the
+# proxy mount (`bin`) + the in-memory store (`memory`) + a running Azurite.
+integration-storage-proxy-azurite = ["memory", "bin"]

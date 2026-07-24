@@ -39,6 +39,38 @@ pub fn create_delta_router(
     router_with_context::<(), _>(Arc::new(handler), extract_cx).with_state(())
 }
 
+/// Router for the same-origin storage byte-proxy (`/storage-proxy/{securable}/{*key}`).
+///
+/// Mirrors [`create_delta_router`]: the `unitycatalog-storage-proxy` crate builds a
+/// state-agnostic router from a [`StorageProxyBackend`] plus the same
+/// `Principal → RequestContext` extractor, and we hand it the local-arm backend
+/// (`ServerHandler`, which implements the port). Returns a fully-stated `Router<()>`
+/// mounted at the default `/storage-proxy` base, so it `.merge`s at the server root.
+///
+/// [`StorageProxyBackend`]: unitycatalog_storage_proxy::StorageProxyBackend
+#[cfg(feature = "bin")]
+#[allow(clippy::result_large_err)]
+pub fn create_storage_proxy_router(
+    handler: crate::services::ServerHandler<crate::api::RequestContext>,
+) -> axum::Router {
+    use std::sync::Arc;
+
+    use unitycatalog_storage_proxy::{ContextExtractor, router_with_context};
+
+    use crate::api::RequestContext;
+    use crate::policy::Principal;
+
+    let extract_cx: ContextExtractor<RequestContext> = Arc::new(|parts| {
+        let recipient = parts
+            .extensions
+            .get::<Principal>()
+            .cloned()
+            .unwrap_or_else(Principal::anonymous);
+        Box::pin(async move { Ok(RequestContext { recipient }) })
+    });
+    router_with_context::<(), _>(Arc::new(handler), extract_cx).with_state(())
+}
+
 pub fn create_catalogs_router<T, Cx>(handler: T) -> axum::Router
 where
     T: CatalogHandler<Cx> + Clone,
