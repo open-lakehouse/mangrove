@@ -15,6 +15,9 @@ pub enum Error {
     #[error("Invalid Argument: {0}")]
     InvalidArgument(String),
 
+    #[error("Unauthenticated: {0}")]
+    Unauthenticated(String),
+
     #[error("Invalid identifier: {0}")]
     InvalidIdentifier(#[from] uuid::Error),
 
@@ -63,6 +66,11 @@ impl Error {
         Self::InvalidArgument(msg.into())
     }
 
+    /// The request could not be authenticated (maps to HTTP `401`).
+    pub fn unauthenticated(msg: impl Into<String>) -> Self {
+        Self::Unauthenticated(msg.into())
+    }
+
     /// Returns a machine-readable error code matching the UC API spec.
     pub fn error_code(&self) -> &str {
         match self {
@@ -70,6 +78,7 @@ impl Error {
             Error::AlreadyExists => "RESOURCE_ALREADY_EXISTS",
             Error::Conflict => "RESOURCE_CONFLICT",
             Error::InvalidArgument(_) => "INVALID_PARAMETER_VALUE",
+            Error::Unauthenticated(_) => "UNAUTHENTICATED",
             Error::InvalidIdentifier(_) => "INVALID_PARAMETER_VALUE",
             Error::InvalidTableLocation(_) => "INVALID_PARAMETER_VALUE",
             Error::InvalidUrl(_) => "INVALID_PARAMETER_VALUE",
@@ -99,9 +108,14 @@ impl Error {
         const NOT_FOUND: &str = "The requested resource does not exist.";
         const ALREADY_EXISTS: &str = "The resource already exists.";
         const CONFLICT: &str = "The request conflicts with the current resource state.";
+        const UNAUTHENTICATED: &str = "The request could not be authenticated.";
 
         match self {
             Error::NotFound => (StatusCode::NOT_FOUND, NOT_FOUND),
+            Error::Unauthenticated(msg) => {
+                tracing::error!("Unauthenticated: {msg}");
+                (StatusCode::UNAUTHORIZED, UNAUTHENTICATED)
+            }
             Error::AlreadyExists => (StatusCode::CONFLICT, ALREADY_EXISTS),
             Error::Conflict => (StatusCode::CONFLICT, CONFLICT),
             Error::InvalidArgument(msg) => {
