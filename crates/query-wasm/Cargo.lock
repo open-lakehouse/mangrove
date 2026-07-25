@@ -3152,6 +3152,7 @@ version = "0.0.3"
 dependencies = [
  "async-trait",
  "chrono",
+ "futures",
  "getrandom 0.2.17",
  "object_store",
  "olai-http",
@@ -3160,6 +3161,7 @@ dependencies = [
  "olai-uc-common",
  "reqwest 0.12.28",
  "send_wrapper",
+ "serde",
  "thiserror",
  "tokio",
  "url",

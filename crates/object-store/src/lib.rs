@@ -93,6 +93,7 @@ pub use unitycatalog_client::{
 
 mod credential;
 mod error;
+mod proxy;
 /// Builder for [`UnityObjectStoreFactory`].
 #[derive(Debug, Clone, Default)]
 pub struct UnityObjectStoreFactoryBuilder {
@@ -199,6 +200,12 @@ impl UnityObjectStoreFactoryBuilder {
 
         let transport = self.build_transport()?;
 
+        // On wasm, discover the server's storage-access posture once, up front,
+        // so every `for_*` call routes consistently. A discovery failure (older
+        // server, no proxy) resolves to `Direct` — the historical behavior.
+        #[cfg(target_arch = "wasm32")]
+        let storage_access = proxy::discover_storage_access(&url, self.token.as_deref()).await;
+
         let creds = TemporaryCredentialClient::new_with_url(transport.clone(), url.clone());
         let uc = UnityCatalogClient::new(transport, url);
         Ok(UnityObjectStoreFactory {
@@ -207,6 +214,10 @@ impl UnityObjectStoreFactoryBuilder {
             aws_region: self.aws_region,
             #[cfg(not(target_arch = "wasm32"))]
             io_handle: self.io_handle,
+            #[cfg(target_arch = "wasm32")]
+            storage_access,
+            #[cfg(target_arch = "wasm32")]
+            token: self.token,
         })
     }
 
@@ -331,6 +342,16 @@ pub struct UnityObjectStoreFactory {
     /// [`UnityObjectStoreFactoryBuilder::with_io_runtime`]. Absent on `wasm32`.
     #[cfg(not(target_arch = "wasm32"))]
     io_handle: Option<Handle>,
+    /// Storage-access posture discovered from the server's `/capabilities`
+    /// endpoint at build time. `Proxy` routes every byte through the server's
+    /// same-origin storage byte-proxy instead of vending + direct cloud IO.
+    /// Only meaningful on `wasm32` (native always reads storage directly).
+    #[cfg(target_arch = "wasm32")]
+    storage_access: proxy::StorageAccess,
+    /// Bearer token, retained on `wasm32` so the proxy store can relay it to the
+    /// same-origin `/storage-proxy` endpoint (the endpoint may require auth).
+    #[cfg(target_arch = "wasm32")]
+    token: Option<String>,
 }
 
 impl UnityObjectStoreFactory {
@@ -399,24 +420,29 @@ impl UnityObjectStoreFactory {
         operation: TableOperation,
     ) -> Result<UCStore> {
         let table = table.into();
-        // A table backed by local filesystem storage has no cloud credential
-        // to vend. Resolve its storage location up front (a name lookup, the
-        // same call name-based vending makes) and, when it is `file://`, build
-        // a local store directly — skipping the credential-vending round-trip.
-        //
-        // This resolution is only possible for name references; a caller that
-        // holds only the table UUID still vends (and a local-fs table addressed
-        // by UUID is an unsupported edge case — use the three-level name).
+        // For name references, resolve the storage location up front (a lookup
+        // name-based vending makes anyway). Two branches consume it before
+        // vending:
+        //   - a `file://` location has no cloud credential to vend → local store;
+        //   - on wasm under a proxy posture → route through the byte-proxy.
+        // A UUID-only reference skips both (a local-fs or proxied table by UUID
+        // is an unsupported edge case — use the three-level name).
         if let TableReference::Name(name) = &table
             && let Some(location) = self.table_storage_location(name).await?
             && let Ok(url) = Url::parse(&location)
-            && url.scheme() == "file"
         {
-            let path_op = match operation {
-                TableOperation::Read => PathOperation::Read,
-                TableOperation::ReadWrite => PathOperation::ReadWrite,
-            };
-            return local_store(&url, path_op);
+            if url.scheme() == "file" {
+                let path_op = match operation {
+                    TableOperation::Read => PathOperation::Read,
+                    TableOperation::ReadWrite => PathOperation::ReadWrite,
+                };
+                return local_store(&url, path_op);
+            }
+            #[cfg(target_arch = "wasm32")]
+            if matches!(self.storage_access, proxy::StorageAccess::Proxy { .. }) {
+                let seg = format!("table:{name}");
+                return self.proxy_store(&seg, &url);
+            }
         }
         let (credential, table_id) = self
             .creds
@@ -471,13 +497,21 @@ impl UnityObjectStoreFactory {
         if let VolumeReference::Name(name) = &volume
             && let Some(location) = self.volume_storage_location(name).await?
             && let Ok(url) = Url::parse(&location)
-            && url.scheme() == "file"
         {
-            let path_op = match operation {
-                VolumeOperation::Read => PathOperation::Read,
-                VolumeOperation::ReadWrite => PathOperation::ReadWrite,
-            };
-            return local_store(&url, path_op);
+            if url.scheme() == "file" {
+                let path_op = match operation {
+                    VolumeOperation::Read => PathOperation::Read,
+                    VolumeOperation::ReadWrite => PathOperation::ReadWrite,
+                };
+                return local_store(&url, path_op);
+            }
+            // Proxy posture (wasm): route volume bytes (read + write) through
+            // the server's storage byte-proxy.
+            #[cfg(target_arch = "wasm32")]
+            if matches!(self.storage_access, proxy::StorageAccess::Proxy { .. }) {
+                let seg = format!("vol:{name}");
+                return self.proxy_store(&seg, &url);
+            }
         }
         let (credential, volume_id) = self
             .creds
@@ -517,6 +551,14 @@ impl UnityObjectStoreFactory {
         if path.scheme() == "file" {
             return local_store(path, operation);
         }
+        // Proxy posture (wasm): route bytes for the raw cloud URL through the
+        // server's storage byte-proxy (`path:<pct-encoded url>` securable). The
+        // URL itself is the securable root, so the routing prefix is its path.
+        #[cfg(target_arch = "wasm32")]
+        if matches!(self.storage_access, proxy::StorageAccess::Proxy { .. }) {
+            let seg = proxy::path_securable(path);
+            return self.proxy_store(&seg, path);
+        }
         let (credential, _resolved) = self
             .creds
             .temporary_path_credential(path.clone(), operation, false)
@@ -543,6 +585,46 @@ impl UnityObjectStoreFactory {
             .map_err(Error::from)?;
         let securable = SecurableRef::Path(path.clone(), operation, Some(true));
         self.build_store(credential, securable).await
+    }
+
+    /// Build a proxy-backed [`UCStore`] for `securable_seg` (a typed
+    /// `{securable}` segment) whose data lives at `location` (the real cloud
+    /// URL of the securable root).
+    ///
+    /// Used on wasm when the server announces `storageAccess: "proxy"`: no
+    /// credential is vended here (the server vends internally). `url` stays the
+    /// real cloud URL so the read path's routing/log-discovery math is
+    /// unchanged; `root` is a proxy `HttpStore` wrapped to strip the bucket
+    /// prefix so forwarded bucket-rooted keys become securable-relative.
+    #[cfg(target_arch = "wasm32")]
+    fn proxy_store(&self, securable_seg: &str, location: &Url) -> Result<UCStore> {
+        let proxy::StorageAccess::Proxy { base } = &self.storage_access else {
+            // Only called from the proxy branches, which are gated on `Proxy`.
+            return Err(Error::invalid_config(
+                "proxy_store called without a proxy posture".to_string(),
+            )
+            .into());
+        };
+        // The bucket-relative prefix of the securable root — the same value
+        // `build_store` records as `UCStore.path`, and exactly what the routing
+        // store forwards ahead of the object key.
+        let path = match parse_azurite(location) {
+            Some(loc) => Path::from(loc.prefix),
+            None => Path::from_url_path(location.path())?,
+        };
+        let root = proxy::build_proxy_store(base, securable_seg, path.clone(), self.token())?;
+        Ok(UCStore {
+            root,
+            url: location.clone(),
+            path,
+        })
+    }
+
+    /// The bearer token this factory authenticates with, if any. On wasm the
+    /// proxy store relays it to the same-origin proxy endpoint.
+    #[cfg(target_arch = "wasm32")]
+    fn token(&self) -> Option<&str> {
+        self.token.as_deref()
     }
 
     async fn build_store(

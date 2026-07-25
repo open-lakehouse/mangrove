@@ -24,7 +24,13 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
 # workspace dependencies in alphabetical order
 async-trait = { workspace = true }
 chrono = { workspace = true }
-object_store = { workspace = true }
+# `futures` is used by the proxy `StripPrefixStore` (`ObjectStore::list` returns a
+# `BoxStream`), which compiles on every target — not just the wasm proxy path.
+futures = { workspace = true }
+# The `http` feature enables `object_store::http::{HttpStore, HttpBuilder}`, used
+# by the same-origin storage byte-proxy client (`proxy.rs`). It is `["cloud"]`
+# under the hood — already pulled in by azure/aws/gcp on native, so additive.
+object_store = { workspace = true, features = ["http"] }
 thiserror = { workspace = true }
 url = { workspace = true }
 uuid = { workspace = true }
@@ -41,9 +47,10 @@ web-time = { workspace = true }
 send_wrapper = { workspace = true }
 reqwest = { version = "0.12", default-features = false, features = ["json"] }
 getrandom = { version = "0.2", features = ["js"] }
+# `/capabilities` posture discovery deserializes the server's JSON response.
+serde = { workspace = true }
 
 [dev-dependencies]
-futures = { workspace = true }
 serde_json = { workspace = true }
 tempfile = "3.1"
 tokio = { version = "1", features = ["full"] }
