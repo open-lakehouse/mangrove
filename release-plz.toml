@@ -203,5 +203,5 @@ commit_parsers = [
 # is already crate-scoped. Scopes use the crate directory names / short names
 # the repo's conventional commits already use.
 commit_preprocessors = [
-  { pattern = '\((delta-api|common|client|sharing-client|object-store|postgres|sqlite|datafusion|server|cli)\)', replace = "" },
+  { pattern = '\((delta-api|common|client|sharing-client|object-store|postgres|sqlite|datafusion|server|storage-proxy|cli)\)', replace = "" },
 ]
