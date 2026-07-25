@@ -146,7 +146,6 @@ changelog_path = "crates/server/CHANGELOG.md"
 [[package]]
 name = "olai-uc-storage-proxy"
 changelog_path = "crates/storage-proxy/CHANGELOG.md"
-release = false
 
 [[package]]
 name = "olai-uc-cli"
