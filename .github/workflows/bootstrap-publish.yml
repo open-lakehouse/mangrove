@@ -83,7 +83,7 @@ jobs:
       # proxy, swagger UI, the CLI parser). `--locked` uses the committed lockfile.
       - name: Publish olai-uc-storage-proxy
         run: |
-          cargo publish -p olai-uc-storage-proxy --locked --features bin \
+          cargo publish -p olai-uc-storage-proxy --locked \
             ${{ inputs.dry_run && '--dry-run' || '' }}
         env:
           SQLX_OFFLINE: "true"
