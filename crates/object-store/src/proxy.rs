@@ -65,7 +65,7 @@ pub(crate) enum StorageAccess {
 /// server root, so we resolve it against the origin. `token`, when set, is
 /// sent as a Bearer credential (the endpoint may be behind auth).
 ///
-/// Any failure — network error, non-2xx, unparseable body — resolves to
+/// Any failure — network error, non-2xx, unparsable body — resolves to
 /// [`StorageAccess::Direct`]: an older server without the endpoint, or one that
 /// does not run the proxy, keeps the direct behavior. Discovery never blocks
 /// table access on a capabilities hiccup.
