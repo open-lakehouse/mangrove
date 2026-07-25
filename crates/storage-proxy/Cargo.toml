@@ -18,7 +18,7 @@ name = "unitycatalog_storage_proxy"
 
 [dependencies]
 # local dependencies
-unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.3", optional = true }
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.4", optional = true }
 
 # workspace dependecies in alphabetical order
 async-trait = { workspace = true }
