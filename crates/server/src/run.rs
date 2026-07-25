@@ -35,17 +35,17 @@ use unitycatalog_sqlite::SqliteCommitCoordinator;
 
 use crate::api::RequestContext;
 use crate::config::PostgresBackendConfig;
-use crate::config::{Backend, Config, SqliteBackendConfig, StorageProxyConfig, UiConfig};
+use crate::config::{AuthMode, Backend, Config, SqliteBackendConfig, StorageProxyConfig, UiConfig};
 use crate::policy::{ConstantPolicy, Policy};
 use crate::rest::{
-    AnonymousAuthenticator, AuthenticationLayer, create_agent_skills_router, create_agents_router,
-    create_catalogs_router, create_credentials_router, create_delta_router,
-    create_entity_tag_assignments_router, create_external_locations_router,
-    create_functions_router, create_model_versions_router, create_policies_router,
-    create_providers_router, create_recipients_router, create_registered_models_router,
-    create_schemas_router, create_shares_router, create_staging_tables_router,
-    create_tables_router, create_tag_policies_router, create_temporary_credentials_router,
-    create_volumes_router,
+    AnonymousAuthenticator, AuthenticationLayer, OnMissingIdentity, ReverseProxyAuthenticator,
+    create_agent_skills_router, create_agents_router, create_catalogs_router,
+    create_credentials_router, create_delta_router, create_entity_tag_assignments_router,
+    create_external_locations_router, create_functions_router, create_model_versions_router,
+    create_policies_router, create_providers_router, create_recipients_router,
+    create_registered_models_router, create_schemas_router, create_shares_router,
+    create_staging_tables_router, create_tables_router, create_tag_policies_router,
+    create_temporary_credentials_router, create_volumes_router,
 };
 use crate::services::{LocalStoragePolicy, ServerHandler, location::StorageLocationUrl};
 
@@ -170,7 +170,22 @@ pub async fn serve(config: Config) -> Result<()> {
         api_router
     };
 
-    let app = api_router.layer(AuthenticationLayer::new(AnonymousAuthenticator));
+    // Apply the configured authenticator. Each arm yields the same erased
+    // `Router` type, so they can share one binding despite distinct authenticator
+    // types.
+    let app = match config.auth.mode {
+        AuthMode::Anonymous => api_router.layer(AuthenticationLayer::new(AnonymousAuthenticator)),
+        AuthMode::ReverseProxy => {
+            let mut authenticator = ReverseProxyAuthenticator::new();
+            if let Some(header) = &config.auth.forwarded_user_header {
+                authenticator = authenticator.with_header(header.clone());
+            }
+            if config.auth.allow_missing_identity {
+                authenticator = authenticator.with_on_missing(OnMissingIdentity::Anonymous);
+            }
+            api_router.layer(AuthenticationLayer::new(authenticator))
+        }
+    };
 
     run(app, &config.ui, &config.storage_proxy, &host, port).await
 }
