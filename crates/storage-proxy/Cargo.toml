@@ -16,6 +16,13 @@ rust-version.workspace = true
 # sibling crates, and this crate's own tests need no churn from the rename.
 name = "unitycatalog_storage_proxy"
 
+# The deployable standalone byte-proxy. Gated behind `bin` so a bare
+# library build (the default) never pulls the CLI/runtime deps.
+[[bin]]
+name = "storage-proxy"
+path = "src/main.rs"
+required-features = ["bin"]
+
 [dependencies]
 # local dependencies
 unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.3", optional = true }
@@ -30,6 +37,23 @@ url = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+
+# CLI/runtime dependencies for the standalone `storage-proxy` binary, all gated
+# behind the `bin` feature so the library build is unaffected.
+tokio = { workspace = true, features = [
+  "rt-multi-thread",
+  "macros",
+  "signal",
+  "net",
+], optional = true }
+clap = { version = "4.5", features = ["derive", "env", "wrap_help"], optional = true }
+# `blocking` for the `healthcheck` probe. Uses the workspace reqwest (rustls TLS,
+# no system OpenSSL).
+reqwest = { workspace = true, features = ["blocking"], optional = true }
+serde_yml = { workspace = true, optional = true }
+tower = { workspace = true, optional = true }
+tower-http = { version = "0.6", features = ["trace"], optional = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"], optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
@@ -58,6 +82,20 @@ server = ["dep:axum"]
 client-arm = ["server", "dep:unitycatalog-object-store"]
 # Exposes `InMemoryStorageProxyBackend`, an in-memory `StorageProxyBackend`
 testing = ["server"]
+# The deployable `storage-proxy` binary: the CLI (`serve` / `healthcheck`), its
+# YAML config, the self-contained request-auth layer, and the client arm that
+# resolves + vends through an upstream Unity Catalog. Off by default so a plain
+# library build stays lean.
+bin = [
+  "client-arm",
+  "dep:tokio",
+  "dep:clap",
+  "dep:reqwest",
+  "dep:serde_yml",
+  "dep:tower",
+  "dep:tower-http",
+  "dep:tracing-subscriber",
+]
 
 [package.metadata.docs.rs]
 all-features = true

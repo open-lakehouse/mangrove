@@ -28,6 +28,79 @@ authorization.
 - `client` (feature `client-arm`) — a portable backend backed by a
   `UnityObjectStoreFactory`, working against any UC server given `{baseUrl, token}`.
 - `testing` (feature `testing`) — an in-memory backend for the wire-contract tests.
+- `auth` / `cli` (feature `bin`) — the request-auth layer and the CLI that back
+  the standalone `storage-proxy` binary (see below).
+
+## Running standalone
+
+Besides being embedded in a UC server (mounted at `/storage-proxy`), the proxy
+runs as its own deployable — a container that sits at the browser's origin and
+forwards to an upstream Unity Catalog for credential vending. It has no database,
+so it needs no migrations; the CLI is just `serve` and `healthcheck`. Build the
+binary with the `bin` feature:
+
+```bash
+cargo run -p olai-uc-storage-proxy --features bin --bin storage-proxy -- \
+  serve --upstream-url http://uc:8080/api/2.1/unity-catalog/ --port 8080
+```
+
+or, as a container:
+
+```bash
+docker build -f crates/storage-proxy/Dockerfile -t storage-proxy .
+docker run --rm -p 8080:8080 ghcr.io/open-lakehouse/storage-proxy:<version> \
+  serve --upstream-url http://uc:8080/api/2.1/unity-catalog/
+```
+
+The image's `ENTRYPOINT` is the binary and its default `CMD` is `serve`, so a
+bare `docker run` starts the proxy; pass `healthcheck` (or a Compose `command:`)
+to run a different subcommand. The distroless `HEALTHCHECK` runs the binary's own
+`healthcheck` subcommand, which GETs `/health` and exits 0/non-zero.
+
+### Configuration
+
+All settings can come from a YAML file (`--config`, or `STORAGE_PROXY_CONFIG`);
+`--host` / `--port` / `--upstream-url` / `--upstream-token` overlay it, and a
+config-less run works given `--upstream-url`. Secrets should be referenced from
+the environment (`{ env: VAR }`) rather than inlined.
+
+```yaml
+# storage-proxy.yaml
+host: 0.0.0.0        # default; all interfaces
+port: 8080           # default
+base_path: /storage-proxy   # byte-proxy mount; default
+upstream:
+  base_url: http://uc:8080/api/2.1/unity-catalog/   # required
+  token: { env: UC_TOKEN }   # optional; absent = contact UC unauthenticated
+auth:
+  mode: anonymous    # or `reverse-proxy` (see below)
+```
+
+The standalone deployment always announces `storageAccess: "proxy"` at
+`/capabilities` — it exists precisely to serve the byte-proxy.
+
+### Inbound request auth
+
+Because the proxy vends credentials on the caller's behalf, in a shared
+deployment access should be attributed to a real user. Two modes:
+
+- **`anonymous`** (default) — every request is anonymous. Use when the upstream
+  UC itself uses anonymous auth, or for single-tenant / local development.
+- **`reverse-proxy`** — trust a forwarded-identity header set by an upstream
+  proxy that has *already* authenticated the caller (e.g. nginx / Envoy / an
+  OAuth2 proxy forwarding `X-Forwarded-User`). Only safe when the proxy is not
+  directly reachable, since a client could otherwise forge the header. Configure
+  the header and missing-identity behavior:
+
+  ```yaml
+  auth:
+    mode: reverse-proxy
+    forwarded_user_header: x-forwarded-user   # default
+    allow_missing_identity: false             # default: reject (401) if absent
+  ```
+
+This is the standalone equivalent of the server crate's `ReverseProxyAuthenticator`
+(`auth.mode: reverse-proxy`).
 
 ## Storage-access posture: `proxy` vs `direct`
 
