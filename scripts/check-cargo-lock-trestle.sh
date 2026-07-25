@@ -51,7 +51,7 @@ fail() {
   exit 1
 }
 
-for pkg in olai-http olai-store; do
+for pkg in olai-http-wasm; do
   block=$(extract_package_block "$pkg")
   if [[ -z "$block" ]]; then
     fail "Cargo.lock is missing a [[package]] entry for $pkg"
