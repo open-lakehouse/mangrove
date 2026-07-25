@@ -88,6 +88,17 @@ pub struct Config {
     /// mounts no proxy surface, so existing deployments are unaffected.
     #[serde(default)]
     pub storage_proxy: StorageProxyConfig,
+
+    /// Request authentication settings (see [`AuthConfig`]).
+    ///
+    /// Defaults to anonymous: every request is [`Principal::anonymous`]. Set
+    /// `mode: reverse-proxy` when running behind a trusted proxy that forwards
+    /// the caller identity — recommended before enabling the storage proxy in a
+    /// shared deployment so vends are attributed to a real user.
+    ///
+    /// [`Principal::anonymous`]: crate::policy::Principal::anonymous
+    #[serde(default)]
+    pub auth: AuthConfig,
 }
 
 /// Default bind host used when neither the config file nor a CLI flag sets one.
@@ -218,6 +229,7 @@ impl Default for Config {
             managed_storage_root: None,
             ui: UiConfig::default(),
             storage_proxy: StorageProxyConfig::default(),
+            auth: AuthConfig::default(),
         }
     }
 }
@@ -287,6 +299,40 @@ impl StorageProxyConfig {
             None
         }
     }
+}
+
+/// How incoming requests are authenticated.
+#[derive(Debug, Deserialize, Serialize, Default, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct AuthConfig {
+    /// The authentication mode. Defaults to [`AuthMode::Anonymous`].
+    #[serde(default)]
+    pub mode: AuthMode,
+
+    /// Header the reverse-proxy mode reads the forwarded user from. Defaults to
+    /// `x-forwarded-user`. Ignored unless `mode` is
+    /// [`AuthMode::ReverseProxy`].
+    #[serde(default)]
+    pub forwarded_user_header: Option<String>,
+
+    /// In reverse-proxy mode, treat a request lacking the forwarded-user header
+    /// as anonymous instead of rejecting it (`401`). Default `false` (reject).
+    #[serde(default)]
+    pub allow_missing_identity: bool,
+}
+
+/// The request-authentication strategy.
+#[derive(Debug, Deserialize, Serialize, Default, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum AuthMode {
+    /// Every request is anonymous. The default; suitable for local development
+    /// and single-tenant deployments.
+    #[default]
+    Anonymous,
+    /// Trust a forwarded-identity header set by an upstream reverse proxy that
+    /// has already authenticated the caller. Only safe when the server is not
+    /// directly reachable.
+    ReverseProxy,
 }
 
 /// Configuration for the upstream Unity Catalog instance.

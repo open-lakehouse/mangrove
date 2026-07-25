@@ -62,7 +62,7 @@ mod constant;
 /// This is one possible authorization context (`Cx`) for a [`Policy`]; a server
 /// that extracts a username from a reverse-proxy header would authorize against
 /// a `Principal`.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Principal {
     /// No authenticated identity — used when no credentials are present, e.g.
     /// behind a proxy that does not forward an identity header.
