@@ -89,6 +89,10 @@ jobs:
       # empty — the Docker job keys off this.
       server_version: ${{ steps.server.outputs.version }}
       server_tag: ${{ steps.server.outputs.tag }}
+      # Likewise for the standalone storage-proxy image — its own Docker job keys
+      # off these.
+      storage_proxy_version: ${{ steps.storage_proxy.outputs.version }}
+      storage_proxy_tag: ${{ steps.storage_proxy.outputs.tag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -129,6 +133,25 @@ jobs:
           else
             echo "Server not released this run — Docker build skipped."
           fi
+      # Same detection for the standalone storage-proxy: it ships as its own GHCR
+      # image (`storage-proxy`), so gate its Docker build on whether release-plz
+      # released `olai-uc-storage-proxy` this run.
+      - name: Detect storage-proxy release
+        id: storage_proxy
+        env:
+          RELEASES: ${{ steps.release.outputs.releases }}
+        run: |
+          entry=$(printf '%s' "${RELEASES:-[]}" \
+            | jq -c '.[] | select(.package_name == "olai-uc-storage-proxy")')
+          if [ -n "$entry" ]; then
+            version=$(printf '%s' "$entry" | jq -r '.version')
+            tag=$(printf '%s' "$entry" | jq -r '.tag')
+            echo "Storage-proxy released this run: ${version} (tag ${tag})."
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          else
+            echo "Storage-proxy not released this run — Docker build skipped."
+          fi
 
   # --- Build + push the server (mangrove) Docker image, iff it was released ---
   docker:
@@ -148,3 +171,20 @@ jobs:
     with:
       version: ${{ needs.release-plz-release.outputs.server_version }}
       ref: ${{ needs.release-plz-release.outputs.server_tag }}
+
+  # --- Build + push the standalone storage-proxy image, iff it was released ---
+  docker-storage-proxy:
+    name: Docker release (storage-proxy)
+    needs: release-plz-release
+    if: ${{ needs.release-plz-release.outputs.storage_proxy_version != '' }}
+    permissions:
+      # contents: write for the same reason as the `docker` job above — the
+      # reusable workflow's `merge` job edits the GitHub Release + uploads
+      # provenance assets.
+      contents: write
+      packages: write
+      id-token: write
+    uses: ./.github/workflows/docker-release-storage-proxy.yml
+    with:
+      version: ${{ needs.release-plz-release.outputs.storage_proxy_version }}
+      ref: ${{ needs.release-plz-release.outputs.storage_proxy_tag }}
