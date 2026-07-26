@@ -7,18 +7,22 @@ name: js-release
 # entries + the version bumps + per-package CHANGELOGs. Nothing lands on `main`
 # — the version state lives on the action's `changeset-release/main` PR branch.
 #
-# When that PR is merged there are no changesets left, so the action reports
-# `hasChangesets == 'false'`; the `napi-build` matrix and `publish` job are gated
-# on that (the JS analogue of release-plz gating Docker on "was it released this
-# run"). On an ordinary push the PR is just updated and both are skipped — no
-# multi-arch builds until a release is actually due.
+# DORMANT: while the `JS_PUBLISH_ENABLED` repo variable is unset/not "true", the
+# `napi-build` matrix and `publish` job DO NOT RUN AT ALL — only `version-pr`
+# runs, maintaining the "Version Packages" PR. This keeps the machinery in place
+# without building or publishing anything on ordinary pushes. Today
+# only `@open-lakehouse/uc-client` (+ its platform packages) is non-private; every
+# `@open-lakehouse/*` package is `private: true` and skipped.
 #
-# DORMANT / DRY-RUN: publishing is further gated behind the `JS_PUBLISH_ENABLED`
-# repo variable. Until it is set to "true" (after the publish-scope follow-up
-# decides which packages go public), the publish job runs `--dry-run` only and
-# never pushes to npm. Today only `@open-lakehouse/uc-client` (+ its platform
-# packages) is non-private; every `@open-lakehouse/*` package is `private: true`
-# and skipped.
+# WHEN PUBLISHING GOES LIVE (`JS_PUBLISH_ENABLED=true`): the build/publish gate
+# is `hasChangesets == 'false'` (no changesets left ⇒ the Version PR was merged).
+# NOTE that `hasChangesets` is `false` both right after a merge AND at rest (a
+# push that produced no changeset), so it is NOT a clean "was released this run"
+# signal on its own — the eventual correct gate is the Changesets action's
+# `published` output (the JS analogue of release-plz's `server_version != ''`).
+# The `JS_PUBLISH_ENABLED` clause below is what prevents the resting-state
+# `hasChangesets == 'false'` from firing spurious multi-arch builds while dormant;
+# revisit the gate (switch to `published`) as part of enabling publishing. See #182.
 #
 # See .changeset/README.md and .agents/rules/js-release-changesets-rule.mdc.
 
@@ -92,14 +96,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
 
   # --- Build the NAPI binary for every target -------------------------------
-  # Gated on a release being due (the Version Packages PR was just merged, so no
-  # changesets remain). On an ordinary push `hasChangesets == 'true'` and this
-  # whole matrix is skipped — no multi-arch builds until we actually release.
+  # DORMANT: never runs while `JS_PUBLISH_ENABLED` is unset (the machinery is set
+  # up but builds nothing yet). When enabled, gated additionally on a release
+  # being due — `hasChangesets == 'false'` (Version PR merged, no changesets
+  # left). The `JS_PUBLISH_ENABLED` clause is essential: `hasChangesets` is also
+  # `false` at rest, so without it an ordinary push would fire this whole matrix.
   # (Per-PR / host-target build coverage lives in node-ci.yaml.)
   napi-build:
     name: napi (${{ matrix.target }})
     needs: [version-pr]
-    if: ${{ github.repository == 'open-lakehouse/mangrove' && needs.version-pr.outputs.hasChangesets == 'false' }}
+    if: ${{ github.repository == 'open-lakehouse/mangrove' && vars.JS_PUBLISH_ENABLED == 'true' && needs.version-pr.outputs.hasChangesets == 'false' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     env:
@@ -158,15 +164,14 @@ jobs:
           path: node/client/unitycatalog/codegen/*.node
           if-no-files-found: error
 
-  # --- Publish to npm (DORMANT: dry-run until JS_PUBLISH_ENABLED=true) --------
-  # Only meaningful once the Version Packages PR is merged (no changesets left).
-  # The Changesets action's `hasChangesets` output (surfaced by `version-pr`)
-  # tells us whether there is still pending versioning; we publish only when
-  # there is not — the same gate the `napi-build` matrix uses.
+  # --- Publish to npm (DORMANT until JS_PUBLISH_ENABLED=true) -----------------
+  # Never runs while dormant (same gate as `napi-build`, and it `needs` it). When
+  # enabled, runs only when a release is due (`hasChangesets == 'false'`, Version
+  # PR merged).
   publish:
     name: Publish (npm)
     needs: [version-pr, napi-build]
-    if: ${{ github.repository == 'open-lakehouse/mangrove' && needs.version-pr.outputs.hasChangesets == 'false' }}
+    if: ${{ github.repository == 'open-lakehouse/mangrove' && vars.JS_PUBLISH_ENABLED == 'true' && needs.version-pr.outputs.hasChangesets == 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: release # protected env, mirrors release-plz
@@ -206,24 +211,10 @@ jobs:
         run: bunx napi artifacts --output-dir artifacts
         working-directory: node/client
 
-      # Dry-run vs real publish is a single gate. When JS_PUBLISH_ENABLED is not
-      # "true" we exercise the WHOLE pipeline — changeset publish + napi
-      # pre-publish — with --dry-run and never touch npm.
-      - name: Publish (dry-run — dormant)
-        if: ${{ vars.JS_PUBLISH_ENABLED != 'true' }}
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: "true"
-        run: |
-          set -euo pipefail
-          echo "JS_PUBLISH_ENABLED is not 'true' — dry-run only, nothing is published to npm."
-          # napi pre-publish runs in the NAPI package; changeset publish is
-          # workspace-aware and runs at the repo root. Both dry-run only.
-          ( cd node/client && bunx napi pre-publish -t npm --dry-run ) || true
-          bun run changeset:publish -- --dry-run || true
-
+      # The whole `publish` job only runs when JS_PUBLISH_ENABLED == 'true' (see
+      # the job `if:`), so this is always a live publish — there is no dry-run
+      # branch. While dormant the job never runs at all.
       - name: Publish (live)
-        if: ${{ vars.JS_PUBLISH_ENABLED == 'true' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
