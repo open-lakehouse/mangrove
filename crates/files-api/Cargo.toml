@@ -13,7 +13,7 @@
 # crate (generated code, wasm-safe); this crate only implements it.
 [package]
 name = "olai-uc-files-api"
-version = "0.0.2"
+version = "0.0.3"
 description = "Files API — a ConnectRPC based files server backed by UC volumes."
 categories = ["web-programming::http-server"]
 edition.workspace = true
