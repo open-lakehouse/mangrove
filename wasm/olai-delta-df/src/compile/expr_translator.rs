@@ -867,7 +867,9 @@ fn df_scalar_value_to_kernel(value: &ScalarValue) -> Option<Scalar> {
     })
 }
 
-#[cfg(test)]
+// Native-only: uses `rstest`/`#[case]` (a `cfg(not(wasm32))` dev-dep). The wasm
+// build's test coverage lives in `tests/m2_wasm.rs`.
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use std::sync::Arc;
 
@@ -1031,7 +1033,9 @@ mod tests {
 }
 
 /// Forward direction: DataFusion [`Expr`] -> kernel [`Predicate`] data-skipping lowering.
-#[cfg(test)]
+// Native-only, consistent with the sibling `tests` module in this file (the crate's
+// wasm test coverage is `tests/m2_wasm.rs`).
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod forward_tests {
     use datafusion_expr::{col, lit};
     use datafusion_functions::core::expr_fn::get_field;

@@ -233,7 +233,9 @@ impl ObjectStore for RoutingObjectStore {
     }
 }
 
-#[cfg(test)]
+// Native-only: uses `#[tokio::test]` (tokio is a `cfg(not(wasm32))` dev-dep). The
+// wasm build's test coverage lives in `tests/m2_wasm.rs`.
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
     use super::*;
     use delta_kernel::object_store::memory::InMemory;
