@@ -56,6 +56,7 @@ tower-http = { version = "0.6", features = ["trace"], optional = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"], optional = true }
 
 [dev-dependencies]
+mockito = "1.4"
 tokio = { version = "1", features = ["full"] }
 tower = { workspace = true }
 futures = { workspace = true }
@@ -71,6 +72,13 @@ required-features = ["testing"]
 [[test]]
 name = "backend"
 required-features = ["testing"]
+
+# Proves the client arm forwards the request-context identity to the upstream UC
+# vend. Needs `bin` for `ForwardedIdentity` (the standalone binary's context type)
+# plus the client arm it pulls in.
+[[test]]
+name = "forwarded_identity"
+required-features = ["bin"]
 
 [features]
 default = ["server"]

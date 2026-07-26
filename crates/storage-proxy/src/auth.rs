@@ -53,6 +53,12 @@ impl ForwardedIdentity {
     }
 }
 
+impl crate::backend::ForwardedUser for ForwardedIdentity {
+    fn forwarded_user(&self) -> Option<&str> {
+        self.0.as_deref()
+    }
+}
+
 /// How the standalone proxy authenticates incoming requests.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AuthMode {

@@ -118,6 +118,18 @@ pub enum AuthKind {
 }
 
 impl AuthConfig {
+    /// The header name the forwarded end-user identity is read from (and, in
+    /// turn, re-emitted under on upstream UC requests): the configured
+    /// `forwarded-user-header`, else [`DEFAULT_FORWARDED_USER_HEADER`].
+    ///
+    /// Meaningful only in `reverse-proxy` mode; in `anonymous` mode no forwarded
+    /// identity is ever present, so the value is unused.
+    pub fn resolved_forwarded_header(&self) -> String {
+        self.forwarded_user_header
+            .clone()
+            .unwrap_or_else(|| DEFAULT_FORWARDED_USER_HEADER.to_string())
+    }
+
     /// Build the runtime [`AuthMode`] from this config.
     pub fn to_mode(&self) -> AuthMode {
         match self.mode {
