@@ -739,6 +739,9 @@ name = "bytes"
 version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "bzip2"
@@ -976,6 +979,37 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ca0197aee26d1ae37445ee532fefce43251d24cc7c166799f4d46817f1d3973"
 dependencies = [
  "crossbeam-utils",
+]
+
+[[package]]
+name = "connectrpc"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "003fac88ace432fd8e6adbe13da8b20e90613b89e70c72186c505ad1bea307b2"
+dependencies = [
+ "async-trait",
+ "axum",
+ "base64",
+ "buffa",
+ "bytes",
+ "futures",
+ "http",
+ "http-body",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "libc",
+ "percent-encoding",
+ "pin-project",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tower",
+ "tower-http",
+ "tracing",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -3770,8 +3804,6 @@ dependencies = [
 [[package]]
 name = "olai-http-wasm"
 version = "0.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "348e03daaf902c4271eef1b733ce00825b549cb1e3ce329d80d351efd873b71c"
 dependencies = [
  "futures",
  "reqwest 0.12.28",
@@ -3943,6 +3975,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "olai-uc-files-api"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "axum",
+ "buffa",
+ "buffa-types",
+ "bytes",
+ "clap",
+ "connectrpc",
+ "futures",
+ "http-body",
+ "object_store",
+ "olai-uc-files-proto",
+ "olai-uc-object-store",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_yml",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "olai-uc-files-proto"
+version = "0.1.0"
+dependencies = [
+ "buffa",
+ "buffa-types",
+ "connectrpc",
+ "http-body",
+ "serde",
+]
+
+[[package]]
 name = "olai-uc-object-store"
 version = "0.0.4"
 dependencies = [
@@ -4010,6 +4082,7 @@ dependencies = [
  "olai-uc-client",
  "olai-uc-common",
  "olai-uc-delta-api",
+ "olai-uc-files-api",
  "olai-uc-object-store",
  "olai-uc-postgres",
  "olai-uc-sqlite",
