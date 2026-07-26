@@ -14,8 +14,8 @@
 # Regenerate with `just generate-files-proto`; never hand-edit `src/generated/**`.
 [package]
 name = "olai-uc-files-proto"
-version = "0.1.0"
-description = "Generated buffa message types + ConnectRPC service trait for the portal.files.v1 FilesService contract."
+version = "0.0.1"
+description = "Generated buffa message types + ConnectRPC service trait for the FilesService contract."
 categories = ["encoding"]
 edition.workspace = true
 homepage.workspace = true
