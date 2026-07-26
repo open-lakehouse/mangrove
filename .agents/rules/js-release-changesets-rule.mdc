@@ -12,10 +12,12 @@ normally do not write changeset files by hand.
 
 ## Default: rely on conventional commits
 
-On every push to `main`, [`js-changeset-autogen`](../../.github/workflows/js-changeset-autogen.yaml)
-runs [`scripts/autogen-changeset.ts`](../../scripts/autogen-changeset.ts) over the
-commits that touched `node/**` and generates the `.changeset/*.md` entries from the
-`type(scope):` prefix:
+On every push to `main`, the `version-pr` job in
+[`js-release`](../../.github/workflows/js-release.yaml) runs
+[`scripts/autogen-changeset.ts`](../../scripts/autogen-changeset.ts) over the
+commits that touched `node/**` and derives the `.changeset/*.md` entries from the
+`type(scope):` prefix, then hands them to the Changesets action. The entries ride
+onto the **Version Packages PR branch** — they are **never committed to `main`**:
 
 | Commit type | Bump  |
 |-------------|-------|

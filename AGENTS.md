@@ -156,9 +156,10 @@ The `node/*` npm packages release via [Changesets](https://changesets.dev) — t
 JS counterpart to `release-plz` — **driven automatically from conventional
 commits**. You normally do **not** write changeset files by hand.
 
-- On push to `main`, [`js-changeset-autogen`](.github/workflows/js-changeset-autogen.yaml)
-  derives `.changeset/*.md` from `node/**` commits: `feat`→minor, `fix`/`perf`/`refactor`→patch,
-  `!`/`BREAKING CHANGE:`→major; the `(scope)` maps to a package by directory/name.
+- On push to `main`, the `version-pr` job in [`js-release`](.github/workflows/js-release.yaml)
+  derives `.changeset/*.md` from `node/**` commits onto the **Version Packages PR branch**
+  (never `main`): `feat`→minor, `fix`/`perf`/`refactor`→patch, `!`/`BREAKING CHANGE:`→major;
+  the `(scope)` maps to a package by directory/name.
   So **scope your `node/` commits** — an unscoped or unmatched-scope commit is skipped.
 - **Hand-write a changeset** (`bun run changeset`) only for a breaking `major` +
   migration note, a bump that differs from the commit type, or a cross-cutting
