@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-storage-proxy"
-version = "0.0.2"
+version = "0.0.3"
 description = "Same-origin Unity Catalog storage byte-proxy based on governed Volumes."
 categories = ["web-programming::http-server"]
 edition.workspace = true
