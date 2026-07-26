@@ -71,6 +71,19 @@ impl AsRef<Principal> for RequestContext {
     }
 }
 
+// The storage-proxy client arm requires its backend context to expose a
+// forwarded identity. Gated on `bin`, the only feature that pulls in the
+// `unitycatalog-storage-proxy` dependency (and mounts the client arm in `run`).
+#[cfg(feature = "bin")]
+impl unitycatalog_storage_proxy::ForwardedUser for RequestContext {
+    fn forwarded_user(&self) -> Option<&str> {
+        match &self.recipient {
+            Principal::User(name) => Some(name),
+            Principal::Anonymous => None,
+        }
+    }
+}
+
 pub trait SecuredAction: Send + Sync {
     /// The resource that the action is performed on.
     fn resource(&self) -> ResourceIdent;
