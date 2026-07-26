@@ -31,4 +31,13 @@ impl AppState {
     pub fn register_all(self, router: Router) -> Router {
         FilesServiceExt::register(Arc::new(self), router)
     }
+
+    /// Build a self-contained axum router serving the `FilesService` as a fallback
+    /// service, ready to `nest_service` under a base path. A convenience for
+    /// embedders (e.g. the UC server) so they need not depend on `connectrpc`
+    /// directly.
+    pub fn into_axum_router(self) -> axum::Router {
+        let connect = self.register_all(Router::new());
+        axum::Router::new().fallback_service(connect.into_axum_service())
+    }
 }

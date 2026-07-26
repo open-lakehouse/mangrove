@@ -38,11 +38,10 @@ pub async fn serve(config: Config) -> Result<(), String> {
         }
     };
 
-    // Register the FilesService on a ConnectRPC router and expose it as a single
-    // axum fallback service, nested under the base path so it occupies its own
-    // subtree and never shadows the operational routes below.
-    let connect = AppState::new(files).register_all(connectrpc::Router::new());
-    let files_service = Router::new().fallback_service(connect.into_axum_service());
+    // Expose the FilesService as a single axum fallback service, nested under the
+    // base path so it occupies its own subtree and never shadows the operational
+    // routes below.
+    let files_service = AppState::new(files).into_axum_router();
     let mounted: Router = if base_path.is_empty() {
         files_service
     } else {

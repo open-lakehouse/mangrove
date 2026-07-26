@@ -170,6 +170,29 @@ pub async fn serve(config: Config) -> Result<()> {
         api_router
     };
 
+    // Optionally mount the embedded Files API (portal.files.v1.FilesService).
+    // It is a ConnectRPC service exposed as a self-contained axum fallback
+    // service, so it is `nest_service`-d under its own base path — never `merge`-d
+    // (two fallback-carrying routers cannot be merged, and it must not shadow the
+    // REST routes or the SPA fallback). An empty configured base path falls back
+    // to `/files` for exactly that reason. Refuse to start on an incoherent config
+    // (unity backend with no client block).
+    if let Some(err) = config.files.startup_error() {
+        return Err(Error::Generic(format!("files config: {err}")));
+    }
+    let api_router = if config.files.enabled {
+        let files = build_files_router(&config).await?;
+        let base_path = config.files.resolved_base_path();
+        let mount = if base_path.is_empty() {
+            "/files".to_string()
+        } else {
+            base_path
+        };
+        api_router.nest_service(&mount, files)
+    } else {
+        api_router
+    };
+
     // Apply the configured authenticator. Each arm yields the same erased
     // `Router` type, so they can share one binding despite distinct authenticator
     // types.
@@ -229,6 +252,47 @@ async fn build_storage_proxy_router(
             Ok(router_with_context::<(), _>(Arc::new(backend), extract_cx).with_state(()))
         }
     }
+}
+
+/// Build the embedded Files API router: construct the configured file store
+/// backend, register the `FilesService` on a ConnectRPC router, and expose it as
+/// a single axum fallback service (the caller nests it under a base path).
+///
+/// - [`FilesBackend::Unity`](crate::config::FilesBackend::Unity): a
+///   `UnityVolumeStore` over a factory pointed at the configured upstream UC.
+/// - [`FilesBackend::Memory`](crate::config::FilesBackend::Memory): a
+///   process-local in-memory store (non-durable; demos/tests).
+async fn build_files_router(config: &Config) -> Result<Router> {
+    use crate::config::FilesBackend;
+    use unitycatalog_files_api::service::AppState;
+    use unitycatalog_files_api::store::{FileStore, MemoryStore, UnityVolumeStore};
+
+    let files: Arc<dyn FileStore> = match config.files.backend {
+        FilesBackend::Memory => Arc::new(MemoryStore::new()),
+        FilesBackend::Unity => {
+            let client = config.files.client.as_ref().ok_or_else(|| {
+                Error::Generic("files unity backend requires a `client` block".into())
+            })?;
+            let token = client.token.as_ref().and_then(|t| t.value());
+            let mut builder = unitycatalog_object_store::UnityObjectStoreFactory::builder()
+                .with_uri(client.base_url.clone())
+                .with_io_runtime(tokio::runtime::Handle::current());
+            match token.filter(|t| !t.is_empty()) {
+                Some(token) => builder = builder.with_token(token),
+                None => builder = builder.with_allow_unauthenticated(true),
+            }
+            if let Some(region) = client.region.as_ref().filter(|r| !r.is_empty()) {
+                builder = builder.with_aws_region(region.clone());
+            }
+            let factory = builder
+                .build()
+                .await
+                .map_err(|e| Error::Generic(format!("files unity factory: {e}")))?;
+            Arc::new(UnityVolumeStore::new(Arc::new(factory)))
+        }
+    };
+
+    Ok(AppState::new(files).into_axum_router())
 }
 
 /// Connect the configured backend and apply any pending migrations, then return.
