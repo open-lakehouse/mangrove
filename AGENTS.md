@@ -165,7 +165,7 @@ commits**. You normally do **not** write changeset files by hand.
   release note. A hand-written entry wins (highest bump per package).
 - **Publishing is DORMANT (dry-run):** [`js-release`](.github/workflows/js-release.yaml)
   opens a "Version Packages" PR but only publishes to npm when the
-  `JS_PUBLISH_ENABLED` repo variable is `"true"`. Only `@unitycatalog/client` is
+  `JS_PUBLISH_ENABLED` repo variable is `"true"`. Only `@open-lakehouse/uc-client` is
   non-private today; `@open-lakehouse/*` are `private: true` and skipped.
 
 ### Git hooks (`setup-hooks`)

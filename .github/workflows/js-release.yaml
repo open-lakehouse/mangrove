@@ -11,7 +11,7 @@ name: js-release
 # DORMANT / DRY-RUN: publishing is gated behind the `JS_PUBLISH_ENABLED` repo
 # variable. Until it is set to "true" (after the publish-scope follow-up decides
 # which packages go public), the publish job runs `--dry-run` only and never
-# pushes to npm. Today only `@unitycatalog/client` (+ its platform packages) is
+# pushes to npm. Today only `@open-lakehouse/uc-client` (+ its platform packages) is
 # non-private; every `@open-lakehouse/*` package is `private: true` and skipped.
 #
 # See .changeset/README.md and .agents/rules/js-release-changesets-rule.mdc.

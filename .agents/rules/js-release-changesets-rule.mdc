@@ -26,7 +26,7 @@ commits that touched `node/**` and generates the `.changeset/*.md` entries from 
 
 The **`(scope)`** is matched to a package by its directory basename, its unscoped
 npm name, or its full name (e.g. `feat(editor):` → `@open-lakehouse/editor`;
-`fix(client):` → `@unitycatalog/client`). A comma-separated scope
+`fix(client):` → `@open-lakehouse/uc-client`). A comma-separated scope
 (`feat(query,editor):`) bumps both. A commit with **no scope**, or a scope that
 matches no package, is skipped — so **scope your `node/` commits** if you want them
 to release.
@@ -47,7 +47,7 @@ Format (frontmatter = package → bump, body = the changelog line):
 
 ```markdown
 ---
-"@unitycatalog/client": major
+"@open-lakehouse/uc-client": major
 ---
 
 Rename `Client.connect()` → `Client.open()`. Update call sites accordingly.
@@ -63,7 +63,7 @@ always safe.
 PR from accumulated changesets; merging it bumps versions + writes CHANGELOGs.
 The publish job runs **`--dry-run` only** and does **not** push to npm while the
 `JS_PUBLISH_ENABLED` repo variable is unset or not `"true"`. Only
-`@unitycatalog/client` (+ its platform packages) is non-private today; every
+`@open-lakehouse/uc-client` (+ its platform packages) is non-private today; every
 `@open-lakehouse/*` package is `private: true` and Changesets skips it. The
 publish scope is decided in a follow-up.
 

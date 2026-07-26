@@ -35,7 +35,7 @@ Publishing is **gated off** until the publish scope is decided (see the
 dependency-isolation / publish-scope follow-up). The release workflow runs
 `changeset publish --dry-run` / `napi pre-publish --dry-run` and does **not** push
 to npm while the `JS_PUBLISH_ENABLED` repo variable is unset or not `"true"`.
-Only `@unitycatalog/client` (+ its platform packages) is currently non-private;
+Only `@open-lakehouse/uc-client` (+ its platform packages) is currently non-private;
 every `@open-lakehouse/*` package is `private: true` and Changesets skips it.
 
 Config reference: <https://github.com/changesets/changesets/blob/main/docs/config-file-options.md>
