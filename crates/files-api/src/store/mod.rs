@@ -2,16 +2,19 @@
 //!
 //! The [`FileStore`] trait surface is intentionally small and purpose-built — the
 //! generated proto messages are the stored/returned values directly. Two backends
-//! ship today: the process-local [`MemoryStore`] (behind `testing`, for
+//! ship today: the process-local [`MemoryStore`] (behind `testing` or `bin`, for
 //! dependency-free runs + tests) and the cloud-backed [`UnityVolumeStore`] (behind
 //! `client-arm`, addressing Databricks Volumes over UC-vended credentials).
 
-#[cfg(feature = "testing")]
+// The in-memory store backs both the `testing` helpers/e2e test AND the standalone
+// binary's `serve --backend memory` (a dependency-free production run), so it must
+// be available whenever either feature is on — not `testing` alone.
+#[cfg(any(feature = "testing", feature = "bin"))]
 pub mod memory;
 #[cfg(feature = "client-arm")]
 pub mod unity;
 
-#[cfg(feature = "testing")]
+#[cfg(any(feature = "testing", feature = "bin"))]
 pub use memory::MemoryStore;
 #[cfg(feature = "client-arm")]
 pub use unity::UnityVolumeStore;
