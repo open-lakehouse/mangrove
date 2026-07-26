@@ -1,5 +1,5 @@
 {
-	"name": "@unitycatalog/client-android-arm64",
+	"name": "@open-lakehouse/uc-client-android-arm64",
 	"version": "0.0.0",
 	"os": [
 		"android"
@@ -13,6 +13,6 @@
 	],
 	"license": "MIT",
 	"engines": {
-		"node": ">= 10"
+		"node": ">= 18"
 	}
 }

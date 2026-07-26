@@ -1,3 +1,3 @@
-# `@unitycatalog/client-linux-arm-gnueabihf`
+# `@open-lakehouse/uc-client-linux-arm-gnueabihf`
 
-This is the **armv7-unknown-linux-gnueabihf** binary for `@unitycatalog/client`
+This is the **armv7-unknown-linux-gnueabihf** binary for `@open-lakehouse/uc-client`

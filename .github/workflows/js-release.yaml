@@ -1,0 +1,208 @@
+name: js-release
+
+# The "publish" half of the JS release pipeline (the counterpart to the
+# release-plz `release` job for the Rust crates). On every push to `main`, the
+# Changesets action opens/updates a single "Version Packages" PR from the
+# accumulated `.changeset/*.md` entries (which `js-changeset-autogen` writes from
+# commits). Merging that PR bumps versions + writes per-package CHANGELOGs and,
+# on the resulting push, this workflow builds the NAPI binary matrix and
+# publishes to npm.
+#
+# DORMANT / DRY-RUN: publishing is gated behind the `JS_PUBLISH_ENABLED` repo
+# variable. Until it is set to "true" (after the publish-scope follow-up decides
+# which packages go public), the publish job runs `--dry-run` only and never
+# pushes to npm. Today only `@open-lakehouse/uc-client` (+ its platform packages) is
+# non-private; every `@open-lakehouse/*` package is `private: true` and skipped.
+#
+# See .changeset/README.md and .agents/rules/js-release-changesets-rule.mdc.
+
+on:
+  push:
+    branches:
+      - main
+
+# Least privilege: grant per job, nothing at the top level.
+permissions: {}
+
+concurrency:
+  group: js-release
+  cancel-in-progress: false
+
+jobs:
+  # --- Open/update the "Version Packages" PR (version bumps + changelogs) -----
+  version-pr:
+    name: Version Packages PR
+    if: ${{ github.repository == 'open-lakehouse/mangrove' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # push the changeset-release/main branch
+      pull-requests: write # open/update the Version Packages PR
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: |
+          bun run scripts/strip-bun-lock-proxy.ts --check
+          bun install --frozen-lockfile
+
+      # Opens/updates the Version Packages PR. `version` runs `changeset version`
+      # (bumps + changelogs); we do NOT set `publish` here — publishing is handled
+      # by the gated `publish` job below so the NAPI matrix build runs first.
+      - name: Changesets Version PR
+        uses: changesets/action@v1
+        with:
+          version: bun run changeset:version
+          commit: "chore(release): version JS packages"
+          title: "chore(release): version JS packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+
+  # --- Build the NAPI binary for every target -------------------------------
+  # Runs on every push; its artifacts are only consumed by the publish job when
+  # there is nothing left to version (i.e. the Version Packages PR was merged).
+  napi-build:
+    name: napi (${{ matrix.target }})
+    if: ${{ github.repository == 'open-lakehouse/mangrove' }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      SCCACHE_GHA_ENABLED: true
+      RUSTC_WRAPPER: sccache
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-24.04-arm
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@1583d6b38d7be47f593cb472781bbb21cab4321e # v0.0.10
+
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: "1.97"
+          targets: ${{ matrix.target }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: |
+          bun run scripts/strip-bun-lock-proxy.ts --check
+          bun install --frozen-lockfile
+
+      # `-- --locked` forwards to cargo so the NAPI build resolves strictly from
+      # Cargo.lock and can never silently re-resolve a git dep to a drifted rev
+      # (mirrors node-ci.yaml). musl legs get the target via the napi CLI's
+      # zig/cross handling; add explicit cross tooling here if a leg fails.
+      - name: Build NAPI binding
+        run: bunx napi build --platform --release --target ${{ matrix.target }} --output-dir unitycatalog/codegen --dts native.d.ts --js native.js -- --locked
+        working-directory: node/client
+
+      - name: Upload .node artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: napi-${{ matrix.target }}
+          path: node/client/unitycatalog/codegen/*.node
+          if-no-files-found: error
+
+  # --- Publish to npm (DORMANT: dry-run until JS_PUBLISH_ENABLED=true) --------
+  # Only meaningful once the Version Packages PR is merged (no changesets left).
+  # The Changesets action's `hasChangesets` output tells us whether there is
+  # still pending versioning; we publish only when there is not.
+  publish:
+    name: Publish (npm)
+    needs: [version-pr, napi-build]
+    if: ${{ github.repository == 'open-lakehouse/mangrove' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release # protected env, mirrors release-plz
+    permissions:
+      contents: read
+      id-token: write # npm provenance / OIDC
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: |
+          bun run scripts/strip-bun-lock-proxy.ts --check
+          bun install --frozen-lockfile
+
+      - name: Download NAPI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: napi-*
+          path: node/client/artifacts
+
+      # napi artifacts copies each per-target .node into its platform package dir
+      # under node/client/npm/<platform>/ (and the root) so `napi pre-publish`
+      # can publish the platform packages and merge their optionalDependencies.
+      - name: Place artifacts into platform packages
+        run: bunx napi artifacts --output-dir artifacts
+        working-directory: node/client
+
+      # Dry-run vs real publish is a single gate. When JS_PUBLISH_ENABLED is not
+      # "true" we exercise the WHOLE pipeline — changeset publish + napi
+      # pre-publish — with --dry-run and never touch npm.
+      - name: Publish (dry-run — dormant)
+        if: ${{ vars.JS_PUBLISH_ENABLED != 'true' }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
+        run: |
+          set -euo pipefail
+          echo "JS_PUBLISH_ENABLED is not 'true' — dry-run only, nothing is published to npm."
+          # napi pre-publish runs in the NAPI package; changeset publish is
+          # workspace-aware and runs at the repo root. Both dry-run only.
+          ( cd node/client && bunx napi pre-publish -t npm --dry-run ) || true
+          bun run changeset:publish -- --dry-run || true
+
+      - name: Publish (live)
+        if: ${{ vars.JS_PUBLISH_ENABLED == 'true' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Platform packages + optionalDependencies merge first (in the NAPI
+          # package), then the root + any other public workspace packages via
+          # the workspace-aware changeset publish at the repo root.
+          ( cd node/client && bunx napi pre-publish -t npm )
+          bun run changeset:publish

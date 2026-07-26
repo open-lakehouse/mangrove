@@ -148,6 +148,26 @@ If it fails after building with local patches: `git checkout main -- Cargo.lock`
 
 Enforced by the pre-commit hook when `Cargo.lock` is staged (see **Git hooks** below).
 
+### 6. JS/TS release (Changesets, commit-driven)
+
+**File:** [`.agents/rules/js-release-changesets-rule.mdc`](.agents/rules/js-release-changesets-rule.mdc)
+
+The `node/*` npm packages release via [Changesets](https://changesets.dev) — the
+JS counterpart to `release-plz` — **driven automatically from conventional
+commits**. You normally do **not** write changeset files by hand.
+
+- On push to `main`, [`js-changeset-autogen`](.github/workflows/js-changeset-autogen.yaml)
+  derives `.changeset/*.md` from `node/**` commits: `feat`→minor, `fix`/`perf`/`refactor`→patch,
+  `!`/`BREAKING CHANGE:`→major; the `(scope)` maps to a package by directory/name.
+  So **scope your `node/` commits** — an unscoped or unmatched-scope commit is skipped.
+- **Hand-write a changeset** (`bun run changeset`) only for a breaking `major` +
+  migration note, a bump that differs from the commit type, or a cross-cutting
+  release note. A hand-written entry wins (highest bump per package).
+- **Publishing is DORMANT (dry-run):** [`js-release`](.github/workflows/js-release.yaml)
+  opens a "Version Packages" PR but only publishes to npm when the
+  `JS_PUBLISH_ENABLED` repo variable is `"true"`. Only `@open-lakehouse/uc-client` is
+  non-private today; `@open-lakehouse/*` are `private: true` and skipped.
+
 ### Git hooks (`setup-hooks`)
 
 The repo ships **local git hooks** under [`.githooks/`](.githooks/) that automate PR

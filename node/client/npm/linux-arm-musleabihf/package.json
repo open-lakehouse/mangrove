@@ -1,5 +1,5 @@
 {
-	"name": "@unitycatalog/client-linux-arm-musleabihf",
+	"name": "@open-lakehouse/uc-client-linux-arm-musleabihf",
 	"version": "0.0.0",
 	"os": [
 		"linux"
@@ -13,6 +13,6 @@
 	],
 	"license": "MIT",
 	"engines": {
-		"node": ">= 10"
+		"node": ">= 18"
 	}
 }

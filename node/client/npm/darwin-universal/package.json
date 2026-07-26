@@ -1,5 +1,5 @@
 {
-	"name": "@unitycatalog/client-darwin-universal",
+	"name": "@open-lakehouse/uc-client-darwin-universal",
 	"version": "0.0.0",
 	"os": [
 		"darwin"
@@ -10,6 +10,6 @@
 	],
 	"license": "MIT",
 	"engines": {
-		"node": ">= 10"
+		"node": ">= 18"
 	}
 }
