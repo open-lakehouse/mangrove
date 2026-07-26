@@ -14,7 +14,7 @@
 [package]
 name = "olai-uc-files-api"
 version = "0.0.1"
-description = "Unity Catalog volume Files API — a ConnectRPC portal.files.v1.FilesService server (embeddable or standalone)."
+description = "Files API — a ConnectRPC based files server backed by UC volumes."
 categories = ["web-programming::http-server"]
 edition.workspace = true
 homepage.workspace = true
@@ -74,7 +74,7 @@ bin = [
 [dependencies]
 # local dependencies
 # The generated portal.files.v1 contract (message types + FilesService trait).
-unitycatalog-files-proto = { package = "olai-uc-files-proto", path = "../files-proto", version = "0.1.0" }
+unitycatalog-files-proto = { package = "olai-uc-files-proto", path = "../files-proto", version = "0.0.1" }
 # The UC object-store factory (client arm only): vends scoped volume credentials.
 unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.4", optional = true }
 
