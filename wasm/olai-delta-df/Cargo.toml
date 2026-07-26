@@ -8,8 +8,8 @@
 #     gates DVs out, so 54.0.0 suffices — verified: `with_projection_indices`,
 #     `TableSchema`, `ParquetSource::new` all exist in 54.0.0).
 #   * arrow-58 via the kernel `arrow-58` feature alias (the roeap arrow-rs fork,
-#     patched workspace-globally by the parent query-wasm Cargo.toml). Arrow is
-#     imported through `delta_kernel::arrow::…` so there is ONE arrow in the graph.
+#     patched workspace-globally by the wasm workspace root `../Cargo.toml`). Arrow
+#     is imported through `delta_kernel::arrow::…` so there is ONE arrow in the graph.
 #   * `delta_kernel` at the sm-plans-consolidation tip (c7bc4254 — 2cf01549 plus the
 #     list-free snapshot-construction seam, the SnapshotPm P&M state machine, the
 #     checkpoint-only reconciliation fix, the stats-on-terminal scan metadata SM, the
@@ -17,12 +17,15 @@
 #     terminal + `Scan::scan_file_row_schema` accessor this crate's `ReconciledLogProvider` uses,
 #     and the `FullState::output_schema` accessor + FSR terminal projection this crate's
 #     `ActionsLogProvider` uses) with `sm-plans` + `internal-api` + `arrow-58`.
-#     A workspace `[patch]` (parent query-wasm Cargo.toml) redirects `deltalake-wasm`'s
+#     The wasm workspace root `[patch]` (`../Cargo.toml`) redirects `deltalake-wasm`'s
 #     transitive kernel onto the same rev, so kernel `SnapshotRef` unifies across the graph.
 #   * NO tokio, NO spawn_blocking, NO getrandom: the sm_plans SM is a CPU-only,
 #     IO-free coroutine, and v1 gates out the only `spawn_blocking` (DV reads).
 #
-# See ../../../handover-wasm-async-native-table-provider.md.
+# This crate is a member of the standalone wasm workspace (`../Cargo.toml`); its
+# ONLY consumer is the sibling `olai-uc-query-wasm`. It is deliberately kept out of
+# the native repo-root workspace so its roeap sm-plans kernel fork never enters the
+# native graph — see #182.
 [package]
 name = "olai-delta-df"
 version = "0.1.0"

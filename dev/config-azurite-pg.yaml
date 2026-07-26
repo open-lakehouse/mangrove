@@ -33,6 +33,6 @@ encryption:
 
 # Metastore-level managed storage root. A managed catalog created without its own
 # storage_root inherits this. The `azurite://<container>` scheme keeps the vended
-# table location browser-reachable (see crates/query-wasm/src/creds.rs). Do not
+# table location browser-reachable (see wasm/query-wasm/src/creds.rs). Do not
 # use a host-style URL here.
 managed_storage_root: "azurite://lakehouse"

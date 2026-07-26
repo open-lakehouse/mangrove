@@ -9,7 +9,7 @@
 //
 // The runner addresses the log surface by `target` (the physical table) + `kind`,
 // binds the async-native `ReconciledLogProvider` / `ActionsLogProvider`
-// (crates/olai-delta-df), and streams Arrow IPC. There is no generated proto
+// (wasm/olai-delta-df), and streams Arrow IPC. There is no generated proto
 // contract for this surface yet, so the request shape is defined locally rather
 // than derived from protobuf.
 

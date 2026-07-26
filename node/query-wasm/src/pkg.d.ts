@@ -1,11 +1,11 @@
 // Ambient typing for the "query-wasm-pkg" bare specifier — the wasm-bindgen
-// output of `just build-query-wasm` (crates/query-wasm/pkg/query_wasm.js,
+// output of `just build-query-wasm` (wasm/query-wasm/pkg/query_wasm.js,
 // gitignored). The worker imports the BARE name so this package type-checks
 // whether or not the artifact exists; node/app/vite.config.ts aliases the name
 // to the real file in wasm-enabled builds (default builds alias the whole
 // package to ./stub.ts and never bundle the worker).
 //
-// Keep the shapes in sync with crates/query-wasm/src/bindings.rs (the
+// Keep the shapes in sync with wasm/query-wasm/src/bindings.rs (the
 // generated pkg/query_wasm.d.ts is the source of truth).
 declare module "query-wasm-pkg" {
   /** Summary returned by `runQuery`. */

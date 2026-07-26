@@ -1,16 +1,18 @@
 [workspace]
 resolver = "2"
 members = ["crates/*", "python/client", "node/client"]
-# The wasm query engine (`crates/query-wasm`) stays its own workspace: its cdylib
-# needs a size-tuned `[profile.release]` and wasm-only glue that shouldn't affect
-# the native server build. But its async-native Delta TableProvider —
-# `crates/olai-delta-df` — is a native-buildable library, so it lives HERE as a
-# top-level member (picked up by `crates/*`); query-wasm consumes it via a
-# cross-workspace `path = "../olai-delta-df"` dep. Both workspaces pin the same
-# arrow fork (`[patch.crates-io]` below / in query-wasm) and the same kernel rev,
-# so the crate resolves identically in each. `crates/query-wasm` is excluded so its
-# own arrow patch + profile don't leak into the native graph.
-exclude = ["crates/query-wasm"]
+# This is the NATIVE workspace. The in-browser query engine lives in its OWN
+# standalone workspace under `../wasm/` (`wasm/query-wasm` + `wasm/olai-delta-df`),
+# NOT here — see `wasm/Cargo.toml` and #182. Both wasm crates were moved out of
+# `crates/` so the `crates/*` glob no longer matches them and no `exclude` is
+# needed. The wasm workspace owns the heavily-customized delta stack (the roeap
+# `delta_kernel` sm-plans fork + the arrow-rs / object_store fork
+# `[patch.crates-io]`); this native workspace still carries the SAME roeap kernel /
+# delta-rs pins + arrow patch below (native has not yet moved to the community
+# `buoyant` kernel — that is deferred, see #182 follow-up), but the two workspaces
+# are now separate directories with independent `Cargo.lock`s. `wasm/query-wasm`
+# reaches back into this workspace's crates via cross-workspace
+# `path = "../../crates/*"` deps.
 
 [workspace.package]
 edition = "2024"

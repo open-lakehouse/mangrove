@@ -205,7 +205,7 @@ ui-dev:
 # the fast inner loop for working on the query-preview UI against real managed
 # Delta data. It is `ui-dev` plus:
 #   1. a `build::build-query-wasm` dep, so the gitignored wasm-bindgen artifact
-#      under crates/query-wasm/pkg/ exists for the dev server's alias to resolve;
+#      under wasm/query-wasm/pkg/ exists for the dev server's alias to resolve;
 #   2. `VITE_ENABLE_WASM_QUERY=true VITE_ENABLE_PREVIEW=true` on the Vite dev
 #      server, which swaps the no-op query-wasm stub for the real engine and
 #      un-gates the table preview UI (see node/app/vite.config.ts + main.tsx).

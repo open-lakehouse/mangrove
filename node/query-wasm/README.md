@@ -1,6 +1,6 @@
 # @open-lakehouse/query-wasm
 
-The in-browser query engine (`crates/query-wasm`: DataFusion + Delta on
+The in-browser query engine (`wasm/query-wasm`: DataFusion + Delta on
 `wasm32`, reading cloud storage directly with UC-vended credentials) packaged
 as a `QueryRunner` for the [`@open-lakehouse/query`](../query) seam. See
 `WASM_QUERY_PREVIEW.md` at the repo root for the full design.
@@ -27,7 +27,7 @@ server-backed runner.
 
 ## Build gating
 
-The worker imports the wasm-bindgen artifact under `crates/query-wasm/pkg/`,
+The worker imports the wasm-bindgen artifact under `wasm/query-wasm/pkg/`,
 which is **gitignored** and produced by `just build-query-wasm`. Default app
 builds must not resolve it, so `node/app/vite.config.ts` aliases this whole
 package to [`src/stub.ts`](src/stub.ts) (a no-op `registerWasmPreview`) unless

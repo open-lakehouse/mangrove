@@ -31,7 +31,7 @@ import {
 } from "@bufbuild/protobuf";
 import type { Transport } from "@connectrpc/connect";
 
-/** The three backend calls the wasm engine exposes (see crates/query-wasm's
+/** The three backend calls the wasm engine exposes (see wasm/query-wasm's
  *  `UcFilesEngine`): the generic unary proto dispatch, plus the two native byte
  *  transfers. A host wires these to a Web Worker (or calls the engine directly). */
 export interface FilesBackend {

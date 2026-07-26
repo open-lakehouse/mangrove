@@ -3,7 +3,7 @@
 // (WASM_QUERY_PREVIEW.md Phase B).
 //
 // `registerWasmPreview` is the one-call app wiring: it registers a runner that
-// spawns a Web Worker per preview run (crates/query-wasm inside), with a
+// spawns a Web Worker per preview run (wasm/query-wasm inside), with a
 // Delta-only capability probe so `TablePreview` never offers previews the
 // engine cannot serve. Default builds alias THIS PACKAGE to ./stub.ts (see
 // node/app/vite.config.ts), so the gitignored wasm artifact is only resolved

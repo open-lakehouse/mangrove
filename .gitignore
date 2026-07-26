@@ -11,7 +11,7 @@
 # Rust
 .cargo/
 # …but the wasm workspace's target rustflags (getrandom wasm_js cfg) are source:
-!crates/query-wasm/.cargo/
+!wasm/.cargo/
 target/
 # The root Cargo.lock IS committed: this workspace ships binaries (the server
 # CLI) and native bindings, and pins several git dependencies by rev. A tracked
@@ -20,7 +20,7 @@ target/
 # moved `delta-kernel-rs` branch previously broke CI).
 integration-tests/Cargo.lock
 # wasm-bindgen output of `just build-query-wasm` (a build artifact)
-crates/query-wasm/pkg/
+wasm/query-wasm/pkg/
 
 # Project
 # Built Python wheels (maturin --out dist; see `just build-py-wheels`)

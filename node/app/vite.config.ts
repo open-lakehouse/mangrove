@@ -10,7 +10,7 @@ import { defineConfig } from "vite";
 const API_URL = process.env.UC_API_URL ?? "http://localhost:8080";
 
 // The in-browser wasm query engine is OPT-IN per build: its worker imports the
-// gitignored wasm-bindgen artifact under crates/query-wasm/pkg/ (produced by
+// gitignored wasm-bindgen artifact under wasm/query-wasm/pkg/ (produced by
 // `just build-query-wasm`), which default builds must never try to resolve. So
 // unless VITE_ENABLE_WASM_QUERY=true, alias the whole package to its committed
 // no-op stub — `registerWasmPreview` then registers nothing and the preview UI
@@ -38,13 +38,13 @@ export default defineConfig({
           // (see @open-lakehouse/query-wasm src/pkg.d.ts).
           "query-wasm-pkg": path.resolve(
             __dirname,
-            "../../crates/query-wasm/pkg/query_wasm.js",
+            "../../wasm/query-wasm/pkg/query_wasm.js",
           ),
         }
       : {
           // Default builds ship no wasm: alias both wasm engines to their no-op
           // stubs so neither tries to resolve the gitignored wasm-bindgen artifact
-          // under crates/query-wasm/pkg/. The query preview + volume Files tab then
+          // under wasm/query-wasm/pkg/. The query preview + volume Files tab then
           // fall back to their dev stub runners (see main.tsx).
           "@open-lakehouse/query-wasm": "@open-lakehouse/query-wasm/stub",
           "@open-lakehouse/files-wasm": "@open-lakehouse/files-wasm/stub",
@@ -55,7 +55,7 @@ export default defineConfig({
     fs: {
       // Allow serving the sibling workspace-package sources (consumed directly
       // from their `src/` via the package `exports` map) — and, one level up,
-      // the wasm engine artifact under crates/query-wasm/pkg/ in wasm builds.
+      // the wasm engine artifact under wasm/query-wasm/pkg/ in wasm builds.
       allow: [path.resolve(__dirname, "../..")],
     },
     proxy: {

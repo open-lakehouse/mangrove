@@ -3,24 +3,20 @@
 # credential storage access, and a wasm-bindgen surface implementing the
 # `open_lakehouse.query.v1` runner contract.
 #
-# This is a STANDALONE workspace, deliberately excluded from the repo root: the
-# cdylib needs a size-tuned `[profile.release]` (opt-level="s", lto, ...) and
-# wasm-only glue that must not affect the native server build, so it keeps its own
-# workspace + Cargo.lock. It carries a `[patch.crates-io]` on the arrow family (the
-# roeap arrow-rs fork, rev dc2acae8) whose parquet backs `zstd` per-target — the C
-# `zstd` crate on native, pure-Rust `ruzstd` (decode-only) on wasm; `brotli` dropped
-# on wasm. The repo ROOT workspace carries the SAME arrow patch + kernel rev, so the
-# shared `olai-delta-df` crate resolves identically in both locks.
+# This crate is a member of the STANDALONE wasm workspace (`../Cargo.toml`), which
+# owns the size-tuned `[profile.release]` and the `[patch.crates-io]` on the arrow
+# family + object_store (the roeap forks). That workspace is deliberately separate
+# from the repo-root (native) workspace so the fork stack never leaks into the
+# native server build — see `../Cargo.toml` and #182.
 #
-# The async-native (sm_plans-driven) Delta TableProvider — the replacement for the
-# eager inline-executor scan path — used to be a sibling member here; it now lives
-# in the root workspace as `crates/olai-delta-df` (a native-buildable library) and
-# this crate consumes it via a cross-workspace `path = "../olai-delta-df"` dep (see
-# `[dependencies]`). This workspace's arrow `[patch.crates-io]` + the `delta_kernel`
-# rev it pins unify the kernel `SnapshotRef` types that crate returns with the ones
-# `deltalake-core` / `deltalake-wasm` return. See ../../handover-wasm-async-native-table-provider.md.
-[workspace]
-members = ["."]
+# The async-native (sm_plans-driven) Delta `TableProvider` — the replacement for
+# the eager inline-executor scan path — is the sibling member `olai-delta-df`
+# (`../olai-delta-df`); this crate consumes it via a `path` dep. The canonical UC
+# crates it also uses (`olai-uc-object-store`/`-client`/`-delta-api`) live in the
+# NATIVE workspace under `../../crates/`, so those are cross-workspace `path` deps:
+# their `workspace = true` deps resolve against the root workspace that owns their
+# manifests, and this workspace's arrow/object_store `[patch.crates-io]` unifies
+# the store + arrow types across the whole graph.
 
 [package]
 name = "olai-uc-query-wasm"
@@ -30,8 +26,8 @@ license = "Apache-2.0"
 repository = "https://github.com/open-lakehouse/mangrove"
 homepage = "https://unitycatalog.io"
 description = "In-browser (wasm32-unknown-unknown) Unity Catalog table preview engine: DataFusion + Delta over UC-vended credentials"
-# Floor set by the delta-rs wasm-engine dependency tree (see ../../Cargo.toml
-# for the root workspace's matching pin rationale).
+# Floor set by the delta-rs wasm-engine dependency tree (see ../Cargo.toml
+# for the wasm workspace's matching pin rationale).
 rust-version = "1.91"
 publish = false
 
@@ -60,26 +56,25 @@ deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "d2d0cbae321
 ] }
 
 # The async-native (sm_plans-driven) Delta TableProvider — the replacement for the
-# eager `DeltaScanNext` + InlineExecutor scan path. It lives in the repo ROOT
-# workspace (`crates/olai-delta-df`), so this is a cross-workspace `path` dep. Both
-# workspaces pin the same arrow fork + kernel rev, so the crate resolves identically
-# here; this workspace's `[patch.crates-io]` applies to it when built in this lock,
-# unifying its `delta_kernel` types with what `deltalake-wasm` returns.
+# eager `DeltaScanNext` + InlineExecutor scan path. It is the sibling member of
+# this same wasm workspace (`../olai-delta-df`), so this is a plain in-workspace
+# `path` dep; the workspace `[patch.crates-io]` applies to it, unifying its
+# `delta_kernel` types with what `deltalake-wasm` returns.
 olai-delta-df = { path = "../olai-delta-df" }
 
 # The canonical Unity Catalog crates, now wasm-capable (PRs #150/#151): the
 # object-store factory drives the real MicrosoftAzure store over object_store's
 # browser-Fetch transport, and the client vends credentials + loads Delta table
-# metadata. These live in the repo ROOT workspace, so they are cross-workspace
-# `path` deps (like olai-delta-df); their `workspace = true` deps resolve against
-# the root workspace that owns their manifests, and this workspace's object_store
-# `[patch.crates-io]` unifies the store type across the whole graph. Default
-# features off mirrors how the object-store crate itself depends on the client.
-unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", default-features = false }
-unitycatalog-client = { package = "olai-uc-client", path = "../client", default-features = false }
+# metadata. These live in the NATIVE (repo-root) workspace under `../../crates/`,
+# so they are cross-workspace `path` deps; their `workspace = true` deps resolve
+# against the root workspace that owns their manifests, and this workspace's
+# object_store `[patch.crates-io]` unifies the store type across the whole graph.
+# Default features off mirrors how the object-store crate itself depends on the client.
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../../crates/object-store", default-features = false }
+unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client", default-features = false }
 # The Delta v1 wire models (DeltaLoadTableResponse) the loadTable gate reads.
 # default-features = false drops the `server` (axum) surface — models only.
-unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", default-features = false }
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../../crates/delta-api", default-features = false }
 
 arrow-array = { version = "58" }
 arrow-ipc = { version = "58" }
@@ -175,45 +170,3 @@ arrow-cast = { version = "58", features = ["prettyprint"] }
 [target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dev-dependencies]
 parquet = { version = "58", features = ["arrow"] }
 tokio = { version = "1.40", features = ["macros", "rt-multi-thread"] }
-
-# wasm-engine: patch parquet (and the arrow family it pins) to the
-# wasm-codec-58.3.0 branch of the arrow-rs fork, pinned by rev — the same patch
-# set as the delta-rs wasm workspace. As of rev `dc2acae8` the fork's parquet keeps
-# `zstd` in its `default` features but backs it per-target: the C `zstd` crate on
-# native, pure-Rust `ruzstd` (decode-only) on wasm. So the graph builds for
-# wasm32-unknown-unknown WITH working zstd parquet decode (needed to read
-# zstd-compressed data files in the browser); only `brotli` stays dropped on wasm.
-# This must stay a patch, not a feature flag: datafusion-datasource-parquet and
-# the kernel declare `parquet` without `default-features = false`, and Cargo
-# unions features graph-wide. See ../../WASM_QUERY_PREVIEW.md and delta-rs's
-# WASM.md for the full rationale.
-
-# The cdylib ships to browsers: optimize release for size. (Further shrinking —
-# wasm-opt -Oz, panic=abort — tracked with the browser-verification follow-up.)
-[profile.release]
-opt-level = "s"
-lto = true
-codegen-units = 1
-strip = "debuginfo"
-
-[patch.crates-io]
-parquet = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "parquet" }
-arrow = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow" }
-arrow-arith = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-arith" }
-arrow-array = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-array" }
-arrow-buffer = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-buffer" }
-arrow-cast = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-cast" }
-arrow-data = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-data" }
-arrow-ipc = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-ipc" }
-arrow-json = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-json" }
-arrow-ord = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-ord" }
-arrow-row = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-row" }
-arrow-schema = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-schema" }
-arrow-select = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-select" }
-arrow-string = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-string" }
-
-# object_store: the roeap fork's 0.13.2-based wasm integration branch (per-target
-# reqwest split + wasm-guarded retry sleep). Keeps 0.13.2 semver so delta-rs /
-# datafusion resolve; enables the real MicrosoftAzure store on wasm32 (browser
-# Fetch transport) so query-wasm can drive canonical `olai-uc-object-store`.
-object_store = { git = "https://github.com/roeap/arrow-rs-object-store", rev = "e4676ee087161681413a059b38aa1687bcf1a3c2" }
