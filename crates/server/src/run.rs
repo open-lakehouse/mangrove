@@ -50,8 +50,8 @@ use crate::rest::{
 use crate::services::{LocalStoragePolicy, ServerHandler, location::StorageLocationUrl};
 
 /// Directory the bundled single-page app is served from, relative to the process
-/// working directory. The Docker image places the built bundle here (see the
-/// server `Dockerfile`); when it's absent — e.g. local API-only runs where the UI
+/// working directory. The Docker image places the built bundle here (see
+/// `crates/server/Dockerfile`); when it's absent — e.g. local API-only runs where the UI
 /// is served by the Vite dev server instead — the SPA routes simply 404.
 const UI_DIR: &str = "web";
 

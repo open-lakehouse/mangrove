@@ -110,10 +110,10 @@ build-node:
 # Builds the bundled UI + the `uc-server` binary and assembles the distroless
 # runtime with the SPA at ./web.
 #
-# build the server Docker image (mangrove)
+# build the server Docker image (mangrove); context = repo root
 [group('build')]
 build-docker:
-    docker build -f Dockerfile -t mangrove:dev .
+    docker build -f crates/server/Dockerfile -t mangrove:dev .
 
 # build the standalone files-api Docker image (context = repo root)
 [group('build')]
