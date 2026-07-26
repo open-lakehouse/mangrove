@@ -150,12 +150,6 @@ changelog_path = "crates/storage-proxy/CHANGELOG.md"
 [[package]]
 name = "olai-uc-files-proto"
 changelog_path = "crates/files-proto/CHANGELOG.md"
-# (a) BOOTSTRAP GATE — brand-new name, never published; crates.io OIDC cannot
-# create it. release-plz still versions/changelogs/tags it, but must not attempt
-# to publish a nonexistent name. Remove this line (and register its crates.io
-# Trusted Publisher) once bootstrapped via bootstrap-publish.yml. Publishable
-# then (pure buffa/connectrpc/serde graph, no git deps).
-release = false
 
 [[package]]
 name = "olai-uc-files-api"
