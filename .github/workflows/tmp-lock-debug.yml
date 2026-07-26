@@ -1,0 +1,52 @@
+# TEMPORARY debug workflow — remove before merge.
+# Reproduces CI's crates.io resolution to show what Cargo.lock SHOULD be,
+# since the local dev proxy hides recent crate versions and can't reproduce it.
+name: tmp-lock-debug
+
+on:
+  push:
+    branches:
+      - feat/files-api
+  workflow_dispatch:
+
+jobs:
+  resolve-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: "1.97"
+
+      - name: Root workspace — show what --locked wants
+        run: |
+          echo "::group::cargo metadata --locked (expected to fail, shows the block)"
+          cargo metadata --format-version 1 --locked >/dev/null || true
+          echo "::endgroup::"
+
+      - name: Root workspace — regenerate lock and diff
+        run: |
+          cp Cargo.lock Cargo.lock.committed
+          cargo generate-lockfile
+          echo "::group::ROOT Cargo.lock diff (committed -> CI-resolved)"
+          diff -u Cargo.lock.committed Cargo.lock || true
+          echo "::endgroup::"
+
+      - name: Wasm workspace — regenerate lock and diff
+        working-directory: wasm
+        run: |
+          cp Cargo.lock Cargo.lock.committed
+          cargo generate-lockfile
+          echo "::group::WASM Cargo.lock diff (committed -> CI-resolved)"
+          diff -u Cargo.lock.committed Cargo.lock || true
+          echo "::endgroup::"
+
+      - name: Upload CI-resolved lockfiles
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-resolved-lockfiles
+          path: |
+            Cargo.lock
+            wasm/Cargo.lock
+          if-no-files-found: error
