@@ -33,14 +33,12 @@ COPY . .
 RUN cargo build --release -p olai-uc-storage-proxy --features bin --bin storage-proxy
 
 # Minimal runtime: distroless cc (glibc + openssl + CA certs) for the
-# dynamically-linked binary, nonroot. No shell/package manager, so the
-# healthcheck below can't shell out to curl/wget — it runs the binary's own
-# `healthcheck` subcommand instead.
+# dynamically-linked binary, nonroot.
 # gcr.io/distroless/cc-debian12:nonroot
 FROM gcr.io/distroless/cc-debian12@sha256:b0ae8e989418b458e0f25489bc3be523718938a2b70864cc0f6a00af1ddbd985 AS runtime
 
 LABEL org.opencontainers.image.title="storage-proxy" \
-      org.opencontainers.image.description="Standalone Unity Catalog storage byte-proxy — same-origin, streaming reads/writes over governed securables" \
+      org.opencontainers.image.description="Unity Catalog storage byte-proxy — same-origin, streaming reads/writes over governed securables" \
       org.opencontainers.image.source="https://github.com/open-lakehouse/mangrove" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.vendor="open-lakehouse"
@@ -62,7 +60,6 @@ USER nonroot
 # ENTRYPOINT is just the binary; CMD supplies the default subcommand. Split this
 # way so a CMD-less `docker run` starts the proxy (`serve`) while
 # `docker run … healthcheck` (or a Compose `command:`) *replaces* CMD to pick the
-# subcommand. `serve` needs an upstream UC URL — supply it via `--upstream-url`,
-# a `--config` file, or the `STORAGE_PROXY_CONFIG` env var.
+# subcommand.
 ENTRYPOINT ["/usr/local/bin/storage-proxy"]
 CMD ["serve"]
