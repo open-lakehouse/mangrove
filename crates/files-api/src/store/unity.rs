@@ -583,7 +583,10 @@ mod tests {
     #[test]
     fn store_path_rejects_volume_root() {
         let p = parse_volume_path("/Volumes/main/default/vol").unwrap();
-        assert!(matches!(p.store_path(), Err(StoreError::InvalidArgument(_))));
+        assert!(matches!(
+            p.store_path(),
+            Err(StoreError::InvalidArgument(_))
+        ));
     }
 
     #[test]
