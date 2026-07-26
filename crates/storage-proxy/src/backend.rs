@@ -130,6 +130,28 @@ pub struct ProxyCapabilities {
     pub enabled: bool,
 }
 
+/// Read a forwarded end-user identity out of a backend's per-request context.
+///
+/// The [`StorageProxyBackend`] port is generic over the host's context type `Cx`,
+/// but the client arm needs to forward the caller's identity to the upstream
+/// Unity Catalog credential vend. This trait lets a backend extract that identity
+/// from any `Cx` without the backend having to name the host's concrete context
+/// type: the standalone binary's context is a `ForwardedIdentity` (which forwards
+/// the validated reverse-proxy user), while a host that has no forwarded identity
+/// (or the unit context `()` used by tests) simply returns `None`.
+pub trait ForwardedUser {
+    /// The forwarded end-user name, or `None` when the request is anonymous /
+    /// carries no forwarded identity.
+    fn forwarded_user(&self) -> Option<&str>;
+}
+
+/// The unit context carries no identity — always anonymous.
+impl ForwardedUser for () {
+    fn forwarded_user(&self) -> Option<&str> {
+        None
+    }
+}
+
 /// The backend port: authorize a request and open a verb-scoped, prefixed store.
 ///
 /// `Cx` is the host's per-request context (mangrove uses its `RequestContext`; the

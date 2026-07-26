@@ -76,7 +76,9 @@ pub mod testing;
 #[cfg(feature = "bin")]
 pub use auth::{AuthLayer, AuthMode, ForwardedIdentity};
 #[cfg(feature = "server")]
-pub use backend::{ProxyCapabilities, ProxyReq, ProxyVerb, Securable, StorageProxyBackend};
+pub use backend::{
+    ForwardedUser, ProxyCapabilities, ProxyReq, ProxyVerb, Securable, StorageProxyBackend,
+};
 #[cfg(feature = "client-arm")]
 pub use client::UnityFactoryProxyBackend;
 #[cfg(feature = "server")]

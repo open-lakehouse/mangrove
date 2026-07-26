@@ -29,16 +29,24 @@ pub async fn serve(config: Config) -> Result<(), String> {
 
     // Connect the client arm to the upstream UC. The token (if any) authenticates
     // the proxy's own resolve/vend calls; absent, the upstream is contacted
-    // unauthenticated (anonymous UC).
+    // unauthenticated (anonymous UC). In reverse-proxy mode, a per-request
+    // forwarded identity is re-emitted upstream under the SAME header the proxy
+    // reads it from, so UC attributes the vend to the end user; an anonymous
+    // request falls back to the token above.
     let token = config.upstream.token.as_ref().and_then(|t| t.value());
-    let backend = UnityFactoryProxyBackend::connect(&config.upstream.base_url, token)
-        .await
-        .map_err(|e| {
-            format!(
-                "connecting to upstream UC `{}`: {e}",
-                config.upstream.base_url
-            )
-        })?;
+    let forwarded_header = config.auth.resolved_forwarded_header();
+    let backend = UnityFactoryProxyBackend::connect_with_forwarded_header(
+        &config.upstream.base_url,
+        token,
+        forwarded_header,
+    )
+    .await
+    .map_err(|e| {
+        format!(
+            "connecting to upstream UC `{}`: {e}",
+            config.upstream.base_url
+        )
+    })?;
 
     // The auth layer inserts a `ForwardedIdentity` extension on every request;
     // the router reads it back as the per-request context. Anonymous mode still
