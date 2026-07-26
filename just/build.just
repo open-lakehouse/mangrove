@@ -115,6 +115,11 @@ build-node:
 build-docker:
     docker build -f Dockerfile -t mangrove:dev .
 
+# build the standalone files-api Docker image (context = repo root)
+[group('build')]
+build-docker-files-api:
+    docker build -f crates/files-api/Dockerfile -t files-api:dev .
+
 # Inputs come from `git ls-files` (deterministic; excludes gitignored build
 # output / node_modules), sorted for a stable order across filesystems/locales.
 #
