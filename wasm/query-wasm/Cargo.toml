@@ -75,6 +75,14 @@ unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client"
 # The Delta v1 wire models (DeltaLoadTableResponse) the loadTable gate reads.
 # default-features = false drops the `server` (axum) surface — models only.
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../../crates/delta-api", default-features = false }
+# The generated `portal.files.v1.FilesService` contract (buffa message types +
+# connect-rust trait/dispatcher/client) — shared with the native Files API server
+# (crates/files-api). The in-wasm files dispatcher (files/service.rs) implements
+# the trait; files/engine.rs uses its message types. Lives in the NATIVE
+# workspace, so this is a cross-workspace `path` dep like the UC crates above; the
+# generated code is patch-agnostic so the arrow/object_store `[patch.crates-io]`
+# never touches it.
+unitycatalog-files-proto = { package = "olai-uc-files-proto", path = "../../crates/files-proto" }
 
 arrow-array = { version = "58" }
 arrow-ipc = { version = "58" }
@@ -109,17 +117,18 @@ serde_json = { version = "1.0" }
 thiserror = { version = "2" }
 url = { version = "2.5" }
 
-# The proto runtime backing the generated `portal.files.v1` message types
-# (src/generated/buffa) — the files API contract vendored from portal's
-# `files/v1/svc.proto` and generated via buf (buf.gen.files.yaml, the same
-# remote buffa plugin the root buf.gen.yaml uses). `json` gives the serde impls
-# the wasm-bindgen surface serializes through; the message types are pure and
-# build for wasm32.
+# The proto runtime backing the `portal.files.v1` message types the wasm-bindgen
+# surface serializes through (via the shared `unitycatalog-files-proto` crate).
+# `json` gives the serde impls serde_wasm_bindgen needs; the types are pure and
+# build for wasm32. Kept as a direct dep because files/service.rs and the bindings
+# name buffa/buffa-types types (e.g. `::buffa_types::google::protobuf::Empty`)
+# directly, not only through the generated code.
 buffa = { version = "0.7", features = ["json"] }
 buffa-types = { version = "0.7", features = ["json"] }
 
-# ConnectRPC runtime for the in-wasm files dispatcher (src/generated/connect +
-# files/service.rs). default-features = false drops `server`/`axum`/`streaming`
+# ConnectRPC runtime for the in-wasm files dispatcher (files/service.rs, which
+# implements the generated FilesService trait from `unitycatalog-files-proto`).
+# default-features = false drops `server`/`axum`/`streaming`
 # (hyper + tokio-net + async-compression, none of which build for
 # wasm32-unknown-unknown); the router/dispatcher/codec/handler modules are always
 # compiled, and the crate has a cfg(wasm32) path, so the dispatcher runs in the

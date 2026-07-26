@@ -1,17 +1,17 @@
-name: Release Docker Image
+name: Release Files-API Docker Image
 
-# Build and publish the `mangrove` image (the `uc-server` binary — a lakehouse
-# catalog server, with the bundled web UI baked in) to the GitHub Container
-# Registry.
+# Build and publish the `files-api` image (the standalone `files-api` binary — a
+# Unity Catalog volume Files API / portal.files.v1.FilesService server, no
+# database, no UI) to the GitHub Container Registry.
 # The matrix axis is the *platform* only, and one GHCR image is produced. We
 # publish to GHCR only (keyless GITHUB_TOKEN — no stored registry secret).
 #
 # Primary trigger is `workflow_call` from release-plz.yml: when release-plz
-# releases (git-tags) a new `olai-uc-server` version, it calls this workflow with
-# that version + the release tag to build from. `workflow_dispatch` allows a
-# manual rebuild of an existing release (e.g. base-image CVE refresh). Those are
-# the ONLY triggers — there is no build on push/PR, so the image is only ever
-# built for an actual server release (or a deliberate manual rebuild).
+# releases (git-tags) a new `olai-uc-files-api` version, it calls this
+# workflow with that version + the release tag to build from. `workflow_dispatch`
+# allows a manual rebuild of an existing release (e.g. base-image CVE refresh).
+# Those are the ONLY triggers — there is no build on push/PR, so the image is
+# only ever built for an actual release (or a deliberate manual rebuild).
 #
 # A run builds multi-arch (amd64 + native arm64), pushes each arch by digest,
 # then a merge job assembles the multi-arch manifest list, applies the tags, and
@@ -21,21 +21,21 @@ on:
   workflow_call:
     inputs:
       version:
-        description: "Released olai-uc-server version, e.g. 0.0.1 (no v prefix)."
+        description: "Released olai-uc-files-api version, e.g. 0.0.1 (no v prefix)."
         required: true
         type: string
       ref:
-        description: "Git ref/tag to build from (the release-plz tag, e.g. olai-uc-server-v0.0.1)."
+        description: "Git ref/tag to build from (the release-plz tag, e.g. olai-uc-files-api-v0.0.1)."
         required: true
         type: string
   workflow_dispatch:
     inputs:
       version:
-        description: "olai-uc-server version to tag the image, e.g. 0.0.1."
+        description: "olai-uc-files-api version to tag the image, e.g. 0.0.1."
         required: true
         type: string
       ref:
-        description: "Git ref/tag to build from, e.g. olai-uc-server-v0.0.1."
+        description: "Git ref/tag to build from, e.g. olai-uc-files-api-v0.0.1."
         required: true
         type: string
 
@@ -48,7 +48,7 @@ concurrency:
 permissions: {}
 
 env:
-  IMAGE: ghcr.io/open-lakehouse/mangrove
+  IMAGE: ghcr.io/open-lakehouse/files-api
 
 jobs:
   # Build each platform on its NATIVE runner and push BY DIGEST (no tags).
@@ -107,8 +107,8 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           labels: |
-            org.opencontainers.image.title=mangrove
-            org.opencontainers.image.description=Mangrove — a lakehouse catalog server (Unity Catalog + Delta Sharing APIs) with bundled web UI
+            org.opencontainers.image.title=files-api
+            org.opencontainers.image.description=Standalone Unity Catalog volume Files API — a ConnectRPC portal.files.v1.FilesService server
             org.opencontainers.image.vendor=open-lakehouse
             org.opencontainers.image.licenses=Apache-2.0
             org.opencontainers.image.source=https://github.com/open-lakehouse/mangrove
@@ -117,21 +117,23 @@ jobs:
 
       # Build + push by digest only (no tags here — the merge job assembles the
       # multi-arch manifest list and applies the tags). Per-arch cache scope so
-      # concurrent matrix builds do not clobber each other's gha cache.
+      # concurrent matrix builds do not clobber each other's gha cache. A distinct
+      # `files-api-` cache-scope prefix keeps this build's layers separate
+      # from the server image's on the shared gha cache.
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: .
-          file: crates/server/Dockerfile
+          file: crates/files-api/Dockerfile
           platforms: ${{ matrix.platform.os }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
           sbom: true
           provenance: mode=max
-          cache-from: type=gha,scope=${{ matrix.platform.arch }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.platform.arch }}
+          cache-from: type=gha,scope=files-api-${{ matrix.platform.arch }}
+          cache-to: type=gha,mode=max,scope=files-api-${{ matrix.platform.arch }}
 
       - name: Export digest
         # Route the digest through env (not inline ${{ }}) so it is never
@@ -199,8 +201,8 @@ jobs:
           flavor: |
             latest=auto
           labels: |
-            org.opencontainers.image.title=mangrove
-            org.opencontainers.image.description=Mangrove — a lakehouse catalog server (Unity Catalog + Delta Sharing APIs) with bundled web UI
+            org.opencontainers.image.title=files-api
+            org.opencontainers.image.description=Standalone Unity Catalog volume Files API — a ConnectRPC portal.files.v1.FilesService server
             org.opencontainers.image.vendor=open-lakehouse
             org.opencontainers.image.licenses=Apache-2.0
             org.opencontainers.image.source=https://github.com/open-lakehouse/mangrove
@@ -246,13 +248,13 @@ jobs:
           echo "$TAGS" | sed "s/:.*\$/@$DIGEST/" | sort -u | \
             xargs --no-run-if-empty cosign sign --yes
 
-      # Associate the GitHub Release (olai-uc-server-v<version>, already created by
-      # release-plz.yml) with the image we just pushed: append a package-version
-      # deep link to the notes and attach immutable provenance assets (the index
-      # digest pin + the per-arch SBOMs that were baked into the image). GHCR has
-      # no native package<->release binding, so this cross-reference is the link.
-      # `inputs.version` is a required input on both triggers, so the guard below
-      # is belt-and-suspenders only.
+      # Associate the GitHub Release (olai-uc-files-api-v<version>, already
+      # created by release-plz.yml) with the image we just pushed: append a
+      # package-version deep link to the notes and attach immutable provenance
+      # assets (the index digest pin + the per-arch SBOMs baked into the image).
+      # GHCR has no native package<->release binding, so this cross-reference is
+      # the link. `inputs.version` is a required input on both triggers, so the
+      # guard below is belt-and-suspenders only.
       - name: Link and attach provenance to release
         if: ${{ inputs.version != '' }}
         env:
@@ -266,23 +268,23 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          tag="olai-uc-server-v${VERSION}"
+          tag="olai-uc-files-api-v${VERSION}"
 
           # Provenance files. The digest pin is authoritative and API-independent.
-          printf '%s@%s\n' "${IMAGE}:${VERSION}" "${DIGEST}" > "mangrove-${VERSION}.digest.txt"
+          printf '%s@%s\n' "${IMAGE}:${VERSION}" "${DIGEST}" > "files-api-${VERSION}.digest.txt"
           docker buildx imagetools inspect "${IMAGE}:${VERSION}" \
-            --format '{{ json (index .SBOM "linux/amd64").SPDX }}' > "mangrove-${VERSION}.amd64.spdx.json"
+            --format '{{ json (index .SBOM "linux/amd64").SPDX }}' > "files-api-${VERSION}.amd64.spdx.json"
           docker buildx imagetools inspect "${IMAGE}:${VERSION}" \
-            --format '{{ json (index .SBOM "linux/arm64").SPDX }}' > "mangrove-${VERSION}.arm64.spdx.json"
+            --format '{{ json (index .SBOM "linux/arm64").SPDX }}' > "files-api-${VERSION}.arm64.spdx.json"
 
           # Deep link to the exact GHCR package version; fall back to the package
           # page if the packages API has not indexed the new version yet.
-          vid=$(gh api "/orgs/open-lakehouse/packages/container/mangrove/versions" \
+          vid=$(gh api "/orgs/open-lakehouse/packages/container/files-api/versions" \
             --jq ".[] | select(.metadata.container.tags[]? == \"${VERSION}\") | .id" | head -1 || true)
           if [ -n "$vid" ]; then
-            url="https://github.com/open-lakehouse/mangrove/pkgs/container/mangrove/${vid}?tag=${VERSION}"
+            url="https://github.com/open-lakehouse/mangrove/pkgs/container/files-api/${vid}?tag=${VERSION}"
           else
-            url="https://github.com/open-lakehouse/mangrove/pkgs/container/mangrove"
+            url="https://github.com/open-lakehouse/mangrove/pkgs/container/files-api"
           fi
 
           # Idempotent on re-run (e.g. a workflow_dispatch rebuild): only append
@@ -296,6 +298,6 @@ jobs:
           fi
 
           gh release upload "$tag" \
-            "mangrove-${VERSION}.digest.txt" \
-            "mangrove-${VERSION}.amd64.spdx.json" \
-            "mangrove-${VERSION}.arm64.spdx.json" --clobber
+            "files-api-${VERSION}.digest.txt" \
+            "files-api-${VERSION}.amd64.spdx.json" \
+            "files-api-${VERSION}.arm64.spdx.json" --clobber

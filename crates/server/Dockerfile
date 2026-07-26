@@ -1,10 +1,12 @@
 # syntax=docker/dockerfile:1
 #
 # Build for the `uc-server` binary: the deployable Unity Catalog server, with the
-# bundled web UI baked in. The build context is the repo root — cargo-chef caches
-# the dependency graph as a separate layer so source edits don't trigger a full
-# dependency rebuild, and a separate node stage builds the SPA so the node
-# toolchain never reaches the runtime image.
+# bundled web UI baked in. Co-located with the crate it builds (like the
+# storage-proxy and files-api images); the build context is still the REPO ROOT
+# (`docker build -f crates/server/Dockerfile .`), so the context-relative COPYs
+# below resolve unchanged. cargo-chef caches the dependency graph as a separate
+# layer so source edits don't trigger a full dependency rebuild, and a separate
+# node stage builds the SPA so the node toolchain never reaches the runtime image.
 #
 # Base images are pinned by digest for reproducible, tamper-evident builds.
 # Refresh a digest with: docker buildx imagetools inspect <image:tag>

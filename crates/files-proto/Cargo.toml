@@ -1,0 +1,47 @@
+# The `portal.files.v1.FilesService` contract, code-generated once and shared by
+# every consumer of the Files API: the standalone/embeddable server
+# (`olai-uc-files-api`, native workspace) and the in-browser engine
+# (`olai-uc-query-wasm`, which depends on this crate cross-workspace via
+# `path = "../../crates/files-proto"`).
+#
+# The generated code is pure proto/RPC runtime — `buffa` message types + views,
+# their serde impls, and the `connect-rust` `FilesService` trait/dispatcher. It
+# names NO `object_store`, arrow, or wasm-specific type, so it is patch-agnostic:
+# it compiles identically in the native root workspace and under the wasm
+# workspace's arrow/object_store `[patch.crates-io]` fork. That is what lets a
+# single crate back both consumers despite their independent `Cargo.lock`s.
+#
+# Regenerate with `just generate-files-proto`; never hand-edit `src/generated/**`.
+[package]
+name = "olai-uc-files-proto"
+version = "0.1.0"
+description = "Generated buffa message types + ConnectRPC service trait for the portal.files.v1 FilesService contract."
+categories = ["encoding"]
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+rust-version.workspace = true
+
+[lib]
+# Keep the Rust crate identifier stable (`unitycatalog_files_proto`) independent
+# of the provisional `olai-uc-*` package name, so `use` paths need no churn from
+# a later rename.
+name = "unitycatalog_files_proto"
+
+[dependencies]
+# Proto runtime backing the generated message types (the workspace `json` feature
+# gives the serde impls consumers serialize the canonical `portal.files.v1` JSON
+# through).
+buffa = { workspace = true }
+buffa-types = { workspace = true }
+# The generated `connect-rust` service trait + dispatcher. default-features = false
+# keeps this crate buildable on wasm32 (drops server/axum/streaming, which pull
+# hyper/tokio-net); the trait, dispatcher, codec, and client are always compiled.
+connectrpc = { workspace = true, default-features = false }
+# The generated ConnectRPC *client* (`FilesServiceClient<T>`) names `::http_body::Body`
+# in a trait bound; http-body is pure traits (wasm-safe), emitted unconditionally.
+http-body = { workspace = true }
+serde = { workspace = true }

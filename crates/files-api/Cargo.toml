@@ -1,0 +1,122 @@
+# The Files API: a ConnectRPC `portal.files.v1.FilesService` server over an
+# `object_store`-backed file store. Like `olai-uc-storage-proxy`, it runs in two
+# modes from one crate:
+#
+#   1. Embedded in the Unity Catalog server (`olai-uc-server`) — the `server`
+#      feature exposes `AppState` + the generated service trait impl; the host
+#      builds a ConnectRPC router and nests it.
+#   2. Standalone against an upstream Unity Catalog service — the `bin` feature
+#      builds the `files-api` binary (CLI serve/healthcheck + self-contained auth
+#      layer + YAML config), vending volume credentials through the client arm.
+#
+# The `portal.files.v1` contract itself lives in the shared `olai-uc-files-proto`
+# crate (generated code, wasm-safe); this crate only implements it.
+[package]
+name = "olai-uc-files-api"
+version = "0.0.1"
+description = "Unity Catalog volume Files API — a ConnectRPC portal.files.v1.FilesService server (embeddable or standalone)."
+categories = ["web-programming::http-server"]
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+rust-version.workspace = true
+
+[lib]
+# Keep the Rust crate identifier stable (`unitycatalog_files_api`) independent of
+# the provisional `olai-uc-*` package name, so source `use` paths and this crate's
+# own tests need no churn from the rename.
+name = "unitycatalog_files_api"
+
+# The deployable standalone Files API server. Gated behind `bin` so a bare library
+# build (the default) never pulls the CLI/runtime deps.
+[[bin]]
+name = "files-api"
+path = "src/main.rs"
+required-features = ["bin"]
+
+[features]
+default = ["server"]
+# The ConnectRPC service surface: the generated FilesService trait impl over the
+# FileStore port, AppState, register_all, and the StoreError -> ConnectError
+# mapping. Enough to build an embeddable router; no store backend or CLI. Turns on
+# connectrpc's `server`/`axum` features (off by default at the workspace level so
+# files-proto stays wasm-lean).
+server = [
+  "dep:axum",
+  "dep:http-body",
+  "connectrpc/server",
+  "connectrpc/axum",
+]
+# The Unity Catalog volume store (UnityVolumeStore) — the standalone-against-
+# upstream-UC arm. Pulls object_store + the UC object-store factory.
+client-arm = ["server", "dep:object_store", "dep:unitycatalog-object-store"]
+# The in-memory store (MemoryStore, pure in-RAM — no object_store) + test
+# helpers. `spawn_memory_server` binds a TCP listener and serves the ConnectRPC
+# router (tokio net/rt); the e2e test drives the generated `FilesServiceClient`,
+# which needs connectrpc's `client` feature.
+testing = ["server", "dep:tokio", "connectrpc/client"]
+# The deployable standalone `files-api` binary: CLI (serve/healthcheck), the
+# self-contained auth layer, YAML config, and the serve wiring.
+bin = [
+  "client-arm",
+  "dep:tokio",
+  "dep:clap",
+  "dep:reqwest",
+  "dep:serde_yml",
+  "dep:tower",
+  "dep:tower-http",
+  "dep:tracing-subscriber",
+]
+
+[dependencies]
+# local dependencies
+# The generated portal.files.v1 contract (message types + FilesService trait).
+unitycatalog-files-proto = { package = "olai-uc-files-proto", path = "../files-proto", version = "0.1.0" }
+# The UC object-store factory (client arm only): vends scoped volume credentials.
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.4", optional = true }
+
+# workspace dependencies in alphabetical order
+async-trait = { workspace = true }
+axum = { workspace = true, optional = true }
+buffa = { workspace = true }
+buffa-types = { workspace = true }
+bytes = { workspace = true }
+connectrpc = { workspace = true }
+futures = { workspace = true }
+http-body = { workspace = true, optional = true }
+object_store = { workspace = true, optional = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+
+# CLI/runtime dependencies for the standalone `files-api` binary, all gated behind
+# the `bin` feature so the library build is unaffected.
+clap = { version = "4.5", features = ["derive", "env", "wrap_help"], optional = true }
+# `blocking` for the `healthcheck` probe (workspace reqwest = rustls TLS).
+reqwest = { workspace = true, features = ["blocking"], optional = true }
+serde_yml = { workspace = true, optional = true }
+tokio = { workspace = true, features = [
+  "rt-multi-thread",
+  "macros",
+  "signal",
+  "net",
+], optional = true }
+tower = { workspace = true, optional = true }
+tower-http = { version = "0.6", features = ["trace"], optional = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"], optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tempfile = "3"
+
+[[test]]
+name = "connect_e2e"
+required-features = ["testing"]
+
+[[test]]
+name = "config"
+required-features = ["bin"]

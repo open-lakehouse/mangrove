@@ -89,6 +89,13 @@ pub struct Config {
     #[serde(default)]
     pub storage_proxy: StorageProxyConfig,
 
+    /// Embedded Files API settings (see [`FilesConfig`]).
+    ///
+    /// Defaults to disabled: the server mounts no Files API surface, so existing
+    /// deployments are unaffected.
+    #[serde(default)]
+    pub files: FilesConfig,
+
     /// Request authentication settings (see [`AuthConfig`]).
     ///
     /// Defaults to anonymous: every request is [`Principal::anonymous`]. Set
@@ -229,6 +236,7 @@ impl Default for Config {
             managed_storage_root: None,
             ui: UiConfig::default(),
             storage_proxy: StorageProxyConfig::default(),
+            files: FilesConfig::default(),
             auth: AuthConfig::default(),
         }
     }
@@ -297,6 +305,87 @@ impl StorageProxyConfig {
             Some("storage-proxy arm is `client` but no `client` block is configured")
         } else {
             None
+        }
+    }
+}
+
+/// Which backend serves the embedded Files API.
+#[derive(Debug, Deserialize, Serialize, Default, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum FilesBackend {
+    /// Serve Unity Catalog volumes through a [`FilesClientConfig`]-configured
+    /// upstream UC (default). Requires a `client` block.
+    #[default]
+    Unity,
+    /// Serve a process-local in-memory store — non-durable; for demos/tests.
+    Memory,
+}
+
+/// Embedded `portal.files.v1.FilesService` configuration.
+///
+/// When [`enabled`](Self::enabled) is `false` (the default) the server mounts no
+/// Files API surface — no behavior change for existing deployments. Enabling it
+/// mounts the ConnectRPC service under [`base_path`](Self::base_path), served by
+/// the selected [`backend`](Self::backend).
+#[derive(Debug, Deserialize, Serialize, Default, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct FilesConfig {
+    /// Master switch. Default `false`.
+    #[serde(default)]
+    pub enabled: bool,
+
+    /// Which backend serves the Files API. Defaults to [`FilesBackend::Unity`].
+    #[serde(default)]
+    pub backend: FilesBackend,
+
+    /// Upstream connection, **required** when [`backend`](Self::backend) is
+    /// [`FilesBackend::Unity`]; ignored otherwise.
+    #[serde(default)]
+    pub client: Option<FilesClientConfig>,
+
+    /// URL prefix the FilesService is mounted under. Empty (the default) mounts
+    /// at root — the ConnectRPC method paths are fully-qualified, so no prefix is
+    /// required. Normalized like the storage-proxy `base_path`.
+    #[serde(default)]
+    pub base_path: Option<String>,
+}
+
+/// Upstream connection for the Unity backend of the embedded Files API.
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct FilesClientConfig {
+    /// Base URL of the UC server to vend volume credentials through, e.g.
+    /// `http://uc:8080/api/2.1/unity-catalog/`.
+    pub base_url: String,
+
+    /// Optional bearer token (inline or `{env: ...}`). Absent = unauthenticated.
+    #[serde(default)]
+    pub token: Option<ConfigValue>,
+
+    /// Optional AWS region override for vended credentials.
+    #[serde(default)]
+    pub region: Option<String>,
+}
+
+impl FilesConfig {
+    /// The config error (if any) that should refuse server startup: the Unity
+    /// backend is selected but no `client` block is configured.
+    pub fn startup_error(&self) -> Option<&'static str> {
+        if self.enabled && self.backend == FilesBackend::Unity && self.client.is_none() {
+            Some("files backend is `unity` but no `client` block is configured")
+        } else {
+            None
+        }
+    }
+
+    /// Resolved mount prefix: normalized to a single leading slash with no
+    /// trailing slash; empty means "mount at root".
+    pub fn resolved_base_path(&self) -> String {
+        let raw = self.base_path.as_deref().unwrap_or("");
+        let trimmed = raw.trim().trim_matches('/');
+        if trimmed.is_empty() {
+            String::new()
+        } else {
+            format!("/{trimmed}")
         }
     }
 }
@@ -933,6 +1022,69 @@ mod tests {
         "#;
         let config: Config = serde_yml::from_str(yaml).unwrap();
         assert!(config.storage_proxy.startup_error().is_none());
+    }
+
+    #[test]
+    fn test_files_config_defaults_to_disabled() {
+        let config = Config::default();
+        assert!(!config.files.enabled);
+        assert!(config.files.startup_error().is_none());
+    }
+
+    #[test]
+    fn test_files_config_roundtrips() {
+        let yaml = r#"
+            files:
+              enabled: true
+              backend: unity
+              base-path: /files
+              client:
+                base_url: "http://uc:8080/api/2.1/unity-catalog/"
+                token:
+                  env: UC_TOKEN
+        "#;
+        let config: Config = serde_yml::from_str(yaml).unwrap();
+        assert!(config.files.enabled);
+        assert_eq!(config.files.backend, FilesBackend::Unity);
+        assert_eq!(config.files.resolved_base_path(), "/files");
+        assert!(config.files.client.is_some());
+        assert!(config.files.startup_error().is_none());
+    }
+
+    #[test]
+    fn test_files_memory_backend_needs_no_client() {
+        let yaml = r#"
+            files:
+              enabled: true
+              backend: memory
+        "#;
+        let config: Config = serde_yml::from_str(yaml).unwrap();
+        assert_eq!(config.files.backend, FilesBackend::Memory);
+        assert!(config.files.startup_error().is_none());
+        // Empty base path resolves to root; the mount logic then falls back to
+        // `/files` to avoid a fallback collision.
+        assert_eq!(config.files.resolved_base_path(), "");
+    }
+
+    #[test]
+    fn test_files_unity_backend_without_client_is_startup_error() {
+        let yaml = r#"
+            files:
+              enabled: true
+              backend: unity
+        "#;
+        let config: Config = serde_yml::from_str(yaml).unwrap();
+        assert!(config.files.startup_error().is_some());
+
+        // Disabled + unity backend (no client block) is NOT an error — the Files
+        // API is not mounted at all.
+        let yaml = r#"
+            files:
+              enabled: false
+              backend: unity
+        "#;
+        let config: Config = serde_yml::from_str(yaml).unwrap();
+        assert!(config.files.startup_error().is_none());
     }
 
     #[test]

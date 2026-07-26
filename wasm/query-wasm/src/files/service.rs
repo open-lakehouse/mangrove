@@ -36,9 +36,9 @@ use url::Url;
 use crate::error::Error;
 use crate::files::engine;
 use crate::files::path::VolumePath;
-use crate::generated::connect::portal::files::v1::{FilesService, FilesServiceExt};
+use unitycatalog_files_proto::connect::portal::files::v1::{FilesService, FilesServiceExt};
 
-use crate::generated::buffa::portal::files::v1 as pb;
+use unitycatalog_files_proto::buffa::portal::files::v1 as pb;
 
 /// The `FilesService` implementation: everything the dispatcher needs to build a
 /// UC object-store factory on demand. Holds only the connection args (base URL +
