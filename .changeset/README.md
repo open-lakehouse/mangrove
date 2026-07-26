@@ -7,12 +7,15 @@ bun workspace (`node/*`), the JS-side counterpart to what
 ## How it works here (automatic, from commits)
 
 You normally **do not** hand-write changeset files. On every push to `main`, the
-[`js-changeset-autogen`](../.github/workflows/js-changeset-autogen.yaml) workflow
-reads the merged conventional commits that touched `node/**` and generates the
-`.changeset/*.md` entries for you (mapping commit `scope` → package, commit type →
-bump level). Those accumulate until [`js-release`](../.github/workflows/js-release.yaml)
-opens a **"Version Packages" PR**; merging it bumps versions, writes per-package
-`CHANGELOG.md`, and (when publishing is enabled) publishes to npm.
+`version-pr` job in [`js-release`](../.github/workflows/js-release.yaml) reads the
+merged conventional commits that touched `node/**` and derives the `.changeset/*.md`
+entries for you (mapping commit `scope` → package, commit type → bump level). It
+carries those entries — plus the version bumps and per-package `CHANGELOG.md` —
+onto a single long-lived **"Version Packages" PR** (the Changesets action's
+`changeset-release/main` branch). **Nothing is committed to `main`**: the pending
+release state lives on that PR, exactly like release-plz's Release PR. Merging it
+lands the bumps and (when publishing is enabled) triggers the NAPI build + npm
+publish.
 
 ## When to add a changeset by hand
 
