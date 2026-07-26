@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.5...olai-uc-server-v0.0.6) - 2026-07-26
+
+### Added
+
+- standalone Files API crate (embeddable + standalone) + co-locate server Dockerfile (#188)
+- *(release)* commit-driven Changesets pipeline for JS packages (dormant) (#183)
+
+### Changed
+
+- *(wasm)* isolate query-wasm + olai-delta-df into a standalone wasm/ workspace (#182) (#187)
+
 ## [0.0.5](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.4...olai-uc-server-v0.0.5) - 2026-07-26
 
 ### Fixed

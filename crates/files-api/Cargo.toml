@@ -13,7 +13,7 @@
 # crate (generated code, wasm-safe); this crate only implements it.
 [package]
 name = "olai-uc-files-api"
-version = "0.0.1"
+version = "0.0.2"
 description = "Files API — a ConnectRPC based files server backed by UC volumes."
 categories = ["web-programming::http-server"]
 edition.workspace = true
@@ -76,7 +76,7 @@ bin = [
 # The generated portal.files.v1 contract (message types + FilesService trait).
 unitycatalog-files-proto = { package = "olai-uc-files-proto", path = "../files-proto", version = "0.0.1" }
 # The UC object-store factory (client arm only): vends scoped volume credentials.
-unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.4", optional = true }
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.5", optional = true }
 
 # workspace dependencies in alphabetical order
 async-trait = { workspace = true }
