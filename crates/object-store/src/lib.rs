@@ -71,6 +71,8 @@ use tokio::runtime::Handle;
 /// (`TemporaryCredentialClient`, `UnityCatalogClient`) hold this same type.
 #[cfg(not(target_arch = "wasm32"))]
 use olai_http::CloudClient as Transport;
+#[cfg(not(target_arch = "wasm32"))]
+use olai_http::service::{HttpService, ReqwestService};
 #[cfg(target_arch = "wasm32")]
 use olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::tables::v1::GetTableRequest;
@@ -94,6 +96,42 @@ pub use unitycatalog_client::{
 mod credential;
 mod error;
 mod proxy;
+
+/// An [`HttpService`] decorator that injects a fixed request header on every
+/// outbound request before delegating to an inner service.
+///
+/// Used by [`UnityObjectStoreFactory::with_forwarded_user`] to forward a trusted
+/// reverse-proxy identity header (e.g. `x-forwarded-user`) onto the upstream
+/// credential-vending + metadata calls, so the upstream Unity Catalog attributes
+/// the vend to the end user rather than the proxy's own service principal. The
+/// header is `insert`ed (replacing any existing value of the same name), not
+/// appended.
+///
+/// Native-only: the browser Fetch transport (`wasm32`) forwards identity through
+/// its own same-origin session, so this decorator is unused there.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Debug)]
+struct ForwardedHeaderService {
+    inner: Arc<dyn HttpService>,
+    name: reqwest::header::HeaderName,
+    value: reqwest::header::HeaderValue,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl HttpService for ForwardedHeaderService {
+    fn call(
+        &self,
+        mut request: reqwest::Request,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = olai_http::Result<reqwest::Response>> + Send + '_>,
+    > {
+        request
+            .headers_mut()
+            .insert(self.name.clone(), self.value.clone());
+        self.inner.call(request)
+    }
+}
+
 /// Builder for [`UnityObjectStoreFactory`].
 #[derive(Debug, Clone, Default)]
 pub struct UnityObjectStoreFactoryBuilder {
@@ -207,13 +245,17 @@ impl UnityObjectStoreFactoryBuilder {
         let storage_access = proxy::discover_storage_access(&url, self.token.as_deref()).await;
 
         let creds = TemporaryCredentialClient::new_with_url(transport.clone(), url.clone());
-        let uc = UnityCatalogClient::new(transport, url);
+        let uc = UnityCatalogClient::new(transport, url.clone());
         Ok(UnityObjectStoreFactory {
             creds,
             uc,
             aws_region: self.aws_region,
             #[cfg(not(target_arch = "wasm32"))]
             io_handle: self.io_handle,
+            #[cfg(not(target_arch = "wasm32"))]
+            base_url: url,
+            #[cfg(not(target_arch = "wasm32"))]
+            allow_unauthenticated: self.allow_unauthenticated,
             #[cfg(target_arch = "wasm32")]
             storage_access,
             #[cfg(target_arch = "wasm32")]
@@ -342,6 +384,21 @@ pub struct UnityObjectStoreFactory {
     /// [`UnityObjectStoreFactoryBuilder::with_io_runtime`]. Absent on `wasm32`.
     #[cfg(not(target_arch = "wasm32"))]
     io_handle: Option<Handle>,
+    /// The UC REST base URL, retained so [`with_forwarded_user`] can rebuild the
+    /// credential + metadata clients over a derived transport.
+    ///
+    /// [`with_forwarded_user`]: UnityObjectStoreFactory::with_forwarded_user
+    #[cfg(not(target_arch = "wasm32"))]
+    base_url: Url,
+    /// Whether the factory was built without a token, retained for parity when
+    /// [`with_forwarded_user`] derives a transport (the forwarded-identity path
+    /// is unauthenticated by design; this field documents that the base factory
+    /// also tolerated no token).
+    ///
+    /// [`with_forwarded_user`]: UnityObjectStoreFactory::with_forwarded_user
+    #[cfg(not(target_arch = "wasm32"))]
+    #[allow(dead_code)]
+    allow_unauthenticated: bool,
     /// Storage-access posture discovered from the server's `/capabilities`
     /// endpoint at build time. `Proxy` routes every byte through the server's
     /// same-origin storage byte-proxy instead of vending + direct cloud IO.
@@ -357,6 +414,80 @@ pub struct UnityObjectStoreFactory {
 impl UnityObjectStoreFactory {
     pub fn builder() -> UnityObjectStoreFactoryBuilder {
         UnityObjectStoreFactoryBuilder::default()
+    }
+
+    /// Derive a factory that forwards a trusted reverse-proxy identity header on
+    /// every upstream Unity Catalog request (both the metadata lookups and the
+    /// credential vend).
+    ///
+    /// Intended for a service — e.g. the standalone storage byte-proxy — that
+    /// sits behind the same reverse proxy as the upstream UC and has already
+    /// validated the caller's identity. Forwarding the header verbatim lets UC's
+    /// own reverse-proxy authenticator attribute the vend to the real end user.
+    ///
+    /// Semantics:
+    /// - `user == None` (anonymous request) → returns `self` cloned unchanged, so
+    ///   the upstream calls use whatever auth the base factory was built with
+    ///   (its static token, or unauthenticated). Zero added cost.
+    /// - `user == Some(name)` → returns a factory whose upstream transport is
+    ///   **unauthenticated** and injects `header: name` on every request. The
+    ///   base factory's static token is intentionally dropped for these calls:
+    ///   the forwarded identity is the auth, not the proxy's own principal.
+    ///
+    /// `header` is the outgoing header name (typically the same
+    /// `x-forwarded-user` the proxy read the identity from). Returns an error if
+    /// `header` or `name` is not a valid HTTP header name / value.
+    ///
+    /// Native-only: on `wasm32` identity is forwarded by the browser session, so
+    /// this method is absent.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn with_forwarded_user(&self, header: &str, user: Option<&str>) -> Result<Self> {
+        use reqwest::header::{HeaderName, HeaderValue};
+
+        let Some(name) = user else {
+            // Anonymous: keep the base factory (and its auth) untouched.
+            return Ok(self.clone());
+        };
+
+        let header_name = HeaderName::from_bytes(header.as_bytes()).map_err(|e| {
+            Error::invalid_config(format!(
+                "invalid forwarded-user header name `{header}`: {e}"
+            ))
+        })?;
+        let header_value = HeaderValue::from_str(name).map_err(|e| {
+            Error::invalid_config(format!("invalid forwarded-user header value: {e}"))
+        })?;
+
+        // A fresh unauthenticated transport (no bearer signer): the forwarded
+        // header is the auth for these calls. Route I/O onto the dedicated
+        // runtime when one is configured, mirroring `build_transport`.
+        let reqwest_client = reqwest::Client::new();
+        let base_service: Arc<dyn HttpService> =
+            Arc::new(ReqwestService::new(reqwest_client.clone()));
+        let transport =
+            Transport::new_unauthenticated().with_http_service(Arc::new(ForwardedHeaderService {
+                inner: base_service,
+                name: header_name,
+                value: header_value,
+            }));
+        let transport = match &self.io_handle {
+            Some(handle) => transport.with_runtime(handle.clone()),
+            None => transport,
+        };
+
+        // Rebuilding both clients is cheap — each just holds a `Transport` clone
+        // (Arc bumps) plus a `Url`.
+        let creds =
+            TemporaryCredentialClient::new_with_url(transport.clone(), self.base_url.clone());
+        let uc = UnityCatalogClient::new(transport, self.base_url.clone());
+        Ok(UnityObjectStoreFactory {
+            creds,
+            uc,
+            aws_region: self.aws_region.clone(),
+            io_handle: self.io_handle.clone(),
+            base_url: self.base_url.clone(),
+            allow_unauthenticated: self.allow_unauthenticated,
+        })
     }
 
     /// Borrow the underlying [`UnityCatalogClient`] for catalog metadata
@@ -1454,5 +1585,167 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_millis() as i64
+    }
+
+    // ---- forwarded-identity header forwarding ------------------------------
+
+    /// A JSON `temporary-path-credentials` response carrying a minimal, well-formed
+    /// Azurite SAS credential — enough for `for_path` to build an emulator store
+    /// with no real cloud I/O. `url` is a path-style Azurite endpoint.
+    fn azurite_credential_body() -> String {
+        format!(
+            r#"{{"expiration_time":{},"url":"http://127.0.0.1:10000/devstoreaccount1/mycontainer/prefix/","azure_user_delegation_sas":{{"sas_token":"sv=2021-08-06&ss=b&srt=co&sp=rl&se=2999-01-01T00:00:00Z&sig=AAAA"}}}}"#,
+            now_epoch_millis() + 3_600_000
+        )
+    }
+
+    /// A factory pointed at the given (mock) UC base URL, authenticated with a
+    /// static token — the token the forwarded-identity path must *drop*.
+    async fn factory_at(base_url: &str) -> UnityObjectStoreFactory {
+        UnityObjectStoreFactory::builder()
+            .with_uri(format!("{base_url}/api/2.1/unity-catalog/"))
+            .with_token("proxy-service-token".to_string())
+            .build()
+            .await
+            .unwrap()
+    }
+
+    /// With a forwarded user, the upstream vend carries `x-forwarded-user` and
+    /// drops the proxy's own bearer token (header-replaces-token).
+    #[tokio::test]
+    async fn forwarded_user_injects_header_and_drops_token() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/api/2.1/unity-catalog/temporary-path-credentials")
+            .match_header("x-forwarded-user", "alice")
+            // The static bearer token must NOT ride along on a forwarded call.
+            .match_header("authorization", mockito::Matcher::Missing)
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(azurite_credential_body())
+            .expect(1)
+            .create_async()
+            .await;
+
+        let factory = factory_at(&server.url()).await;
+        let scoped = factory
+            .with_forwarded_user("x-forwarded-user", Some("alice"))
+            .unwrap();
+        let url = Url::parse("abfss://mycontainer@devstoreaccount1/prefix/").unwrap();
+        scoped
+            .for_path(&url, PathOperation::Read)
+            .await
+            .expect("vend + store build should succeed against the mock");
+
+        mock.assert_async().await;
+    }
+
+    /// An anonymous request (no forwarded user) sends NO `x-forwarded-user` header
+    /// and still authenticates with the proxy's static bearer token — unchanged
+    /// from today.
+    #[tokio::test]
+    async fn anonymous_sends_no_forwarded_header_and_keeps_token() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/api/2.1/unity-catalog/temporary-path-credentials")
+            .match_header("x-forwarded-user", mockito::Matcher::Missing)
+            .match_header("authorization", "Bearer proxy-service-token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(azurite_credential_body())
+            .expect(1)
+            .create_async()
+            .await;
+
+        let factory = factory_at(&server.url()).await;
+        // `None` returns the base factory unchanged.
+        let scoped = factory
+            .with_forwarded_user("x-forwarded-user", None)
+            .unwrap();
+        let url = Url::parse("abfss://mycontainer@devstoreaccount1/prefix/").unwrap();
+        scoped
+            .for_path(&url, PathOperation::Read)
+            .await
+            .expect("vend + store build should succeed against the mock");
+
+        mock.assert_async().await;
+    }
+
+    /// The header name is configurable; a custom outgoing header carries the user.
+    #[tokio::test]
+    async fn forwarded_user_honors_custom_header_name() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/api/2.1/unity-catalog/temporary-path-credentials")
+            .match_header("x-remote-user", "bob")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(azurite_credential_body())
+            .expect(1)
+            .create_async()
+            .await;
+
+        let factory = factory_at(&server.url()).await;
+        let scoped = factory
+            .with_forwarded_user("x-remote-user", Some("bob"))
+            .unwrap();
+        let url = Url::parse("abfss://mycontainer@devstoreaccount1/prefix/").unwrap();
+        scoped.for_path(&url, PathOperation::Read).await.unwrap();
+
+        mock.assert_async().await;
+    }
+
+    /// An invalid header name / value is a clean config error, not a panic.
+    #[tokio::test]
+    async fn forwarded_user_rejects_invalid_header() {
+        let factory = factory_at("http://127.0.0.1:0").await;
+        // Space is not a legal header-name character.
+        assert!(
+            factory
+                .with_forwarded_user("bad header", Some("alice"))
+                .is_err()
+        );
+        // A newline is not a legal header-value character.
+        assert!(
+            factory
+                .with_forwarded_user("x-forwarded-user", Some("a\nb"))
+                .is_err()
+        );
+    }
+
+    /// The `ForwardedHeaderService` decorator inserts the header (replacing any
+    /// prior value of the same name) and delegates to its inner service.
+    #[tokio::test]
+    async fn forwarded_header_service_inserts_and_delegates() {
+        use olai_http::service::{HttpService, ReqwestService};
+        use reqwest::header::{HeaderName, HeaderValue};
+
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/echo")
+            .match_header("x-forwarded-user", "carol")
+            .with_status(204)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let client = reqwest::Client::new();
+        let svc = ForwardedHeaderService {
+            inner: Arc::new(ReqwestService::new(client.clone())),
+            name: HeaderName::from_static("x-forwarded-user"),
+            value: HeaderValue::from_static("carol"),
+        };
+        // A pre-existing value of the same header must be overwritten, not appended.
+        let mut request = client
+            .get(format!("{}/echo", server.url()))
+            .build()
+            .unwrap();
+        request
+            .headers_mut()
+            .insert("x-forwarded-user", HeaderValue::from_static("stale"));
+
+        let resp = svc.call(request).await.unwrap();
+        assert_eq!(resp.status(), 204);
+        mock.assert_async().await;
     }
 }
