@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-server"
-version = "0.0.4"
+version = "0.0.5"
 description = "Unity Catalog REST server with pluggable storage backends."
 edition.workspace = true
 license.workspace = true
@@ -36,7 +36,7 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
   "metric-view",
 ] }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.4" }
-unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.2", features = [
+unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.3", features = [
   "client-arm",
 ], optional = true }
 unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.4", optional = true }
