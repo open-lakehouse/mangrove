@@ -3177,6 +3177,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "olai-uc-files-proto"
+version = "0.1.0"
+dependencies = [
+ "buffa",
+ "buffa-types",
+ "connectrpc",
+ "http-body",
+ "serde",
+]
+
+[[package]]
 name = "olai-uc-object-store"
 version = "0.0.4"
 dependencies = [
@@ -3226,6 +3237,7 @@ dependencies = [
  "olai-delta-df",
  "olai-uc-client",
  "olai-uc-delta-api",
+ "olai-uc-files-proto",
  "olai-uc-object-store",
  "parquet",
  "percent-encoding",
