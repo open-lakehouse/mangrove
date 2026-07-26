@@ -29,26 +29,8 @@ WORKDIR /ui
 # whole bun workspace (root manifest + every node/* package the app imports).
 COPY package.json bun.lock ./
 COPY node/ ./node/
-# The root manifest also lists the `docs` and `examples/typescript` workspaces, which
-# the server image never builds. With `--frozen-lockfile`, bun still resolves EVERY
-# workspace glob against the on-disk tree, so their manifests must exist or install
-# fails with `Workspace not found`. Copy just the package.json (not the source): bun
-# resolves the workspace but never fetches its deps, since nothing the app builds
-# depends on them — the docs toolchain (astro/sharp) stays out of the image. Editing
-# the lockfile to drop them instead would trip the frozen-lockfile check.
-COPY docs/package.json ./docs/
-COPY examples/typescript/package.json ./examples/typescript/
-# The committed bun.lock pins each tarball URL to whatever registry it was generated
-# against — for us some entries may point at an internal mirror
-# (npm-proxy.cloud.databricks.com) that CI and other external builders can't reach.
-# Re-point the host to the target registry here; the integrity hashes are unchanged
-# (identical tarball content on any mirror), so the lockfile's guarantees still hold.
-# Defaults to the public registry so CI works out of the box; override NPM_REGISTRY
-# (and NPM_REGISTRY_FROM, the host to replace) to build behind a different mirror.
-ARG NPM_REGISTRY=https://registry.npmjs.org
-ARG NPM_REGISTRY_FROM=https://npm-proxy.cloud.databricks.com
-RUN sed -i "s#${NPM_REGISTRY_FROM}/#${NPM_REGISTRY}/#g" bun.lock \
-    && bun install --frozen-lockfile
+
+RUN bun install --frozen-lockfile
 # Build the app → node/app/dist. Vite `base: "./"` makes the asset URLs relative
 # so one image works under any server base-path without a rebuild.
 RUN bun run --filter @open-lakehouse/uc-app build
@@ -75,7 +57,7 @@ RUN cargo build --release -p olai-uc-server --features bin --bin uc-server
 FROM gcr.io/distroless/cc-debian12@sha256:b0ae8e989418b458e0f25489bc3be523718938a2b70864cc0f6a00af1ddbd985 AS runtime
 
 LABEL org.opencontainers.image.title="mangrove" \
-      org.opencontainers.image.description="Mangrove — a lakehouse catalog server (Unity Catalog + Delta Sharing APIs) with bundled web UI" \
+      org.opencontainers.image.description="Mangrove — a composable lakehouse catalog integration layer." \
       org.opencontainers.image.source="https://github.com/open-lakehouse/mangrove" \
       org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.vendor="open-lakehouse"
