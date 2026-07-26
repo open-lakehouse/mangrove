@@ -148,6 +148,27 @@ name = "olai-uc-storage-proxy"
 changelog_path = "crates/storage-proxy/CHANGELOG.md"
 
 [[package]]
+name = "olai-uc-files-proto"
+changelog_path = "crates/files-proto/CHANGELOG.md"
+# (a) BOOTSTRAP GATE — brand-new name, never published; crates.io OIDC cannot
+# create it. release-plz still versions/changelogs/tags it, but must not attempt
+# to publish a nonexistent name. Remove this line (and register its crates.io
+# Trusted Publisher) once bootstrapped via bootstrap-publish.yml. Publishable
+# then (pure buffa/connectrpc/serde graph, no git deps).
+release = false
+
+[[package]]
+name = "olai-uc-files-api"
+changelog_path = "crates/files-api/CHANGELOG.md"
+# The Files API ships as the `files-api` Docker image (ghcr.io/open-lakehouse/
+# files-api), like the server and storage-proxy deployables. (a) BOOTSTRAP GATE —
+# brand-new name, never published; keep `release = false` until it is bootstrapped
+# (bootstrap-publish.yml) + its Trusted Publisher registered. Its Docker job in
+# release-plz.yml keys off the released-crates JSON, so the image build activates
+# once this crate actually releases (i.e. once this line is removed).
+release = false
+
+[[package]]
 name = "olai-uc-cli"
 changelog_path = "crates/cli/CHANGELOG.md"
 # Publishable (no git deps; its deps client/common are live), but intentionally

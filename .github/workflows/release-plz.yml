@@ -93,6 +93,10 @@ jobs:
       # off these.
       storage_proxy_version: ${{ steps.storage_proxy.outputs.version }}
       storage_proxy_tag: ${{ steps.storage_proxy.outputs.tag }}
+      # Likewise for the standalone files-api image — its own Docker job keys off
+      # these.
+      files_api_version: ${{ steps.files_api.outputs.version }}
+      files_api_tag: ${{ steps.files_api.outputs.tag }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -152,6 +156,27 @@ jobs:
           else
             echo "Storage-proxy not released this run — Docker build skipped."
           fi
+      # Same detection for the standalone files-api: it ships as its own GHCR image
+      # (`files-api`), so gate its Docker build on whether release-plz released
+      # `olai-uc-files-api` this run. While the crate carries `release = false`
+      # (bootstrap gate — see release-plz.toml) it is never in `releases`, so this
+      # stays empty and the Docker job is skipped; removing that gate activates it.
+      - name: Detect files-api release
+        id: files_api
+        env:
+          RELEASES: ${{ steps.release.outputs.releases }}
+        run: |
+          entry=$(printf '%s' "${RELEASES:-[]}" \
+            | jq -c '.[] | select(.package_name == "olai-uc-files-api")')
+          if [ -n "$entry" ]; then
+            version=$(printf '%s' "$entry" | jq -r '.version')
+            tag=$(printf '%s' "$entry" | jq -r '.tag')
+            echo "Files-api released this run: ${version} (tag ${tag})."
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          else
+            echo "Files-api not released this run — Docker build skipped."
+          fi
 
   # --- Build + push the server (mangrove) Docker image, iff it was released ---
   docker:
@@ -188,3 +213,20 @@ jobs:
     with:
       version: ${{ needs.release-plz-release.outputs.storage_proxy_version }}
       ref: ${{ needs.release-plz-release.outputs.storage_proxy_tag }}
+
+  # --- Build + push the standalone files-api image, iff it was released ---
+  docker-files-api:
+    name: Docker release (files-api)
+    needs: release-plz-release
+    if: ${{ needs.release-plz-release.outputs.files_api_version != '' }}
+    permissions:
+      # contents: write for the same reason as the `docker` job above — the
+      # reusable workflow's `merge` job edits the GitHub Release + uploads
+      # provenance assets.
+      contents: write
+      packages: write
+      id-token: write
+    uses: ./.github/workflows/docker-release-files-api.yml
+    with:
+      version: ${{ needs.release-plz-release.outputs.files_api_version }}
+      ref: ${{ needs.release-plz-release.outputs.files_api_tag }}
