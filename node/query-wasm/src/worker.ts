@@ -1,9 +1,9 @@
-// The wasm worker: hosts `UcQueryEngine` (crates/query-wasm) off the main
+// The wasm worker: hosts `UcQueryEngine` (wasm/query-wasm) off the main
 // thread — the kernel's inline-executor bursts run synchronously against primed
 // data and would jank the UI if run on the main thread.
 //
 // "query-wasm-pkg" is a BARE specifier for the gitignored wasm-bindgen output
-// of `just build-query-wasm` (crates/query-wasm/pkg/query_wasm.js): typed by
+// of `just build-query-wasm` (wasm/query-wasm/pkg/query_wasm.js): typed by
 // the ambient declaration in ./pkg.d.ts and resolved by the vite alias in
 // node/app/vite.config.ts — only in wasm-enabled builds (default builds alias
 // the whole package to ./stub.ts and never bundle this worker).

@@ -2,7 +2,7 @@
 // files engine packaged as a `FilesRunner` for the `@open-lakehouse/files` seam.
 //
 // `registerWasmFiles` is the one-call wiring: it registers a runner that spawns a
-// Web Worker per operation (crates/query-wasm's `UcFilesEngine` inside), with an
+// Web Worker per operation (wasm/query-wasm's `UcFilesEngine` inside), with an
 // Azure/GCP-only capability probe so a Files tab is never offered for storage the
 // engine cannot read direct-to-cloud (AWS/R2 need SigV4, unsupported in-browser).
 // Default builds alias THIS PACKAGE to ./stub.ts (see node/app/vite.config.ts),

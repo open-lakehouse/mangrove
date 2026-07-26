@@ -52,7 +52,7 @@ const CHECKPOINT_POLICY_V2: &str = "v2";
 //
 // Deletion vectors are deliberately NOT enabled here. They are a *recommended*
 // (not required) Delta feature, and the in-browser wasm query engine
-// (`crates/query-wasm`) refuses to preview any table advertising
+// (`wasm/query-wasm`) refuses to preview any table advertising
 // `delta.enableDeletionVectors=true`. A freshly written managed table carries no
 // deletion-vector files anyway, so omitting the feature keeps managed tables
 // preview-able at no cost to writers. The server contract mirrors this (see

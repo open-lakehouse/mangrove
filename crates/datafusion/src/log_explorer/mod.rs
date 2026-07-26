@@ -24,7 +24,7 @@
 //! `DeltaLogReplayProvider`.
 //!
 //! This is the native seam behind the planned Delta Log Explorer UI; the wasm
-//! engine (`crates/query-wasm`) can reuse the same provider types with a
+//! engine (`wasm/query-wasm`) can reuse the same provider types with a
 //! fetch-backed store and the facade's DataFusion engine (see
 //! `WASM_QUERY_PREVIEW.md`).
 

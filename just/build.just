@@ -30,7 +30,7 @@ ui-build:
 # Built from inside the crate so its own workspace, lockfile, and
 # .cargo/config.toml (wasm getrandom rustflags) apply.
 #
-# build the in-browser query engine into crates/query-wasm/pkg (gitignored)
+# build the in-browser query engine into wasm/query-wasm/pkg (gitignored)
 [group('build')]
 [no-cd]
 build-query-wasm:
@@ -51,11 +51,14 @@ build-query-wasm:
     fi
     # Anchor on the repo root (this recipe is [no-cd] and may be invoked from a
     # sibling module like `just dev ui-dev-wasm`, so relative paths aren't safe).
+    # Build from the wasm WORKSPACE ROOT (`wasm/`) so its own lockfile and
+    # `.cargo/config.toml` (wasm getrandom rustflags) apply; -p selects the crate.
+    # The target dir is the shared workspace target at `wasm/target/`.
     root="{{ justfile_directory() }}"
-    cd "$root/crates/query-wasm" && cargo build --target wasm32-unknown-unknown --release --locked
+    cd "$root/wasm" && cargo build -p olai-uc-query-wasm --target wasm32-unknown-unknown --release --locked
     wasm-bindgen --target web --typescript \
-      --out-dir "$root/crates/query-wasm/pkg" \
-      "$root/crates/query-wasm/target/wasm32-unknown-unknown/release/query_wasm.wasm"
+      --out-dir "$root/wasm/query-wasm/pkg" \
+      "$root/wasm/target/wasm32-unknown-unknown/release/query_wasm.wasm"
 
 # default `ui-build` ships neither the wasm engine nor the preview UI; see
 # node/app/vite.config.ts.
@@ -176,12 +179,12 @@ build-sqlx-sqlite:
     cd crates/sqlite && cargo sqlx prepare -- --tests
     rm -f "$DB" "$DB"-wal "$DB"-shm
 
-# one-time toolchain setup for the in-browser query engine (crates/query-wasm)
+# one-time toolchain setup for the in-browser query engine (wasm/query-wasm)
 [group('build')]
 setup-wasm:
     rustup target add wasm32-unknown-unknown
     # The CLI's bindgen schema must exactly match the wasm-bindgen crate version
-    # in crates/query-wasm/Cargo.lock — keep the two pins in sync.
+    # in wasm/Cargo.lock — keep the two pins in sync.
     cargo install -f wasm-bindgen-cli --version 0.2.126 --locked
 
 _start_pg_sqlx:

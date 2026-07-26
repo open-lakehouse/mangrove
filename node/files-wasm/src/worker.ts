@@ -1,11 +1,11 @@
-// The wasm worker: hosts `UcFilesEngine` (crates/query-wasm) off the main
+// The wasm worker: hosts `UcFilesEngine` (wasm/query-wasm) off the main
 // thread. Metadata RPCs dispatch through the engine's `connectUnary` (the in-wasm
 // connect Router) as binary proto; file bytes stream through `readFileBytes` /
 // `writeFileBytes` — kept off the UI thread to match the query worker and to
 // avoid janking on large transfers.
 //
 // "query-wasm-pkg" is a BARE specifier for the gitignored wasm-bindgen output of
-// `just build-query-wasm` (crates/query-wasm/pkg/query_wasm.js) — the SAME
+// `just build-query-wasm` (wasm/query-wasm/pkg/query_wasm.js) — the SAME
 // artifact @open-lakehouse/query-wasm imports; the files engine ships alongside
 // the query engine. Typed by the ambient declaration in ./pkg.d.ts and resolved
 // by the vite alias in node/app/vite.config.ts — only in wasm-enabled builds

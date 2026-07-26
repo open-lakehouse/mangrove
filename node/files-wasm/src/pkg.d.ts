@@ -1,5 +1,5 @@
 // Ambient typing for the "query-wasm-pkg" bare specifier — the wasm-bindgen
-// output of `just build-query-wasm` (crates/query-wasm/pkg/query_wasm.js,
+// output of `just build-query-wasm` (wasm/query-wasm/pkg/query_wasm.js,
 // gitignored). The worker imports the BARE name so this package type-checks
 // whether or not the artifact exists; node/app/vite.config.ts aliases the name
 // to the real file in wasm-enabled builds (default builds alias the whole
@@ -9,7 +9,7 @@
 // files engine (`UcFilesEngine`) ships in the same crate/pkg as `UcQueryEngine`.
 // Only the declarations this package uses are repeated here.
 //
-// Keep the shapes in sync with crates/query-wasm/src/bindings.rs (the generated
+// Keep the shapes in sync with wasm/query-wasm/src/bindings.rs (the generated
 // pkg/query_wasm.d.ts is the source of truth). `UcFilesEngine` now speaks the
 // `portal.files.v1.FilesService` contract: metadata RPCs go through the single
 // `connectUnary` binary-proto dispatch, and file bytes bypass it via the native

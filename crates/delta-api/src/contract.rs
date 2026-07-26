@@ -38,7 +38,7 @@ const FEATURE_ROW_TRACKING: &str = "rowTracking";
 ///
 /// `deletionVectors` is intentionally NOT required: it is a *recommended* Delta
 /// feature, and requiring it on every managed table makes those tables
-/// un-preview-able by the in-browser wasm query engine (`crates/query-wasm`),
+/// un-preview-able by the in-browser wasm query engine (`wasm/query-wasm`),
 /// which refuses `delta.enableDeletionVectors=true`. Writers may still enable it
 /// explicitly; it is simply no longer mandated.
 pub const REQUIRED_READER_FEATURES: &[&str] = &[

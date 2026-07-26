@@ -50,7 +50,7 @@ registerWasmPreview({
 // The Delta-log tab (in TableDetail) is gated on hasLogQueryRunner(); registering
 // a runner here lights it up for Delta tables. In wasm-enabled builds we register
 // the REAL in-browser log runner (reconciled files + reconciled action stream,
-// backed by crates/query-wasm) — resolving through the same @open-lakehouse/query-wasm
+// backed by wasm/query-wasm) — resolving through the same @open-lakehouse/query-wasm
 // package the table preview uses. In default builds that package is aliased to a
 // no-op stub, so we fall back to the dev fixture stub runner, which renders a
 // canned reconciled-log dataset end-to-end without wasm.
@@ -71,7 +71,7 @@ registerCatalogProvider(ucCatalogProvider);
 
 // The volume Files tab (in VolumeDetail) is gated on hasFilesRunner(). In
 // wasm-enabled builds we register the REAL in-browser files backend (direct-to-
-// cloud listing over CORS, backed by crates/query-wasm); in default builds
+// cloud listing over CORS, backed by wasm/query-wasm); in default builds
 // @open-lakehouse/files-wasm is aliased to a no-op stub (vite.config.ts), so we
 // fall back to the dev fixture stub runner, which renders a canned volume file
 // tree end-to-end without wasm. The backend is read-only (canWrite() is false),

@@ -153,7 +153,7 @@ generate-query-contract:
     buf generate proto/query --template {{ justfile_directory() }}/buf.gen.query.yaml
 
 # Generate the volume-files contract (proto/portal/portal/files/v1) into
-# crates/query-wasm/src/generated: buffa message types + the connect-rust
+# wasm/query-wasm/src/generated: buffa message types + the connect-rust
 # FilesService trait/dispatcher (the in-wasm files engine implements it), AND the
 # connect-es TypeScript client (message types + FilesService descriptor) into
 # @open-lakehouse/files-connect. See buf.gen.files.yaml / buf.gen.files-es.yaml.

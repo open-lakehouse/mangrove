@@ -1,7 +1,7 @@
 // Rich, deterministic reconciled-Delta-log fixture data — the dataset the
 // Delta-log UI is built against until the real wasm runner lands. It mirrors the
 // async-native `ReconciledLogProvider` scan-file-row schema
-// (crates/olai-delta-df/src/log_explorer.rs): the flat `sm_plans` shape with
+// (wasm/olai-delta-df/src/log_explorer.rs): the flat `sm_plans` shape with
 // top-level `path` / `size` plus the nested `deletionVector`,
 // `fileConstantValues` (incl. `partitionValues_parsed`) and `stats` structs.
 //
@@ -146,7 +146,7 @@ export function reconciledLogFixtureRows(
 
 // --- Reconciled action-stream fixture (the `actions` log surface) ------------
 //
-// Mirrors the async-native `ActionsLogProvider` (crates/olai-delta-df): six
+// Mirrors the async-native `ActionsLogProvider` (wasm/olai-delta-df): six
 // nullable top-level struct slots — add / remove / metaData / protocol /
 // domainMetadata / txn — with EXACTLY ONE non-null per row (the reconciled full
 // action stream). This is the shape that makes a flat grid unreadable (5/6 of
