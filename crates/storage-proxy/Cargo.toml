@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-storage-proxy"
-version = "0.0.1"
+version = "0.0.2"
 description = "Same-origin Unity Catalog storage byte-proxy based on governed Volumes."
 edition.workspace = true
 homepage.workspace = true
@@ -25,7 +25,7 @@ required-features = ["bin"]
 
 [dependencies]
 # local dependencies
-unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.3", optional = true }
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.4", optional = true }
 
 # workspace dependecies in alphabetical order
 async-trait = { workspace = true }
