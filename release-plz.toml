@@ -154,13 +154,6 @@ changelog_path = "crates/files-proto/CHANGELOG.md"
 [[package]]
 name = "olai-uc-files-api"
 changelog_path = "crates/files-api/CHANGELOG.md"
-# The Files API ships as the `files-api` Docker image (ghcr.io/open-lakehouse/
-# files-api), like the server and storage-proxy deployables. (a) BOOTSTRAP GATE —
-# brand-new name, never published; keep `release = false` until it is bootstrapped
-# (bootstrap-publish.yml) + its Trusted Publisher registered. Its Docker job in
-# release-plz.yml keys off the released-crates JSON, so the image build activates
-# once this crate actually releases (i.e. once this line is removed).
-release = false
 
 [[package]]
 name = "olai-uc-cli"
