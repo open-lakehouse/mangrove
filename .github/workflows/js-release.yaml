@@ -1,18 +1,24 @@
 name: js-release
 
-# The "publish" half of the JS release pipeline (the counterpart to the
-# release-plz `release` job for the Rust crates). On every push to `main`, the
-# Changesets action opens/updates a single "Version Packages" PR from the
-# accumulated `.changeset/*.md` entries (which `js-changeset-autogen` writes from
-# commits). Merging that PR bumps versions + writes per-package CHANGELOGs and,
-# on the resulting push, this workflow builds the NAPI binary matrix and
-# publishes to npm.
+# The JS release pipeline (the counterpart to release-plz for the Rust crates),
+# mirroring its two-job shape: on every push to `main` the `version-pr` job
+# derives `.changeset/*.md` from the `node/**` conventional commits and, via the
+# Changesets action, opens/updates a single "Version Packages" PR carrying those
+# entries + the version bumps + per-package CHANGELOGs. Nothing lands on `main`
+# — the version state lives on the action's `changeset-release/main` PR branch.
 #
-# DORMANT / DRY-RUN: publishing is gated behind the `JS_PUBLISH_ENABLED` repo
-# variable. Until it is set to "true" (after the publish-scope follow-up decides
-# which packages go public), the publish job runs `--dry-run` only and never
-# pushes to npm. Today only `@open-lakehouse/uc-client` (+ its platform packages) is
-# non-private; every `@open-lakehouse/*` package is `private: true` and skipped.
+# When that PR is merged there are no changesets left, so the action reports
+# `hasChangesets == 'false'`; the `napi-build` matrix and `publish` job are gated
+# on that (the JS analogue of release-plz gating Docker on "was it released this
+# run"). On an ordinary push the PR is just updated and both are skipped — no
+# multi-arch builds until a release is actually due.
+#
+# DORMANT / DRY-RUN: publishing is further gated behind the `JS_PUBLISH_ENABLED`
+# repo variable. Until it is set to "true" (after the publish-scope follow-up
+# decides which packages go public), the publish job runs `--dry-run` only and
+# never pushes to npm. Today only `@open-lakehouse/uc-client` (+ its platform
+# packages) is non-private; every `@open-lakehouse/*` package is `private: true`
+# and skipped.
 #
 # See .changeset/README.md and .agents/rules/js-release-changesets-rule.mdc.
 
@@ -38,6 +44,13 @@ jobs:
     permissions:
       contents: write # push the changeset-release/main branch
       pull-requests: write # open/update the Version Packages PR
+    # `hasChangesets` is 'true' while a release is still pending (the Version PR
+    # is open/updated) and 'false' once it has been merged (nothing left to
+    # version). The `napi-build` + `publish` jobs gate on 'false' so the
+    # expensive multi-arch build + npm publish run ONLY when a release is due —
+    # the JS analogue of release-plz gating Docker on "was it released this run".
+    outputs:
+      hasChangesets: ${{ steps.changesets.outputs.hasChangesets }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -53,10 +66,23 @@ jobs:
           bun run scripts/strip-bun-lock-proxy.ts --check
           bun install --frozen-lockfile
 
+      # Derive `.changeset/*.md` from the `node/**` conventional commits since the
+      # last release (the "automatic" half — the counterpart to release-plz
+      # reading commits). The script is idempotent per HEAD sha and writes nothing
+      # when there is no release-worthy commit. Crucially this only stages files in
+      # the working tree; the Changesets action below carries them onto its PR
+      # branch, so NOTHING is ever committed to `main`. A hand-written changeset
+      # still wins (`changeset version` takes the highest bump per package).
+      - name: Generate changesets from node/ commits
+        run: bun run scripts/autogen-changeset.ts
+
       # Opens/updates the Version Packages PR. `version` runs `changeset version`
-      # (bumps + changelogs); we do NOT set `publish` here — publishing is handled
-      # by the gated `publish` job below so the NAPI matrix build runs first.
+      # (bumps + changelogs) and commits both the generated changesets and the
+      # bumps to the `changeset-release/main` branch. We do NOT set `publish` here
+      # — publishing is handled by the gated `publish` job below so the NAPI matrix
+      # build runs first. `id:` exposes `hasChangesets` for the release gate.
       - name: Changesets Version PR
+        id: changesets
         uses: changesets/action@v1
         with:
           version: bun run changeset:version
@@ -66,11 +92,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
 
   # --- Build the NAPI binary for every target -------------------------------
-  # Runs on every push; its artifacts are only consumed by the publish job when
-  # there is nothing left to version (i.e. the Version Packages PR was merged).
+  # Gated on a release being due (the Version Packages PR was just merged, so no
+  # changesets remain). On an ordinary push `hasChangesets == 'true'` and this
+  # whole matrix is skipped — no multi-arch builds until we actually release.
+  # (Per-PR / host-target build coverage lives in node-ci.yaml.)
   napi-build:
     name: napi (${{ matrix.target }})
-    if: ${{ github.repository == 'open-lakehouse/mangrove' }}
+    needs: [version-pr]
+    if: ${{ github.repository == 'open-lakehouse/mangrove' && needs.version-pr.outputs.hasChangesets == 'false' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     env:
@@ -131,12 +160,13 @@ jobs:
 
   # --- Publish to npm (DORMANT: dry-run until JS_PUBLISH_ENABLED=true) --------
   # Only meaningful once the Version Packages PR is merged (no changesets left).
-  # The Changesets action's `hasChangesets` output tells us whether there is
-  # still pending versioning; we publish only when there is not.
+  # The Changesets action's `hasChangesets` output (surfaced by `version-pr`)
+  # tells us whether there is still pending versioning; we publish only when
+  # there is not — the same gate the `napi-build` matrix uses.
   publish:
     name: Publish (npm)
     needs: [version-pr, napi-build]
-    if: ${{ github.repository == 'open-lakehouse/mangrove' }}
+    if: ${{ github.repository == 'open-lakehouse/mangrove' && needs.version-pr.outputs.hasChangesets == 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: release # protected env, mirrors release-plz
