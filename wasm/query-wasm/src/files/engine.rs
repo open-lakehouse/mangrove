@@ -40,7 +40,7 @@ use unitycatalog_object_store::UnityObjectStoreFactory;
 use crate::error::{Error, Result};
 use crate::files::page::{DirectoryPage, FileEntry, paginate};
 use crate::files::path::VolumePath;
-use crate::generated::portal::files::v1::{DirectoryMetadata, FileMetadata};
+use unitycatalog_files_proto::portal::files::v1::{DirectoryMetadata, FileMetadata};
 
 /// Vend `READ_VOLUME` credentials for `path`'s volume and return the real cloud
 /// store, prefix-scoped to the volume root (so callers address it with
