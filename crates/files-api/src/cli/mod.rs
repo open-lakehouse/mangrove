@@ -138,10 +138,10 @@ impl ServeArgs {
                 }
             }
         }
-        if let Some(token) = &self.upstream_token {
-            if let Some(u) = &mut cfg.upstream {
-                u.token = Some(config::ConfigValue::Value(token.clone()));
-            }
+        if let Some(token) = &self.upstream_token
+            && let Some(u) = &mut cfg.upstream
+        {
+            u.token = Some(config::ConfigValue::Value(token.clone()));
         }
     }
 }
