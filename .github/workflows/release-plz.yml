@@ -192,8 +192,17 @@ jobs:
       contents: write
       packages: write
       id-token: write
+    # One generic reusable workflow builds every image; per-image differences are
+    # passed as inputs (see docker-release.yml). This replaced three byte-identical
+    # copies whose forgotten per-image artifact name let concurrent merge jobs
+    # collide on shared `digests-*` artifacts.
     uses: ./.github/workflows/docker-release.yml
     with:
+      image: mangrove
+      dockerfile: crates/server/Dockerfile
+      tag_prefix: olai-uc-server
+      title: mangrove
+      description: Mangrove — a lakehouse catalog server (Unity Catalog + Delta Sharing APIs) with bundled web UI
       version: ${{ needs.release-plz-release.outputs.server_version }}
       ref: ${{ needs.release-plz-release.outputs.server_tag }}
 
@@ -209,8 +218,13 @@ jobs:
       contents: write
       packages: write
       id-token: write
-    uses: ./.github/workflows/docker-release-storage-proxy.yml
+    uses: ./.github/workflows/docker-release.yml
     with:
+      image: storage-proxy
+      dockerfile: crates/storage-proxy/Dockerfile
+      tag_prefix: olai-uc-storage-proxy
+      title: storage-proxy
+      description: Standalone Unity Catalog storage byte-proxy — same-origin, streaming reads/writes over governed securables
       version: ${{ needs.release-plz-release.outputs.storage_proxy_version }}
       ref: ${{ needs.release-plz-release.outputs.storage_proxy_tag }}
 
@@ -226,7 +240,12 @@ jobs:
       contents: write
       packages: write
       id-token: write
-    uses: ./.github/workflows/docker-release-files-api.yml
+    uses: ./.github/workflows/docker-release.yml
     with:
+      image: files-api
+      dockerfile: crates/files-api/Dockerfile
+      tag_prefix: olai-uc-files-api
+      title: files-api
+      description: Standalone Unity Catalog volume Files API — a ConnectRPC portal.files.v1.FilesService server
       version: ${{ needs.release-plz-release.outputs.files_api_version }}
       ref: ${{ needs.release-plz-release.outputs.files_api_tag }}
