@@ -4,11 +4,11 @@
 # Why its own workspace: the cdylib needs a size-tuned `[profile.release]`
 # (opt-level="s", lto, ...) and it pins a heavily-customized delta stack that must
 # NOT leak into the native server build — the roeap `delta_kernel` fork's
-# experimental `sm-plans` line (rev c7bc4254), the matching `roeap/delta-rs` rev
-# (d2d0cbae), and a `[patch.crates-io]` on the whole arrow-rs family + object_store
-# (the roeap wasm-codec / browser-Fetch forks). Keeping this in a distinct
-# workspace + lock is exactly what lets `../Cargo.toml` stay on stock crates.io
-# arrow/object_store and a lighter (buoyant/main) kernel — see #182.
+# experimental `sm-plans` line (rev c7bc4254) and a `[patch.crates-io]` on the
+# whole arrow-rs family + object_store (the roeap wasm-codec / browser-Fetch
+# forks). Keeping this in a distinct workspace + lock is exactly what lets
+# `../Cargo.toml` stay on stock crates.io arrow/object_store and the published
+# `buoyant_kernel` — see #182.
 #
 # The two workspaces are now INDEPENDENT graphs with independent `Cargo.lock`s:
 # there is deliberately no shared kernel/arrow rev between them (the old

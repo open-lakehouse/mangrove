@@ -1,7 +1,7 @@
 # The in-browser query engine (WASM_QUERY_PREVIEW.md Phase B): mangrove-specific
-# glue around `deltalake-wasm` — UC table resolution over the REST API, vended-
-# credential storage access, and a wasm-bindgen surface implementing the
-# `open_lakehouse.query.v1` runner contract.
+# glue around the async-native `olai-delta-df` Delta provider — UC table resolution
+# over the REST API, vended-credential storage access, and a wasm-bindgen surface
+# implementing the `open_lakehouse.query.v1` runner contract. No delta-rs dependency.
 #
 # This crate is a member of the STANDALONE wasm workspace (`../Cargo.toml`), which
 # owns the size-tuned `[profile.release]` and the `[patch.crates-io]` on the arrow
@@ -35,31 +35,12 @@ publish = false
 name = "query_wasm"
 crate-type = ["cdylib", "rlib"]
 
-# The delta-rs wasm engine, pinned by immutable rev to the roeap fork's
-# `feat/kernel-snapshot-accessor` branch (rev d2d0cbae): the sm-plans/wasm line
-# with `feat/wasm-max-catalog-version` (so `OpenOptions.max_catalog_version` — the
-# discovery-version thread — is retained) and its `delta_kernel` bumped to the
-# sm-plans-consolidation tip `c7bc4254` (adds the logical scan-file-row terminal +
-# `Scan::scan_file_row_schema` accessor and the `FullState::output_schema` accessor
-# + FSR terminal projection). Both deps resolve from one git source and
-# pin the SAME kernel rev the `olai-delta-df` sibling pins directly, so exactly
-# one `delta_kernel` is in the graph and `SnapshotRef` unifies across it.
-#
-# NOTE (follow-up): async-native construction no longer uses the facade's
-# `Snapshot::kernel_snapshot()` accessor or `open_table_with_store`; the
-# deltalake-wasm/-core deps remain only for a now-dead `Error::Delta` variant and
-# are slated for removal (see the M3 follow-up issue).
 [dependencies]
-deltalake-wasm = { git = "https://github.com/roeap/delta-rs", rev = "d2d0cbae3219b04338551949ed7eaf4181255170" }
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "d2d0cbae3219b04338551949ed7eaf4181255170", default-features = false, features = [
-  "datafusion",
-] }
-
 # The async-native (sm_plans-driven) Delta TableProvider — the replacement for the
 # eager `DeltaScanNext` + InlineExecutor scan path. It is the sibling member of
 # this same wasm workspace (`../olai-delta-df`), so this is a plain in-workspace
-# `path` dep; the workspace `[patch.crates-io]` applies to it, unifying its
-# `delta_kernel` types with what `deltalake-wasm` returns.
+# `path` dep; the workspace `[patch.crates-io]` applies to it, so it shares this
+# crate's arrow / object_store types.
 olai-delta-df = { path = "../olai-delta-df" }
 
 # The canonical Unity Catalog crates, now wasm-capable (PRs #150/#151): the
@@ -140,21 +121,16 @@ connectrpc = { version = "0.7", default-features = false }
 # the server-side dispatcher, because the client type is emitted unconditionally.
 http-body = "1"
 
-# Native builds of deltalake-core require a TLS backend feature; the wasm target
-# needs none (the browser supplies fetch), so re-add it natively only. Mirrors
-# deltalake-wasm's own manifest.
-[target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
-deltalake-core = { git = "https://github.com/roeap/delta-rs", rev = "d2d0cbae3219b04338551949ed7eaf4181255170", default-features = false, features = [
-  "datafusion",
-  "rustls",
-] }
-
 # wasm glue: the fetch-backed store, the UC REST client, and the wasm-bindgen
 # surface only exist on wasm32-unknown-unknown; everything else compiles (and is
 # tested) natively.
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
 bytes = { version = "1" }
 console_error_panic_hook = "0.1"
+# getrandom 0.4 (pulled via object_store -> rand 0.10) needs its JS backend selected
+# by crate feature on wasm32-unknown-unknown; 0.3 uses the `getrandom_backend`
+# rustflag in `../.cargo/config.toml` instead. deltalake-core used to enable this.
+getrandom = { version = "0.4", features = ["wasm_js"] }
 # The in-wasm ConnectRPC dispatcher (files/service.rs) builds a `RequestContext`
 # from an `http::HeaderMap`; connectrpc takes `http` types in its API but does not
 # re-export the crate. Pure traits + types — wasm-safe, already in the graph via

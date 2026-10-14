@@ -4,13 +4,11 @@
 //! The runner contract hands us raw SQL (built by `@open-lakehouse/query` as
 //! ``SELECT … FROM `catalog`.`schema`.`table` LIMIT n``). The engine extracts
 //! the single table reference, resolves it against the request's optional
-//! default catalog/schema (the Unity Catalog address), opens the table through
-//! [`deltalake_wasm`], registers an async-native scan
-//! ([`DeltaSsaTableProvider`]) under exactly the name the SQL will resolve to,
-//! and executes — emitting one **self-contained** Arrow IPC stream per record
-//! batch (schema + batch + EOS), per the proto contract. This differs from
-//! `deltalake_wasm::query_ipc`, whose chunks form one incremental stream and
-//! only parse when concatenated.
+//! default catalog/schema (the Unity Catalog address), registers an async-native
+//! scan ([`DeltaSsaTableProvider`]) under exactly the name the SQL will resolve
+//! to, and executes — emitting one **self-contained** Arrow IPC stream per record
+//! batch (schema + batch + EOS), per the proto contract (rather than one
+//! incremental stream whose chunks only parse when concatenated).
 //!
 //! Both snapshot construction *and* the scan are now async-native and engine-free.
 //! Construction drives the kernel `sm_plans` P&M state machine over the discovered
@@ -18,7 +16,7 @@
 //! directory listing) and with **no `PrimedStore` prefetch** and **no
 //! `InlineExecutor`**. The scan is the `sm_plans`-driven [`DeltaSsaTableProvider`],
 //! which streams data files lazily through DataFusion's own async object-store
-//! stack. The `deltalake_wasm` facade is no longer on this path.
+//! stack.
 
 use std::sync::Arc;
 

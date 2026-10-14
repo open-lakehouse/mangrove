@@ -27,10 +27,6 @@ pub enum Error {
     #[error(transparent)]
     ObjectStore(#[from] object_store::Error),
 
-    /// Delta table resolution or scan failed.
-    #[error(transparent)]
-    Delta(#[from] deltalake_core::DeltaTableError),
-
     /// Query planning or execution failed.
     #[error(transparent)]
     DataFusion(#[from] datafusion::error::DataFusionError),

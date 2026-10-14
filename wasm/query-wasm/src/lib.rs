@@ -1,10 +1,10 @@
 //! In-browser query engine for Unity Catalog table previews (Phase B of
 //! `WASM_QUERY_PREVIEW.md`).
 //!
-//! Glue around [`deltalake-wasm`](deltalake_wasm): resolve a Unity Catalog table
-//! over the REST API (`/delta/v1` `loadTable` + `temporary-table-credentials`),
-//! turn the vended credential into a fetch-backed object store, prime and open
-//! the Delta table with the delta-rs wasm facade, and execute preview SQL —
+//! Resolve a Unity Catalog table over the REST API (`/delta/v1` `loadTable` +
+//! `temporary-table-credentials`), turn the vended credential into a fetch-backed
+//! object store, build the Delta snapshot and scan with the async-native
+//! [`olai_delta_df`] provider, and execute preview SQL —
 //! streaming results as the self-contained Arrow IPC chunks the
 //! `open_lakehouse.query.v1` runner contract requires.
 //!
