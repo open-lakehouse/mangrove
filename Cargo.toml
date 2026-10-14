@@ -2,26 +2,21 @@
 resolver = "2"
 members = ["crates/*", "python/client", "node/client"]
 # This is the NATIVE workspace. The in-browser query engine lives in its OWN
-# standalone workspace under `../wasm/` (`wasm/query-wasm` + `wasm/olai-delta-df`),
-# NOT here — see `wasm/Cargo.toml` and #182. Both wasm crates were moved out of
-# `crates/` so the `crates/*` glob no longer matches them and no `exclude` is
-# needed. The wasm workspace owns the heavily-customized delta stack (the roeap
-# `delta_kernel` sm-plans fork + the arrow-rs / object_store fork
-# `[patch.crates-io]`); this native workspace still carries the SAME roeap kernel /
-# delta-rs pins + arrow patch below (native has not yet moved to the community
-# `buoyant` kernel — that is deferred, see #182 follow-up), but the two workspaces
-# are now separate directories with independent `Cargo.lock`s. `wasm/query-wasm`
-# reaches back into this workspace's crates via cross-workspace
-# `path = "../../crates/*"` deps.
+# standalone workspace under `wasm/` (`wasm/query-wasm` + `wasm/olai-delta-df`),
+# NOT here — see `wasm/Cargo.toml` and #182. The wasm workspace owns the
+# wasm-specific fork stack (the arrow-rs / object_store patch); this native
+# workspace resolves arrow, parquet and object_store straight from crates.io. The
+# two workspaces have independent `Cargo.lock`s. `wasm/query-wasm` reaches back
+# into this workspace's crates via cross-workspace `path = "../../crates/*"` deps.
 
 [workspace.package]
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/open-lakehouse/mangrove"
 readme = "README.md"
-# Floor set by the dependency tree: buoyant_kernel requires rustc 1.91
-# (datafusion 53 / darling 0.23 need 1.88). Keep CI's toolchain pin >= this.
-rust-version = "1.91"
+# Floor set by the dependency tree: deltalake-core 1.1 requires rustc 1.94.1
+# (buoyant_kernel 0.28 needs 1.88). Keep CI's toolchain pin >= this.
+rust-version = "1.94.1"
 # Crates are versioned independently in each crate's own `[package].version`
 # (the release-plz convention), so there is intentionally no workspace-wide
 # `version` here.
@@ -35,58 +30,32 @@ keywords = [
 ]
 
 [workspace.dependencies]
-# Kernel and delta-rs core share one git source so the `Snapshot` types unify when
-# `crates/datafusion` builds a catalog-managed kernel snapshot and hands it to
-# `deltalake-core::kernel::Snapshot::new`. All three are pinned here at the
-# workspace level by immutable `rev` (never a floating branch): a moving branch
-# drifts on any CI job that re-resolves instead of `--locked` (napi build,
-# `cargo llvm-cov --doc`), which is exactly how the old `buoyant/main` pin broke.
-#
-# The native server and the wasm preview engine (`crates/query-wasm`, now a member
-# of this same workspace) share ONE kernel fork: roeap `delta_kernel` v0.25.0. The
-# default engine (`DefaultEngineBuilder`) moved into its own
-# `delta_kernel_default_engine` crate in v0.25 — depend on it explicitly. Bump all
-# four revs in lock-step; the `delta-rs` and `delta-kernel-rs` revs must be a
-# matched set.
-# The `version =` on these git deps is required for `release-plz`'s
-# `cargo package` version-determination step: `cargo package` rejects any
-# dependency (git-sourced included) that lacks a version requirement. The
-# `git`+`rev` still governs the actual build; `version` only satisfies the
-# packaging check and matches each fork's declared version. See release-plz#2595.
-# Pinned to the delta-kernel-rs `sm-plans-consolidation` TIP (rev c7bc4254 =
-# 2cf01549 plus 8 additive, `sm-plans`-gated commits: the list-free snapshot
-# construction seam, the SnapshotPm P&M state machine, the checkpoint-only
-# reconciliation fix, the stats-on-terminal scan metadata SM, the SSA
-# data-skipping FilterNode on the scan terminal, the logical scan-file-row
-# terminal + `Scan::scan_file_row_schema` accessor, the
-# `FullState::output_schema` accessor + FSR terminal projection, and the
-# nested-`replace_col` ancestor-nullability fix so rebuilt ancestor structs
-# (only `add`, via stats/partitions parsing) keep their top-level null-ness —
-# non-`add` FSR rows now show a top-level-NULL `add` instead of a present,
-# all-inner-null struct) and the
-# matching delta-rs rev d2d0cbae (= the olai/sm-plans
-# tip a686c3be plus one-line Cargo bumps of delta-rs's own kernel pin, most
-# recently to c7bc4254). This is the rev the wasm query engine (`crates/query-wasm`
-# + `delta-df-provider`) requires for its async-native sm_plans path, and it is
-# now the WHOLE repo's rev — native + wasm share ONE kernel and ONE delta-rs rev
-# (the single-rev invariant): delta-rs's internal kernel pin was bumped to c7bc4254
-# in lock-step with this bump, so `deltalake-core` and `delta_kernel` resolve to the
-# same kernel rev and their `Snapshot` types unify. The extra commits are inside the
-# `sm-plans` feature the native build never enables, so the native surface is unchanged.
-# `default-features = false` +
-# explicit `arrow-58` is REQUIRED: the kernel's `arrow` default alias is arrow-59
-# and delta_kernel_default_engine's `default` enables it, so leaving defaults on
-# unions arrow-59 into this arrow-58 graph and splits the two `Schema` types.
-delta_kernel = { package = "delta_kernel", version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "c7bc425478aeb58b0902bbd88a1f53d0a93c9fd8", default-features = false, features = [
+# The Delta stack: the published `buoyant_kernel` (the Buoyant Data distribution of
+# delta-kernel-rs) plus delta-rs. `deltalake-core` 1.1 depends on `buoyant_kernel`
+# from crates.io, so depending on the same published crate here makes the kernel
+# `Snapshot` / `Engine` / `Committer` types unify between our crates and delta-rs.
+# The `package` aliases keep every `delta_kernel::` / `delta_kernel_default_engine::`
+# path unchanged. `default-features = false` + an explicit `arrow-59` keeps the
+# kernel on the same arrow major as datafusion 55 / deltalake-core 1.1.
+delta_kernel = { package = "buoyant_kernel", version = "0.28.1", default-features = false, features = [
   "internal-api",
   "default-engine-base",
-  "arrow-58",
+  "arrow-59",
 ] }
-delta_kernel_default_engine = { version = "0.25.0", git = "https://github.com/roeap/delta-kernel-rs", rev = "c7bc425478aeb58b0902bbd88a1f53d0a93c9fd8", package = "delta_kernel_default_engine", default-features = false, features = [
-  "arrow-58",
+delta_kernel_default_engine = { package = "buoyant_kernel_engine", version = "0.28.0", default-features = false, features = [
+  "arrow-59",
   "rustls",
 ] }
-deltalake-core = { version = "0.32.4", git = "https://github.com/roeap/delta-rs", rev = "d2d0cbae3219b04338551949ed7eaf4181255170", features = [
+# deltalake-core is the ONE remaining git dep: the roeap fork's `olai/rust-v1.1.1`
+# branch = upstream tag `rust-v1.1.1` plus three commits mangrove needs:
+# `Snapshot::from_kernel_snapshot` (wrap the catalog-managed kernel snapshot built
+# with a log tail), a public `to_delta_predicate`, and `CatalogManaged` /
+# `VacuumProtocolCheck` as supported *reader* features (UC managed tables carry
+# both). All are slated for upstreaming; switch to the crates.io release once they
+# ship. Pinned by immutable
+# `rev`. The `version =` is required by `release-plz`'s `cargo package` step
+# (release-plz#2595) and must match both the fork and a crates.io version.
+deltalake-core = { version = "1.1.1", git = "https://github.com/roeap/delta-rs", rev = "64c0814617cbaa6410756e27786754fb877a3bff", features = [
   "datafusion",
   "cloud",
 ] }
@@ -98,7 +67,7 @@ axum-extra = { version = "0.10", features = ["query"] }
 bytes = { version = "1.1" }
 chrono = { version = "0.4.41", features = ["serde"] }
 dashmap = { version = "6" }
-datafusion = { version = "54.0.0" }
+datafusion = { version = "55" }
 env_logger = "0.11"
 futures = "0.3.32"
 itertools = { version = "0.14.0" }
@@ -146,7 +115,7 @@ sqlx = { version = "0.8.3" }
 # Standalone SQL parser. DataFusion only re-exports this crate, so we depend on it
 # directly for metric-view dependency extraction. Keep the version aligned with the
 # one DataFusion (`datafusion` above) resolves so the AST types unify across crates.
-sqlparser = { version = "0.61.0" }
+sqlparser = { version = "0.62.0" }
 thiserror = { version = "2" }
 tokio = { version = "1.40" }
 tonic = { version = "0.14" }
@@ -167,41 +136,6 @@ reqwest = { version = "0.12", default-features = false, features = [
   "json",
   "stream",
 ] }
-
-[patch.crates-io]
-# arrow family + parquet: the roeap arrow-rs fork (branch wasm-codec-58.3.0, rev
-# dc2acae8). Same 58.3.0 version as crates.io. This is what lets the wasm query
-# engine build for wasm32-unknown-unknown: the fork's parquet backs `zstd`
-# per-target (the C `zstd` crate on native — full encode+decode — and pure-Rust
-# `ruzstd` decode-only on wasm), and `brotli` is dropped from wasm. Native builds
-# keep full C zstd, so this patch is native-safe. Applied workspace-wide (native +
-# wasm now share one graph). MUST stay a patch, not feature flags: the kernel and
-# datafusion-datasource-parquet declare `parquet` without `default-features =
-# false`, and Cargo unions features graph-wide. Keep in lock-step with the pin in
-# crates/query-wasm/Cargo.toml.
-parquet = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "parquet" }
-arrow = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow" }
-arrow-arith = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-arith" }
-arrow-array = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-array" }
-arrow-buffer = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-buffer" }
-arrow-cast = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-cast" }
-arrow-data = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-data" }
-arrow-ipc = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-ipc" }
-arrow-json = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-json" }
-arrow-ord = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-ord" }
-arrow-row = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-row" }
-arrow-schema = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-schema" }
-arrow-select = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-select" }
-arrow-string = { git = "https://github.com/roeap/arrow-rs", rev = "dc2acae85be7543f4a417b131554ef5c948e992b", package = "arrow-string" }
-
-# object_store: the roeap fork's 0.13.2-based wasm integration branch. Same
-# 0.13.2 version as crates.io, so every `object_store = "0.13.2"` dep resolves
-# unchanged. Patched workspace-wide so native + wasm share ONE object_store
-# build (rev e4676ee). The fork's additions are per-target `cfg` (browser Fetch
-# transport, wasm-guarded retry sleep, wasm `no-store` fetch cache); native
-# builds are unaffected. Keep the rev in lock-step with the pin in
-# crates/query-wasm/Cargo.toml.
-object_store = { git = "https://github.com/roeap/arrow-rs-object-store", rev = "e4676ee087161681413a059b38aa1687bcf1a3c2", package = "object_store" }
 
 [workspace.metadata.typos]
 default.extend-ignore-re = [

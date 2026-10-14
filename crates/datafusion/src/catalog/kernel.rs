@@ -8,13 +8,13 @@
 //! table's latest version: the newest commits are ratified but may not yet be
 //! backfilled into `_delta_log/` (they live as staged commits under
 //! `_delta_log/_staged_commits/`). We build a `delta_kernel` snapshot from the
-//! supplied commit tail + catalog version and wrap it with [`Snapshot::new`],
+//! supplied commit tail + catalog version and wrap it with
+//! [`Snapshot::from_kernel_snapshot`],
 //! mirroring the reference `delta-kernel-unity-catalog` read path.
 
 use datafusion::common::DataFusionError;
 use delta_kernel::snapshot::Snapshot as KernelSnapshot;
 use delta_kernel::{Engine, LogPath, Version};
-use deltalake_core::DeltaTableConfig;
 use deltalake_core::kernel::Snapshot;
 use unitycatalog_delta_api::models::{DeltaCommit, DeltaLoadTableResponse, DeltaTableType};
 use url::Url;
@@ -185,7 +185,7 @@ pub fn build_catalog_managed_snapshot(
         .build(engine)
         .map_err(|e| DataFusionError::External(Box::new(e)))?;
 
-    Ok(Snapshot::new(inner, DeltaTableConfig::default()))
+    Ok(Snapshot::from_kernel_snapshot(inner))
 }
 
 /// The staged-commit file name to hand the kernel, tolerating both forms the spec

@@ -26,9 +26,8 @@ use crate::engine::{ACTIONS_LOG_UDTF, LogKind, RECONCILED_LOG_UDTF, run_unified}
 use crate::error::Error;
 use crate::files::path::VolumePath;
 
-// Named uniquely: `deltalake-wasm` (also a cdylib-capable dependency) exports
-// its own `#[wasm_bindgen(start)] fn init`, and identically-named start
-// symbols collide at link time.
+// Named uniquely so the start symbol cannot collide at link time with another
+// cdylib-capable dependency's `#[wasm_bindgen(start)] fn init`.
 #[wasm_bindgen(start)]
 fn query_wasm_init() {
     console_error_panic_hook::set_once();

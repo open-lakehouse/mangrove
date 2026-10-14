@@ -12,11 +12,12 @@
 //!
 //! ## Upstream / follow-ups (tracked here so they travel with the code)
 //!
-//! - **delta-rs `V2Checkpoint` allow-list**: this module requires a delta-rs that allow-lists
-//!   the `v2Checkpoint` table feature in `ProtocolChecker` (it's part of the UC managed-table
-//!   contract). The workspace pins the `roeap/delta-rs` fork rev carrying that change. Upstream
-//!   it to delta-rs (a focused PR, not the "demo updates" commit it currently rides on), then
-//!   bump the pin off the fork rev.
+//! - **delta-rs kernel-snapshot constructor**: the catalog-managed read path wraps a kernel
+//!   snapshot built with the catalog log tail via `Snapshot::from_kernel_snapshot`, which only
+//!   the `roeap/delta-rs` `olai/rust-v1.1.1` fork exposes (alongside a public
+//!   `to_delta_predicate`), and reading needs `CatalogManaged` / `VacuumProtocolCheck` in
+//!   delta-rs's `ProtocolChecker` reader allow-list (also fork-only; `v2Checkpoint` is upstream
+//!   as of 1.1). Upstream all three, then drop the fork pin for the crates.io release.
 //! - **Schema/property evolution on append**: ALTER-style commits (protocol/metadata/clustering
 //!   changes) are rejected, not propagated — see `UnityCatalogCommitter`'s
 //!   `validate_no_alter_table_changes`. Lifting this requires bundling

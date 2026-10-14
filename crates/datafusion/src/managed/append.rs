@@ -112,7 +112,8 @@ pub async fn append_to_managed_table(
             .with_engine_info(engine_info);
 
         let write_context = txn
-            .unpartitioned_write_context()
+            .write_state()
+            .and_then(|state| state.unpartitioned_write_context())
             .map_err(CreateManagedTableError::Kernel)?;
         let add_metadata = engine
             .write_parquet(&ArrowEngineData::new(batch.clone()), &write_context)

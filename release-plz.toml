@@ -64,22 +64,24 @@ pr_draft = false
 #       OIDC trusted publishing cannot create a brand-new name. It needs a
 #       one-time token bootstrap (bootstrap-publish.yml) first. Remove the
 #       `release = false` line once the crate is bootstrapped + its Trusted
-#       Publisher is registered. Currently NONE — every publishable name is live
-#       (delta-api, common, client, object-store, postgres, sqlite). The server
-#       will need this bootstrap when it flips from `git_only` to published.
+#       Publisher is registered. Currently `sharing-client` (git-free since the
+#       move to the published `buoyant_kernel`, but its name is not yet on
+#       crates.io). The server will need this bootstrap when it flips from
+#       `git_only` to published.
 #
-#   (b) GIT-DEP BLOCK — the crate depends (transitively, via the workspace
-#       `delta_kernel` / `deltalake-core` git revs) on a git source. `cargo
-#       publish` rejects ANY git dependency, optional or not, so these crates
-#       CANNOT go to crates.io until those deps are published to the registry.
-#       This is a hard, standing block — NOT a bootstrap step. `sharing-client`
-#       (non-optional `delta_kernel`) and `datafusion` (optional kernel/delta-rs
-#       behind the `delta` feature) are both blocked this way.
+#   (b) GIT-DEP BLOCK — the crate depends (transitively) on the workspace
+#       `deltalake-core` git rev (the roeap `olai/rust-v1.1.1` fork; the kernel
+#       itself is the published `buoyant_kernel`). `cargo publish` rejects ANY
+#       git dependency, optional or not, so these crates CANNOT go to crates.io
+#       until the fork's two visibility commits ship in a delta-rs release.
+#       This is a hard, standing block — NOT a bootstrap step. `datafusion`
+#       (optional delta-rs behind the `delta` feature) and `sharing-api` (via
+#       datafusion's `delta` feature) are blocked this way.
 #
 # crates.io publish/bootstrap order (root -> leaf):
 #   delta-api, common -> client, object-store, postgres, sqlite -> cli
-# (sharing-client, sharing-api, datafusion are out of the order entirely — see
-# (b) above; server is git_only — see below.)
+# (sharing-client awaits its bootstrap — see (a); sharing-api and datafusion are
+# out of the order entirely — see (b); server is git_only — see below.)
 #
 # Already on crates.io (bootstrapped, releasing via OIDC): delta-api, common,
 # client, object-store, postgres, sqlite — these carry NO `release = false`.
@@ -106,17 +108,17 @@ changelog_path = "crates/client/CHANGELOG.md"
 [[package]]
 name = "olai-uc-sharing-client"
 changelog_path = "crates/sharing-client/CHANGELOG.md"
-# (b) Git-dep block: non-optional `delta_kernel` git dep — cannot publish to
-# crates.io. Standing block, not a bootstrap step.
+# (a) Bootstrap gate: git-free now that `delta_kernel` is the published
+# `buoyant_kernel`, but the name has never been published. Drop this line once
+# bootstrap-publish.yml has created it and its Trusted Publisher is registered.
 release = false
 
 [[package]]
 name = "olai-uc-sharing-api"
 changelog_path = "crates/sharing-api/CHANGELOG.md"
-# (b) Git-dep block: owns the kernel-backed query path, so it pulls the
-# non-optional `delta_kernel` / `delta_kernel_default_engine` git deps (and
-# `olai-uc-datafusion`'s `delta` feature) — cannot publish to crates.io.
-# Standing block, not a bootstrap step.
+# (b) Git-dep block: depends on `olai-uc-datafusion`'s `delta` feature, which
+# pulls the `deltalake-core` git dep — cannot publish to crates.io. Standing
+# block, not a bootstrap step.
 release = false
 
 [[package]]
@@ -134,9 +136,9 @@ changelog_path = "crates/sqlite/CHANGELOG.md"
 [[package]]
 name = "olai-uc-datafusion"
 changelog_path = "crates/datafusion/CHANGELOG.md"
-# (b) Git-dep block: kernel/delta-rs git deps (optional, behind `delta`) — cargo
-# rejects git deps even when optional, so cannot publish to crates.io. Standing
-# block, not a bootstrap step.
+# (b) Git-dep block: the `deltalake-core` git dep (optional, behind `delta`) —
+# cargo rejects git deps even when optional, so cannot publish to crates.io.
+# Standing block, not a bootstrap step.
 release = false
 
 [[package]]
@@ -170,10 +172,9 @@ changelog_path = "python/client/CHANGELOG.md"
 # this crate's release. It must be fully excluded from release-plz processing:
 # once a baseline tag exists, release-plz runs `cargo package` on it to diff
 # versions, and that packaging pass walks the workspace path-dep graph into
-# `olai-uc-datafusion`, whose optional `delta_kernel`/`deltalake-core` GIT deps
-# carry no registry `version` — `cargo package` rejects a git dep without one
-# (the same standing git-dep block that keeps datafusion/sharing-* off crates.io,
-# reason (b) above). `release = false` skips update/release-pr/release for this
+# `olai-uc-datafusion`, whose optional `deltalake-core` GIT dep `cargo package`
+# rejects (the same standing git-dep block that keeps datafusion/sharing-api off
+# crates.io, reason (b) above). `release = false` skips update/release-pr/release for this
 # crate entirely, so the packaging pass never runs. `git_only`/`publish` are now
 # redundant but kept for intent. Push the `unitycatalog-client-py-v<version>` tag
 # by hand to cut a wheel release (the workflow's detect step keys off the tag).
