@@ -47,13 +47,15 @@ delta_kernel_default_engine = { package = "buoyant_kernel_engine", version = "0.
   "rustls",
 ] }
 # deltalake-core is the ONE remaining git dep: the roeap fork's `olai/rust-v1.1.1`
-# branch = upstream tag `rust-v1.1.1` plus two visibility commits mangrove needs
-# (`Snapshot::from_kernel_snapshot`, to wrap the catalog-managed kernel snapshot
-# built with a log tail, and a public `to_delta_predicate`). Both are slated for
-# upstreaming; switch to the crates.io release once they ship. Pinned by immutable
+# branch = upstream tag `rust-v1.1.1` plus three commits mangrove needs:
+# `Snapshot::from_kernel_snapshot` (wrap the catalog-managed kernel snapshot built
+# with a log tail), a public `to_delta_predicate`, and `CatalogManaged` /
+# `VacuumProtocolCheck` as supported *reader* features (UC managed tables carry
+# both). All are slated for upstreaming; switch to the crates.io release once they
+# ship. Pinned by immutable
 # `rev`. The `version =` is required by `release-plz`'s `cargo package` step
 # (release-plz#2595) and must match both the fork and a crates.io version.
-deltalake-core = { version = "1.1.1", git = "https://github.com/roeap/delta-rs", rev = "dfa9be2d3b5eabe3a8c5e655432da223c2977560", features = [
+deltalake-core = { version = "1.1.1", git = "https://github.com/roeap/delta-rs", rev = "64c0814617cbaa6410756e27786754fb877a3bff", features = [
   "datafusion",
   "cloud",
 ] }
