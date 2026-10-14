@@ -621,6 +621,11 @@ jobs:
           workspaces: wasm
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
+      # buoyant_kernel's `declarative-plans` feature compiles its plan protos with
+      # prost-build at build time, which needs `protoc` on PATH.
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends protobuf-compiler
+
       - name: Format
         run: cargo fmt --all --check
 
