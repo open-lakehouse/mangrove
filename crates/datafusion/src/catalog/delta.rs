@@ -18,7 +18,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use datafusion::catalog::TableProvider;
 use datafusion::common::DataFusionError;
 use datafusion::execution::context::SessionContext;
-use deltalake_core::DeltaTableConfig;
 use deltalake_core::delta_datafusion::DeltaScanNext;
 use deltalake_core::delta_datafusion::engine::DataFusionEngine;
 use deltalake_core::kernel::Snapshot;
@@ -94,7 +93,7 @@ impl DeltaTableProviderBuilder {
     /// filesystem `_delta_log/` is authoritative here, so no catalog version is set.
     async fn filesystem_snapshot(&self, location: &Url) -> Result<Snapshot, TableProviderError> {
         let engine = DataFusionEngine::new_from_context(self.ctx.task_ctx());
-        Snapshot::try_new_with_engine(engine, location.clone(), DeltaTableConfig::default(), None)
+        Snapshot::try_new_with_engine(engine, location.clone(), None)
             .await
             .map_err(|e| DataFusionError::External(Box::new(e)))
     }

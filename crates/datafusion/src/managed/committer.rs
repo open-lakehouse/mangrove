@@ -229,7 +229,7 @@ impl UnityCatalogCommitter {
             .json_handler()
             .write_json_file(&published, Box::new(actions), false)
         {
-            Ok(()) => {
+            Ok(_) => {
                 info!("wrote version 0 commit for UC managed table creation");
                 let file_meta = engine.storage_handler().head(&published)?;
                 Ok(CommitResponse::Committed { file_meta })

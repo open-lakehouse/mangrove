@@ -33,9 +33,10 @@ use datafusion::arrow::record_batch::RecordBatch;
 use datafusion::catalog::{Session, TableProvider};
 use datafusion::common::DataFusionError;
 use datafusion::common::error::Result;
+use datafusion::common::tree_node::TreeNodeRecursion;
 use datafusion::execution::{RecordBatchStream, SendableRecordBatchStream, TaskContext};
 use datafusion::logical_expr::{Expr, TableProviderFilterPushDown, TableType};
-use datafusion::physical_expr::EquivalenceProperties;
+use datafusion::physical_expr::{EquivalenceProperties, PhysicalExpr};
 use datafusion::physical_plan::execution_plan::{Boundedness, EmissionType};
 use datafusion::physical_plan::{
     DisplayAs, DisplayFormatType, ExecutionPlan, Partitioning, PlanProperties,
@@ -200,6 +201,14 @@ impl DisplayAs for ReconciledLogExec {
 impl ExecutionPlan for ReconciledLogExec {
     fn name(&self) -> &'static str {
         "ReconciledLogExec"
+    }
+
+    fn apply_expressions(
+        &self,
+        _f: &mut dyn FnMut(&Arc<dyn PhysicalExpr>) -> Result<TreeNodeRecursion>,
+    ) -> Result<TreeNodeRecursion> {
+        // A leaf over the kernel's log replay: it holds no physical expressions.
+        Ok(TreeNodeRecursion::Continue)
     }
 
     fn properties(&self) -> &Arc<PlanProperties> {
