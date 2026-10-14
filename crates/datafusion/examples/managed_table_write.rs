@@ -270,7 +270,8 @@ async fn main() -> Result<(), BoxError> {
     let log_store = default_logstore(Arc::from(prefixed), root.clone(), &location, &config);
     let engine = DataFusionEngine::new_from_context(ctx.task_ctx());
     let snapshot =
-        build_catalog_managed_snapshot(engine.as_ref(), &location, &commits, latest as i64, None)?;
+        build_catalog_managed_snapshot(engine.clone(), &location, &commits, latest as i64, None)
+            .await?;
     println!("  snapshot version = {}", snapshot.version());
 
     let provider = DeltaScanNext::builder()

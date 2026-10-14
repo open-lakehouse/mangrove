@@ -68,7 +68,7 @@ async fn build_table(dir: &std::path::Path) -> Url {
     let table = table.write(vec![batch(&[3], &["c"])]).await.unwrap();
 
     // Checkpoint at v1 so the raw reader crosses a checkpoint file.
-    create_checkpoint(&table, None).await.unwrap();
+    create_checkpoint(&table).await.unwrap();
 
     // v2: overwrite — tombstones the earlier adds, writes new files.
     table

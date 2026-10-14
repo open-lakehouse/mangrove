@@ -189,7 +189,8 @@ async fn read_managed_table(
     let engine = DataFusionEngine::new_from_context(ctx.task_ctx());
 
     let snapshot =
-        build_catalog_managed_snapshot(engine.as_ref(), &location, &commits, latest as i64, None)?;
+        build_catalog_managed_snapshot(engine.clone(), &location, &commits, latest as i64, None)
+            .await?;
     let provider = DeltaScanNext::builder()
         .with_snapshot(Arc::new(snapshot))
         .with_log_store(log_store)

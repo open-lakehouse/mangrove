@@ -12,12 +12,15 @@
 //!
 //! ## Upstream / follow-ups (tracked here so they travel with the code)
 //!
-//! - **delta-rs kernel-snapshot constructor**: the catalog-managed read path wraps a kernel
-//!   snapshot built with the catalog log tail via `Snapshot::from_kernel_snapshot`, which only
-//!   the `roeap/delta-rs` `olai/rust-v1.1.1` fork exposes (alongside a public
-//!   `to_delta_predicate`), and reading needs `CatalogManaged` / `VacuumProtocolCheck` in
-//!   delta-rs's `ProtocolChecker` reader allow-list (also fork-only; `v2Checkpoint` is upstream
-//!   as of 1.1). Upstream all three, then drop the fork pin for the crates.io release.
+//! - **delta-rs read path**: upstream delta-rs `main` (2.0, delta-rs#4809) reads catalog-managed
+//!   tables — `Snapshot::try_new_with_engine_and_catalog` takes our UC log tail as a
+//!   `CatalogLogTail`, and `CatalogManaged` / `VacuumProtocolCheck` are supported reader
+//!   features. The `roeap/delta-rs` `olai/catalog-managed` pin adds only a public
+//!   `to_delta_predicate` (log explorer pushdown); drop the fork once 2.0 ships with it.
+//! - **delta-rs write path**: delta-rs can't write catalog-managed tables yet (no ICT writes,
+//!   `CatalogManaged` is not a writer feature, no catalog implementation of its
+//!   `logstore::Committer` trait — delta-rs#4549). Until it does, creates and appends go
+//!   through the kernel `Transaction` + [`UnityCatalogCommitter`] here.
 //! - **Schema/property evolution on append**: ALTER-style commits (protocol/metadata/clustering
 //!   changes) are rejected, not propagated — see `UnityCatalogCommitter`'s
 //!   `validate_no_alter_table_changes`. Lifting this requires bundling

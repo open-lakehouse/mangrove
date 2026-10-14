@@ -176,7 +176,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let engine = DataFusionEngine::new_from_context(ctx.task_ctx());
 
     let snapshot =
-        build_catalog_managed_snapshot(engine.as_ref(), &location, &commits, latest as i64, None)?;
+        build_catalog_managed_snapshot(engine.clone(), &location, &commits, latest as i64, None)
+            .await?;
     println!(
         "built catalog-managed snapshot for {full_name} at version {}",
         snapshot.version()
