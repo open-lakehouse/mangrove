@@ -161,7 +161,8 @@ async fn create_managed_table_round_trip() {
     let log_store = default_logstore(Arc::from(prefixed), root, &location, &config);
     let engine = DataFusionEngine::new_from_context(ctx.task_ctx());
     let snapshot =
-        build_catalog_managed_snapshot(engine.as_ref(), &location, &commits, latest as i64, None)
+        build_catalog_managed_snapshot(engine.clone(), &location, &commits, latest as i64, None)
+            .await
             .expect("build_catalog_managed_snapshot failed");
     assert_eq!(snapshot.version(), latest, "snapshot at catalog version");
 

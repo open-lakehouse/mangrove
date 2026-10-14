@@ -14,9 +14,9 @@ edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/open-lakehouse/mangrove"
 readme = "README.md"
-# Floor set by the dependency tree: deltalake-core 1.1 requires rustc 1.94.1
-# (buoyant_kernel 0.28 needs 1.88). Keep CI's toolchain pin >= this.
-rust-version = "1.94.1"
+# Floor set by the dependency tree: deltalake-core 2.0 (delta-rs main) requires
+# rustc 1.95.0 (buoyant_kernel 0.28 needs 1.88). Keep CI's toolchain pin >= this.
+rust-version = "1.95.0"
 # Crates are versioned independently in each crate's own `[package].version`
 # (the release-plz convention), so there is intentionally no workspace-wide
 # `version` here.
@@ -46,16 +46,16 @@ delta_kernel_default_engine = { package = "buoyant_kernel_engine", version = "0.
   "arrow-59",
   "rustls",
 ] }
-# deltalake-core is the ONE remaining git dep: the roeap fork's `olai/rust-v1.1.1`
-# branch = upstream tag `rust-v1.1.1` plus three commits mangrove needs:
-# `Snapshot::from_kernel_snapshot` (wrap the catalog-managed kernel snapshot built
-# with a log tail), a public `to_delta_predicate`, and `CatalogManaged` /
-# `VacuumProtocolCheck` as supported *reader* features (UC managed tables carry
-# both). All are slated for upstreaming; switch to the crates.io release once they
-# ship. Pinned by immutable
-# `rev`. The `version =` is required by `release-plz`'s `cargo package` step
-# (release-plz#2595) and must match both the fork and a crates.io version.
-deltalake-core = { version = "1.1.1", git = "https://github.com/roeap/delta-rs", rev = "64c0814617cbaa6410756e27786754fb877a3bff", features = [
+# deltalake-core is the ONE remaining git dep: the roeap fork's
+# `olai/catalog-managed` branch = upstream delta-rs `main` (2.0.0-dev, which has
+# the catalog-managed read path: `Snapshot::try_new_with_engine_and_catalog` +
+# `CatalogManaged` / `VacuumProtocolCheck` reader support, delta-rs#4809) plus one
+# commit making `to_delta_predicate` public. Switch to the crates.io release once
+# 2.0 ships with that export. Pinned by immutable `rev`. `version =` matches the
+# fork (release-plz#2595); 2.0.0 is not on crates.io yet, which is fine while
+# every dependent (datafusion, acceptance, sharing-api, py client) is
+# `release = false`.
+deltalake-core = { version = "2.0.0", git = "https://github.com/roeap/delta-rs", rev = "adea9ea175a63549d10ffdf7bc3d7ca4cc1986ee", features = [
   "datafusion",
   "cloud",
 ] }

@@ -7,15 +7,17 @@
 //! The catalog — not the filesystem — is the source of truth for a managed
 //! table's latest version: the newest commits are ratified but may not yet be
 //! backfilled into `_delta_log/` (they live as staged commits under
-//! `_delta_log/_staged_commits/`). We build a `delta_kernel` snapshot from the
-//! supplied commit tail + catalog version and wrap it with
-//! [`Snapshot::from_kernel_snapshot`],
-//! mirroring the reference `delta-kernel-unity-catalog` read path.
+//! `_delta_log/_staged_commits/`). We hand the supplied commit tail + catalog
+//! version to [`Snapshot::try_new_with_engine_and_catalog`] as a
+//! [`CatalogLogTail`], mirroring the reference `delta-kernel-unity-catalog` read
+//! path.
+
+use std::sync::Arc;
 
 use datafusion::common::DataFusionError;
-use delta_kernel::snapshot::Snapshot as KernelSnapshot;
 use delta_kernel::{Engine, LogPath, Version};
 use deltalake_core::kernel::Snapshot;
+use deltalake_core::logstore::CatalogLogTail;
 use unitycatalog_delta_api::models::{DeltaCommit, DeltaLoadTableResponse, DeltaTableType};
 use url::Url;
 
@@ -143,8 +145,8 @@ pub fn resolve_managed_read_state(
 ///
 /// When `at_version` is `Some(v)`, `v` must not exceed `latest_table_version` — a
 /// reader must never read beyond the max ratified version (ManagedTablesSpec).
-pub fn build_catalog_managed_snapshot(
-    engine: &dyn Engine,
+pub async fn build_catalog_managed_snapshot(
+    engine: Arc<dyn Engine>,
     location: &Url,
     commits: &[DeltaCommit],
     latest_table_version: i64,
@@ -172,20 +174,19 @@ pub fn build_catalog_managed_snapshot(
         table_root.set_path(&format!("{}/", table_root.path()));
     }
 
-    let log_tail = to_log_tail(&table_root, commits)?;
+    let catalog_log_tail = CatalogLogTail {
+        log_tail: to_log_tail(&table_root, commits)?,
+        max_version: latest_table_version,
+    };
 
-    let mut builder = KernelSnapshot::builder_for(table_root)
-        .with_max_catalog_version(latest_table_version)
-        .with_log_tail(log_tail);
-    if let Some(version) = at_version {
-        builder = builder.at_version(version);
-    }
-
-    let inner = builder
-        .build(engine)
-        .map_err(|e| DataFusionError::External(Box::new(e)))?;
-
-    Ok(Snapshot::from_kernel_snapshot(inner))
+    Snapshot::try_new_with_engine_and_catalog(
+        engine,
+        table_root,
+        at_version,
+        Some(catalog_log_tail),
+    )
+    .await
+    .map_err(|e| DataFusionError::External(Box::new(e)))
 }
 
 /// The staged-commit file name to hand the kernel, tolerating both forms the spec

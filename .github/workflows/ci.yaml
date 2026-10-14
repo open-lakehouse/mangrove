@@ -95,7 +95,7 @@ jobs:
           persist-credentials: false
 
       # Pinned to a recent stable (matches local dev). The workspace
-      # rust-version floor is 1.94.1 (set by deltalake-core); this stays above it.
+      # rust-version floor is 1.95.0 (set by deltalake-core); this stays above it.
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           toolchain: "1.97"

@@ -168,12 +168,13 @@ impl TableProviderBuilder for DeltaTableProviderBuilder {
             ManagedReadState::Managed { commits, latest } => {
                 let engine = DataFusionEngine::new_from_context(self.ctx.task_ctx());
                 build_catalog_managed_snapshot(
-                    engine.as_ref(),
+                    engine.clone(),
                     location,
                     &commits,
                     latest as i64,
                     None,
-                )?
+                )
+                .await?
             }
             // External / not-catalog-managed: the filesystem `_delta_log/` is
             // authoritative and the read must not set a catalog version.

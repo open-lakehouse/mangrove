@@ -241,13 +241,14 @@ pub async fn create_commit_read(
     // multi-thread runtime flavor (see the conformance test attributes).
     let snapshot = tokio::task::block_in_place(|| {
         build_catalog_managed_snapshot(
-            engine.as_ref(),
+            engine.clone(),
             &local_location,
             &commits,
             latest as i64,
             None,
         )
     })
+    .await
     .map_err(err)?;
 
     let provider = DeltaScanNext::builder()
