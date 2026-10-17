@@ -100,8 +100,31 @@ re-exports everything above):
 > derived from their carrying fields in `uc-types.ts` because gnostic inlines enum
 > values rather than emitting named component schemas.
 
-## Distribution
+## Install
 
-Source-only workspace package (`exports` → `src/index.ts`). React and the
-TanStack query lib are peer dependencies (singleton cache/context, provided by
-the host). Consumed via `file:` links during the current evaluation phase.
+Published to **GitHub Packages**. Point the `@open-lakehouse` scope at it in
+`.npmrc`:
+
+```ini
+@open-lakehouse:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+```bash
+# framework-free client (browsers, Node ≥ 18, Bun, Deno)
+bun add @open-lakehouse/unity-catalog-client
+# React hosts using ./react also need its peers
+bun add @open-lakehouse/unity-catalog-client @tanstack/react-query openapi-react-query react react-dom
+```
+
+GitHub Packages needs a token even to read. In GitHub Actions, the job's
+`GITHUB_TOKEN` works (`permissions: packages: read`) once the consuming
+repository has been granted read access in the package's settings. Elsewhere,
+use a token with `read:packages`. Release tarballs carry a build-provenance
+attestation (`gh attestation verify <file> -R open-lakehouse/mangrove`).
+
+The package ships ESM (`dist/`, with declarations and source maps). Inside this
+workspace, consumers resolve the `source` export condition straight to `src/`
+instead (Vite `resolve.conditions` / TS `customConditions`), so no build step is
+needed for local development. The `VITE_API_URL` default base URL only applies
+when the host is built with Vite; pass `baseUrl` explicitly elsewhere.

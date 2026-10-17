@@ -32,14 +32,24 @@ same package in the same batch, so adding one is always safe.
 See [`.agents/rules/js-release-changesets-rule.mdc`](../.agents/rules/js-release-changesets-rule.mdc)
 for the full agent contract.
 
-## Current state: DORMANT
+## Publishing (GitHub Packages only)
 
-Publishing is **gated off** until the publish scope is decided (see the
-dependency-isolation / publish-scope follow-up). While the `JS_PUBLISH_ENABLED`
-repo variable is unset or not `"true"`, the NAPI build matrix and publish job
-**do not run at all** — only the version-PR job runs, so no multi-arch build or
-npm publish happens on any push. Only `@open-lakehouse/unity-catalog-node` (+ its platform
-packages) is currently non-private; every `@open-lakehouse/*` package is
-`private: true` and Changesets skips it.
+Merging the Version Packages PR is what releases. On the next push to `main`,
+the `plan` job in [`js-release`](../.github/workflows/js-release.yaml) lists the
+publishable packages whose version is not on their registry yet
+([`scripts/unpublished-packages.ts`](../scripts/unpublished-packages.ts)), and
+`publish` builds, packs, attests (build provenance) and publishes them to
+**GitHub Packages** (`npm.pkg.github.com`), then pushes a `<name>@<version>` tag
+each. The NAPI multi-arch build only runs when the NAPI package is due. Nothing
+goes to npmjs yet.
+
+Publishable today: `@open-lakehouse/unity-catalog-node` (+ its per-platform
+packages) and `@open-lakehouse/unity-catalog-client`. The UI packages are
+`private: true` and skipped.
+
+The `JS_PUBLISH_ENABLED` repo variable is the kill switch: unless it is `"true"`
+the build and publish jobs do not run (only the Version PR and the plan do). When
+it is first switched on, any publishable version not yet on the registry is
+published on the next push to `main`.
 
 Config reference: <https://github.com/changesets/changesets/blob/main/docs/config-file-options.md>

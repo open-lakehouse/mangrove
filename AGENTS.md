@@ -164,11 +164,12 @@ commits**. You normally do **not** write changeset files by hand.
 - **Hand-write a changeset** (`bun run changeset`) only for a breaking `major` +
   migration note, a bump that differs from the commit type, or a cross-cutting
   release note. A hand-written entry wins (highest bump per package).
-- **Publishing is DORMANT:** [`js-release`](.github/workflows/js-release.yaml)
-  opens a "Version Packages" PR, but its NAPI build matrix + publish job **do not
-  run at all** until the `JS_PUBLISH_ENABLED` repo variable is `"true"`. Only
-  `@open-lakehouse/unity-catalog-node` is non-private today; `@open-lakehouse/*` are
-  `private: true` and skipped.
+- **Publishing goes to GitHub Packages only:** merging the
+  [`js-release`](.github/workflows/js-release.yaml) "Version Packages" PR
+  publishes every publishable package whose version isn't on the registry yet
+  (`@open-lakehouse/unity-catalog-node` + platform packages,
+  `@open-lakehouse/unity-catalog-client`; the UI packages stay `private: true`),
+  gated on the `JS_PUBLISH_ENABLED` repo variable. No npmjs publishing yet.
 
 ### Git hooks (`setup-hooks`)
 
