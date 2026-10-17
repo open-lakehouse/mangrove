@@ -19,7 +19,7 @@
     "@open-lakehouse/query-wasm": "^0.1.0",
     "@open-lakehouse/ui-kit": "^0.1.0",
     "@open-lakehouse/unity-catalog-ui": "^0.1.0",
-    "@open-lakehouse/unity-catalog-client": "^0.1.0",
+    "@open-lakehouse/unity-catalog-client": "workspace:*",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.42",
     "lucide-react": "^1.55.0",

@@ -1,9 +1,40 @@
+# The NAPI extension behind the npm package @open-lakehouse/unity-catalog-node.
+#
+# It is never published to crates.io (`publish = false`, `git_only` in
+# release-plz.toml), but release-plz versions it like any other crate: the
+# `version` below IS the npm package's version. release-plz bumps it from
+# conventional commits, writes CHANGELOG.md and tags
+# `unity-catalog-node-v<version>`; release-plz.yml then hands the release to
+# js-release.yaml, which stamps the version into package.json, builds the
+# per-target binaries and publishes to GitHub Packages. package.json stays at
+# 0.0.0 in git.
+#
+# release-plz decides a crate changed from the files `cargo package --list`
+# reports, so `include` lists exactly what feeds the npm package: the Rust
+# binding, the TypeScript wrapper + generated models, and the npm manifests.
+# Tests and tooling config are left out so they don't cut releases. Changes to
+# the wrapped Rust crates (olai-uc-client / olai-uc-common) release this
+# package through the path dependencies.
+
 [package]
-edition = "2024"
-name = "unitycatalog_client"
-version = "0.0.0"
-# NAPI extension module — distributed as an npm package, not to crates.io.
+name = "unity-catalog-node"
+version = "0.1.0"
+description = "NAPI extension for the @open-lakehouse/unity-catalog-node npm package"
 publish = false
+readme = "README.md"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+include = [
+  "/Cargo.toml",
+  "/build.rs",
+  "/src/**",
+  "/unitycatalog/**",
+  "/package.json",
+  "/npm/*/package.json",
+  "/README.md",
+  "/tsconfig.json",
+]
 
 [lib]
 crate-type = ["cdylib"]
