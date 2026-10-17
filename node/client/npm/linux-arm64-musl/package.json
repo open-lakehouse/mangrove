@@ -1,21 +1,29 @@
 {
-	"name": "@open-lakehouse/unity-catalog-node-linux-arm64-musl",
-	"version": "0.0.0",
-	"os": [
-		"linux"
-	],
-	"cpu": [
-		"arm64"
-	],
-	"main": "client.linux-arm64-musl.node",
-	"files": [
-		"client.linux-arm64-musl.node"
-	],
-	"license": "MIT",
-	"engines": {
-		"node": ">= 22"
-	},
-	"libc": [
-		"musl"
-	]
+  "name": "@open-lakehouse/unity-catalog-node-linux-arm64-musl",
+  "version": "0.1.0",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "client.linux-arm64-musl.node",
+  "files": [
+    "client.linux-arm64-musl.node"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">= 22"
+  },
+  "libc": [
+    "musl"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-lakehouse/mangrove.git",
+    "directory": "node/client/npm/linux-arm64-musl"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
 }

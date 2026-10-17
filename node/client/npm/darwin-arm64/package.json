@@ -1,18 +1,26 @@
 {
-	"name": "@open-lakehouse/unity-catalog-node-darwin-arm64",
-	"version": "0.0.0",
-	"os": [
-		"darwin"
-	],
-	"cpu": [
-		"arm64"
-	],
-	"main": "client.darwin-arm64.node",
-	"files": [
-		"client.darwin-arm64.node"
-	],
-	"license": "MIT",
-	"engines": {
-		"node": ">= 22"
-	}
+  "name": "@open-lakehouse/unity-catalog-node-darwin-arm64",
+  "version": "0.1.0",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "client.darwin-arm64.node",
+  "files": [
+    "client.darwin-arm64.node"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">= 22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-lakehouse/mangrove.git",
+    "directory": "node/client/npm/darwin-arm64"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
 }

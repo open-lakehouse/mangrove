@@ -1,6 +1,6 @@
 {
   "name": "@open-lakehouse/unity-catalog-node",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -9,18 +9,15 @@
   "napi": {
     "binaryName": "client",
     "targets": [
-      "aarch64-apple-darwin",
-      "aarch64-linux-android",
+      "x86_64-unknown-linux-gnu",
       "aarch64-unknown-linux-gnu",
-      "aarch64-unknown-linux-musl",
-      "aarch64-pc-windows-msvc",
-      "armv7-unknown-linux-gnueabihf",
-      "armv7-unknown-linux-musleabihf",
       "x86_64-unknown-linux-musl",
-      "universal-apple-darwin"
+      "aarch64-unknown-linux-musl",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin"
     ]
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@jest/globals": "^30.5.2",
@@ -47,16 +44,30 @@
     "build": "bun run build:debug && bun run tsc && shx cp unitycatalog/codegen/*.node dist/codegen/",
     "build:release": "napi build --platform --release --output-dir unitycatalog/codegen",
     "build:debug": "napi build --platform --output-dir unitycatalog/codegen --dts native.d.ts --js native.js",
-    "tsc": "tsc -b",
+    "tsc": "tsc -b && shx cp unitycatalog/codegen/native.d.ts dist/codegen/native.d.ts",
     "prepublishOnly": "napi prepublish -t npm",
     "test": "jest --verbose",
     "test:integration": "jest --config jest.integration.config.js --verbose --runInBand",
     "lint": "biome check . && biome format .",
     "lint-fix": "biome check --write && biome format --write .",
-    "universal": "napi universal",
     "version": "napi version"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.16.0"
-  }
+  },
+  "description": "Native (NAPI) Unity Catalog client for Node.js.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-lakehouse/mangrove.git",
+    "directory": "node/client"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.node",
+    "README.md",
+    "CHANGELOG.md"
+  ]
 }
