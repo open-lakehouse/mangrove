@@ -1,5 +1,5 @@
 {
-	"name": "@open-lakehouse/uc-client-linux-arm64-gnu",
+	"name": "@open-lakehouse/unity-catalog-node-linux-arm64-gnu",
 	"version": "0.0.0",
 	"os": [
 		"linux"

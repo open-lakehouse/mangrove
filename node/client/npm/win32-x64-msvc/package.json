@@ -1,5 +1,5 @@
 {
-	"name": "@open-lakehouse/uc-client-win32-x64-msvc",
+	"name": "@open-lakehouse/unity-catalog-node-win32-x64-msvc",
 	"version": "0.0.0",
 	"os": [
 		"win32"

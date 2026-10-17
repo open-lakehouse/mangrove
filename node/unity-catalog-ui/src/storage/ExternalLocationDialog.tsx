@@ -19,7 +19,7 @@ import {
   useCredentials,
   useExternalLocationDetail,
   useUpdateExternalLocation,
-} from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-client/react";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";

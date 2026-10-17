@@ -4,7 +4,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@open-lakehouse/ui-kit";
-import { useVolumeDetail } from "@open-lakehouse/unity-catalog-client";
+import { useVolumeDetail } from "@open-lakehouse/unity-catalog-client/react";
 import { useState } from "react";
 
 import { SectionLabel } from "../SectionLabel";

@@ -6,7 +6,7 @@ into streamed Arrow IPC that feeds `@open-lakehouse/data-grid`'s
 100`) without a dedicated server-side query service.
 
 This package is a **leaf**: it depends on `@open-lakehouse/data-grid` and React,
-never on `@open-lakehouse/unity-catalog` (enforced by a Biome rule in
+never on `@open-lakehouse/unity-catalog-ui` (enforced by a Biome rule in
 `node/biome.json`). Unity Catalog builds on it; never the reverse.
 
 ## It ships no runtime query implementation — on purpose

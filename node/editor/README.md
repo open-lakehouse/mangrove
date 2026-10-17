@@ -5,7 +5,7 @@ highlighting, catalog-aware autocompletion, live SQL diagnostics (validation),
 markdown preview, and a run affordance — wrapped so a host application can drop
 it into a file/volume view.
 
-The package is a **leaf**: it never imports `@open-lakehouse/unity-catalog` (or
+The package is a **leaf**: it never imports `@open-lakehouse/unity-catalog-ui` (or
 `@open-lakehouse/query` / `@open-lakehouse/data-grid`). Instead it exposes seams
 the host pushes context into — catalog metadata for completion, a file store for
 persistence, and a run callback for execution. This inversion is enforced by a

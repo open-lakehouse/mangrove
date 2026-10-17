@@ -17,11 +17,11 @@ import {
 import {
   EnvironmentScopeProvider,
   ucCatalogProvider,
-} from "@open-lakehouse/unity-catalog";
+} from "@open-lakehouse/unity-catalog-ui";
 import {
   createUnityCatalogClient,
   UnityCatalogProvider,
-} from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-client/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";

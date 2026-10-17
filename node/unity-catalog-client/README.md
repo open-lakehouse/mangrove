@@ -2,7 +2,7 @@
 
 The **data-fetching half** of the Unity Catalog UI: the typed client, the
 React-Query hooks, and the generated UC OpenAPI types. Split out from the
-presentational `@open-lakehouse/unity-catalog` package so the two concerns —
+presentational `@open-lakehouse/unity-catalog-ui` package so the two concerns —
 *talking to Unity Catalog* and *rendering it* — are not bundled together.
 
 ## Why it's separate
@@ -49,20 +49,40 @@ the transport.
 
 ## Public surface
 
-Import from the barrel — `@open-lakehouse/unity-catalog-client`:
+Two entry points:
+
+**`@open-lakehouse/unity-catalog-client`** (framework-free; any runtime with a
+`fetch`, no React needed):
+
+- **Client:** `createUnityCatalogFetchClient`, `fetchClient` (the default
+  instance), `setDefaultUnityCatalogFetch`, `UnityCatalogFetchClient`,
+  `CreateUnityCatalogClientOptions`.
+- **Helpers:** `parseUcError`, `objectFullName`.
+- **UC OpenAPI types:** `CatalogInfo`, `SchemaInfo`, `TableInfo`, `Create*`,
+  `List*`, `components`, `paths`, … (re-exported from `uc-types`).
+
+```ts
+import { createUnityCatalogFetchClient } from "@open-lakehouse/unity-catalog-client";
+
+const uc = createUnityCatalogFetchClient({ baseUrl: "http://localhost:8080/api/2.1/unity-catalog" });
+const { data, error } = await uc.GET("/catalogs");
+```
+
+**`@open-lakehouse/unity-catalog-client/react`** (React + TanStack Query; also
+re-exports everything above):
 
 - **Client:** `createUnityCatalogClient`, `defaultUnityCatalogClient`,
-  `setDefaultUnityCatalogFetch`, `UnityCatalogClient`, `$api`, `fetchClient`.
+  `UnityCatalogClient`, `$api`.
 - **Provider:** `UnityCatalogProvider`, `useUnityCatalog`.
 - **Read hooks / query helpers:** `useCatalogs`, `useSchemas`, `useTables`,
   `useVolumes`, `useFunctions`, `useModels`, `useCredentials`,
   `useExternalLocations`, the `*Detail` hooks, `prefetch*`, `*DetailQuery`,
-  `objectFullName`, `ucListKeys`.
+  `ucListKeys`.
 - **Mutations / invalidators:** the `useCreate*` / `useUpdate*` / `useDelete*`
   hooks and the `invalidate*` / `remove*` helpers.
-- **Errors:** `parseUcError`.
-- **UC OpenAPI types:** `CatalogInfo`, `SchemaInfo`, `TableInfo`, `Create*`,
-  `List*`, `components`, `paths`, … (re-exported from `uc-types`).
+
+`react`, `react-dom` and `@tanstack/react-query` are **optional** peers: only the
+`./react` entry needs them.
 
 ## Codegen
 
@@ -71,7 +91,7 @@ Import from the barrel — `@open-lakehouse/unity-catalog-client`:
   `just generate-openapi`) via `openapi-typescript`.
 - `bun run gen:form-schemas` — regenerate the RJSF form schemas from this repo's
   UC proto. These are presentational assets, so the script writes them into the
-  sibling `@open-lakehouse/unity-catalog` package's `src/forms/schemas/`.
+  sibling `@open-lakehouse/unity-catalog-ui` package's `src/forms/schemas/`.
 
 > These types are generated from mangrove's own canonical spec, so they stay in
 > sync with the running server. Regeneration is wired into `just generate-openapi`

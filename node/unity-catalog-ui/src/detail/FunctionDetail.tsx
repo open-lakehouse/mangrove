@@ -1,4 +1,4 @@
-import { useFunctionDetail } from "@open-lakehouse/unity-catalog-client";
+import { useFunctionDetail } from "@open-lakehouse/unity-catalog-client/react";
 
 import { DetailStates } from "./DetailStates";
 import { Meta, MetaGrid } from "./Meta";

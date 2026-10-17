@@ -12,7 +12,7 @@ import {
   prefetchSchemas,
   useCatalogs,
   useSchemas,
-} from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-client/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {

@@ -15,7 +15,7 @@ import {
   useCreateRegisteredModel,
   useCreateSchema,
   useCreateVolume,
-} from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-client/react";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";

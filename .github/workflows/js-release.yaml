@@ -11,7 +11,7 @@ name: js-release
 # `napi-build` matrix and `publish` job DO NOT RUN AT ALL — only `version-pr`
 # runs, maintaining the "Version Packages" PR. This keeps the machinery in place
 # without building or publishing anything on ordinary pushes. Today
-# only `@open-lakehouse/uc-client` (+ its platform packages) is non-private; every
+# only `@open-lakehouse/unity-catalog-node` (+ its platform packages) is non-private; every
 # `@open-lakehouse/*` package is `private: true` and skipped.
 #
 # WHEN PUBLISHING GOES LIVE (`JS_PUBLISH_ENABLED=true`): the build/publish gate

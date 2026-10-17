@@ -14,7 +14,7 @@ import {
   useUpdateRegisteredModel,
   useUpdateSchema,
   useUpdateVolume,
-} from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-client/react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import type { EditRequest } from "./dialog-types";

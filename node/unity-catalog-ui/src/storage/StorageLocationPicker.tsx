@@ -16,7 +16,7 @@ import {
   SelectValue,
   Switch,
 } from "@open-lakehouse/ui-kit";
-import { useExternalLocations } from "@open-lakehouse/unity-catalog-client";
+import { useExternalLocations } from "@open-lakehouse/unity-catalog-client/react";
 import { useId, useMemo, useState } from "react";
 
 // Radix Select can't use an empty-string value, so the custom mode needs a sentinel.

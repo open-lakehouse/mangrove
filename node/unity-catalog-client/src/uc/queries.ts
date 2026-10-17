@@ -25,7 +25,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { $api, fetchClient } from "../api";
+import { $api } from "../api";
+import { fetchClient } from "../fetch";
+import { objectFullName } from "../names";
 import { useUnityCatalog } from "./context";
 
 // `$api` / `fetchClient` (imported above) are the DEFAULT client's members. The
@@ -36,25 +38,6 @@ import { useUnityCatalog } from "./context";
 // produce match the injected client's hooks and caches stay aligned.
 
 const PAGE_SIZE = 100;
-
-/**
- * Three-level fully-qualified name (`catalog.schema.object`). Several OSS list
- * payloads omit `full_name` from the typed schema (the server populates it at
- * runtime), so we derive it deterministically from the namespace parts. This is
- * the single source of truth for both detail-cache keys and display.
- */
-export function objectFullName(parts: {
-  catalog_name?: string;
-  schema_name?: string;
-  name?: string;
-}): string {
-  return [parts.catalog_name, parts.schema_name, parts.name]
-    .filter(Boolean)
-    .join(".");
-}
-
-/** Back-compat alias; prefer `objectFullName`. */
-export const tableFullName = objectFullName;
 
 // ── Shared init builders (single source of truth for query keys) ────────────
 

@@ -5,7 +5,7 @@ primitives (`Button`, `Dialog`, `Select`, `Tooltip`, …), the `cn` class-merge
 helper, and the `ThemeProvider` / `useTheme` theme context.
 
 The feature packages (`@open-lakehouse/data-grid`,
-`@open-lakehouse/unity-catalog`), the mangrove scaffold app, and downstream
+`@open-lakehouse/unity-catalog-ui`), the mangrove scaffold app, and downstream
 consumers (hydrofoil's unified UI, via the sibling-repo `file:` link) all depend
 on this package, so the primitives live in exactly one place instead of being
 copied per consumer.

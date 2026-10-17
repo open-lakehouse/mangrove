@@ -1,4 +1,4 @@
-# `@open-lakehouse/unity-catalog`
+# `@open-lakehouse/unity-catalog-ui`
 
 The Unity Catalog **presentational** package: the catalog browser, per-entity
 detail panes, the create/edit/delete and storage dialogs, the schema-driven form
@@ -13,7 +13,7 @@ types) from there directly — they are not re-exported here.
 
 ## Public surface
 
-Import only from the package root — `@open-lakehouse/unity-catalog`. This barrel
+Import only from the package root — `@open-lakehouse/unity-catalog-ui`. This barrel
 exposes **presentational** exports only; data-access exports (the provider,
 hooks, client, `setDefaultUnityCatalogFetch`, UC types, `parseUcError`) come from
 `@open-lakehouse/unity-catalog-client`.

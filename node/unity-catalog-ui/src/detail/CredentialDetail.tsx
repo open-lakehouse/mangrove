@@ -1,4 +1,4 @@
-import { useCredentialDetail } from "@open-lakehouse/unity-catalog-client";
+import { useCredentialDetail } from "@open-lakehouse/unity-catalog-client/react";
 
 import { awsIamRoleTrust } from "../types";
 import { DetailStates } from "./DetailStates";

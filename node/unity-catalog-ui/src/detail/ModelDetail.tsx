@@ -1,4 +1,4 @@
-import { useModelDetail } from "@open-lakehouse/unity-catalog-client";
+import { useModelDetail } from "@open-lakehouse/unity-catalog-client/react";
 
 import { DetailStates } from "./DetailStates";
 import { Meta, MetaGrid } from "./Meta";

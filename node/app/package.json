@@ -18,7 +18,7 @@
     "@open-lakehouse/query": "^0.1.0",
     "@open-lakehouse/query-wasm": "^0.1.0",
     "@open-lakehouse/ui-kit": "^0.1.0",
-    "@open-lakehouse/unity-catalog": "^0.1.0",
+    "@open-lakehouse/unity-catalog-ui": "^0.1.0",
     "@open-lakehouse/unity-catalog-client": "^0.1.0",
     "@tanstack/react-query": "^5.100.14",
     "@tanstack/react-router": "^1.170.10",

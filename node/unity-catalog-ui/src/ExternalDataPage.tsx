@@ -14,7 +14,7 @@ import {
 import {
   useCredentials,
   useExternalLocations,
-} from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-client/react";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { Globe, KeyRound, type LucideIcon } from "lucide-react";
 

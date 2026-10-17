@@ -9,7 +9,7 @@
    reach across to the sibling workspace packages under node/. */
 @source "../../ui-kit/src";
 @source "../../data-grid/src";
-@source "../../unity-catalog/src";
+@source "../../unity-catalog-ui/src";
 
 @theme inline {
   --color-background: hsl(var(--background));

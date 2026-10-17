@@ -167,7 +167,7 @@ commits**. You normally do **not** write changeset files by hand.
 - **Publishing is DORMANT:** [`js-release`](.github/workflows/js-release.yaml)
   opens a "Version Packages" PR, but its NAPI build matrix + publish job **do not
   run at all** until the `JS_PUBLISH_ENABLED` repo variable is `"true"`. Only
-  `@open-lakehouse/uc-client` is non-private today; `@open-lakehouse/*` are
+  `@open-lakehouse/unity-catalog-node` is non-private today; `@open-lakehouse/*` are
   `private: true` and skipped.
 
 ### Git hooks (`setup-hooks`)

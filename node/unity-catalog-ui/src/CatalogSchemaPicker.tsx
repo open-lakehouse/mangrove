@@ -18,7 +18,7 @@ import {
   useCreateCatalog,
   useCreateSchema,
   useSchemas,
-} from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-client/react";
 import { Database, FolderTree, Plus } from "lucide-react";
 import { useId, useState } from "react";
 import { toast } from "sonner";

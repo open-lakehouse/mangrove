@@ -1,4 +1,4 @@
-import { useCatalogDetail } from "@open-lakehouse/unity-catalog-client";
+import { useCatalogDetail } from "@open-lakehouse/unity-catalog-client/react";
 
 import { SectionLabel } from "../SectionLabel";
 import { DetailStates } from "./DetailStates";

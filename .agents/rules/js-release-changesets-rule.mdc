@@ -28,7 +28,7 @@ onto the **Version Packages PR branch** — they are **never committed to `main`
 
 The **`(scope)`** is matched to a package by its directory basename, its unscoped
 npm name, or its full name (e.g. `feat(editor):` → `@open-lakehouse/editor`;
-`fix(client):` → `@open-lakehouse/uc-client`). A comma-separated scope
+`fix(client):` → `@open-lakehouse/unity-catalog-node`). A comma-separated scope
 (`feat(query,editor):`) bumps both. A commit with **no scope**, or a scope that
 matches no package, is skipped — so **scope your `node/` commits** if you want them
 to release.
@@ -49,7 +49,7 @@ Format (frontmatter = package → bump, body = the changelog line):
 
 ```markdown
 ---
-"@open-lakehouse/uc-client": major
+"@open-lakehouse/unity-catalog-node": major
 ---
 
 Rename `Client.connect()` → `Client.open()`. Update call sites accordingly.
@@ -65,7 +65,7 @@ always safe.
 PR from accumulated changesets; merging it bumps versions + writes CHANGELOGs.
 While the `JS_PUBLISH_ENABLED` repo variable is unset or not `"true"`, the NAPI
 build matrix and publish job **do not run at all** — only the version-PR job
-runs, so nothing is built or published. Only `@open-lakehouse/uc-client` (+ its
+runs, so nothing is built or published. Only `@open-lakehouse/unity-catalog-node` (+ its
 platform packages) is non-private today; every `@open-lakehouse/*` package is
 `private: true` and Changesets skips it. The publish scope is decided in a
 follow-up.

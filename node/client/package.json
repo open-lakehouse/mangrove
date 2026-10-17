@@ -1,5 +1,5 @@
 {
-  "name": "@open-lakehouse/uc-client",
+  "name": "@open-lakehouse/unity-catalog-node",
   "version": "0.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

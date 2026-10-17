@@ -16,7 +16,7 @@ import {
   useDeleteSchema,
   useDeleteTable,
   useDeleteVolume,
-} from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-client/react";
 import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

@@ -9,7 +9,7 @@ import {
   useModels,
   useTables,
   useVolumes,
-} from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-client/react";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import {
   Boxes,

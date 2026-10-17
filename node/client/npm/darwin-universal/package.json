@@ -1,5 +1,5 @@
 {
-	"name": "@open-lakehouse/uc-client-darwin-universal",
+	"name": "@open-lakehouse/unity-catalog-node-darwin-universal",
 	"version": "0.0.0",
 	"os": [
 		"darwin"

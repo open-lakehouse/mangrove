@@ -38,7 +38,7 @@ Publishing is **gated off** until the publish scope is decided (see the
 dependency-isolation / publish-scope follow-up). While the `JS_PUBLISH_ENABLED`
 repo variable is unset or not `"true"`, the NAPI build matrix and publish job
 **do not run at all** — only the version-PR job runs, so no multi-arch build or
-npm publish happens on any push. Only `@open-lakehouse/uc-client` (+ its platform
+npm publish happens on any push. Only `@open-lakehouse/unity-catalog-node` (+ its platform
 packages) is currently non-private; every `@open-lakehouse/*` package is
 `private: true` and Changesets skips it.
 

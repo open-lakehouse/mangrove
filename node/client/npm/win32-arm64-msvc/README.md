@@ -1,3 +1,3 @@
-# `@open-lakehouse/uc-client-win32-arm64-msvc`
+# `@open-lakehouse/unity-catalog-node-win32-arm64-msvc`
 
-This is the **aarch64-pc-windows-msvc** binary for `@open-lakehouse/uc-client`
+This is the **aarch64-pc-windows-msvc** binary for `@open-lakehouse/unity-catalog-node`

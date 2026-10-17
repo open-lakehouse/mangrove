@@ -13,7 +13,7 @@
     "node/files-wasm",
     "node/editor",
     "node/unity-catalog-client",
-    "node/unity-catalog",
+    "node/unity-catalog-ui",
     "node/app"
   ],
   "scripts": {

@@ -14,7 +14,7 @@ import {
   useSchemaDetail,
   useTables,
   useVolumes,
-} from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-client/react";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";

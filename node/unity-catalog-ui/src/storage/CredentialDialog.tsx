@@ -21,7 +21,7 @@ import {
   useCreateCredential,
   useCredentialDetail,
   useUpdateCredential,
-} from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-client/react";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";

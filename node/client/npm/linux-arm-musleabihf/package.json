@@ -1,5 +1,5 @@
 {
-	"name": "@open-lakehouse/uc-client-linux-arm-musleabihf",
+	"name": "@open-lakehouse/unity-catalog-node-linux-arm-musleabihf",
 	"version": "0.0.0",
 	"os": [
 		"linux"

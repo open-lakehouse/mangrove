@@ -1,29 +1,11 @@
-import createFetchClient from "openapi-fetch";
 import createQueryClient from "openapi-react-query";
+import {
+  type CreateUnityCatalogClientOptions,
+  createUnityCatalogFetchClient,
+  fetchClient,
+  type UnityCatalogFetchClient,
+} from "./fetch";
 import type { paths } from "./uc-types";
-
-/**
- * The fetch the default client uses. It is a stable indirection over a mutable
- * slot so the default client (and its back-compat `$api` / `fetchClient`
- * singletons, captured at module init) can be repointed at a host-supplied fetch
- * AFTER construction — without rebuilding the client. Defaults to the platform
- * `fetch`; a host (e.g. the Tauri desktop shell, which speaks over its own IPC
- * fetch) calls {@link setDefaultUnityCatalogFetch} once at startup.
- */
-let currentDefaultFetch: typeof globalThis.fetch = (...args) =>
-  globalThis.fetch(...args);
-const defaultFetch: typeof globalThis.fetch = (...args) =>
-  currentDefaultFetch(...args);
-
-/**
- * Repoint the default Unity Catalog client at a host-supplied fetch. Call once
- * at startup, before the first request. This is the transport seam the package
- * exposes so a host can route UC calls through its own fetch (auth, IPC, …)
- * without the package depending on the host's transport registry.
- */
-export function setDefaultUnityCatalogFetch(fetch: typeof globalThis.fetch) {
-  currentDefaultFetch = fetch;
-}
 
 /**
  * A constructed Unity Catalog client: the openapi-fetch transport plus its
@@ -39,24 +21,7 @@ export interface UnityCatalogClient {
   /** TanStack Query bindings; auto-derives `["get", path, init]` query keys. */
   $api: ReturnType<typeof createQueryClient<paths>>;
   /** The raw typed fetch client, for non-hook query functions (prefetch). */
-  fetchClient: ReturnType<typeof createFetchClient<paths>>;
-}
-
-/** Options for {@link createUnityCatalogClient}. */
-export interface CreateUnityCatalogClientOptions {
-  /**
-   * Base URL for the Unity Catalog REST API. Defaults to the Databricks-parallel
-   * root path the Envoy gateway routes to the UC server (see
-   * environments/docker/envoy/envoy.yaml); the Vite dev proxy forwards /api to
-   * the gateway (see vite.config.ts).
-   */
-  baseUrl?: string;
-  /**
-   * Fetch implementation. Defaults to the package's mutable default fetch (the
-   * platform `fetch`, unless a host called {@link setDefaultUnityCatalogFetch}).
-   * Pass an explicit fetch to build a client with a fixed transport.
-   */
-  fetch?: typeof globalThis.fetch;
+  fetchClient: UnityCatalogFetchClient;
 }
 
 /**
@@ -67,31 +32,29 @@ export interface CreateUnityCatalogClientOptions {
 export function createUnityCatalogClient(
   opts: CreateUnityCatalogClientOptions = {},
 ): UnityCatalogClient {
-  const fetchClient = createFetchClient<paths>({
-    baseUrl:
-      opts.baseUrl ?? import.meta.env.VITE_API_URL ?? "/api/2.1/unity-catalog",
-    fetch: opts.fetch ?? defaultFetch,
-  });
-  // `$api` wraps the fetch client with TanStack Query bindings. It auto-derives
-  // a query key of the form ["get", path, init] for every request. We treat that
-  // as the canonical key for a resource everywhere (reads, prefetch,
-  // invalidation), so keys never drift — see lib/uc/queries.ts for the conventions.
-  const $api = createQueryClient(fetchClient);
-  return { $api, fetchClient };
+  return withQueryBindings(createUnityCatalogFetchClient(opts));
+}
+
+// `$api` wraps the fetch client with TanStack Query bindings. It auto-derives a
+// query key of the form ["get", path, init] for every request. We treat that as
+// the canonical key for a resource everywhere (reads, prefetch, invalidation),
+// so keys never drift — see uc/queries.ts for the conventions.
+function withQueryBindings(
+  fetchClient: UnityCatalogFetchClient,
+): UnityCatalogClient {
+  return { $api: createQueryClient(fetchClient), fetchClient };
 }
 
 /**
- * The default, app-wide client instance — identical config to the historical
- * module singleton. `UnityCatalogProvider` falls back to this when no client is
- * supplied, and the non-hook query helpers (`*DetailQuery`, `prefetch*`) bind to
- * it directly (query-key derivation is client-independent, so caches still align).
+ * The default, app-wide client instance — wraps the root package's default
+ * `fetchClient`, so both share the transport set by
+ * `setDefaultUnityCatalogFetch`. `UnityCatalogProvider` falls back to this when
+ * no client is supplied, and the non-hook query helpers (`*DetailQuery`,
+ * `prefetch*`) bind to it directly (query-key derivation is client-independent,
+ * so caches still align).
  */
-export const defaultUnityCatalogClient = createUnityCatalogClient();
+export const defaultUnityCatalogClient = withQueryBindings(fetchClient);
 
-// Back-compat singleton exports. These are the default instance's members, so
-// any code still importing them keeps identical behavior. Prefer reading the
-// client from `useUnityCatalog()` in React code.
+// Back-compat singleton export: the default instance's query bindings. Prefer
+// reading the client from `useUnityCatalog()` in React code.
 export const $api = defaultUnityCatalogClient.$api;
-const fetchClient = defaultUnityCatalogClient.fetchClient;
-
-export { fetchClient };
