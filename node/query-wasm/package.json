@@ -18,8 +18,8 @@
     "@open-lakehouse/query": "^0.1.0"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "vite": "^8.0.14"
+    "typescript": "^6.0.3",
+    "vite": "^8.3.4"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

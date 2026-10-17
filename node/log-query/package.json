@@ -16,20 +16,20 @@
   "dependencies": {
     "@open-lakehouse/data-grid": "^0.1.0",
     "@open-lakehouse/ui-kit": "^0.1.0",
-    "@tanstack/react-virtual": "^3.14.2",
-    "apache-arrow": "^21.0.0",
-    "lucide-react": "^1.17.0"
+    "@tanstack/react-virtual": "^3.14.14",
+    "apache-arrow": "^21.2.0",
+    "lucide-react": "^1.55.0"
   },
   "peerDependencies": {
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
-    "@types/react": "^19.2.15",
-    "@types/react-dom": "^19.2.3",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "typescript": "^5"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^6.0.3"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

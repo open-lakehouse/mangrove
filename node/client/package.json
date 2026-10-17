@@ -23,24 +23,24 @@
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
-    "@jest/globals": "^30.2.0",
-    "@napi-rs/cli": "^3.5.1",
+    "@jest/globals": "^30.5.2",
+    "@napi-rs/cli": "^3.10.8",
     "@types/jest": "^30.0.0",
-    "@types/node": "^22.7.4",
+    "@types/node": "^22.20.5",
     "ava": "^7.0.0",
-    "eslint": "^10.0.2",
-    "jest": "^30.2.0",
+    "eslint": "^10.12.0",
+    "jest": "^30.5.2",
     "shx": "^0.4.0",
-    "tmp": "^0.2.3",
-    "ts-jest": "^29.4.0",
-    "typescript": "^5.5.4",
-    "typescript-eslint": "^8.56.1"
+    "tmp": "^0.2.7",
+    "ts-jest": "^29.4.14",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1"
   },
   "ava": {
     "timeout": "3m"
   },
   "engines": {
-    "node": ">= 18"
+    "node": ">= 22"
   },
   "scripts": {
     "artifacts": "napi artifacts",
@@ -57,6 +57,6 @@
     "version": "napi version"
   },
   "dependencies": {
-    "@bufbuild/protobuf": "^2.11.0"
+    "@bufbuild/protobuf": "^2.16.0"
   }
 }

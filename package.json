@@ -33,9 +33,9 @@
     "test:ui": "bun test node --path-ignore-patterns \"node/client/**\""
   },
   "dependencies": {
-    "eslint": "^10.0.2",
-    "prettier": "^3.8.1",
-    "yaml": "^2.8.2"
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.10",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

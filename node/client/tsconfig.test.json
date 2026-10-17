@@ -1,0 +1,10 @@
+{
+  // ts-jest compiles the __test__ suites with this config: the library
+  // tsconfig plus the jest globals (TypeScript 6 no longer auto-includes
+  // every @types package).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "jest"],
+    "isolatedModules": true
+  }
+}
