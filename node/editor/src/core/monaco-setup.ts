@@ -20,7 +20,7 @@
 //     context (see completionService.ts).
 //
 // This uses `monaco-sql-languages`' OWN worker path (no hand-wired handshake) —
-// it works on the tested monaco-editor@0.52.2 + monaco-sql-languages@1.1 pair.
+// it works on the tested monaco-editor@0.54.0 + monaco-sql-languages@1.2.1 pair.
 // See README.md for the version constraint and consuming-app build steps.
 //
 // Import this module for its side effects once, early — `ensureMonacoSetup()`
@@ -33,10 +33,10 @@ import * as monaco from "monaco-editor";
 import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 // The monaco-sql-languages pgsql worker (ANTLR PostgreSQL parser: diagnostics +
 // the completion parse context). `?worker` bundles it into its own chunk.
-import PgSqlWorker from "monaco-sql-languages/esm/languages/pgsql/pgsql.worker?worker";
+import PgSqlWorker from "monaco-sql-languages/esm/languages/pgsql/pgsql.worker.js?worker";
 // Register the pgsql language contribution (tokenizer + language features). This
 // calls monaco's `registerLanguage` at import time; it does not create workers.
-import "monaco-sql-languages/esm/languages/pgsql/pgsql.contribution";
+import "monaco-sql-languages/esm/languages/pgsql/pgsql.contribution.js";
 import { LanguageIdEnum, setupLanguageFeatures } from "monaco-sql-languages";
 import { catalogCompletionService } from "./completionService";
 

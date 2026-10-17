@@ -101,8 +101,8 @@
         "dt-sql-parser": "^4.5.1",
         "lucide-react": "^1.55.0",
         "marked": "^18.1.0",
-        "monaco-editor": "0.52.2",
-        "monaco-sql-languages": "^1.1.0",
+        "monaco-editor": "0.54.0",
+        "monaco-sql-languages": "1.2.1",
       },
       "devDependencies": {
         "@types/react": "^19.3.0",
@@ -1708,9 +1708,9 @@
 
     "minizlib": ["minizlib@3.1.0", "", { "dependencies": { "minipass": "^7.1.2" } }, "sha512-KZxYo1BUkWD2TVFLr0MQoM8vUUigWD3LlD83a/75BqC+4qE0Hb1Vo5v1FgcfaNXvfXzr+5EhQ6ing/CaBijTlw=="],
 
-    "monaco-editor": ["monaco-editor@0.52.2", "", {}, "sha512-GEQWEZmfkOGLdd3XK8ryrfWz3AIP8YymVXiPHEdewrUq7mh0qrKrfHLNCXcbB6sTnMLnOZ3ztSiKcciFUkIJwQ=="],
+    "monaco-editor": ["monaco-editor@0.54.0", "", { "dependencies": { "dompurify": "3.1.7", "marked": "14.0.0" } }, "sha512-hx45SEUoLatgWxHKCmlLJH81xBo0uXP4sRkESUpmDQevfi+e7K1VuiSprK6UpQ8u4zOcKNiH0pMvHvlMWA/4cw=="],
 
-    "monaco-sql-languages": ["monaco-sql-languages@1.1.0", "", { "dependencies": { "dt-sql-parser": "4.5.0" }, "peerDependencies": { "monaco-editor": ">=0.37.1" } }, "sha512-c2xjjg5ddMInfscDmZXhwd5qO+Zvl+ldOuZqXwqGd+TJkBJOTs1hPmjuM3XIhedBK/VtuVhTvXIVEgOgFROofA=="],
+    "monaco-sql-languages": ["monaco-sql-languages@1.2.1", "", { "dependencies": { "dt-sql-parser": "4.5.1" }, "peerDependencies": { "monaco-editor": ">=0.37.1", "sql-formatter": ">=10.7.2" }, "optionalPeers": ["sql-formatter"] }, "sha512-Svgt9YvXeWQ1o2TacDThhBJkGlIieik1kgjvPKs2Lk9UU8XpwVh3b9iNT6MCsVCJFUXyVRMcnL3kvhoirNOcGw=="],
 
     "mri": ["mri@1.2.0", "", {}, "sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA=="],
 
@@ -2350,7 +2350,9 @@
 
     "micromatch/picomatch": ["picomatch@2.3.2", "", {}, "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA=="],
 
-    "monaco-sql-languages/dt-sql-parser": ["dt-sql-parser@4.5.0", "", { "dependencies": { "antlr4-c3": "3.3.7", "antlr4ng": "2.0.11" } }, "sha512-x12CX4vqeJKUZzCDjVBlG2DLQZ7ORnqVYYmnOFiz1IMBCOuamjHUeU05IGiRbRO+VqQSoN5RasiFJAjqzZ1WJw=="],
+    "monaco-editor/dompurify": ["dompurify@3.1.7", "", {}, "sha512-VaTstWtsneJY8xzy7DekmYWEOZcmzIe3Qb3zPd4STve1OBTa+e+WmS1ITQec1fZYXI3HCsOZZiSMpG6oxoWMWQ=="],
+
+    "monaco-editor/marked": ["marked@14.0.0", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-uIj4+faQ+MgHgwUW1l2PsPglZLOLOT1uErt06dAPtx2kjteLAkbsd/0FiYg/MGS+i7ZKLb7w2WClxHkzOOuryQ=="],
 
     "npm-run-path/path-key": ["path-key@2.0.1", "", {}, "sha512-fEHGKCSmUSDPv4uoj8AlD+joPlq3peND+HRYyxFz4KPw4z926S/b8rIuFs2FYJg3BwsxJf6A9/3eIdLaYC+9Dw=="],
 
