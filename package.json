@@ -29,7 +29,8 @@
     "changeset:autogen": "bun run scripts/autogen-changeset.ts",
     "typecheck": "bun run --filter \"./node/*\" typecheck",
     "lint:node": "biome check node",
-    "test:ui": "bun test --conditions source node --path-ignore-patterns \"node/client/**\""
+    "test:ui": "bun test --conditions source node --path-ignore-patterns \"node/client/**\"",
+    "pack:check": "bun run scripts/pack-check.ts"
   },
   "dependencies": {
     "eslint": "^10.12.0",

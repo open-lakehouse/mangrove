@@ -55,6 +55,11 @@ jobs:
         run: bun run tsc
         working-directory: node/client
 
+      # Pack the package the way js-release publishes it and lint the tarball
+      # (publint + attw), so broken exports/types fail here, not at release.
+      - name: Pack check
+        run: bun run pack:check node/client
+
       - name: Copy .node artifact to dist
         # `dist/codegen/native.js` resolves the binary via `require("./client.<platform>.node")`,
         # so the artifact must sit next to it under `dist/codegen/`.
@@ -95,6 +100,13 @@ jobs:
       - name: Build SPA
         run: bun run build
         working-directory: node/app
+
+      # Build + pack the publishable TS packages the way js-release does and lint
+      # the tarballs (publint + attw).
+      - name: Pack check
+        run: |
+          bun run --filter @open-lakehouse/unity-catalog-client build
+          bun run pack:check node/unity-catalog-client
 
   # Guard the unity-catalog-client's generated OpenAPI types against drift from
   # the canonical spec. The spec itself is NOT regenerated here (that needs the

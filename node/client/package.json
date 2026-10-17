@@ -69,5 +69,6 @@
     "!dist/**/*.node",
     "README.md",
     "CHANGELOG.md"
-  ]
+  ],
+  "type": "commonjs"
 }
