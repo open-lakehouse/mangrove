@@ -54,8 +54,9 @@ behavior crosses package boundaries only through seams: `QueryRunner`,
   binding, `-client` for the transport-level client, `-ui` for React components,
   `-wasm` / `-connect` for seam implementations.
 - Workspace directory names match the unscoped package name (except `client/`,
-  which holds the NAPI crate and `app/`); the changeset autogen maps commit
-  scopes to packages by either.
+  which holds the NAPI crate and `app/`).
+- Published packages are released by release-plz through a crate each (see
+  `.agents/rules/js-release-rule.mdc`).
 
 ## Theming
 

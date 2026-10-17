@@ -148,28 +148,22 @@ If it fails after building with local patches: `git checkout main -- Cargo.lock`
 
 Enforced by the pre-commit hook when `Cargo.lock` is staged (see **Git hooks** below).
 
-### 6. JS/TS release (Changesets, commit-driven)
+### 6. JS/TS release (release-plz, GitHub Packages)
 
-**File:** [`.agents/rules/js-release-changesets-rule.mdc`](.agents/rules/js-release-changesets-rule.mdc)
+**File:** [`.agents/rules/js-release-rule.mdc`](.agents/rules/js-release-rule.mdc)
 
-The `node/*` npm packages release via [Changesets](https://changesets.dev) — the
-JS counterpart to `release-plz` — **driven automatically from conventional
-commits**. You normally do **not** write changeset files by hand.
+The publishable npm packages are released by **release-plz**, through crates:
+`unity-catalog-node` (the NAPI extension's own `node/client/Cargo.toml`) and
+`unity-catalog-client` (a placeholder `node/unity-catalog-client/Cargo.toml`).
 
-- On push to `main`, the `version-pr` job in [`js-release`](.github/workflows/js-release.yaml)
-  derives `.changeset/*.md` from `node/**` commits onto the **Version Packages PR branch**
-  (never `main`): `feat`→minor, `fix`/`perf`/`refactor`→patch, `!`/`BREAKING CHANGE:`→major;
-  the `(scope)` maps to a package by directory/name.
-  So **scope your `node/` commits** — an unscoped or unmatched-scope commit is skipped.
-- **Hand-write a changeset** (`bun run changeset`) only for a breaking `major` +
-  migration note, a bump that differs from the commit type, or a cross-cutting
-  release note. A hand-written entry wins (highest bump per package).
-- **Publishing goes to GitHub Packages only:** merging the
-  [`js-release`](.github/workflows/js-release.yaml) "Version Packages" PR
-  publishes every publishable package whose version isn't on the registry yet
-  (`@open-lakehouse/unity-catalog-node` + platform packages,
-  `@open-lakehouse/unity-catalog-client`; the UI packages stay `private: true`),
-  gated on the `JS_PUBLISH_ENABLED` repo variable. No npmjs publishing yet.
+- The version lives in the crate's `Cargo.toml`; `package.json` stays `0.0.0` in
+  git and is stamped at publish. Never bump either by hand.
+- Commits touching a crate's `include`d files bump it in the release-plz Release PR,
+  like any crate. Merging it tags `<crate>-v<version>`, and release-plz.yml's `npm`
+  job ([`js-release.yaml`](.github/workflows/js-release.yaml)) publishes to
+  **GitHub Packages only** (no npmjs yet), gated on the `JS_PUBLISH_ENABLED` repo
+  variable.
+- The UI packages stay `private: true` and are not released.
 
 ### Git hooks (`setup-hooks`)
 
