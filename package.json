@@ -24,9 +24,6 @@
     "strip-lock-proxy:check": "bun run scripts/strip-bun-lock-proxy.ts --check",
     "cargo-lock-trestle:check": "bash scripts/check-cargo-lock-trestle.sh",
     "test:coverage": "bun test --coverage --coverage-reporter=lcov",
-    "changeset": "changeset",
-    "changeset:version": "changeset version",
-    "changeset:autogen": "bun run scripts/autogen-changeset.ts",
     "typecheck": "bun run --filter \"./node/*\" typecheck",
     "lint:node": "biome check node",
     "test:ui": "bun test --conditions source node --path-ignore-patterns \"node/client/**\"",
@@ -40,8 +37,6 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "2.5.15",
-    "@changesets/changelog-github": "^1.0.1",
-    "@changesets/cli": "^3.0.3",
     "publint": "^0.3.25"
   }
 }

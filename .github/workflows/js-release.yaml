@@ -1,33 +1,41 @@
 name: js-release
 
-# The JS release pipeline (the counterpart to release-plz for the Rust crates).
-# On every push to `main`:
+# Publishes the npm packages to GitHub Packages (npm.pkg.github.com). Only
+# GitHub Packages for now (no npmjs) while downstream projects validate the
+# packages.
 #
-# 1. `version-pr` derives `.changeset/*.md` from the `node/**` conventional
-#    commits and, via the Changesets action, opens/updates a single "Version
-#    Packages" PR carrying those entries + the version bumps + per-package
-#    CHANGELOGs. Nothing lands on `main` until that PR is merged.
-# 2. `plan` lists the publishable packages whose version on `main` is not yet on
-#    their registry (scripts/unpublished-packages.ts). That is the "release due"
-#    signal: right after the Version PR merges the bumped versions are missing,
-#    at rest everything is already published and the remaining jobs skip.
-# 3. `napi-build` builds the native binary per target, only when the NAPI
-#    package (@open-lakehouse/unity-catalog-node) is due.
-# 4. `publish` builds, packs, attests and publishes every due package to GitHub
-#    Packages (npm.pkg.github.com), then pushes a `<name>@<version>` tag each.
+# release-plz owns versioning: each npm package is a crate in release-plz.toml
+# (`unity-catalog-node` = the NAPI extension in node/client, `unity-catalog-client`
+# = a placeholder crate in node/unity-catalog-client). release-plz bumps the
+# crate version from conventional commits, writes the CHANGELOG, tags
+# `<crate>-v<version>` and creates the GitHub Release. release-plz.yml then calls
+# this workflow with the npm packages it released this run. package.json
+# versions stay 0.0.0 in git; the released version is stamped in here.
 #
-# Registry: GitHub Packages ONLY for now (no npmjs) while downstream projects
-# validate the packages; publishing uses the job's GITHUB_TOKEN.
+# Per package: stamp the version, build, (NAPI) build each target binary and
+# publish the per-platform packages, pack, attest the tarballs + binaries
+# (GitHub Packages has no npm provenance), publish, and attach the tarball to the
+# package's GitHub Release.
 #
-# Kill switch: `napi-build` and `publish` only run while the `JS_PUBLISH_ENABLED`
-# repo variable is "true". With it unset only `version-pr` and `plan` run.
-#
-# See .changeset/README.md and .agents/rules/js-release-changesets-rule.mdc.
+# Kill switch: nothing is built or published unless the `JS_PUBLISH_ENABLED`
+# repo variable is "true". A release cut while it was off (or a failed publish)
+# can be published later with workflow_dispatch and the release tag.
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
+    inputs:
+      releases:
+        description: >-
+          JSON array of the npm-package crates release-plz released, as in its
+          `releases` output: [{"package_name": "...", "version": "...", "tag": "..."}].
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to publish, e.g. unity-catalog-node-v0.2.0
+        type: string
+        required: true
 
 # Least privilege: grant per job, nothing at the top level.
 permissions: {}
@@ -37,97 +45,60 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # --- Open/update the "Version Packages" PR (version bumps + changelogs) -----
-  version-pr:
-    name: Version Packages PR
-    if: ${{ github.repository == 'open-lakehouse/mangrove' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: write # push the changeset-release/main branch
-      pull-requests: write # open/update the Version Packages PR
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          persist-credentials: true
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.14
-
-      - name: Install dependencies
-        run: |
-          bun run scripts/strip-bun-lock-proxy.ts --check
-          bun install --frozen-lockfile
-
-      # Derive `.changeset/*.md` from the `node/**` conventional commits since the
-      # last JS release tag (the "automatic" half — the counterpart to release-plz
-      # reading commits). The script is idempotent per HEAD sha and writes nothing
-      # when there is no release-worthy commit. It only stages files in the
-      # working tree; the Changesets action below carries them onto its PR branch,
-      # so NOTHING is committed to `main` directly. A hand-written changeset still
-      # wins (`changeset version` takes the highest bump per package).
-      - name: Generate changesets from node/ commits
-        run: bun run scripts/autogen-changeset.ts
-
-      # Opens/updates the Version Packages PR. `version-script` runs `changeset
-      # version` (bumps + changelogs) and the action commits the result to the
-      # `changeset-release/main` branch. No `publish-script`: publishing is the
-      # `publish` job's business, after the NAPI matrix build.
-      - name: Changesets Version PR
-        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
-        with:
-          version-script: bun run changeset:version
-          commit-message: "chore(release): version JS packages"
-          pr-title: "chore(release): version JS packages"
-          github-token: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-
-  # --- Which package versions are not on their registry yet? -----------------
+  # --- Which npm packages, at which version and git ref? ---------------------
   plan:
     name: Release plan
-    if: ${{ github.repository == 'open-lakehouse/mangrove' }}
+    if: ${{ github.repository == 'open-lakehouse/mangrove' && vars.JS_PUBLISH_ENABLED == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      packages: read # query GitHub Packages for already-published versions
+    timeout-minutes: 5
+    permissions: {}
     outputs:
       packages: ${{ steps.plan.outputs.packages }}
-      any: ${{ steps.plan.outputs.any }}
       napi: ${{ steps.plan.outputs.napi }}
+      ref: ${{ steps.plan.outputs.ref }}
     steps:
-      - uses: actions/checkout@v5
-        with:
-          persist-credentials: false
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.14
-
-      # Writes an .npmrc mapping @open-lakehouse to GitHub Packages with
-      # NODE_AUTH_TOKEN, which `npm view` in the plan script picks up.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@open-lakehouse"
-
-      - name: List unpublished package versions
+      - name: Resolve packages
         id: plan
-        run: bun run scripts/unpublished-packages.ts --github-output
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASES: ${{ inputs.releases }}
+          TAG: ${{ inputs.tag }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # Crate -> workspace dir. Keep in sync with release-plz.toml.
+          dirs='{"unity-catalog-node":"node/client","unity-catalog-client":"node/unity-catalog-client"}'
+          if [ -n "${TAG:-}" ]; then
+            # workflow_dispatch: one existing `<crate>-v<version>` tag.
+            crate="${TAG%-v*}"
+            version="${TAG##*-v}"
+            RELEASES=$(jq -nc --arg c "$crate" --arg v "$version" --arg t "$TAG" \
+              '[{package_name: $c, version: $v, tag: $t}]')
+            ref="refs/tags/$TAG"
+          else
+            ref="$SHA"
+          fi
+          packages=$(jq -c --argjson dirs "$dirs" '
+            map(select($dirs[.package_name]) | {crate: .package_name, version, tag, dir: $dirs[.package_name]})
+          ' <<<"$RELEASES")
+          if [ "$(jq length <<<"$packages")" -eq 0 ]; then
+            echo "::error::no npm package in: $RELEASES"
+            exit 1
+          fi
+          {
+            echo "packages=$packages"
+            echo "napi=$(jq 'any(.crate == "unity-catalog-node")' <<<"$packages")"
+            echo "ref=$ref"
+          } >> "$GITHUB_OUTPUT"
+          echo "Publishing: $packages (ref $ref)"
 
   # --- Build the NAPI binary for every target -------------------------------
-  # Only when the NAPI package is due (and the kill switch is on). The matrix
-  # must list exactly the `napi.targets` in node/client/package.json, or
-  # `napi pre-publish` expects binaries that were never built.
+  # The matrix must list exactly the `napi.targets` in node/client/package.json,
+  # or `napi pre-publish` expects binaries that were never built.
   # (Per-PR / host-target build coverage lives in node-ci.yaml.)
   napi-build:
     name: napi (${{ matrix.target }})
     needs: [plan]
-    if: ${{ github.repository == 'open-lakehouse/mangrove' && vars.JS_PUBLISH_ENABLED == 'true' && needs.plan.outputs.napi == 'true' }}
+    if: ${{ needs.plan.outputs.napi == 'true' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     permissions:
@@ -154,6 +125,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ needs.plan.outputs.ref }}
           persist-credentials: false
 
       - name: Setup sccache
@@ -189,34 +161,36 @@ jobs:
           if-no-files-found: error
 
   # --- Publish to GitHub Packages --------------------------------------------
-  # Runs when any package is due (and the kill switch is on). `always()` lets it
-  # run when `napi-build` was skipped because only TS packages are due; it still
-  # refuses to run if that build failed.
+  # `always()` lets it run when `napi-build` was skipped because only the TS
+  # client was released; it still refuses to run if that build failed.
   publish:
     name: Publish (GitHub Packages)
     needs: [plan, napi-build]
-    if: ${{ always() && github.repository == 'open-lakehouse/mangrove' && vars.JS_PUBLISH_ENABLED == 'true' && needs.plan.outputs.any == 'true' && (needs.napi-build.result == 'success' || needs.napi-build.result == 'skipped') }}
+    if: ${{ always() && needs.plan.result == 'success' && (needs.napi-build.result == 'success' || needs.napi-build.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: release # protected env, mirrors release-plz
     permissions:
-      contents: write # push the <name>@<version> release tags
+      contents: write # attach the tarballs to the GitHub Releases
       packages: write # publish to GitHub Packages
       id-token: write # build-provenance attestation
       attestations: write # build-provenance attestation
     env:
       PACKAGES: ${{ needs.plan.outputs.packages }}
       NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 0
-          persist-credentials: true # pushes the release tags
+          ref: ${{ needs.plan.outputs.ref }}
+          persist-credentials: false
 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
 
+      # Writes an .npmrc mapping @open-lakehouse to GitHub Packages with
+      # NODE_AUTH_TOKEN.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
@@ -228,15 +202,28 @@ jobs:
           bun run scripts/strip-bun-lock-proxy.ts --check
           bun install --frozen-lockfile
 
+      # package.json carries 0.0.0 in git; the crate version release-plz just
+      # released is the npm version.
+      - name: Stamp versions
+        run: |
+          set -euo pipefail
+          jq -c '.[]' <<<"$PACKAGES" | while read -r p; do
+            dir=$(jq -r .dir <<<"$p")
+            version=$(jq -r .version <<<"$p")
+            jq --arg v "$version" '.version = $v' "$dir/package.json" > "$RUNNER_TEMP/package.json"
+            mv "$RUNNER_TEMP/package.json" "$dir/package.json"
+            echo "$(jq -r .name "$dir/package.json")@$version"
+          done
+
       # node/client's `build` script compiles a debug binary; its JS/declaration
       # build is `tsc` (the release binaries come from `napi-build`).
-      - name: Build due packages
+      - name: Build
         run: |
           set -euo pipefail
           for dir in $(jq -r '.[].dir' <<<"$PACKAGES"); do
             if [ "$dir" = node/client ]; then
               (cd "$dir" && bun run tsc)
-            elif jq -e '.scripts.build' "$dir/package.json" >/dev/null; then
+            else
               (cd "$dir" && bun run build)
             fi
           done
@@ -248,9 +235,9 @@ jobs:
           pattern: napi-*
           path: node/client/artifacts
 
-      # `napi version` syncs the per-platform packages under npm/ to the main
-      # package's version, `napi artifacts` copies each downloaded binary into its
-      # platform package, and `napi pre-publish` publishes those platform packages
+      # `napi version` syncs the per-platform packages under npm/ to the stamped
+      # version, `napi artifacts` copies each downloaded binary into its platform
+      # package, and `napi pre-publish` publishes those platform packages
       # (registry from their publishConfig) and pins them as optionalDependencies
       # of the main package, which is packed and published below.
       - name: Publish NAPI platform packages
@@ -262,7 +249,7 @@ jobs:
           bunx napi artifacts --output-dir artifacts
           bunx napi pre-publish -t npm
 
-      - name: Pack due packages
+      - name: Pack
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/tarballs"
@@ -272,8 +259,8 @@ jobs:
           ls -l "$RUNNER_TEMP/tarballs"
 
       # GitHub Packages doesn't support npm provenance, so attest the exact
-      # tarballs (and the platform binaries) with a build-provenance attestation
-      # instead; consumers verify with `gh attestation verify <file> -R open-lakehouse/mangrove`.
+      # tarballs (and the platform binaries) instead; consumers verify with
+      # `gh attestation verify <file> -R open-lakehouse/mangrove`.
       - name: Attest build provenance
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
@@ -288,10 +275,14 @@ jobs:
             npm publish "$tgz"
           done
 
-      - name: Push release tags
+      # release-plz already created each package's GitHub Release (with its
+      # changelog); attach the published tarball to it.
+      - name: Attach tarballs to the GitHub Releases
         run: |
           set -euo pipefail
-          for tag in $(jq -r '.[] | "\(.name)@\(.version)"' <<<"$PACKAGES"); do
-            git tag "$tag"
-            git push origin "refs/tags/$tag"
+          jq -c '.[]' <<<"$PACKAGES" | while read -r p; do
+            dir=$(jq -r .dir <<<"$p")
+            tag=$(jq -r .tag <<<"$p")
+            tgz="$RUNNER_TEMP/tarballs/$(jq -r '.name | ltrimstr("@") | gsub("/"; "-")' "$dir/package.json")-$(jq -r .version <<<"$p").tgz"
+            gh release upload "$tag" "$tgz" --clobber -R "$GITHUB_REPOSITORY"
           done
