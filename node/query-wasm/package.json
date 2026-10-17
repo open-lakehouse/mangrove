@@ -20,5 +20,8 @@
   "devDependencies": {
     "typescript": "^5",
     "vite": "^8.0.14"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
   }
 }

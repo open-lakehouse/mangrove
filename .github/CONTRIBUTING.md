@@ -26,7 +26,7 @@ aliases; the recipes live in `just/*.just` (and the promoted sibling justfiles):
 | `codegen`     | `just/codegen.just`        | proto / OpenAPI / client generation             |
 | `build`       | `just/build.just`          | UI, bindings, wasm engine, Docker, sqlx caches  |
 | `test`        | `just/test.just`           | unit / integration / conformance + CI gates     |
-| `meta`        | `just/meta.just`           | `fmt`, `fix*`, `lint-node`, `docs`, `run`        |
+| `meta`        | `just/meta.just`           | `fmt`, `fix*`, `lint-node`, `run`                |
 | `dev`         | `dev/justfile`             | docker-compose env + UC server / UI dev flows   |
 | `postgres`    | `crates/postgres/justfile` | sharing migrations helpers                       |
 | `node_client` | `node/client/justfile`     | node client external-type generation            |

@@ -13,7 +13,7 @@ mod codegen 'just/codegen.just'
 mod build 'just/build.just'
 # unit / integration / conformance tests + CI drift guards
 mod test 'just/test.just'
-# formatting, autofix, linting, docs, `run`
+# formatting, autofix, linting, `run`
 mod meta 'just/meta.just'
 # docker-compose dev environment + UC server / UI dev flows
 mod dev 'dev/justfile'

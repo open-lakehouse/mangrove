@@ -17,5 +17,11 @@
     "types": ["vite/client"]
   },
   "include": ["env.d.ts", "src"],
-  "exclude": ["node_modules", "dist", "**/*.stories.tsx", "**/*.stories.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.stories.tsx",
+    "**/*.stories.ts",
+    "**/*.test.ts"
+  ]
 }

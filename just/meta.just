@@ -24,10 +24,11 @@ fix: fix-rust fix-node fix-py
 fix-rust:
     cargo clippy --fix --workspace --allow-dirty --allow-staged
 
-# auto-fix Node lint issues
+# auto-fix Node lint issues (biome across the whole node/ workspace)
 [group('meta')]
+[no-cd]
 fix-node:
-    bun run --filter @unitycatalog/client lint-fix
+    bunx biome check --write node
 
 # auto-fix Python lint issues
 [group('meta')]
@@ -35,12 +36,10 @@ fix-node:
 fix-py:
     uvx ruff check --fix
 
-# lint the Node bindings
+# lint + typecheck the node/ workspace (mirrors the node-ci `ui` job)
 [group('meta')]
+[no-cd]
 lint-node:
-    bun run --filter @unitycatalog/client lint
+    bun run lint:node
+    bun run typecheck
 
-# run the Astro documentation development server
-[group('meta')]
-docs:
-    bun run --filter docs dev

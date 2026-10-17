@@ -27,7 +27,10 @@
     "changeset": "changeset",
     "changeset:version": "changeset version",
     "changeset:publish": "changeset publish",
-    "changeset:autogen": "bun run scripts/autogen-changeset.ts"
+    "changeset:autogen": "bun run scripts/autogen-changeset.ts",
+    "typecheck": "bun run --filter \"./node/*\" typecheck",
+    "lint:node": "biome check node",
+    "test:ui": "bun test node --path-ignore-patterns \"node/client/**\""
   },
   "dependencies": {
     "eslint": "^10.0.2",
