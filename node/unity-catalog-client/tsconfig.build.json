@@ -1,0 +1,17 @@
+{
+  // Emits the published ESM build (JS + declarations) to dist/. The workspace
+  // itself consumes src/ through the `source` export condition, so this only
+  // runs for packing/publishing.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["env.d.ts", "src"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}

@@ -30,7 +30,7 @@
     "changeset:autogen": "bun run scripts/autogen-changeset.ts",
     "typecheck": "bun run --filter \"./node/*\" typecheck",
     "lint:node": "biome check node",
-    "test:ui": "bun test node --path-ignore-patterns \"node/client/**\""
+    "test:ui": "bun test --conditions source node --path-ignore-patterns \"node/client/**\""
   },
   "dependencies": {
     "eslint": "^10.12.0",
@@ -38,8 +38,10 @@
     "yaml": "^2.9.1"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "2.5.15",
+    "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.1",
-    "@changesets/changelog-github": "^0.7.0"
+    "publint": "^0.3.25"
   }
 }

@@ -1,7 +1,7 @@
 import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defaultClientConditions, defineConfig } from "vite";
 
 // The Unity Catalog REST API and this SPA are served on one origin by the
 // `uc-server` Rust binary (tower-http ServeDir serves the built `dist/` as
@@ -23,6 +23,10 @@ export default defineConfig({
   // server base path without a rebuild — the server may mount it anywhere.
   base: "./",
   resolve: {
+    // Publishable workspace packages export a `source` condition pointing at
+    // their src/, so the app builds and hot-reloads from source with no
+    // package build step (published consumers get dist/).
+    conditions: ["source", ...defaultClientConditions],
     // The shared UI packages are separate workspace packages; force a single
     // copy of React and the TanStack context/singleton libs so hooks and
     // query/router context work at runtime (duplicates break them).

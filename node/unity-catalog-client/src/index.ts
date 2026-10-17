@@ -24,10 +24,10 @@ export {
   fetchClient,
   setDefaultUnityCatalogFetch,
   type UnityCatalogFetchClient,
-} from "./fetch";
+} from "./fetch.js";
 // Name helpers.
-export { objectFullName, tableFullName } from "./names";
+export { objectFullName, tableFullName } from "./names.js";
 // Error helper.
-export { parseUcError } from "./uc/errors";
+export { parseUcError } from "./uc/errors.js";
 // Generated UC OpenAPI types (from the canonical ../../openapi/openapi.yaml via `gen:api`).
-export * from "./uc-types";
+export * from "./uc-types.js";

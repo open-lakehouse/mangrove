@@ -10,7 +10,7 @@
 // `defaultUnityCatalogClient` (identical config to the historical singleton), so
 // tests and Storybook stories need no wrapper and behave exactly as before.
 import { createContext, type ReactNode, useContext } from "react";
-import { defaultUnityCatalogClient, type UnityCatalogClient } from "../api";
+import { defaultUnityCatalogClient, type UnityCatalogClient } from "../api.js";
 
 const UnityCatalogContext = createContext<UnityCatalogClient | null>(null);
 

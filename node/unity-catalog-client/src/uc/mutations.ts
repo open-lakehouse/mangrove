@@ -12,7 +12,7 @@
 
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
-import { useUnityCatalog } from "./context";
+import { useUnityCatalog } from "./context.js";
 import {
   catalogDetailQuery,
   credentialDetailQuery,
@@ -22,7 +22,7 @@ import {
   schemaDetailQuery,
   tableDetailQuery,
   volumeDetailQuery,
-} from "./queries";
+} from "./queries.js";
 
 interface ListInit {
   params?: { query?: { catalog_name?: string; schema_name?: string } };

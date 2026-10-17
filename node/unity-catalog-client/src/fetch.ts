@@ -1,5 +1,5 @@
 import createFetchClient from "openapi-fetch";
-import type { paths } from "./uc-types";
+import type { paths } from "./uc-types.js";
 
 /**
  * The fetch the default client uses. It is a stable indirection over a mutable

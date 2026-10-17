@@ -21,6 +21,8 @@ target/
 integration-tests/Cargo.lock
 # wasm-bindgen output of `just build-query-wasm` (a build artifact)
 wasm/query-wasm/pkg/
+# Published build output of the node/* workspace packages (`bun run build`)
+node/*/dist/
 
 # Project
 # Built Python wheels (maturin --out dist; see `just build-py-wheels`)

@@ -4,8 +4,8 @@ import {
   createUnityCatalogFetchClient,
   fetchClient,
   type UnityCatalogFetchClient,
-} from "./fetch";
-import type { paths } from "./uc-types";
+} from "./fetch.js";
+import type { paths } from "./uc-types.js";
 
 /**
  * A constructed Unity Catalog client: the openapi-fetch transport plus its

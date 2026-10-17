@@ -11,11 +11,11 @@ export {
   createUnityCatalogClient,
   defaultUnityCatalogClient,
   type UnityCatalogClient,
-} from "./api";
-export * from "./index";
+} from "./api.js";
+export * from "./index.js";
 // Client injection context.
-export { UnityCatalogProvider, useUnityCatalog } from "./uc/context";
+export { UnityCatalogProvider, useUnityCatalog } from "./uc/context.js";
 // Mutations + cache invalidators.
-export * from "./uc/mutations";
+export * from "./uc/mutations.js";
 // Read hooks + query helpers + list keys.
-export * from "./uc/queries";
+export * from "./uc/queries.js";
