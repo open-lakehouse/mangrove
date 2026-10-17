@@ -16,8 +16,8 @@
  *   others  -> skip  A `!` or `BREAKING CHANGE` footer promotes the bump to major.
  *
  * Only NON-private, non-ignored workspace packages are eligible — the same set
- * Changesets itself would version. Private packages (all `@open-lakehouse/*`
- * today) are skipped, matching the dormant publish scope.
+ * Changesets itself would version (today the NAPI `unity-catalog-node` and the
+ * TS `unity-catalog-client`; the UI packages are still private).
  *
  * A hand-written changeset already present for a package in this batch wins:
  * this script never overwrites `.changeset/*.md` files it did not author, and
@@ -25,11 +25,11 @@
  *
  * Usage:
  *   bun run scripts/autogen-changeset.ts --since <git-ref>   # since a ref (exclusive)
- *   bun run scripts/autogen-changeset.ts                     # since the last release tag, else HEAD~1
+ *   bun run scripts/autogen-changeset.ts                     # since the last JS release tag, else HEAD~1
  *   bun run scripts/autogen-changeset.ts --dry-run           # print, do not write
  */
 import { execFileSync } from "node:child_process";
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -139,9 +139,18 @@ function git(args: string[]): string {
 
 function resolveSince(explicit?: string): string {
   if (explicit) return explicit;
-  // Prefer the most recent tag reachable from HEAD; fall back to HEAD~1.
+  // Prefer the most recent JS release tag (`@open-lakehouse/<pkg>@<version>`,
+  // pushed by js-release) reachable from HEAD; fall back to HEAD~1. Matching
+  // only JS tags matters: a newer release-plz crate tag would otherwise move
+  // the window past node/ commits that have not been released yet.
   try {
-    return git(["describe", "--tags", "--abbrev=0"]);
+    return git([
+      "describe",
+      "--tags",
+      "--abbrev=0",
+      "--match",
+      "@open-lakehouse/*@*",
+    ]);
   } catch {
     return "HEAD~1";
   }
@@ -186,8 +195,11 @@ const scopeIndex = buildScopeIndex(pkgs);
 const since = resolveSince(sinceArg);
 const commits = commitsTouchingNode(since);
 
-// Accumulate the highest bump per eligible package, plus a summary line.
-const bumps = new Map<string, { bump: Bump; summaries: string[] }>();
+// Accumulate, per eligible package, the highest bump plus each commit's bump.
+const bumps = new Map<
+  string,
+  { bump: Bump; bumps: { bump: Bump; subject: string }[] }
+>();
 let skippedNoScope = 0;
 let skippedUnmatched = 0;
 
@@ -209,15 +221,10 @@ for (const { subject, body } of commits) {
     }
     for (const name of names) {
       if (!eligible.has(name)) continue; // private / ignored
-      const cur = bumps.get(name);
-      if (!cur || BUMP_RANK[bump] > BUMP_RANK[cur.bump]) {
-        bumps.set(name, {
-          bump,
-          summaries: [...(cur?.summaries ?? []), parsed.subject],
-        });
-      } else {
-        cur.summaries.push(parsed.subject);
-      }
+      const cur = bumps.get(name) ?? { bump, bumps: [] };
+      if (BUMP_RANK[bump] > BUMP_RANK[cur.bump]) cur.bump = bump;
+      cur.bumps.push({ bump, subject: parsed.subject });
+      bumps.set(name, cur);
     }
   }
 }
@@ -230,27 +237,36 @@ if (bumps.size === 0) {
   process.exit(0);
 }
 
-// One aggregated changeset file for this batch. `changeset version` still merges
-// it with any hand-written entries by taking the highest bump per package.
-const frontmatter = [...bumps.entries()]
-  .map(([name, { bump }]) => `"${name}": ${bump}`)
-  .join("\n");
-const summaryLines = [
-  ...new Set([...bumps.values()].flatMap((b) => b.summaries)),
-].map((s) => `- ${s}`);
-const content = `---\n${frontmatter}\n---\n\n${summaryLines.join("\n")}\n`;
+// One changeset per (package, commit): each package's CHANGELOG then lists only
+// its own commits, one bullet each. `changeset version` takes the highest bump
+// per package across these and any hand-written entries.
+const entries = [...bumps.entries()].flatMap(([name, { bumps: perCommit }]) =>
+  perCommit.map(({ bump, subject }) => ({ name, bump, subject })),
+);
+const render = (e: (typeof entries)[number]) =>
+  `---\n"${e.name}": ${e.bump}\n---\n\n${e.subject}\n`;
 
 if (dryRun) {
-  console.log(`# would write .changeset/auto-<sha>.md\n\n${content}`);
+  console.log(
+    `# would write ${entries.length} file(s) .changeset/auto-<sha>-<n>.md\n\n` +
+      entries.map(render).join("\n"),
+  );
   process.exit(0);
 }
 
-// Name the file after the HEAD sha so re-running on the same tip is idempotent
-// (overwrites its own prior output rather than piling up duplicates).
+// Name the files after the HEAD sha so re-running on the same tip is idempotent:
+// drop this tip's prior output (only files this script authored) before
+// rewriting, rather than piling up duplicates.
 const headSha = git(["rev-parse", "--short", "HEAD"]);
-const outPath = join(CHANGESET_DIR, `auto-${headSha}.md`);
-writeFileSync(outPath, content);
+for (const f of readdirSync(CHANGESET_DIR)) {
+  if (f === `auto-${headSha}.md` || f.startsWith(`auto-${headSha}-`)) {
+    rmSync(join(CHANGESET_DIR, f));
+  }
+}
+entries.forEach((e, i) => {
+  writeFileSync(join(CHANGESET_DIR, `auto-${headSha}-${i + 1}.md`), render(e));
+});
 console.log(
-  `Wrote ${outPath} bumping ${bumps.size} package(s): ` +
+  `Wrote ${entries.length} changeset(s) as .changeset/auto-${headSha}-*.md bumping ${bumps.size} package(s): ` +
     [...bumps.entries()].map(([n, b]) => `${n}=${b.bump}`).join(", "),
 );
