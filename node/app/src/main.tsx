@@ -15,13 +15,13 @@ import {
   TooltipProvider,
 } from "@open-lakehouse/ui-kit";
 import {
-  EnvironmentScopeProvider,
-  ucCatalogProvider,
-} from "@open-lakehouse/unity-catalog-ui";
-import {
   createUnityCatalogClient,
   UnityCatalogProvider,
 } from "@open-lakehouse/unity-catalog-client/react";
+import {
+  EnvironmentScopeProvider,
+  ucCatalogProvider,
+} from "@open-lakehouse/unity-catalog-ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";

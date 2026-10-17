@@ -37,6 +37,10 @@
     "@types/react-dom": "^19.2.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.0.14"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
   }
 }

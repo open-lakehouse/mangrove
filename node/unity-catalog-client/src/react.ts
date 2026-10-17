@@ -5,8 +5,6 @@
 // React code needs a single import. Requires the `react` and
 // `@tanstack/react-query` peers.
 
-export * from "./index";
-
 // Client with query bindings.
 export {
   $api,
@@ -14,6 +12,7 @@ export {
   defaultUnityCatalogClient,
   type UnityCatalogClient,
 } from "./api";
+export * from "./index";
 // Client injection context.
 export { UnityCatalogProvider, useUnityCatalog } from "./uc/context";
 // Mutations + cache invalidators.

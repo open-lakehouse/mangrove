@@ -59,9 +59,7 @@ export function createUnityCatalogFetchClient(
     // `import.meta.env` only exists under Vite; guard it so the package also
     // loads in plain Node / other bundlers.
     baseUrl:
-      opts.baseUrl ??
-      import.meta.env?.VITE_API_URL ??
-      "/api/2.1/unity-catalog",
+      opts.baseUrl ?? import.meta.env?.VITE_API_URL ?? "/api/2.1/unity-catalog",
     fetch: opts.fetch ?? defaultFetch,
   });
 }

@@ -29,6 +29,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
       className="flex min-w-0 items-center gap-1 text-xs"
     >
       {items.map((item, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: crumbs are positional; the same label may repeat at different depths.
         <Fragment key={`${item.label}-${i}`}>
           {i > 0 && <ChevronRight className={CHEVRON_CLASS} aria-hidden />}
           {item.to ? (
