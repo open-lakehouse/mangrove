@@ -18,7 +18,7 @@
 
 [package]
 name = "unity-catalog-node"
-version = "0.1.0"
+version = "0.0.1"
 description = "NAPI extension for the @open-lakehouse/unity-catalog-node npm package"
 publish = false
 readme = "README.md"

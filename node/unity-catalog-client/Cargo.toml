@@ -18,7 +18,7 @@
 
 [package]
 name = "unity-catalog-client"
-version = "0.1.0"
+version = "0.0.1"
 description = "Release placeholder for the @open-lakehouse/unity-catalog-client npm package"
 publish = false
 readme = "README.md"
