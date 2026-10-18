@@ -18,10 +18,10 @@ import {
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { Globe, KeyRound, type LucideIcon } from "lucide-react";
 
-import { Breadcrumbs } from "./Breadcrumbs";
-import { CatalogDialogsProvider } from "./dialogs";
-import { StorageTable } from "./storage/StorageTable";
-import { STORAGE_KINDS, type StorageKind } from "./types";
+import { Breadcrumbs } from "./Breadcrumbs.js";
+import { CatalogDialogsProvider } from "./dialogs.js";
+import { StorageTable } from "./storage/StorageTable.js";
+import { STORAGE_KINDS, type StorageKind } from "./types.js";
 
 type StorageList = UseInfiniteQueryResult<unknown[], unknown>;
 

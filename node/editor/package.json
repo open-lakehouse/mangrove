@@ -3,19 +3,44 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "description": "Monaco SQL editor with catalog-aware completion for React.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-lakehouse/mangrove.git",
+    "directory": "node/editor"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
+    "!src/**/*.stories.tsx",
+    "README.md",
+    "DESIGN.md",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./session": {
-      "types": "./src/session.ts",
-      "import": "./src/session.ts"
+      "source": "./src/session.ts",
+      "types": "./dist/session.d.ts",
+      "import": "./dist/session.js"
     },
     "./fixtures": {
-      "types": "./src/fixtures.ts",
-      "import": "./src/fixtures.ts"
-    }
+      "source": "./src/fixtures.ts",
+      "types": "./dist/fixtures.d.ts",
+      "import": "./dist/fixtures.js"
+    },
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -39,6 +64,8 @@
     "typescript": "^6.0.3"
   },
   "scripts": {
+    "build": "bun run ../../scripts/build-package.ts",
+    "prepack": "bun run build",
     "typecheck": "tsc --noEmit"
   }
 }

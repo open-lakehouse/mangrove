@@ -1,6 +1,6 @@
 import type { RJSFSchema } from "@rjsf/utils";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { SchemaForm } from "./SchemaForm";
+import { SchemaForm } from "./SchemaForm.js";
 // SchemaForm renders the checked-in JSON Schemas that back the UI's create/edit
 // dialogs (generated from the Unity Catalog protos — see
 // scripts/gen-form-schemas.mjs). These stories load those exact

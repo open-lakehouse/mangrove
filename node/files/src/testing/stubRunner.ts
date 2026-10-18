@@ -7,18 +7,18 @@
 // and backs both the app's dev wiring and Storybook stories, without polluting
 // the main barrel.
 
-import { type FilesRunner, registerFilesRunner } from "../runner";
+import { type FilesRunner, registerFilesRunner } from "../runner.js";
 import type {
   DirectoryPage,
   FileChunk,
   FileMetadata,
   ReadFileRequest,
-} from "../types";
+} from "../types.js";
 import {
   fixtureFileChunks,
   fixtureFileMetadata,
   fixtureListing,
-} from "./fixtures";
+} from "./fixtures.js";
 
 // Default page size when a request omits `maxResults` — small so the root's
 // 15-entry listing arrives in several pages, exercising `nextPageToken`

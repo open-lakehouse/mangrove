@@ -12,7 +12,7 @@ import {
   SELECTABLE_KINDS,
   type SelectableKind,
   type Selection,
-} from "./types";
+} from "./types.js";
 
 /** Route id the selection lives on (see routeTree.tsx `validateSearch`). */
 const FROM = "/catalog";

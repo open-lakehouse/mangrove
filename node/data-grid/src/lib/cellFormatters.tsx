@@ -1,6 +1,6 @@
 import { type DataType, type Timestamp, Type } from "apache-arrow";
 import type { ReactNode } from "react";
-import { timestampToEpochMs } from "./temporal";
+import { timestampToEpochMs } from "./temporal.js";
 
 // Type-aware cell rendering driven by the Arrow schema. Each formatter takes a
 // raw value read zero-copy from the store plus the column's `DataType`, and

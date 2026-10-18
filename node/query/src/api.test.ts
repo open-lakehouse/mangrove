@@ -7,9 +7,9 @@
 
 import { expect, test } from "bun:test";
 import { tableFromJSON, tableToIPC } from "apache-arrow";
-import { createQueryService } from "./api";
-import type { QueryChunk, QueryRunner } from "./runner";
-import { registerQueryRunner } from "./runner";
+import { createQueryService } from "./api.js";
+import type { QueryChunk, QueryRunner } from "./runner.js";
+import { registerQueryRunner } from "./runner.js";
 
 // A one-row Arrow IPC chunk so `store.append` has something real to decode.
 function oneRowChunk(): QueryChunk {

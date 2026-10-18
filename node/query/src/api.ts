@@ -12,13 +12,13 @@
 // it when no provider is mounted.
 
 import { ArrowResultStore } from "@open-lakehouse/data-grid";
-import { queryRunner, queryRunnerSupports } from "./runner";
+import { queryRunner, queryRunnerSupports } from "./runner.js";
 import type {
   PreviewHandle,
   PreviewRequest,
   QueryService,
   SupportsInput,
-} from "./types";
+} from "./types.js";
 
 /** Default preview row cap when a request omits `limit`. */
 const DEFAULT_PREVIEW_LIMIT = 100;

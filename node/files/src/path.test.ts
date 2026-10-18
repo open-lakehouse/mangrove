@@ -8,7 +8,7 @@ import {
   joinVolumePath,
   parseVolumePath,
   volumeFullName,
-} from "./path";
+} from "./path.js";
 
 test("parses a canonical volume path with a nested rest", () => {
   const vp = parseVolumePath("/Volumes/cat/sch/vol/a/b/c.parquet");

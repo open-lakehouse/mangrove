@@ -1,9 +1,9 @@
 import Editor, { type OnMount } from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
 import { useCallback, useEffect, useRef } from "react";
-import { getEntry, saveViewState } from "./models";
-import { ensureMonacoSetup } from "./monaco-setup";
-import { useMonacoTheme } from "./useMonacoTheme";
+import { getEntry, saveViewState } from "./models.js";
+import { ensureMonacoSetup } from "./monaco-setup.js";
+import { useMonacoTheme } from "./useMonacoTheme.js";
 
 // Run the loader/worker bootstrap at module import — before any <Editor> mounts.
 ensureMonacoSetup();

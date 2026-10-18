@@ -1,7 +1,7 @@
 import { useExternalLocationDetail } from "@open-lakehouse/unity-catalog-client/react";
 
-import { DetailStates } from "./DetailStates";
-import { Meta, MetaGrid } from "./Meta";
+import { DetailStates } from "./DetailStates.js";
+import { Meta, MetaGrid } from "./Meta.js";
 
 export function ExternalLocationDetail({ name }: { name: string }) {
   const { data: location, isLoading, error } = useExternalLocationDetail(name);

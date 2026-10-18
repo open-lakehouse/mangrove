@@ -5,8 +5,8 @@
 
 import type { Transport } from "@connectrpc/connect";
 import { type Client, createClient } from "@connectrpc/connect";
-import { FilesService } from "./gen/portal/files/v1/svc_pb";
-import { clientTransport } from "./registry";
+import { FilesService } from "./gen/portal/files/v1/svc_pb.js";
+import { clientTransport } from "./registry.js";
 
 /** A typed client for `portal.files.v1.FilesService`. */
 export type FilesClient = Client<typeof FilesService>;

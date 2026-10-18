@@ -5,7 +5,7 @@
 
 import { expect, test } from "bun:test";
 import { type Table, tableFromJSON, tableToIPC } from "apache-arrow";
-import { ArrowResultStore } from "./arrowResultStore";
+import { ArrowResultStore } from "./arrowResultStore.js";
 
 // One reconciled-log-shaped row: a top-level `stats` struct with nested
 // minValues/maxValues leaves, plus a sibling nullable `dv` struct. Build the

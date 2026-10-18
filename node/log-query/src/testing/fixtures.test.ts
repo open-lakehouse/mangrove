@@ -10,7 +10,7 @@ import {
   type ActionLogRow,
   actionsLogFixtureRows,
   reconciledLogFixtureRows,
-} from "./fixtures";
+} from "./fixtures.js";
 
 test("reconciled fixture carries typed minValues/maxValues sub-structs", () => {
   const table = tableFromJSON(

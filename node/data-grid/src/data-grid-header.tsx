@@ -1,8 +1,8 @@
 import { Badge, cn } from "@open-lakehouse/ui-kit";
 import type { Header } from "@tanstack/react-table";
 import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
-import { arrowTypeLabel } from "./lib/arrowTypeLabel";
-import type { ArrowColumnMeta } from "./lib/useArrowTable";
+import { arrowTypeLabel } from "./lib/arrowTypeLabel.js";
+import type { ArrowColumnMeta } from "./lib/useArrowTable.js";
 
 interface DataGridHeaderProps {
   // biome-ignore lint/suspicious/noExplicitAny: TanStack Header is generic over row data we don't model

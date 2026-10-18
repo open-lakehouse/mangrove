@@ -21,8 +21,8 @@
 import type {
   RunQueryRequest,
   RunQueryResponse,
-} from "./gen/open_lakehouse/query/v1/svc_pb";
-import type { SupportsInput } from "./types";
+} from "./gen/open_lakehouse/query/v1/svc_pb.js";
+import type { SupportsInput } from "./types.js";
 
 /**
  * A query to execute. Structurally the generated `RunQueryRequest` minus its

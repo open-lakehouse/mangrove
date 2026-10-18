@@ -26,21 +26,21 @@ import {
   useRef,
   useState,
 } from "react";
-import { type EditorLanguage, languageOf } from "../core/language";
+import { type EditorLanguage, languageOf } from "../core/language.js";
 import {
   disposeAll,
   disposeModel,
   ensureModel,
   getEntry,
-} from "../core/models";
-import { type Autosave, createAutosave } from "./autosave";
-import type { FileStore } from "./fileStore";
+} from "../core/models.js";
+import { type Autosave, createAutosave } from "./autosave.js";
+import type { FileStore } from "./fileStore.js";
 import {
   initialSessionState,
   type OpenTab,
   sessionReducer,
   type TabId,
-} from "./sessionReducer";
+} from "./sessionReducer.js";
 
 const CONTENT_TYPE_BY_LANG: Record<EditorLanguage, string> = {
   sql: "text/plain",

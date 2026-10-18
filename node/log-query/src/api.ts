@@ -13,13 +13,17 @@
 // mounted.
 
 import { ArrowResultStore } from "@open-lakehouse/data-grid";
-import { type LogKind, logQueryRunner, logQueryRunnerSupports } from "./runner";
+import {
+  type LogKind,
+  logQueryRunner,
+  logQueryRunnerSupports,
+} from "./runner.js";
 import type {
   LogPreviewHandle,
   LogPreviewRequest,
   LogQueryService,
   LogSupportsInput,
-} from "./types";
+} from "./types.js";
 
 /** Default row cap when a request omits `limit`. */
 const DEFAULT_LOG_LIMIT = 100;

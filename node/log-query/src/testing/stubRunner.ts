@@ -13,8 +13,8 @@ import {
   type LogQueryChunk,
   type LogQueryRunner,
   registerLogQueryRunner,
-} from "../runner";
-import { actionsLogFixtureRows, reconciledLogFixtureRows } from "./fixtures";
+} from "../runner.js";
+import { actionsLogFixtureRows, reconciledLogFixtureRows } from "./fixtures.js";
 
 // Rows per streamed record batch. Small enough that the ~40-row fixture arrives
 // in several chunks, exercising progressive render, virtualization and the

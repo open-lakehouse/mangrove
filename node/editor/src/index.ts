@@ -17,19 +17,19 @@ export {
   hasCatalogProvider,
   NoCatalogProviderError,
   registerCatalogProvider,
-} from "./core/catalogProvider";
+} from "./core/catalogProvider.js";
 // The catalog-aware SQL completion service (already wired by ensureMonacoSetup;
 // exported for hosts that build their own setup).
-export { catalogCompletionService } from "./core/completionService";
+export { catalogCompletionService } from "./core/completionService.js";
 // Path → language classification.
 export {
   type EditorLanguage,
   extensionOf,
   languageOf,
   MONACO_LANGUAGE_ID,
-} from "./core/language";
+} from "./core/language.js";
 // The persistent editor surface.
-export { MonacoHost, type MonacoHostProps } from "./core/MonacoHost";
+export { MonacoHost, type MonacoHostProps } from "./core/MonacoHost.js";
 // The Monaco model registry (used by the session layer and by core consumers
 // that manage models directly).
 export {
@@ -42,11 +42,11 @@ export {
   markSaved,
   modelUri,
   saveViewState,
-} from "./core/models";
+} from "./core/models.js";
 // Run-once Monaco bootstrap (loader + workers + SQL features).
-export { ensureMonacoSetup } from "./core/monaco-setup";
+export { ensureMonacoSetup } from "./core/monaco-setup.js";
 // Theme bridge to ui-kit's useTheme.
-export { type MonacoThemeId, useMonacoTheme } from "./core/useMonacoTheme";
+export { type MonacoThemeId, useMonacoTheme } from "./core/useMonacoTheme.js";
 
 // NOTE: the multi-tab session shell (EditorSessionProvider, TabStrip,
 // MarkdownPreview, the FileStore seam) is intentionally NOT re-exported here —

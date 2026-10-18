@@ -1,8 +1,8 @@
 import type { ArrowResultStore } from "@open-lakehouse/data-grid";
 import { cn } from "@open-lakehouse/ui-kit";
 import { useMemo, useState } from "react";
-import type { MinMaxAxis } from "./lib/minMaxAxes";
-import { type AxisData, useMinMaxBoxes } from "./lib/useMinMaxBoxes";
+import type { MinMaxAxis } from "./lib/minMaxAxes.js";
+import { type AxisData, useMinMaxBoxes } from "./lib/useMinMaxBoxes.js";
 
 // The min/max-box visualization for the reconciled-log view. Each surviving file
 // carries a [min,max] interval per column (from its stats); this plots those

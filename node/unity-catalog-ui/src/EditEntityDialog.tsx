@@ -17,8 +17,8 @@ import {
 } from "@open-lakehouse/unity-catalog-client/react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
-import type { EditRequest } from "./dialog-types";
-import { useCatalogSelection } from "./selection";
+import type { EditRequest } from "./dialog-types.js";
+import { useCatalogSelection } from "./selection.js";
 
 const TITLES: Record<EditRequest["kind"], string> = {
   catalog: "Edit catalog",

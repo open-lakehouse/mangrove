@@ -8,8 +8,8 @@
 // Storybook stories need no wrapper.
 
 import { createContext, type ReactNode, useContext } from "react";
-import { defaultQueryService } from "./api";
-import type { QueryService } from "./types";
+import { defaultQueryService } from "./api.js";
+import type { QueryService } from "./types.js";
 
 const QueryServiceContext = createContext<QueryService | null>(null);
 

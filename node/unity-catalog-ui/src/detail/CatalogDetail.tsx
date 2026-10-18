@@ -1,8 +1,8 @@
 import { useCatalogDetail } from "@open-lakehouse/unity-catalog-client/react";
 
-import { SectionLabel } from "../SectionLabel";
-import { DetailStates } from "./DetailStates";
-import { formatTimestamp, Meta, MetaGrid } from "./Meta";
+import { SectionLabel } from "../SectionLabel.js";
+import { DetailStates } from "./DetailStates.js";
+import { formatTimestamp, Meta, MetaGrid } from "./Meta.js";
 
 export function CatalogDetail({ name }: { name: string }) {
   const { data: catalog, isLoading, error } = useCatalogDetail(name);

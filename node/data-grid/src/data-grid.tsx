@@ -1,10 +1,10 @@
 import { cn } from "@open-lakehouse/ui-kit";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useLayoutEffect, useState } from "react";
-import { DataGridCell } from "./data-grid-cell";
-import { DataGridHeader } from "./data-grid-header";
-import type { ArrowResultStore } from "./lib/arrowResultStore";
-import { useArrowTable } from "./lib/useArrowTable";
+import { DataGridCell } from "./data-grid-cell.js";
+import { DataGridHeader } from "./data-grid-header.js";
+import type { ArrowResultStore } from "./lib/arrowResultStore.js";
+import { useArrowTable } from "./lib/useArrowTable.js";
 
 interface DataGridProps {
   store: ArrowResultStore;

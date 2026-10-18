@@ -1,7 +1,7 @@
 import { FilesServiceProvider } from "@open-lakehouse/files";
 import { registerStubFiles } from "@open-lakehouse/files/testing";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { VolumeEditor } from "./VolumeEditor";
+import { VolumeEditor } from "./VolumeEditor.js";
 
 // The Files tab is hook-driven off the @open-lakehouse/files seam. Register the
 // dev stub runner (the rich nested fixture tree under /Volumes/demo/raw/events)

@@ -11,19 +11,19 @@
 // `@open-lakehouse/files` seam; the (separately-updated) editor consumes the
 // client later.
 
-export { createFilesClient, type FilesClient } from "./client";
+export { createFilesClient, type FilesClient } from "./client.js";
 // Re-export the generated service descriptor + message schemas so consumers
 // build request messages (`create(GetFileMetadataRequestSchema, …)`) without
 // reaching into the generated tree directly.
-export * from "./gen/portal/files/v1/svc_pb";
+export * from "./gen/portal/files/v1/svc_pb.js";
 export {
   clientTransport,
   getFilesTransport,
   hasFilesTransport,
   NoFilesTransportError,
   registerFilesTransport,
-} from "./registry";
+} from "./registry.js";
 export {
   createWasmFilesTransport,
   type FilesBackend,
-} from "./transport";
+} from "./transport.js";

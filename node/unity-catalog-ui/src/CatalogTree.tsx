@@ -28,14 +28,14 @@ import {
   Trash2,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useCatalogDialogs } from "./dialogs";
-import { nodeId, useExpansion } from "./ExpansionContext";
-import { GROUPS, type GroupDef } from "./groups";
-import { PANE_HEADER_CLASS } from "./layout";
-import { RowMenu } from "./RowMenu";
-import { SectionLabel } from "./SectionLabel";
-import { useCatalogSelection } from "./selection";
-import { CreateAction, ListStates, TreeRow } from "./TreeRow";
+import { useCatalogDialogs } from "./dialogs.js";
+import { nodeId, useExpansion } from "./ExpansionContext.js";
+import { GROUPS, type GroupDef } from "./groups.js";
+import { PANE_HEADER_CLASS } from "./layout.js";
+import { RowMenu } from "./RowMenu.js";
+import { SectionLabel } from "./SectionLabel.js";
+import { useCatalogSelection } from "./selection.js";
+import { CreateAction, ListStates, TreeRow } from "./TreeRow.js";
 
 export function CatalogTree() {
   const queryClient = useQueryClient();

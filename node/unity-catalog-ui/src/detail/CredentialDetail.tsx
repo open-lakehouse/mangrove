@@ -1,8 +1,8 @@
 import { useCredentialDetail } from "@open-lakehouse/unity-catalog-client/react";
 
-import { awsIamRoleTrust } from "../types";
-import { DetailStates } from "./DetailStates";
-import { Meta, MetaGrid } from "./Meta";
+import { awsIamRoleTrust } from "../types.js";
+import { DetailStates } from "./DetailStates.js";
+import { Meta, MetaGrid } from "./Meta.js";
 
 export function CredentialDetail({ name }: { name: string }) {
   const { data: credential, isLoading, error } = useCredentialDetail(name);

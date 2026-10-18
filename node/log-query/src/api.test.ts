@@ -7,9 +7,9 @@
 
 import { expect, test } from "bun:test";
 import { tableFromJSON, tableToIPC } from "apache-arrow";
-import { createLogQueryService } from "./api";
-import type { LogQueryChunk, LogQueryRunner } from "./runner";
-import { registerLogQueryRunner } from "./runner";
+import { createLogQueryService } from "./api.js";
+import type { LogQueryChunk, LogQueryRunner } from "./runner.js";
+import { registerLogQueryRunner } from "./runner.js";
 
 function oneRowChunk(): LogQueryChunk {
   const table = tableFromJSON([{ id: 1 }]);

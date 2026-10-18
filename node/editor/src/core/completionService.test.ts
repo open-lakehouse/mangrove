@@ -5,9 +5,9 @@
 
 import { beforeAll, describe, expect, test } from "bun:test";
 import { EntityContextType, type Suggestions } from "dt-sql-parser";
-import { fixtureCatalogProvider } from "../fixtures";
-import { registerCatalogProvider } from "./catalogProvider";
-import { __test } from "./completionService";
+import { fixtureCatalogProvider } from "../fixtures.js";
+import { registerCatalogProvider } from "./catalogProvider.js";
+import { __test } from "./completionService.js";
 
 const { dottedPrefix, buildItems, tablesInStatement } = __test;
 

@@ -46,8 +46,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { formatFileSize } from "./fileSize";
-import { formatTimestamp } from "./Meta";
+import { formatFileSize } from "./fileSize.js";
+import { formatTimestamp } from "./Meta.js";
 
 /** Adapt the files seam's FilesService to the editor's (read-only) FileStore:
  *  readFile drains the file bytes; no writeFile, so the editor session is

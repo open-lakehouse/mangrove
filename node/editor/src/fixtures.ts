@@ -5,7 +5,7 @@
 // Register it with `registerCatalogProvider(fixtureCatalogProvider)` to get
 // catalog-aware completion without a live backend.
 
-import type { CatalogColumn, CatalogProvider } from "./core/catalogProvider";
+import type { CatalogColumn, CatalogProvider } from "./core/catalogProvider.js";
 
 interface FixtureTable {
   columns: CatalogColumn[];

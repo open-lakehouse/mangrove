@@ -13,18 +13,18 @@ import {
   useState,
 } from "react";
 
-import { CreateEntityDialog } from "./CreateEntityDialog";
-import { DeleteEntityDialog } from "./DeleteEntityDialog";
+import { CreateEntityDialog } from "./CreateEntityDialog.js";
+import { DeleteEntityDialog } from "./DeleteEntityDialog.js";
 import type {
   AnyCreateRequest,
   AnyEditRequest,
   DeleteRequest,
   EditRequest,
-} from "./dialog-types";
-import { isCatalogCreateRequest } from "./dialog-types";
-import { EditEntityDialog } from "./EditEntityDialog";
-import { CredentialDialog } from "./storage/CredentialDialog";
-import { ExternalLocationDialog } from "./storage/ExternalLocationDialog";
+} from "./dialog-types.js";
+import { isCatalogCreateRequest } from "./dialog-types.js";
+import { EditEntityDialog } from "./EditEntityDialog.js";
+import { CredentialDialog } from "./storage/CredentialDialog.js";
+import { ExternalLocationDialog } from "./storage/ExternalLocationDialog.js";
 
 export type {
   AnyCreateRequest,
@@ -37,7 +37,7 @@ export type {
   EditRequest,
   StorageCreateRequest,
   StorageEditRequest,
-} from "./dialog-types";
+} from "./dialog-types.js";
 
 interface CatalogDialogsValue {
   create: (req: AnyCreateRequest) => void;

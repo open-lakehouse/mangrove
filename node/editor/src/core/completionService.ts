@@ -19,7 +19,7 @@
 import { EntityContextType, type Suggestions } from "dt-sql-parser";
 import type * as Monaco from "monaco-editor";
 import type { CompletionService, ICompletionItem } from "monaco-sql-languages";
-import { type CatalogColumn, getCatalogProvider } from "./catalogProvider";
+import { type CatalogColumn, getCatalogProvider } from "./catalogProvider.js";
 
 // monaco.languages.CompletionItemKind values, inlined so this module carries NO
 // runtime import of `monaco-editor` (which touches `window` at import time and

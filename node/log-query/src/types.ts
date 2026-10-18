@@ -5,7 +5,7 @@
 // registered runner does. Mirrors @open-lakehouse/query's types.ts.
 
 import type { ArrowResultStore } from "@open-lakehouse/data-grid";
-import type { LogKind } from "./runner";
+import type { LogKind } from "./runner.js";
 
 /** A request to explore a table's reconciled Delta log. */
 export interface LogPreviewRequest {

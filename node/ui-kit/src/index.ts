@@ -4,8 +4,8 @@
 // (@open-lakehouse/ui) depend on this package rather than each carrying its own
 // copy of the primitives. Distribute visuals from one place; see ./README.md.
 
-export { Badge, type BadgeProps, badgeVariants } from "./badge";
-export { Button, type ButtonProps, buttonVariants } from "./button";
+export { Badge, type BadgeProps, badgeVariants } from "./badge.js";
+export { Button, type ButtonProps, buttonVariants } from "./button.js";
 export {
   Dialog,
   DialogClose,
@@ -17,7 +17,7 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
-} from "./dialog";
+} from "./dialog.js";
 export {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,9 +27,9 @@ export {
   DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./dropdown-menu";
-export { Input } from "./input";
-export { Label } from "./label";
+} from "./dropdown-menu.js";
+export { Input } from "./input.js";
+export { Label } from "./label.js";
 export {
   Select,
   SelectContent,
@@ -37,17 +37,17 @@ export {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./select";
-export { Separator } from "./separator";
-export { Toaster } from "./sonner";
-export { Switch, type SwitchProps } from "./switch";
-export { ThemeProvider, useTheme } from "./ThemeProvider";
-export { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
-export { Textarea } from "./textarea";
+} from "./select.js";
+export { Separator } from "./separator.js";
+export { Toaster } from "./sonner.js";
+export { Switch, type SwitchProps } from "./switch.js";
+export { ThemeProvider, useTheme } from "./ThemeProvider.js";
+export { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs.js";
+export { Textarea } from "./textarea.js";
 export {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./tooltip";
-export { cn } from "./utils";
+} from "./tooltip.js";
+export { cn } from "./utils.js";

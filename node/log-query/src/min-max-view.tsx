@@ -1,8 +1,8 @@
 import type { ArrowResultStore } from "@open-lakehouse/data-grid";
 import { useMemo, useState } from "react";
-import { enumerateMinMaxAxes, type MinMaxAxis } from "./lib/minMaxAxes";
-import { MinMaxBoxes } from "./min-max-boxes";
-import { type BoxDim, MinMaxControls } from "./min-max-controls";
+import { enumerateMinMaxAxes, type MinMaxAxis } from "./lib/minMaxAxes.js";
+import { MinMaxBoxes } from "./min-max-boxes.js";
+import { type BoxDim, MinMaxControls } from "./min-max-controls.js";
 
 // The complete min/max-box view: enumerates the orderable axes from the store
 // schema, holds the dimension + axis-selection state, and renders the controls

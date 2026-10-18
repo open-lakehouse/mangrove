@@ -8,8 +8,8 @@
 // tests and Storybook stories need no wrapper.
 
 import { createContext, type ReactNode, useContext } from "react";
-import { defaultLogQueryService } from "./api";
-import type { LogQueryService } from "./types";
+import { defaultLogQueryService } from "./api.js";
+import type { LogQueryService } from "./types.js";
 
 const LogQueryServiceContext = createContext<LogQueryService | null>(null);
 

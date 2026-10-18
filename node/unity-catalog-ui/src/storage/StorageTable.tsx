@@ -25,11 +25,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { CredentialDetail } from "../detail/CredentialDetail";
-import { ExternalLocationDetail } from "../detail/ExternalLocationDetail";
-import { useCatalogDialogs } from "../dialogs";
-import { RowMenu } from "../RowMenu";
-import type { StorageKind } from "../types";
+import { CredentialDetail } from "../detail/CredentialDetail.js";
+import { ExternalLocationDetail } from "../detail/ExternalLocationDetail.js";
+import { useCatalogDialogs } from "../dialogs.js";
+import { RowMenu } from "../RowMenu.js";
+import type { StorageKind } from "../types.js";
 
 type StorageItem = CredentialInfo | ExternalLocationInfo;
 type StorageList = UseInfiniteQueryResult<StorageItem[], unknown>;

@@ -1,7 +1,7 @@
 // Unit tests for formatFileSize — boundary rounding and unit selection.
 
 import { expect, test } from "bun:test";
-import { formatFileSize } from "./fileSize";
+import { formatFileSize } from "./fileSize.js";
 
 test("zero and sub-byte inputs collapse to 0 B", () => {
   expect(formatFileSize(0)).toBe("0 B");

@@ -8,8 +8,8 @@
 // Storybook stories need no wrapper.
 
 import { createContext, type ReactNode, useContext } from "react";
-import { defaultFilesService } from "./api";
-import type { FilesService } from "./types";
+import { defaultFilesService } from "./api.js";
+import type { FilesService } from "./types.js";
 
 const FilesServiceContext = createContext<FilesService | null>(null);
 

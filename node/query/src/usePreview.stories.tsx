@@ -17,7 +17,7 @@ import {
   type QueryRunner,
   registerQueryRunner,
   usePreview,
-} from "./index";
+} from "./index.js";
 
 // --- canned Arrow IPC (self-contained; this package doesn't reach into
 // data-grid's internal fixtures) ---

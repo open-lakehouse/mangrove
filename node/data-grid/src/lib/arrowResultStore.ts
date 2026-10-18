@@ -4,8 +4,8 @@ import {
   tableFromIPC,
   type Vector,
 } from "apache-arrow";
-import { arrowTypeLabel } from "./arrowTypeLabel";
-import { resolveChildPath } from "./nestedAccess";
+import { arrowTypeLabel } from "./arrowTypeLabel.js";
+import { resolveChildPath } from "./nestedAccess.js";
 
 /** A read-only summary of what an {@link ArrowResultStore} currently holds.
  *  Cheap to produce (no row scan) — for memory accounting and a "what's in the

@@ -1,7 +1,7 @@
 import { useFunctionDetail } from "@open-lakehouse/unity-catalog-client/react";
 
-import { DetailStates } from "./DetailStates";
-import { Meta, MetaGrid } from "./Meta";
+import { DetailStates } from "./DetailStates.js";
+import { Meta, MetaGrid } from "./Meta.js";
 
 export function FunctionDetail({ fullName }: { fullName: string }) {
   const { data: fn, isLoading, error } = useFunctionDetail(fullName);

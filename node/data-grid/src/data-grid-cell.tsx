@@ -1,7 +1,7 @@
 import { cn } from "@open-lakehouse/ui-kit";
 import type { DataType } from "apache-arrow";
 import { memo } from "react";
-import { formatCell } from "./lib/cellFormatters";
+import { formatCell } from "./lib/cellFormatters.js";
 
 interface DataGridCellProps {
   value: unknown;

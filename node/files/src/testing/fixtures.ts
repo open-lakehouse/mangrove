@@ -9,7 +9,7 @@
 // sizes and timestamps, and ENOUGH immediate children under the root that a small
 // page size yields ≥2 pages (exercising `nextPageToken` continuation).
 
-import type { DirectoryEntry, FileMetadata } from "../types";
+import type { DirectoryEntry, FileMetadata } from "../types.js";
 
 /** The canonical root the fixture tree hangs under. */
 export const FIXTURE_VOLUME_ROOT = "/Volumes/demo/raw/events";

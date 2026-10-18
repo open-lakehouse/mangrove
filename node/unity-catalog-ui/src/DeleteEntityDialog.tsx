@@ -20,8 +20,8 @@ import {
 import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { DeleteRequest } from "./dialog-types";
-import { useCatalogSelection } from "./selection";
+import type { DeleteRequest } from "./dialog-types.js";
+import { useCatalogSelection } from "./selection.js";
 
 // Catalogs / schemas / models accept a `force` flag to delete when non-empty.
 const FORCEABLE = new Set<DeleteRequest["kind"]>([

@@ -19,7 +19,7 @@ import {
   Table2,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { ObjectKind } from "./types";
+import type { ObjectKind } from "./types.js";
 
 export interface GroupDef {
   kind: ObjectKind;

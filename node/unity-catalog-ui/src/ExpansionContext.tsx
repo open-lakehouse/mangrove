@@ -13,8 +13,8 @@ import {
   useState,
 } from "react";
 
-import { useEnvironmentScopeId } from "./env-seam";
-import type { ObjectKind } from "./types";
+import { useEnvironmentScopeId } from "./env-seam.js";
+import type { ObjectKind } from "./types.js";
 
 export const nodeId = {
   catalog: (catalog: string) => `catalog:${catalog}`,

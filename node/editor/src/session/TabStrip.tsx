@@ -6,8 +6,8 @@
 import { cn } from "@open-lakehouse/ui-kit";
 import { Loader2, X } from "lucide-react";
 import { useState } from "react";
-import { useEditorSession } from "./EditorSessionContext";
-import type { OpenTab } from "./sessionReducer";
+import { useEditorSession } from "./EditorSessionContext.js";
+import type { OpenTab } from "./sessionReducer.js";
 
 export function TabStrip() {
   const { tabs, activeId, activate, close, reorder } = useEditorSession();

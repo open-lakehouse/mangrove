@@ -18,7 +18,7 @@
   "scripts": {
     "gen:api": "openapi-typescript ../../openapi/openapi.yaml -o src/uc-api.d.ts",
     "typecheck": "tsc --noEmit",
-    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp src/uc-api.d.ts dist/uc-api.d.ts",
+    "build": "bun run ../../scripts/build-package.ts",
     "prepack": "bun run build"
   },
   "dependencies": {

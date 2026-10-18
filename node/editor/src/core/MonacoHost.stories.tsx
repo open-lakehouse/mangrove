@@ -15,10 +15,10 @@ import { loader } from "@monaco-editor/react";
 import { ThemeProvider } from "@open-lakehouse/ui-kit";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
-import { fixtureCatalogProvider } from "../fixtures";
-import { registerCatalogProvider } from "./catalogProvider";
-import { MonacoHost } from "./MonacoHost";
-import { ensureModel } from "./models";
+import { fixtureCatalogProvider } from "../fixtures.js";
+import { registerCatalogProvider } from "./catalogProvider.js";
+import { MonacoHost } from "./MonacoHost.js";
+import { ensureModel } from "./models.js";
 
 const SAMPLE_SQL = `-- Try editing: catalog-aware completion + live validation.
 -- Type "main." to complete schemas, then tables, then columns.
