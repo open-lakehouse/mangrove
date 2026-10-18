@@ -147,7 +147,6 @@ jobs:
           command: build
           target: ${{ matrix.target }}
           manylinux: "2_28"
-          sccache: "true"
           args: --release --frozen --out dist --manifest-path python/client/Cargo.toml
 
       # Attach the wheel(s) to the release. `--clobber` makes re-runs (a

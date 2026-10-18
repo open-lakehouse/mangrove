@@ -103,9 +103,6 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
-    env:
-      SCCACHE_GHA_ENABLED: true
-      RUSTC_WRAPPER: sccache
     strategy:
       fail-fast: false
       matrix:
@@ -128,13 +125,31 @@ jobs:
           ref: ${{ needs.plan.outputs.ref }}
           persist-credentials: false
 
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@1583d6b38d7be47f593cb472781bbb21cab4321e # v0.0.10
-
       - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
         with:
           toolchain: "1.97"
           targets: ${{ matrix.target }}
+
+      # One cache per target (release builds are rare, so this mostly saves the
+      # registry download and dependency builds on re-runs).
+      - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
+        with:
+          key: napi-${{ matrix.target }}
+
+      # musl targets cross-compile through cargo-zigbuild (`napi build -x`), with
+      # zig as the C compiler/linker. The runners have no musl C toolchain, and
+      # crates with C code (ring) can't build without one. Same setup as the
+      # napi-rs package template.
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        if: ${{ contains(matrix.target, 'musl') }}
+        with:
+          version: 0.15.2
+
+      - name: Install cargo-zigbuild
+        if: ${{ contains(matrix.target, 'musl') }}
+        uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2.87.29
+        with:
+          tool: cargo-zigbuild
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -147,10 +162,9 @@ jobs:
 
       # `-- --locked` forwards to cargo so the NAPI build resolves strictly from
       # Cargo.lock and can never silently re-resolve a git dep to a drifted rev
-      # (mirrors node-ci.yaml). musl legs get the target via the napi CLI's
-      # zig/cross handling; add explicit cross tooling here if a leg fails.
+      # (mirrors node-ci.yaml). musl legs add `-x` (cargo-zigbuild, see above).
       - name: Build NAPI binding
-        run: bunx napi build --platform --release --target ${{ matrix.target }} --output-dir unitycatalog/codegen --dts native.d.ts --js native.js -- --locked
+        run: bunx napi build --platform --release --target ${{ matrix.target }} ${{ contains(matrix.target, 'musl') && '-x' || '' }} --output-dir unitycatalog/codegen --dts native.d.ts --js native.js -- --locked
         working-directory: node/client
 
       - name: Upload .node artifact
