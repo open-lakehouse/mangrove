@@ -8,11 +8,20 @@ comes from `@open-lakehouse/unity-catalog-client/react`. This is the composed
 package; it builds on every leaf (ui-kit, data-grid, editor, query, files,
 log-query), and nothing builds on it.
 
-## Install & peers
+## Distribution: shadcn blocks, not an npm package
 
-Peers: `react` / `react-dom` 19, `@tanstack/react-query` 5,
-`@tanstack/react-router` 1. The host must provide exactly one copy of each
-(dedupe in the bundler). The leaf packages come in as dependencies.
+This is app-level composition that each host will want to arrange, label and
+restyle, so it is distributed the shadcn way, as `registry:block` items from
+mangrove's self-hosted registry (#210). `shadcn add` copies the block's files
+into the host, which then owns them. The blocks depend on the npm packages that
+carry the logic (`unity-catalog-client`, `ui-kit`, `data-grid`, `editor`,
+`query`, `files`, `log-query`), so fixes to those still arrive centrally.
+Inside this workspace it remains a source package that `node/app` imports.
+
+## Peers
+
+`react` / `react-dom` 19, `@tanstack/react-query` 5, `@tanstack/react-router`
+1. The host must provide exactly one copy of each (dedupe in the bundler).
 
 ## Host setup
 
@@ -33,11 +42,10 @@ Peers: `react` / `react-dom` 19, `@tanstack/react-query` 5,
    (`registerQueryRunner`, `registerLogQueryRunner`, `registerFilesRunner`). SQL
    completion in the volume editor needs `registerCatalogProvider(ucCatalogProvider)`.
 4. **Tailwind.** Define the ui-kit tokens ([`ui-kit/DESIGN.md`](../ui-kit/DESIGN.md))
-   plus the `--action-*` palette, and scan this package **and every package it
-   renders**:
+   plus the `--action-*` palette. The copied block files live in the host, so its
+   Tailwind build scans them already; scan **every npm package they render**:
 
    ```css
-   @source "../node_modules/@open-lakehouse/unity-catalog-ui/dist";
    @source "../node_modules/@open-lakehouse/ui-kit/dist";
    @source "../node_modules/@open-lakehouse/data-grid/dist";
    @source "../node_modules/@open-lakehouse/editor/dist";
@@ -60,9 +68,12 @@ Peers: `react` / `react-dom` 19, `@tanstack/react-query` 5,
 
 ## Usage
 
+In this workspace the components import from `@open-lakehouse/unity-catalog-ui`;
+a host that added the block imports them from wherever `shadcn add` put them.
+
 ```tsx
 import { createUnityCatalogClient, UnityCatalogProvider } from "@open-lakehouse/unity-catalog-client/react";
-import { CatalogExplorer } from "@open-lakehouse/unity-catalog-ui";
+import { CatalogExplorer } from "@open-lakehouse/unity-catalog-ui"; // or the block's local path
 import { ThemeProvider, TooltipProvider } from "@open-lakehouse/ui-kit";
 
 const uc = createUnityCatalogClient({ baseUrl: "/api/2.1/unity-catalog" });

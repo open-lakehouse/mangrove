@@ -5,32 +5,11 @@
   "type": "module",
   "description": "Unity Catalog browser components (catalog explorer, entity details, dialogs) for React.",
   "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/open-lakehouse/mangrove.git",
-    "directory": "node/unity-catalog-ui"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
-  "files": [
-    "dist",
-    "src",
-    "!src/**/*.test.ts",
-    "!src/**/*.test.tsx",
-    "!src/**/*.stories.tsx",
-    "README.md",
-    "DESIGN.md",
-    "CHANGELOG.md"
-  ],
-  "sideEffects": false,
   "exports": {
     ".": {
-      "source": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./package.json": "./package.json"
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
   },
   "dependencies": {
     "@open-lakehouse/data-grid": "^0.1.0",
@@ -64,9 +43,7 @@
     "vite": "^8.3.4"
   },
   "scripts": {
-    "build": "bun run ../../scripts/build-package.ts",
     "gen:form-schemas": "node scripts/gen-form-schemas.mjs",
-    "prepack": "bun run build",
     "typecheck": "tsc --noEmit"
   }
 }

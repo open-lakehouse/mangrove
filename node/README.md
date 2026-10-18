@@ -19,7 +19,7 @@ this page is the map.
 | `@open-lakehouse/log-query` | `log-query/` | Delta-log views + log-query seam | publish-ready, [`DESIGN.md`](log-query/DESIGN.md) (private) |
 | `@open-lakehouse/query-wasm` | `query-wasm/` | In-browser (wasm) `QueryRunner` | workspace-internal |
 | `@open-lakehouse/files-wasm` | `files-wasm/` | In-browser (wasm) `FilesRunner` | workspace-internal |
-| `@open-lakehouse/unity-catalog-ui` | `unity-catalog-ui/` | Unity Catalog browser components (presentation only) | publish-ready, [`DESIGN.md`](unity-catalog-ui/DESIGN.md) (private) |
+| `@open-lakehouse/unity-catalog-ui` | `unity-catalog-ui/` | Unity Catalog browser components (presentation only) | shadcn registry blocks (#210), [`DESIGN.md`](unity-catalog-ui/DESIGN.md); workspace source package |
 | `@open-lakehouse/uc-app` | `app/` | The bundled SPA served by `olai-uc-server`; composes everything | never published |
 
 ## Dependency direction
@@ -75,6 +75,9 @@ pointing at `src/`:
   `customConditions`) to consume the TypeScript sources, or run
   `bun run build:packages` here first. Without either, the link resolves to a
   `dist/` that doesn't exist.
+
+`unity-catalog-ui` is the exception: it isn't built or packaged, because hosts get
+it as shadcn blocks that copy its files in (see its `DESIGN.md`).
 
 Every UI package's `DESIGN.md` is its consumer contract: peers, the host setup
 (tokens + Tailwind `@source`), its seams, a usage example, and do/don't rules.

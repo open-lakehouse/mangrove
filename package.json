@@ -28,8 +28,8 @@
     "lint:node": "biome check node",
     "test:ui": "bun test --conditions source node --path-ignore-patterns \"node/client/**\"",
     "pack:check": "bun run scripts/pack-check.ts",
-    "build:packages": "bun run --filter @open-lakehouse/unity-catalog-client --filter @open-lakehouse/ui-kit --filter @open-lakehouse/data-grid --filter @open-lakehouse/editor --filter @open-lakehouse/query --filter @open-lakehouse/files --filter @open-lakehouse/files-connect --filter @open-lakehouse/log-query --filter @open-lakehouse/unity-catalog-ui build",
-    "pack:check:all": "bun run scripts/pack-check.ts node/unity-catalog-client node/ui-kit node/data-grid node/editor node/query node/files node/files-connect node/log-query node/unity-catalog-ui"
+    "build:packages": "bun run --filter @open-lakehouse/unity-catalog-client --filter @open-lakehouse/ui-kit --filter @open-lakehouse/data-grid --filter @open-lakehouse/editor --filter @open-lakehouse/query --filter @open-lakehouse/files --filter @open-lakehouse/files-connect --filter @open-lakehouse/log-query build",
+    "pack:check:all": "bun run scripts/pack-check.ts node/unity-catalog-client node/ui-kit node/data-grid node/editor node/query node/files node/files-connect node/log-query"
   },
   "dependencies": {
     "eslint": "^10.12.0",
