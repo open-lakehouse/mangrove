@@ -17,7 +17,6 @@
   },
   "scripts": {
     "gen:api": "openapi-typescript ../../openapi/openapi.yaml -o src/uc-api.d.ts",
-    "gen:form-schemas": "node scripts/gen-form-schemas.mjs",
     "typecheck": "tsc --noEmit",
     "build": "rm -rf dist && tsc -p tsconfig.build.json && cp src/uc-api.d.ts dist/uc-api.d.ts",
     "prepack": "bun run build"

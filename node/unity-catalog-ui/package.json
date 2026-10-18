@@ -41,6 +41,7 @@
     "vite": "^8.3.4"
   },
   "scripts": {
+    "gen:form-schemas": "node scripts/gen-form-schemas.mjs",
     "typecheck": "tsc --noEmit"
   }
 }

@@ -1,5 +1,5 @@
 // Typed access to the JSON Schemas generated from the Unity Catalog protobufs
-// (see unity-catalog-client/scripts/gen-form-schemas.mjs). Centralizing the
+// (see scripts/gen-form-schemas.mjs). Centralizing the
 // imports keeps the `as RJSFSchema` casts in one place.
 import type { RJSFSchema } from "@rjsf/utils";
 

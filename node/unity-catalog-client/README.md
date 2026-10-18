@@ -89,9 +89,6 @@ re-exports everything above):
 - `bun run gen:api` — regenerate `src/uc-api.d.ts` from the canonical
   proto-derived spec `../../openapi/openapi.yaml` (produced by
   `just generate-openapi`) via `openapi-typescript`.
-- `bun run gen:form-schemas` — regenerate the RJSF form schemas from this repo's
-  UC proto. These are presentational assets, so the script writes them into the
-  sibling `@open-lakehouse/unity-catalog-ui` package's `src/forms/schemas/`.
 
 > These types are generated from mangrove's own canonical spec, so they stay in
 > sync with the running server. Regeneration is wired into `just generate-openapi`
