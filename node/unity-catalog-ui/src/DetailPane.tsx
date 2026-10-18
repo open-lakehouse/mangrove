@@ -1,18 +1,18 @@
 import { Database, FolderTree, Globe, KeyRound } from "lucide-react";
 import type { ReactNode } from "react";
-import { Breadcrumbs, type Crumb } from "./Breadcrumbs";
-import { CopyButton } from "./CopyButton";
-import { CatalogDetail } from "./detail/CatalogDetail";
-import { CredentialDetail } from "./detail/CredentialDetail";
-import { ExternalLocationDetail } from "./detail/ExternalLocationDetail";
-import { FunctionDetail } from "./detail/FunctionDetail";
-import { ModelDetail } from "./detail/ModelDetail";
-import { SchemaDetail } from "./detail/SchemaDetail";
-import { TableDetail } from "./detail/TableDetail";
-import { VolumeDetail } from "./detail/VolumeDetail";
-import { kindIcon } from "./groups";
-import { useCatalogSelection } from "./selection";
-import { isObjectKind, type SelectableKind, splitFullName } from "./types";
+import { Breadcrumbs, type Crumb } from "./Breadcrumbs.js";
+import { CopyButton } from "./CopyButton.js";
+import { CatalogDetail } from "./detail/CatalogDetail.js";
+import { CredentialDetail } from "./detail/CredentialDetail.js";
+import { ExternalLocationDetail } from "./detail/ExternalLocationDetail.js";
+import { FunctionDetail } from "./detail/FunctionDetail.js";
+import { ModelDetail } from "./detail/ModelDetail.js";
+import { SchemaDetail } from "./detail/SchemaDetail.js";
+import { TableDetail } from "./detail/TableDetail.js";
+import { VolumeDetail } from "./detail/VolumeDetail.js";
+import { kindIcon } from "./groups.js";
+import { useCatalogSelection } from "./selection.js";
+import { isObjectKind, type SelectableKind, splitFullName } from "./types.js";
 
 function detailIcon(kind: SelectableKind): ReactNode {
   const cls = "h-5 w-5 shrink-0 text-muted-foreground";

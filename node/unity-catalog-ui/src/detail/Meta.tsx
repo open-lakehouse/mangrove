@@ -1,7 +1,7 @@
 import { cn } from "@open-lakehouse/ui-kit";
 import type { ReactNode } from "react";
 
-import { CopyButton } from "../CopyButton";
+import { CopyButton } from "../CopyButton.js";
 
 export function Meta({
   label,

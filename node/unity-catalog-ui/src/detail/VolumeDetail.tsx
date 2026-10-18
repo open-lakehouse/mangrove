@@ -7,11 +7,11 @@ import {
 import { useVolumeDetail } from "@open-lakehouse/unity-catalog-client/react";
 import { useState } from "react";
 
-import { SectionLabel } from "../SectionLabel";
-import { DetailStates } from "./DetailStates";
-import { formatTimestamp, Meta, MetaGrid } from "./Meta";
-import { TypePill } from "./TypePill";
-import { VolumeEditor } from "./VolumeEditor";
+import { SectionLabel } from "../SectionLabel.js";
+import { DetailStates } from "./DetailStates.js";
+import { formatTimestamp, Meta, MetaGrid } from "./Meta.js";
+import { TypePill } from "./TypePill.js";
+import { VolumeEditor } from "./VolumeEditor.js";
 
 type VolumeView = "overview" | "files";
 

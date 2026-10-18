@@ -8,7 +8,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@open-lakehouse/ui-kit";
-import type { MinMaxAxis } from "./lib/minMaxAxes";
+import type { MinMaxAxis } from "./lib/minMaxAxes.js";
 
 // Axis controls for the min/max-box view: a 1D/2D dimension toggle and one
 // column Select per active axis. The available options are the enumerated

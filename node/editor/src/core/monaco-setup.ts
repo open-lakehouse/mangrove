@@ -38,7 +38,7 @@ import PgSqlWorker from "monaco-sql-languages/esm/languages/pgsql/pgsql.worker.j
 // calls monaco's `registerLanguage` at import time; it does not create workers.
 import "monaco-sql-languages/esm/languages/pgsql/pgsql.contribution.js";
 import { LanguageIdEnum, setupLanguageFeatures } from "monaco-sql-languages";
-import { catalogCompletionService } from "./completionService";
+import { catalogCompletionService } from "./completionService.js";
 
 let done = false;
 

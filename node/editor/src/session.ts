@@ -10,17 +10,17 @@ export {
   type EditorSessionProviderProps,
   type RunRequest,
   useEditorSession,
-} from "./session/EditorSessionContext";
+} from "./session/EditorSessionContext.js";
 export {
   ConflictError,
   type FileStat,
   type FileStore,
   type ReadResult,
-} from "./session/fileStore";
-export { MarkdownPreview } from "./session/MarkdownPreview";
+} from "./session/fileStore.js";
+export { MarkdownPreview } from "./session/MarkdownPreview.js";
 export type {
   OpenTab,
   SaveStatus,
   TabId,
-} from "./session/sessionReducer";
-export { TabStrip } from "./session/TabStrip";
+} from "./session/sessionReducer.js";
+export { TabStrip } from "./session/TabStrip.js";

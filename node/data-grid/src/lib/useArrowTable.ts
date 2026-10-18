@@ -6,8 +6,8 @@ import {
 } from "@tanstack/react-table";
 import type { DataType, Type } from "apache-arrow";
 import { useMemo, useState } from "react";
-import type { ArrowResultStore } from "./arrowResultStore";
-import { compareCells } from "./sortValues";
+import type { ArrowResultStore } from "./arrowResultStore.js";
+import { compareCells } from "./sortValues.js";
 
 /** Metadata for one result column, derived from the Arrow schema. */
 export interface ArrowColumnMeta {

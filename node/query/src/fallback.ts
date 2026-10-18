@@ -9,7 +9,7 @@
 // yielded a chunk, its errors propagate: rows may already be rendered, and
 // silently restarting on another engine could produce a torn result.
 
-import type { QueryChunk, QueryRunner } from "./runner";
+import type { QueryChunk, QueryRunner } from "./runner.js";
 
 /**
  * Compose two runners: `primary` first; on any failure before the first chunk

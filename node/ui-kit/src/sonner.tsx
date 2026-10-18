@@ -1,6 +1,6 @@
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
-import { useTheme } from "./ThemeProvider";
+import { useTheme } from "./ThemeProvider.js";
 
 export function Toaster(props: ToasterProps) {
   const { theme } = useTheme();

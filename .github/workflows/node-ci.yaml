@@ -94,12 +94,13 @@ jobs:
         run: bun run build
         working-directory: node/app
 
-      # Build + pack the publishable TS packages the way js-release does and lint
-      # the tarballs (publint + attw).
+      # Build every publishable TS package (dist/) and lint the packed tarballs
+      # (publint + attw), the published TS client as well as the publish-ready,
+      # still-private UI packages.
       - name: Pack check
         run: |
-          bun run --filter @open-lakehouse/unity-catalog-client build
-          bun run pack:check node/unity-catalog-client
+          bun run build:packages
+          bun run pack:check:all
 
   # Guard the unity-catalog-client's generated OpenAPI types against drift from
   # the canonical spec. The spec itself is NOT regenerated here (that needs the

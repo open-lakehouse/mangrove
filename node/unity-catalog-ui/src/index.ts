@@ -21,23 +21,23 @@
 // own table and does not use data-grid — porting it is a separate refactor.)
 
 // ── Route-level UI ───────────────────────────────────────────────────────────
-export { CatalogExplorer } from "./CatalogExplorer";
+export { CatalogExplorer } from "./CatalogExplorer.js";
 // ── Shared presentational primitives reused by the host ──────────────────────
 // EnvironmentDetail renders entity metadata; the editor's file browser reuses
 // the tree row + list-state primitives.
-export { Meta, MetaGrid } from "./detail/Meta";
+export { Meta, MetaGrid } from "./detail/Meta.js";
 // Dialog orchestration the environment manager mounts around catalog actions.
-export { CatalogDialogsProvider } from "./dialogs";
-export { ExternalDataPage } from "./ExternalDataPage";
+export { CatalogDialogsProvider } from "./dialogs.js";
+export { ExternalDataPage } from "./ExternalDataPage.js";
 // ── Editor integration ───────────────────────────────────────────────────────
 // The UC-backed CatalogProvider for @open-lakehouse/editor's SQL completion; the
 // app registers it via registerCatalogProvider (see node/app/src/main.tsx). Lives
 // here because it uses the UC client — the editor package stays UC-agnostic.
-export { ucCatalogProvider } from "./editor/ucCatalogProvider";
+export { ucCatalogProvider } from "./editor/ucCatalogProvider.js";
 // The host feeds the environment scope id (namespaces per-env tree expansion).
-export { EnvironmentScopeProvider } from "./env-seam";
-export { StorageLocationPicker } from "./storage/StorageLocationPicker";
+export { EnvironmentScopeProvider } from "./env-seam.js";
+export { StorageLocationPicker } from "./storage/StorageLocationPicker.js";
 // ── Storage admin surfaces (used by the environment manager) ─────────────────
-export { StorageTable } from "./storage/StorageTable";
-export { ListStates, TreeRow } from "./TreeRow";
-export type { StorageKind } from "./types";
+export { StorageTable } from "./storage/StorageTable.js";
+export { ListStates, TreeRow } from "./TreeRow.js";
+export type { StorageKind } from "./types.js";

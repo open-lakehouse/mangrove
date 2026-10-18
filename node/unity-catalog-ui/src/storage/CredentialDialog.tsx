@@ -25,11 +25,11 @@ import {
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { SchemaForm } from "../forms/SchemaForm";
-import { cloneSchema, formSchemas } from "../forms/schemas";
-import { awsIamRoleTrust } from "../types";
+import { SchemaForm } from "../forms/SchemaForm.js";
+import { cloneSchema, formSchemas } from "../forms/schemas.js";
+import { awsIamRoleTrust } from "../types.js";
 
-import { CopyField } from "./CopyField";
+import { CopyField } from "./CopyField.js";
 
 const FORM_ID = "credential-form";
 

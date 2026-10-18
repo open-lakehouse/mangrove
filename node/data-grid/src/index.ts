@@ -14,7 +14,7 @@
 // @open-lakehouse/log-query, built ON these generic primitives — not here.
 // See ../README.md.
 
-export { DataGrid } from "./data-grid";
+export { DataGrid } from "./data-grid.js";
 // The grid's input contract. Consumers (the editor's run controller, the import
 // preview, Storybook fixtures) construct an `ArrowResultStore` and hand it to
 // `<DataGrid store={…}>`. Kept Arrow-specific by design — generalizing the grid
@@ -22,19 +22,19 @@ export { DataGrid } from "./data-grid";
 export {
   ArrowResultStore,
   type ArrowStoreInfo,
-} from "./lib/arrowResultStore";
+} from "./lib/arrowResultStore.js";
 // Generic Arrow cell formatting — a React node + alignment for the grid, and a
 // compact plain-string form for dense inline contexts (used by log-query views).
-export { formatCell, formatScalarText } from "./lib/cellFormatters";
+export { formatCell, formatScalarText } from "./lib/cellFormatters.js";
 // Zero-copy nested-struct navigation + ordered-value coercion. Generic Arrow
 // helpers the Arrow-backed visualizations (in log-query) build on.
 export {
   resolveChildPath,
   structChildren,
   structFieldByName,
-} from "./lib/nestedAccess";
+} from "./lib/nestedAccess.js";
 export {
   isOrderableType,
   timestampToEpochMs,
   toAxisNumber,
-} from "./lib/temporal";
+} from "./lib/temporal.js";

@@ -13,7 +13,7 @@
 // app); it holds no React state.
 
 import type * as Monaco from "monaco-editor";
-import { languageOf, MONACO_LANGUAGE_ID } from "./language";
+import { languageOf, MONACO_LANGUAGE_ID } from "./language.js";
 
 export interface ModelEntry {
   model: Monaco.editor.ITextModel;

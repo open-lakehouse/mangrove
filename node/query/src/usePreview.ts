@@ -4,8 +4,8 @@
 // handle's `subscribe`.
 
 import { useEffect, useMemo, useSyncExternalStore } from "react";
-import { useQueryService } from "./context";
-import type { PreviewHandle, QueryService } from "./types";
+import { useQueryService } from "./context.js";
+import type { PreviewHandle, QueryService } from "./types.js";
 
 /** What `usePreview` returns — a live view of the current run. */
 export interface PreviewState {

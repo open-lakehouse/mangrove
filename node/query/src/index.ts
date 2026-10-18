@@ -18,17 +18,17 @@ export {
   createQueryService,
   defaultQueryService,
   setDefaultQueryService,
-} from "./api";
+} from "./api.js";
 // React injection + hook.
-export { QueryServiceProvider, useQueryService } from "./context";
+export { QueryServiceProvider, useQueryService } from "./context.js";
 // Runner composition (wasm-first with a host fallback).
-export { createFallbackQueryRunner } from "./fallback";
+export { createFallbackQueryRunner } from "./fallback.js";
 // Generated contract message types (proto/query) — re-exported so runner
 // implementors and tests share the upstream-owned shapes.
 export type {
   RunQueryRequest,
   RunQueryResponse,
-} from "./gen/open_lakehouse/query/v1/svc_pb";
+} from "./gen/open_lakehouse/query/v1/svc_pb.js";
 // Low-level runner seam (the swap point for the wasm engine / a host).
 export {
   getQueryRunner,
@@ -41,11 +41,11 @@ export {
   queryRunner,
   queryRunnerSupports,
   registerQueryRunner,
-} from "./runner";
+} from "./runner.js";
 export type {
   PreviewHandle,
   PreviewRequest,
   QueryService,
   SupportsInput,
-} from "./types";
-export { type PreviewState, usePreview } from "./usePreview";
+} from "./types.js";
+export { type PreviewState, usePreview } from "./usePreview.js";

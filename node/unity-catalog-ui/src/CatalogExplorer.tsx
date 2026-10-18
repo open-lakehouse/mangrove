@@ -1,13 +1,13 @@
 import { cn } from "@open-lakehouse/ui-kit";
 import { type CSSProperties, useCallback, useEffect, useRef } from "react";
 
-import { CatalogTree } from "./CatalogTree";
-import { DetailPane } from "./DetailPane";
-import { CatalogDialogsProvider } from "./dialogs";
-import { ExpansionProvider, nodeId, useExpansion } from "./ExpansionContext";
-import { useCatalogSelection } from "./selection";
-import { isObjectKind } from "./types";
-import { useSidebarWidth } from "./useSidebarWidth";
+import { CatalogTree } from "./CatalogTree.js";
+import { DetailPane } from "./DetailPane.js";
+import { CatalogDialogsProvider } from "./dialogs.js";
+import { ExpansionProvider, nodeId, useExpansion } from "./ExpansionContext.js";
+import { useCatalogSelection } from "./selection.js";
+import { isObjectKind } from "./types.js";
+import { useSidebarWidth } from "./useSidebarWidth.js";
 
 export function CatalogExplorer() {
   return (

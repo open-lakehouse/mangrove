@@ -6,7 +6,7 @@
 import { expect, test } from "bun:test";
 import { ArrowResultStore } from "@open-lakehouse/data-grid";
 import { type Table, tableFromJSON, tableToIPC } from "apache-arrow";
-import { enumerateMinMaxAxes, hasMinMaxAxes } from "./minMaxAxes";
+import { enumerateMinMaxAxes, hasMinMaxAxes } from "./minMaxAxes.js";
 
 // A reconciled-shaped fixture with numeric min/max leaves (id, amount) plus a
 // string leaf (note) that must NOT become an axis.

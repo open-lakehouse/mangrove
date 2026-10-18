@@ -14,9 +14,9 @@
 // dispatches. Persistence goes through the injected `FileStore` seam — the host
 // supplies the concrete store (see fileStore.ts).
 
-import { getEntry, isDirty, markSaved } from "../core/models";
-import { ConflictError, type FileStore } from "./fileStore";
-import type { SaveStatus } from "./sessionReducer";
+import { getEntry, isDirty, markSaved } from "../core/models.js";
+import { ConflictError, type FileStore } from "./fileStore.js";
+import type { SaveStatus } from "./sessionReducer.js";
 
 const DEBOUNCE_MS = 1500;
 

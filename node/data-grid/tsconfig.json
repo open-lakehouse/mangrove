@@ -11,7 +11,8 @@
     "verbatimModuleSyntax": true,
     "declaration": true,
     "emitDeclarationOnly": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "customConditions": ["source"]
   },
   "include": ["src"],
   "exclude": [

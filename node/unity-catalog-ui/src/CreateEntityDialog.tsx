@@ -19,12 +19,12 @@ import {
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CatalogSchemaPicker } from "./CatalogSchemaPicker";
-import { useRevealCreated } from "./create-reconcile";
-import type { CatalogCreateRequest } from "./dialog-types";
-import { SchemaForm } from "./forms/SchemaForm";
-import { cloneSchema, formSchemas } from "./forms/schemas";
-import { StorageLocationPicker } from "./storage/StorageLocationPicker";
+import { CatalogSchemaPicker } from "./CatalogSchemaPicker.js";
+import { useRevealCreated } from "./create-reconcile.js";
+import type { CatalogCreateRequest } from "./dialog-types.js";
+import { SchemaForm } from "./forms/SchemaForm.js";
+import { cloneSchema, formSchemas } from "./forms/schemas.js";
+import { StorageLocationPicker } from "./storage/StorageLocationPicker.js";
 
 const TITLES: Record<CatalogCreateRequest["kind"], string> = {
   catalog: "New catalog",

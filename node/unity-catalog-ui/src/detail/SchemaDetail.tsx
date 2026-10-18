@@ -19,12 +19,12 @@ import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { GROUPS, type GroupDef } from "../groups";
-import { SectionLabel } from "../SectionLabel";
-import { useCatalogSelection } from "../selection";
-import type { ObjectKind } from "../types";
-import { DetailStates } from "./DetailStates";
-import { formatTimestamp, Meta, MetaGrid, toEpochMillis } from "./Meta";
+import { GROUPS, type GroupDef } from "../groups.js";
+import { SectionLabel } from "../SectionLabel.js";
+import { useCatalogSelection } from "../selection.js";
+import type { ObjectKind } from "../types.js";
+import { DetailStates } from "./DetailStates.js";
+import { formatTimestamp, Meta, MetaGrid, toEpochMillis } from "./Meta.js";
 
 // Minimal shape shared by every child list item we render in the table. The
 // per-kind list payloads are wider than this, but Name / Owner / Created are the

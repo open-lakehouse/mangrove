@@ -17,9 +17,9 @@ export {
   createFilesService,
   defaultFilesService,
   setDefaultFilesService,
-} from "./api";
+} from "./api.js";
 // React injection + hook.
-export { FilesServiceProvider, useFilesService } from "./context";
+export { FilesServiceProvider, useFilesService } from "./context.js";
 // Canonical /Volumes/<c>/<s>/<v>/<rest> path helpers.
 export {
   formatVolumePath,
@@ -27,7 +27,7 @@ export {
   parseVolumePath,
   type VolumePath,
   volumeFullName,
-} from "./path";
+} from "./path.js";
 // Low-level runner seam (the swap point for the wasm engine / a host).
 export {
   type FilesRunner,
@@ -39,7 +39,7 @@ export {
   hasFilesRunner,
   NoFilesRunnerError,
   registerFilesRunner,
-} from "./runner";
+} from "./runner.js";
 export type {
   DirectoryEntry,
   DirectoryMetadata,
@@ -52,5 +52,5 @@ export type {
   ReadFileRequest,
   WriteFileRequest,
   WriteFileResult,
-} from "./types";
-export { type DirectoryState, useDirectory } from "./useDirectory";
+} from "./types.js";
+export { type DirectoryState, useDirectory } from "./useDirectory.js";

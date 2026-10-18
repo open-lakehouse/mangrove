@@ -8,13 +8,13 @@ import {
 import { useTableDetail } from "@open-lakehouse/unity-catalog-client/react";
 import { useState } from "react";
 
-import { SectionLabel } from "../SectionLabel";
-import { DeltaLogTab } from "./DeltaLogTab";
-import { DetailStates } from "./DetailStates";
-import { FormatIcon } from "./FormatIcon";
-import { formatTimestamp, Meta, MetaGrid } from "./Meta";
-import { TablePreview, useTablePreviewVisible } from "./TablePreview";
-import { TypePill } from "./TypePill";
+import { SectionLabel } from "../SectionLabel.js";
+import { DeltaLogTab } from "./DeltaLogTab.js";
+import { DetailStates } from "./DetailStates.js";
+import { FormatIcon } from "./FormatIcon.js";
+import { formatTimestamp, Meta, MetaGrid } from "./Meta.js";
+import { TablePreview, useTablePreviewVisible } from "./TablePreview.js";
+import { TypePill } from "./TypePill.js";
 
 type TableView = "overview" | "details" | "preview" | "delta-log";
 

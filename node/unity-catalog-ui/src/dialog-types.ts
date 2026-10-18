@@ -1,4 +1,4 @@
-import type { ObjectKind, StorageKind } from "./types";
+import type { ObjectKind, StorageKind } from "./types.js";
 
 /**
  * Catalog-namespace create request. Parent fields are optional when launched

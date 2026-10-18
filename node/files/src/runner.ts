@@ -29,7 +29,7 @@ import type {
   ReadFileRequest,
   WriteFileRequest,
   WriteFileResult,
-} from "./types";
+} from "./types.js";
 
 /**
  * Executes volume-files operations. Unlike the single-callable `QueryRunner`,

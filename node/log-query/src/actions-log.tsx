@@ -2,12 +2,12 @@ import type { ArrowResultStore } from "@open-lakehouse/data-grid";
 import { cn } from "@open-lakehouse/ui-kit";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useLayoutEffect, useMemo, useState } from "react";
-import { ActionRow } from "./action-row";
+import { ActionRow } from "./action-row.js";
 import {
   detectActionSlot,
   resolveSlotColumns,
   SLOT_SPECS,
-} from "./lib/actionSlots";
+} from "./lib/actionSlots.js";
 
 // The rich Delta-log actions view. Replaces the flat DataGrid (which shows 5/6
 // null cells per row) for the `actions` log surface: one console-style row per

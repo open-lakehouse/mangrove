@@ -7,7 +7,7 @@
 // this package), so the grid's own showcase data lives here.
 
 import { type Table, tableFromArrays, tableToIPC } from "apache-arrow";
-import { ArrowResultStore } from "./index";
+import { ArrowResultStore } from "./index.js";
 
 /** Serialize an Arrow table to a self-contained IPC stream (schema + batch). */
 function tableToIpc(table: Table): Uint8Array {

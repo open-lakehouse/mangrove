@@ -7,7 +7,7 @@ import {
   type OpenTab,
   type SessionState,
   sessionReducer,
-} from "./sessionReducer";
+} from "./sessionReducer.js";
 
 const openTab = (id: string): Omit<OpenTab, "saveStatus"> => ({
   id,

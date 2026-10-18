@@ -22,21 +22,21 @@
 // view/service/seam entries interleave — the grouping is by comment, not order.
 //
 // The rich action-row stream — replaces the flat grid for the `actions` surface.
-export { ActionsLog } from "./actions-log";
+export { ActionsLog } from "./actions-log.js";
 // Table-oriented service surface.
 export {
   createLogQueryService,
   defaultLogQueryService,
   setDefaultLogQueryService,
-} from "./api";
+} from "./api.js";
 // React injection + hook.
-export { LogQueryServiceProvider, useLogQueryService } from "./context";
+export { LogQueryServiceProvider, useLogQueryService } from "./context.js";
 // `isActionsSchema` gates the action-row view; the actions surface uses it.
-export { isActionsSchema } from "./lib/actionSlots";
+export { isActionsSchema } from "./lib/actionSlots.js";
 // The min/max-box view — per-file [min,max] intervals (1D) / bounding boxes (2D)
 // from the reconciled-log stats; `hasMinMaxAxes` gates whether it's offered.
-export { hasMinMaxAxes } from "./lib/minMaxAxes";
-export { MinMaxView } from "./min-max-view";
+export { hasMinMaxAxes } from "./lib/minMaxAxes.js";
+export { MinMaxView } from "./min-max-view.js";
 // Low-level runner seam (the swap point for the wasm engine / a host).
 export {
   getLogQueryRunner,
@@ -50,11 +50,11 @@ export {
   logQueryRunnerSupports,
   NoLogQueryRunnerError,
   registerLogQueryRunner,
-} from "./runner";
+} from "./runner.js";
 export type {
   LogPreviewHandle,
   LogPreviewRequest,
   LogQueryService,
   LogSupportsInput,
-} from "./types";
-export { type LogPreviewState, useLogPreview } from "./useLogPreview";
+} from "./types.js";
+export { type LogPreviewState, useLogPreview } from "./useLogPreview.js";

@@ -11,7 +11,7 @@ import {
   detectActionSlot,
   isActionsSchema,
   resolveSlotColumns,
-} from "./actionSlots";
+} from "./actionSlots.js";
 
 const EMPTY = {
   add: null as { path: string; size: bigint } | null,

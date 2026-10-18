@@ -3,15 +3,39 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "description": "Delta-log views and the log-query seam for React.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-lakehouse/mangrove.git",
+    "directory": "node/log-query"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
+    "!src/**/*.stories.tsx",
+    "README.md",
+    "DESIGN.md",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./testing": {
-      "types": "./src/testing/stubRunner.ts",
-      "import": "./src/testing/stubRunner.ts"
-    }
+      "source": "./src/testing/stubRunner.ts",
+      "types": "./dist/testing/stubRunner.d.ts",
+      "import": "./dist/testing/stubRunner.js"
+    },
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "@open-lakehouse/data-grid": "^0.1.0",
@@ -32,6 +56,8 @@
     "typescript": "^6.0.3"
   },
   "scripts": {
+    "build": "bun run ../../scripts/build-package.ts",
+    "prepack": "bun run build",
     "typecheck": "tsc --noEmit"
   }
 }

@@ -17,7 +17,7 @@ import {
   filesRunner,
   filesRunnerCanWrite,
   filesRunnerSupports,
-} from "./runner";
+} from "./runner.js";
 import type {
   FileChunk,
   FileMetadata,
@@ -25,7 +25,7 @@ import type {
   FilesSupportsInput,
   ListDirectoryRequest,
   ReadFileRequest,
-} from "./types";
+} from "./types.js";
 
 // A never-aborting signal for calls that omit one, so the runner always receives
 // a real `AbortSignal` (its contract) without every caller having to build one.

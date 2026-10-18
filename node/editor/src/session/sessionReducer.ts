@@ -4,7 +4,7 @@
 // saved-version baseline) lives in the model registry (core/models.ts), NOT here
 // — so typing never churns reducer state.
 
-import type { EditorLanguage } from "../core/language";
+import type { EditorLanguage } from "../core/language.js";
 
 export type TabId = string; // == file path (unique per store), a stable key.
 

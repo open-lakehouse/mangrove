@@ -7,8 +7,8 @@
 
 import { type ArrowResultStore, toAxisNumber } from "@open-lakehouse/data-grid";
 import { useMemo } from "react";
-import type { MinMaxAxis } from "./minMaxAxes";
-import { maxPath, minPath, STATS_COLUMN } from "./minMaxAxes";
+import type { MinMaxAxis } from "./minMaxAxes.js";
+import { maxPath, minPath, STATS_COLUMN } from "./minMaxAxes.js";
 
 /** Per-axis extracted intervals plus its numeric domain. */
 export interface AxisData {

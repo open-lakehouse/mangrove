@@ -24,10 +24,10 @@ import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { SchemaForm } from "../forms/SchemaForm";
-import { cloneSchema, formSchemas } from "../forms/schemas";
+import { SchemaForm } from "../forms/SchemaForm.js";
+import { cloneSchema, formSchemas } from "../forms/schemas.js";
 
-import { CredentialDialog } from "./CredentialDialog";
+import { CredentialDialog } from "./CredentialDialog.js";
 
 const FORM_ID = "external-location-form";
 

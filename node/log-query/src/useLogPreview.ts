@@ -4,9 +4,9 @@
 // handle's `subscribe`. Mirrors @open-lakehouse/query's usePreview.ts.
 
 import { useEffect, useMemo, useSyncExternalStore } from "react";
-import { useLogQueryService } from "./context";
-import type { LogKind } from "./runner";
-import type { LogPreviewHandle, LogQueryService } from "./types";
+import { useLogQueryService } from "./context.js";
+import type { LogKind } from "./runner.js";
+import type { LogPreviewHandle, LogQueryService } from "./types.js";
 
 /** What `useLogPreview` returns — a live view of the current run. */
 export interface LogPreviewState {

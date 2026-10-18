@@ -19,8 +19,19 @@ coherent while staying independently themeable.
    its own global stylesheet.
 2. The host maps them to Tailwind color tokens via `@theme inline`
    (`--color-background: hsl(var(--background));` …).
-3. The host adds a `@source` glob so Tailwind scans this package's source and
-   generates the utilities the primitives reference.
+3. The host adds a `@source` glob so Tailwind scans this package and generates
+   the utilities the primitives reference. Installed from the registry, point it
+   at the build; inside this workspace, at the source:
+
+   ```css
+   @source "../node_modules/@open-lakehouse/ui-kit/dist"; /* installed */
+   @source "../../ui-kit/src";                            /* workspace (node/app) */
+   ```
+
+   Do the same for every other `@open-lakehouse/*` UI package the host renders,
+   including ones it only renders indirectly (e.g. `unity-catalog-ui` renders
+   `data-grid`, `editor` and `log-query`). Each package's `DESIGN.md` lists
+   its sources.
 
 The canonical reference implementation of steps 1–3 is hydrofoil's
 `node/ui/src/app/globals.css`; the mangrove scaffold app carries an equivalent.
@@ -46,6 +57,7 @@ Every consumer MUST define all of these on both `:root` and `.dark`.
 | `--secondary` / `--secondary-foreground` | Secondary action fill + text on it |
 | `--accent` / `--accent-foreground` | Hover/active accent fill + text on it |
 | `--destructive` / `--destructive-foreground` | Danger action fill + text on it |
+| `--success` / `--success-foreground` | Success fill + text on it (e.g. the `success` badge) |
 | `--border` | Hairline borders (also the default `border-color`) |
 | `--input` | Form control border |
 | `--ring` | Focus ring |
@@ -65,6 +77,16 @@ Every consumer MUST define all of these on both `:root` and `.dark`.
 | `--status-done` | Success |
 | `--status-in-progress` | Active (usually tracks `--primary`) |
 | `--status-blocked` | Error / blocked |
+
+### Delta-log action slots (used by `@open-lakehouse/log-query`)
+| Variable | Meaning |
+| --- | --- |
+| `--action-add` / `--action-remove` | add / remove actions (reuse the good / critical hues) |
+| `--action-metadata` / `--action-protocol` / `--action-txn` / `--action-domain` | the neutral action kinds, as distinct categorical hues |
+
+Hosts that don't render the Delta-log views may omit these. The reference values
+in `node/app/src/globals.css` are validated for colour-vision deficiency and
+contrast; the views always pair a hue with an icon and label.
 
 ### Typography (font stacks, not HSL)
 | Variable | Meaning |

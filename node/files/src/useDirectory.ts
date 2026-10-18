@@ -10,8 +10,8 @@
 // the same StrictMode-safe, deferred-start discipline `usePreview` uses.
 
 import { useEffect, useMemo, useSyncExternalStore } from "react";
-import { useFilesService } from "./context";
-import type { DirectoryEntry, FilesService } from "./types";
+import { useFilesService } from "./context.js";
+import type { DirectoryEntry, FilesService } from "./types.js";
 
 /** What `useDirectory` returns — a live view of the accumulated listing. */
 export interface DirectoryState {

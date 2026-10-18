@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { ActionsLog } from "./actions-log";
-import * as arrow from "./story-fixtures";
+import { ActionsLog } from "./actions-log.js";
+import * as arrow from "./story-fixtures.js";
 
 // ActionsLog reads zero-copy from an ArrowResultStore built from real Arrow IPC:
 // six nullable action slots, exactly one non-null per row (the reconciled action

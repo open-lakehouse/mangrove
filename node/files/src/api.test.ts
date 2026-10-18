@@ -5,7 +5,7 @@
 // directory listing continuation via `nextPageToken`.
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { createFilesService } from "./api";
+import { createFilesService } from "./api.js";
 import {
   type FilesRunner,
   filesRunner,
@@ -14,9 +14,9 @@ import {
   hasFilesRunner,
   NoFilesRunnerError,
   registerFilesRunner,
-} from "./runner";
-import { FIXTURE_VOLUME_ROOT, fixtureListing } from "./testing/fixtures";
-import { registerStubFiles, stubFilesRunner } from "./testing/stubRunner";
+} from "./runner.js";
+import { FIXTURE_VOLUME_ROOT, fixtureListing } from "./testing/fixtures.js";
+import { registerStubFiles, stubFilesRunner } from "./testing/stubRunner.js";
 
 const never = new AbortController().signal;
 

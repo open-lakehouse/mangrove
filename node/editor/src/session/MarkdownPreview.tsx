@@ -9,8 +9,8 @@
 import DOMPurify from "dompurify";
 import { marked } from "marked";
 import { useEffect, useState } from "react";
-import { getEntry } from "../core/models";
-import type { TabId } from "./sessionReducer";
+import { getEntry } from "../core/models.js";
+import type { TabId } from "./sessionReducer.js";
 
 const DEBOUNCE_MS = 150;
 

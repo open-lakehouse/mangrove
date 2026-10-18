@@ -13,7 +13,7 @@
 // contract for this surface yet, so the request shape is defined locally rather
 // than derived from protobuf.
 
-import type { LogSupportsInput } from "./types";
+import type { LogSupportsInput } from "./types.js";
 
 /** Which reconciled-Delta-log surface to scan. `reconciled` = the surviving
  *  scan-file rows after log replay; `actions` = the reconciled full action

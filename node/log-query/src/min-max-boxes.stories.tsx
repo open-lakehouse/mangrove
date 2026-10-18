@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { MinMaxView } from "./min-max-view";
-import * as arrow from "./story-fixtures";
+import { MinMaxView } from "./min-max-view.js";
+import * as arrow from "./story-fixtures.js";
 
 // MinMaxView enumerates orderable min/max axes from the reconciled-log stats and
 // plots per-file intervals (1D) / bounding boxes (2D), reading the nested

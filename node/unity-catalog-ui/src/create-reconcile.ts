@@ -1,10 +1,10 @@
 // After a successful create, reveal the new object in the tree using the
 // existing expansion + selection stores (no new state channel).
 
-import type { CreateRequest } from "./dialog-types";
-import { nodeId, useExpansion } from "./ExpansionContext";
-import { useCatalogSelection } from "./selection";
-import type { ObjectKind, Selection } from "./types";
+import type { CreateRequest } from "./dialog-types.js";
+import { nodeId, useExpansion } from "./ExpansionContext.js";
+import { useCatalogSelection } from "./selection.js";
+import type { ObjectKind, Selection } from "./types.js";
 
 export interface CreatedEntity {
   kind: CreateRequest["kind"];

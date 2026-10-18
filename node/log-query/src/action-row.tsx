@@ -7,7 +7,7 @@ import { cn } from "@open-lakehouse/ui-kit";
 import type { DataType, Field } from "apache-arrow";
 import { ChevronRight } from "lucide-react";
 import { memo, useMemo } from "react";
-import type { SlotSpec } from "./lib/actionSlots";
+import type { SlotSpec } from "./lib/actionSlots.js";
 
 // One rendered action row. The collapsed row keeps the console look — monospace,
 // tabular figures, single line — prefixed by a color-and-glyph badge that names
