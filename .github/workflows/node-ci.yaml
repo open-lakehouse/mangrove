@@ -6,19 +6,12 @@ on:
   push:
     branches: [main]
 
-env:
-  SCCACHE_GHA_ENABLED: true
-  RUSTC_WRAPPER: sccache
-
 jobs:
   node-unit-tests:
     name: node-unit-tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@1583d6b38d7be47f593cb472781bbb21cab4321e # v0.0.10
 
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
