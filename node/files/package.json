@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Volume-files seam (FilesRunner) and file-browser UI for React.",
+  "description": "Volume-files seam (FilesRunner) and React hooks for listing, reading and writing volume files.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

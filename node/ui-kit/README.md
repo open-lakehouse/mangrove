@@ -30,7 +30,9 @@ consumer must satisfy is documented in [`DESIGN.md`](./DESIGN.md).
 
 ## Distribution
 
-Source-only workspace package (`exports` points straight at `src/index.ts`), so
-the consuming app's Vite/tsc compile it directly — no build step. During the
-current evaluation phase nothing is published; sibling repos consume it via a
-local `file:` link across checkouts.
+`bun run build` emits ESM + declarations to `dist/`, and `exports` point there
+for consumers outside the workspace. Workspace consumers resolve the `source`
+export condition to `src/` instead, so local development needs no build step.
+The package is still `private` (not published) while downstream projects
+validate the API; until then sibling repos consume it via a `file:` link. See
+[`DESIGN.md`](./DESIGN.md) for host setup.

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Query-preview seam (QueryRunner) and preview UI for React.",
+  "description": "Query-preview seam (QueryRunner) and the usePreview hook that streams results into a data-grid store.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

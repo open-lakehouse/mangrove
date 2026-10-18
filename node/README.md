@@ -10,16 +10,16 @@ this page is the map.
 |---|---|---|---|
 | `@open-lakehouse/unity-catalog-node` | `client/` | Native (NAPI) Unity Catalog client for Node.js | published (GitHub Packages) |
 | `@open-lakehouse/unity-catalog-client` | `unity-catalog-client/` | Typed REST client (`openapi-fetch`, framework-free) + React-Query hooks (`./react`) | published (GitHub Packages) |
-| `@open-lakehouse/ui-kit` | `ui-kit/` | Headless, theme-agnostic primitives (Radix + CVA + Tailwind) and the design-token contract | workspace-internal |
-| `@open-lakehouse/data-grid` | `data-grid/` | Arrow-backed virtualized result grid | workspace-internal |
-| `@open-lakehouse/editor` | `editor/` | Monaco SQL editor with catalog-aware completion | workspace-internal |
-| `@open-lakehouse/query` | `query/` | Query-preview seam (`QueryRunner`) | workspace-internal |
-| `@open-lakehouse/files` | `files/` | Volume-files seam (`FilesRunner`) | workspace-internal |
-| `@open-lakehouse/files-connect` | `files-connect/` | ConnectRPC bindings for the files service | workspace-internal |
-| `@open-lakehouse/log-query` | `log-query/` | Delta-log views + log-query seam | workspace-internal |
+| `@open-lakehouse/ui-kit` | `ui-kit/` | Headless, theme-agnostic primitives (Radix + CVA + Tailwind) and the design-token contract | publish-ready, [`DESIGN.md`](ui-kit/DESIGN.md) (private) |
+| `@open-lakehouse/data-grid` | `data-grid/` | Arrow-backed virtualized result grid | publish-ready, [`DESIGN.md`](data-grid/DESIGN.md) (private) |
+| `@open-lakehouse/editor` | `editor/` | Monaco SQL editor with catalog-aware completion | publish-ready, [`DESIGN.md`](editor/DESIGN.md) (private) |
+| `@open-lakehouse/query` | `query/` | Query-preview seam (`QueryRunner`) | publish-ready, [`DESIGN.md`](query/DESIGN.md) (private) |
+| `@open-lakehouse/files` | `files/` | Volume-files seam (`FilesRunner`) | publish-ready, [`DESIGN.md`](files/DESIGN.md) (private) |
+| `@open-lakehouse/files-connect` | `files-connect/` | ConnectRPC bindings for the files service | publish-ready, [`DESIGN.md`](files-connect/DESIGN.md) (private) |
+| `@open-lakehouse/log-query` | `log-query/` | Delta-log views + log-query seam | publish-ready, [`DESIGN.md`](log-query/DESIGN.md) (private) |
 | `@open-lakehouse/query-wasm` | `query-wasm/` | In-browser (wasm) `QueryRunner` | workspace-internal |
 | `@open-lakehouse/files-wasm` | `files-wasm/` | In-browser (wasm) `FilesRunner` | workspace-internal |
-| `@open-lakehouse/unity-catalog-ui` | `unity-catalog-ui/` | Unity Catalog browser components (presentation only) | workspace-internal |
+| `@open-lakehouse/unity-catalog-ui` | `unity-catalog-ui/` | Unity Catalog browser components (presentation only) | publish-ready, [`DESIGN.md`](unity-catalog-ui/DESIGN.md) (private) |
 | `@open-lakehouse/uc-app` | `app/` | The bundled SPA served by `olai-uc-server`; composes everything | never published |
 
 ## Dependency direction
@@ -57,6 +57,27 @@ behavior crosses package boundaries only through seams: `QueryRunner`,
   which holds the NAPI crate and `app/`).
 - Published packages are released by release-plz through a crate each (see
   `.agents/rules/js-release-rule.mdc`).
+
+## Building and consuming
+
+Publish-ready packages build to `dist/` with `bun run build` (all of them:
+`bun run build:packages`; CI also lints the packed tarballs with
+`bun run pack:check:all`). Their `exports` list a `source` condition first,
+pointing at `src/`:
+
+- **Inside this workspace** every consumer resolves `source` (TS
+  `customConditions: ["source"]`, Vite `resolve.conditions` in `app/`,
+  `bun test --conditions source`), so nothing needs building for dev, typecheck
+  or tests.
+- **Installed from the registry** consumers get `dist/`.
+- **Linked from a sibling checkout** (`file:`, e.g. hydrofoil): either opt into
+  the same `source` condition (Vite `resolve.conditions` + TS
+  `customConditions`) to consume the TypeScript sources, or run
+  `bun run build:packages` here first. Without either, the link resolves to a
+  `dist/` that doesn't exist.
+
+Every UI package's `DESIGN.md` is its consumer contract: peers, the host setup
+(tokens + Tailwind `@source`), its seams, a usage example, and do/don't rules.
 
 ## Theming
 
