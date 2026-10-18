@@ -1,15 +1,18 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
-  "extends": ["../../biome.json"],
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "root": false,
+  "extends": "//",
   "files": {
     "includes": [
+      "**",
       "!**/dist/**/*",
       "!**/native.js",
       "!**/native.d.ts",
       "!**/npm/**/*",
       "!./examples/*",
       "!**/models/gen/**/*",
-      "!**/unitycatalog/client.ts"
+      "!**/unitycatalog/client.ts",
+      "!**/unitycatalog/codegen/client.ts"
     ]
   }
 }

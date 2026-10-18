@@ -20,12 +20,11 @@ The project follows a multi-crate Rust workspace architecture with language bind
   `olai-store` crates (published from the [`trestle`](https://github.com/open-lakehouse/trestle)
   codegen repo). See [Code generation](#code-generation).
 - `python/client/` - Python bindings via PyO3
-- `node/client/` - Node.js bindings via NAPI
+- `node/` - JS/TS workspace: the NAPI Node client (`node/client/`), the Unity Catalog
+  TS client, and the shared UI component packages — see [`node/README.md`](node/README.md)
 - `proto/` - Protocol buffer definitions
 - `openapi/` - Generated OpenAPI specifications
 - `dev/` - Docker Compose config, development scripts, and Marimo notebooks
-- `docs/` - Astro-based documentation site
-- `examples/` - Type-checked code examples (Rust, Python, TypeScript) injected into docs
 
 ## Build, Test, and Development Commands
 
@@ -62,10 +61,6 @@ We use [`just`](https://just.systems/) as the primary task runner. Key commands:
 - `just fix-py` - Auto-fix Python code only
 - `just lint-node` - Lint JavaScript/TypeScript code
 - `just fmt` - Format all code (Rust, protobuf, etc.)
-
-**Documentation:**
-- `just docs` - Start the Astro documentation development server
-- `just validate-examples` - Type-check all examples and build docs (Rust/Python/TypeScript)
 
 Standard Rust commands also work:
 - `cargo test` - Run Rust unit tests
@@ -126,30 +121,6 @@ Some targets need external services or env vars (a local `.env` is dotenv-loaded
 - `just rest-db` / `build-sqlx` — require Docker + Postgres.
 - `just integration` / `integration-record` — require `DATABRICKS_HOST`,
   `DATABRICKS_TOKEN`, and `DATABRICKS_STORAGE_ROOT`.
-
-## Code Examples in Documentation
-
-Docs use a snippet injection system. The `examples/` directory contains type-checked
-source files for Rust, Python, and TypeScript. In MDX docs, use `<CodeExample snippet="name" />`
-to render a tabbed code block for all three languages automatically.
-
-**Snippet tagging convention** (tag lines are stripped from the rendered output):
-- Rust/TypeScript: `// [snippet:name]` ... `// [/snippet:name]`
-- Python: `# [snippet:name]` ... `# [/snippet:name]`
-
-Snippet names use `snake_case` matching the Rust method name (e.g., `list_catalogs`).
-
-**Adding a new example:**
-1. Add the tagged region to `examples/rust/src/*.rs`, `examples/python/*.py`, and `examples/typescript/examples/*.ts`
-2. Add the new file imports to `docs/src/components/CodeExample.astro` and include them in `buildRegistry()`
-3. Verify with `just validate-examples`
-4. Use `<CodeExample snippet="your_snippet_name" />` in any MDX doc page (import the component first: `import CodeExample from "../../../components/CodeExample.astro"`)
-
-**The `CodeExample` Astro component** (`docs/src/components/CodeExample.astro`) uses Vite `?raw`
-imports to load snippet files at build time and expands `<CodeExample />` to Starlight
-`<Tabs syncKey="language">` blocks — so users only need to select their language once site-wide.
-It throws a hard build error if a snippet name is not found, ensuring docs always stay in sync.
-Tabs are synced across the entire site via Starlight's built-in `localStorage` persistence.
 
 ## Coding Style & Naming Conventions
 

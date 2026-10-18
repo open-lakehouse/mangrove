@@ -1,6 +1,6 @@
 // Public surface of the shared UI kit: the shadcn/Radix primitives, the `cn`
 // class-merge helper, and the theme context. Both feature packages
-// (@open-lakehouse/data-grid, @open-lakehouse/unity-catalog) and the app
+// (@open-lakehouse/data-grid, @open-lakehouse/unity-catalog-ui) and the app
 // (@open-lakehouse/ui) depend on this package rather than each carrying its own
 // copy of the primitives. Distribute visuals from one place; see ./README.md.
 

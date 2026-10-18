@@ -26,7 +26,7 @@ aliases; the recipes live in `just/*.just` (and the promoted sibling justfiles):
 | `codegen`     | `just/codegen.just`        | proto / OpenAPI / client generation             |
 | `build`       | `just/build.just`          | UI, bindings, wasm engine, Docker, sqlx caches  |
 | `test`        | `just/test.just`           | unit / integration / conformance + CI gates     |
-| `meta`        | `just/meta.just`           | `fmt`, `fix*`, `lint-node`, `docs`, `run`        |
+| `meta`        | `just/meta.just`           | `fmt`, `fix*`, `lint-node`, `run`                |
 | `dev`         | `dev/justfile`             | docker-compose env + UC server / UI dev flows   |
 | `postgres`    | `crates/postgres/justfile` | sharing migrations helpers                       |
 | `node_client` | `node/client/justfile`     | node client external-type generation            |
@@ -217,6 +217,7 @@ here.
 |------------------------|----------------------------------------------------|-----------------------------------|
 | every `olai-uc-*-v*`   | GitHub Release (changelog); crates.io publish for publishable crates | release-plz.yml   |
 | `olai-uc-server-v*`    | + `ghcr.io/open-lakehouse/mangrove` image (once the server is un-paused) | release-plz.yml → docker-release.yml |
+| `unity-catalog-node-v*` / `unity-catalog-client-v*` | npm package on GitHub Packages + attested tarball on the Release | release-plz.yml → js-release.yaml |
 
 **The server is a deployable — currently paused.** `olai-uc-server` is `git_only = true` in
 `release-plz.toml` (and `publish = false` in its `Cargo.toml`): release-plz versions,
@@ -225,9 +226,9 @@ graph is git-free (PR #89), so it is *eligible* to publish to crates.io (library
 `uc-server` binary behind the `bin` feature), but it is held back until its sibling path deps
 (`olai-uc-common`/`-client`/`-delta-api`) are re-released to crates.io with the current buffa
 API — a verifying `cargo publish` of the server otherwise builds against their stale pre-buffa
-`0.0.2` and fails. The Docker gate in release-plz.yml reads release-plz's `releases` JSON, which
-omits `git_only` crates, so **no image is built while paused** (intentional — no publish ⇒ no
-new image). Flipping the server to `publish = true` (after the siblings are live) puts it back
+`0.0.2` and fails. The Docker gate in release-plz.yml reads release-plz's `releases` JSON. (Since
+release-plz action v0.5.142 that JSON also lists released `git_only` crates; the npm
+packages rely on it.) Flipping the server to `publish = true` (after the siblings are live) puts it back
 in `releases` and re-activates the Docker build automatically — no workflow edit needed; the
 image then builds only on an actual server release or a manual `workflow_dispatch` rebuild
 (there is no per-push/edge build). The server's bundled web UI lives in `node/` — outside the
@@ -235,8 +236,28 @@ crate's packaged fileset — so a UI change is tied to the crate via `crates/ser
 after editing anything under `node/`, run `just ui-fingerprint` and commit the updated lock
 (CI's `ui-fingerprint` job enforces this).
 
-The Python (`python/client`) and Node (`node/client`) bindings are `publish = false` for
-now (held off); so are `unitycatalog-acceptance` and the doc `examples`.
+The Python binding (`python/client`) is `publish = false` and released by hand (see
+`python-wheels.yml`); so are `unitycatalog-acceptance` and the doc `examples`.
+
+**npm packages (GitHub Packages).** The publishable npm packages are versioned by
+release-plz through crates, the same way trestle releases `trestle-diagram`:
+
+| npm package | Crate | Manifest |
+|---|---|---|
+| `@open-lakehouse/unity-catalog-node` | `unity-catalog-node` | `node/client/Cargo.toml` (the NAPI extension itself) |
+| `@open-lakehouse/unity-catalog-client` | `unity-catalog-client` | `node/unity-catalog-client/Cargo.toml` (placeholder, no Rust) |
+
+Both are `git_only = true` + `publish = false`. The crate `version` is the npm version
+(`package.json` stays `0.0.0` in git), and each crate's `include` list is exactly the
+files that feed its npm package, so release-plz bumps it when those change.
+`unity-catalog-node` also bumps whenever `olai-uc-client` / `olai-uc-common` release,
+through its path dependencies. When a run releases one of them, release-plz.yml's `npm`
+job calls `js-release.yaml`. That job stamps the version into `package.json`, builds
+(NAPI: one binary per target, plus the per-platform packages), publishes to
+`npm.pkg.github.com`, attests the tarballs, and attaches them to the GitHub Release. Nothing
+is published unless the `JS_PUBLISH_ENABLED` repo variable is `"true"`. A release tagged
+while it was off can be published later via `workflow_dispatch` on `js-release.yaml`
+with its tag. No npmjs publishing yet.
 
 **First-publish bootstrap.** crates.io OIDC trusted publishing cannot create a crate name
 that has never existed. Each `olai-uc-*` crate therefore needs a one-time token bootstrap

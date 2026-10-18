@@ -164,6 +164,32 @@ changelog_path = "crates/cli/CHANGELOG.md"
 # held out of crates.io for now. Remove this line to release the `uc` CLI crate.
 release = false
 
+# --- npm packages, released to GitHub Packages ---
+# Each npm package is versioned through a crate: the NAPI extension itself
+# (node/client) and a placeholder for the pure-TS client
+# (node/unity-catalog-client), following trestle's `trestle-diagram`. `git_only`
+# takes the previous version from the `<name>-v*` tags instead of crates.io, and
+# `publish = false` (which git_only requires) skips `cargo publish`. When one is
+# released, release-plz.yml's `npm` job (js-release.yaml) stamps the version
+# into package.json and publishes to GitHub Packages. Neither has a Rust API
+# that cargo-semver-checks could compare. Their `cargo package` pass (run once a
+# tag exists) is safe: neither reaches a git dependency (unity-catalog-node's
+# path deps are crates.io-published olai-uc-client/common; the placeholder has
+# no deps) — unlike unitycatalog-client-py below.
+[[package]]
+name = "unity-catalog-node"
+changelog_path = "node/client/CHANGELOG.md"
+git_only = true
+publish = false # required alongside git_only
+semver_check = false
+
+[[package]]
+name = "unity-catalog-client"
+changelog_path = "node/unity-catalog-client/CHANGELOG.md"
+git_only = true
+publish = false # required alongside git_only
+semver_check = false
+
 [[package]]
 name = "unitycatalog-client-py"
 changelog_path = "python/client/CHANGELOG.md"
@@ -212,5 +238,5 @@ commit_parsers = [
 # is already crate-scoped. Scopes use the crate directory names / short names
 # the repo's conventional commits already use.
 commit_preprocessors = [
-  { pattern = '\((delta-api|common|client|sharing-client|object-store|postgres|sqlite|datafusion|server|storage-proxy|cli)\)', replace = "" },
+  { pattern = '\((delta-api|common|client|sharing-client|object-store|postgres|sqlite|datafusion|server|storage-proxy|cli|unity-catalog-node|unity-catalog-client)\)', replace = "" },
 ]

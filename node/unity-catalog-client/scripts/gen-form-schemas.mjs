@@ -14,7 +14,7 @@
 //        - collapse the proto scalar `anyOf` unions (e.g. enum int|string) to
 //          their human-facing branch,
 //        - keep a single draft 2020-12 `$schema` at the root.
-//   3. Output is checked in under unity-catalog/src/forms/schemas/ so the UI build needs
+//   3. Output is checked in under unity-catalog-ui/src/forms/schemas/ so the UI build needs
 //      no network access.
 //
 // Regenerate with `bun run gen:form-schemas` (or `just gen-forms`). Requires the
@@ -32,7 +32,7 @@ const tmpDir = path.join(pkgDir, ".gen-jsonschema");
 // presentational package's SchemaForm, so they are written there (the
 // generation itself is UC-contract codegen and lives with the client package,
 // alongside gen:api).
-const outDir = path.resolve(pkgDir, "../unity-catalog/src/forms/schemas");
+const outDir = path.resolve(pkgDir, "../unity-catalog-ui/src/forms/schemas");
 
 /** Output file name (without extension) -> fully-qualified proto message. */
 const TARGETS = {

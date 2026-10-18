@@ -13,7 +13,7 @@
     "node/files-wasm",
     "node/editor",
     "node/unity-catalog-client",
-    "node/unity-catalog",
+    "node/unity-catalog-ui",
     "node/app"
   ],
   "scripts": {
@@ -24,19 +24,19 @@
     "strip-lock-proxy:check": "bun run scripts/strip-bun-lock-proxy.ts --check",
     "cargo-lock-trestle:check": "bash scripts/check-cargo-lock-trestle.sh",
     "test:coverage": "bun test --coverage --coverage-reporter=lcov",
-    "changeset": "changeset",
-    "changeset:version": "changeset version",
-    "changeset:publish": "changeset publish",
-    "changeset:autogen": "bun run scripts/autogen-changeset.ts"
+    "typecheck": "bun run --filter \"./node/*\" typecheck",
+    "lint:node": "biome check node",
+    "test:ui": "bun test --conditions source node --path-ignore-patterns \"node/client/**\"",
+    "pack:check": "bun run scripts/pack-check.ts"
   },
   "dependencies": {
-    "eslint": "^10.0.2",
-    "prettier": "^3.8.1",
-    "yaml": "^2.8.2"
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.10",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.0",
-    "@changesets/cli": "^2.31.1",
-    "@changesets/changelog-github": "^0.7.0"
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@biomejs/biome": "2.5.15",
+    "publint": "^0.3.25"
   }
 }

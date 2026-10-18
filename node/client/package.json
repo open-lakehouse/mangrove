@@ -1,5 +1,5 @@
 {
-  "name": "@open-lakehouse/uc-client",
+  "name": "@open-lakehouse/unity-catalog-node",
   "version": "0.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,54 +9,66 @@
   "napi": {
     "binaryName": "client",
     "targets": [
-      "aarch64-apple-darwin",
-      "aarch64-linux-android",
+      "x86_64-unknown-linux-gnu",
       "aarch64-unknown-linux-gnu",
-      "aarch64-unknown-linux-musl",
-      "aarch64-pc-windows-msvc",
-      "armv7-unknown-linux-gnueabihf",
-      "armv7-unknown-linux-musleabihf",
       "x86_64-unknown-linux-musl",
-      "universal-apple-darwin"
+      "aarch64-unknown-linux-musl",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin"
     ]
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "devDependencies": {
-    "@biomejs/biome": "^2.2.0",
-    "@jest/globals": "^30.2.0",
-    "@napi-rs/cli": "^3.5.1",
+    "@biomejs/biome": "2.5.15",
+    "@jest/globals": "^30.5.2",
+    "@napi-rs/cli": "^3.10.8",
     "@types/jest": "^30.0.0",
-    "@types/node": "^22.7.4",
+    "@types/node": "^22.20.5",
     "ava": "^7.0.0",
-    "eslint": "^10.0.2",
-    "jest": "^30.2.0",
+    "eslint": "^10.12.0",
+    "jest": "^30.5.2",
     "shx": "^0.4.0",
-    "tmp": "^0.2.3",
-    "ts-jest": "^29.4.0",
-    "typescript": "^5.5.4",
-    "typescript-eslint": "^8.56.1"
+    "tmp": "^0.2.7",
+    "ts-jest": "^29.4.14",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1"
   },
   "ava": {
     "timeout": "3m"
   },
   "engines": {
-    "node": ">= 18"
+    "node": ">= 22"
   },
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "bun run build:debug && bun run tsc && shx cp unitycatalog/codegen/*.node dist/codegen/",
     "build:release": "napi build --platform --release --output-dir unitycatalog/codegen",
     "build:debug": "napi build --platform --output-dir unitycatalog/codegen --dts native.d.ts --js native.js",
-    "tsc": "tsc -b",
+    "tsc": "tsc -b && shx cp unitycatalog/codegen/native.d.ts dist/codegen/native.d.ts",
     "prepublishOnly": "napi prepublish -t npm",
     "test": "jest --verbose",
     "test:integration": "jest --config jest.integration.config.js --verbose --runInBand",
     "lint": "biome check . && biome format .",
     "lint-fix": "biome check --write && biome format --write .",
-    "universal": "napi universal",
     "version": "napi version"
   },
   "dependencies": {
-    "@bufbuild/protobuf": "^2.11.0"
-  }
+    "@bufbuild/protobuf": "^2.16.0"
+  },
+  "description": "Native (NAPI) Unity Catalog client for Node.js.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-lakehouse/mangrove.git",
+    "directory": "node/client"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.node",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "type": "commonjs"
 }

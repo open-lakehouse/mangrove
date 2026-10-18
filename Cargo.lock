@@ -6523,6 +6523,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fc81956842c57dac11422a97c3b8195a1ff727f06e85c84ed2e8aa277c9a0fd"
 
 [[package]]
+name = "unity-catalog-client"
+version = "0.0.1"
+
+[[package]]
+name = "unity-catalog-node"
+version = "0.0.1"
+dependencies = [
+ "buffa",
+ "env_logger 0.11.11",
+ "futures",
+ "napi",
+ "napi-build",
+ "napi-derive",
+ "olai-http",
+ "olai-uc-client",
+ "olai-uc-common",
+ "prost",
+ "url",
+]
+
+[[package]]
 name = "unitycatalog-acceptance"
 version = "0.0.1"
 dependencies = [
@@ -6555,23 +6576,6 @@ dependencies = [
  "pyo3",
  "thiserror",
  "tokio",
- "url",
-]
-
-[[package]]
-name = "unitycatalog_client"
-version = "0.0.0"
-dependencies = [
- "buffa",
- "env_logger 0.11.11",
- "futures",
- "napi",
- "napi-build",
- "napi-derive",
- "olai-http",
- "olai-uc-client",
- "olai-uc-common",
- "prost",
  "url",
 ]
 

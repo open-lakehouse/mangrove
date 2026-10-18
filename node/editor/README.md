@@ -5,7 +5,7 @@ highlighting, catalog-aware autocompletion, live SQL diagnostics (validation),
 markdown preview, and a run affordance — wrapped so a host application can drop
 it into a file/volume view.
 
-The package is a **leaf**: it never imports `@open-lakehouse/unity-catalog` (or
+The package is a **leaf**: it never imports `@open-lakehouse/unity-catalog-ui` (or
 `@open-lakehouse/query` / `@open-lakehouse/data-grid`). Instead it exposes seams
 the host pushes context into — catalog metadata for completion, a file store for
 persistence, and a run callback for execution. This inversion is enforced by a
@@ -30,14 +30,18 @@ there are constraints the **consuming app** must honor:
 
 ### 1. Monaco version pin
 
-Use **`monaco-editor@0.52.2` exactly**, not 0.55.x. `monaco-sql-languages@1.1`
-is built and tested against 0.52.2 (its own devDep); its `pgsql.worker` relies
-on monaco's `editor.worker.js#initialize`, an export removed in 0.55 — on 0.55.x
-the SQL worker fails to initialize and completion/diagnostics silently fall back
-to (broken) main-thread behavior (cf. DTStack monaco-sql-languages#213). If the
-app ships its own monaco, dedupe it to a single 0.52.2 copy — do not let it float
-forward. (When the registry exposes monaco-sql-languages ≥1.2, the tested pair
-moves to monaco-editor 0.54.0; revisit then.)
+Use the tested pair **`monaco-editor@0.54.0` + `monaco-sql-languages@1.2.1`**
+exactly, and only ever bump them together. `monaco-sql-languages@1.2.1` is built
+and tested against 0.54.0 (its own devDep). Do **not** float monaco to 0.55+: the
+`pgsql.worker` relies on monaco's `editor.worker.js#initialize`, an export removed
+in 0.55, so on 0.55.x the SQL worker fails to initialize and completion/diagnostics
+silently fall back to (broken) main-thread behavior (cf. DTStack
+monaco-sql-languages#213). If the app ships its own monaco, dedupe it to a single
+0.54.0 copy.
+
+`monaco-sql-languages` 1.2 adds an optional `sql-formatter` peer, used only by its
+`monaco-sql-languages/format` entry. The editor doesn't enable formatting, so the
+peer isn't needed.
 
 ### 2. Bundler / workers
 

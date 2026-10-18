@@ -2,7 +2,7 @@
 
 The **data-fetching half** of the Unity Catalog UI: the typed client, the
 React-Query hooks, and the generated UC OpenAPI types. Split out from the
-presentational `@open-lakehouse/unity-catalog` package so the two concerns —
+presentational `@open-lakehouse/unity-catalog-ui` package so the two concerns —
 *talking to Unity Catalog* and *rendering it* — are not bundled together.
 
 ## Why it's separate
@@ -49,20 +49,40 @@ the transport.
 
 ## Public surface
 
-Import from the barrel — `@open-lakehouse/unity-catalog-client`:
+Two entry points:
+
+**`@open-lakehouse/unity-catalog-client`** (framework-free; any runtime with a
+`fetch`, no React needed):
+
+- **Client:** `createUnityCatalogFetchClient`, `fetchClient` (the default
+  instance), `setDefaultUnityCatalogFetch`, `UnityCatalogFetchClient`,
+  `CreateUnityCatalogClientOptions`.
+- **Helpers:** `parseUcError`, `objectFullName`.
+- **UC OpenAPI types:** `CatalogInfo`, `SchemaInfo`, `TableInfo`, `Create*`,
+  `List*`, `components`, `paths`, … (re-exported from `uc-types`).
+
+```ts
+import { createUnityCatalogFetchClient } from "@open-lakehouse/unity-catalog-client";
+
+const uc = createUnityCatalogFetchClient({ baseUrl: "http://localhost:8080/api/2.1/unity-catalog" });
+const { data, error } = await uc.GET("/catalogs");
+```
+
+**`@open-lakehouse/unity-catalog-client/react`** (React + TanStack Query; also
+re-exports everything above):
 
 - **Client:** `createUnityCatalogClient`, `defaultUnityCatalogClient`,
-  `setDefaultUnityCatalogFetch`, `UnityCatalogClient`, `$api`, `fetchClient`.
+  `UnityCatalogClient`, `$api`.
 - **Provider:** `UnityCatalogProvider`, `useUnityCatalog`.
 - **Read hooks / query helpers:** `useCatalogs`, `useSchemas`, `useTables`,
   `useVolumes`, `useFunctions`, `useModels`, `useCredentials`,
   `useExternalLocations`, the `*Detail` hooks, `prefetch*`, `*DetailQuery`,
-  `objectFullName`, `ucListKeys`.
+  `ucListKeys`.
 - **Mutations / invalidators:** the `useCreate*` / `useUpdate*` / `useDelete*`
   hooks and the `invalidate*` / `remove*` helpers.
-- **Errors:** `parseUcError`.
-- **UC OpenAPI types:** `CatalogInfo`, `SchemaInfo`, `TableInfo`, `Create*`,
-  `List*`, `components`, `paths`, … (re-exported from `uc-types`).
+
+`react`, `react-dom` and `@tanstack/react-query` are **optional** peers: only the
+`./react` entry needs them.
 
 ## Codegen
 
@@ -71,7 +91,7 @@ Import from the barrel — `@open-lakehouse/unity-catalog-client`:
   `just generate-openapi`) via `openapi-typescript`.
 - `bun run gen:form-schemas` — regenerate the RJSF form schemas from this repo's
   UC proto. These are presentational assets, so the script writes them into the
-  sibling `@open-lakehouse/unity-catalog` package's `src/forms/schemas/`.
+  sibling `@open-lakehouse/unity-catalog-ui` package's `src/forms/schemas/`.
 
 > These types are generated from mangrove's own canonical spec, so they stay in
 > sync with the running server. Regeneration is wired into `just generate-openapi`
@@ -80,8 +100,31 @@ Import from the barrel — `@open-lakehouse/unity-catalog-client`:
 > derived from their carrying fields in `uc-types.ts` because gnostic inlines enum
 > values rather than emitting named component schemas.
 
-## Distribution
+## Install
 
-Source-only workspace package (`exports` → `src/index.ts`). React and the
-TanStack query lib are peer dependencies (singleton cache/context, provided by
-the host). Consumed via `file:` links during the current evaluation phase.
+Published to **GitHub Packages**. Point the `@open-lakehouse` scope at it in
+`.npmrc`:
+
+```ini
+@open-lakehouse:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+```bash
+# framework-free client (browsers, Node ≥ 18, Bun, Deno)
+bun add @open-lakehouse/unity-catalog-client
+# React hosts using ./react also need its peers
+bun add @open-lakehouse/unity-catalog-client @tanstack/react-query openapi-react-query react react-dom
+```
+
+GitHub Packages needs a token even to read. In GitHub Actions, the job's
+`GITHUB_TOKEN` works (`permissions: packages: read`) once the consuming
+repository has been granted read access in the package's settings. Elsewhere,
+use a token with `read:packages`. Release tarballs carry a build-provenance
+attestation (`gh attestation verify <file> -R open-lakehouse/mangrove`).
+
+The package ships ESM (`dist/`, with declarations and source maps). Inside this
+workspace, consumers resolve the `source` export condition straight to `src/`
+instead (Vite `resolve.conditions` / TS `customConditions`), so no build step is
+needed for local development. The `VITE_API_URL` default base URL only applies
+when the host is built with Vite; pass `baseUrl` explicitly elsewhere.

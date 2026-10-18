@@ -23,7 +23,7 @@ outside.
 
 ## Consumers
 
-- `@open-lakehouse/unity-catalog`: the upcoming **table-preview** surface renders
+- `@open-lakehouse/unity-catalog-ui`: the upcoming **table-preview** surface renders
   query results through `<DataGrid>`. It builds an `ArrowResultStore` from the
   data it fetches and hands it to the grid.
 - hydrofoil's `@open-lakehouse/ui` (SQL editor result pane, import preview) also
@@ -47,7 +47,7 @@ query/transport concerns here.
 ## Boundary rule (enforced)
 
 `data-grid` is a leaf: a Biome `noRestrictedImports` rule in `node/biome.json`
-forbids it from importing `@open-lakehouse/unity-catalog`. The dependency
+forbids it from importing `@open-lakehouse/unity-catalog-ui`. The dependency
 direction is the invariant: the Unity Catalog package may build on `data-grid`;
 `data-grid` never builds on it. The "barrel-only" guarantee is native — the
 package `exports` map reaches only `src/index.ts`.

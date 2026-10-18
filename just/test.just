@@ -12,16 +12,6 @@ AZURITE_ACCOUNT := "devstoreaccount1"
 AZURITE_KEY_A := "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq"
 AZURITE_KEY_B := "/K1SZFPTOtr/KBHBeksoGMGw=="
 
-# validate code examples type-check and docs build successfully
-[group('test')]
-[no-cd]
-validate-examples:
-    cargo check -p unitycatalog-examples
-    uvx ty check examples/python/
-    bun run --filter @unitycatalog/client build
-    bunx tsc --noEmit -p examples/typescript/tsconfig.json
-    bun run --filter docs build
-
 # Regenerate with `just codegen sync-server-openapi`. The path is duplicated from
 # `codegen`'s SERVER_OPENAPI_DIR — modules cannot share variables, so keep the two
 # in sync by hand.

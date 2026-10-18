@@ -1,0 +1,46 @@
+# A placeholder crate that lets release-plz version and release the npm package
+# @open-lakehouse/unity-catalog-client alongside the Rust crates (the same
+# pattern as trestle's `trestle-diagram`). release-plz only understands Cargo
+# packages and decides a package has changed from the files `cargo package
+# --list` reports, so `include` lists exactly the sources that end up in the npm
+# tarball (tests excluded).
+#
+# It is never published to crates.io (`publish = false`, and `git_only` in
+# release-plz.toml). Its `version` is the npm package's version: release-plz
+# bumps it from conventional commits, writes CHANGELOG.md, and tags
+# `unity-catalog-client-v<version>`; release-plz.yml then hands the release to
+# js-release.yaml, which stamps that version into package.json and publishes to
+# GitHub Packages. package.json stays at 0.0.0 in git.
+#
+# src/uc-api.d.ts is generated from ../../openapi/openapi.yaml (outside this
+# directory, so Cargo can't include it), which means a spec change releases the
+# package through the regenerated, committed uc-api.d.ts.
+
+[package]
+name = "unity-catalog-client"
+version = "0.0.1"
+description = "Release placeholder for the @open-lakehouse/unity-catalog-client npm package"
+publish = false
+readme = "README.md"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+include = [
+  "/Cargo.toml",
+  "/release.rs",
+  "/package.json",
+  "/README.md",
+  "/env.d.ts",
+  "/tsconfig.json",
+  "/tsconfig.build.json",
+  "/src/**",
+  "!/src/**/*.test.ts",
+]
+
+[lib]
+path = "release.rs"

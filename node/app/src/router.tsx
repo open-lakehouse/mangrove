@@ -1,9 +1,9 @@
+import { prefetchCatalogs } from "@open-lakehouse/unity-catalog-client/react";
 import {
   CatalogExplorer,
   ExternalDataPage,
   type StorageKind,
-} from "@open-lakehouse/unity-catalog";
-import { prefetchCatalogs } from "@open-lakehouse/unity-catalog-client";
+} from "@open-lakehouse/unity-catalog-ui";
 import type { QueryClient } from "@tanstack/react-query";
 import {
   createRootRouteWithContext,

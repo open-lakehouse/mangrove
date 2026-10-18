@@ -1,5 +1,6 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
+  "root": false,
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
   "extends": "//",
   "files": {
     "includes": [
@@ -7,14 +8,14 @@
       "!**/dist/**/*",
       "!**/node_modules/**/*",
       "!**/unity-catalog-client/src/uc-api.d.ts",
-      "!**/unity-catalog/src/forms/schemas/**/*",
+      "!**/unity-catalog-ui/src/forms/schemas/**/*",
       "!**/query/src/gen/**/*",
       "!**/files-connect/src/gen/**/*"
     ]
   },
   "linter": {
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
         "noExplicitAny": "warn"
       },
@@ -49,7 +50,7 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@open-lakehouse/unity-catalog"],
+                    "group": ["@open-lakehouse/unity-catalog-ui"],
                     "message": "data-grid is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on data-grid, never the reverse."
                   }
                 ]
@@ -69,7 +70,7 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@open-lakehouse/unity-catalog"],
+                    "group": ["@open-lakehouse/unity-catalog-ui"],
                     "message": "query is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on query, never the reverse."
                   }
                 ]
@@ -89,7 +90,7 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@open-lakehouse/unity-catalog"],
+                    "group": ["@open-lakehouse/unity-catalog-ui"],
                     "message": "query-wasm implements the @open-lakehouse/query runner contract and must not import Unity Catalog UI: the app composes them, never the packages themselves."
                   }
                 ]
@@ -109,7 +110,7 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@open-lakehouse/unity-catalog"],
+                    "group": ["@open-lakehouse/unity-catalog-ui"],
                     "message": "files-wasm implements the @open-lakehouse/files runner contract and must not import Unity Catalog UI: the app composes them, never the packages themselves."
                   }
                 ]
@@ -129,7 +130,7 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@open-lakehouse/unity-catalog"],
+                    "group": ["@open-lakehouse/unity-catalog-ui"],
                     "message": "files-connect is the write-capable ConnectRPC surface for the @open-lakehouse/files seam and must not import Unity Catalog UI: the app composes them, never the packages themselves."
                   }
                 ]
@@ -149,7 +150,7 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@open-lakehouse/unity-catalog"],
+                    "group": ["@open-lakehouse/unity-catalog-ui"],
                     "message": "log-query is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on log-query (renders a Delta-log tab), never the reverse."
                   }
                 ]
@@ -169,7 +170,7 @@
               "options": {
                 "patterns": [
                   {
-                    "group": ["@open-lakehouse/unity-catalog"],
+                    "group": ["@open-lakehouse/unity-catalog-ui"],
                     "message": "files is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on files (renders a volume Files tab), never the reverse."
                   }
                 ]
@@ -190,7 +191,7 @@
                 "patterns": [
                   {
                     "group": [
-                      "@open-lakehouse/unity-catalog",
+                      "@open-lakehouse/unity-catalog-ui",
                       "@open-lakehouse/query",
                       "@open-lakehouse/data-grid"
                     ],

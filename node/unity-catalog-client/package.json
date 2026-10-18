@@ -1,36 +1,77 @@
 {
   "name": "@open-lakehouse/unity-catalog-client",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0",
   "type": "module",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "source": "./src/react.ts",
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
     },
     "./package.json": "./package.json"
   },
   "scripts": {
     "gen:api": "openapi-typescript ../../openapi/openapi.yaml -o src/uc-api.d.ts",
-    "gen:form-schemas": "node scripts/gen-form-schemas.mjs"
+    "gen:form-schemas": "node scripts/gen-form-schemas.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp src/uc-api.d.ts dist/uc-api.d.ts",
+    "prepack": "bun run build"
   },
   "dependencies": {
-    "openapi-fetch": "^0.17.0",
-    "openapi-react-query": "^0.5.4"
+    "openapi-fetch": "^0.17.0"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.100.14",
+    "openapi-react-query": "^0.5.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
-    "@tanstack/react-query": "^5.100.14",
-    "@types/react": "^19.2.15",
-    "@types/react-dom": "^19.2.3",
+    "@tanstack/react-query": "^5.104.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "openapi-react-query": "^0.5.4",
     "openapi-typescript": "^7.13.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "typescript": "^5",
-    "vite": "^7.0.0"
-  }
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.4"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "openapi-react-query": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "description": "Typed Unity Catalog REST client (framework-free) with React-Query hooks under ./react.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-lakehouse/mangrove.git",
+    "directory": "node/unity-catalog-client"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false
 }

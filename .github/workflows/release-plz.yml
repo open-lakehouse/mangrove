@@ -19,6 +19,11 @@ name: Release-plz
 # had their one-time token bootstrap publish (.github/workflows/bootstrap-
 # publish.yml) and are versioned/tagged but not published here. See CONTRIBUTING.md.
 #
+# The npm packages ride along the same way: release-plz versions them through
+# crates (node/client is the NAPI extension, node/unity-catalog-client a
+# placeholder), and when this run releases one, the `npm` job (a workflow_call
+# into js-release.yaml) publishes it to GitHub Packages.
+#
 # See release-plz.toml; CONTRIBUTING.md has the full flow.
 
 on:
@@ -54,7 +59,7 @@ jobs:
           # Matches the rest of CI; stays above the 1.95.0 workspace floor.
           toolchain: "1.97"
       - name: Run release-plz (release-pr)
-        uses: release-plz/action@e8792575c7f2366cf6ff3ccc33ead9ace5b691c7 # v0.5.130
+        uses: release-plz/action@8921286633dfa0c4020f7f30bd1c14fe19cbb10e # v0.5.142
         with:
           command: release-pr
         env:
@@ -97,6 +102,10 @@ jobs:
       # these.
       files_api_version: ${{ steps.files_api.outputs.version }}
       files_api_tag: ${{ steps.files_api.outputs.tag }}
+      # The npm-package crates (unity-catalog-node, unity-catalog-client)
+      # released this run, as a JSON array of release entries ("[]" if none) —
+      # the `npm` job keys off this.
+      npm_releases: ${{ steps.npm.outputs.releases }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -109,7 +118,7 @@ jobs:
       # (`id-token: write`). Crates with `release = false` are skipped.
       - name: Run release-plz (release)
         id: release
-        uses: release-plz/action@e8792575c7f2366cf6ff3ccc33ead9ace5b691c7 # v0.5.130
+        uses: release-plz/action@8921286633dfa0c4020f7f30bd1c14fe19cbb10e # v0.5.142
         with:
           command: release
         env:
@@ -177,6 +186,33 @@ jobs:
           else
             echo "Files-api not released this run — Docker build skipped."
           fi
+
+      # The npm packages are versioned through crates (see release-plz.toml):
+      # collect the ones released this run for the `npm` job.
+      - name: Detect npm package releases
+        id: npm
+        env:
+          RELEASES: ${{ steps.release.outputs.releases }}
+        run: |
+          releases=$(printf '%s' "${RELEASES:-[]}" \
+            | jq -c '[.[] | select(.package_name == "unity-catalog-node" or .package_name == "unity-catalog-client")]')
+          echo "npm packages released this run: $releases"
+          echo "releases=$releases" >> "$GITHUB_OUTPUT"
+
+  # --- Publish the released npm packages to GitHub Packages ---
+  npm:
+    name: npm release
+    needs: release-plz-release
+    if: ${{ needs.release-plz-release.outputs.npm_releases != '' && needs.release-plz-release.outputs.npm_releases != '[]' }}
+    permissions:
+      # The called workflow's jobs may request at most what is granted here.
+      contents: write # attach tarballs to the GitHub Releases
+      packages: write # publish to GitHub Packages
+      id-token: write # build-provenance attestation
+      attestations: write # build-provenance attestation
+    uses: ./.github/workflows/js-release.yaml
+    with:
+      releases: ${{ needs.release-plz-release.outputs.npm_releases }}
 
   # --- Build + push the server (mangrove) Docker image, iff it was released ---
   docker:

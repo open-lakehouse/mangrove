@@ -41,6 +41,5 @@ declare module "query-wasm-pkg" {
   }
 
   /** wasm-bindgen module init (fetches + instantiates the .wasm). */
-  // biome-ignore lint/style/noDefaultExport: mirrors wasm-bindgen's generated module shape.
   export default function init(input?: unknown): Promise<unknown>;
 }

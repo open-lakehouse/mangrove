@@ -4,29 +4,41 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": { "types": "./src/index.ts", "import": "./src/index.ts" },
-    "./session": { "types": "./src/session.ts", "import": "./src/session.ts" },
-    "./fixtures": { "types": "./src/fixtures.ts", "import": "./src/fixtures.ts" }
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./session": {
+      "types": "./src/session.ts",
+      "import": "./src/session.ts"
+    },
+    "./fixtures": {
+      "types": "./src/fixtures.ts",
+      "import": "./src/fixtures.ts"
+    }
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "@open-lakehouse/ui-kit": "^0.1.0",
-    "dompurify": "^3.2.7",
-    "dt-sql-parser": "^4.5.0",
-    "lucide-react": "^1.17.0",
-    "marked": "^18.0.5",
-    "monaco-editor": "0.52.2",
-    "monaco-sql-languages": "^1.1.0"
+    "dompurify": "^3.4.16",
+    "dt-sql-parser": "^4.5.1",
+    "lucide-react": "^1.55.0",
+    "marked": "^18.1.0",
+    "monaco-editor": "0.54.0",
+    "monaco-sql-languages": "1.2.1"
   },
   "peerDependencies": {
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
-    "@types/react": "^19.2.15",
-    "@types/react-dom": "^19.2.3",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "typescript": "^5"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^6.0.3"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
   }
 }

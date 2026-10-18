@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/*", "python/client", "node/client"]
+members = ["crates/*", "python/client", "node/client", "node/unity-catalog-client"]
 # This is the NATIVE workspace. The in-browser query engine lives in its OWN
 # standalone workspace under `wasm/` (`wasm/query-wasm` + `wasm/olai-delta-df`),
 # NOT here — see `wasm/Cargo.toml` and #182. The wasm workspace owns the
