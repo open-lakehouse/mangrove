@@ -81,6 +81,8 @@ it as shadcn blocks that copy its files in (see its `DESIGN.md`).
 
 Every UI package's `DESIGN.md` is its consumer contract: peers, the host setup
 (tokens + Tailwind `@source`), its seams, a usage example, and do/don't rules.
+How the packages compose across services (state, seams, extensions) is in
+[`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ## Theming
 
