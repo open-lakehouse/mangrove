@@ -3961,7 +3961,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-client"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "buffa",
  "bytes",
@@ -3992,7 +3992,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-common"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -4077,7 +4077,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-files-api"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "async-trait",
  "axum",
@@ -4117,7 +4117,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-object-store"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "async-trait",
  "chrono",
@@ -4143,7 +4143,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-postgres"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4163,7 +4163,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-server"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "async-trait",
  "axum",
@@ -4258,7 +4258,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-sqlite"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4278,7 +4278,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-storage-proxy"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "async-trait",
  "axum",
@@ -6673,11 +6673,11 @@ checksum = "1fc81956842c57dac11422a97c3b8195a1ff727f06e85c84ed2e8aa277c9a0fd"
 
 [[package]]
 name = "unity-catalog-client"
-version = "0.0.1"
+version = "0.0.2"
 
 [[package]]
 name = "unity-catalog-node"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "buffa",
  "env_logger 0.11.11",
