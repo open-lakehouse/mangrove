@@ -4129,6 +4129,7 @@ dependencies = [
  "olai-http-wasm",
  "olai-uc-client",
  "olai-uc-common",
+ "percent-encoding",
  "reqwest 0.12.28",
  "send_wrapper",
  "serde",

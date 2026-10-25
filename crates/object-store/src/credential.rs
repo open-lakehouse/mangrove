@@ -228,19 +228,7 @@ pub(super) fn as_azure(cred: &TemporaryCredential) -> Result<TemporaryToken<Arc<
         .ok_or(crate::Error::NoCredential)?
     {
         AzureAad(token) => AzureCredential::BearerToken(token.aad_token.clone()),
-        AzureUserDelegationSas(sas) => {
-            // SAS tokens are query-string fragments (`k1=v1&k2=v2&...`).
-            // `object_store` wants them as a `Vec<(String, String)>`.
-            let pairs = sas.sas_token.split('&');
-            let mut map = Vec::new();
-            for pair in pairs {
-                let mut parts = pair.split('=');
-                if let (Some(key), Some(value)) = (parts.next(), parts.next()) {
-                    map.push((key.to_string(), value.to_string()));
-                }
-            }
-            AzureCredential::SASToken(map)
-        }
+        AzureUserDelegationSas(sas) => AzureCredential::SASToken(split_sas(&sas.sas_token)?),
         _ => return Err(crate::Error::credential_mismatch("Expected Azure credential.").into()),
     };
 
@@ -248,6 +236,30 @@ pub(super) fn as_azure(cred: &TemporaryCredential) -> Result<TemporaryToken<Arc<
         token: Arc::new(az_cred),
         expiry: get_expiry(cred)?,
     })
+}
+
+/// Split a SAS query string (`k1=v1&k2=v2&…`) into **decoded** `(key, value)`
+/// pairs for [`AzureCredential::SASToken`].
+///
+/// Mirrors object_store's own `split_sas` (behind `AzureConfigKey::SasKey`).
+/// Unity Catalog vends the token URL-encoded (`sig=…%2B…%3D`), and object_store
+/// re-encodes `SASToken` pairs when appending them to each request — so they
+/// must be decoded here, or the signature goes out double-encoded (`%252B`) and
+/// Azure rejects it.
+fn split_sas(sas: &str) -> Result<Vec<(String, String)>> {
+    let sas = percent_encoding::percent_decode_str(sas)
+        .decode_utf8()
+        .map_err(|e| Error::credential_mismatch(format!("invalid SAS token encoding: {e}")))?;
+    sas.trim_start_matches('?')
+        .split('&')
+        .filter(|pair| !pair.trim().is_empty())
+        .map(|pair| {
+            pair.trim()
+                .split_once('=')
+                .map(|(key, value)| (key.to_string(), value.to_string()))
+                .ok_or_else(|| Error::credential_mismatch("malformed SAS token component").into())
+        })
+        .collect()
 }
 
 /// Map an empty string to `None`, otherwise `Some(clone)`. An empty AWS session
@@ -325,10 +337,184 @@ pub(super) fn aws_access_point(cred: &TemporaryCredential) -> Option<String> {
     }
 }
 
+/// Translate the vended `expiration_time` (epoch millis) into a cache expiry.
+///
+/// Servers that do not vend an expiry (OSS Unity Catalog returns `null`) surface
+/// as the proto default `0`. Treat any non-positive value as "no expiry" so the
+/// [`TokenCache`] keeps the credential — reading it as the Unix epoch would mark
+/// it already expired and re-vend on every single request.
 fn get_expiry(cred: &TemporaryCredential) -> Result<Option<Instant>> {
+    if cred.expiration_time <= 0 {
+        return Ok(None);
+    }
     let expiry = DateTime::from_timestamp_millis(cred.expiration_time)
         .ok_or(Error::credential_mismatch("Invalid expiration time"))?;
     let ttl = (expiry - Utc::now()).to_std().unwrap_or_default();
 
     Ok(Some(Instant::now() + ttl))
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod tests {
+    use object_store::ObjectStoreExt;
+    use object_store::azure::MicrosoftAzureBuilder;
+    use object_store::path::Path;
+    use unitycatalog_common::models::temporary_credentials::v1::AwsTemporaryCredentials;
+    use url::Url;
+
+    use super::*;
+
+    fn now_epoch_millis() -> i64 {
+        Utc::now().timestamp_millis()
+    }
+
+    fn aws_credential(expiration_time: i64) -> TemporaryCredential {
+        TemporaryCredential {
+            expiration_time,
+            url: "s3://bucket/prefix/".to_string(),
+            credentials: Some(
+                AwsTemporaryCredentials {
+                    access_key_id: "ak".to_string(),
+                    secret_access_key: "sk".to_string(),
+                    session_token: "st".to_string(),
+                    ..Default::default()
+                }
+                .into(),
+            ),
+            ..Default::default()
+        }
+    }
+
+    /// A provider bound to a path securable whose refreshes go to `server`.
+    async fn aws_provider(
+        server: &mockito::Server,
+        seed: &TemporaryCredential,
+    ) -> UCCredentialProvider<AwsCredential> {
+        let base = Url::parse(&format!("{}/api/2.1/unity-catalog/", server.url())).unwrap();
+        let client = TemporaryCredentialClient::new_with_url(
+            olai_http::CloudClient::new_unauthenticated(),
+            base,
+        );
+        let securable = SecurableRef::Path(
+            Url::parse("s3://bucket/prefix/").unwrap(),
+            PathOperation::Read,
+            Some(false),
+        );
+        new_aws(client, seed, securable).await.unwrap()
+    }
+
+    /// A credential vended without an expiry (OSS UC sends `null` → `0`) is
+    /// served from the cache instead of being re-vended on every request.
+    #[tokio::test]
+    async fn missing_expiry_does_not_revend() {
+        let mut server = mockito::Server::new_async().await;
+        let vend = server
+            .mock("POST", "/api/2.1/unity-catalog/temporary-path-credentials")
+            .expect(0)
+            .create_async()
+            .await;
+
+        let provider = aws_provider(&server, &aws_credential(0)).await;
+        for _ in 0..3 {
+            let cred = provider.get_credential().await.unwrap();
+            assert_eq!(cred.key_id, "ak");
+        }
+
+        vend.assert_async().await;
+    }
+
+    /// An expired credential is re-vended for the same securable.
+    #[tokio::test]
+    async fn expired_credential_revends() {
+        let mut server = mockito::Server::new_async().await;
+        let fresh = format!(
+            r#"{{"expiration_time":{},"url":"s3://bucket/prefix/","aws_temp_credentials":{{"access_key_id":"ak2","secret_access_key":"sk2","session_token":"st2"}}}}"#,
+            now_epoch_millis() + 3_600_000
+        );
+        let vend = server
+            .mock("POST", "/api/2.1/unity-catalog/temporary-path-credentials")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(fresh)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let provider = aws_provider(&server, &aws_credential(now_epoch_millis() - 1_000)).await;
+        // The first call refreshes; the second is served from the fresh cache entry.
+        for _ in 0..2 {
+            let cred = provider.get_credential().await.unwrap();
+            assert_eq!(cred.key_id, "ak2");
+        }
+
+        vend.assert_async().await;
+    }
+
+    #[test]
+    fn split_sas_decodes_pairs() {
+        let pairs = split_sas("?sv=2021-08-06&sp=rl&&sig=ab%2Bcd%2Fef%3D").unwrap();
+        assert_eq!(
+            pairs,
+            vec![
+                ("sv".to_string(), "2021-08-06".to_string()),
+                ("sp".to_string(), "rl".to_string()),
+                ("sig".to_string(), "ab+cd/ef=".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn split_sas_rejects_malformed_component() {
+        assert!(split_sas("sv=2021-08-06&garbage").is_err());
+    }
+
+    /// The vended (URL-encoded) signature reaches Azure encoded exactly once.
+    #[tokio::test]
+    async fn azure_sas_signature_is_not_double_encoded() {
+        use unitycatalog_common::models::temporary_credentials::v1::AzureUserDelegationSas;
+
+        let mut server = mockito::Server::new_async().await;
+        // `UrlEncoded` matches the *decoded* value: a double-encoded `%252B`
+        // would decode to `%2B` and miss.
+        let get = server
+            .mock("GET", mockito::Matcher::Any)
+            .match_query(mockito::Matcher::UrlEncoded(
+                "sig".to_string(),
+                "ab+cd/ef=".to_string(),
+            ))
+            .with_status(404)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let credential = TemporaryCredential {
+            expiration_time: now_epoch_millis() + 3_600_000,
+            url: "abfss://container@account.dfs.core.windows.net/prefix/".to_string(),
+            credentials: Some(
+                AzureUserDelegationSas {
+                    sas_token: "sv=2021-08-06&sp=rl&sig=ab%2Bcd%2Fef%3D".to_string(),
+                    ..Default::default()
+                }
+                .into(),
+            ),
+            ..Default::default()
+        };
+        let token = Arc::try_unwrap(as_azure(&credential).unwrap().token).unwrap();
+        let store = MicrosoftAzureBuilder::new()
+            .with_account("account")
+            .with_container_name("container")
+            .with_endpoint(server.url())
+            .with_allow_http(true)
+            .with_retry(object_store::RetryConfig {
+                max_retries: 0,
+                ..Default::default()
+            })
+            .with_credentials(Arc::new(object_store::StaticCredentialProvider::new(token)))
+            .build()
+            .unwrap();
+
+        let _ = store.get(&Path::from("prefix/file")).await;
+
+        get.assert_async().await;
+    }
 }

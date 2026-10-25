@@ -39,7 +39,7 @@ also accepted for compatibility with existing credential-vending samples.
 ## Rust quickstart
 
 ```rust
-use unitycatalog_object_store::{Operation, UnityObjectStoreFactory};
+use unitycatalog_object_store::{Operation, UnityObjectStoreFactory, UnityObjectStoreFactoryBuilder};
 
 let factory = UnityObjectStoreFactory::builder()
     .with_uri("https://<workspace>/api/2.1/unity-catalog/")
@@ -56,6 +56,33 @@ let store = factory
 // paths inside the volume.
 let object = store.as_dyn().get(&"file.parquet".into()).await?;
 ```
+
+### Authentication
+
+`with_token` covers personal access tokens. For everything else, pass
+Databricks auth options (resolved by `olai-http`'s Databricks credential
+chain) or read them from the environment:
+
+```rust
+// OAuth M2M with a service principal; the workspace host defaults to the
+// origin of the UC URI.
+let factory = UnityObjectStoreFactory::builder()
+    .with_uri("https://<workspace>/api/2.1/unity-catalog/")
+    .with_options([
+        ("databricks_client_id", client_id),
+        ("databricks_client_secret", client_secret),
+    ])
+    .build()
+    .await?;
+
+// Or: every `DATABRICKS_*` variable, with the UC URI derived from
+// `DATABRICKS_HOST`.
+let factory = UnityObjectStoreFactoryBuilder::from_env().build().await?;
+```
+
+Supported flows include PAT, OAuth M2M, OIDC token from an env var or file
+(workload identity federation), Azure managed identity, and GCP token
+exchange. An explicit `with_token` takes precedence over the options.
 
 ### DataFusion
 
