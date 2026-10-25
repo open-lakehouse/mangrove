@@ -971,23 +971,8 @@ impl UnityObjectStoreFactory {
             let access_point = aws_access_point(&credential);
             let provider = new_aws(self.creds.clone(), &credential, securable).await?;
             let url = Url::parse(&credential.url).map_err(Error::from)?;
-            let mut builder = AmazonS3Builder::new()
-                .with_url(url.to_string())
+            let mut builder = s3_builder(&url, self.aws_region.clone(), access_point)?
                 .with_credentials(Arc::new(provider));
-            // Prefer an explicit override; otherwise honour `AWS_REGION`
-            // before falling back to the object_store default.
-            if let Some(region) = self
-                .aws_region
-                .clone()
-                .or_else(|| std::env::var("AWS_REGION").ok())
-            {
-                builder = builder.with_region(region);
-            }
-            // Where the server returns an S3 access-point ARN, use it as the
-            // bucket so SigV4 signatures match what STS authorised.
-            if let Some(ap) = access_point {
-                builder = builder.with_bucket_name(ap);
-            }
             if let Some(handle) = &self.io_handle {
                 builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
             }
@@ -1238,15 +1223,8 @@ pub fn store_from_vended_credential(
     } else if as_aws(credential).is_ok() {
         let access_point = aws_access_point(credential);
         let token = as_aws(credential)?.token;
-        let mut builder = AmazonS3Builder::new()
-            .with_url(url.to_string())
+        let mut builder = s3_builder(&url, aws_region, access_point)?
             .with_credentials(Arc::new(StaticArcProvider(token)));
-        if let Some(region) = aws_region.or_else(|| std::env::var("AWS_REGION").ok()) {
-            builder = builder.with_region(region);
-        }
-        if let Some(ap) = access_point {
-            builder = builder.with_bucket_name(ap);
-        }
         if let Some(handle) = &io_handle {
             builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
         }
@@ -1268,6 +1246,48 @@ pub fn store_from_vended_credential(
     };
 
     Ok(UCStore { root, url, path })
+}
+
+/// Start an [`AmazonS3Builder`] for a vended S3-compatible storage URL.
+///
+/// Cloudflare R2 locations arrive as
+/// `r2://<bucket>@<account>.r2.cloudflarestorage.com/<path>`, a scheme
+/// object_store does not parse, so the bucket, the account endpoint
+/// (`https://<account>.r2.cloudflarestorage.com`) and R2's `auto` region are
+/// set explicitly — an AWS region override must not clobber the latter.
+///
+/// For S3 the region is `aws_region`, else `AWS_REGION`, else the object_store
+/// default. Where the server returns an S3 access-point ARN, it is used as the
+/// bucket so SigV4 signatures match what STS authorised.
+#[cfg(not(target_arch = "wasm32"))]
+fn s3_builder(
+    url: &Url,
+    aws_region: Option<String>,
+    access_point: Option<String>,
+) -> Result<AmazonS3Builder> {
+    if url.scheme() == "r2" {
+        let bucket = url.username();
+        let host = url.host_str().unwrap_or_default();
+        if bucket.is_empty() || !host.ends_with(".r2.cloudflarestorage.com") {
+            return Err(Error::invalid_url(format!(
+                "expected r2://<bucket>@<account>.r2.cloudflarestorage.com/..., got {url}"
+            ))
+            .into());
+        }
+        return Ok(AmazonS3Builder::new()
+            .with_bucket_name(bucket)
+            .with_endpoint(format!("https://{host}"))
+            .with_region("auto"));
+    }
+
+    let mut builder = AmazonS3Builder::new().with_url(url.to_string());
+    if let Some(region) = aws_region.or_else(|| std::env::var("AWS_REGION").ok()) {
+        builder = builder.with_region(region);
+    }
+    if let Some(ap) = access_point {
+        builder = builder.with_bucket_name(ap);
+    }
+    Ok(builder)
 }
 
 /// wasm has no local filesystem; a `file://` reference is unsupported.
@@ -1706,6 +1726,70 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_millis() as i64
+    }
+
+    /// R2 locations are rewritten to the R2 endpoint form, keep the `auto`
+    /// region despite an AWS region override, and scope the prefix to the path.
+    #[test]
+    fn s3_builder_rewrites_r2_urls() {
+        use object_store::aws::AmazonS3ConfigKey;
+
+        let url = Url::parse("r2://my-bucket@acct123.r2.cloudflarestorage.com/tables/t1/").unwrap();
+        let builder = s3_builder(&url, Some("eu-west-1".to_string()), None).unwrap();
+        assert_eq!(
+            builder
+                .get_config_value(&AmazonS3ConfigKey::Endpoint)
+                .as_deref(),
+            Some("https://acct123.r2.cloudflarestorage.com")
+        );
+        assert_eq!(
+            builder
+                .get_config_value(&AmazonS3ConfigKey::Bucket)
+                .as_deref(),
+            Some("my-bucket")
+        );
+        assert_eq!(
+            builder
+                .get_config_value(&AmazonS3ConfigKey::Region)
+                .as_deref(),
+            Some("auto")
+        );
+        // `build_store` derives the prefix from the vended URL's path.
+        assert_eq!(
+            Path::from_url_path(url.path()).unwrap(),
+            Path::from("tables/t1")
+        );
+    }
+
+    #[test]
+    fn s3_builder_rejects_r2_url_without_bucket() {
+        let url = Url::parse("r2://acct123.r2.cloudflarestorage.com/tables/").unwrap();
+        assert!(s3_builder(&url, None, None).is_err());
+    }
+
+    #[test]
+    fn s3_builder_applies_region_and_access_point() {
+        use object_store::aws::AmazonS3ConfigKey;
+
+        let url = Url::parse("s3://bucket/prefix/").unwrap();
+        let builder = s3_builder(
+            &url,
+            Some("eu-north-1".to_string()),
+            Some("arn:aws:s3:eu-north-1:123:accesspoint/ap".to_string()),
+        )
+        .unwrap();
+        assert_eq!(
+            builder
+                .get_config_value(&AmazonS3ConfigKey::Region)
+                .as_deref(),
+            Some("eu-north-1")
+        );
+        assert_eq!(
+            builder
+                .get_config_value(&AmazonS3ConfigKey::Bucket)
+                .as_deref(),
+            Some("arn:aws:s3:eu-north-1:123:accesspoint/ap")
+        );
     }
 
     // ---- Databricks auth options -------------------------------------------
