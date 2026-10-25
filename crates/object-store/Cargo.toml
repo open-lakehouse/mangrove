@@ -31,6 +31,8 @@ futures = { workspace = true }
 # by the same-origin storage byte-proxy client (`proxy.rs`). It is `["cloud"]`
 # under the hood — already pulled in by azure/aws/gcp on native, so additive.
 object_store = { workspace = true, features = ["http"] }
+# Decodes vended Azure SAS tokens (see `credential::split_sas`).
+percent-encoding = "2.3"
 thiserror = { workspace = true }
 url = { workspace = true }
 uuid = { workspace = true }
