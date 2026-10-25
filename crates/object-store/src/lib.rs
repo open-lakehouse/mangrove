@@ -133,7 +133,7 @@ impl HttpService for ForwardedHeaderService {
 }
 
 /// Builder for [`UnityObjectStoreFactory`].
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct UnityObjectStoreFactoryBuilder {
     /// Base URL of the Unity Catalog REST API
     /// (e.g. `https://<workspace>.cloud.databricks.com/api/2.1/unity-catalog/`).
@@ -154,6 +154,20 @@ pub struct UnityObjectStoreFactoryBuilder {
     /// [`with_io_runtime`]: UnityObjectStoreFactoryBuilder::with_io_runtime
     #[cfg(not(target_arch = "wasm32"))]
     io_handle: Option<Handle>,
+}
+
+// Manual `Debug`: the token is a secret.
+impl std::fmt::Debug for UnityObjectStoreFactoryBuilder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = f.debug_struct("UnityObjectStoreFactoryBuilder");
+        s.field("uri", &self.uri)
+            .field("token", &self.token.as_ref().map(|_| "***"))
+            .field("allow_unauthenticated", &self.allow_unauthenticated)
+            .field("aws_region", &self.aws_region);
+        #[cfg(not(target_arch = "wasm32"))]
+        s.field("io_handle", &self.io_handle);
+        s.finish()
+    }
 }
 
 impl UnityObjectStoreFactoryBuilder {
@@ -1585,6 +1599,16 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_millis() as i64
+    }
+
+    /// The builder's `Debug` never prints the token.
+    #[test]
+    fn builder_debug_redacts_token() {
+        let builder = UnityObjectStoreFactory::builder()
+            .with_uri("https://example.cloud.databricks.com/api/2.1/unity-catalog/")
+            .with_token("super-secret-token".to_string());
+        let debug = format!("{builder:?}");
+        assert!(!debug.contains("super-secret"), "secret leaked: {debug}");
     }
 
     // ---- forwarded-identity header forwarding ------------------------------
