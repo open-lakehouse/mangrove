@@ -154,9 +154,15 @@ pub struct UnityObjectStoreFactoryBuilder {
     /// [`with_io_runtime`]: UnityObjectStoreFactoryBuilder::with_io_runtime
     #[cfg(not(target_arch = "wasm32"))]
     io_handle: Option<Handle>,
+    /// Databricks authentication options (`databricks_client_id`, …), resolved
+    /// by `olai_http`'s Databricks credential chain. See [`with_option`].
+    ///
+    /// [`with_option`]: UnityObjectStoreFactoryBuilder::with_option
+    #[cfg(not(target_arch = "wasm32"))]
+    auth_options: Vec<(String, String)>,
 }
 
-// Manual `Debug`: the token is a secret.
+// Manual `Debug`: the token and auth option values are secrets.
 impl std::fmt::Debug for UnityObjectStoreFactoryBuilder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut s = f.debug_struct("UnityObjectStoreFactoryBuilder");
@@ -165,7 +171,14 @@ impl std::fmt::Debug for UnityObjectStoreFactoryBuilder {
             .field("allow_unauthenticated", &self.allow_unauthenticated)
             .field("aws_region", &self.aws_region);
         #[cfg(not(target_arch = "wasm32"))]
-        s.field("io_handle", &self.io_handle);
+        s.field("io_handle", &self.io_handle).field(
+            "auth_options",
+            &self
+                .auth_options
+                .iter()
+                .map(|(key, _)| key.as_str())
+                .collect::<Vec<_>>(),
+        );
         s.finish()
     }
 }
@@ -173,6 +186,73 @@ impl std::fmt::Debug for UnityObjectStoreFactoryBuilder {
 impl UnityObjectStoreFactoryBuilder {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Create a builder configured from the environment.
+    ///
+    /// Every `DATABRICKS_*` variable (plus `GOOGLE_APPLICATION_CREDENTIALS`) is
+    /// collected as an authentication option — see [`with_option`] — and, when
+    /// `DATABRICKS_HOST` is set, the Unity Catalog URI defaults to
+    /// `<host>/api/2.1/unity-catalog/`.
+    ///
+    /// `.databrickscfg` profiles are not read yet.
+    ///
+    /// Not available on `wasm32`: the browser has no process environment.
+    ///
+    /// [`with_option`]: UnityObjectStoreFactoryBuilder::with_option
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn from_env() -> Self {
+        let mut builder = Self::default();
+        for (key, value) in std::env::vars() {
+            if key.starts_with("DATABRICKS_") || key == "GOOGLE_APPLICATION_CREDENTIALS" {
+                builder = builder.with_option(key.to_ascii_lowercase(), value);
+            }
+        }
+        if let Ok(host) = std::env::var("DATABRICKS_HOST") {
+            builder.uri = Some(format!(
+                "{}/api/2.1/unity-catalog/",
+                host.trim_end_matches('/')
+            ));
+        }
+        builder
+    }
+
+    /// Set a Databricks authentication option.
+    ///
+    /// Keys are `olai_http`'s Databricks configuration keys, with or without the
+    /// `databricks_` prefix: `databricks_token`, `databricks_client_id` +
+    /// `databricks_client_secret` (OAuth M2M), `databricks_oidc_token_env` /
+    /// `databricks_oidc_token_filepath` (workload identity federation),
+    /// `databricks_azure_resource_id` (Azure MSI), `databricks_auth_type`, and
+    /// the HTTP client options. Unknown keys are ignored. `databricks_host`
+    /// defaults to the scheme and authority of [`with_uri`].
+    ///
+    /// An explicit [`with_token`] takes precedence over these options.
+    ///
+    /// Not available on `wasm32`, which authenticates with a bearer token or the
+    /// ambient browser session.
+    ///
+    /// [`with_uri`]: UnityObjectStoreFactoryBuilder::with_uri
+    /// [`with_token`]: UnityObjectStoreFactoryBuilder::with_token
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn with_option(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        self.auth_options.push((key.into(), value.into()));
+        self
+    }
+
+    /// Set several Databricks authentication options; see [`with_option`].
+    ///
+    /// [`with_option`]: UnityObjectStoreFactoryBuilder::with_option
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn with_options<I, K, V>(self, options: I) -> Self
+    where
+        I: IntoIterator<Item = (K, V)>,
+        K: Into<String>,
+        V: Into<String>,
+    {
+        options.into_iter().fold(self, |builder, (key, value)| {
+            builder.with_option(key, value)
+        })
     }
 
     /// Set the URI of the Unity Catalog API
@@ -250,7 +330,7 @@ impl UnityObjectStoreFactoryBuilder {
             return Err(Error::invalid_config("missing `uri` for Unity Catalog endpoint").into());
         };
 
-        let transport = self.build_transport()?;
+        let transport = self.build_transport(&url)?;
 
         // On wasm, discover the server's storage-access posture once, up front,
         // so every `for_*` call routes consistently. A discovery failure (older
@@ -279,14 +359,41 @@ impl UnityObjectStoreFactoryBuilder {
 
     /// Build the credential-vending transport for the current target.
     ///
-    /// Native: the `olai-http` cloud client, optionally routed onto the
-    /// dedicated I/O runtime. `wasm32`: the browser Fetch client, carrying a
-    /// bearer token via `with_auth` when one was supplied (otherwise it relies
-    /// on the ambient browser session — cookies / forwarded auth).
+    /// Native: the `olai-http` cloud client — a static bearer token, else the
+    /// Databricks credential chain over the configured auth options, else
+    /// unauthenticated when allowed — optionally routed onto the dedicated I/O
+    /// runtime. `wasm32`: the browser Fetch client, carrying a bearer token via
+    /// `with_auth` when one was supplied (otherwise it relies on the ambient
+    /// browser session — cookies / forwarded auth).
     #[cfg(not(target_arch = "wasm32"))]
-    fn build_transport(&self) -> Result<Transport> {
+    fn build_transport(&self, uri: &Url) -> Result<Transport> {
         let cloud_client = if let Some(token) = &self.token {
             Transport::new_with_token(token)
+        } else if !self.auth_options.is_empty() {
+            let mut options = self.auth_options.clone();
+            let has_option = |options: &[(String, String)], names: &[&str]| {
+                options.iter().any(|(key, _)| names.contains(&key.as_str()))
+            };
+            if !has_option(&options, &["databricks_host", "host"]) {
+                // OAuth flows resolve their token endpoint against the
+                // workspace host, which is the authority of the UC endpoint.
+                options.push((
+                    "databricks_host".to_string(),
+                    uri.origin().ascii_serialization(),
+                ));
+            }
+            if uri.scheme() == "http"
+                && !has_option(&options, &["databricks_allow_http", "allow_http"])
+            {
+                // The caller already chose plain HTTP for UC itself (local
+                // development); the token endpoint lives on the same host.
+                options.push(("allow_http".to_string(), "true".to_string()));
+            }
+            // The Databricks credential chain spawns its own token refreshes,
+            // so it takes the runtime directly rather than via `with_runtime`.
+            return Transport::new_databricks(options, self.io_handle.as_ref()).map_err(|e| {
+                Error::invalid_config(format!("invalid Databricks auth: {e}")).into()
+            });
         } else if self.allow_unauthenticated {
             Transport::new_unauthenticated()
         } else {
@@ -305,7 +412,7 @@ impl UnityObjectStoreFactoryBuilder {
     }
 
     #[cfg(target_arch = "wasm32")]
-    fn build_transport(&self) -> Result<Transport> {
+    fn build_transport(&self, _uri: &Url) -> Result<Transport> {
         use olai_http_wasm::CredentialsMode;
         use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 
@@ -1601,14 +1708,103 @@ mod tests {
             .as_millis() as i64
     }
 
-    /// The builder's `Debug` never prints the token.
+    // ---- Databricks auth options -------------------------------------------
+
+    /// OAuth M2M options authenticate the vend: the token is fetched from the
+    /// workspace host derived from the UC URI and sent as the bearer.
+    #[tokio::test]
+    async fn auth_options_drive_oauth_m2m() {
+        let mut server = mockito::Server::new_async().await;
+        let token = server
+            .mock("POST", "/oidc/v1/token")
+            .match_body(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded(
+                    "grant_type".to_string(),
+                    "client_credentials".to_string(),
+                ),
+                mockito::Matcher::UrlEncoded("client_id".to_string(), "sp-id".to_string()),
+            ]))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"access_token":"m2m-token","token_type":"Bearer","expires_in":3600}"#)
+            .expect(1)
+            .create_async()
+            .await;
+        let vend = server
+            .mock("POST", "/api/2.1/unity-catalog/temporary-path-credentials")
+            .match_header("authorization", "Bearer m2m-token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(azurite_credential_body())
+            .expect(1)
+            .create_async()
+            .await;
+
+        let factory = UnityObjectStoreFactory::builder()
+            .with_uri(format!("{}/api/2.1/unity-catalog/", server.url()))
+            .with_options([
+                ("databricks_client_id", "sp-id"),
+                ("databricks_client_secret", "sp-secret"),
+            ])
+            .build()
+            .await
+            .unwrap();
+        let url = Url::parse("abfss://mycontainer@devstoreaccount1/prefix/").unwrap();
+        factory
+            .for_path(&url, PathOperation::Read)
+            .await
+            .expect("vend + store build should succeed against the mock");
+
+        token.assert_async().await;
+        vend.assert_async().await;
+    }
+
+    /// An explicit token wins over auth options; no OAuth exchange happens.
+    #[tokio::test]
+    async fn token_takes_precedence_over_auth_options() {
+        let mut server = mockito::Server::new_async().await;
+        let token = server
+            .mock("POST", "/oidc/v1/token")
+            .expect(0)
+            .create_async()
+            .await;
+        let vend = server
+            .mock("POST", "/api/2.1/unity-catalog/temporary-path-credentials")
+            .match_header("authorization", "Bearer pat")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(azurite_credential_body())
+            .expect(1)
+            .create_async()
+            .await;
+
+        let factory = UnityObjectStoreFactory::builder()
+            .with_uri(format!("{}/api/2.1/unity-catalog/", server.url()))
+            .with_token("pat".to_string())
+            .with_options([
+                ("databricks_client_id", "sp-id"),
+                ("databricks_client_secret", "sp-secret"),
+            ])
+            .build()
+            .await
+            .unwrap();
+        let url = Url::parse("abfss://mycontainer@devstoreaccount1/prefix/").unwrap();
+        factory.for_path(&url, PathOperation::Read).await.unwrap();
+
+        token.assert_async().await;
+        vend.assert_async().await;
+    }
+
+    /// The builder's `Debug` never prints the token or auth option values.
     #[test]
-    fn builder_debug_redacts_token() {
+    fn builder_debug_redacts_secrets() {
         let builder = UnityObjectStoreFactory::builder()
             .with_uri("https://example.cloud.databricks.com/api/2.1/unity-catalog/")
-            .with_token("super-secret-token".to_string());
+            .with_token("super-secret-token".to_string())
+            .with_option("databricks_client_secret", "super-secret-value");
         let debug = format!("{builder:?}");
         assert!(!debug.contains("super-secret"), "secret leaked: {debug}");
+        assert!(debug.contains("databricks_client_secret"));
     }
 
     // ---- forwarded-identity header forwarding ------------------------------
