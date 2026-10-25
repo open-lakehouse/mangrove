@@ -104,8 +104,13 @@ jobs:
       # Caches ~/.cargo and ./target keyed on the lockfile. clippy and test share
       # the "ci" shared-key so they reuse one warmed target/; only main writes the
       # cache (save-if) so parallel PR jobs don't thrash each other's entry.
+      # `env-vars: ImageOS` hashes the runner image (`ubuntu24`, `ubuntu26`, …)
+      # into the cache key. Without it a cache saved on one image restores on
+      # another, and stale build-script output (e.g. pyo3's resolved
+      # `libpython3.12` from ubuntu-24.04) breaks linking on the new image.
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
+          env-vars: ImageOS
           shared-key: ci
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -134,6 +139,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
+          env-vars: ImageOS
           shared-key: ci
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -218,6 +224,7 @@ jobs:
       # test/clippy "ci" cache — give it its own shared-key.
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
+          env-vars: ImageOS
           shared-key: coverage
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -281,6 +288,7 @@ jobs:
       # "coverage" target/.
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
+          env-vars: ImageOS
           shared-key: coverage-doc
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -322,6 +330,7 @@ jobs:
       # under -C instrument-coverage (via cargo-llvm-cov), like the coverage job.
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
+          env-vars: ImageOS
           shared-key: coverage
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -383,6 +392,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
+          env-vars: ImageOS
           shared-key: coverage
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -465,6 +475,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
+          env-vars: ImageOS
           shared-key: coverage
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -531,6 +542,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
+          env-vars: ImageOS
           shared-key: coverage
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -617,6 +629,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
+          env-vars: ImageOS
           shared-key: query-wasm
           workspaces: wasm
           save-if: ${{ github.ref == 'refs/heads/main' }}
