@@ -18,7 +18,7 @@ use crate::codegen::sharing::SharingHandler;
 use crate::codegen::sharing_skill::SharingSkillHandler;
 use crate::codegen::sharing_volume::SharingVolumeHandler;
 use crate::error::{Error, Result};
-use crate::format::{QuerySpec, VersionSpec};
+use crate::format::{QuerySpec, TableResponse, VersionSpec};
 use crate::service::{SharingService, paginate};
 
 impl<Cx: Clone + Send + Sync + 'static> SharingService<Cx> {
@@ -445,10 +445,10 @@ pub trait SharingQueryHandler<Cx = crate::DefaultContext>: Send + Sync + 'static
         &self,
         request: GetTableMetadataRequest,
         context: Cx,
-    ) -> Result<Bytes>;
+    ) -> Result<TableResponse>;
 
     /// The NDJSON protocol + metadata + file lines answering a table query.
-    async fn query_table(&self, request: QueryTableRequest, context: Cx) -> Result<Bytes>;
+    async fn query_table(&self, request: QueryTableRequest, context: Cx) -> Result<TableResponse>;
 
     /// Read-only temporary credentials for a shared table's storage location (the
     /// Open Sharing `temporary-table-credentials` endpoint), so a recipient can
@@ -506,7 +506,7 @@ impl<Cx: Clone + Send + Sync + 'static> SharingQueryHandler<Cx> for SharingServi
         &self,
         request: GetTableMetadataRequest,
         context: Cx,
-    ) -> Result<Bytes> {
+    ) -> Result<TableResponse> {
         let asset = self
             .table(&request.share, &request.schema, &request.name, &context)
             .await?;
@@ -517,7 +517,7 @@ impl<Cx: Clone + Send + Sync + 'static> SharingQueryHandler<Cx> for SharingServi
             .await
     }
 
-    async fn query_table(&self, request: QueryTableRequest, context: Cx) -> Result<Bytes> {
+    async fn query_table(&self, request: QueryTableRequest, context: Cx) -> Result<TableResponse> {
         let asset = self
             .table(&request.share, &request.schema, &request.name, &context)
             .await?;

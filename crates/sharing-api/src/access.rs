@@ -49,10 +49,19 @@ pub trait FileSigner: Send + Sync {
 pub struct TableStorage {
     /// An object store over the asset's location.
     ///
-    /// It must address objects by their path from the root of the location's
-    /// bucket / container (the shape [`object_store::parse_url`] returns), since
-    /// the table reader derives object paths from the full location URL.
+    /// The table reader addresses objects in it by the *path* of [`root`](Self::root)
+    /// (plus the table's relative file paths), so the store must be rooted where
+    /// that path starts — typically the bucket / container root, as
+    /// [`object_store::parse_url`] returns it.
     pub store: Arc<DynObjectStore>,
+    /// The table's root URL, in the form `store` addresses (a directory URL).
+    ///
+    /// Usually the asset's location itself. It differs where the location's URL
+    /// path does not start at the store root — path-style endpoints such as
+    /// Azurite's `http://host/<account>/<container>/…` — in which case it is the
+    /// normalized location (`azurite://<container>/…`). File URLs handed to the
+    /// [`signer`](Self::signer) are joined onto it.
+    pub root: Url,
     /// Presigns the table's data files for the query response.
     pub signer: Arc<dyn FileSigner>,
 }

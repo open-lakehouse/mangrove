@@ -151,6 +151,10 @@ pub struct SharedAsset {
     pub history_shared: bool,
     /// The lowest table version recipients may read, when the provider limits it.
     pub start_version: Option<Version>,
+    /// The asset's name in the source catalog it was resolved from (for example
+    /// `catalog.schema.table`), so a [`StorageAccess`](crate::StorageAccess) can
+    /// ask that catalog for credentials. `None` when there is no source catalog.
+    pub source_name: Option<String>,
 }
 
 impl SharedAsset {
@@ -163,6 +167,7 @@ impl SharedAsset {
             format: Some(DataFormat::Delta),
             history_shared: true,
             start_version: None,
+            source_name: None,
         }
     }
 
@@ -175,6 +180,7 @@ impl SharedAsset {
             format: None,
             history_shared: false,
             start_version: None,
+            source_name: None,
         }
     }
 

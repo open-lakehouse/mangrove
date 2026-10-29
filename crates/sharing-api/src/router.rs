@@ -47,6 +47,8 @@ use crate::handler::SharingQueryHandler;
 const DELTA_SHARING_CAPABILITIES: &str = "delta-sharing-capabilities";
 const DELTA_SHARING_CAPABILITIES_VALUE: &str = "responseformat=parquet";
 const CONTENT_TYPE: &str = "content-type";
+/// The table version a `version` / `metadata` / `query` response describes.
+const DELTA_TABLE_VERSION: &str = "delta-table-version";
 
 /// Where the Delta Sharing surface is mounted by [`sharing_router`].
 pub const DELTA_SHARING_PREFIX: &str = "/api/v1/delta-sharing";
@@ -235,7 +237,7 @@ where
 {
     let result = handler.get_table_version(request, context).await?;
     Response::builder()
-        .header("Delta-Table-Version", result.version)
+        .header(DELTA_TABLE_VERSION, result.version)
         .body(Body::empty())
         .map_err(|e| Error::generic(e.to_string()))
 }
@@ -255,7 +257,8 @@ where
     Response::builder()
         .header(CONTENT_TYPE, "application/x-ndjson; charset=utf-8")
         .header(DELTA_SHARING_CAPABILITIES, DELTA_SHARING_CAPABILITIES_VALUE)
-        .body(Body::from(result))
+        .header(DELTA_TABLE_VERSION, result.version)
+        .body(Body::from(result.body))
         .map_err(|e| Error::generic(e.to_string()))
 }
 
@@ -274,7 +277,8 @@ where
     Response::builder()
         .header(CONTENT_TYPE, "application/x-ndjson; charset=utf-8")
         .header(DELTA_SHARING_CAPABILITIES, DELTA_SHARING_CAPABILITIES_VALUE)
-        .body(Body::from(result))
+        .header(DELTA_TABLE_VERSION, result.version)
+        .body(Body::from(result.body))
         .map_err(|e| Error::generic(e.to_string()))
 }
 

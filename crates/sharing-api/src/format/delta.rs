@@ -29,7 +29,7 @@ use unitycatalog_sharing_client::models::{
 };
 
 use super::predicate::to_kernel_predicate;
-use super::{QuerySpec, TableFormat, VersionSpec};
+use super::{QuerySpec, TableFormat, TableResponse, VersionSpec};
 use crate::access::TableStorage;
 use crate::catalog::SharedAsset;
 use crate::error::{Error, Result};
@@ -48,7 +48,7 @@ impl TableFormat for DeltaFormat {
         starting_timestamp: Option<i64>,
     ) -> Result<Version> {
         let engine = build_engine(storage.store.clone());
-        let root = asset.location.as_directory();
+        let root = directory(&storage.root);
         let start_version = asset.start_version;
         blocking(move || {
             let latest = Snapshot::builder_for(root.as_str()).build(engine.as_ref())?;
@@ -75,9 +75,9 @@ impl TableFormat for DeltaFormat {
         asset: &SharedAsset,
         storage: &TableStorage,
         at: VersionSpec,
-    ) -> Result<Bytes> {
+    ) -> Result<TableResponse> {
         let engine = build_engine(storage.store.clone());
-        let root = asset.location.as_directory();
+        let root = directory(&storage.root);
         let start_version = asset.start_version;
         let (snapshot, _) =
             blocking(move || resolve_snapshot(engine.as_ref(), &root, at, start_version)).await?;
@@ -85,7 +85,10 @@ impl TableFormat for DeltaFormat {
         for line in header_lines(&snapshot, at)? {
             write_line(&mut out, &line)?;
         }
-        Ok(Bytes::from(out))
+        Ok(TableResponse {
+            version: snapshot.version(),
+            body: Bytes::from(out),
+        })
     }
 
     async fn query(
@@ -93,9 +96,9 @@ impl TableFormat for DeltaFormat {
         asset: &SharedAsset,
         storage: &TableStorage,
         query: QuerySpec,
-    ) -> Result<Bytes> {
+    ) -> Result<TableResponse> {
         let engine = build_engine(storage.store.clone());
-        let root = asset.location.as_directory();
+        let root = directory(&storage.root);
         let start_version = asset.start_version;
         let at = query.at;
         let predicate = query.predicate.as_ref().and_then(to_kernel_predicate);
@@ -116,7 +119,7 @@ impl TableFormat for DeltaFormat {
         .await?;
 
         let files = apply_limit_hint(files, query.limit_hint);
-        let root = asset.location.as_directory();
+        let root = directory(&storage.root);
         let urls = files
             .iter()
             .map(|file| file_url(&root, &file.path))
@@ -154,8 +157,20 @@ impl TableFormat for DeltaFormat {
             });
             write_line(&mut out, &line)?;
         }
-        Ok(Bytes::from(out))
+        Ok(TableResponse {
+            version: snapshot.version(),
+            body: Bytes::from(out),
+        })
     }
+}
+
+/// `url` as a directory URL (with a trailing `/`), so relative paths join under it.
+fn directory(url: &Url) -> Url {
+    let mut url = url.clone();
+    if !url.path().ends_with('/') {
+        url.set_path(&format!("{}/", url.path()));
+    }
+    url
 }
 
 /// Run blocking kernel work off the async runtime.
