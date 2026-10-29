@@ -69,21 +69,32 @@ pub struct DeltaSharingCapabilities {
 }
 
 impl DeltaSharingCapabilities {
+    /// Parse a `delta-sharing-capabilities` header value.
+    ///
+    /// Parsing is lenient, as the header is client-supplied: empty or malformed
+    /// segments (no `=`) and unknown keys are skipped, and unknown reader features
+    /// are ignored rather than rejected, so a newer client never fails a request
+    /// just by advertising more than this server knows. Only an unrecognized
+    /// `responseformat` or a non-boolean `includeendstreamaction` is an error.
     pub fn parse_header(header: &str) -> Result<Self, Error> {
         let mut format = None;
         let mut reader_features = None;
         let mut include_end_stream_action = None;
 
         for capability in header.split(';') {
-            let mut parts = capability.split('=');
-            let key = parts.next().unwrap().to_lowercase();
-            let value = parts.next().unwrap().to_lowercase();
+            let Some((key, value)) = capability.split_once('=') else {
+                continue;
+            };
+            let key = key.trim().to_ascii_lowercase();
+            let value = value.trim().to_ascii_lowercase();
 
-            match key.to_ascii_lowercase().as_str() {
+            match key.as_str() {
                 "responseformat" => {
                     format = Some(
                         value
                             .split(',')
+                            .map(str::trim)
+                            .filter(|s| !s.is_empty())
                             .map(|s| s.parse())
                             .collect::<Result<Vec<_>, _>>()?,
                     );
@@ -92,13 +103,12 @@ impl DeltaSharingCapabilities {
                     reader_features = Some(
                         value
                             .split(',')
-                            .map(parse_reader_feature)
-                            .collect::<Result<Vec<_>, _>>()
-                            .unwrap(),
+                            .filter_map(|s| parse_reader_feature(s.trim()).ok())
+                            .collect(),
                     );
                 }
                 "includeendstreamaction" => {
-                    include_end_stream_action = match value.to_ascii_lowercase().as_str() {
+                    include_end_stream_action = match value.as_str() {
                         "true" => Some(true),
                         "false" => Some(false),
                         _ => {
@@ -118,6 +128,17 @@ impl DeltaSharingCapabilities {
             reader_features,
             include_end_stream_action,
         })
+    }
+
+    /// Whether the client accepts responses in `format`.
+    ///
+    /// A client that sends no `responseformat` accepts only `parquet`, the
+    /// protocol's original (and default) format.
+    pub fn accepts(&self, format: &ResponseFormat) -> bool {
+        match &self.format {
+            Some(formats) => formats.contains(format),
+            None => *format == ResponseFormat::Parquet,
+        }
     }
 }
 
@@ -341,6 +362,45 @@ pub enum MetadataResponse {
     MetaData(MetadataResponseData),
 }
 
+/// A data file in a [parquet-format] query response: one `{"file": {...}}` line.
+///
+/// [parquet-format]: https://github.com/delta-io/delta-sharing/blob/main/PROTOCOL.md#file
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParquetFile {
+    /// A (typically presigned, short-lived) URL the client reads the file from.
+    pub url: String,
+    /// A stable identifier for the file within the table.
+    pub id: String,
+    /// The file's partition values, keyed by partition column.
+    #[serde(default)]
+    pub partition_values: HashMap<String, String>,
+    /// The file size in bytes.
+    pub size: i64,
+    /// The file's statistics as a JSON string (`numRecords`, …), when known.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stats: Option<String>,
+    /// The table version the file was read at, for a version / timestamp query.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<i64>,
+    /// The commit timestamp (ms) of `version`, for a version / timestamp query.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timestamp: Option<i64>,
+    /// When `url` stops being valid, in milliseconds since the Unix epoch.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expiration_timestamp: Option<i64>,
+}
+
+/// One line of a parquet-format `query` response: protocol, metadata, or a file.
+#[allow(clippy::large_enum_variant)]
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum QueryResponseLine {
+    Protocol(ProtocolResponseData),
+    MetaData(MetadataResponseData),
+    File(ParquetFile),
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -467,6 +527,47 @@ mod tests {
         assert_eq!(table.location.as_deref(), Some("s3://bucket/path"));
         assert_eq!(table.auxiliary_locations, vec!["s3://bucket/aux"]);
         assert_eq!(table.access_modes, vec!["url", "dir"]);
+    }
+
+    #[test]
+    fn test_parse_capabilities_header_is_lenient() {
+        // Malformed segments, unknown keys and unknown reader features must not
+        // fail (or panic on) a request.
+        let raw = "garbage;;readerfeatures=deletionvectors,somefuturefeature;unknown=x";
+        let parsed = DeltaSharingCapabilities::parse_header(raw).unwrap();
+        assert_eq!(parsed.format, None);
+        assert_eq!(
+            parsed.reader_features,
+            Some(vec![ReaderFeature::DeletionVectors])
+        );
+        assert!(parsed.accepts(&ResponseFormat::Parquet));
+        assert!(!parsed.accepts(&ResponseFormat::Delta));
+
+        assert!(DeltaSharingCapabilities::parse_header("responseformat=avro").is_err());
+    }
+
+    #[test]
+    fn test_query_response_file_line() {
+        let raw = json!({
+            "file": {
+                "url": "https://bucket/part-0.parquet?sig=x",
+                "id": "abc",
+                "partitionValues": {"letter": "a"},
+                "size": 783,
+                "stats": "{\"numRecords\":1}",
+                "expirationTimestamp": 1700000000000i64
+            }
+        });
+        let line: QueryResponseLine = serde_json::from_value(raw).unwrap();
+        let QueryResponseLine::File(file) = line else {
+            panic!("expected a file line");
+        };
+        assert_eq!(file.size, 783);
+        assert_eq!(
+            file.partition_values.get("letter").map(String::as_str),
+            Some("a")
+        );
+        assert_eq!(file.version, None);
     }
 
     #[test]
