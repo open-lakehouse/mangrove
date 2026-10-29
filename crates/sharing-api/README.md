@@ -26,3 +26,10 @@ The Delta Sharing tabular surface and the Open Sharing asset surface are
 implemented. Recent protocol additions — Change Data Feed (`/changes`),
 asynchronous queries (`POST /queries/{id}`), and `responseformat=delta` serving —
 have their request/response types defined but return `501 Not Implemented`.
+
+## Architecture
+
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the pluggable server design
+(ports, source-catalog share mapping, delegated vs. local storage access,
+secrets at rest) and the gap assessment against the upstream OpenSharing
+reference implementation.
