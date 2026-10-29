@@ -96,12 +96,12 @@ prefix the `olai-sharing-client` targets.
 
 ### Discovery maps shares onto a source catalog
 
-A share is a UC `Share` whose `objects[]` name assets in a source catalog. The
-`objects[]` entries are tables, whole schemas, volumes and agent skills. The
-sharing server stores the share. It resolves each object through
-`CatalogSource` at request time: storage location, format and identity come
-from the catalog, which stays the source of truth. `DataObject` fields we
-honor:
+A share is a list of share objects naming assets in a source catalog. The
+entries are tables, whole schemas, volumes and agent skills. The sharing server
+stores the share (as `ShareObject`s, which use the field names of UC's
+`DataObject`). It resolves each object through `CatalogSource` at request time:
+storage location, format and identity come from the catalog, which stays the
+source of truth. Fields we honor:
 
 - `shared_as` renames the object for recipients.
 - `start_version` clamps time travel and CDF.
@@ -223,6 +223,26 @@ gates the real bundle on both limits. If it gets tight, the next levers are:
 1. `panic = "abort"`;
 2. per-cloud `object_store` features;
 3. trimmed parquet codecs.
+
+### Catalog independence
+
+The sharing crates are meant to move into their own repository, and any catalog
+should be able to host them. The layering:
+
+- `olai-sharing-common` and `olai-sharing-api` (protocol, ports, router) depend
+  on no catalog crate. `Error` owns its `{ "errorCode", "message" }` envelope.
+- `olai-sharing-server`'s core (store, recipients, secrets, `StoreCatalog`,
+  `CatalogSource`, storage access) uses catalog-independent types:
+  `ShareObject` for share entries and `olai-uc-credentials`' own
+  `StorageCredential` / `TemporaryCredential` for vending.
+- Unity Catalog comes in only through the `unity` feature (`src/unity/`): the UC
+  REST `CatalogSource` and the UC-shaped admin API. It converts UC models at
+  that boundary (`olai-uc-common`'s `credentials` feature for credentials).
+
+Credential vending (`olai-uc-credentials`) and the object-store primitives
+(`olai-uc-object-store`) are accepted storage dependencies. Vending already
+owns its credential shapes; `olai-uc-object-store` still pulls the UC client
+transitively, and carving its primitives out is a follow-up.
 
 ## Delivery
 
