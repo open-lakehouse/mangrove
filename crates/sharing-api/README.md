@@ -22,6 +22,16 @@ and temporary credentials), and `auth::require_recipient` puts a bearer-token
 [`olai-sharing-common`](https://crates.io/crates/olai-sharing-common), which
 the client shares; this crate does not depend on the client.
 
+## Integrating
+
+The crate depends on no catalog (no Unity Catalog crates). To serve sharing from
+an existing catalog, implement `ShareCatalog`, `StorageAccess` and a
+`RecipientAuthenticator` over the catalog's own discovery, grants and credential
+vending, then mount `sharing_router` behind `auth::require_recipient`. Map
+your own errors onto `Error`, which renders the `{ "errorCode", "message" }`
+envelope. [`olai-sharing-server`](../sharing-server) is a complete host built
+this way.
+
 ## Status
 
 - **Discovery** (shares, schemas, tables, volumes, skills) is implemented and

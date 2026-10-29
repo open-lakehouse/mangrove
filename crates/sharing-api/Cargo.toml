@@ -25,7 +25,6 @@ name = "open_sharing_api"
 [dependencies]
 # local dependencies in alphabetical order
 open-sharing-common = { package = "olai-sharing-common", path = "../sharing-common", version = "0.0.1" }
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.5" }
 
 # workspace dependencies in alphabetical order
 async-trait = { workspace = true }
@@ -79,7 +78,6 @@ axum = [
   "dep:axum",
   "dep:axum-extra",
   "open-sharing-common/axum",
-  "unitycatalog-common/axum",
 ]
 # The kernel-backed Delta table format (`format::delta`).
 delta = ["dep:delta_kernel_default_engine", "dep:uuid"]

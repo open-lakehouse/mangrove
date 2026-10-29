@@ -3927,7 +3927,6 @@ dependencies = [
  "chrono",
  "object_store",
  "olai-sharing-common",
- "olai-uc-common",
  "serde",
  "serde_json",
  "tempfile",
