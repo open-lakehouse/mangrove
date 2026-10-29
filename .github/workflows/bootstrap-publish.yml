@@ -31,11 +31,14 @@ name: Bootstrap publish (one-shot, DELETE AFTER USE)
 # release. Decommission it like files-api below.
 #
 # NOT bootstrappable here — do NOT add steps for these:
-#   * olai-uc-sharing-client, olai-uc-sharing-api, olai-uc-datafusion — depend
-#     (transitively, via the workspace `delta_kernel` / `deltalake-core` git
-#     revs) on a git source. `cargo publish` rejects ANY git dependency, so these
-#     cannot go to crates.io until those upstream deps are published to the
-#     registry. They stay `release = false` in release-plz.toml (git-dep block).
+#   * olai-uc-datafusion — depends (via its optional `deltalake-core` git rev)
+#     on a git source. `cargo publish` rejects ANY git dependency, so it cannot
+#     go to crates.io until that upstream dep is published to the registry. It
+#     stays `release = false` in release-plz.toml (git-dep block).
+#   * olai-uc-sharing-client, olai-uc-sharing-api — git-free now (published
+#     `buoyant_kernel`; sharing-api no longer goes through datafusion), so they
+#     are bootstrappable in a later tier (sharing-client first), but not yet
+#     scheduled here.
 #   * olai-uc-cli — publishable, but intentionally held out of crates.io for now.
 #
 # Run once with dry_run=true to package-check the active tier, then again with

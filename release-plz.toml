@@ -75,12 +75,14 @@ pr_draft = false
 #       git dependency, optional or not, so these crates CANNOT go to crates.io
 #       until the fork's two visibility commits ship in a delta-rs release.
 #       This is a hard, standing block — NOT a bootstrap step. `datafusion`
-#       (optional delta-rs behind the `delta` feature) and `sharing-api` (via
-#       datafusion's `delta` feature) are blocked this way.
+#       (optional delta-rs behind the `delta` feature) is blocked this way.
+#       (`sharing-api` used to be too, via datafusion; it now reads Delta through
+#       the published `buoyant_kernel` alone, so it is git-free and only awaits
+#       its bootstrap, after `sharing-client` — see (a).)
 #
 # crates.io publish/bootstrap order (root -> leaf):
 #   delta-api, common -> client, object-store, postgres, sqlite -> cli
-# (sharing-client awaits its bootstrap — see (a); sharing-api and datafusion are
+# (sharing-client -> sharing-api await their bootstrap — see (a); datafusion is
 # out of the order entirely — see (b); server is git_only — see below.)
 #
 # Already on crates.io (bootstrapped, releasing via OIDC): delta-api, common,
@@ -207,7 +209,7 @@ changelog_path = "python/client/CHANGELOG.md"
 # once a baseline tag exists, release-plz runs `cargo package` on it to diff
 # versions, and that packaging pass walks the workspace path-dep graph into
 # `olai-uc-datafusion`, whose optional `deltalake-core` GIT dep `cargo package`
-# rejects (the same standing git-dep block that keeps datafusion/sharing-api off
+# rejects (the same standing git-dep block that keeps datafusion off
 # crates.io, reason (b) above). `release = false` skips update/release-pr/release for this
 # crate entirely, so the packaging pass never runs. `git_only`/`publish` are now
 # redundant but kept for intent. Push the `unitycatalog-client-py-v<version>` tag
