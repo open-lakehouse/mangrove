@@ -22,7 +22,13 @@ name: Bootstrap publish (one-shot, DELETE AFTER USE)
 # all registry/workspace (no git), so it bootstraps cleanly. We bootstrap the
 # `bin`-featured build, since that (the `uc-server` binary) is what ships.
 #
-#   Tier 0 (ACTIVE): olai-uc-files-api
+#   Tier 0 (ACTIVE): olai-uc-files-api, olai-uc-credentials
+#
+# olai-uc-credentials was extracted out of olai-uc-server (shared storage
+# credential vending for the UC and Open Sharing servers). Its deps
+# (olai-uc-common, olai-http, object_store) are all on crates.io, and the server
+# now depends on it, so it must exist on crates.io before the next server
+# release. Decommission it like files-api below.
 #
 # NOT bootstrappable here — do NOT add steps for these:
 #   * olai-uc-sharing-client, olai-uc-sharing-api, olai-uc-datafusion — depend
@@ -87,4 +93,11 @@ jobs:
             ${{ inputs.dry_run && '--dry-run' || '' }}
         env:
           SQLX_OFFLINE: "true"
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      - name: Publish olai-uc-credentials
+        run: |
+          cargo publish -p olai-uc-credentials --locked \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
