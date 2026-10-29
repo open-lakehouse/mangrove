@@ -24,8 +24,7 @@ use open_sharing_server::store::ShareStore;
 use open_sharing_server::store::memory::InMemoryStore;
 use serde_json::{Value, json};
 use tower::ServiceExt;
-use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
-use unitycatalog_credentials::local_path_credential;
+use unitycatalog_credentials::{TemporaryCredential, local_path_credential};
 
 const ADMIN: &str = "provider-secret";
 const PUBLIC_URL: &str = "https://sharing.example.com";

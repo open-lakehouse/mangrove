@@ -4,11 +4,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Mutex;
 
 use async_trait::async_trait;
-use unitycatalog_common::models::shares::v1::DataObject;
 
 use super::{
-    ExternalLocationRecord, RecipientRecord, SealedCredential, ShareRecord, ShareStore,
-    TokenRecord, now_millis,
+    ExternalLocationRecord, RecipientRecord, SealedCredential, ShareObject, ShareRecord,
+    ShareStore, TokenRecord, now_millis,
 };
 use crate::{Error, Result};
 
@@ -87,7 +86,7 @@ impl ShareStore for InMemoryStore {
     async fn update_share(
         &self,
         name: &str,
-        objects: Vec<DataObject>,
+        objects: Vec<ShareObject>,
         comment: Option<String>,
     ) -> Result<ShareRecord> {
         let mut state = self.state();

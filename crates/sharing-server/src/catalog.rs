@@ -1,12 +1,12 @@
 //! [`StoreCatalog`]: the recipient-facing [`ShareCatalog`] over the share store
 //! and the source catalogs.
 //!
-//! A share's UC `DataObject`s name assets in a source catalog. They are exposed
+//! A share's [`ShareObject`]s name assets in a source catalog. They are exposed
 //! to recipients under their `shared_as` names (default: the source name minus
 //! its catalog), and resolved through the [`SourceRegistry`] at request time — the
 //! source catalog stays the source of truth for locations and formats:
 //!
-//! | `DataObject` type | `name`            | exposed as                 |
+//! | object kind      | `name`            | exposed as                 |
 //! |-------------------|-------------------|----------------------------|
 //! | `TABLE`           | `cat.schema.tbl`  | `schema.tbl` (or `shared_as`) |
 //! | `SCHEMA`          | `cat.schema`      | every table of the schema, under `schema` (or `shared_as`) |
@@ -25,10 +25,9 @@ use open_sharing_api::catalog::{
     SharedObject, SharingAction,
 };
 use open_sharing_api::service::paginate;
-use unitycatalog_common::models::shares::v1::{DataObject, DataObjectType, HistoryStatus};
 
 use crate::source::{SourceRegistry, split_name};
-use crate::store::{ShareRecord, ShareStore};
+use crate::store::{ShareObject, ShareObjectKind, ShareRecord, ShareStore};
 use crate::{Error, Result};
 
 /// A shared object, with the source-catalog name it resolves through.
@@ -36,7 +35,7 @@ use crate::{Error, Result};
 struct Exposed {
     object: SharedObject,
     source_name: String,
-    data_object: DataObject,
+    share_object: ShareObject,
 }
 
 /// The store-backed share catalog. See the module docs.
@@ -53,15 +52,15 @@ impl StoreCatalog {
     /// The share's objects as exposed to recipients, in share order.
     async fn expose(&self, share: &ShareRecord) -> Result<Vec<Exposed>> {
         let mut exposed = Vec::new();
-        for data_object in &share.objects {
-            let kind = match data_object.data_object_type.as_known() {
-                Some(DataObjectType::TABLE) => AssetKind::Table,
-                Some(DataObjectType::VOLUME) => AssetKind::Volume,
-                Some(DataObjectType::AGENT_SKILL) => AssetKind::AgentSkill,
-                Some(DataObjectType::SCHEMA) => {
-                    let [catalog, schema] = split_name::<2>(&data_object.name)?;
-                    let shared_schema = data_object.shared_as.as_deref().unwrap_or(schema);
-                    let source = self.sources.for_name(&data_object.name)?;
+        for share_object in &share.objects {
+            let kind = match share_object.kind {
+                ShareObjectKind::Table => AssetKind::Table,
+                ShareObjectKind::Volume => AssetKind::Volume,
+                ShareObjectKind::AgentSkill => AssetKind::AgentSkill,
+                ShareObjectKind::Schema => {
+                    let [catalog, schema] = split_name::<2>(&share_object.name)?;
+                    let shared_schema = share_object.shared_as.as_deref().unwrap_or(schema);
+                    let source = self.sources.for_name(&share_object.name)?;
                     for table in source.source.list_tables(catalog, schema).await? {
                         exposed.push(Exposed {
                             object: SharedObject {
@@ -71,14 +70,13 @@ impl StoreCatalog {
                                 id: table.id.clone(),
                             },
                             source_name: table.full_name,
-                            data_object: data_object.clone(),
+                            share_object: share_object.clone(),
                         });
                     }
                     continue;
                 }
-                _ => continue,
             };
-            let (schema, name) = shared_as(data_object)?;
+            let (schema, name) = shared_as(share_object)?;
             exposed.push(Exposed {
                 object: SharedObject {
                     schema,
@@ -86,8 +84,8 @@ impl StoreCatalog {
                     kind,
                     id: None,
                 },
-                source_name: data_object.name.clone(),
-                data_object: data_object.clone(),
+                source_name: share_object.name.clone(),
+                share_object: share_object.clone(),
             });
         }
         Ok(exposed)
@@ -95,7 +93,7 @@ impl StoreCatalog {
 }
 
 /// The `(schema, name)` a table / volume / skill object is exposed under.
-pub(crate) fn shared_as(object: &DataObject) -> Result<(String, String)> {
+pub fn shared_as(object: &ShareObject) -> Result<(String, String)> {
     let shared = match object.shared_as.as_deref() {
         Some(shared) => shared.to_string(),
         None => {
@@ -167,13 +165,9 @@ impl ShareCatalog<Recipient> for StoreCatalog {
             })
             .ok_or(Error::NotFound)?;
         let source = self.sources.for_name(&exposed.source_name)?;
-        let history_shared = exposed
-            .data_object
-            .history_data_sharing_status
-            .and_then(|status| status.as_known())
-            == Some(HistoryStatus::ENABLED);
+        let history_shared = exposed.share_object.history_shared;
         let start_version = exposed
-            .data_object
+            .share_object
             .start_version
             .map(|v| u64::try_from(v).unwrap_or_default());
         Ok(match asset.kind {

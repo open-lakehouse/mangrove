@@ -29,11 +29,11 @@ use open_sharing_common::models::open_sharing::v1::{
     SharingR2Credentials, SharingTemporaryCredentials,
     sharing_temporary_credentials::Credentials as SharingCredentials,
 };
-use unitycatalog_common::models::credentials::v1::Credential;
-use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
-use unitycatalog_common::models::temporary_credentials::v1::temporary_credential::Credentials;
 use unitycatalog_credentials::location::{StorageLocationUrl, longest_prefix_match};
-use unitycatalog_credentials::{CredentialResolver, VendOperation, local_path_credential};
+use unitycatalog_credentials::{
+    CredentialResolver, StorageCredential, TemporaryCredential, VendOperation, VendedCredential,
+    local_path_credential,
+};
 use unitycatalog_object_store::{presign_from_vended_credential, store_from_vended_credential};
 use url::Url;
 
@@ -195,33 +195,33 @@ impl FileSigner for VendedSigner {
     }
 }
 
-/// Map a vended UC credential into the Open Sharing credential envelope.
+/// Map a vended credential into the Open Sharing credential envelope.
 pub(crate) fn to_sharing_credentials(
     credential: TemporaryCredential,
 ) -> Result<SharingTemporaryCredentials> {
     let credentials = match credential.credentials {
         None => None,
-        Some(Credentials::AwsTempCredentials(aws)) => Some(SharingCredentials::AwsTempCredentials(
-            Box::new(SharingAwsCredentials {
+        Some(VendedCredential::AwsTempCredentials(aws)) => Some(
+            SharingCredentials::AwsTempCredentials(Box::new(SharingAwsCredentials {
                 access_key_id: aws.access_key_id,
                 secret_access_key: aws.secret_access_key,
                 session_token: aws.session_token,
                 ..Default::default()
-            }),
-        )),
-        Some(Credentials::AzureUserDelegationSas(sas)) => Some(
+            })),
+        ),
+        Some(VendedCredential::AzureUserDelegationSas(sas)) => Some(
             SharingCredentials::AzureUserDelegationSas(Box::new(SharingAzureUserDelegationSas {
                 sas_token: sas.sas_token,
                 ..Default::default()
             })),
         ),
-        Some(Credentials::GcpOauthToken(gcp)) => Some(SharingCredentials::GcpOauthToken(Box::new(
-            SharingGcpOauthToken {
+        Some(VendedCredential::GcpOauthToken(gcp)) => Some(SharingCredentials::GcpOauthToken(
+            Box::new(SharingGcpOauthToken {
                 oauth_token: gcp.oauth_token,
                 ..Default::default()
-            },
-        ))),
-        Some(Credentials::R2TempCredentials(r2)) => Some(SharingCredentials::R2Credentials(
+            }),
+        )),
+        Some(VendedCredential::R2TempCredentials(r2)) => Some(SharingCredentials::R2Credentials(
             Box::new(SharingR2Credentials {
                 access_key_id: r2.access_key_id,
                 secret_access_key: r2.secret_access_key,
@@ -245,15 +245,13 @@ pub(crate) fn to_sharing_credentials(
 
 pub(crate) fn credentials_error(e: unitycatalog_credentials::Error) -> Error {
     match e {
-        unitycatalog_credentials::Error::Common(source) => match source {
-            unitycatalog_common::Error::NotFound => Error::invalid_argument(
-                "no external location with a credential covers this storage location",
-            ),
-            source => Error::Common { source },
-        },
-        unitycatalog_credentials::Error::CloudCredential(e) => {
-            Error::generic(format!("vending storage credentials: {e}"))
+        unitycatalog_credentials::Error::NotFound => Error::invalid_argument(
+            "no external location with a credential covers this storage location",
+        ),
+        unitycatalog_credentials::Error::InvalidArgument(message) => {
+            Error::InvalidArgument(message)
         }
+        e => Error::generic(format!("vending storage credentials: {e}")),
     }
 }
 
@@ -266,18 +264,21 @@ pub(crate) struct StoreCredentialResolver {
 
 impl StoreCredentialResolver {
     /// Open the stored credential `name`, migrating it to the active key.
-    pub(crate) async fn open(&self, name: &str) -> Result<Credential> {
+    pub(crate) async fn open(&self, name: &str) -> Result<StorageCredential> {
         open_credential(self.store.as_ref(), &self.secrets, name).await
     }
 }
 
 /// Open the stored credential `name`, writing it back re-wrapped if it was sealed
 /// under a retired key.
+///
+/// Credentials sealed as a full Unity Catalog `Credential` document (as the admin
+/// API stored them before) open too: the metadata keys are ignored.
 pub(crate) async fn open_credential(
     store: &dyn ShareStore,
     secrets: &Secrets,
     name: &str,
-) -> Result<Credential> {
+) -> Result<StorageCredential> {
     let sealed = store.get_credential(name).await?;
     let (plaintext, rewrapped) = secrets.open(&credential_aad(name), &sealed.sealed).await?;
     if let Some(sealed) = rewrapped {
@@ -301,18 +302,17 @@ impl CredentialResolver for StoreCredentialResolver {
     async fn resolve(
         &self,
         location: &StorageLocationUrl,
-    ) -> unitycatalog_credentials::Result<Credential> {
-        let to_common = |e: Error| unitycatalog_common::Error::generic(e.to_string());
+    ) -> unitycatalog_credentials::Result<StorageCredential> {
+        let to_credentials = |e: Error| unitycatalog_credentials::Error::generic(e.to_string());
         let locations = self
             .store
             .list_external_locations()
             .await
-            .map_err(to_common)?;
+            .map_err(to_credentials)?;
         let location = longest_prefix_match(location, locations, |l| l.url.as_str())
-            .ok_or(unitycatalog_common::Error::NotFound)?;
-        Ok(self
-            .open(&location.credential_name)
+            .ok_or(unitycatalog_credentials::Error::NotFound)?;
+        self.open(&location.credential_name)
             .await
-            .map_err(to_common)?)
+            .map_err(to_credentials)
     }
 }

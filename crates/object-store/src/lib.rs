@@ -76,8 +76,8 @@ use olai_http::service::{HttpService, ReqwestService};
 #[cfg(target_arch = "wasm32")]
 use olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::tables::v1::GetTableRequest;
-use unitycatalog_common::temporary_credentials::v1::TemporaryCredential;
 use unitycatalog_common::volumes::v1::GetVolumeRequest;
+use unitycatalog_credentials::model::TemporaryCredential;
 use url::Url;
 
 use crate::credential::{SecurableRef, as_aws, as_azure, as_gcp, new_azure};
@@ -706,7 +706,7 @@ impl UnityObjectStoreFactory {
             .await
             .map_err(Error::from)?;
         let securable = SecurableRef::Table(table_id, operation);
-        self.build_store(credential, securable).await
+        self.build_store(credential.into(), securable).await
     }
 
     /// Look up a table's `storage_location` by its three-level name.
@@ -775,7 +775,7 @@ impl UnityObjectStoreFactory {
             .await
             .map_err(Error::from)?;
         let securable = SecurableRef::Volume(volume_id, operation);
-        self.build_store(credential, securable).await
+        self.build_store(credential.into(), securable).await
     }
 
     /// Look up a volume's `storage_location` by its three-level name.
@@ -821,7 +821,7 @@ impl UnityObjectStoreFactory {
             .await
             .map_err(Error::from)?;
         let securable = SecurableRef::Path(path.clone(), operation, Some(false));
-        self.build_store(credential, securable).await
+        self.build_store(credential.into(), securable).await
     }
 
     /// Vend credentials for a raw cloud URL with `dry_run` set to true.
@@ -840,7 +840,7 @@ impl UnityObjectStoreFactory {
             .await
             .map_err(Error::from)?;
         let securable = SecurableRef::Path(path.clone(), operation, Some(true));
-        self.build_store(credential, securable).await
+        self.build_store(credential.into(), securable).await
     }
 
     /// Build a proxy-backed [`UCStore`] for `securable_seg` (a typed
@@ -1360,9 +1360,9 @@ fn parse_azurite(url: &Url) -> Option<AzuriteLocation> {
 /// Extract the raw SAS query string (`k1=v1&k2=v2&…`) from a vended credential,
 /// if it carries an Azure User Delegation / service SAS.
 fn azure_sas_token(credential: &TemporaryCredential) -> Option<String> {
-    use unitycatalog_common::temporary_credentials::v1::temporary_credential::Credentials;
+    use unitycatalog_credentials::model::VendedCredential;
     match credential.credentials.as_ref()? {
-        Credentials::AzureUserDelegationSas(sas) => Some(sas.sas_token.clone()),
+        VendedCredential::AzureUserDelegationSas(sas) => Some(sas.sas_token.clone()),
         _ => None,
     }
 }
@@ -1692,7 +1692,7 @@ mod tests {
     /// path, which also carries `/<account>/<container>`).
     #[tokio::test]
     async fn azurite_store_targets_emulator_and_roots_prefix() {
-        use unitycatalog_common::temporary_credentials::v1::AzureUserDelegationSas;
+        use unitycatalog_credentials::model::AzureUserDelegationSas;
 
         let url = "http://127.0.0.1:10000/devstoreaccount1/mycontainer/tbl/data";
         let credential = TemporaryCredential {
@@ -1704,11 +1704,9 @@ mod tests {
                     // into query pairs; the emulator never sees it in this test.
                     sas_token: "sv=2021-08-06&ss=b&srt=co&sp=rl&se=2999-01-01T00:00:00Z&sig=AAAA"
                         .to_string(),
-                    ..Default::default()
                 }
                 .into(),
             ),
-            ..Default::default()
         };
 
         let factory = offline_factory().await;

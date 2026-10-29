@@ -7,20 +7,20 @@
 //! credentials the server reads with and hands on to recipients (*delegated*
 //! access), so the sharing server stores no storage secrets.
 //!
-//! Implementations: [`unity::UnitySource`] (a Unity Catalog REST server — this
-//! one or Databricks) and [`fixed::StaticSource`] (assets declared in config).
-//! Iceberg REST and other catalogs plug in here.
+//! Implementations: [`fixed::StaticSource`] (assets declared in config) and,
+//! with the `unity` feature, `unity::source::UnitySource` (a Unity Catalog REST
+//! server — this one or Databricks). Iceberg REST and other catalogs plug in
+//! here.
 
 use std::sync::Arc;
 
 use async_trait::async_trait;
 use open_sharing_api::catalog::DataFormat;
-use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
+use unitycatalog_credentials::TemporaryCredential;
 
 use crate::{Error, Result};
 
 pub mod fixed;
-pub mod unity;
 
 /// A table in a source catalog.
 #[derive(Debug, Clone, PartialEq, Eq)]

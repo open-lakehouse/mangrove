@@ -4,10 +4,11 @@ A composable Open Sharing / Delta Sharing server, built on the protocol
 implementation in [`olai-sharing-api`](../sharing-api). See
 [`ARCHITECTURE.md`](../sharing-api/ARCHITECTURE.md) for the design.
 
-- **Shares map onto a source catalog.** A share is a list of UC `DataObject`s
+- **Shares map onto a source catalog.** A share is a list of share objects
   (`TABLE`, `SCHEMA`, `VOLUME`, `AGENT_SKILL`) naming assets in a catalog source:
-  a Unity Catalog REST server (this repository's `uc-server`, UC OSS or
-  Databricks), or a static list in the config. Locations and formats are
+  a static list in the config, a Unity Catalog REST server (this repository's
+  `uc-server`, UC OSS or Databricks; feature `unity`), or your own
+  `CatalogSource`. Locations and formats are
   resolved from the source at request time.
 - **Storage access is delegated or local.** A *delegated* source vends
   short-lived, downscoped credentials, so the server stores no storage secrets.
@@ -28,8 +29,28 @@ implementation in [`olai-sharing-api`](../sharing-api). See
 | `/api/v1/delta-sharing/…` | Delta Sharing protocol (recipient token) |
 | `/api/1.0/opensharing/…` | Open Sharing protocol: adds volumes, agent skills, temporary credentials (recipient token) |
 | `/api/1.0/opensharing/activations/{code}` | One-time activation link, returns the sharing profile |
-| `/api/2.1/unity-catalog/…` | Provider admin API: `shares`, `shares/{name}/permissions`, `recipients`, `recipients/{name}/rotate-token`, `credentials`, `external-locations` (provider token) |
+| `/api/2.1/unity-catalog/…` | Provider admin API (feature `unity`): `shares`, `shares/{name}/permissions`, `recipients`, `recipients/{name}/rotate-token`, `credentials`, `external-locations` (provider token) |
 | `/health` | Liveness |
+
+## Features
+
+| Feature | Default | What |
+|---|---|---|
+| `postgres` | ✓ | The Postgres `ShareStore` (sqlx, embedded migrations) |
+| `unity` | ✓ | Unity Catalog integration: the UC REST catalog source and the UC-shaped provider admin API |
+| `bin` | | The `sharing-server` binary (implies `postgres` and `unity`) |
+
+### Without Unity Catalog
+
+With `default-features = false` (optionally plus `postgres`) the crate uses no
+catalog's models: the store, recipient tokens and activation, sealed secrets,
+the static source and storage access remain. Credential vending and object
+stores come from `olai-uc-credentials` / `olai-uc-object-store`, over their own
+credential types. A catalog that already has discovery and an admin surface
+implements `CatalogSource` (or the `olai-sharing-api` ports directly),
+provisions shares and recipients through the `ShareStore`
+(`recipients::issue_token` issues tokens), and serves `embed::router`. See
+`tests/custom_mount.rs`.
 
 ## Running
 
@@ -80,6 +101,7 @@ that the `delta-sharing` clients read directly.
 ## Testing
 
 `cargo test -p olai-sharing-server` runs the end-to-end suite on the
-in-memory store. The Postgres store test runs when
+in-memory store; `--no-default-features` runs the catalog-free host test
+(`tests/custom_mount.rs`). The Postgres store test runs when
 `SHARING_SERVER_TEST_DATABASE_URL` points at a disposable database (see
 `tests/postgres.rs`).

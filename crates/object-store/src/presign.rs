@@ -21,8 +21,7 @@ use std::time::Duration;
 use object_store::Result;
 use object_store::path::Path;
 use object_store::signer::Signer;
-use unitycatalog_common::temporary_credentials::v1::TemporaryCredential;
-use unitycatalog_common::temporary_credentials::v1::temporary_credential::Credentials;
+use unitycatalog_credentials::model::{TemporaryCredential, VendedCredential as Credentials};
 use url::Url;
 
 use crate::credential::{as_aws, aws_access_point};
@@ -156,7 +155,7 @@ fn azure_sas_url(file: &Url, sas: &str) -> Result<Url> {
 
 #[cfg(test)]
 mod tests {
-    use unitycatalog_common::temporary_credentials::v1::{
+    use unitycatalog_credentials::model::{
         AwsTemporaryCredentials, AzureUserDelegationSas, GcpOauthToken,
     };
 
@@ -171,7 +170,6 @@ mod tests {
             url: url.to_string(),
             credentials,
             expiration_time,
-            ..Default::default()
         }
     }
 
@@ -195,14 +193,12 @@ mod tests {
         let expires = chrono::Utc::now().timestamp_millis() + 30_000;
         let cred = credential(
             "s3://bucket/tables/t1",
-            Some(Credentials::AwsTempCredentials(Box::new(
-                AwsTemporaryCredentials {
-                    access_key_id: "AKIAEXAMPLE".to_string(), // gitleaks:allow
-                    secret_access_key: "secret".to_string(),
-                    session_token: "session".to_string(),
-                    ..Default::default()
-                },
-            ))),
+            Some(Credentials::AwsTempCredentials(AwsTemporaryCredentials {
+                access_key_id: "AKIAEXAMPLE".to_string(), // gitleaks:allow
+                secret_access_key: "secret".to_string(),
+                session_token: "session".to_string(),
+                ..Default::default()
+            })),
             expires,
         );
         let files = vec![Url::parse("s3://bucket/tables/t1/letter=a/part-0.parquet").unwrap()];
@@ -233,12 +229,11 @@ mod tests {
         let sas = "sv=2022-11-02&sr=d&sp=rl&sig=abc";
         let cred = credential(
             "abfss://data@acct.dfs.core.windows.net/tables/t1",
-            Some(Credentials::AzureUserDelegationSas(Box::new(
+            Some(Credentials::AzureUserDelegationSas(
                 AzureUserDelegationSas {
                     sas_token: sas.to_string(),
-                    ..Default::default()
                 },
-            ))),
+            )),
             far_future(),
         );
         let files = vec![
@@ -263,10 +258,9 @@ mod tests {
     async fn oauth_tokens_cannot_presign() {
         let cred = credential(
             "gs://bucket/t1",
-            Some(Credentials::GcpOauthToken(Box::new(GcpOauthToken {
+            Some(Credentials::GcpOauthToken(GcpOauthToken {
                 oauth_token: "token".to_string(),
-                ..Default::default()
-            }))),
+            })),
             far_future(),
         );
         let files = vec![Url::parse("gs://bucket/t1/part-0.parquet").unwrap()];

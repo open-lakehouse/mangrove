@@ -40,9 +40,7 @@ use olai_http_wasm::{TemporaryToken, TokenCache};
 use unitycatalog_client::{
     PathOperation, TableOperation, TemporaryCredentialClient, VolumeOperation,
 };
-use unitycatalog_common::models::temporary_credentials::v1::{
-    TemporaryCredential, temporary_credential::Credentials,
-};
+use unitycatalog_credentials::model::{TemporaryCredential, VendedCredential};
 
 use crate::Error;
 
@@ -122,19 +120,22 @@ impl<T> UCCredentialProvider<T> {
                 .temporary_table_credential(*table, *op)
                 .await
                 .map_err(Error::from)?
-                .0),
+                .0
+                .into()),
             SecurableRef::Volume(volume, op) => Ok(self
                 .client
                 .temporary_volume_credential(*volume, *op)
                 .await
                 .map_err(Error::from)?
-                .0),
+                .0
+                .into()),
             SecurableRef::Path(path, op, dry_run) => Ok(self
                 .client
                 .temporary_path_credential(path.clone(), *op, *dry_run)
                 .await
                 .map_err(Error::from)?
-                .0),
+                .0
+                .into()),
         }
     }
 }
@@ -220,7 +221,7 @@ impl CredentialProvider for UCCredentialProvider<GcpCredential> {
 }
 
 pub(super) fn as_azure(cred: &TemporaryCredential) -> Result<TemporaryToken<Arc<AzureCredential>>> {
-    use Credentials::*;
+    use VendedCredential::*;
 
     let az_cred = match cred
         .credentials
@@ -275,7 +276,7 @@ fn non_empty(s: &str) -> Option<String> {
 }
 
 pub(super) fn as_aws(cred: &TemporaryCredential) -> Result<TemporaryToken<Arc<AwsCredential>>> {
-    use Credentials::*;
+    use VendedCredential::*;
 
     let aws_cred = match cred
         .credentials
@@ -302,7 +303,7 @@ pub(super) fn as_aws(cred: &TemporaryCredential) -> Result<TemporaryToken<Arc<Aw
 }
 
 pub(super) fn as_gcp(cred: &TemporaryCredential) -> Result<TemporaryToken<Arc<GcpCredential>>> {
-    use Credentials::*;
+    use VendedCredential::*;
 
     let gcp_cred = match cred
         .credentials
@@ -330,7 +331,7 @@ pub(super) fn as_gcp(cred: &TemporaryCredential) -> Result<TemporaryToken<Arc<Gc
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) fn aws_access_point(cred: &TemporaryCredential) -> Option<String> {
     match cred.credentials.as_ref()? {
-        Credentials::AwsTempCredentials(aws) if !aws.access_point.is_empty() => {
+        VendedCredential::AwsTempCredentials(aws) if !aws.access_point.is_empty() => {
             Some(aws.access_point.clone())
         }
         _ => None,
@@ -359,7 +360,7 @@ mod tests {
     use object_store::ObjectStoreExt;
     use object_store::azure::MicrosoftAzureBuilder;
     use object_store::path::Path;
-    use unitycatalog_common::models::temporary_credentials::v1::AwsTemporaryCredentials;
+    use unitycatalog_credentials::model::AwsTemporaryCredentials;
     use url::Url;
 
     use super::*;
@@ -381,7 +382,6 @@ mod tests {
                 }
                 .into(),
             ),
-            ..Default::default()
         }
     }
 
@@ -471,7 +471,7 @@ mod tests {
     /// The vended (URL-encoded) signature reaches Azure encoded exactly once.
     #[tokio::test]
     async fn azure_sas_signature_is_not_double_encoded() {
-        use unitycatalog_common::models::temporary_credentials::v1::AzureUserDelegationSas;
+        use unitycatalog_credentials::model::AzureUserDelegationSas;
 
         let mut server = mockito::Server::new_async().await;
         // `UrlEncoded` matches the *decoded* value: a double-encoded `%252B`
@@ -493,11 +493,9 @@ mod tests {
             credentials: Some(
                 AzureUserDelegationSas {
                     sas_token: "sv=2021-08-06&sp=rl&sig=ab%2Bcd%2Fef%3D".to_string(),
-                    ..Default::default()
                 }
                 .into(),
             ),
-            ..Default::default()
         };
         let token = Arc::try_unwrap(as_azure(&credential).unwrap().token).unwrap();
         let store = MicrosoftAzureBuilder::new()

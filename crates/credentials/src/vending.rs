@@ -3,20 +3,17 @@ use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+use crate::location::{StorageLocationScheme, StorageLocationUrl};
+use crate::model::{
+    AwsIamRole, AwsTemporaryCredentials, AzureClientSecret, AzureManagedIdentity,
+    AzureServicePrincipal, AzureStorageKey, AzureUserDelegationSas, StorageCredential,
+    TemporaryCredential, VendedCredential,
+};
+use crate::{Error, Result};
 use olai_http::StaticCredentialProvider;
 use olai_http::TemporaryToken;
 use olai_http::aws::{AwsCredential, AwsCredentialProvider};
 use olai_http::azure::AzureCredential;
-use unitycatalog_common::models::credentials::v1::{
-    Credential, azure_service_principal::Credential as AzureSpCredential,
-};
-use unitycatalog_common::models::temporary_credentials::v1::{
-    AwsTemporaryCredentials, AzureUserDelegationSas, TemporaryCredential,
-    temporary_credential::Credentials,
-};
-
-use crate::location::{StorageLocationScheme, StorageLocationUrl};
-use crate::{Error, Result};
 
 /// Default credential TTL when the cloud provider does not supply an expiry.
 const DEFAULT_TTL_SECS: u64 = 3600;
@@ -57,7 +54,6 @@ pub fn local_path_credential(url: &str) -> TemporaryCredential {
         expiration_time: expiry_to_epoch_millis(None),
         url: url.to_owned(),
         credentials: None,
-        ..Default::default()
     }
 }
 
@@ -70,16 +66,14 @@ fn aws_token_to_temporary_credential(
     TemporaryCredential {
         expiration_time,
         url: url.to_owned(),
-        credentials: Some(Credentials::AwsTempCredentials(Box::new(
+        credentials: Some(VendedCredential::AwsTempCredentials(
             AwsTemporaryCredentials {
                 access_key_id: cred.key_id.clone(),
                 secret_access_key: cred.secret_key.clone(),
                 session_token: cred.token.clone().unwrap_or_default(),
                 access_point: String::new(),
-                ..Default::default()
             },
-        ))),
-        ..Default::default()
+        )),
     }
 }
 
@@ -90,13 +84,9 @@ fn azure_sas_to_temporary_credential(url: &str, sas_token: String) -> TemporaryC
     TemporaryCredential {
         expiration_time,
         url: url.to_owned(),
-        credentials: Some(Credentials::AzureUserDelegationSas(Box::new(
-            AzureUserDelegationSas {
-                sas_token,
-                ..Default::default()
-            },
-        ))),
-        ..Default::default()
+        credentials: Some(VendedCredential::AzureUserDelegationSas(
+            AzureUserDelegationSas { sas_token },
+        )),
     }
 }
 
@@ -176,23 +166,14 @@ fn vended_cache() -> &'static Mutex<HashMap<u64, TemporaryCredential>> {
 /// Cache key for a vend request: the credential's secret material plus the storage scope and
 /// operation. Hashing the credential content means a rotated credential produces a different key,
 /// so a stale token is never served after rotation.
-fn vend_cache_key(credential: &Credential, url: &str, operation: VendOperation) -> Result<u64> {
+fn vend_cache_key(
+    credential: &StorageCredential,
+    url: &str,
+    operation: VendOperation,
+) -> Result<u64> {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    // The secret-bearing credential variants serialize deterministically enough for cache keying.
-    serde_json::to_vec(&credential.azure_service_principal)
-        .and_then(|b| {
-            hasher.write(&b);
-            serde_json::to_vec(&credential.azure_managed_identity)
-        })
-        .and_then(|b| {
-            hasher.write(&b);
-            serde_json::to_vec(&credential.azure_storage_key)
-        })
-        .and_then(|b| {
-            hasher.write(&b);
-            serde_json::to_vec(&credential.aws_iam_role)
-        })
-        .map_err(Error::from)?;
+    // The credential serializes deterministically enough for cache keying.
+    hasher.write(&serde_json::to_vec(credential)?);
     url.hash(&mut hasher);
     (operation as u8).hash(&mut hasher);
     Ok(hasher.finish())
@@ -206,14 +187,14 @@ fn now_epoch_millis() -> i64 {
         .as_millis() as i64
 }
 
-/// Generate a temporary credential for the given `Credential` and storage `url`,
+/// Generate a temporary credential for the given [`StorageCredential`] and storage `url`,
 /// downscoped to the requested `operation`.
 ///
 /// Results are cached by `(credential material, url, operation)` until shortly before the vended
 /// token expires, so repeated requests for the same scope avoid redundant calls to the cloud
 /// provider. See [`vend_credential_uncached`] for the dispatch logic.
 pub async fn vend_credential(
-    credential: &Credential,
+    credential: &StorageCredential,
     url: &str,
     operation: VendOperation,
 ) -> Result<TemporaryCredential> {
@@ -234,46 +215,37 @@ pub async fn vend_credential(
     Ok(vended)
 }
 
-/// Dispatch to the appropriate cloud provider based on which credential field is populated:
+/// Dispatch to the appropriate cloud provider for the credential kind:
 /// - `AzureServicePrincipal` → fetch AAD bearer token, then exchange for a User Delegation SAS
 /// - `AzureManagedIdentity`  → fetch AAD bearer token via IMDS, then User Delegation SAS
 /// - `AzureStorageKey`       → service SAS signed with the account key
-/// - `AwsIamRoleConfig`      → AWS STS `AssumeRole` with inline session policy
-/// - GCP                     → not yet implemented
+/// - `AwsIamRole`            → AWS STS `AssumeRole` with inline session policy
 async fn vend_credential_uncached(
-    credential: &Credential,
+    credential: &StorageCredential,
     url: &str,
     operation: VendOperation,
 ) -> Result<TemporaryCredential> {
-    if let Some(sp) = credential.azure_service_principal.as_option() {
-        return vend_azure_service_principal(sp, url, operation).await;
+    match credential {
+        StorageCredential::AzureServicePrincipal(sp) => {
+            vend_azure_service_principal(sp, url, operation).await
+        }
+        StorageCredential::AzureManagedIdentity(msi) => {
+            vend_azure_managed_identity(msi, url, operation).await
+        }
+        StorageCredential::AzureStorageKey(key) => {
+            vend_azure_storage_key(key, url, operation).await
+        }
+        StorageCredential::AwsIamRole(role) => vend_aws_iam_role(role, url, operation).await,
     }
-    if let Some(msi) = credential.azure_managed_identity.as_option() {
-        return vend_azure_managed_identity(msi, url, operation).await;
-    }
-    if let Some(key) = credential.azure_storage_key.as_option() {
-        return vend_azure_storage_key(key, url, operation).await;
-    }
-    if let Some(role) = credential.aws_iam_role.as_option() {
-        return vend_aws_iam_role(role, url, operation).await;
-    }
-    if credential.databricks_gcp_service_account.is_set() {
-        return Err(Error::generic(
-            "GCP service account credential vending is not yet implemented.",
-        ));
-    }
-    Err(Error::invalid_argument(
-        "No supported credential type found on this credential object.",
-    ))
 }
 
 async fn vend_azure_service_principal(
-    sp: &unitycatalog_common::models::credentials::v1::AzureServicePrincipal,
+    sp: &AzureServicePrincipal,
     url: &str,
     operation: VendOperation,
 ) -> Result<TemporaryCredential> {
-    let bearer_token = match &sp.credential {
-        Some(AzureSpCredential::ClientSecret(secret)) => {
+    let bearer_token = match &sp.secret {
+        AzureClientSecret::ClientSecret(secret) => {
             let token = olai_http::azure::fetch_client_secret_token(
                 &sp.directory_id,
                 sp.application_id.clone(),
@@ -283,7 +255,7 @@ async fn vend_azure_service_principal(
             .await?;
             extract_bearer_token(token.token.as_ref())?
         }
-        Some(AzureSpCredential::FederatedTokenFile(token_file)) => {
+        AzureClientSecret::FederatedTokenFile(token_file) => {
             let token = olai_http::azure::fetch_workload_identity_token(
                 &sp.directory_id,
                 sp.application_id.clone(),
@@ -292,11 +264,6 @@ async fn vend_azure_service_principal(
             )
             .await?;
             extract_bearer_token(token.token.as_ref())?
-        }
-        None => {
-            return Err(Error::invalid_argument(
-                "Azure service principal credential is missing client_secret or federated_token_file.",
-            ));
         }
     };
     vend_azure_sas_from_bearer(url, &bearer_token, operation).await
@@ -317,7 +284,7 @@ async fn vend_azure_service_principal(
 /// user-assigned identity and is passed as `msi_res_id` to IMDS. When absent,
 /// the system-assigned identity of the Access Connector is used automatically.
 async fn vend_azure_managed_identity(
-    msi: &unitycatalog_common::models::credentials::v1::AzureManagedIdentity,
+    msi: &AzureManagedIdentity,
     url: &str,
     operation: VendOperation,
 ) -> Result<TemporaryCredential> {
@@ -328,7 +295,7 @@ async fn vend_azure_managed_identity(
 }
 
 async fn vend_azure_storage_key(
-    key: &unitycatalog_common::models::credentials::v1::AzureStorageKey,
+    key: &AzureStorageKey,
     url: &str,
     operation: VendOperation,
 ) -> Result<TemporaryCredential> {
@@ -390,7 +357,7 @@ fn extract_bearer_token(credential: &AzureCredential) -> Result<String> {
 }
 
 async fn vend_aws_iam_role(
-    role: &unitycatalog_common::models::credentials::v1::AwsIamRoleConfig,
+    role: &AwsIamRole,
     url: &str,
     operation: VendOperation,
 ) -> Result<TemporaryCredential> {
@@ -470,7 +437,7 @@ mod tests {
         assert_eq!(cred.url, "s3://my-bucket/path");
         assert!(cred.expiration_time > 0);
         match cred.credentials {
-            Some(Credentials::AwsTempCredentials(aws)) => {
+            Some(VendedCredential::AwsTempCredentials(aws)) => {
                 assert_eq!(aws.access_key_id, "AKIAIOSFODNN7EXAMPLE"); // gitleaks:allow
                 assert_eq!(aws.session_token, "session-token");
             }
@@ -561,13 +528,18 @@ mod tests {
         assert!(millis.unwrap() > 0);
     }
 
-    fn empty_credential() -> Credential {
-        Credential::default()
+    /// A storage-key credential whose key is not valid base64, so dispatching it
+    /// fails locally (no network) while signing the SAS.
+    fn unusable_credential() -> StorageCredential {
+        StorageCredential::AzureStorageKey(AzureStorageKey {
+            account_name: "acct".into(),
+            account_key: "not base64!".into(),
+        })
     }
 
     #[test]
     fn test_vend_cache_key_is_sensitive_to_inputs() {
-        let cred = empty_credential();
+        let cred = unusable_credential();
         let base = vend_cache_key(&cred, "s3://bucket/a", VendOperation::Read).unwrap();
         // Same inputs → same key.
         assert_eq!(
@@ -584,15 +556,10 @@ mod tests {
             vend_cache_key(&cred, "s3://bucket/a", VendOperation::ReadWrite).unwrap()
         );
         // A different credential (rotated secret) changes the key.
-        let mut rotated = empty_credential();
-        rotated.azure_storage_key = Some(
-            unitycatalog_common::models::credentials::v1::AzureStorageKey {
-                account_name: "acct".into(),
-                account_key: "rotated-secret".into(),
-                ..Default::default()
-            },
-        )
-        .into();
+        let rotated = StorageCredential::AzureStorageKey(AzureStorageKey {
+            account_name: "acct".into(),
+            account_key: "rotated-secret".into(),
+        });
         assert_ne!(
             base,
             vend_cache_key(&rotated, "s3://bucket/a", VendOperation::Read).unwrap()
@@ -601,16 +568,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_vend_credential_serves_unexpired_cache_entry() {
-        // A credential with no supported type would error if dispatched, so a successful
-        // result proves the cached entry short-circuited the (network) dispatch.
-        let cred = empty_credential();
+        // The credential would error if dispatched, so a successful result proves the
+        // cached entry short-circuited the (network) dispatch.
+        let cred = unusable_credential();
         let url = "s3://cache-hit-bucket/unique-prefix";
         let key = vend_cache_key(&cred, url, VendOperation::Read).unwrap();
         let cached = TemporaryCredential {
             expiration_time: now_epoch_millis() + 3_600_000,
             url: url.to_string(),
             credentials: None,
-            ..Default::default()
         };
         vended_cache().lock().unwrap().insert(key, cached.clone());
 
@@ -623,8 +589,8 @@ mod tests {
     #[tokio::test]
     async fn test_vend_credential_ignores_expired_cache_entry() {
         // An entry inside the refresh margin must be treated as a miss, so dispatch runs (and here
-        // errors, since the credential has no supported type).
-        let cred = empty_credential();
+        // errors, since the credential's key is unusable).
+        let cred = unusable_credential();
         let url = "s3://cache-expired-bucket/unique-prefix";
         let key = vend_cache_key(&cred, url, VendOperation::Read).unwrap();
         let expired = TemporaryCredential {
@@ -632,7 +598,6 @@ mod tests {
             expiration_time: now_epoch_millis() + 1_000,
             url: url.to_string(),
             credentials: None,
-            ..Default::default()
         };
         vended_cache().lock().unwrap().insert(key, expired);
 

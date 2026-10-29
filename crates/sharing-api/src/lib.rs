@@ -1,5 +1,5 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
-//! Portable Unity Catalog **Open Sharing** / **Delta Sharing** REST API.
+//! Portable **Open Sharing** / **Delta Sharing** REST API.
 //!
 //! This crate owns the sharing *semantics* — share / schema / asset discovery,
 //! the table query path (version / metadata / query) and the storage-backed asset
@@ -15,6 +15,10 @@
 //!
 //! [`SharingService`] composes them and implements every handler; the [`router`]
 //! serves it over axum. See `ARCHITECTURE.md` for the overall design.
+//!
+//! The crate depends on no catalog. An existing catalog becomes a sharing server
+//! by implementing the ports over its own discovery, authorization and
+//! credential machinery; `olai-sharing-server` is one such host.
 //!
 //! The wire types come from `olai-sharing-common`
 //! ([`open_sharing_common`]), shared with the client.

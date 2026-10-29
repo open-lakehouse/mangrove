@@ -79,21 +79,13 @@ pub enum Error {
 /// keep the status codes and messages they had while vending lived in the server.
 impl From<unitycatalog_credentials::Error> for Error {
     fn from(e: unitycatalog_credentials::Error) -> Self {
-        use unitycatalog_common::Error as CommonError;
+        use unitycatalog_credentials::Error as CredentialsError;
         match e {
-            unitycatalog_credentials::Error::Common(CommonError::Generic(msg)) => {
-                Error::Generic(msg)
-            }
-            unitycatalog_credentials::Error::Common(CommonError::InvalidArgument(msg)) => {
-                Error::InvalidArgument(msg)
-            }
-            unitycatalog_credentials::Error::Common(CommonError::SerDe(source)) => {
-                Error::SerDe { source }
-            }
-            unitycatalog_credentials::Error::Common(source) => Error::Common { source },
-            unitycatalog_credentials::Error::CloudCredential(source) => {
-                Error::CloudCredential { source }
-            }
+            CredentialsError::NotFound => Error::NotFound,
+            CredentialsError::Generic(msg) => Error::Generic(msg),
+            CredentialsError::InvalidArgument(msg) => Error::InvalidArgument(msg),
+            CredentialsError::Serde(source) => Error::SerDe { source },
+            CredentialsError::CloudCredential(source) => Error::CloudCredential { source },
         }
     }
 }

@@ -3,13 +3,14 @@
 //! [`Error`] is the error half of every handler `Result` in this crate: the
 //! generated `SharingHandler` / `SharingVolumeHandler` / `SharingSkillHandler`
 //! traits return `crate::Result<T>`, and the hand-written NDJSON query path does
-//! too. Its [`IntoResponse`] emits the Unity Catalog error envelope
-//! (`{ "errorCode", "message" }`) with the status codes the sharing surface uses,
-//! plus a
+//! too. Its [`IntoResponse`] emits the [`ErrorResponse`] envelope
+//! (`{ "errorCode", "message" }`, the shape Delta Sharing and Unity Catalog
+//! servers share) with the status codes the sharing surface uses, plus a
 //! [`NotImplemented`](Error::NotImplemented) variant (→ 501) for the
 //! not-yet-implemented protocol additions (CDF, async queries, delta format).
-
-use unitycatalog_common::Error as CommonError;
+//!
+//! The crate depends on no catalog: a host maps its own errors onto these
+//! variants.
 
 /// Result type used across the crate's sharing handlers + router.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -28,14 +29,6 @@ pub enum Error {
     DeltaKernel {
         #[from]
         source: delta_kernel::Error,
-    },
-
-    /// A Unity Catalog common error, carrying its own status mapping. Surfaced
-    /// with the status/code the common error dictates.
-    #[error("Common Error: {source}")]
-    Common {
-        #[from]
-        source: CommonError,
     },
 
     /// A response (de)serialization failure. → 500.
@@ -110,10 +103,18 @@ impl Error {
             Error::NotAllowed => "PERMISSION_DENIED",
             Error::Unauthenticated => "UNAUTHENTICATED",
             Error::NotImplemented(_) => "NOT_IMPLEMENTED",
-            Error::Common { source } => source.error_code(),
             _ => "INTERNAL_ERROR",
         }
     }
+}
+
+/// The error body every sharing endpoint returns.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ErrorResponse {
+    /// A machine-readable code, e.g. `NOT_FOUND` (see [`Error::error_code`]).
+    pub error_code: String,
+    pub message: String,
 }
 
 /// Bridge from the shared wire-model error (produced by the protocol
@@ -134,9 +135,8 @@ mod server {
     use axum::http::StatusCode;
     use axum::response::{IntoResponse, Response};
     use tracing::error;
-    use unitycatalog_common::ErrorResponse;
 
-    use super::Error;
+    use super::{Error, ErrorResponse};
 
     fn internal() -> (StatusCode, String) {
         (
@@ -149,17 +149,6 @@ mod server {
         fn into_response(self) -> Response {
             let error_code = self.error_code().to_string();
             let (status, message): (StatusCode, String) = match self {
-                Error::Common { source } => {
-                    let (status, message) = source.response_parts();
-                    return (
-                        status,
-                        Json(ErrorResponse {
-                            error_code,
-                            message: message.to_string(),
-                        }),
-                    )
-                        .into_response();
-                }
                 Error::DeltaKernel { source } => {
                     error!("Delta Kernel error: {}", source);
                     internal()
