@@ -75,6 +75,12 @@ request context `Cx`, which becomes the authenticated recipient.
 | `TableFormat` | version / metadata / query / changes as protocol actions | Delta (kernel) | Iceberg |
 | `KeyProvider` (`olai-store`) | wrap/unwrap data keys for sealed secrets | `LocalKeyProvider` | cloud KMS / Key Vault |
 
+The recipient-facing ports live in `olai-uc-sharing-api`: `ShareCatalog`, which
+covers discovery and resolution and is authorized through one `authorize` hook;
+`StorageAccess`; and `TableFormat`. A host implements `ShareCatalog` on top of
+its `ShareStore` and `CatalogSource`, which belong to the sharing server, and
+puts `RecipientAuthenticator` in front of the router.
+
 A `SharingService` holds one implementation per port, plus a format registry.
 It implements the existing handler traits, so discovery, query and asset
 serving stay identical whatever backs them. The router mounts the same

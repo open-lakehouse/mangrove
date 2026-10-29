@@ -1,70 +1,132 @@
-//! The sharing handler surface: the generated discovery/asset handler traits are
-//! implemented here as a **blanket impl** over any [`SharingBackend`], and the
-//! hand-written NDJSON query path is a separate [`SharingQueryHandler`] trait
-//! (also blanket-implemented) whose streaming response contract the generated,
-//! JSON-only handlers do not model.
+//! The sharing handler surface, implemented by [`SharingService`].
 //!
-//! All sharing business logic lives here, expressed purely in terms of the
-//! [`SharingBackend`] port — a server serves the identical surface by implementing
-//! the port and nothing else.
+//! The generated discovery / asset handler traits (`SharingHandler`,
+//! `SharingVolumeHandler`, `SharingSkillHandler`) and the hand-written
+//! [`SharingQueryHandler`] — whose newline-delimited JSON responses the generated,
+//! JSON-only handlers do not model — are all implemented here in terms of the
+//! service's ports. This is the only place protocol semantics live.
 
 use bytes::Bytes;
+use chrono::DateTime;
 
 use unitycatalog_sharing_client::models::open_sharing::v1::{
     Schema, Share as SharingShare, SharingSkill, SharingVolume, Table, *,
 };
-use unitycatalog_sharing_client::models::{
-    MetadataResponse, MetadataResponseData, ProtocolResponseData,
-};
 
-use crate::backend::{
-    SharedAssetKind, SharingAction, SharingBackend, SharingTableReference, SharingVolumeReference,
-};
+use crate::catalog::{AssetKind, AssetRef, PageRequest, SharedAsset, SharedObject, SharingAction};
 use crate::codegen::sharing::SharingHandler;
 use crate::codegen::sharing_skill::SharingSkillHandler;
 use crate::codegen::sharing_volume::SharingVolumeHandler;
 use crate::error::{Error, Result};
+use crate::format::{QuerySpec, VersionSpec};
+use crate::service::{SharingService, paginate};
+
+impl<Cx: Clone + Send + Sync + 'static> SharingService<Cx> {
+    /// Authorize reading `share`.
+    async fn authorize_share(&self, share: &str, cx: &Cx) -> Result<()> {
+        self.catalog
+            .authorize(SharingAction::ReadShare { share }, cx)
+            .await
+    }
+
+    /// The share's objects of `kind`, optionally restricted to one schema.
+    async fn objects(
+        &self,
+        share: &str,
+        kind: AssetKind,
+        schema: Option<&str>,
+        cx: &Cx,
+    ) -> Result<Vec<SharedObject>> {
+        Ok(self
+            .catalog
+            .list_objects(share, cx)
+            .await?
+            .into_iter()
+            .filter(|o| o.kind == kind && schema.is_none_or(|s| o.schema == s))
+            .collect())
+    }
+
+    /// Authorize and resolve a shared table.
+    async fn table(&self, share: &str, schema: &str, name: &str, cx: &Cx) -> Result<SharedAsset> {
+        self.authorize_share(share, cx).await?;
+        self.catalog
+            .resolve(&AssetRef::table(share, schema, name), cx)
+            .await
+    }
+
+    /// Authorize and resolve a shared storage-backed asset.
+    async fn storage_asset(
+        &self,
+        share: &str,
+        schema: &str,
+        name: &str,
+        kind: AssetKind,
+        cx: &Cx,
+    ) -> Result<SharedAsset> {
+        self.authorize_share(share, cx).await?;
+        self.catalog
+            .resolve(&AssetRef::new(share, schema, name, kind), cx)
+            .await
+    }
+}
+
+/// Reject reading history the provider does not share.
+fn check_history(asset: &SharedAsset, at: VersionSpec) -> Result<()> {
+    if at.is_time_travel() && !asset.history_shared {
+        return Err(Error::invalid_argument(
+            "the provider does not share this table's history; only the latest version can be read",
+        ));
+    }
+    Ok(())
+}
+
+/// Parse an ISO-8601 / RFC-3339 timestamp into milliseconds since the epoch.
+fn parse_timestamp(field: &str, value: &str) -> Result<i64> {
+    DateTime::parse_from_rfc3339(value)
+        .map(|ts| ts.timestamp_millis())
+        .map_err(|e| Error::invalid_argument(format!("{field}: invalid timestamp {value:?}: {e}")))
+}
 
 // ---------------------------------------------------------------------------
-// Discovery: the generated `SharingHandler`, blanket-implemented over the port.
+// Discovery
 // ---------------------------------------------------------------------------
 
 #[async_trait::async_trait]
-impl<B, Cx> SharingHandler<Cx> for B
-where
-    B: SharingBackend<Cx>,
-    Cx: Clone + Send + Sync + 'static,
-{
+impl<Cx: Clone + Send + Sync + 'static> SharingHandler<Cx> for SharingService<Cx> {
     async fn list_shares(
         &self,
         request: ListSharesRequest,
         context: Cx,
     ) -> Result<ListSharesResponse> {
-        self.authorize(SharingAction::ListShares, &context).await?;
-        let (shares, next_page_token) = self
+        self.catalog
+            .authorize(SharingAction::ListShares, &context)
+            .await?;
+        let page = self
+            .catalog
             .list_shares(
-                request.max_results.map(|v| v as usize),
-                request.page_token.clone(),
+                PageRequest {
+                    max_results: request
+                        .max_results
+                        .map(|n| usize::try_from(n).unwrap_or_default()),
+                    page_token: request.page_token,
+                },
                 &context,
             )
             .await?;
         Ok(ListSharesResponse {
-            items: shares.into_iter().map(SharingShare::from).collect(),
-            next_page_token,
+            items: page.items.into_iter().map(SharingShare::from).collect(),
+            next_page_token: page.next_page_token,
             ..Default::default()
         })
     }
 
     async fn get_share(&self, request: GetShareRequest, context: Cx) -> Result<SharingShare> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.name,
-            },
-            &context,
-        )
-        .await?;
-        let share = SharingBackend::get_share(self, &request.name, &context).await?;
-        Ok(share.into())
+        self.authorize_share(&request.name, &context).await?;
+        Ok(self
+            .catalog
+            .get_share(&request.name, &context)
+            .await?
+            .into())
     }
 
     async fn list_schemas(
@@ -72,22 +134,14 @@ where
         request: ListSchemasRequest,
         context: Cx,
     ) -> Result<ListSchemasResponse> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let objects = self
-            .list_share_objects(
-                &request.share,
-                crate::backend::ShareObjectKind::Table,
-                &context,
-            )
-            .await?;
+        self.authorize_share(&request.share, &context).await?;
+        // Schemas are implied by the share's objects — of every kind, so a schema
+        // holding only volumes or skills is listed too.
         let mut seen = std::collections::HashSet::new();
-        let items = objects
+        let schemas: Vec<_> = self
+            .catalog
+            .list_objects(&request.share, &context)
+            .await?
             .into_iter()
             .filter(|o| seen.insert(o.schema.clone()))
             .map(|o| Schema {
@@ -96,9 +150,10 @@ where
                 ..Default::default()
             })
             .collect();
+        let page = paginate(schemas, request.max_results, request.page_token.as_deref())?;
         Ok(ListSchemasResponse {
-            items,
-            next_page_token: None,
+            items: page.items,
+            next_page_token: page.next_page_token,
             ..Default::default()
         })
     }
@@ -108,35 +163,23 @@ where
         request: ListTablesRequest,
         context: Cx,
     ) -> Result<ListTablesResponse> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let share = SharingBackend::get_share(self, &request.share, &context).await?;
-        let objects = self
-            .list_share_objects(
+        self.authorize_share(&request.share, &context).await?;
+        let share = self.catalog.get_share(&request.share, &context).await?;
+        let tables = self
+            .objects(
                 &request.share,
-                crate::backend::ShareObjectKind::Table,
+                AssetKind::Table,
+                Some(&request.name),
                 &context,
             )
-            .await?;
-        let items = objects
+            .await?
             .into_iter()
-            .filter(|o| o.schema == request.name)
-            .map(|o| Table {
-                name: o.name,
-                share: share.name.clone(),
-                share_id: share.id.clone(),
-                schema: o.schema,
-                ..Default::default()
-            })
+            .map(|o| table(o, &share.name, share.id.as_deref()))
             .collect();
+        let page = paginate(tables, request.max_results, request.page_token.as_deref())?;
         Ok(ListTablesResponse {
-            items,
-            next_page_token: None,
+            items: page.items,
+            next_page_token: page.next_page_token,
             ..Default::default()
         })
     }
@@ -146,83 +189,62 @@ where
         request: ListAllTablesRequest,
         context: Cx,
     ) -> Result<ListAllTablesResponse> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.name,
-            },
-            &context,
-        )
-        .await?;
-        let share = SharingBackend::get_share(self, &request.name, &context).await?;
-        let objects = self
-            .list_share_objects(
-                &request.name,
-                crate::backend::ShareObjectKind::Table,
-                &context,
-            )
-            .await?;
-        let items = objects
+        self.authorize_share(&request.name, &context).await?;
+        let share = self.catalog.get_share(&request.name, &context).await?;
+        let tables = self
+            .objects(&request.name, AssetKind::Table, None, &context)
+            .await?
             .into_iter()
-            .map(|o| Table {
-                name: o.name,
-                share: share.name.clone(),
-                share_id: share.id.clone(),
-                schema: o.schema,
-                ..Default::default()
-            })
+            .map(|o| table(o, &share.name, share.id.as_deref()))
             .collect();
+        let page = paginate(tables, request.max_results, request.page_token.as_deref())?;
         Ok(ListAllTablesResponse {
-            items,
-            next_page_token: None,
+            items: page.items,
+            next_page_token: page.next_page_token,
             ..Default::default()
         })
     }
 }
 
+fn table(object: SharedObject, share: &str, share_id: Option<&str>) -> Table {
+    Table {
+        name: object.name,
+        schema: object.schema,
+        share: share.to_string(),
+        id: object.id,
+        share_id: share_id.map(ToString::to_string),
+        ..Default::default()
+    }
+}
+
 // ---------------------------------------------------------------------------
-// Assets (volumes): the generated `SharingVolumeHandler`, blanket-implemented.
+// Assets: volumes
 // ---------------------------------------------------------------------------
 
 #[async_trait::async_trait]
-impl<B, Cx> SharingVolumeHandler<Cx> for B
-where
-    B: SharingBackend<Cx>,
-    Cx: Clone + Send + Sync + 'static,
-{
+impl<Cx: Clone + Send + Sync + 'static> SharingVolumeHandler<Cx> for SharingService<Cx> {
     async fn list_volumes(
         &self,
         request: ListVolumesRequest,
         context: Cx,
     ) -> Result<ListVolumesResponse> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let share = SharingBackend::get_share(self, &request.share, &context).await?;
-        let objects = self
-            .list_share_objects(
+        self.authorize_share(&request.share, &context).await?;
+        let share = self.catalog.get_share(&request.share, &context).await?;
+        let volumes = self
+            .objects(
                 &request.share,
-                crate::backend::ShareObjectKind::Volume,
+                AssetKind::Volume,
+                Some(&request.schema),
                 &context,
             )
-            .await?;
-        let items = objects
+            .await?
             .into_iter()
-            .filter(|o| o.schema == request.schema)
-            .map(|o| SharingVolume {
-                name: o.name,
-                schema: o.schema,
-                share: share.name.clone(),
-                share_id: share.id.clone(),
-                ..Default::default()
-            })
+            .map(|o| volume(o, &share.name, share.id.as_deref()))
             .collect();
+        let page = paginate(volumes, request.max_results, request.page_token.as_deref())?;
         Ok(ListVolumesResponse {
-            items,
-            next_page_token: None,
+            items: page.items,
+            next_page_token: page.next_page_token,
             ..Default::default()
         })
     }
@@ -232,55 +254,38 @@ where
         request: ListAllVolumesRequest,
         context: Cx,
     ) -> Result<ListAllVolumesResponse> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let share = SharingBackend::get_share(self, &request.share, &context).await?;
-        let objects = self
-            .list_share_objects(
-                &request.share,
-                crate::backend::ShareObjectKind::Volume,
-                &context,
-            )
-            .await?;
-        let items = objects
+        self.authorize_share(&request.share, &context).await?;
+        let share = self.catalog.get_share(&request.share, &context).await?;
+        let volumes = self
+            .objects(&request.share, AssetKind::Volume, None, &context)
+            .await?
             .into_iter()
-            .map(|o| SharingVolume {
-                name: o.name,
-                schema: o.schema,
-                share: share.name.clone(),
-                share_id: share.id.clone(),
-                ..Default::default()
-            })
+            .map(|o| volume(o, &share.name, share.id.as_deref()))
             .collect();
+        let page = paginate(volumes, request.max_results, request.page_token.as_deref())?;
         Ok(ListAllVolumesResponse {
-            items,
-            next_page_token: None,
+            items: page.items,
+            next_page_token: page.next_page_token,
             ..Default::default()
         })
     }
 
     async fn get_volume(&self, request: GetVolumeRequest, context: Cx) -> Result<SharingVolume> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let asset = SharingVolumeReference::new(&request.share, &request.schema, &request.name);
-        let location = self
-            .resolve_asset_location(&asset, SharedAssetKind::Volume, &context)
+        let asset = self
+            .storage_asset(
+                &request.share,
+                &request.schema,
+                &request.name,
+                AssetKind::Volume,
+                &context,
+            )
             .await?;
         Ok(SharingVolume {
             name: request.name,
             schema: request.schema,
             share: request.share,
-            storage_location: Some(location.raw),
+            id: asset.id,
+            storage_location: Some(asset.location.raw),
             ..Default::default()
         })
     }
@@ -290,65 +295,58 @@ where
         request: GenerateTemporaryVolumeCredentialsRequest,
         context: Cx,
     ) -> Result<SharingTemporaryCredentials> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let asset = SharingVolumeReference::new(&request.share, &request.schema, &request.name);
-        let location = self
-            .resolve_asset_location(&asset, SharedAssetKind::Volume, &context)
+        let asset = self
+            .storage_asset(
+                &request.share,
+                &request.schema,
+                &request.name,
+                AssetKind::Volume,
+                &context,
+            )
             .await?;
-        self.vend_read_credential(&location, &context).await
+        self.access.vend_read_credential(&asset, &context).await
+    }
+}
+
+fn volume(object: SharedObject, share: &str, share_id: Option<&str>) -> SharingVolume {
+    SharingVolume {
+        name: object.name,
+        schema: object.schema,
+        share: share.to_string(),
+        id: object.id,
+        share_id: share_id.map(ToString::to_string),
+        ..Default::default()
     }
 }
 
 // ---------------------------------------------------------------------------
-// Assets (agent skills): the generated `SharingSkillHandler`, blanket-implemented.
+// Assets: agent skills
 // ---------------------------------------------------------------------------
 
 #[async_trait::async_trait]
-impl<B, Cx> SharingSkillHandler<Cx> for B
-where
-    B: SharingBackend<Cx>,
-    Cx: Clone + Send + Sync + 'static,
-{
+impl<Cx: Clone + Send + Sync + 'static> SharingSkillHandler<Cx> for SharingService<Cx> {
     async fn list_skills(
         &self,
         request: ListSkillsRequest,
         context: Cx,
     ) -> Result<ListSkillsResponse> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let share = SharingBackend::get_share(self, &request.share, &context).await?;
-        let objects = self
-            .list_share_objects(
+        self.authorize_share(&request.share, &context).await?;
+        let share = self.catalog.get_share(&request.share, &context).await?;
+        let skills = self
+            .objects(
                 &request.share,
-                crate::backend::ShareObjectKind::AgentSkill,
+                AssetKind::AgentSkill,
+                Some(&request.schema),
                 &context,
             )
-            .await?;
-        let items = objects
+            .await?
             .into_iter()
-            .filter(|o| o.schema == request.schema)
-            .map(|o| SharingSkill {
-                name: o.name,
-                schema: o.schema,
-                share: share.name.clone(),
-                share_id: share.id.clone(),
-                ..Default::default()
-            })
+            .map(|o| skill(o, &share.name, share.id.as_deref()))
             .collect();
+        let page = paginate(skills, request.max_results, request.page_token.as_deref())?;
         Ok(ListSkillsResponse {
-            items,
-            next_page_token: None,
+            items: page.items,
+            next_page_token: page.next_page_token,
             ..Default::default()
         })
     }
@@ -358,55 +356,38 @@ where
         request: ListAllSkillsRequest,
         context: Cx,
     ) -> Result<ListAllSkillsResponse> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let share = SharingBackend::get_share(self, &request.share, &context).await?;
-        let objects = self
-            .list_share_objects(
-                &request.share,
-                crate::backend::ShareObjectKind::AgentSkill,
-                &context,
-            )
-            .await?;
-        let items = objects
+        self.authorize_share(&request.share, &context).await?;
+        let share = self.catalog.get_share(&request.share, &context).await?;
+        let skills = self
+            .objects(&request.share, AssetKind::AgentSkill, None, &context)
+            .await?
             .into_iter()
-            .map(|o| SharingSkill {
-                name: o.name,
-                schema: o.schema,
-                share: share.name.clone(),
-                share_id: share.id.clone(),
-                ..Default::default()
-            })
+            .map(|o| skill(o, &share.name, share.id.as_deref()))
             .collect();
+        let page = paginate(skills, request.max_results, request.page_token.as_deref())?;
         Ok(ListAllSkillsResponse {
-            items,
-            next_page_token: None,
+            items: page.items,
+            next_page_token: page.next_page_token,
             ..Default::default()
         })
     }
 
     async fn get_skill(&self, request: GetSkillRequest, context: Cx) -> Result<SharingSkill> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let asset = SharingVolumeReference::new(&request.share, &request.schema, &request.name);
-        let location = self
-            .resolve_asset_location(&asset, SharedAssetKind::AgentSkill, &context)
+        let asset = self
+            .storage_asset(
+                &request.share,
+                &request.schema,
+                &request.name,
+                AssetKind::AgentSkill,
+                &context,
+            )
             .await?;
         Ok(SharingSkill {
             name: request.name,
             schema: request.schema,
             share: request.share,
-            storage_location: Some(location.raw),
+            id: asset.id,
+            storage_location: Some(asset.location.raw),
             ..Default::default()
         })
     }
@@ -416,18 +397,27 @@ where
         request: GenerateTemporarySkillCredentialsRequest,
         context: Cx,
     ) -> Result<SharingTemporaryCredentials> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let asset = SharingVolumeReference::new(&request.share, &request.schema, &request.name);
-        let location = self
-            .resolve_asset_location(&asset, SharedAssetKind::AgentSkill, &context)
+        let asset = self
+            .storage_asset(
+                &request.share,
+                &request.schema,
+                &request.name,
+                AssetKind::AgentSkill,
+                &context,
+            )
             .await?;
-        self.vend_read_credential(&location, &context).await
+        self.access.vend_read_credential(&asset, &context).await
+    }
+}
+
+fn skill(object: SharedObject, share: &str, share_id: Option<&str>) -> SharingSkill {
+    SharingSkill {
+        name: object.name,
+        schema: object.schema,
+        share: share.to_string(),
+        id: object.id,
+        share_id: share_id.map(ToString::to_string),
+        ..Default::default()
     }
 }
 
@@ -450,14 +440,14 @@ pub trait SharingQueryHandler<Cx = crate::DefaultContext>: Send + Sync + 'static
         context: Cx,
     ) -> Result<GetTableVersionResponse>;
 
-    /// The NDJSON protocol + metadata actions for a shared table.
+    /// The NDJSON protocol + metadata lines for a shared table.
     async fn get_table_metadata(
         &self,
         request: GetTableMetadataRequest,
         context: Cx,
     ) -> Result<Bytes>;
 
-    /// The NDJSON protocol + metadata + file actions for a shared table query.
+    /// The NDJSON protocol + metadata + file lines answering a table query.
     async fn query_table(&self, request: QueryTableRequest, context: Cx) -> Result<Bytes>;
 
     /// Change data feed for a shared table. **Not implemented** — the request type
@@ -470,28 +460,33 @@ pub trait SharingQueryHandler<Cx = crate::DefaultContext>: Send + Sync + 'static
 }
 
 #[async_trait::async_trait]
-impl<B, Cx> SharingQueryHandler<Cx> for B
-where
-    B: SharingBackend<Cx>,
-    Cx: Clone + Send + Sync + 'static,
-{
+impl<Cx: Clone + Send + Sync + 'static> SharingQueryHandler<Cx> for SharingService<Cx> {
     async fn get_table_version(
         &self,
         request: GetTableVersionRequest,
         context: Cx,
     ) -> Result<GetTableVersionResponse> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let table_ref = SharingTableReference::new(&request.share, &request.schema, &request.name);
-        let location = self.resolve_table_location(&table_ref, &context).await?;
-        let snapshot = self.kernel_session().read_snapshot(&location, None).await?;
+        let asset = self
+            .table(&request.share, &request.schema, &request.name, &context)
+            .await?;
+        let starting_timestamp = request
+            .starting_timestamp
+            .as_deref()
+            .map(|ts| parse_timestamp("startingTimestamp", ts))
+            .transpose()?;
+        if starting_timestamp.is_some() && !asset.history_shared {
+            return Err(Error::invalid_argument(
+                "the provider does not share this table's history",
+            ));
+        }
+        let storage = self.access.table_storage(&asset, &context).await?;
+        let version = self
+            .formats
+            .get(asset.table_format()?)?
+            .version(&asset, &storage, starting_timestamp)
+            .await?;
         Ok(GetTableVersionResponse {
-            version: snapshot.version() as i64,
+            version: version as i64,
             ..Default::default()
         })
     }
@@ -501,41 +496,45 @@ where
         request: GetTableMetadataRequest,
         context: Cx,
     ) -> Result<Bytes> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let table_ref = SharingTableReference::new(&request.share, &request.schema, &request.name);
-        let location = self.resolve_table_location(&table_ref, &context).await?;
-        let snapshot = self.kernel_session().read_snapshot(&location, None).await?;
-
-        let table_config = snapshot.table_configuration();
-        let mut response = serde_json::to_vec(&MetadataResponse::MetaData(
-            MetadataResponseData::ParquetMetadata(table_config.metadata().try_into()?),
-        ))?;
-        response.push(b'\n');
-        response.extend(serde_json::to_vec(&MetadataResponse::Protocol(
-            ProtocolResponseData::ParquetProtocol(table_config.protocol().into()),
-        ))?);
-
-        Ok(Bytes::from(response))
+        let asset = self
+            .table(&request.share, &request.schema, &request.name, &context)
+            .await?;
+        let storage = self.access.table_storage(&asset, &context).await?;
+        self.formats
+            .get(asset.table_format()?)?
+            .metadata(&asset, &storage, VersionSpec::Latest)
+            .await
     }
 
     async fn query_table(&self, request: QueryTableRequest, context: Cx) -> Result<Bytes> {
-        self.authorize(
-            SharingAction::ReadShare {
-                share: &request.share,
-            },
-            &context,
-        )
-        .await?;
-        let table_ref = SharingTableReference::new(&request.share, &request.schema, &request.name);
-        let location = self.resolve_table_location(&table_ref, &context).await?;
-        self.kernel_session()
-            .extract_sharing_query_response(&table_ref, &location)
+        let asset = self
+            .table(&request.share, &request.schema, &request.name, &context)
+            .await?;
+        let at = match (request.version, request.timestamp.as_deref()) {
+            (Some(_), Some(_)) => {
+                return Err(Error::invalid_argument(
+                    "version and timestamp are mutually exclusive",
+                ));
+            }
+            (Some(version), None) => VersionSpec::Version(
+                u64::try_from(version)
+                    .map_err(|_| Error::invalid_argument("version must not be negative"))?,
+            ),
+            (None, Some(ts)) => VersionSpec::Timestamp(parse_timestamp("timestamp", ts)?),
+            (None, None) => VersionSpec::Latest,
+        };
+        check_history(&asset, at)?;
+        let query = QuerySpec {
+            at,
+            predicate: request.json_predicate_hints.as_option().cloned(),
+            limit_hint: request
+                .limit_hint
+                .and_then(|limit| u64::try_from(limit).ok()),
+        };
+        let storage = self.access.table_storage(&asset, &context).await?;
+        self.formats
+            .get(asset.table_format()?)?
+            .query(&asset, &storage, query)
             .await
     }
 
@@ -554,8 +553,8 @@ where
 
 /// A convenience alias for the full set of handler traits a sharing router needs.
 ///
-/// Any [`SharingBackend`] satisfies this via the blanket impls above. Named so a
-/// server (or the router) can bound on one trait instead of four.
+/// [`SharingService`] implements all of them. Named so a host (or the router) can
+/// bound on one trait instead of four.
 pub trait SharingApiHandler<Cx = crate::DefaultContext>:
     SharingHandler<Cx> + SharingVolumeHandler<Cx> + SharingSkillHandler<Cx> + SharingQueryHandler<Cx>
 {

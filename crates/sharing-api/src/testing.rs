@@ -1,48 +1,69 @@
-//! An in-memory [`SharingBackend`] for exercising the sharing logic without a
-//! real server.
+//! In-memory port implementations for exercising the sharing logic without a
+//! real host.
 //!
-//! Enabled by the `testing` feature. The crate's own tests use it to drive the
-//! discovery, asset, and credential-vending surface end-to-end; downstream
-//! servers can enable it to test their own port wiring.
+//! Enabled by the `testing` feature. The crate's own tests use them to drive the
+//! discovery, asset, query and credential surface end-to-end; downstream hosts
+//! can enable it to test their own wiring.
 //!
-//! It is deliberately permissive: authorization allows everything, credential
-//! vending returns a fixed fake AWS credential, and the object-store factory
-//! hands back an in-memory store. The point is to exercise the *sharing* logic
-//! (discovery iteration, asset resolution, the router wiring), not access control
-//! or live Delta-log serving — the kernel query path needs a real Delta table and
-//! is covered by the server's integration tests.
+//! They are deliberately permissive: authorization allows everything and
+//! credential vending returns a fixed fake AWS credential. [`LocalStorageAccess`]
+//! reads `file://` locations from the local filesystem (so real Delta tables can
+//! be queried) and hands back their file URLs unsigned.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use delta_kernel::Version;
 use object_store::DynObjectStore;
+use object_store::local::LocalFileSystem;
 use object_store::memory::InMemory;
-use url::Url;
 
 use unitycatalog_sharing_client::models::open_sharing::v1::{
     SharingAwsCredentials, SharingTemporaryCredentials, sharing_temporary_credentials::Credentials,
 };
 
-use crate::backend::{
-    BackendResult, ResolvedLocation, ResolvedShare, ShareObject, ShareObjectKind, SharedAssetKind,
-    SharingAction, SharingBackend, SharingCapabilities, SharingTableReference,
-    SharingVolumeReference,
+use crate::access::{StorageAccess, TableStorage, UnsignedUrls};
+use crate::catalog::{
+    AssetKind, AssetRef, DataFormat, Page, PageRequest, ResolvedLocation, ShareCatalog, ShareInfo,
+    SharedAsset, SharedObject, SharingAction,
 };
 use crate::error::{Error, Result};
-use crate::kernel::ObjectStoreFactory;
-use crate::session::KernelSession;
+use crate::service::{SharingService, paginate};
 
-/// One shared object in the fixture: its kind, `schema.name`, and storage location.
+/// One shared object in a fixture share.
 #[derive(Debug, Clone)]
 pub struct FixtureObject {
-    pub kind: ShareObjectKind,
+    pub kind: AssetKind,
     pub schema: String,
     pub name: String,
     pub location: String,
+    /// Whether the table's history is shared (time travel allowed).
+    pub history_shared: bool,
+    /// The lowest shared table version.
+    pub start_version: Option<Version>,
 }
 
-/// A fixture share: identity + its objects.
+impl FixtureObject {
+    /// A Delta table sharing its full history.
+    pub fn table(schema: &str, name: &str, location: &str) -> Self {
+        Self::new(AssetKind::Table, schema, name, location)
+    }
+
+    /// An object of `kind`; tables share their full history.
+    pub fn new(kind: AssetKind, schema: &str, name: &str, location: &str) -> Self {
+        Self {
+            kind,
+            schema: schema.to_string(),
+            name: name.to_string(),
+            location: location.to_string(),
+            history_shared: kind == AssetKind::Table,
+            start_version: None,
+        }
+    }
+}
+
+/// A fixture share: identity plus its objects.
 #[derive(Debug, Clone, Default)]
 pub struct FixtureShare {
     pub name: String,
@@ -51,175 +72,112 @@ pub struct FixtureShare {
     pub objects: Vec<FixtureObject>,
 }
 
-/// An [`ObjectStoreFactory`] that always hands back a single shared in-memory store.
-struct InMemoryFactory {
-    store: Arc<DynObjectStore>,
-}
-
-#[async_trait]
-impl ObjectStoreFactory for InMemoryFactory {
-    async fn create_object_store(&self, _url: &Url) -> Result<Arc<DynObjectStore>> {
-        Ok(self.store.clone())
-    }
-}
-
-/// An in-memory [`SharingBackend`] (see the module docs).
-pub struct InMemorySharingBackend {
+/// A [`ShareCatalog`] over fixed, in-memory shares.
+#[derive(Debug, Clone, Default)]
+pub struct InMemoryShareCatalog {
     shares: BTreeMap<String, FixtureShare>,
-    session: KernelSession,
 }
 
-impl InMemorySharingBackend {
-    /// Build a backend over the given fixture shares.
+impl InMemoryShareCatalog {
     pub fn new(shares: Vec<FixtureShare>) -> Self {
-        let store: Arc<DynObjectStore> = Arc::new(InMemory::new());
-        let factory = Arc::new(InMemoryFactory { store });
-        let session = KernelSession::new(factory).expect("kernel session builds in-memory");
         Self {
             shares: shares.into_iter().map(|s| (s.name.clone(), s)).collect(),
-            session,
         }
     }
 
-    /// A convenience constructor with one share containing one table.
-    pub fn with_one_table(share: &str, schema: &str, table: &str, location: &str) -> Self {
-        Self::new(vec![FixtureShare {
-            name: share.to_string(),
-            id: Some(format!("{share}-id")),
-            comment: None,
-            objects: vec![FixtureObject {
-                kind: ShareObjectKind::Table,
-                schema: schema.to_string(),
-                name: table.to_string(),
-                location: location.to_string(),
-            }],
-        }])
-    }
-
-    fn share(&self, name: &str) -> BackendResult<&FixtureShare> {
+    fn share(&self, name: &str) -> Result<&FixtureShare> {
         self.shares.get(name).ok_or(Error::NotFound)
     }
 }
 
-impl Clone for InMemorySharingBackend {
-    fn clone(&self) -> Self {
-        // Cloning rebuilds a fresh session over the same fixtures; the axum router
-        // only needs `Clone` to hand state to each request, and the in-memory
-        // fixtures are immutable, so a fresh session is equivalent.
-        Self::new(self.shares.values().cloned().collect())
+fn info(share: &FixtureShare) -> ShareInfo {
+    ShareInfo {
+        name: share.name.clone(),
+        id: share.id.clone(),
+        comment: share.comment.clone(),
     }
-}
-
-fn matches(kind: ShareObjectKind, want: ShareObjectKind) -> bool {
-    kind == want
 }
 
 #[async_trait]
-impl<Cx: Clone + Send + Sync + 'static> SharingBackend<Cx> for InMemorySharingBackend {
-    fn capabilities(&self) -> SharingCapabilities {
-        SharingCapabilities::default()
-    }
-
-    fn kernel_session(&self) -> &KernelSession {
-        &self.session
-    }
-
-    async fn authorize(&self, _action: SharingAction<'_>, _cx: &Cx) -> BackendResult<()> {
+impl<Cx: Send + Sync + 'static> ShareCatalog<Cx> for InMemoryShareCatalog {
+    async fn authorize(&self, _action: SharingAction<'_>, _cx: &Cx) -> Result<()> {
         Ok(())
     }
 
-    async fn list_shares(
-        &self,
-        max_results: Option<usize>,
-        _page_token: Option<String>,
-        _cx: &Cx,
-    ) -> BackendResult<(Vec<ResolvedShare>, Option<String>)> {
-        let mut shares: Vec<ResolvedShare> = self
-            .shares
-            .values()
-            .map(|s| ResolvedShare {
-                name: s.name.clone(),
-                id: s.id.clone(),
-                comment: s.comment.clone(),
-            })
-            .collect();
-        if let Some(limit) = max_results {
-            shares.truncate(limit);
-        }
-        Ok((shares, None))
+    async fn list_shares(&self, page: PageRequest, _cx: &Cx) -> Result<Page<ShareInfo>> {
+        paginate(
+            self.shares.values().map(info).collect(),
+            page.max_results.map(|n| n as i32),
+            page.page_token.as_deref(),
+        )
     }
 
-    async fn get_share(&self, share: &str, _cx: &Cx) -> BackendResult<ResolvedShare> {
-        let s = self.share(share)?;
-        Ok(ResolvedShare {
-            name: s.name.clone(),
-            id: s.id.clone(),
-            comment: s.comment.clone(),
-        })
+    async fn get_share(&self, share: &str, _cx: &Cx) -> Result<ShareInfo> {
+        Ok(info(self.share(share)?))
     }
 
-    async fn list_share_objects(
-        &self,
-        share: &str,
-        kind: ShareObjectKind,
-        _cx: &Cx,
-    ) -> BackendResult<Vec<ShareObject>> {
-        let s = self.share(share)?;
-        Ok(s.objects
+    async fn list_objects(&self, share: &str, _cx: &Cx) -> Result<Vec<SharedObject>> {
+        Ok(self
+            .share(share)?
+            .objects
             .iter()
-            .filter(|o| matches(o.kind, kind))
-            .map(|o| ShareObject {
+            .map(|o| SharedObject {
                 schema: o.schema.clone(),
                 name: o.name.clone(),
+                kind: o.kind,
+                id: Some(format!("{share}.{}.{}", o.schema, o.name)),
             })
             .collect())
     }
 
-    async fn resolve_table_location(
-        &self,
-        table: &SharingTableReference,
-        _cx: &Cx,
-    ) -> BackendResult<ResolvedLocation> {
-        let s = self.share(&table.share)?;
-        let obj = s
+    async fn resolve(&self, asset: &AssetRef, _cx: &Cx) -> Result<SharedAsset> {
+        let object = self
+            .share(&asset.share)?
             .objects
             .iter()
-            .find(|o| {
-                matches(o.kind, ShareObjectKind::Table)
-                    && o.schema == table.schema
-                    && o.name == table.table
-            })
+            .find(|o| o.kind == asset.kind && o.schema == asset.schema && o.name == asset.name)
             .ok_or(Error::NotFound)?;
-        ResolvedLocation::parse(&obj.location)
+        Ok(SharedAsset {
+            reference: asset.clone(),
+            id: Some(format!("{}.{}.{}", asset.share, asset.schema, asset.name)),
+            location: ResolvedLocation::parse(&object.location)?,
+            format: (object.kind == AssetKind::Table).then_some(DataFormat::Delta),
+            history_shared: object.history_shared,
+            start_version: object.start_version,
+        })
     }
+}
 
-    async fn resolve_asset_location(
-        &self,
-        asset: &SharingVolumeReference,
-        kind: SharedAssetKind,
-        _cx: &Cx,
-    ) -> BackendResult<ResolvedLocation> {
-        let want = match kind {
-            SharedAssetKind::Volume => ShareObjectKind::Volume,
-            SharedAssetKind::AgentSkill => ShareObjectKind::AgentSkill,
+/// A [`StorageAccess`] for tests and local development.
+///
+/// `file://` locations are read from the local filesystem; anything else gets an
+/// empty in-memory store (enough for discovery-only fixtures). File URLs are
+/// returned unsigned, and vending returns a fixed fake AWS credential.
+#[derive(Debug, Clone, Default)]
+pub struct LocalStorageAccess;
+
+#[async_trait]
+impl<Cx: Send + Sync + 'static> StorageAccess<Cx> for LocalStorageAccess {
+    async fn table_storage(&self, asset: &SharedAsset, _cx: &Cx) -> Result<TableStorage> {
+        let store: Arc<DynObjectStore> = if asset.location.url.scheme() == "file" {
+            Arc::new(LocalFileSystem::new())
+        } else {
+            Arc::new(InMemory::new())
         };
-        let s = self.share(&asset.share)?;
-        let obj = s
-            .objects
-            .iter()
-            .find(|o| matches(o.kind, want) && o.schema == asset.schema && o.name == asset.name)
-            .ok_or(Error::NotFound)?;
-        ResolvedLocation::parse(&obj.location)
+        Ok(TableStorage {
+            store,
+            signer: Arc::new(UnsignedUrls),
+        })
     }
 
     async fn vend_read_credential(
         &self,
-        location: &ResolvedLocation,
+        asset: &SharedAsset,
         _cx: &Cx,
-    ) -> BackendResult<SharingTemporaryCredentials> {
+    ) -> Result<SharingTemporaryCredentials> {
         Ok(SharingTemporaryCredentials {
             expiration_time: 1_700_000_000_000,
-            url: Some(location.raw.clone()),
+            url: Some(asset.location.raw.clone()),
             credentials: Some(Credentials::AwsTempCredentials(Box::new(
                 SharingAwsCredentials {
                     access_key_id: "AKIAFAKE".to_string(),
@@ -231,4 +189,14 @@ impl<Cx: Clone + Send + Sync + 'static> SharingBackend<Cx> for InMemorySharingBa
             ..Default::default()
         })
     }
+}
+
+/// A [`SharingService`] over fixture shares, with [`LocalStorageAccess`].
+pub fn in_memory_service<Cx: Clone + Send + Sync + 'static>(
+    shares: Vec<FixtureShare>,
+) -> SharingService<Cx> {
+    SharingService::new(
+        Arc::new(InMemoryShareCatalog::new(shares)),
+        Arc::new(LocalStorageAccess),
+    )
 }

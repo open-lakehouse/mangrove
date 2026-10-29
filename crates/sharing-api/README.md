@@ -2,30 +2,33 @@
 
 Portable Unity Catalog **Open Sharing** / **Delta Sharing** REST API.
 
-This crate owns the sharing *semantics* — share/schema/table discovery, the
-kernel-backed NDJSON query path (table version / metadata / query), and the
-storage-backed asset surface (volumes, agent skills) — behind a narrow backend
-[port](crate::backend::SharingBackend). Any server can serve the identical
-`/api/v1/delta-sharing` and `/api/v1/open-sharing` surfaces by implementing
-`SharingBackend` over its own share store, table/volume resolution, credential
-vending, and authorization; all the sharing business logic is shared here, so the
-behavior is identical by construction.
+This crate owns the sharing *semantics* — share / schema / asset discovery,
+the table query path (version / metadata / query) and the storage-backed asset
+surface (volumes, agent skills) — and expresses them over three narrow ports:
 
-Unlike the fork-free [`olai-uc-delta-api`](https://crates.io/crates/olai-uc-delta-api),
-this crate deliberately owns the DataFusion + `delta-kernel` query path (via
-[`olai-uc-datafusion`](https://crates.io/crates/olai-uc-datafusion)'s
-`ReconciledLogProvider`), isolating those git-pinned dependencies behind one
-crate so downstream servers stay free of them.
+- `ShareCatalog`: which shares and objects a recipient sees, and where a shared
+  object lives (backed by any source catalog);
+- `StorageAccess`: the server's own reads of a shared asset, plus presigned file
+  URLs and temporary credentials for recipients;
+- `TableFormat`: serving one table format. Delta is built in (feature `delta`)
+  and reads tables through `delta_kernel` directly, so no query engine is
+  involved.
 
-The wire types come from
+`SharingService` composes one implementation of each port and implements every
+handler; the axum routers serve it under the `/api/v1/delta-sharing` and
+`/api/v1/open-sharing` surfaces. The wire types come from
 [`olai-uc-sharing-client`](https://crates.io/crates/olai-uc-sharing-client).
 
 ## Status
 
-The Delta Sharing tabular surface and the Open Sharing asset surface are
-implemented. Recent protocol additions — Change Data Feed (`/changes`),
-asynchronous queries (`POST /queries/{id}`), and `responseformat=delta` serving —
-have their request/response types defined but return `501 Not Implemented`.
+- **Discovery** (shares, schemas, tables, volumes, skills) is implemented and
+  paginated.
+- **Query** (`version`, `metadata`, `query`) serves Delta tables in the parquet
+  response format, with version / timestamp time travel, predicate-hint file
+  skipping and limit hints. Tables that need reader features (column mapping,
+  deletion vectors, …) require `responseformat=delta` and are rejected for now.
+- **Not implemented** (`501`): change data feed (`/changes`), asynchronous
+  queries (`POST /queries/{id}`) and `responseformat=delta` serving.
 
 ## Architecture
 

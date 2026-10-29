@@ -4236,19 +4236,18 @@ dependencies = [
  "buoyant_kernel_engine",
  "bytes",
  "chrono",
- "datafusion",
- "itertools 0.14.0",
  "object_store",
  "olai-uc-common",
- "olai-uc-datafusion",
  "olai-uc-sharing-client",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror",
  "tokio",
  "tower",
  "tracing",
  "url",
+ "uuid",
 ]
 
 [[package]]
@@ -5674,6 +5673,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha1_smol"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbfa15b3dddfee50a0fff136974b3e1bde555604ba463834a7eb7deb6417705d"
+
+[[package]]
 name = "sha2"
 version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6798,6 +6803,7 @@ dependencies = [
  "js-sys",
  "rand 0.10.2",
  "serde_core",
+ "sha1_smol",
  "wasm-bindgen",
 ]
 
