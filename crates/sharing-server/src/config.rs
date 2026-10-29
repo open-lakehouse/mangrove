@@ -28,13 +28,15 @@
 use std::sync::Arc;
 
 use base64::Engine as _;
+use olai_store::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 use serde::{Deserialize, Serialize};
-use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
+#[cfg(feature = "unity")]
 use url::Url;
 
 use crate::source::fixed::StaticSource;
-use crate::source::unity::UnitySource;
 use crate::source::{AccessMode, RegisteredSource, SourceRegistry};
+#[cfg(feature = "unity")]
+use crate::unity::source::UnitySource;
 
 /// A configuration value given inline or read from an environment variable.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -223,7 +225,9 @@ fn all_catalogs() -> Vec<String> {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum SourceKind {
-    /// A Unity Catalog REST server. Defaults to delegated access.
+    /// A Unity Catalog REST server. Defaults to delegated access. Needs the
+    /// `unity` feature.
+    #[cfg(feature = "unity")]
     Unity {
         /// The UC REST base URL (`…/api/2.1/unity-catalog/`).
         url: String,
@@ -319,6 +323,7 @@ impl Config {
         for source in &self.sources {
             let (implementation, default_access): (Arc<dyn crate::source::CatalogSource>, _) =
                 match &source.kind {
+                    #[cfg(feature = "unity")]
                     SourceKind::Unity { url, token } => {
                         let mut url = Url::parse(url)
                             .map_err(|e| format!("source '{}': invalid url: {e}", source.name))?;
@@ -358,6 +363,7 @@ impl Config {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "unity")]
     #[test]
     fn parses_a_full_config() {
         let config: Config = serde_yml::from_str(

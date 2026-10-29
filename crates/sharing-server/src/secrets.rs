@@ -3,7 +3,7 @@
 //! Every secret the server persists — storage credentials (local access) and
 //! recipient tokens awaiting activation — is sealed by an [`EnvelopeEncryptor`]:
 //! a fresh data key per value, wrapped by a key-encryption key (KEK) from a
-//! pluggable [`KeyProvider`](unitycatalog_common::services::encryption::KeyProvider).
+//! pluggable [`KeyProvider`](olai_store::encryption::KeyProvider).
 //! The AAD binds each ciphertext to its name, so a sealed value cannot be moved
 //! to another row.
 //!
@@ -15,7 +15,7 @@
 
 use std::sync::Arc;
 
-use unitycatalog_common::services::encryption::EnvelopeEncryptor;
+use olai_store::encryption::EnvelopeEncryptor;
 
 use crate::{Error, Result};
 

@@ -16,7 +16,7 @@ use unitycatalog_common::models::volumes::v1::GetVolumeRequest;
 use unitycatalog_credentials::TemporaryCredential;
 use url::Url;
 
-use super::{CatalogSource, SourceTable, SourceVolume, split_name};
+use crate::source::{CatalogSource, SourceTable, SourceVolume, split_name};
 use crate::{Error, Result};
 
 /// A Unity Catalog REST server as a catalog source.

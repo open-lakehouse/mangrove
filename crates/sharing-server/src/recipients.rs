@@ -10,7 +10,6 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use open_sharing_api::auth::{Recipient, RecipientAuthenticator};
 use serde::Serialize;
-use unitycatalog_common::models::recipients::v1::RecipientToken;
 
 use crate::secrets::Secrets;
 use crate::store::{RecipientRecord, ShareStore, TokenRecord, now_millis};
@@ -54,15 +53,14 @@ fn token_aad(token_id: &str) -> String {
     format!("recipient-token:{token_id}")
 }
 
-/// Issue a new token for `recipient`, returning it as listed to the provider
-/// (with its activation link).
+/// Issue a new token for `recipient`. The returned record carries the activation
+/// code; [`activation_url`] turns it into the link handed to the recipient.
 pub async fn issue_token(
     store: &dyn ShareStore,
     secrets: &Secrets,
-    public_url: &str,
     recipient: &RecipientRecord,
     expires_at: Option<i64>,
-) -> Result<RecipientToken> {
+) -> Result<TokenRecord> {
     let id = uuid::Uuid::new_v4().to_string();
     let token = random_secret();
     let activation_code = random_secret();
@@ -75,24 +73,16 @@ pub async fn issue_token(
         expires_at,
         created_at: now_millis(),
     };
-    let listed = listed_token(public_url, &record);
-    store.insert_token(record).await?;
-    Ok(listed)
+    store.insert_token(record.clone()).await?;
+    Ok(record)
 }
 
-/// A token as shown to the provider; the activation link only until it is used.
-pub fn listed_token(public_url: &str, token: &TokenRecord) -> RecipientToken {
-    RecipientToken {
-        id: token.id.clone(),
-        created_at: token.created_at,
-        activation_url: token
-            .activation_code
-            .as_ref()
-            .map(|code| format!("{public_url}{ACTIVATION_PATH}/{code}"))
-            .unwrap_or_default(),
-        expiration_time: token.expires_at.unwrap_or_default(),
-        ..Default::default()
-    }
+/// The activation link for a token, until it is used.
+pub fn activation_url(public_url: &str, token: &TokenRecord) -> Option<String> {
+    token
+        .activation_code
+        .as_ref()
+        .map(|code| format!("{public_url}{ACTIVATION_PATH}/{code}"))
 }
 
 /// A Delta Sharing profile (the contents of a `.share` file).

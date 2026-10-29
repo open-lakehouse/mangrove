@@ -15,9 +15,8 @@ use open_sharing_server::store::postgres::{
     PostgresStore, connect, ensure_schema_current, migrate,
 };
 use open_sharing_server::store::{
-    ExternalLocationRecord, SealedCredential, ShareStore, TokenRecord,
+    ExternalLocationRecord, SealedCredential, ShareObject, ShareObjectKind, ShareStore, TokenRecord,
 };
-use unitycatalog_common::models::shares::v1::{DataObject, DataObjectType};
 
 #[tokio::test]
 async fn postgres_store_round_trips() {
@@ -43,11 +42,9 @@ async fn postgres_store_round_trips() {
         store.create_share("pg_share", None).await,
         Err(Error::InvalidArgument(_))
     ));
-    let object = DataObject {
-        name: "main.sales.orders".into(),
-        data_object_type: DataObjectType::TABLE.into(),
+    let object = ShareObject {
         start_version: Some(3),
-        ..Default::default()
+        ..ShareObject::new(ShareObjectKind::Table, "main.sales.orders")
     };
     let updated = store
         .update_share("pg_share", vec![object.clone()], None)

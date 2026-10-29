@@ -19,7 +19,10 @@ test = false
 doctest = false
 
 [dependencies]
-open-sharing-server = { package = "olai-sharing-server", path = "../sharing-server" }
+# The Unity Catalog source and admin API are part of the deployed function.
+open-sharing-server = { package = "olai-sharing-server", path = "../sharing-server", features = [
+  "unity",
+] }
 
 axum = { workspace = true }
 http-body-util = "0.1"

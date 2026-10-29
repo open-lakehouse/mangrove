@@ -13,11 +13,10 @@
 use async_trait::async_trait;
 use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
 use sqlx::{Row, migrate::Migrator};
-use unitycatalog_common::models::shares::v1::DataObject;
 
 use super::{
-    ExternalLocationRecord, RecipientRecord, SealedCredential, ShareRecord, ShareStore,
-    TokenRecord, now_millis,
+    ExternalLocationRecord, RecipientRecord, SealedCredential, ShareObject, ShareRecord,
+    ShareStore, TokenRecord, now_millis,
 };
 use crate::{Error, Result};
 
@@ -212,7 +211,7 @@ impl ShareStore for PostgresStore {
     async fn update_share(
         &self,
         name: &str,
-        objects: Vec<DataObject>,
+        objects: Vec<ShareObject>,
         comment: Option<String>,
     ) -> Result<ShareRecord> {
         let row = sqlx::query(&format!(

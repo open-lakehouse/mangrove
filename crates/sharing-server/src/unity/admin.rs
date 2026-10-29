@@ -9,6 +9,9 @@
 //!   access vends from (credentials are sealed and never returned).
 //!
 //! With no provider token configured the admin API rejects every request.
+//!
+//! The store keeps shares as catalog-independent [`ShareObject`]s; this module
+//! converts them to and from UC `DataObject`s at the API boundary.
 
 use std::sync::Arc;
 
@@ -23,7 +26,7 @@ use serde_json::json;
 use unitycatalog_common::models::credentials::v1::Credential;
 use unitycatalog_common::models::external_locations::v1::CreateExternalLocationRequest;
 use unitycatalog_common::models::recipients::v1::{
-    AuthenticationType, CreateRecipientRequest, ListRecipientsResponse, Recipient,
+    AuthenticationType, CreateRecipientRequest, ListRecipientsResponse, Recipient, RecipientToken,
 };
 use unitycatalog_common::models::shares::v1::{
     Action, CreateShareRequest, DataObject, DataObjectType, GetPermissionsResponse,
@@ -35,10 +38,13 @@ use unitycatalog_credentials::location::StorageLocationUrl;
 
 use crate::access::credential_aad;
 use crate::catalog::shared_as;
-use crate::recipients::{issue_token, listed_token};
+use crate::recipients::{activation_url, issue_token};
 use crate::secrets::Secrets;
 use crate::source::split_name;
-use crate::store::{ExternalLocationRecord, SealedCredential, ShareRecord, ShareStore, now_millis};
+use crate::store::{
+    ExternalLocationRecord, SealedCredential, ShareObject, ShareRecord, ShareStore, TokenRecord,
+    now_millis,
+};
 use crate::tokens::token_hash;
 use crate::{Error, Result};
 
@@ -123,16 +129,36 @@ async fn require_provider(
 
 // -- shares -------------------------------------------------------------------
 
-fn share(record: ShareRecord) -> Share {
-    Share {
+/// A UC `DataObject` as the store's [`ShareObject`]. Both use the UC field
+/// names, so the conversion goes through JSON and keeps every field.
+fn share_object(object: &DataObject) -> Result<ShareObject> {
+    serde_json::from_value(serde_json::to_value(object)?).map_err(|_| {
+        Error::invalid_argument(format!(
+            "data object '{}' needs a data_object_type of TABLE, SCHEMA, VOLUME or AGENT_SKILL",
+            object.name
+        ))
+    })
+}
+
+/// A stored [`ShareObject`] as a UC `DataObject`.
+fn data_object(object: &ShareObject) -> Result<DataObject> {
+    Ok(serde_json::from_value(serde_json::to_value(object)?)?)
+}
+
+fn share(record: ShareRecord) -> Result<Share> {
+    Ok(Share {
         id: Some(record.id),
         name: record.name,
-        objects: record.objects,
+        objects: record
+            .objects
+            .iter()
+            .map(data_object)
+            .collect::<Result<_>>()?,
         comment: record.comment,
         created_at: Some(record.created_at),
         updated_at: Some(record.updated_at),
         ..Default::default()
-    }
+    })
 }
 
 async fn create_share(
@@ -145,7 +171,7 @@ async fn create_share(
             .store
             .create_share(&request.name, request.comment)
             .await?,
-    )))
+    )?))
 }
 
 async fn list_shares(State(state): State<ProviderState>) -> Result<Json<ListSharesResponse>> {
@@ -156,7 +182,7 @@ async fn list_shares(State(state): State<ProviderState>) -> Result<Json<ListShar
             .await?
             .into_iter()
             .map(share)
-            .collect(),
+            .collect::<Result<_>>()?,
         ..Default::default()
     }))
 }
@@ -165,7 +191,7 @@ async fn get_share(
     State(state): State<ProviderState>,
     Path(name): Path<String>,
 ) -> Result<Json<Share>> {
-    Ok(Json(share(state.store.get_share(&name).await?)))
+    Ok(Json(share(state.store.get_share(&name).await?)?))
 }
 
 async fn delete_share(
@@ -191,7 +217,7 @@ fn validate_object(object: &DataObject) -> Result<()> {
     match object.data_object_type.as_known() {
         Some(DataObjectType::TABLE | DataObjectType::VOLUME | DataObjectType::AGENT_SKILL) => {
             split_name::<3>(&object.name)?;
-            shared_as(object)?;
+            shared_as(&share_object(object)?)?;
         }
         Some(DataObjectType::SCHEMA) => {
             split_name::<2>(&object.name)?;
@@ -218,7 +244,11 @@ async fn update_share(
         return Err(Error::invalid_argument("renaming shares is not supported"));
     }
     let current = state.store.get_share(&name).await?;
-    let mut objects = current.objects;
+    let mut objects = current
+        .objects
+        .iter()
+        .map(data_object)
+        .collect::<Result<Vec<_>>>()?;
     for update in request.updates {
         let object = update
             .data_object
@@ -265,7 +295,10 @@ async fn update_share(
         .iter()
         .filter(|o| o.data_object_type.as_known() != Some(DataObjectType::SCHEMA))
     {
-        let key = (object.data_object_type.to_i32(), shared_as(object)?);
+        let key = (
+            object.data_object_type.to_i32(),
+            shared_as(&share_object(object)?)?,
+        );
         if !exposed.insert(key) {
             return Err(Error::invalid_argument(format!(
                 "'{}' would be shared under a name already in use",
@@ -274,9 +307,13 @@ async fn update_share(
         }
     }
     let comment = request.comment.or(current.comment);
+    let objects = objects
+        .iter()
+        .map(share_object)
+        .collect::<Result<Vec<_>>>()?;
     Ok(Json(share(
         state.store.update_share(&name, objects, comment).await?,
-    )))
+    )?))
 }
 
 async fn get_permissions(
@@ -331,6 +368,17 @@ async fn update_permissions(
 
 // -- recipients ---------------------------------------------------------------
 
+/// A token as shown to the provider; the activation link only until it is used.
+pub fn listed_token(public_url: &str, token: &TokenRecord) -> RecipientToken {
+    RecipientToken {
+        id: token.id.clone(),
+        created_at: token.created_at,
+        activation_url: activation_url(public_url, token).unwrap_or_default(),
+        expiration_time: token.expires_at.unwrap_or_default(),
+        ..Default::default()
+    }
+}
+
 async fn recipient(state: &ProviderState, name: &str) -> Result<Recipient> {
     let record = state.store.get_recipient(name).await?;
     let tokens = state
@@ -371,7 +419,6 @@ async fn create_recipient(
     issue_token(
         state.store.as_ref(),
         &state.secrets,
-        &state.public_url,
         &record,
         request.expiration_time,
     )
@@ -421,14 +468,7 @@ async fn rotate_token(
         .first()
         .and_then(|t| t.expires_at);
     state.store.delete_tokens(&record.id).await?;
-    issue_token(
-        state.store.as_ref(),
-        &state.secrets,
-        &state.public_url,
-        &record,
-        expires_at,
-    )
-    .await?;
+    issue_token(state.store.as_ref(), &state.secrets, &record, expires_at).await?;
     Ok(Json(recipient(&state, &name).await?))
 }
 
