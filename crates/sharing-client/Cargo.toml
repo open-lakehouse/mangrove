@@ -1,7 +1,7 @@
 [package]
-name = "olai-uc-sharing-client"
+name = "olai-sharing-client"
 version = "0.0.1"
-description = "Delta Sharing protocol client and server types for Unity Catalog."
+description = "Open Sharing / Delta Sharing protocol client."
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -11,8 +11,9 @@ homepage.workspace = true
 keywords.workspace = true
 
 [lib]
-# Stable Rust crate identifier, independent of the provisional package name.
-name = "unitycatalog_sharing_client"
+# Stable Rust crate identifier (the expanded `open_sharing_*` name), independent
+# of the `olai-sharing-*` package name.
+name = "open_sharing_client"
 
 [dependencies]
 # local dependencies in alphabetical order

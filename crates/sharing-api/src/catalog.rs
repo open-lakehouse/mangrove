@@ -18,7 +18,7 @@
 use async_trait::async_trait;
 use delta_kernel::Version;
 
-use unitycatalog_sharing_client::models::open_sharing::v1::Share as SharingShare;
+use open_sharing_client::models::open_sharing::v1::Share as SharingShare;
 
 use crate::error::{Error, Result};
 

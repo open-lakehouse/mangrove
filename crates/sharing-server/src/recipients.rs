@@ -8,9 +8,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use open_sharing_api::auth::{Recipient, RecipientAuthenticator};
 use serde::Serialize;
 use unitycatalog_common::models::recipients::v1::RecipientToken;
-use unitycatalog_sharing_api::auth::{Recipient, RecipientAuthenticator};
 
 use crate::secrets::Secrets;
 use crate::store::{RecipientRecord, ShareStore, TokenRecord, now_millis};
@@ -121,7 +121,7 @@ pub async fn activate(
         share_credentials_version: 1,
         endpoint: format!(
             "{public_url}{}",
-            unitycatalog_sharing_api::router::DELTA_SHARING_PREFIX
+            open_sharing_api::router::DELTA_SHARING_PREFIX
         ),
         bearer_token: String::from_utf8(clear)
             .map_err(|_| Error::generic("stored token is not valid UTF-8"))?,

@@ -10,10 +10,10 @@ use axum::http::{Request, StatusCode};
 use tower::ServiceExt;
 use url::Url;
 
-use unitycatalog_sharing_api::testing::{FixtureObject, FixtureShare, in_memory_service};
-use unitycatalog_sharing_api::{Error, SharingQueryHandler, SharingService, open_sharing_router};
-use unitycatalog_sharing_client::models::open_sharing::v1::*;
-use unitycatalog_sharing_client::models::{
+use open_sharing_api::testing::{FixtureObject, FixtureShare, in_memory_service};
+use open_sharing_api::{Error, SharingQueryHandler, SharingService, open_sharing_router};
+use open_sharing_client::models::open_sharing::v1::*;
+use open_sharing_client::models::{
     MetadataResponseData, ParquetFile, ProtocolResponseData, QueryResponseLine,
 };
 

@@ -14,8 +14,8 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use open_sharing_api::catalog::DataFormat;
 use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
-use unitycatalog_sharing_api::catalog::DataFormat;
 
 use crate::{Error, Result};
 

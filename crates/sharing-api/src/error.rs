@@ -5,7 +5,7 @@
 //! traits return `crate::Result<T>`, and the hand-written NDJSON query path does
 //! too. Its [`IntoResponse`] emits the Unity Catalog error envelope
 //! (`{ "errorCode", "message" }`) with the status codes the sharing surface uses,
-//! reproducing `unitycatalog_sharing_client`'s server-side mapping — plus a
+//! reproducing `open_sharing_client`'s server-side mapping — plus a
 //! [`NotImplemented`](Error::NotImplemented) variant (→ 501) for the
 //! not-yet-implemented protocol additions (CDF, async queries, delta format).
 
@@ -116,11 +116,11 @@ impl Error {
     }
 }
 
-/// Bridge from the shared `unitycatalog_sharing_client` error (produced by the
+/// Bridge from the shared `open_sharing_client` error (produced by the
 /// reused protocol conversions + capability parsing) into this crate's error.
-impl From<unitycatalog_sharing_client::error::Error> for Error {
-    fn from(err: unitycatalog_sharing_client::error::Error) -> Self {
-        use unitycatalog_sharing_client::error::Error as Sc;
+impl From<open_sharing_client::error::Error> for Error {
+    fn from(err: open_sharing_client::error::Error) -> Self {
+        use open_sharing_client::error::Error as Sc;
         match err {
             Sc::DeltaKernel { source } => Error::DeltaKernel { source },
             Sc::Common { source } => Error::Common { source },

@@ -21,20 +21,20 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use async_trait::async_trait;
+use open_sharing_api::access::{FileSigner, SignedFile, StorageAccess, TableStorage};
+use open_sharing_api::auth::Recipient;
+use open_sharing_api::catalog::{AssetKind, SharedAsset};
+use open_sharing_client::models::open_sharing::v1::{
+    SharingAwsCredentials, SharingAzureUserDelegationSas, SharingGcpOauthToken,
+    SharingR2Credentials, SharingTemporaryCredentials,
+    sharing_temporary_credentials::Credentials as SharingCredentials,
+};
 use unitycatalog_common::models::credentials::v1::Credential;
 use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
 use unitycatalog_common::models::temporary_credentials::v1::temporary_credential::Credentials;
 use unitycatalog_credentials::location::{StorageLocationUrl, longest_prefix_match};
 use unitycatalog_credentials::{CredentialResolver, VendOperation, local_path_credential};
 use unitycatalog_object_store::{presign_from_vended_credential, store_from_vended_credential};
-use unitycatalog_sharing_api::access::{FileSigner, SignedFile, StorageAccess, TableStorage};
-use unitycatalog_sharing_api::auth::Recipient;
-use unitycatalog_sharing_api::catalog::{AssetKind, SharedAsset};
-use unitycatalog_sharing_client::models::open_sharing::v1::{
-    SharingAwsCredentials, SharingAzureUserDelegationSas, SharingGcpOauthToken,
-    SharingR2Credentials, SharingTemporaryCredentials,
-    sharing_temporary_credentials::Credentials as SharingCredentials,
-};
 use url::Url;
 
 use crate::secrets::Secrets;

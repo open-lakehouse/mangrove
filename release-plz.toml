@@ -116,7 +116,7 @@ name = "olai-uc-client"
 changelog_path = "crates/client/CHANGELOG.md"
 
 [[package]]
-name = "olai-uc-sharing-client"
+name = "olai-sharing-client"
 changelog_path = "crates/sharing-client/CHANGELOG.md"
 # (a) Bootstrap gate: git-free now that `delta_kernel` is the published
 # `buoyant_kernel`, but the name has never been published. Drop this line once
@@ -124,7 +124,7 @@ changelog_path = "crates/sharing-client/CHANGELOG.md"
 release = false
 
 [[package]]
-name = "olai-uc-sharing-api"
+name = "olai-sharing-api"
 changelog_path = "crates/sharing-api/CHANGELOG.md"
 # (b) Git-dep block: depends on `olai-uc-datafusion`'s `delta` feature, which
 # pulls the `deltalake-core` git dep — cannot publish to crates.io. Standing
@@ -132,13 +132,13 @@ changelog_path = "crates/sharing-api/CHANGELOG.md"
 release = false
 
 [[package]]
-name = "olai-uc-sharing-server"
+name = "olai-sharing-server"
 changelog_path = "crates/sharing-server/CHANGELOG.md"
 # BOOTSTRAP GATE (a): new crate, after sharing-client -> sharing-api.
 release = false
 
 [[package]]
-name = "olai-uc-sharing-neon"
+name = "olai-sharing-neon"
 # Deployment artifact (Neon Function bundle), never published.
 publish = false
 release = false

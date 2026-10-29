@@ -120,8 +120,8 @@ generate-code:
     cat python/client/_client_supplement.pyi \
       >> python/client/python/unitycatalog_client/_client.pyi
 
-# The sharing surface lives in its own crates (`unitycatalog-sharing-client` for
-# models + co-located extractors + client, `unitycatalog-sharing-api` for handler
+# The sharing surface lives in its own crates (`open-sharing-client` for
+# models + co-located extractors + client, `open-sharing-api` for handler
 # traits/routes), so it has its own trestle config (`trestle.sharing.yaml`)
 # separate from the resource-oriented Unity Catalog pipeline in `generate-code`.
 # The NDJSON table query RPCs are intentionally excluded from the proto service

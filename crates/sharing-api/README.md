@@ -1,4 +1,4 @@
-# olai-uc-sharing-api
+# olai-sharing-api
 
 Portable Unity Catalog **Open Sharing** / **Delta Sharing** REST API.
 
@@ -19,7 +19,7 @@ handler. `sharing_router` serves it under `/api/v1/delta-sharing` (Delta
 Sharing) and `/api/1.0/opensharing` (Open Sharing, adding volumes, agent skills
 and temporary credentials), and `auth::require_recipient` puts a bearer-token
 `RecipientAuthenticator` in front. The wire types come from
-[`olai-uc-sharing-client`](https://crates.io/crates/olai-uc-sharing-client).
+[`olai-sharing-client`](https://crates.io/crates/olai-sharing-client).
 
 ## Status
 

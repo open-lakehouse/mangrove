@@ -4,7 +4,7 @@
 //! consuming the Delta Sharing REST API — discovering shares, schemas, and
 //! tables, and reading table metadata and data — along with the request/response
 //! [`models`] that describe the protocol on the wire. Those models are shared:
-//! the server-side `unitycatalog-sharing-api` crate serves the same types this
+//! the server-side `open-sharing-api` crate serves the same types this
 //! client sends.
 //!
 //! # Feature flags
@@ -14,9 +14,9 @@
 //! build does not need it.
 
 // The generated client/extractor code refers to this crate by its external name
-// (`unitycatalog_sharing_client::...`); alias `self` so those paths resolve from
+// (`open_sharing_client::...`); alias `self` so those paths resolve from
 // within the crate.
-extern crate self as unitycatalog_sharing_client;
+extern crate self as open_sharing_client;
 
 pub use crate::error::{Error, Result};
 

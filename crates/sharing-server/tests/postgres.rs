@@ -6,18 +6,18 @@
 //!
 //! ```sh
 //! SHARING_SERVER_TEST_DATABASE_URL=<connection url> \
-//!   cargo test -p olai-uc-sharing-server --test postgres
+//!   cargo test -p olai-sharing-server --test postgres
 //! ```
 #![cfg(feature = "postgres")]
 
-use unitycatalog_common::models::shares::v1::{DataObject, DataObjectType};
-use unitycatalog_sharing_server::Error;
-use unitycatalog_sharing_server::store::postgres::{
+use open_sharing_server::Error;
+use open_sharing_server::store::postgres::{
     PostgresStore, connect, ensure_schema_current, migrate,
 };
-use unitycatalog_sharing_server::store::{
+use open_sharing_server::store::{
     ExternalLocationRecord, SealedCredential, ShareStore, TokenRecord,
 };
+use unitycatalog_common::models::shares::v1::{DataObject, DataObjectType};
 
 #[tokio::test]
 async fn postgres_store_round_trips() {

@@ -3,7 +3,7 @@
 //! The Neon Function's handler (`function/index.ts`) calls [`start`] once,
 //! forwards every fetch `Request` through [`handle`], and calls [`shutdown`] on
 //! SIGINT. Requests never touch a socket: [`handle`] drives the in-process axum
-//! router (`olai-uc-sharing-server`'s `embed::start`) with `oneshot`.
+//! router (`olai-sharing-server`'s `embed::start`) with `oneshot`.
 //!
 //! Sharing is pure request/response, so unlike a service with background work
 //! nothing needs settling between requests; an isolate can be evicted at any
@@ -16,9 +16,9 @@ use axum::body::Body;
 use http_body_util::BodyExt;
 use napi::bindgen_prelude::Buffer;
 use napi_derive::napi;
+use open_sharing_server::Config;
+use open_sharing_server::embed;
 use tower::ServiceExt;
-use unitycatalog_sharing_server::Config;
-use unitycatalog_sharing_server::embed;
 
 /// The router, `None` before [`start`] and after [`shutdown`].
 static ROUTER: Mutex<Option<Router>> = Mutex::new(None);

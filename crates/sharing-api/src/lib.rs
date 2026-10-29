@@ -16,8 +16,8 @@
 //! [`SharingService`] composes them and implements every handler; the [`router`]
 //! serves it over axum. See `ARCHITECTURE.md` for the overall design.
 //!
-//! The wire types come from `olai-uc-sharing-client`
-//! ([`unitycatalog_sharing_client`]).
+//! The wire types come from `olai-sharing-client`
+//! ([`open_sharing_client`]).
 //!
 //! # Layout
 //! - [`catalog`] — the [`ShareCatalog`] port and the share / asset types.

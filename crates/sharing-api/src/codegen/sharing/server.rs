@@ -3,7 +3,7 @@
 use super::handler::SharingHandler;
 use crate::Result;
 use axum::extract::State;
-use unitycatalog_sharing_client::models::open_sharing::v1::*;
+use open_sharing_client::models::open_sharing::v1::*;
 pub async fn list_shares<T, Cx>(
     State(handler): State<T>,
     context: Cx,

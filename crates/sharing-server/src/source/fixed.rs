@@ -7,8 +7,8 @@
 use std::collections::BTreeMap;
 
 use async_trait::async_trait;
+use open_sharing_api::catalog::DataFormat;
 use serde::{Deserialize, Serialize};
-use unitycatalog_sharing_api::catalog::DataFormat;
 
 use super::{CatalogSource, SourceTable, SourceVolume, split_name};
 use crate::{Error, Result};

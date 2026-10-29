@@ -19,13 +19,13 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use unitycatalog_common::models::shares::v1::{DataObject, DataObjectType, HistoryStatus};
-use unitycatalog_sharing_api::auth::Recipient;
-use unitycatalog_sharing_api::catalog::{
+use open_sharing_api::auth::Recipient;
+use open_sharing_api::catalog::{
     AssetKind, AssetRef, Page, PageRequest, ResolvedLocation, ShareCatalog, ShareInfo, SharedAsset,
     SharedObject, SharingAction,
 };
-use unitycatalog_sharing_api::service::paginate;
+use open_sharing_api::service::paginate;
+use unitycatalog_common::models::shares::v1::{DataObject, DataObjectType, HistoryStatus};
 
 use crate::source::{SourceRegistry, split_name};
 use crate::store::{ShareRecord, ShareStore};

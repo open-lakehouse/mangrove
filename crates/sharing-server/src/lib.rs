@@ -1,7 +1,7 @@
 //! A composable Open Sharing / Delta Sharing server.
 //!
 //! The protocol itself — discovery, the table query path, credential endpoints,
-//! recipient auth — comes from `olai-uc-sharing-api`. This crate supplies a
+//! recipient auth — comes from `olai-sharing-api`. This crate supplies a
 //! deployable host for it:
 //!
 //! - [`store`]: the server's own state (shares, recipients, tokens, grants,
@@ -31,4 +31,4 @@ pub mod store;
 mod tokens;
 
 pub use config::Config;
-pub use unitycatalog_sharing_api::{Error, Result};
+pub use open_sharing_api::{Error, Result};

@@ -271,7 +271,7 @@ sibling deps are re-released; when it flips to a published crate it will need th
 bootstrap. Once every publishable crate is live, delete the bootstrap workflow and revoke the
 `CARGO_REGISTRY_TOKEN` secret. Any *new* publishable crate added later needs the same
 one-time bootstrap (re-add the workflow if so). Not published to crates.io at all:
-`olai-uc-sharing-client` / `olai-uc-sharing-api` / `olai-uc-datafusion` (standing git-dep
+`olai-sharing-client` / `olai-sharing-api` / `olai-uc-datafusion` (standing git-dep
 block via the `delta_kernel`/`deltalake-core` git revs) and `olai-uc-cli` (held out for now).
 
 **Notes:**

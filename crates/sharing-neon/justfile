@@ -21,7 +21,7 @@ _default:
 build:
     #!/usr/bin/env bash
     set -euo pipefail
-    cargo zigbuild -p olai-uc-sharing-neon --profile release-neon --target {{ TARGET }}
+    cargo zigbuild -p olai-sharing-neon --profile release-neon --target {{ TARGET }}
     just sharing-neon _dist target/aarch64-unknown-linux-gnu/release-neon/libolai_uc_sharing_neon.so
     rm -f {{ ZIP }}
     (cd {{ FN }}/dist && zip -9 -q -r "$OLDPWD/{{ ZIP }}" .)
@@ -36,7 +36,7 @@ build:
 build-host:
     #!/usr/bin/env bash
     set -euo pipefail
-    cargo build -p olai-uc-sharing-neon
+    cargo build -p olai-sharing-neon
     lib=target/debug/libolai_uc_sharing_neon.dylib
     [ -f "$lib" ] || lib=target/debug/libolai_uc_sharing_neon.so
     just sharing-neon _dist "$lib"
@@ -64,7 +64,7 @@ test-arm64: build
 # apply migrations to a Neon branch (needs DATABASE_URL_UNPOOLED)
 migrate:
     DATABASE_URL="${DATABASE_URL_UNPOOLED:?set DATABASE_URL_UNPOOLED to the branch direct (unpooled) connection string}" \
-    cargo run -p olai-uc-sharing-server --features bin -- migrate
+    cargo run -p olai-sharing-server --features bin -- migrate
 
 # deploy the built bundle as a Neon Function (needs the `neon` CLI, logged in)
 deploy slug="open-sharing": build

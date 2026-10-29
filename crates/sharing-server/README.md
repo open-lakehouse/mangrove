@@ -1,7 +1,7 @@
-# olai-uc-sharing-server
+# olai-sharing-server
 
 A composable Open Sharing / Delta Sharing server, built on the protocol
-implementation in [`olai-uc-sharing-api`](../sharing-api). See
+implementation in [`olai-sharing-api`](../sharing-api). See
 [`ARCHITECTURE.md`](../sharing-api/ARCHITECTURE.md) for the design.
 
 - **Shares map onto a source catalog.** A share is a list of UC `DataObject`s
@@ -34,8 +34,8 @@ implementation in [`olai-uc-sharing-api`](../sharing-api). See
 ## Running
 
 ```sh
-cargo run -p olai-uc-sharing-server --features bin -- -c config.yaml migrate
-cargo run -p olai-uc-sharing-server --features bin -- -c config.yaml serve
+cargo run -p olai-sharing-server --features bin -- -c config.yaml migrate
+cargo run -p olai-sharing-server --features bin -- -c config.yaml serve
 ```
 
 Without a config file the server runs on an in-memory store with an insecure
@@ -79,7 +79,7 @@ that the `delta-sharing` clients read directly.
 
 ## Testing
 
-`cargo test -p olai-uc-sharing-server` runs the end-to-end suite on the
+`cargo test -p olai-sharing-server` runs the end-to-end suite on the
 in-memory store. The Postgres store test runs when
 `SHARING_SERVER_TEST_DATABASE_URL` points at a disposable database (see
 `tests/postgres.rs`).

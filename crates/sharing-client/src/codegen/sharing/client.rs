@@ -2,7 +2,7 @@
 #![allow(unused_imports)]
 use crate::Result;
 use olai_http::CloudClient;
-use unitycatalog_sharing_client::models::open_sharing::v1::*;
+use open_sharing_client::models::open_sharing::v1::*;
 use url::Url;
 /// HTTP client for service operations
 #[derive(Clone)]

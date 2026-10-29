@@ -7,13 +7,13 @@
 
 use async_trait::async_trait;
 use futures::TryStreamExt;
+use open_sharing_api::catalog::DataFormat;
 use unitycatalog_client::{
     TableOperation, TableReference, UnityCatalogClient, VolumeOperation, VolumeReference,
 };
 use unitycatalog_common::models::tables::v1::{DataSourceFormat, GetTableRequest, Table};
 use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
 use unitycatalog_common::models::volumes::v1::GetVolumeRequest;
-use unitycatalog_sharing_api::catalog::DataFormat;
 use url::Url;
 
 use super::{CatalogSource, SourceTable, SourceVolume, split_name};

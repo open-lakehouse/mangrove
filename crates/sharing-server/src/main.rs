@@ -3,9 +3,9 @@
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
+use open_sharing_server::config::DatabaseConfig;
+use open_sharing_server::{Config, embed};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use unitycatalog_sharing_server::config::DatabaseConfig;
-use unitycatalog_sharing_server::{Config, embed};
 
 #[derive(Parser)]
 #[command(
@@ -92,7 +92,7 @@ async fn run(cli: Cli) -> Result<(), String> {
 }
 
 async fn migrate(config: &Config) -> Result<(), String> {
-    use unitycatalog_sharing_server::store::postgres;
+    use open_sharing_server::store::postgres;
     let DatabaseConfig::Postgres {
         url, migration_url, ..
     } = &config.database
