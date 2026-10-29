@@ -4,8 +4,8 @@
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 use super::client::*;
 use crate::Result;
+use open_sharing_common::models::open_sharing::v1::*;
 use std::future::IntoFuture;
-use unitycatalog_sharing_client::models::open_sharing::v1::*;
 /// Builder for volumes
 pub struct ListVolumesBuilder {
     client: SharingVolumeClient,

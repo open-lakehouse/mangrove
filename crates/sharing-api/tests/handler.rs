@@ -1,13 +1,13 @@
 //! Handler integration tests: drive the discovery + asset surface through the
 //! generated handler traits over the in-memory backend.
 
-use unitycatalog_sharing_api::catalog::AssetKind;
-use unitycatalog_sharing_api::codegen::sharing::SharingHandler;
-use unitycatalog_sharing_api::codegen::sharing_skill::SharingSkillHandler;
-use unitycatalog_sharing_api::codegen::sharing_volume::SharingVolumeHandler;
-use unitycatalog_sharing_api::testing::{FixtureObject, FixtureShare, in_memory_service};
-use unitycatalog_sharing_api::{Error, SharingQueryHandler, SharingService};
-use unitycatalog_sharing_client::models::open_sharing::v1::*;
+use open_sharing_api::catalog::AssetKind;
+use open_sharing_api::codegen::sharing::SharingHandler;
+use open_sharing_api::codegen::sharing_skill::SharingSkillHandler;
+use open_sharing_api::codegen::sharing_volume::SharingVolumeHandler;
+use open_sharing_api::testing::{FixtureObject, FixtureShare, in_memory_service};
+use open_sharing_api::{Error, SharingQueryHandler, SharingService};
+use open_sharing_common::models::open_sharing::v1::*;
 
 fn backend() -> SharingService<()> {
     in_memory_service(vec![FixtureShare {

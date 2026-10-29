@@ -1,8 +1,9 @@
 # Trestle codegen config for the Open Sharing proto module.
 #
-# The sharing protocol is served from the `unitycatalog-sharing-client` crate
-# (models + client + co-located axum extractors) and the `unitycatalog-sharing-api`
-# crate (handler traits & axum routes), separately from the resource-oriented
+# The sharing protocol is split across three crates: `open-sharing-common`
+# (wire models + co-located axum extractors, shared by client and server),
+# `open-sharing-client` (the HTTP client), and `open-sharing-api` (handler
+# traits & axum routes), separately from the resource-oriented
 # Unity Catalog surface (see `trestle.yaml`). The sharing-api crate is a portable
 # carve-out (a `SharingBackend` port + blanket handler impl); the server adopts it
 # via a thin adapter. Sharing services are RPC-style (non-resource), so the
@@ -12,7 +13,7 @@
 # `buf generate` directly).
 version: 1
 project:
-  name: unitycatalog-sharing
+  name: open-sharing
 generate:
   proto_lib: buffa
   # snake_case JSON field names on the wire (see trestle.yaml for rationale).
@@ -29,8 +30,8 @@ generate:
       output: crates/sharing-client/src
 
   models:
-    dir: crates/sharing-client/src/models
-    crate_name: unitycatalog_sharing_client
+    dir: crates/sharing-common/src/models
+    crate_name: open_sharing_common
 
   server:
     output: crates/sharing-api/src

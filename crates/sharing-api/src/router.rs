@@ -33,8 +33,8 @@ use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{Router, get, post};
 
-use unitycatalog_sharing_client::models::open_sharing::v1::*;
-use unitycatalog_sharing_client::models::{DeltaSharingCapabilities, ResponseFormat};
+use open_sharing_common::models::open_sharing::v1::*;
+use open_sharing_common::models::{DeltaSharingCapabilities, ResponseFormat};
 
 use crate::codegen::sharing::{self, SharingHandler};
 use crate::codegen::sharing_skill::{self, SharingSkillHandler};

@@ -12,22 +12,20 @@ use async_trait::async_trait;
 use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
+use open_sharing_server::Result;
+use open_sharing_server::config::{ConfigValue, EncryptionConfig, KeyConfig, KeyProviderKind};
+use open_sharing_server::embed::{self, Settings};
+use open_sharing_server::secrets::Secrets;
+use open_sharing_server::source::fixed::{StaticSource, StaticTable};
+use open_sharing_server::source::{
+    AccessMode, CatalogSource, RegisteredSource, SourceRegistry, SourceTable, SourceVolume,
+};
+use open_sharing_server::store::ShareStore;
+use open_sharing_server::store::memory::InMemoryStore;
 use serde_json::{Value, json};
 use tower::ServiceExt;
 use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
 use unitycatalog_credentials::local_path_credential;
-use unitycatalog_sharing_server::Result;
-use unitycatalog_sharing_server::config::{
-    ConfigValue, EncryptionConfig, KeyConfig, KeyProviderKind,
-};
-use unitycatalog_sharing_server::embed::{self, Settings};
-use unitycatalog_sharing_server::secrets::Secrets;
-use unitycatalog_sharing_server::source::fixed::{StaticSource, StaticTable};
-use unitycatalog_sharing_server::source::{
-    AccessMode, CatalogSource, RegisteredSource, SourceRegistry, SourceTable, SourceVolume,
-};
-use unitycatalog_sharing_server::store::ShareStore;
-use unitycatalog_sharing_server::store::memory::InMemoryStore;
 
 const ADMIN: &str = "provider-secret";
 const PUBLIC_URL: &str = "https://sharing.example.com";
@@ -418,7 +416,7 @@ impl CatalogSource for VendingCatalog {
             name: full_name.rsplit('.').next().unwrap().to_string(),
             id: Some("11111111-1111-1111-1111-111111111111".to_string()),
             location: self.location.clone(),
-            format: unitycatalog_sharing_api::catalog::DataFormat::Delta,
+            format: open_sharing_api::catalog::DataFormat::Delta,
         })
     }
 
@@ -427,7 +425,7 @@ impl CatalogSource for VendingCatalog {
     }
 
     async fn get_volume(&self, _full_name: &str) -> Result<SourceVolume> {
-        Err(unitycatalog_sharing_server::Error::NotFound)
+        Err(open_sharing_server::Error::NotFound)
     }
 
     async fn vend_table(&self, table: &SourceTable) -> Result<TemporaryCredential> {

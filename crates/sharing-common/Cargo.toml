@@ -1,0 +1,41 @@
+[package]
+# Open Sharing is its own project, not part of Unity Catalog: published to
+# crates.io under the `olai-sharing-*` prefix, while the in-workspace dependency
+# key + crate identifier use the expanded `open(_)sharing_common` name via each
+# dependent's `package =` alias. See release-plz.toml / CONTRIBUTING.md.
+name = "olai-sharing-common"
+version = "0.0.1"
+description = "Open Sharing / Delta Sharing wire models shared by the client and server: generated request/response types, the NDJSON query-response lines, capability-header parsing, and optional axum request extractors."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+rust-version.workspace = true
+
+[lib]
+# Keep the Rust crate identifier (`open_sharing_common`) independent of the
+# `olai-sharing-*` package name, so source `use` paths need no churn from a
+# later rename.
+name = "open_sharing_common"
+
+[dependencies]
+# workspace dependencies in alphabetical order
+axum = { workspace = true, optional = true }
+axum-extra = { workspace = true, optional = true }
+buffa = { workspace = true }
+# `ProtocolResponseData::DeltaProtocol` embeds the kernel's `Protocol`, and the
+# metadata responses convert from the kernel's `Metadata`.
+delta_kernel = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[features]
+default = []
+# `axum` compiles the request extractors a server built on these types needs
+# (generated discovery extractors + the hand-written NDJSON query-path ones).
+# The feature name must be `axum` because the generated extractors hard-code
+# `#[cfg(feature = "axum")]`.
+axum = ["dep:axum", "dep:axum-extra"]

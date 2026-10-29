@@ -75,18 +75,24 @@ request context `Cx`, which becomes the authenticated recipient.
 | `TableFormat` | version / metadata / query / changes as protocol actions | Delta (kernel) | Iceberg |
 | `KeyProvider` (`olai-store`) | wrap/unwrap data keys for sealed secrets | `LocalKeyProvider` | cloud KMS / Key Vault |
 
-The recipient-facing ports live in `olai-uc-sharing-api`: `ShareCatalog`, which
+The recipient-facing ports live in `olai-sharing-api`: `ShareCatalog`, which
 covers discovery and resolution and is authorized through one `authorize` hook;
 `StorageAccess`; and `TableFormat`. A host implements `ShareCatalog` on top of
 its `ShareStore` and `CatalogSource`, which belong to the sharing server, and
 puts `RecipientAuthenticator` in front of the router.
+
+The wire types (generated request/response models, the NDJSON query lines and
+the capabilities header) live in `olai-sharing-common`, which both this crate
+and `olai-sharing-client` depend on. The server side never depends on the
+client, so the client can take on heavier dependencies (DataFrame libraries and
+the like) without the server inheriting them.
 
 A `SharingService` holds one implementation per port, plus a format registry.
 It implements the existing handler traits, so discovery, query and asset
 serving stay identical whatever backs them. The router mounts the same
 handlers twice behind a bearer-auth layer: under `/api/1.0/opensharing` (the
 spec, including assets and credential endpoints) and under the Delta Sharing
-prefix the `olai-uc-sharing-client` targets.
+prefix the `olai-sharing-client` targets.
 
 ### Discovery maps shares onto a source catalog
 
@@ -173,7 +179,7 @@ This crate drops `datafusion` and `olai-uc-datafusion`.
 
 ### Hosts
 
-`olai-uc-sharing-server` is a library plus binary, structured like Headwaters'
+`olai-sharing-server` is a library plus binary, structured like Headwaters'
 service crate:
 
 - **Startup.** `embed::Service::start` returns a socket-less `Router`.
@@ -187,7 +193,7 @@ service crate:
   Recipient creation issues a token and an activation URL, and
   `GET /api/1.0/opensharing/activations/{code}` returns the profile.
 
-`olai-uc-sharing-neon` hosts the same router as a Neon Function. It mirrors
+`olai-sharing-neon` hosts the same router as a Neon Function. It mirrors
 Headwaters (`headwaters-neon`): a napi `cdylib`, a thin dependency-free
 TypeScript fetch handler, and a `release-neon` profile. Configuration comes from
 the environment (`SHARING_SERVER_CONFIG_YAML`, plus Neon's `DATABASE_URL` /
@@ -229,10 +235,10 @@ One GitHub stack, one PR per layer:
    pagination and capability parsing are fixed.
 4. Storage access on the recipient surface: presigned `/query`, credential
    endpoints, the dual-prefix router and bearer auth.
-5. `olai-uc-sharing-server`: Postgres store, sealed secrets with lazy rewrap,
+5. `olai-sharing-server`: Postgres store, sealed secrets with lazy rewrap,
    UC REST catalog source, delegated and local access, admin API, binary,
    end-to-end tests.
-6. The Neon Function host (`olai-uc-sharing-neon`), with the size measurement
+6. The Neon Function host (`olai-sharing-neon`), with the size measurement
    above.
 
 ## Deferred

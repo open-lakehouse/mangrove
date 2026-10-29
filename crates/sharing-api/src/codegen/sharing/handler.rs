@@ -13,7 +13,7 @@
 //! Service exposing the official APIs for Delta Sharing.
 use crate::Result;
 use async_trait::async_trait;
-use unitycatalog_sharing_client::models::open_sharing::v1::*;
+use open_sharing_common::models::open_sharing::v1::*;
 #[async_trait]
 pub trait SharingHandler<Cx = crate::DefaultContext>: Send + Sync + 'static {
     /// List shares accessible to a recipient.

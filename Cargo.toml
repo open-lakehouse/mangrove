@@ -147,7 +147,7 @@ default.extend-ignore-re = [
 ]
 files.extend-exclude = [
   "crates/common/src/models/_gen/**/*",
-  "crates/sharing-client/src/models/_gen/**/*",
+  "crates/sharing-common/src/models/_gen/**/*",
   # buffa + connect-rust output for the portal.files.v1 FilesService contract
   # (`@generated`, never hand-edited) — the connect dispatcher/view aliases carry
   # random-looking substrings the spellchecker flags.

@@ -1,5 +1,5 @@
 [package]
-name = "olai-uc-sharing-neon"
+name = "olai-sharing-neon"
 version = "0.0.0"
 description = "The Open Sharing server as a Node-API addon, for deployment as a Neon Function"
 edition.workspace = true
@@ -19,7 +19,7 @@ test = false
 doctest = false
 
 [dependencies]
-unitycatalog-sharing-server = { package = "olai-uc-sharing-server", path = "../sharing-server" }
+open-sharing-server = { package = "olai-sharing-server", path = "../sharing-server" }
 
 axum = { workspace = true }
 http-body-util = "0.1"

@@ -10,7 +10,7 @@ plugins:
   # snake_case wire JSON comes from `json_field_names: proto` in
   # trestle.sharing.yaml.
   - remote: buf.build/anthropics/buffa:v0.7.0
-    out: crates/sharing-client/src/models/_gen
+    out: crates/sharing-common/src/models/_gen
     opt:
       - json=true
       - file_per_package=true

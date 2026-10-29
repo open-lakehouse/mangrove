@@ -15,7 +15,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use delta_kernel::Version;
 
-use unitycatalog_sharing_client::models::open_sharing::v1::JsonPredicate;
+use open_sharing_common::models::open_sharing::v1::JsonPredicate;
 
 use crate::access::TableStorage;
 use crate::catalog::{DataFormat, SharedAsset};

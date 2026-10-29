@@ -1,6 +1,6 @@
-# olai-uc-sharing-neon
+# olai-sharing-neon
 
-The Open Sharing server ([`olai-uc-sharing-server`](../sharing-server)) as a
+The Open Sharing server ([`olai-sharing-server`](../sharing-server)) as a
 Node-API addon, deployed as a [Neon Function](https://neon.com/docs). This
 follows the headwaters design (`headwaters-neon`, ADR 0015):
 

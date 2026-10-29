@@ -14,7 +14,7 @@
 //! storage-backed agent skills.
 use crate::Result;
 use async_trait::async_trait;
-use unitycatalog_sharing_client::models::open_sharing::v1::*;
+use open_sharing_common::models::open_sharing::v1::*;
 #[async_trait]
 pub trait SharingSkillHandler<Cx = crate::DefaultContext>: Send + Sync + 'static {
     /// List the agent skills in a given share's schema.

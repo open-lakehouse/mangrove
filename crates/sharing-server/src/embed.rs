@@ -8,8 +8,8 @@ use axum::Json;
 use axum::Router;
 use axum::extract::{Path, State};
 use axum::routing::get;
-use unitycatalog_sharing_api::auth::{Recipient, require_recipient};
-use unitycatalog_sharing_api::{SharingService, sharing_router};
+use open_sharing_api::auth::{Recipient, require_recipient};
+use open_sharing_api::{SharingService, sharing_router};
 
 use crate::Result;
 use crate::access::{SourceStorageAccess, open_credential};
