@@ -1,16 +1,24 @@
 //! Router integration tests: serve the Open Sharing router over the in-memory
-//! backend and check discovery JSON + that the gap routes return 501.
+//! service and check discovery JSON + that the gap routes return 501.
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use tower::ServiceExt; // for `oneshot`
-use unitycatalog_sharing_api::open_sharing_router;
-use unitycatalog_sharing_api::testing::InMemorySharingBackend;
+use unitycatalog_sharing_api::testing::{FixtureObject, FixtureShare, in_memory_service};
+use unitycatalog_sharing_api::{SharingService, open_sharing_router};
 
 fn router() -> axum::Router {
-    let backend =
-        InMemorySharingBackend::with_one_table("share1", "schema1", "table1", "s3://bucket/table1");
-    open_sharing_router::<InMemorySharingBackend, ()>(backend)
+    let service = in_memory_service(vec![FixtureShare {
+        name: "share1".to_string(),
+        id: Some("share1-id".to_string()),
+        objects: vec![FixtureObject::table(
+            "schema1",
+            "table1",
+            "s3://bucket/table1",
+        )],
+        ..Default::default()
+    }]);
+    open_sharing_router::<SharingService<()>, ()>(service)
 }
 
 async fn body_string(resp: axum::response::Response) -> String {

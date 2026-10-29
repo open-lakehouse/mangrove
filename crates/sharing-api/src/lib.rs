@@ -1,40 +1,45 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 //! Portable Unity Catalog **Open Sharing** / **Delta Sharing** REST API.
 //!
-//! This crate owns the sharing *semantics* — share/schema/table discovery, the
-//! kernel-backed NDJSON query path (table version / metadata / query), and the
-//! storage-backed asset surface (volumes, agent skills) — behind a narrow
-//! backend [port](backend::SharingBackend). Any server can serve the identical
-//! `/api/v1/delta-sharing` and `/api/v1/open-sharing` surfaces by implementing
-//! [`SharingBackend`] over its own share store, table/volume resolution,
-//! credential vending, and authorization; all the sharing business logic is
-//! shared here, so the behavior is identical by construction.
+//! This crate owns the sharing *semantics* — share / schema / asset discovery,
+//! the table query path (version / metadata / query) and the storage-backed asset
+//! surface (volumes, agent skills) — and expresses them over three narrow ports a
+//! host plugs implementations into:
 //!
-//! Unlike the fork-free `olai-uc-delta-api`, this crate deliberately owns the
-//! DataFusion + `delta-kernel` query path (via `olai-uc-datafusion`'s
-//! `ReconciledLogProvider`), isolating those git-pinned dependencies behind one
-//! crate so downstream servers stay free of them.
+//! - [`ShareCatalog`] — which shares and objects a recipient sees, and where a
+//!   shared object lives (backed by any source catalog);
+//! - [`StorageAccess`] — the server's own reads of a shared asset, presigned file
+//!   URLs and temporary credentials for recipients;
+//! - [`TableFormat`] — serving one table format; Delta (via `delta_kernel`, no
+//!   query engine) is built in behind the `delta` feature.
+//!
+//! [`SharingService`] composes them and implements every handler; the [`router`]
+//! serves it over axum. See `ARCHITECTURE.md` for the overall design.
 //!
 //! The wire types come from `olai-uc-sharing-client`
 //! ([`unitycatalog_sharing_client`]).
 //!
 //! # Layout
-//! - [`error`] — the decoupled error contract ([`SharingApiError`] +
-//!   [`SharingBackendError`]).
-//! - [`backend`] — the [`SharingBackend`] port trait + its coordinate/spec types.
-//! - [`kernel`] — the `ObjectStoreFactory` port + kernel engine builder.
-//! - [`session`] — the DataFusion/kernel NDJSON query path.
-//! - [`handler`] — the handler traits + the generic blanket impl.
+//! - [`catalog`] — the [`ShareCatalog`] port and the share / asset types.
+//! - [`access`] — the [`StorageAccess`] port and [`FileSigner`](access::FileSigner).
+//! - [`format`] — the [`TableFormat`] port, the format registry, the Delta format
+//!   and predicate-hint translation.
+//! - [`service`] — [`SharingService`], the composition root.
+//! - [`handler`] — the handler traits, implemented by [`SharingService`].
 //! - [`router`] — the axum routers for the Delta Sharing + Open Sharing surfaces.
+//! - [`error`] — the error contract.
 
-pub mod backend;
+pub mod access;
+pub mod catalog;
 pub mod codegen;
 pub mod error;
+pub mod format;
 pub mod handler;
-pub mod kernel;
+#[cfg(feature = "delta")]
+mod kernel;
 #[cfg(feature = "axum")]
 pub mod router;
-pub mod session;
+pub mod service;
 #[cfg(feature = "testing")]
 pub mod testing;
 
@@ -45,12 +50,14 @@ pub mod testing;
 /// server plugs in its own request-context type when it implements the port.
 pub type DefaultContext = ();
 
-pub use backend::{SharingBackend, SharingCapabilities};
+pub use access::StorageAccess;
+pub use catalog::ShareCatalog;
 pub use error::{Error, Result};
+pub use format::TableFormat;
 pub use handler::{SharingApiHandler, SharingQueryHandler};
-pub use kernel::ObjectStoreFactory;
 #[cfg(feature = "axum")]
 pub use router::{get_router, open_sharing_router};
+pub use service::SharingService;
 
 /// The generated handler traits (`SharingHandler`, `SharingVolumeHandler`,
 /// `SharingSkillHandler`), re-exported at the crate root.
