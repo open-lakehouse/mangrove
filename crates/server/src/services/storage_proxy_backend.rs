@@ -36,9 +36,9 @@ use crate::api::tables::TableHandler;
 use crate::api::volumes::VolumeHandler;
 use crate::policy::{Permission, Policy};
 use crate::services::ServerHandler;
-use crate::services::credential_vending::{VendOperation, vend_credential};
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::find_external_location_for_url;
+use unitycatalog_credentials::vending::{VendOperation, vend_credential};
 
 /// Map a server [`Error`] onto a [`ProxyError`], preserving status semantics
 /// (not-found → 404, not-allowed → 403, …).
@@ -206,7 +206,7 @@ async fn open_store(
         .map_err(to_proxy_err)?;
     let vended = vend_credential(&credential, location, vend_operation(write))
         .await
-        .map_err(to_proxy_err)?;
+        .map_err(|e| to_proxy_err(e.into()))?;
     // No refresh client is threaded: the vended credential is valid for the
     // request's lifetime, and the server has no ambient I/O runtime / region to
     // forward here (the `AWS_REGION` env fallback still applies).

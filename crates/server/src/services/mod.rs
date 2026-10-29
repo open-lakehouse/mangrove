@@ -8,9 +8,10 @@ use unitycatalog_delta_api::coordinator::{
     CommitCoordinator, InMemoryCommitCoordinator, ProvidesCommitCoordinator,
 };
 
-pub mod credential_vending;
 mod delta_backend;
-pub mod location;
+// Storage-location parsing moved to `olai-uc-credentials` (shared with the Open
+// Sharing server); re-exported so `services::location` stays a stable path.
+pub use unitycatalog_credentials::location;
 pub mod location_policy;
 pub(crate) mod object_store;
 // The storage byte-proxy local arm impl. Gated on `bin`, where the

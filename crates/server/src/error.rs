@@ -75,6 +75,29 @@ pub enum Error {
     },
 }
 
+/// Lift a credentials-crate error onto the server's variants so vending failures
+/// keep the status codes and messages they had while vending lived in the server.
+impl From<unitycatalog_credentials::Error> for Error {
+    fn from(e: unitycatalog_credentials::Error) -> Self {
+        use unitycatalog_common::Error as CommonError;
+        match e {
+            unitycatalog_credentials::Error::Common(CommonError::Generic(msg)) => {
+                Error::Generic(msg)
+            }
+            unitycatalog_credentials::Error::Common(CommonError::InvalidArgument(msg)) => {
+                Error::InvalidArgument(msg)
+            }
+            unitycatalog_credentials::Error::Common(CommonError::SerDe(source)) => {
+                Error::SerDe { source }
+            }
+            unitycatalog_credentials::Error::Common(source) => Error::Common { source },
+            unitycatalog_credentials::Error::CloudCredential(source) => {
+                Error::CloudCredential { source }
+            }
+        }
+    }
+}
+
 impl Error {
     pub fn generic(message: impl ToString) -> Self {
         Error::Generic(message.to_string())

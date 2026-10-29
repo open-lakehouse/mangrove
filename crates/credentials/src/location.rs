@@ -1,3 +1,10 @@
+//! Storage location URLs: parsing, normalization and prefix matching.
+//!
+//! [`StorageLocationUrl`] gives a single place to turn a raw storage URL
+//! (`s3://`, `abfss://`, `https://<account>.blob…`, `gs://`, Azurite, `file://`)
+//! into the store base, the normalized location, and the bucket / prefix pair
+//! that credential vending downscopes to.
+
 use itertools::Itertools;
 use object_store::ObjectStoreScheme;
 use unitycatalog_common::{Error, Result};
@@ -255,4 +262,87 @@ fn get_store_url(url: &url::Url) -> Result<(Url, StorageLocationScheme, Url)> {
         StorageLocationScheme::Azurite => url.clone(),
     };
     Ok((store_url, scheme, location))
+}
+
+/// Whether `prefix` is a path-segment prefix of `url`.
+///
+/// Delegates to [`object_store::path::Path::prefix_matches`], which compares on
+/// path-segment boundaries so that a location registered for `s3://bucket/data`
+/// does **not** match `s3://bucket/data-secret/x` (which a raw `starts_with`
+/// would wrongly accept). Both inputs are full URL strings; `Path` parses them
+/// the same way (splitting on `/`), so the comparison is consistent. A trailing
+/// `/` is collapsed by `Path` parsing, so no separate normalization is needed.
+pub fn is_path_prefix(url: &str, prefix: &str) -> bool {
+    object_store::path::Path::from(url).prefix_matches(&object_store::path::Path::from(prefix))
+}
+
+/// Pick the candidate whose URL is the most specific (longest) prefix of `location`.
+///
+/// `url_of` extracts each candidate's registered URL. Candidates whose URL fails
+/// to parse are skipped. A candidate matches when its URL is a path-segment prefix
+/// of `location` in either the raw or the normalized form, so the `abfss://` and
+/// `https://` spellings of the same Azure location resolve alike. This is the
+/// lookup that maps a storage path onto the external location (and so the
+/// credential) that governs it.
+pub fn longest_prefix_match<T>(
+    location: &StorageLocationUrl,
+    candidates: impl IntoIterator<Item = T>,
+    url_of: impl Fn(&T) -> &str,
+) -> Option<T> {
+    candidates
+        .into_iter()
+        .filter(|candidate| {
+            let Ok(candidate_url) = StorageLocationUrl::parse(url_of(candidate)) else {
+                return false;
+            };
+            is_path_prefix(location.raw().as_str(), candidate_url.raw().as_str())
+                || is_path_prefix(
+                    location.location().as_str(),
+                    candidate_url.location().as_str(),
+                )
+        })
+        .max_by_key(|candidate| url_of(candidate).len())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{StorageLocationUrl, is_path_prefix, longest_prefix_match};
+
+    #[test]
+    fn path_prefix_matches_exact_and_subpaths() {
+        assert!(is_path_prefix("s3://bucket/data", "s3://bucket/data"));
+        assert!(is_path_prefix("s3://bucket/data/file", "s3://bucket/data"));
+        assert!(is_path_prefix("s3://bucket/data/x/y", "s3://bucket/data/"));
+    }
+
+    #[test]
+    fn path_prefix_rejects_sibling_prefix() {
+        // The classic over-match: `data` must not match `data-secret`.
+        assert!(!is_path_prefix(
+            "s3://bucket/data-secret/file",
+            "s3://bucket/data"
+        ));
+        assert!(!is_path_prefix("s3://bucket/database", "s3://bucket/data"));
+    }
+
+    #[test]
+    fn longest_prefix_match_picks_most_specific() {
+        let location = StorageLocationUrl::parse("s3://bucket/data/team/table").unwrap();
+        let candidates = [
+            "s3://bucket",
+            "s3://bucket/data",
+            "s3://bucket/data/team",
+            "s3://bucket/data-secret",
+            "not a url",
+        ];
+        let found = longest_prefix_match(&location, candidates, |c| c);
+        assert_eq!(found, Some("s3://bucket/data/team"));
+    }
+
+    #[test]
+    fn longest_prefix_match_none_when_uncovered() {
+        let location = StorageLocationUrl::parse("s3://other/data").unwrap();
+        let found = longest_prefix_match(&location, ["s3://bucket/data"], |c| c);
+        assert_eq!(found, None);
+    }
 }
