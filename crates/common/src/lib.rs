@@ -11,6 +11,8 @@
 //!   implemented by backends (feature `store`).
 //! - [`services`] — envelope encryption for sealing sensitive fields inline
 //!   (feature `store`).
+//! - [`credentials_ext`] — conversions to the `olai-uc-credentials` types
+//!   (feature `credentials`).
 //! - [`metric_view`] — the single parser for Unity Catalog metric-view definitions
 //!   (feature `metric-view`).
 //!
@@ -25,6 +27,8 @@ pub use error::{Error, Result};
 pub use models::*;
 pub use reference::UCReference;
 
+#[cfg(feature = "credentials")]
+pub mod credentials_ext;
 pub mod error;
 #[cfg(feature = "metric-view")]
 pub mod metric_view;

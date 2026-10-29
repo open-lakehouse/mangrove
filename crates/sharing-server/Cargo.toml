@@ -28,6 +28,7 @@ open-sharing-common = { package = "olai-sharing-common", path = "../sharing-comm
 unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.5" }
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.5", features = [
   "axum",
+  "credentials",
   "store",
 ] }
 unitycatalog-credentials = { package = "olai-uc-credentials", path = "../credentials", version = "0.0.1" }

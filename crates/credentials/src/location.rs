@@ -5,9 +5,9 @@
 //! into the store base, the normalized location, and the bucket / prefix pair
 //! that credential vending downscopes to.
 
+use crate::{Error, Result};
 use itertools::Itertools;
 use object_store::ObjectStoreScheme;
-use unitycatalog_common::{Error, Result};
 use url::Url;
 
 pub enum StorageLocationScheme {

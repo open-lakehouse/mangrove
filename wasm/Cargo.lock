@@ -2796,6 +2796,7 @@ dependencies = [
  "bytes",
  "chrono",
  "itertools",
+ "olai-uc-credentials",
  "pbjson",
  "pbjson-types",
  "percent-encoding",
@@ -2808,6 +2809,18 @@ dependencies = [
  "url",
  "uuid",
  "zeroize",
+]
+
+[[package]]
+name = "olai-uc-credentials"
+version = "0.0.1"
+dependencies = [
+ "itertools",
+ "object_store",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "url",
 ]
 
 [[package]]
@@ -2846,6 +2859,7 @@ dependencies = [
  "olai-http-wasm",
  "olai-uc-client",
  "olai-uc-common",
+ "olai-uc-credentials",
  "percent-encoding",
  "reqwest 0.12.28",
  "send_wrapper",

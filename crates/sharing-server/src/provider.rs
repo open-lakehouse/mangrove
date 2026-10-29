@@ -30,6 +30,7 @@ use unitycatalog_common::models::shares::v1::{
     ListSharesResponse, PrivilegeAssignment, Share, UpdatePermissionsRequest,
     UpdatePermissionsResponse, UpdateShareRequest,
 };
+use unitycatalog_credentials::StorageCredential;
 use unitycatalog_credentials::location::StorageLocationUrl;
 
 use crate::access::credential_aad;
@@ -438,21 +439,18 @@ async fn create_credential(
     Json(credential): Json<Credential>,
 ) -> Result<Json<serde_json::Value>> {
     identifier(&credential.name)?;
-    let has_secret = credential.aws_iam_role.is_set()
-        || credential.azure_service_principal.is_set()
-        || credential.azure_managed_identity.is_set()
-        || credential.azure_storage_key.is_set();
-    if !has_secret {
-        return Err(Error::invalid_argument(
+    // Only the storage credential itself is kept; the catalog metadata is not.
+    let storage = StorageCredential::try_from(&credential).map_err(|_| {
+        Error::invalid_argument(
             "a credential needs one of aws_iam_role, azure_service_principal, \
              azure_managed_identity or azure_storage_key",
-        ));
-    }
+        )
+    })?;
     let sealed = state
         .secrets
         .seal(
             &credential_aad(&credential.name),
-            &serde_json::to_vec(&credential)?,
+            &serde_json::to_vec(&storage)?,
         )
         .await?;
     state

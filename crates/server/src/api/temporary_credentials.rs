@@ -14,10 +14,22 @@ use crate::services::location::{StorageLocationScheme, StorageLocationUrl};
 use crate::services::object_store::find_external_location_for_url;
 use crate::store::ResourceStore;
 use crate::{Error, Result};
+use unitycatalog_credentials::StorageCredential;
 use unitycatalog_credentials::vending::{VendOperation, local_path_credential, vend_credential};
 
 use buffa::Enumeration;
 use object_store::ObjectStoreScheme;
+
+/// Vend a temporary credential for `url` from a registered catalog credential,
+/// converting to and from the catalog-independent types the vending crate speaks.
+pub(crate) async fn vend_uc_credential(
+    credential: &unitycatalog_common::models::credentials::v1::Credential,
+    url: &str,
+    operation: VendOperation,
+) -> Result<TemporaryCredential> {
+    let storage = StorageCredential::try_from(credential)?;
+    Ok(vend_credential(&storage, url, operation).await?.into())
+}
 
 /// The permission a vend operation requires from the policy.
 ///
@@ -89,7 +101,7 @@ impl<
             storage_url.scheme(),
             StorageLocationScheme::ObjectStore(ObjectStoreScheme::Local)
         ) {
-            return Ok(local_path_credential(&request.url));
+            return Ok(local_path_credential(&request.url).into());
         }
 
         let ext_loc = find_external_location_for_url(&storage_url, self).await?;
@@ -107,7 +119,7 @@ impl<
                 ..Default::default()
             })
             .await?;
-        Ok(vend_credential(&credential, &request.url, operation).await?)
+        vend_uc_credential(&credential, &request.url, operation).await
     }
 
     /// Generate temporary credentials for a volume.
@@ -143,7 +155,7 @@ impl<
                 ..Default::default()
             })
             .await?;
-        Ok(vend_credential(&credential, &location, operation).await?)
+        vend_uc_credential(&credential, &location, operation).await
     }
 
     /// Generate temporary credentials for a model version.
@@ -186,7 +198,7 @@ impl<
                 ..Default::default()
             })
             .await?;
-        Ok(vend_credential(&credential, &location, operation).await?)
+        vend_uc_credential(&credential, &location, operation).await
     }
 
     #[tracing::instrument(skip(self, context))]
@@ -216,7 +228,7 @@ impl<
                 ..Default::default()
             })
             .await?;
-        Ok(vend_credential(&credential, &location, operation).await?)
+        vend_uc_credential(&credential, &location, operation).await
     }
 }
 // NOTE: These request types intentionally do not implement `SecuredAction`.

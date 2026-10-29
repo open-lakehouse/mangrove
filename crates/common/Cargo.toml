@@ -21,6 +21,11 @@ rust-version.workspace = true
 name = "unitycatalog_common"
 
 [dependencies]
+# local dependencies in alphabetical order
+# Conversions to the catalog-independent credential types (feature `credentials`).
+unitycatalog-credentials = { package = "olai-uc-credentials", path = "../credentials", version = "0.0.1", default-features = false, optional = true }
+
+# workspace dependencies in alphabetical order
 aes-gcm = { workspace = true }
 async-trait = { workspace = true }
 # buffa runtime consumed by the generated models (replaces the prost stack).
@@ -101,6 +106,9 @@ metric-view = ["dep:serde_yml", "dep:sqlparser"]
 axum = ["dep:axum", "dep:axum-extra", "http"]
 
 sqlx = ["dep:sqlx", "store", "olai-store/sqlx"]
+
+# conversions between the generated credential models and `olai-uc-credentials`
+credentials = ["dep:unitycatalog-credentials"]
 
 # storage abstraction trait (ResourceStore) implemented by backends
 store = ["dep:futures", "dep:olai-store"]

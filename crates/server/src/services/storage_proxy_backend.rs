@@ -38,6 +38,7 @@ use crate::policy::{Permission, Policy};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::find_external_location_for_url;
+use unitycatalog_credentials::StorageCredential;
 use unitycatalog_credentials::vending::{VendOperation, vend_credential};
 
 /// Map a server [`Error`] onto a [`ProxyError`], preserving status semantics
@@ -50,16 +51,15 @@ fn to_proxy_err(e: Error) -> ProxyError {
     }
 }
 
-/// Map a [`unitycatalog_common::Error`] onto a [`ProxyError`]. Used for the few
-/// helpers that surface the common error type directly (e.g.
+/// Map a [`unitycatalog_credentials::Error`] onto a [`ProxyError`]. Used for the
+/// helpers that surface the credentials error type directly (e.g.
 /// [`StorageLocationUrl::parse`], whose failures are malformed-URL / bad-argument).
-fn to_proxy_err_common(e: unitycatalog_common::Error) -> ProxyError {
+fn to_proxy_err_location(e: unitycatalog_credentials::Error) -> ProxyError {
     match e {
-        unitycatalog_common::Error::NotFound => ProxyError::NotFound("resource not found".into()),
-        unitycatalog_common::Error::InvalidArgument(m) => ProxyError::InvalidArgument(m),
-        unitycatalog_common::Error::InvalidUrl(e) => {
-            ProxyError::InvalidArgument(format!("invalid storage URL: {e}"))
+        unitycatalog_credentials::Error::NotFound => {
+            ProxyError::NotFound("resource not found".into())
         }
+        unitycatalog_credentials::Error::InvalidArgument(m) => ProxyError::InvalidArgument(m),
         other => ProxyError::Internal(other.to_string()),
     }
 }
@@ -142,7 +142,7 @@ async fn authorize_and_locate(
             // A raw path must resolve to a registered external location the caller
             // is authorized on; `find_external_location_for_url` 404s otherwise.
             let storage_url =
-                StorageLocationUrl::parse(url.as_str()).map_err(to_proxy_err_common)?;
+                StorageLocationUrl::parse(url.as_str()).map_err(to_proxy_err_location)?;
             let ext_loc = find_external_location_for_url(&storage_url, handler)
                 .await
                 .map_err(to_proxy_err)?;
@@ -193,7 +193,7 @@ async fn open_store(
     location: &str,
     write: bool,
 ) -> ProxyResult<Arc<DynObjectStore>> {
-    let storage_url = StorageLocationUrl::parse(location).map_err(to_proxy_err_common)?;
+    let storage_url = StorageLocationUrl::parse(location).map_err(to_proxy_err_location)?;
     let ext_loc = find_external_location_for_url(&storage_url, handler)
         .await
         .map_err(to_proxy_err)?;
@@ -204,6 +204,8 @@ async fn open_store(
         })
         .await
         .map_err(to_proxy_err)?;
+    let credential =
+        StorageCredential::try_from(&credential).map_err(|e| to_proxy_err(e.into()))?;
     let vended = vend_credential(&credential, location, vend_operation(write))
         .await
         .map_err(|e| to_proxy_err(e.into()))?;

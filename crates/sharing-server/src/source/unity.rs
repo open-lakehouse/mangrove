@@ -12,8 +12,8 @@ use unitycatalog_client::{
     TableOperation, TableReference, UnityCatalogClient, VolumeOperation, VolumeReference,
 };
 use unitycatalog_common::models::tables::v1::{DataSourceFormat, GetTableRequest, Table};
-use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
 use unitycatalog_common::models::volumes::v1::GetVolumeRequest;
+use unitycatalog_credentials::TemporaryCredential;
 use url::Url;
 
 use super::{CatalogSource, SourceTable, SourceVolume, split_name};
@@ -137,12 +137,13 @@ impl CatalogSource for UnitySource {
     }
 
     async fn vend_table(&self, table: &SourceTable) -> Result<TemporaryCredential> {
-        let (mut credential, _) = self
+        let (credential, _) = self
             .client
             .temporary_credentials()
             .temporary_table_credential(table_id(table)?, TableOperation::Read)
             .await
             .map_err(client_error)?;
+        let mut credential = TemporaryCredential::from(credential);
         if credential.url.is_empty() {
             credential.url = table.location.clone();
         }
@@ -158,12 +159,13 @@ impl CatalogSource for UnitySource {
                 })?,
             None => VolumeReference::Name(volume.full_name.clone()),
         };
-        let (mut credential, _) = self
+        let (credential, _) = self
             .client
             .temporary_credentials()
             .temporary_volume_credential(reference, VolumeOperation::Read)
             .await
             .map_err(client_error)?;
+        let mut credential = TemporaryCredential::from(credential);
         if credential.url.is_empty() {
             credential.url = volume.location.clone();
         }
