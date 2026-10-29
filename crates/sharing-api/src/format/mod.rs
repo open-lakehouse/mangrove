@@ -55,6 +55,14 @@ pub struct QuerySpec {
     pub limit_hint: Option<u64>,
 }
 
+/// A newline-delimited JSON table response and the table version it describes
+/// (sent as the `Delta-Table-Version` response header).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TableResponse {
+    pub version: Version,
+    pub body: Bytes,
+}
+
 /// Serves one table format. See the module docs.
 ///
 /// Every method receives the resolved [`SharedAsset`] (which carries the
@@ -78,7 +86,7 @@ pub trait TableFormat: Send + Sync + 'static {
         asset: &SharedAsset,
         storage: &TableStorage,
         at: VersionSpec,
-    ) -> Result<Bytes>;
+    ) -> Result<TableResponse>;
 
     /// The protocol, metadata and file lines answering `query`.
     async fn query(
@@ -86,7 +94,7 @@ pub trait TableFormat: Send + Sync + 'static {
         asset: &SharedAsset,
         storage: &TableStorage,
         query: QuerySpec,
-    ) -> Result<Bytes>;
+    ) -> Result<TableResponse>;
 }
 
 /// The table formats a service can serve, keyed by [`DataFormat`].

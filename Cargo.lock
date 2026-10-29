@@ -4275,6 +4275,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "olai-uc-sharing-server"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "axum",
+ "base64 0.22.1",
+ "chrono",
+ "clap",
+ "futures",
+ "object_store",
+ "olai-uc-client",
+ "olai-uc-common",
+ "olai-uc-credentials",
+ "olai-uc-object-store",
+ "olai-uc-sharing-api",
+ "olai-uc-sharing-client",
+ "serde",
+ "serde_json",
+ "serde_yml",
+ "sha2 0.10.9",
+ "sqlx",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+]
+
+[[package]]
 name = "olai-uc-sqlite"
 version = "0.0.5"
 dependencies = [

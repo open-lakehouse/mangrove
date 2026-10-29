@@ -132,6 +132,12 @@ changelog_path = "crates/sharing-api/CHANGELOG.md"
 release = false
 
 [[package]]
+name = "olai-uc-sharing-server"
+changelog_path = "crates/sharing-server/CHANGELOG.md"
+# BOOTSTRAP GATE (a): new crate, after sharing-client -> sharing-api.
+release = false
+
+[[package]]
 name = "olai-uc-object-store"
 changelog_path = "crates/object-store/CHANGELOG.md"
 
@@ -248,5 +254,5 @@ commit_parsers = [
 # is already crate-scoped. Scopes use the crate directory names / short names
 # the repo's conventional commits already use.
 commit_preprocessors = [
-  { pattern = '\((delta-api|common|credentials|client|sharing-client|object-store|postgres|sqlite|datafusion|server|storage-proxy|cli|unity-catalog-node|unity-catalog-client)\)', replace = "" },
+  { pattern = '\((delta-api|common|credentials|client|sharing-client|sharing-api|sharing-server|object-store|postgres|sqlite|datafusion|server|storage-proxy|cli|unity-catalog-node|unity-catalog-client)\)', replace = "" },
 ]

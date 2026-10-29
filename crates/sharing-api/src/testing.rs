@@ -144,6 +144,7 @@ impl<Cx: Send + Sync + 'static> ShareCatalog<Cx> for InMemoryShareCatalog {
             format: (object.kind == AssetKind::Table).then_some(DataFormat::Delta),
             history_shared: object.history_shared,
             start_version: object.start_version,
+            source_name: None,
         })
     }
 }
@@ -166,6 +167,7 @@ impl<Cx: Send + Sync + 'static> StorageAccess<Cx> for LocalStorageAccess {
         };
         Ok(TableStorage {
             store,
+            root: asset.location.as_directory(),
             signer: Arc::new(UnsignedUrls),
         })
     }

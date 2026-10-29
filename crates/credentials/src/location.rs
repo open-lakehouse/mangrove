@@ -257,7 +257,11 @@ fn get_store_url(url: &url::Url) -> Result<(Url, StorageLocationScheme, Url)> {
                 .ok_or_else(|| Error::invalid_argument("Invalid azurite path"))?
                 .skip(2)
                 .join("/");
-            url::Url::parse(&format!("{}{}", store_url.as_str(), path))?
+            url::Url::parse(&format!(
+                "{}/{}",
+                store_url.as_str().trim_end_matches('/'),
+                path
+            ))?
         }
         StorageLocationScheme::Azurite => url.clone(),
     };
@@ -323,6 +327,16 @@ mod tests {
             "s3://bucket/data"
         ));
         assert!(!is_path_prefix("s3://bucket/database", "s3://bucket/data"));
+    }
+
+    #[test]
+    fn azurite_path_style_locations_normalize_to_the_container() {
+        let url =
+            StorageLocationUrl::parse("http://127.0.0.1:10000/devstoreaccount1/data/tables/t1/")
+                .unwrap();
+        assert_eq!(url.location().as_str(), "azurite://data/tables/t1/");
+        assert_eq!(url.store_url().as_str(), "azurite://data");
+        assert_eq!(url.azure_account().as_deref(), Some("devstoreaccount1"));
     }
 
     #[test]

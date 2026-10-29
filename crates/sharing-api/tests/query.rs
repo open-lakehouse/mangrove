@@ -130,7 +130,8 @@ async fn metadata_is_protocol_then_metadata() {
     )
     .await
     .unwrap();
-    let (protocol, metadata, files) = parse(&body);
+    assert_eq!(body.version, 1);
+    let (protocol, metadata, files) = parse(&body.body);
     assert_eq!(protocol.min_reader_version(), 1);
     assert_eq!(metadata.partition_columns(), ["letter".to_string()]);
     assert!(files.is_empty());
@@ -141,7 +142,7 @@ async fn query_lists_latest_files() {
     let body = SharingQueryHandler::<()>::query_table(&service(), query(Default::default()), ())
         .await
         .unwrap();
-    let (_, metadata, files) = parse(&body);
+    let (_, metadata, files) = parse(&body.body);
     assert_eq!(letters(&files), ["a", "a", "b", "c", "e", "f"]);
 
     let root = table_url(&fixture_dir());
@@ -174,7 +175,7 @@ async fn query_at_version() {
     )
     .await
     .unwrap();
-    let (_, metadata, files) = parse(&body);
+    let (_, metadata, files) = parse(&body.body);
     assert_eq!(letters(&files), ["a", "b", "c"]);
     assert!(files.iter().all(|f| f.version == Some(0)));
     let MetadataResponseData::ParquetMetadata(metadata) = metadata else {
@@ -195,7 +196,7 @@ async fn query_prunes_with_predicate_hints() {
     )
     .await
     .unwrap();
-    let (_, _, files) = parse(&body);
+    let (_, _, files) = parse(&body.body);
     assert_eq!(letters(&files), ["a", "a"]);
 }
 
@@ -211,7 +212,7 @@ async fn query_honors_limit_hint() {
     )
     .await
     .unwrap();
-    let (_, _, files) = parse(&body);
+    let (_, _, files) = parse(&body.body);
     // Every file holds one row, so two files cover the hint.
     assert_eq!(files.len(), 2);
 }
@@ -296,7 +297,7 @@ async fn query_enforces_start_version() {
     )
     .await
     .unwrap();
-    assert_eq!(parse(&body).2.len(), 6);
+    assert_eq!(parse(&body.body).2.len(), 6);
 }
 
 /// Copy the fixture and pin its commit times: the table has no in-commit
@@ -348,7 +349,7 @@ async fn query_and_version_by_timestamp() {
     )
     .await
     .unwrap();
-    let (_, _, files) = parse(&body);
+    let (_, _, files) = parse(&body.body);
     assert_eq!(letters(&files), ["a", "b", "c"]);
     assert!(files.iter().all(|f| f.version == Some(0)));
     assert!(files.iter().all(|f| f.timestamp == Some(1_000_000_000_000)));
@@ -406,6 +407,7 @@ async fn router_query_accepts_string_encoded_predicate_hints() {
         resp.headers()["content-type"],
         "application/x-ndjson; charset=utf-8"
     );
+    assert_eq!(resp.headers()["delta-table-version"], "1");
     let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
         .await
         .unwrap();
