@@ -15,8 +15,10 @@ surface (volumes, agent skills) — and expresses them over three narrow ports:
   involved.
 
 `SharingService` composes one implementation of each port and implements every
-handler; the axum routers serve it under the `/api/v1/delta-sharing` and
-`/api/v1/open-sharing` surfaces. The wire types come from
+handler. `sharing_router` serves it under `/api/v1/delta-sharing` (Delta
+Sharing) and `/api/1.0/opensharing` (Open Sharing, adding volumes, agent skills
+and temporary credentials), and `auth::require_recipient` puts a bearer-token
+`RecipientAuthenticator` in front. The wire types come from
 [`olai-uc-sharing-client`](https://crates.io/crates/olai-uc-sharing-client).
 
 ## Status
@@ -27,6 +29,8 @@ handler; the axum routers serve it under the `/api/v1/delta-sharing` and
   response format, with version / timestamp time travel, predicate-hint file
   skipping and limit hints. Tables that need reader features (column mapping,
   deletion vectors, …) require `responseformat=delta` and are rejected for now.
+- **Credentials**: `temporary-table-credentials` (Open Sharing) and the volume /
+  skill credential endpoints vend read-only credentials through `StorageAccess`.
 - **Not implemented** (`501`): change data feed (`/changes`), asynchronous
   queries (`POST /queries/{id}`) and `responseformat=delta` serving.
 

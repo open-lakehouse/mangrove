@@ -64,6 +64,10 @@ required-features = ["testing"]
 name = "query"
 required-features = ["testing"]
 
+[[test]]
+name = "mount"
+required-features = ["testing"]
+
 [features]
 # `axum` gates the generated axum route functions, the hand-written router, and
 # the error `IntoResponse`. On by default: this crate exists to serve an axum

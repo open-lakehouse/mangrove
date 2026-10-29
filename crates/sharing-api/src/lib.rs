@@ -27,9 +27,13 @@
 //! - [`service`] — [`SharingService`], the composition root.
 //! - [`handler`] — the handler traits, implemented by [`SharingService`].
 //! - [`router`] — the axum routers for the Delta Sharing + Open Sharing surfaces.
+//! - [`auth`] — the [`RecipientAuthenticator`](auth::RecipientAuthenticator) port
+//!   and the bearer-token layer.
 //! - [`error`] — the error contract.
 
 pub mod access;
+#[cfg(feature = "axum")]
+pub mod auth;
 pub mod catalog;
 pub mod codegen;
 pub mod error;
@@ -56,7 +60,7 @@ pub use error::{Error, Result};
 pub use format::TableFormat;
 pub use handler::{SharingApiHandler, SharingQueryHandler};
 #[cfg(feature = "axum")]
-pub use router::{get_router, open_sharing_router};
+pub use router::{get_router, open_sharing_router, sharing_router};
 pub use service::SharingService;
 
 /// The generated handler traits (`SharingHandler`, `SharingVolumeHandler`,

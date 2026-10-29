@@ -86,6 +86,8 @@ use crate::credential::{SecurableRef, as_aws, as_azure, as_gcp, new_azure};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::credential::{aws_access_point, new_aws, new_gcp};
 pub use crate::error::Error;
+#[cfg(not(target_arch = "wasm32"))]
+pub use crate::presign::{PresignedUrls, presign_from_vended_credential};
 pub use unitycatalog_common::UCReference;
 // Re-export the reference / operation enums so consumers do not need a direct
 // dependency on `unitycatalog-client` for the common case.
@@ -95,6 +97,8 @@ pub use unitycatalog_client::{
 
 mod credential;
 mod error;
+#[cfg(not(target_arch = "wasm32"))]
+mod presign;
 mod proxy;
 
 /// An [`HttpService`] decorator that injects a fixed request header on every

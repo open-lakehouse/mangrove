@@ -60,6 +60,10 @@ pub enum Error {
     #[error("permission denied")]
     NotAllowed,
 
+    /// The request carries no valid recipient credential. → 401.
+    #[error("unauthenticated")]
+    Unauthenticated,
+
     /// A malformed request or invalid parameter. → 400.
     #[error("Invalid Argument: {0}")]
     InvalidArgument(String),
@@ -104,6 +108,7 @@ impl Error {
             }
             Error::NotFound => "NOT_FOUND",
             Error::NotAllowed => "PERMISSION_DENIED",
+            Error::Unauthenticated => "UNAUTHENTICATED",
             Error::NotImplemented(_) => "NOT_IMPLEMENTED",
             Error::Common { source } => source.error_code(),
             _ => "INTERNAL_ERROR",
@@ -138,20 +143,17 @@ mod server {
 
     use super::Error;
 
-    const INTERNAL_ERROR: (StatusCode, &str) = (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "The request is not handled correctly due to a server error.",
-    );
-
-    const INVALID_ARGUMENT: (StatusCode, &str) = (
-        StatusCode::BAD_REQUEST,
-        "Invalid argument provided in the request.",
-    );
+    fn internal() -> (StatusCode, String) {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "The request is not handled correctly due to a server error.".to_string(),
+        )
+    }
 
     impl IntoResponse for Error {
         fn into_response(self) -> Response {
             let error_code = self.error_code().to_string();
-            let (status, message): (StatusCode, &str) = match self {
+            let (status, message): (StatusCode, String) = match self {
                 Error::Common { source } => {
                     let (status, message) = source.response_parts();
                     return (
@@ -165,42 +167,46 @@ mod server {
                 }
                 Error::DeltaKernel { source } => {
                     error!("Delta Kernel error: {}", source);
-                    INTERNAL_ERROR
+                    internal()
                 }
-                Error::InvalidArgument(ref message) => {
-                    error!("Invalid argument: {}", message);
-                    INVALID_ARGUMENT
-                }
+                // Invalid-argument messages are written for the caller (a version
+                // past the end of the table, an unshared history, …), so they are
+                // returned rather than replaced by a generic message.
+                Error::InvalidArgument(message) => (StatusCode::BAD_REQUEST, message),
                 Error::MalformedUrl { source } => {
                     error!("Malformed URL: {}", source);
-                    INTERNAL_ERROR
+                    internal()
                 }
                 Error::MalformedResponse { source } => {
                     error!("Malformed response: {}", source);
-                    INTERNAL_ERROR
+                    internal()
                 }
                 Error::InvalidPredicate(ref msg) => {
                     error!("Invalid predicate: {}", msg);
                     (
                         StatusCode::BAD_REQUEST,
-                        "Invalid predicate provided in the request.",
+                        "Invalid predicate provided in the request.".to_string(),
                     )
                 }
                 Error::NotFound => (
                     StatusCode::NOT_FOUND,
-                    "The requested resource was not found.",
+                    "The requested resource was not found.".to_string(),
                 ),
                 Error::NotAllowed => (
                     StatusCode::FORBIDDEN,
-                    "The caller is not permitted to perform this action.",
+                    "The caller is not permitted to perform this action.".to_string(),
+                ),
+                Error::Unauthenticated => (
+                    StatusCode::UNAUTHORIZED,
+                    "No or invalid recipient token provided.".to_string(),
                 ),
                 Error::NotImplemented(what) => {
                     error!("Not implemented: {}", what);
-                    (StatusCode::NOT_IMPLEMENTED, what)
+                    (StatusCode::NOT_IMPLEMENTED, what.to_string())
                 }
                 Error::Generic(ref message) => {
                     error!("Generic error: {}", message);
-                    INTERNAL_ERROR
+                    internal()
                 }
             };
 
@@ -208,7 +214,7 @@ mod server {
                 status,
                 Json(ErrorResponse {
                     error_code,
-                    message: message.to_string(),
+                    message,
                 }),
             )
                 .into_response()
