@@ -15,7 +15,7 @@ use unitycatalog_common::models::temporary_credentials::v1::{
     temporary_credential::Credentials,
 };
 
-use crate::services::location::{StorageLocationScheme, StorageLocationUrl};
+use crate::location::{StorageLocationScheme, StorageLocationUrl};
 use crate::{Error, Result};
 
 /// Default credential TTL when the cloud provider does not supply an expiry.
@@ -24,7 +24,7 @@ const DEFAULT_TTL_SECS: u64 = 3600;
 /// The operation requested by the caller — used to determine the minimum permissions
 /// that should be encoded in the vended credential.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum VendOperation {
+pub enum VendOperation {
     /// Read-only access (s3:GetObject, SAS sp=rl, …).
     Read,
     /// Read and write access (s3:PutObject + s3:DeleteObject, SAS sp=racwdl, …).
@@ -52,7 +52,7 @@ fn expiry_to_epoch_millis(expiry: Option<Instant>) -> i64 {
 /// `get_local_store`). The response still carries the `url` and an expiry so the
 /// shape matches a cloud vend, but `credentials` is `None` — the signal the
 /// client uses to take its local-store branch.
-pub(crate) fn local_path_credential(url: &str) -> TemporaryCredential {
+pub fn local_path_credential(url: &str) -> TemporaryCredential {
     TemporaryCredential {
         expiration_time: expiry_to_epoch_millis(None),
         url: url.to_owned(),
@@ -212,7 +212,7 @@ fn now_epoch_millis() -> i64 {
 /// Results are cached by `(credential material, url, operation)` until shortly before the vended
 /// token expires, so repeated requests for the same scope avoid redundant calls to the cloud
 /// provider. See [`vend_credential_uncached`] for the dispatch logic.
-pub(crate) async fn vend_credential(
+pub async fn vend_credential(
     credential: &Credential,
     url: &str,
     operation: VendOperation,

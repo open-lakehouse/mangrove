@@ -35,6 +35,7 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
   "store",
   "metric-view",
 ] }
+unitycatalog-credentials = { package = "olai-uc-credentials", path = "../credentials", version = "0.0.1" }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.5" }
 unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.4", features = [
   "client-arm",

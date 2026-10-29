@@ -4032,6 +4032,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "olai-uc-credentials"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "itertools 0.14.0",
+ "object_store",
+ "olai-http",
+ "olai-uc-common",
+ "percent-encoding",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "url",
+]
+
+[[package]]
 name = "olai-uc-datafusion"
 version = "0.1.0"
 dependencies = [
@@ -4183,6 +4200,7 @@ dependencies = [
  "olai-store",
  "olai-uc-client",
  "olai-uc-common",
+ "olai-uc-credentials",
  "olai-uc-delta-api",
  "olai-uc-files-api",
  "olai-uc-object-store",

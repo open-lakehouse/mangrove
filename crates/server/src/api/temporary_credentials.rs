@@ -10,11 +10,11 @@ use crate::api::CredentialHandler;
 use crate::api::credentials::CredentialHandlerExt;
 pub use crate::codegen::temporary_credentials::TemporaryCredentialHandler;
 use crate::policy::{Permission, Policy};
-use crate::services::credential_vending::{VendOperation, local_path_credential, vend_credential};
 use crate::services::location::{StorageLocationScheme, StorageLocationUrl};
 use crate::services::object_store::find_external_location_for_url;
 use crate::store::ResourceStore;
 use crate::{Error, Result};
+use unitycatalog_credentials::vending::{VendOperation, local_path_credential, vend_credential};
 
 use buffa::Enumeration;
 use object_store::ObjectStoreScheme;
@@ -107,7 +107,7 @@ impl<
                 ..Default::default()
             })
             .await?;
-        vend_credential(&credential, &request.url, operation).await
+        Ok(vend_credential(&credential, &request.url, operation).await?)
     }
 
     /// Generate temporary credentials for a volume.
@@ -143,7 +143,7 @@ impl<
                 ..Default::default()
             })
             .await?;
-        vend_credential(&credential, &location, operation).await
+        Ok(vend_credential(&credential, &location, operation).await?)
     }
 
     /// Generate temporary credentials for a model version.
@@ -186,7 +186,7 @@ impl<
                 ..Default::default()
             })
             .await?;
-        vend_credential(&credential, &location, operation).await
+        Ok(vend_credential(&credential, &location, operation).await?)
     }
 
     #[tracing::instrument(skip(self, context))]
@@ -216,7 +216,7 @@ impl<
                 ..Default::default()
             })
             .await?;
-        vend_credential(&credential, &location, operation).await
+        Ok(vend_credential(&credential, &location, operation).await?)
     }
 }
 // NOTE: These request types intentionally do not implement `SecuredAction`.

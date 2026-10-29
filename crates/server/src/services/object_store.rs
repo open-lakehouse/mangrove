@@ -4,10 +4,12 @@ use unitycatalog_common::models::tables::v1::Table;
 use unitycatalog_common::models::volumes::v1::Volume;
 
 use super::ProvidesLocalStoragePolicy;
-use super::location::StorageLocationUrl;
 use crate::api::staging_tables::MANAGED_STORAGE_PREFIX;
 use crate::store::ResourceStore;
 use crate::{Error, Result};
+use unitycatalog_credentials::location::{
+    StorageLocationUrl, is_path_prefix, longest_prefix_match,
+};
 
 /// Find the most specific external location whose URL is a prefix of `location`.
 ///
@@ -18,21 +20,7 @@ pub(crate) async fn find_external_location_for_url(
     handler: &(impl ResourceStore + ?Sized),
 ) -> Result<ExternalLocation> {
     let locations = list_external_locations(handler).await?;
-    // find the longest matching location
-    locations
-        .into_iter()
-        .filter(|l| {
-            let Ok(ext_loc_url) = StorageLocationUrl::parse(&l.url) else {
-                return false;
-            };
-            is_path_prefix(location.raw().as_str(), ext_loc_url.raw().as_str())
-                || is_path_prefix(
-                    location.location().as_str(),
-                    ext_loc_url.location().as_str(),
-                )
-        })
-        .max_by(|l, r| l.url.len().cmp(&r.url.len()))
-        .ok_or(Error::NotFound)
+    longest_prefix_match(location, locations, |l| l.url.as_str()).ok_or(Error::NotFound)
 }
 
 /// All registered external locations paired with their parsed URLs.
@@ -236,38 +224,9 @@ pub(crate) fn paths_overlap(a: &str, b: &str) -> bool {
     is_path_prefix(a, b) || is_path_prefix(b, a)
 }
 
-/// Whether `prefix` is a path-segment prefix of `url`.
-///
-/// Delegates to [`object_store::path::Path::prefix_matches`], which compares on
-/// path-segment boundaries so that a location registered for `s3://bucket/data`
-/// does **not** match `s3://bucket/data-secret/x` (which a raw `starts_with`
-/// would wrongly accept). Both inputs are full URL strings; `Path` parses them
-/// the same way (splitting on `/`), so the comparison is consistent. A trailing
-/// `/` is collapsed by `Path` parsing, so no separate normalization is needed.
-pub(crate) fn is_path_prefix(url: &str, prefix: &str) -> bool {
-    object_store::path::Path::from(url).prefix_matches(&object_store::path::Path::from(prefix))
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{StorageLocationUrl, is_path_prefix, locations_overlap, paths_overlap};
-
-    #[test]
-    fn path_prefix_matches_exact_and_subpaths() {
-        assert!(is_path_prefix("s3://bucket/data", "s3://bucket/data"));
-        assert!(is_path_prefix("s3://bucket/data/file", "s3://bucket/data"));
-        assert!(is_path_prefix("s3://bucket/data/x/y", "s3://bucket/data/"));
-    }
-
-    #[test]
-    fn path_prefix_rejects_sibling_prefix() {
-        // The classic over-match: `data` must not match `data-secret`.
-        assert!(!is_path_prefix(
-            "s3://bucket/data-secret/file",
-            "s3://bucket/data"
-        ));
-        assert!(!is_path_prefix("s3://bucket/database", "s3://bucket/data"));
-    }
+    use super::{StorageLocationUrl, locations_overlap, paths_overlap};
 
     #[test]
     fn paths_overlap_is_symmetric_on_nesting() {
