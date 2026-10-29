@@ -2,8 +2,16 @@
 //!
 //! [`get_router`] serves the Delta Sharing tabular surface (shares / schemas /
 //! tables / version / metadata / query); [`open_sharing_router`] adds the Open
-//! Sharing asset routes (volumes, agent skills) plus the not-yet-implemented
-//! protocol additions (change data feed, asynchronous queries).
+//! Sharing asset routes (volumes, agent skills, temporary table credentials).
+//! [`sharing_router`] mounts both under their protocol prefixes
+//! ([`DELTA_SHARING_PREFIX`], [`OPEN_SHARING_PREFIX`]), which is what a host
+//! normally serves — wrapped in [`require_recipient`](crate::auth::require_recipient).
+//!
+//! # Response formats
+//!
+//! Table responses are served in the protocol's `parquet` response format. A
+//! client that sends a `delta-sharing-capabilities` header accepting only other
+//! formats (`responseformat=delta`) is rejected with `400`.
 //!
 //! The discovery + asset routes bind to the generated route functions; the
 //! version / metadata / query routes bind to the hand-written functions below,
@@ -21,10 +29,12 @@
 
 use axum::body::Body;
 use axum::extract::{Path, State};
+use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{Router, get, post};
 
 use unitycatalog_sharing_client::models::open_sharing::v1::*;
+use unitycatalog_sharing_client::models::{DeltaSharingCapabilities, ResponseFormat};
 
 use crate::codegen::sharing::{self, SharingHandler};
 use crate::codegen::sharing_skill::{self, SharingSkillHandler};
@@ -37,6 +47,29 @@ use crate::handler::SharingQueryHandler;
 const DELTA_SHARING_CAPABILITIES: &str = "delta-sharing-capabilities";
 const DELTA_SHARING_CAPABILITIES_VALUE: &str = "responseformat=parquet";
 const CONTENT_TYPE: &str = "content-type";
+
+/// Where the Delta Sharing surface is mounted by [`sharing_router`].
+pub const DELTA_SHARING_PREFIX: &str = "/api/v1/delta-sharing";
+/// Where the Open Sharing surface is mounted by [`sharing_router`].
+pub const OPEN_SHARING_PREFIX: &str = "/api/1.0/opensharing";
+
+/// Reject a client whose `delta-sharing-capabilities` rule out the `parquet`
+/// response format, the only one served so far.
+fn check_response_format(headers: &HeaderMap) -> Result<()> {
+    let Some(header) = headers.get(DELTA_SHARING_CAPABILITIES) else {
+        return Ok(());
+    };
+    let header = header
+        .to_str()
+        .map_err(|_| Error::invalid_argument("delta-sharing-capabilities is not valid text"))?;
+    let capabilities = DeltaSharingCapabilities::parse_header(header)?;
+    if !capabilities.accepts(&ResponseFormat::Parquet) {
+        return Err(Error::invalid_argument(
+            "only responseformat=parquet is served; the delta response format is not supported yet",
+        ));
+    }
+    Ok(())
+}
 
 /// The tabular Delta Sharing routes (shares / schemas / tables / version /
 /// metadata / query).
@@ -86,14 +119,24 @@ where
         .route("/queries/{query_id}", post(poll_query::<T, Cx>))
 }
 
-/// The Open-Sharing-only asset routes (volumes, agent skills), bound to the
-/// generated per-asset route functions.
+/// The Open-Sharing-only asset routes (volumes, agent skills) bound to the
+/// generated per-asset route functions, plus temporary table credentials.
 fn asset_routes<T, Cx>() -> Router<T>
 where
-    T: SharingVolumeHandler<Cx> + SharingSkillHandler<Cx> + Clone + Send + Sync + 'static,
+    T: SharingVolumeHandler<Cx>
+        + SharingSkillHandler<Cx>
+        + SharingQueryHandler<Cx>
+        + Clone
+        + Send
+        + Sync
+        + 'static,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
     Router::new()
+        .route(
+            "/shares/{share}/schemas/{schema}/tables/{name}/temporary-table-credentials",
+            post(generate_temporary_table_credentials::<T, Cx>),
+        )
         .route(
             "/shares/{share}/all-volumes",
             get(sharing_volume::server::list_all_volumes::<T, Cx>),
@@ -157,6 +200,25 @@ where
         .with_state(state)
 }
 
+/// Mount the Delta Sharing surface under [`DELTA_SHARING_PREFIX`] and the Open
+/// Sharing surface under [`OPEN_SHARING_PREFIX`], both served by `state`.
+pub fn sharing_router<T, Cx>(state: T) -> Router
+where
+    T: SharingHandler<Cx>
+        + SharingQueryHandler<Cx>
+        + SharingVolumeHandler<Cx>
+        + SharingSkillHandler<Cx>
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+    Cx: axum::extract::FromRequestParts<T> + Send + 'static,
+{
+    Router::new()
+        .nest(DELTA_SHARING_PREFIX, get_router::<T, Cx>(state.clone()))
+        .nest(OPEN_SHARING_PREFIX, open_sharing_router::<T, Cx>(state))
+}
+
 // ---------------------------------------------------------------------------
 // Hand-written NDJSON query routes (version / metadata / query) + the 501 gap
 // routes (changes / queries poll).
@@ -180,6 +242,7 @@ where
 
 async fn get_table_metadata<T, Cx>(
     State(handler): State<T>,
+    headers: HeaderMap,
     context: Cx,
     request: GetTableMetadataRequest,
 ) -> Result<Response>
@@ -187,6 +250,7 @@ where
     T: SharingQueryHandler<Cx> + Clone + Send + Sync + 'static,
     Cx: axum::extract::FromRequestParts<T> + Send,
 {
+    check_response_format(&headers)?;
     let result = handler.get_table_metadata(request, context).await?;
     Response::builder()
         .header(CONTENT_TYPE, "application/x-ndjson; charset=utf-8")
@@ -197,6 +261,7 @@ where
 
 async fn get_table_query<T, Cx>(
     State(handler): State<T>,
+    headers: HeaderMap,
     context: Cx,
     request: QueryTableRequest,
 ) -> Result<Response>
@@ -204,12 +269,30 @@ where
     T: SharingQueryHandler<Cx> + Clone + Send + Sync + 'static,
     Cx: axum::extract::FromRequestParts<T> + Send,
 {
+    check_response_format(&headers)?;
     let result = handler.query_table(request, context).await?;
     Response::builder()
         .header(CONTENT_TYPE, "application/x-ndjson; charset=utf-8")
         .header(DELTA_SHARING_CAPABILITIES, DELTA_SHARING_CAPABILITIES_VALUE)
         .body(Body::from(result))
         .map_err(|e| Error::generic(e.to_string()))
+}
+
+/// Open Sharing temporary table credentials. The spec allows an optional request
+/// body; nothing in it changes what is vended (always read-only), so it is not read.
+async fn generate_temporary_table_credentials<T, Cx>(
+    State(handler): State<T>,
+    context: Cx,
+    Path((share, schema, name)): Path<(String, String, String)>,
+) -> Result<axum::Json<SharingTemporaryCredentials>>
+where
+    T: SharingQueryHandler<Cx> + Clone + Send + Sync + 'static,
+    Cx: axum::extract::FromRequestParts<T> + Send,
+{
+    let credentials = handler
+        .generate_temporary_table_credentials(share, schema, name, context)
+        .await?;
+    Ok(axum::Json(credentials))
 }
 
 /// Change data feed. **Not implemented** (501). A GET with `startingVersion` /

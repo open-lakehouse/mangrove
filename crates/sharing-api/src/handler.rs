@@ -450,6 +450,17 @@ pub trait SharingQueryHandler<Cx = crate::DefaultContext>: Send + Sync + 'static
     /// The NDJSON protocol + metadata + file lines answering a table query.
     async fn query_table(&self, request: QueryTableRequest, context: Cx) -> Result<Bytes>;
 
+    /// Read-only temporary credentials for a shared table's storage location (the
+    /// Open Sharing `temporary-table-credentials` endpoint), so a recipient can
+    /// read the table directly instead of through presigned URLs.
+    async fn generate_temporary_table_credentials(
+        &self,
+        share: String,
+        schema: String,
+        name: String,
+        context: Cx,
+    ) -> Result<SharingTemporaryCredentials>;
+
     /// Change data feed for a shared table. **Not implemented** — the request type
     /// and route exist for spec coverage but the serving path returns 501.
     async fn get_table_changes(&self, request: QueryTableRequest, context: Cx) -> Result<Bytes>;
@@ -536,6 +547,17 @@ impl<Cx: Clone + Send + Sync + 'static> SharingQueryHandler<Cx> for SharingServi
             .get(asset.table_format()?)?
             .query(&asset, &storage, query)
             .await
+    }
+
+    async fn generate_temporary_table_credentials(
+        &self,
+        share: String,
+        schema: String,
+        name: String,
+        context: Cx,
+    ) -> Result<SharingTemporaryCredentials> {
+        let asset = self.table(&share, &schema, &name, &context).await?;
+        self.access.vend_read_credential(&asset, &context).await
     }
 
     async fn get_table_changes(&self, _request: QueryTableRequest, _context: Cx) -> Result<Bytes> {
