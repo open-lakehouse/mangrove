@@ -4275,6 +4275,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "olai-uc-sharing-neon"
+version = "0.0.0"
+dependencies = [
+ "axum",
+ "http-body-util",
+ "napi",
+ "napi-build",
+ "napi-derive",
+ "olai-uc-sharing-server",
+ "tower",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "olai-uc-sharing-server"
 version = "0.0.1"
 dependencies = [

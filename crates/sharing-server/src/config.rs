@@ -250,6 +250,20 @@ impl Config {
         Ok(config)
     }
 
+    /// Load the configuration from the environment alone, for hosts without a
+    /// config file (serverless functions): the YAML document in
+    /// `SHARING_SERVER_CONFIG_YAML`, else the file at `SHARING_SERVER_CONFIG`,
+    /// else the defaults — then the usual environment overrides.
+    pub fn from_env() -> Result<Self, String> {
+        if let Ok(yaml) = std::env::var("SHARING_SERVER_CONFIG_YAML") {
+            let mut config: Config = serde_yml::from_str(&yaml)
+                .map_err(|e| format!("parsing SHARING_SERVER_CONFIG_YAML: {e}"))?;
+            config.apply_env();
+            return Ok(config);
+        }
+        Self::load(std::env::var("SHARING_SERVER_CONFIG").ok().as_deref())
+    }
+
     fn apply_env(&mut self) {
         if let Ok(url) = std::env::var("DATABASE_URL") {
             let migration_url = std::env::var("DATABASE_URL_UNPOOLED")

@@ -165,3 +165,14 @@ files.extend-exclude = [
 # to avoid having to name fields r#type
 typ = "typ"
 AKS = "AKS"
+
+# The Neon Function bundle (crates/sharing-neon; `just sharing-neon build`).
+# Kept separate from `release` so Docker images are unaffected. Neon's limit is
+# 10 MiB zipped: with `opt-level = 3` the server is ~11 MiB zipped, with "z"
+# ~7 MiB (aarch64-unknown-linux-gnu, see crates/sharing-api/ARCHITECTURE.md).
+[profile.release-neon]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+opt-level = "z"

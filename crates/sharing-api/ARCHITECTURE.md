@@ -187,16 +187,36 @@ service crate:
   Recipient creation issues a token and an activation URL, and
   `GET /api/1.0/opensharing/activations/{code}` returns the profile.
 
-A Neon Function host is evaluated last. It would mirror Headwaters
-(`headwaters-neon`): a napi `cdylib`, a thin TypeScript fetch handler, and a
-`release-neon` profile. The hard limit is 10 MiB zipped / 64 MiB unzipped.
-Kernel, arrow/parquet, `object_store`, sqlx and rustls must fit. The size
-levers, in order:
+`olai-uc-sharing-neon` hosts the same router as a Neon Function. It mirrors
+Headwaters (`headwaters-neon`): a napi `cdylib`, a thin dependency-free
+TypeScript fetch handler, and a `release-neon` profile. Configuration comes from
+the environment (`SHARING_SERVER_CONFIG_YAML`, plus Neon's `DATABASE_URL` /
+`DATABASE_URL_UNPOOLED`). Migrations run out of band (`just sharing-neon
+migrate`).
 
-1. `opt-level = "z"`;
-2. `panic = "abort"`;
-3. per-cloud cargo features;
-4. trimmed parquet codecs.
+Size is the binding constraint: Neon allows 10 MiB zipped and 64 MiB unzipped.
+All builds below are for `aarch64-unknown-linux-gnu.2.28`, with fat LTO, one
+codegen unit and stripped symbols. Measured on 2026-10-29 with the standalone
+server binary, which links the same dependency graph as the addon (kernel,
+arrow/parquet, `object_store` with AWS/Azure/GCS, sqlx, rustls):
+
+| `opt-level` | `panic` | unzipped | zipped |
+|---|---|---|---|
+| 3 | unwind | 27.9 MiB | 11.1 MiB (over the limit) |
+| `"z"` | abort | 15.3 MiB | 6.7 MiB |
+| `"z"` (`release-neon`, the actual addon bundle) | unwind | 17.5 MiB | 7.8 MiB |
+
+The bundle loads and passes the smoke suite on `node:24-bookworm-slim`
+(linux-arm64) via `just sharing-neon test-arm64`. It has not been deployed to a
+Neon branch yet.
+
+`release-neon` therefore uses `opt-level = "z"`. It keeps `panic = "unwind"`,
+so a panic fails the request instead of the isolate. `just sharing-neon build`
+gates the real bundle on both limits. If it gets tight, the next levers are:
+
+1. `panic = "abort"`;
+2. per-cloud `object_store` features;
+3. trimmed parquet codecs.
 
 ## Delivery
 
@@ -212,7 +232,8 @@ One GitHub stack, one PR per layer:
 5. `olai-uc-sharing-server`: Postgres store, sealed secrets with lazy rewrap,
    UC REST catalog source, delegated and local access, admin API, binary,
    end-to-end tests.
-6. Neon evaluation: size measurement, then the napi host if it fits.
+6. The Neon Function host (`olai-uc-sharing-neon`), with the size measurement
+   above.
 
 ## Deferred
 

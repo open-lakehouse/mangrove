@@ -21,6 +21,8 @@ mod dev 'dev/justfile'
 mod postgres 'crates/postgres/justfile'
 # node client external-type generation
 mod node_client 'node/client/justfile'
+# the Open Sharing server as a Neon Function
+mod sharing-neon 'crates/sharing-neon/justfile'
 
 # show the available modules and recipes
 _default:

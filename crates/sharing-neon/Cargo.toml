@@ -1,0 +1,34 @@
+[package]
+name = "olai-uc-sharing-neon"
+version = "0.0.0"
+description = "The Open Sharing server as a Node-API addon, for deployment as a Neon Function"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+# A deployment artifact (a `.node` inside a Neon Function zip), not a library:
+# never published, never released.
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+# The `napi_*` symbols only resolve once Node loads the addon, so a Rust test
+# binary cannot link; it is tested end to end with `node --test` instead
+# (`just sharing-neon test`).
+test = false
+doctest = false
+
+[dependencies]
+unitycatalog-sharing-server = { package = "olai-uc-sharing-server", path = "../sharing-server" }
+
+axum = { workspace = true }
+http-body-util = "0.1"
+# `async` runs `#[napi] async fn`s on napi's own tokio runtime.
+napi = { workspace = true }
+napi-derive = { workspace = true }
+tower = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+[build-dependencies]
+napi-build = "2.1"

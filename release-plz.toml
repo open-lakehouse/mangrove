@@ -138,6 +138,12 @@ changelog_path = "crates/sharing-server/CHANGELOG.md"
 release = false
 
 [[package]]
+name = "olai-uc-sharing-neon"
+# Deployment artifact (Neon Function bundle), never published.
+publish = false
+release = false
+
+[[package]]
 name = "olai-uc-object-store"
 changelog_path = "crates/object-store/CHANGELOG.md"
 
