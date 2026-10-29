@@ -5,7 +5,7 @@
 //! traits return `crate::Result<T>`, and the hand-written NDJSON query path does
 //! too. Its [`IntoResponse`] emits the Unity Catalog error envelope
 //! (`{ "errorCode", "message" }`) with the status codes the sharing surface uses,
-//! reproducing `open_sharing_client`'s server-side mapping — plus a
+//! plus a
 //! [`NotImplemented`](Error::NotImplemented) variant (→ 501) for the
 //! not-yet-implemented protocol additions (CDF, async queries, delta format).
 
@@ -116,19 +116,14 @@ impl Error {
     }
 }
 
-/// Bridge from the shared `open_sharing_client` error (produced by the
-/// reused protocol conversions + capability parsing) into this crate's error.
-impl From<open_sharing_client::error::Error> for Error {
-    fn from(err: open_sharing_client::error::Error) -> Self {
-        use open_sharing_client::error::Error as Sc;
+/// Bridge from the shared wire-model error (produced by the protocol
+/// conversions + capability parsing in `open_sharing_common`).
+impl From<open_sharing_common::Error> for Error {
+    fn from(err: open_sharing_common::Error) -> Self {
+        use open_sharing_common::Error as Sc;
         match err {
-            Sc::DeltaKernel { source } => Error::DeltaKernel { source },
-            Sc::Common { source } => Error::Common { source },
             Sc::MalformedResponse { source } => Error::MalformedResponse { source },
-            Sc::MalformedUrl { source } => Error::MalformedUrl { source },
             Sc::InvalidArgument(m) => Error::InvalidArgument(m),
-            Sc::InvalidPredicate(m) => Error::InvalidPredicate(m),
-            other => Error::Generic(other.to_string()),
         }
     }
 }

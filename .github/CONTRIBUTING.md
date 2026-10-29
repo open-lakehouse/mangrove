@@ -174,8 +174,9 @@ touch it (and bumps its dependents automatically), so e.g. `olai-uc-object-store
 changelog/git-cliff config is embedded there — there is no separate `cliff.toml`).
 
 Use a `(scope)` matching the affected crate's short name — `common`, `client`,
-`sharing-client`, `object-store`, `postgres`, `sqlite`, `datafusion`, `server`, `cli` —
-so the bump and changelog land on the right crate. Prefer several focused commits over one
+`sharing-common`, `sharing-client`, `sharing-api`, `sharing-server`, `object-store`,
+`postgres`, `sqlite`, `datafusion`, `server`, `cli` — so the bump and changelog land on the
+right crate. Prefer several focused commits over one
 mixed commit; keep generated output in the same commit as its source.
 
 **Cross-repo (trestle) dependencies.** `olai-http` / `olai-store` are declared as plain
@@ -270,9 +271,11 @@ workflow `release-plz.yml`, env `release`), then remove its `release = false`.
 sibling deps are re-released; when it flips to a published crate it will need this one-time
 bootstrap. Once every publishable crate is live, delete the bootstrap workflow and revoke the
 `CARGO_REGISTRY_TOKEN` secret. Any *new* publishable crate added later needs the same
-one-time bootstrap (re-add the workflow if so). Not published to crates.io at all:
-`olai-sharing-client` / `olai-sharing-api` / `olai-uc-datafusion` (standing git-dep
-block via the `delta_kernel`/`deltalake-core` git revs) and `olai-uc-cli` (held out for now).
+one-time bootstrap (re-add the workflow if so). The Open Sharing crates
+(`olai-sharing-common` first, then `olai-sharing-client` / `olai-sharing-api` /
+`olai-sharing-server`) are git-free and await that bootstrap. Not published to crates.io at
+all: `olai-uc-datafusion` (standing git-dep block via the `deltalake-core` git rev) and
+`olai-uc-cli` (held out for now).
 
 **Notes:**
 

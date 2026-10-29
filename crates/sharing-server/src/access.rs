@@ -24,7 +24,7 @@ use async_trait::async_trait;
 use open_sharing_api::access::{FileSigner, SignedFile, StorageAccess, TableStorage};
 use open_sharing_api::auth::Recipient;
 use open_sharing_api::catalog::{AssetKind, SharedAsset};
-use open_sharing_client::models::open_sharing::v1::{
+use open_sharing_common::models::open_sharing::v1::{
     SharingAwsCredentials, SharingAzureUserDelegationSas, SharingGcpOauthToken,
     SharingR2Credentials, SharingTemporaryCredentials,
     sharing_temporary_credentials::Credentials as SharingCredentials,

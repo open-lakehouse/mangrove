@@ -19,7 +19,7 @@ use object_store::DynObjectStore;
 use object_store::local::LocalFileSystem;
 use object_store::memory::InMemory;
 
-use open_sharing_client::models::open_sharing::v1::{
+use open_sharing_common::models::open_sharing::v1::{
     SharingAwsCredentials, SharingTemporaryCredentials, sharing_temporary_credentials::Credentials,
 };
 

@@ -3,7 +3,7 @@
 use super::handler::SharingVolumeHandler;
 use crate::Result;
 use axum::extract::State;
-use open_sharing_client::models::open_sharing::v1::*;
+use open_sharing_common::models::open_sharing::v1::*;
 pub async fn list_volumes<T, Cx>(
     State(handler): State<T>,
     context: Cx,

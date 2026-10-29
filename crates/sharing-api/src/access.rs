@@ -20,7 +20,7 @@ use async_trait::async_trait;
 use object_store::DynObjectStore;
 use url::Url;
 
-use open_sharing_client::models::open_sharing::v1::SharingTemporaryCredentials;
+use open_sharing_common::models::open_sharing::v1::SharingTemporaryCredentials;
 
 use crate::catalog::SharedAsset;
 use crate::error::Result;

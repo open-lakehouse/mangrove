@@ -1,6 +1,6 @@
 # olai-sharing-api
 
-Portable Unity Catalog **Open Sharing** / **Delta Sharing** REST API.
+Portable **Open Sharing** / **Delta Sharing** REST API.
 
 This crate owns the sharing *semantics* — share / schema / asset discovery,
 the table query path (version / metadata / query) and the storage-backed asset
@@ -19,7 +19,8 @@ handler. `sharing_router` serves it under `/api/v1/delta-sharing` (Delta
 Sharing) and `/api/1.0/opensharing` (Open Sharing, adding volumes, agent skills
 and temporary credentials), and `auth::require_recipient` puts a bearer-token
 `RecipientAuthenticator` in front. The wire types come from
-[`olai-sharing-client`](https://crates.io/crates/olai-sharing-client).
+[`olai-sharing-common`](https://crates.io/crates/olai-sharing-common), which
+the client shares; this crate does not depend on the client.
 
 ## Status
 

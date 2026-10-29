@@ -23,6 +23,8 @@ required-features = ["bin"]
 
 [dependencies]
 # local dependencies in alphabetical order
+open-sharing-api = { package = "olai-sharing-api", path = "../sharing-api", version = "0.0.1" }
+open-sharing-common = { package = "olai-sharing-common", path = "../sharing-common", version = "0.0.1" }
 unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.5" }
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.5", features = [
   "axum",
@@ -30,8 +32,6 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
 ] }
 unitycatalog-credentials = { package = "olai-uc-credentials", path = "../credentials", version = "0.0.1" }
 unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.5" }
-open-sharing-api = { package = "olai-sharing-api", path = "../sharing-api", version = "0.0.1" }
-open-sharing-client = { package = "olai-sharing-client", path = "../sharing-client", version = "0.0.1" }
 
 # workspace dependencies in alphabetical order
 async-trait = { workspace = true }

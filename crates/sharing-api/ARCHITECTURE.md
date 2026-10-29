@@ -81,6 +81,12 @@ covers discovery and resolution and is authorized through one `authorize` hook;
 its `ShareStore` and `CatalogSource`, which belong to the sharing server, and
 puts `RecipientAuthenticator` in front of the router.
 
+The wire types (generated request/response models, the NDJSON query lines and
+the capabilities header) live in `olai-sharing-common`, which both this crate
+and `olai-sharing-client` depend on. The server side never depends on the
+client, so the client can take on heavier dependencies (DataFrame libraries and
+the like) without the server inheriting them.
+
 A `SharingService` holds one implementation per port, plus a format registry.
 It implements the existing handler traits, so discovery, query and asset
 serving stay identical whatever backs them. The router mounts the same

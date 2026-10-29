@@ -23,7 +23,7 @@ use delta_kernel::{Engine, Snapshot, Version};
 use serde::Serialize;
 use url::Url;
 
-use open_sharing_client::models::{
+use open_sharing_common::models::{
     MetadataResponse, MetadataResponseData, ParquetFile, ParquetMetadata, ProtocolResponseData,
     QueryResponseLine,
 };

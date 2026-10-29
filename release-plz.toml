@@ -64,10 +64,11 @@ pr_draft = false
 #       OIDC trusted publishing cannot create a brand-new name. It needs a
 #       one-time token bootstrap (bootstrap-publish.yml) first. Remove the
 #       `release = false` line once the crate is bootstrapped + its Trusted
-#       Publisher is registered. Currently `sharing-client` (git-free since the
-#       move to the published `buoyant_kernel`, but its name is not yet on
-#       crates.io). The server will need this bootstrap when it flips from
-#       `git_only` to published.
+#       Publisher is registered. Currently the Open Sharing crates
+#       (`sharing-common`, `sharing-client`, `sharing-api`, `sharing-server`;
+#       git-free since the move to the published `buoyant_kernel`, but their
+#       names are not yet on crates.io). The server will need this bootstrap
+#       when it flips from `git_only` to published.
 #
 #   (b) GIT-DEP BLOCK — the crate depends (transitively) on the workspace
 #       `deltalake-core` git rev (the roeap `olai/rust-v1.1.1` fork; the kernel
@@ -78,11 +79,12 @@ pr_draft = false
 #       (optional delta-rs behind the `delta` feature) is blocked this way.
 #       (`sharing-api` used to be too, via datafusion; it now reads Delta through
 #       the published `buoyant_kernel` alone, so it is git-free and only awaits
-#       its bootstrap, after `sharing-client` — see (a).)
+#       its bootstrap, after `sharing-common` — see (a).)
 #
 # crates.io publish/bootstrap order (root -> leaf):
 #   delta-api, common -> client, object-store, postgres, sqlite -> cli
-# (sharing-client -> sharing-api await their bootstrap — see (a); datafusion is
+# (sharing-common -> sharing-client, sharing-api -> sharing-server await their
+# bootstrap — see (a); datafusion is
 # out of the order entirely — see (b); server is git_only — see below.)
 #
 # Already on crates.io (bootstrapped, releasing via OIDC): delta-api, common,
@@ -116,25 +118,35 @@ name = "olai-uc-client"
 changelog_path = "crates/client/CHANGELOG.md"
 
 [[package]]
+name = "olai-sharing-common"
+changelog_path = "crates/sharing-common/CHANGELOG.md"
+# (a) Bootstrap gate: new crate name, never published. The root of the Open
+# Sharing crates (client and api both depend on it), so it is bootstrapped
+# first. Drop this line once bootstrap-publish.yml has created it and its
+# Trusted Publisher is registered.
+release = false
+
+[[package]]
 name = "olai-sharing-client"
 changelog_path = "crates/sharing-client/CHANGELOG.md"
 # (a) Bootstrap gate: git-free now that `delta_kernel` is the published
-# `buoyant_kernel`, but the name has never been published. Drop this line once
-# bootstrap-publish.yml has created it and its Trusted Publisher is registered.
+# `buoyant_kernel`, but the name has never been published. Bootstrapped after
+# `olai-sharing-common`. Drop this line once bootstrap-publish.yml has created it
+# and its Trusted Publisher is registered.
 release = false
 
 [[package]]
 name = "olai-sharing-api"
 changelog_path = "crates/sharing-api/CHANGELOG.md"
-# (b) Git-dep block: depends on `olai-uc-datafusion`'s `delta` feature, which
-# pulls the `deltalake-core` git dep — cannot publish to crates.io. Standing
-# block, not a bootstrap step.
+# (a) Bootstrap gate: git-free (reads Delta through the published
+# `buoyant_kernel`, no longer via datafusion), but the name has never been
+# published. Bootstrapped after `olai-sharing-common`.
 release = false
 
 [[package]]
 name = "olai-sharing-server"
 changelog_path = "crates/sharing-server/CHANGELOG.md"
-# BOOTSTRAP GATE (a): new crate, after sharing-client -> sharing-api.
+# BOOTSTRAP GATE (a): new crate, after sharing-common -> sharing-api.
 release = false
 
 [[package]]
