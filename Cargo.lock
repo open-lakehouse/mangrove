@@ -4114,7 +4114,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-files-api"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "async-trait",
  "axum",
@@ -4201,7 +4201,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-server"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "async-trait",
  "axum",
@@ -4269,7 +4269,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-storage-proxy"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "async-trait",
  "axum",
