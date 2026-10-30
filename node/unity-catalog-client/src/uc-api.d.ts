@@ -947,7 +947,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Generate a new set of credentials for a path. */
+        /**
+         * @description Generate a new set of credentials for a path.
+         *
+         *      Only external storage paths (external locations and external tables) are
+         *      supported; managed tables are not. The metastore must have the
+         *      `external_access_enabled` flag set to true (default false). The caller must
+         *      have the `EXTERNAL_USE_LOCATION` privilege on the external location
+         *      (granted by its owner) and, for existing external tables, the
+         *      `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
+         */
         post: operations["GenerateTemporaryPathCredentials"];
         delete?: never;
         options?: never;
@@ -964,7 +973,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Generate a new set of credentials for a table. */
+        /**
+         * @description Generate a new set of credentials for a table.
+         *
+         *      The metastore must have the `external_access_enabled` flag set to true
+         *      (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+         *      privilege on the parent schema (granted by a catalog owner).
+         */
         post: operations["GenerateTemporaryTableCredentials"];
         delete?: never;
         options?: never;
@@ -1623,7 +1638,8 @@ export interface components {
             comment?: string;
             /**
              * @description The recipient profile (credential file contents) used to connect to the
-             *      sharing server, required for TOKEN authentication.
+             *      sharing server. Required when authentication_type is TOKEN or
+             *      OAUTH_CLIENT_CREDENTIALS.
              */
             recipient_profile_str?: string;
             /** @description Provider properties as map of string key-value pairs. */
@@ -1801,7 +1817,7 @@ export interface components {
             volume_type: "EXTERNAL" | "MANAGED";
             /** @description The storage location on the cloud */
             storage_location?: string;
-            /** @description The storage location on the cloud */
+            /** @description The comment attached to the volume. */
             comment?: string;
         };
         /**
@@ -1899,7 +1915,9 @@ export interface components {
              * A user-provided new name for the data object within the share.
              * @description If this new name is not provided, the object's original name will be used as the shared_as name.
              *      The shared_as name must be unique within a share.
-             *      For tables, the new name must follow the format of <schema>.<table>.
+             *      For tables, the new name must follow the format of <schema>.<table>: two parts, each
+             *      consisting only of alphanumeric characters and underscores, without the catalog part.
+             *      Do not set it for non-table data objects.
              */
             shared_as?: string;
             /** @description Array of partitions for the shared data. */
@@ -1931,13 +1949,13 @@ export interface components {
             /**
              * Action
              * Format: enum
-             * @description Name of the share.
+             * @description The action to perform on the data object.
              * @enum {string}
              */
             action: "ACTION_UNSPECIFIED" | "ADD" | "REMOVE" | "UPDATE";
             /**
              * Data Object
-             * @description User-provided free-form text description.
+             * @description The data object that is being added, removed, or updated.
              */
             data_object?: WithRequired<components["schemas"]["DataObject"], "name" | "data_object_type">;
         };
@@ -2093,7 +2111,7 @@ export interface components {
              * @enum {string}
              */
             security_type: "SECURITY_TYPE_UNSPECIFIED" | "DEFINER";
-            /** @description The type of the function (SCALAR or TABLE). */
+            /** @description Specific name of the function; reserved for future use. */
             specific_name?: string;
             /**
              * Routine Body
@@ -2495,7 +2513,7 @@ export interface components {
         };
         /**
          * List Volumes Response
-         * @description List Schemas response.
+         * @description List volumes response.
          */
         ListVolumesResponseContent: {
             /** @description The volumes returned. */
@@ -2682,7 +2700,7 @@ export interface components {
             comment?: string;
             /**
              * @description The recipient profile (credential file contents) used to connect to the
-             *      sharing server, present only for TOKEN authentication.
+             *      sharing server. Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
              */
             recipient_profile_str?: string;
             /** @description A map of key-value properties attached to the provider. */
@@ -2728,15 +2746,15 @@ export interface components {
             properties?: {
                 [key: string]: string;
             };
-            /** @description Time at which this share was created, in epoch milliseconds. */
+            /** @description Time at which this recipient was created, in epoch milliseconds. */
             readonly created_at?: string;
-            /** @description Username of the creator of the share. */
+            /** @description Username of recipient creator. */
             readonly created_by?: string;
             /** @description This field is only present when the authentication_type is TOKEN. */
             readonly tokens?: components["schemas"]["RecipientToken"][];
-            /** @description Time at which this share was updated, in epoch milliseconds. */
+            /** @description Time at which this recipient was updated, in epoch milliseconds. */
             readonly updated_at?: string;
-            /** @description Username of share updater. */
+            /** @description Username of recipient updater. */
             readonly updated_by?: string;
         };
         /** Recipient Token */
@@ -2850,7 +2868,7 @@ export interface components {
          *      A recipient can access all resources in a share. A share may contain multiple schemas.
          */
         Share: {
-            /** @description Unique ID of the recipient. */
+            /** @description Unique ID of the share. */
             readonly id?: string;
             /**
              * Name of the share.
@@ -3127,7 +3145,7 @@ export interface components {
             properties?: {
                 [key: string]: string;
             };
-            /** @description Name of catalog. */
+            /** @description New name for the catalog. */
             new_name?: string;
         };
         /**
@@ -3276,7 +3294,8 @@ export interface components {
             comment?: string;
             /**
              * @description The recipient profile (credential file contents) used to connect to the
-             *      sharing server.
+             *      sharing server. Required when authentication_type is TOKEN or
+             *      OAUTH_CLIENT_CREDENTIALS.
              */
             recipient_profile_str?: string;
             /**
@@ -3337,7 +3356,7 @@ export interface components {
             properties?: {
                 [key: string]: string;
             };
-            /** @description Name of schema. */
+            /** @description New name for the schema. */
             new_name?: string;
         };
         /**
@@ -3416,13 +3435,13 @@ export interface components {
             owner?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-            /** @description Time at which this catalog was created, in epoch milliseconds. */
+            /** @description Time at which this volume was created, in epoch milliseconds. */
             readonly created_at?: string;
-            /** @description Username of catalog creator. */
+            /** @description Username of volume creator. */
             readonly created_by?: string;
-            /** @description Time at which this catalog was last updated, in epoch milliseconds. */
+            /** @description Time at which this volume was last updated, in epoch milliseconds. */
             readonly updated_at?: string;
-            /** @description Username of user who last modified catalog. */
+            /** @description Username of user who last modified the volume. */
             readonly updated_by?: string;
             /**
              * @description Indicates whether the principal is limited to retrieving metadata
@@ -6696,7 +6715,7 @@ export interface operations {
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
-                /** @description Whether to include schemas in the response for which the principal can only access selective metadata for */
+                /** @description Whether to include volumes in the response for which the principal can only access selective metadata for */
                 include_browse?: boolean;
             };
             header?: never;
@@ -6761,7 +6780,7 @@ export interface operations {
     GetVolume: {
         parameters: {
             query?: {
-                /** @description Whether to include schemas in the response for which the principal can only access selective metadata for */
+                /** @description Whether to include volumes in the response for which the principal can only access selective metadata for */
                 include_browse?: boolean;
             };
             header?: never;

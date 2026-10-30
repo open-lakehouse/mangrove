@@ -87,28 +87,28 @@ export type Volume = Message<"unitycatalog.volumes.v1.Volume"> & {
   comment?: string | undefined;
 
   /**
-   * Time at which this catalog was created, in epoch milliseconds.
+   * Time at which this volume was created, in epoch milliseconds.
    *
    * @generated from field: optional int64 created_at = 1000;
    */
   createdAt?: bigint | undefined;
 
   /**
-   * Username of catalog creator.
+   * Username of volume creator.
    *
    * @generated from field: optional string created_by = 1001;
    */
   createdBy?: string | undefined;
 
   /**
-   * Time at which this catalog was last updated, in epoch milliseconds.
+   * Time at which this volume was last updated, in epoch milliseconds.
    *
    * @generated from field: optional int64 updated_at = 1002;
    */
   updatedAt?: bigint | undefined;
 
   /**
-   * Username of user who last modified catalog.
+   * Username of user who last modified the volume.
    *
    * @generated from field: optional string updated_by = 1003;
    */

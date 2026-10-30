@@ -109,7 +109,8 @@ impl CreateProviderBuilder {
         self
     }
     /** The recipient profile (credential file contents) used to connect to the
-    sharing server, required for TOKEN authentication.*/
+    sharing server. Required when authentication_type is TOKEN or
+    OAUTH_CLIENT_CREDENTIALS.*/
     pub fn with_recipient_profile_str(
         mut self,
         recipient_profile_str: impl Into<Option<String>>,
@@ -196,7 +197,8 @@ impl UpdateProviderBuilder {
         self
     }
     /** The recipient profile (credential file contents) used to connect to the
-    sharing server.*/
+    sharing server. Required when authentication_type is TOKEN or
+    OAUTH_CLIENT_CREDENTIALS.*/
     pub fn with_recipient_profile_str(
         mut self,
         recipient_profile_str: impl Into<Option<String>>,

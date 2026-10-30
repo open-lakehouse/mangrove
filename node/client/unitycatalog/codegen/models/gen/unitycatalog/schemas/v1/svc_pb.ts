@@ -199,7 +199,7 @@ export type UpdateSchemaRequest = Message<"unitycatalog.schemas.v1.UpdateSchemaR
   properties: { [key: string]: string };
 
   /**
-   * Name of schema.
+   * New name for the schema.
    *
    * @generated from field: optional string new_name = 4;
    */

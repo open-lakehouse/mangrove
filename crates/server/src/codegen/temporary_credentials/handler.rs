@@ -20,12 +20,23 @@ pub trait TemporaryCredentialHandler<Cx = crate::api::RequestContext>:
     Send + Sync + 'static
 {
     /// Generate a new set of credentials for a table.
+    ///
+    /// The metastore must have the `external_access_enabled` flag set to true
+    /// (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+    /// privilege on the parent schema (granted by a catalog owner).
     async fn generate_temporary_table_credentials(
         &self,
         request: GenerateTemporaryTableCredentialsRequest,
         context: Cx,
     ) -> Result<TemporaryCredential>;
     /// Generate a new set of credentials for a path.
+    ///
+    /// Only external storage paths (external locations and external tables) are
+    /// supported; managed tables are not. The metastore must have the
+    /// `external_access_enabled` flag set to true (default false). The caller must
+    /// have the `EXTERNAL_USE_LOCATION` privilege on the external location
+    /// (granted by its owner) and, for existing external tables, the
+    /// `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
     async fn generate_temporary_path_credentials(
         &self,
         request: GenerateTemporaryPathCredentialsRequest,

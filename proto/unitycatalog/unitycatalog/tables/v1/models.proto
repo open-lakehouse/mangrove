@@ -208,6 +208,8 @@ message Table {
   // Tables and functions the view-like table reads. For metric views this is
   // derived from the view_definition by the server (the definition is the
   // single source of truth).
+  //
+  // When unset, dependencies were not provided; an empty list means there are none.
   optional DependencyList view_dependencies = 9 [(google.api.field_behavior) = OPTIONAL];
 
   // optional string sql_path = 10;

@@ -262,7 +262,7 @@ message Function {
   // The security type of the function.
   SecurityType security_type = 16 [(google.api.field_behavior) = REQUIRED];
 
-  // The type of the function (SCALAR or TABLE).
+  // Specific name of the function; reserved for future use.
   optional string specific_name = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // The routine body.

@@ -534,7 +534,7 @@ pub struct Recipient {
         ::buffa::alloc::string::String,
         ::buffa::alloc::string::String,
     >,
-    /// Time at which this share was created, in epoch milliseconds.
+    /// Time at which this recipient was created, in epoch milliseconds.
     ///
     /// Field 7: `created_at`
     #[serde(
@@ -544,7 +544,7 @@ pub struct Recipient {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_at: ::core::option::Option<i64>,
-    /// Username of the creator of the share.
+    /// Username of recipient creator.
     ///
     /// Field 8: `created_by`
     #[serde(
@@ -562,7 +562,7 @@ pub struct Recipient {
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
     pub tokens: ::buffa::alloc::vec::Vec<RecipientToken>,
-    /// Time at which this share was updated, in epoch milliseconds.
+    /// Time at which this recipient was updated, in epoch milliseconds.
     ///
     /// Field 10: `updated_at`
     #[serde(
@@ -572,7 +572,7 @@ pub struct Recipient {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_at: ::core::option::Option<i64>,
-    /// Username of share updater.
+    /// Username of recipient updater.
     ///
     /// Field 11: `updated_by`
     #[serde(
@@ -3204,11 +3204,11 @@ pub mod __buffa {
             ///
             /// Field 6: `properties` (map)
             pub properties: ::buffa::MapView<'a, &'a str, &'a str>,
-            /// Time at which this share was created, in epoch milliseconds.
+            /// Time at which this recipient was created, in epoch milliseconds.
             ///
             /// Field 7: `created_at`
             pub created_at: ::core::option::Option<i64>,
-            /// Username of the creator of the share.
+            /// Username of recipient creator.
             ///
             /// Field 8: `created_by`
             pub created_by: ::core::option::Option<&'a str>,
@@ -3219,11 +3219,11 @@ pub mod __buffa {
                 'a,
                 super::super::__buffa::view::RecipientTokenView<'a>,
             >,
-            /// Time at which this share was updated, in epoch milliseconds.
+            /// Time at which this recipient was updated, in epoch milliseconds.
             ///
             /// Field 10: `updated_at`
             pub updated_at: ::core::option::Option<i64>,
-            /// Username of share updater.
+            /// Username of recipient updater.
             ///
             /// Field 11: `updated_by`
             pub updated_by: ::core::option::Option<&'a str>,
@@ -3930,14 +3930,14 @@ pub mod __buffa {
             pub fn properties(&self) -> &::buffa::MapView<'_, &'_ str, &'_ str> {
                 &self.0.reborrow().properties
             }
-            /// Time at which this share was created, in epoch milliseconds.
+            /// Time at which this recipient was created, in epoch milliseconds.
             ///
             /// Field 7: `created_at`
             #[must_use]
             pub fn created_at(&self) -> ::core::option::Option<i64> {
                 self.0.reborrow().created_at
             }
-            /// Username of the creator of the share.
+            /// Username of recipient creator.
             ///
             /// Field 8: `created_by`
             #[must_use]
@@ -3956,14 +3956,14 @@ pub mod __buffa {
             > {
                 &self.0.reborrow().tokens
             }
-            /// Time at which this share was updated, in epoch milliseconds.
+            /// Time at which this recipient was updated, in epoch milliseconds.
             ///
             /// Field 10: `updated_at`
             #[must_use]
             pub fn updated_at(&self) -> ::core::option::Option<i64> {
                 self.0.reborrow().updated_at
             }
-            /// Username of share updater.
+            /// Username of recipient updater.
             ///
             /// Field 11: `updated_by`
             #[must_use]

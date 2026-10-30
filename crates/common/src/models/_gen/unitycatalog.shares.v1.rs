@@ -370,7 +370,9 @@ pub struct DataObject {
     ///
     /// If this new name is not provided, the object's original name will be used as the shared_as name.
     /// The shared_as name must be unique within a share.
-    /// For tables, the new name must follow the format of \<schema\>.\<table\>.
+    /// For tables, the new name must follow the format of \<schema\>.\<table\>: two parts, each
+    /// consisting only of alphanumeric characters and underscores, without the catalog part.
+    /// Do not set it for non-table data objects.
     ///
     /// Field 6: `shared_as`
     #[serde(
@@ -839,7 +841,7 @@ pub const __DATA_OBJECT_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = ::buffa
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[serde(default)]
 pub struct Share {
-    /// Unique ID of the recipient.
+    /// Unique ID of the share.
     ///
     /// Field 100: `id`
     #[serde(rename = "id", skip_serializing_if = "::core::option::Option::is_none")]
@@ -2741,7 +2743,7 @@ pub const __GET_SHARE_REQUEST_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = :
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[serde(default)]
 pub struct DataObjectUpdate {
-    /// Name of the share.
+    /// The action to perform on the data object.
     ///
     /// Field 1: `action`
     #[serde(
@@ -2750,7 +2752,7 @@ pub struct DataObjectUpdate {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
     pub action: ::buffa::EnumValue<Action>,
-    /// User-provided free-form text description.
+    /// The data object that is being added, removed, or updated.
     ///
     /// Field 2: `data_object`
     #[serde(
@@ -4218,7 +4220,9 @@ pub mod __buffa {
             ///
             /// If this new name is not provided, the object's original name will be used as the shared_as name.
             /// The shared_as name must be unique within a share.
-            /// For tables, the new name must follow the format of \<schema\>.\<table\>.
+            /// For tables, the new name must follow the format of \<schema\>.\<table\>: two parts, each
+            /// consisting only of alphanumeric characters and underscores, without the catalog part.
+            /// Do not set it for non-table data objects.
             ///
             /// Field 6: `shared_as`
             pub shared_as: ::core::option::Option<&'a str>,
@@ -4813,7 +4817,9 @@ pub mod __buffa {
             ///
             /// If this new name is not provided, the object's original name will be used as the shared_as name.
             /// The shared_as name must be unique within a share.
-            /// For tables, the new name must follow the format of \<schema\>.\<table\>.
+            /// For tables, the new name must follow the format of \<schema\>.\<table\>: two parts, each
+            /// consisting only of alphanumeric characters and underscores, without the catalog part.
+            /// Do not set it for non-table data objects.
             ///
             /// Field 6: `shared_as`
             #[must_use]
@@ -4891,7 +4897,7 @@ pub mod __buffa {
         }
         #[derive(Clone, Debug, Default)]
         pub struct ShareView<'a> {
-            /// Unique ID of the recipient.
+            /// Unique ID of the share.
             ///
             /// Field 100: `id`
             pub id: ::core::option::Option<&'a str>,
@@ -5503,7 +5509,7 @@ pub mod __buffa {
             pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
                 self.0.into_bytes()
             }
-            /// Unique ID of the recipient.
+            /// Unique ID of the share.
             ///
             /// Field 100: `id`
             #[must_use]
@@ -7778,11 +7784,11 @@ pub mod __buffa {
         /// Data object update.
         #[derive(Clone, Debug, Default)]
         pub struct DataObjectUpdateView<'a> {
-            /// Name of the share.
+            /// The action to perform on the data object.
             ///
             /// Field 1: `action`
             pub action: ::buffa::EnumValue<super::super::Action>,
-            /// User-provided free-form text description.
+            /// The data object that is being added, removed, or updated.
             ///
             /// Field 2: `data_object`
             pub data_object: ::buffa::MessageFieldView<
@@ -8108,14 +8114,14 @@ pub mod __buffa {
             pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
                 self.0.into_bytes()
             }
-            /// Name of the share.
+            /// The action to perform on the data object.
             ///
             /// Field 1: `action`
             #[must_use]
             pub fn action(&self) -> ::buffa::EnumValue<super::super::Action> {
                 self.0.reborrow().action
             }
-            /// User-provided free-form text description.
+            /// The data object that is being added, removed, or updated.
             ///
             /// Field 2: `data_object`
             #[must_use]

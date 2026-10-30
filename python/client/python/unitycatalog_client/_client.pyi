@@ -537,8 +537,9 @@ class DataObject:
     """
     A user-provided new name for the data object within the share. If this new name is not
     provided, the object's original name will be used as the shared_as name. The shared_as
-    name must be unique within a share. For tables, the new name must follow the format of
-    <schema>.<table>.
+    name must be unique within a share. For tables, the new name must follow the format
+    of <schema>.<table>: two parts, each consisting only of alphanumeric characters and
+    underscores, without the catalog part. Do not set it for non-table data objects.
     """
     start_version: Optional[int]
     """
@@ -567,9 +568,9 @@ class DataObjectUpdate:
     """Data object update."""
 
     action: Action
-    """Name of the share."""
+    """The action to perform on the data object."""
     data_object: Optional[DataObject]
-    """User-provided free-form text description."""
+    """The data object that is being added, removed, or updated."""
 
     def __init__(
         self, action: Optional[Action] = None, data_object: Optional[DataObject] = None
@@ -736,7 +737,7 @@ class Function:
     security_type: SecurityType
     """The security type of the function."""
     specific_name: Optional[str]
-    """The type of the function (SCALAR or TABLE)."""
+    """Specific name of the function; reserved for future use."""
     sql_data_access: SqlDataAccess
     """SQL data access information."""
     updated_at: Optional[int]
@@ -1122,8 +1123,8 @@ class Provider:
     """A map of key-value properties attached to the provider."""
     recipient_profile_str: Optional[str]
     """
-    The recipient profile (credential file contents) used to connect to the sharing server,
-    present only for TOKEN authentication.
+    The recipient profile (credential file contents) used to connect to the sharing server.
+    Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
     """
     updated_at: Optional[int]
     """Time at which this provider was updated, in epoch milliseconds."""
@@ -1166,9 +1167,9 @@ class Recipient:
     comment: Optional[str]
     """Description about the recipient."""
     created_at: Optional[int]
-    """Time at which this share was created, in epoch milliseconds."""
+    """Time at which this recipient was created, in epoch milliseconds."""
     created_by: Optional[str]
-    """Username of the creator of the share."""
+    """Username of recipient creator."""
     id: Optional[str]
     """Unique ID of the recipient."""
     name: str
@@ -1180,9 +1181,9 @@ class Recipient:
     tokens: List[RecipientToken]
     """This field is only present when the authentication_type is TOKEN."""
     updated_at: Optional[int]
-    """Time at which this share was updated, in epoch milliseconds."""
+    """Time at which this recipient was updated, in epoch milliseconds."""
     updated_by: Optional[str]
-    """Username of share updater."""
+    """Username of recipient updater."""
 
     def __init__(
         self,
@@ -1352,7 +1353,7 @@ class Share:
     created_by: Optional[str]
     """Username of the creator of the share."""
     id: Optional[str]
-    """Unique ID of the recipient."""
+    """Unique ID of the share."""
     name: str
     """Name of the share."""
     objects: List[DataObject]
@@ -1480,7 +1481,8 @@ class Table:
     view_dependencies: Optional[DependencyList]
     """
     Tables and functions the view-like table reads. For metric views this is derived from the
-    view_definition by the server (the definition is the single source of truth).
+    view_definition by the server (the definition is the single source of truth). When unset,
+    dependencies were not provided; an empty list means there are none.
     """
 
     def __init__(
@@ -1616,9 +1618,9 @@ class Volume:
     comment: Optional[str]
     """User-provided free-form text description."""
     created_at: Optional[int]
-    """Time at which this catalog was created, in epoch milliseconds."""
+    """Time at which this volume was created, in epoch milliseconds."""
     created_by: Optional[str]
-    """Username of catalog creator."""
+    """Username of volume creator."""
     full_name: str
     """The three-level (fully qualified) name of the volume"""
     metastore_id: Optional[str]
@@ -1632,9 +1634,9 @@ class Volume:
     storage_location: str
     """The storage location on the cloud"""
     updated_at: Optional[int]
-    """Time at which this catalog was last updated, in epoch milliseconds."""
+    """Time at which this volume was last updated, in epoch milliseconds."""
     updated_by: Optional[str]
-    """Username of user who last modified catalog."""
+    """Username of user who last modified the volume."""
     volume_id: str
     """The unique identifier of the volume"""
     volume_type: VolumeType
@@ -2057,7 +2059,7 @@ class CatalogClient:
             properties: A map of key-value properties attached to the securable. When provided in update
                         request, the specified properties will override the existing properties. To add and
                         remove properties, one would need to perform a read-modify-write.
-            new_name: Name of catalog.
+            new_name: New name for the catalog.
 
 
         Returns:
@@ -2330,8 +2332,9 @@ class ProviderClient:
             new_name: New name for the provider.
             owner: Username of the provider owner.
             comment: Description about the provider.
-            recipient_profile_str: The recipient profile (credential file contents) used to connect to the
-                                   sharing server.
+            recipient_profile_str: The recipient profile (credential file contents) used to connect to
+                                   the sharing server. Required when authentication_type is TOKEN or
+                                   OAUTH_CLIENT_CREDENTIALS.
             properties: Provider properties as map of string key-value pairs. When provided in update
                         request, the specified properties will override the existing properties. To add and
                         remove properties, one would need to perform a read-modify-write.
@@ -2498,7 +2501,7 @@ class SchemaClient:
             properties: A map of key-value properties attached to the securable. When provided in update
                         request, the specified properties will override the existing properties. To add and
                         remove properties, one would need to perform a read-modify-write.
-            new_name: Name of schema.
+            new_name: New name for the schema.
 
 
         Returns:
@@ -2675,7 +2678,7 @@ class VolumeClient:
     def get(self, include_browse: Optional[bool] = None) -> Volume:
         """
         Args:
-            include_browse: Whether to include schemas in the response for which the principal can only
+            include_browse: Whether to include volumes in the response for which the principal can only
                             access selective metadata for
 
 
@@ -2949,8 +2952,9 @@ class UnityCatalogClient:
             authentication_type: The delta sharing authentication type.
             owner: Username of the provider owner.
             comment: Description about the provider.
-            recipient_profile_str: The recipient profile (credential file contents) used to connect to the
-                                   sharing server, required for TOKEN authentication.
+            recipient_profile_str: The recipient profile (credential file contents) used to connect to
+                                   the sharing server. Required when authentication_type is TOKEN or
+                                   OAUTH_CLIENT_CREDENTIALS.
             properties: Provider properties as map of string key-value pairs.
 
 
@@ -3156,7 +3160,7 @@ class UnityCatalogClient:
                          location. A managed volume is located in the default location which is specified by
                          the parent schema, or the parent catalog, or the Metastore.
             storage_location: The storage location on the cloud
-            comment: The storage location on the cloud
+            comment: The comment attached to the volume.
 
 
         Returns:
@@ -3243,6 +3247,11 @@ class UnityCatalogClient:
         """
         Generate a new set of credentials for a path.
 
+        Only external storage paths (external locations and external tables) are supported; managed tables
+        are not. The metastore must have the `external_access_enabled` flag set to true (default false).
+        The caller must have the `EXTERNAL_USE_LOCATION` privilege on the external location (granted by its
+        owner) and, for existing external tables, the `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
+
 
         Args:
             url: URL for path-based access.
@@ -3261,6 +3270,9 @@ class UnityCatalogClient:
     ) -> TemporaryCredential:
         """
         Generate a new set of credentials for a table.
+
+        The metastore must have the `external_access_enabled` flag set to true (default false). The caller
+        must have the `EXTERNAL_USE_SCHEMA` privilege on the parent schema (granted by a catalog owner).
 
 
         Args:
@@ -3682,7 +3694,7 @@ class UnityCatalogClient:
             schema_name: The identifier of the schema
             max_results: The maximum number of results per page that should be returned. If unset or 0, the
                          server's default page size is used. Negative values are rejected.
-            include_browse: Whether to include schemas in the response for which the principal can only
+            include_browse: Whether to include volumes in the response for which the principal can only
                             access selective metadata for
 
 

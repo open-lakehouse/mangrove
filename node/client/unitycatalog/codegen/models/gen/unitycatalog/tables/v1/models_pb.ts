@@ -297,6 +297,8 @@ export type Table = Message<"unitycatalog.tables.v1.Table"> & {
    * derived from the view_definition by the server (the definition is the
    * single source of truth).
    *
+   * When unset, dependencies were not provided; an empty list means there are none.
+   *
    * @generated from field: optional unitycatalog.tables.v1.DependencyList view_dependencies = 9;
    */
   viewDependencies?: DependencyList | undefined;

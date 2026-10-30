@@ -69,18 +69,18 @@ message Recipient {
   // A map of key-value properties attached to the securable.
   map<string, string> properties = 6;
 
-  // Time at which this share was created, in epoch milliseconds.
+  // Time at which this recipient was created, in epoch milliseconds.
   optional int64 created_at = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Username of the creator of the share.
+  // Username of recipient creator.
   optional string created_by = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // This field is only present when the authentication_type is TOKEN.
   repeated RecipientToken tokens = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Time at which this share was updated, in epoch milliseconds.
+  // Time at which this recipient was updated, in epoch milliseconds.
   optional int64 updated_at = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Username of share updater.
+  // Username of recipient updater.
   optional string updated_by = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

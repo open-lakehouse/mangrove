@@ -114,7 +114,8 @@ export type CreateProviderRequest = Message<"unitycatalog.providers.v1.CreatePro
 
   /**
    * The recipient profile (credential file contents) used to connect to the
-   * sharing server, required for TOKEN authentication.
+   * sharing server. Required when authentication_type is TOKEN or
+   * OAUTH_CLIENT_CREDENTIALS.
    *
    * @generated from field: optional string recipient_profile_str = 5;
    */
@@ -192,7 +193,8 @@ export type UpdateProviderRequest = Message<"unitycatalog.providers.v1.UpdatePro
 
   /**
    * The recipient profile (credential file contents) used to connect to the
-   * sharing server.
+   * sharing server. Required when authentication_type is TOKEN or
+   * OAUTH_CLIENT_CREDENTIALS.
    *
    * @generated from field: optional string recipient_profile_str = 5;
    */

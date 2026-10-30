@@ -3049,7 +3049,15 @@ paths:
     post:
       tags:
         - TemporaryCredentialsService
-      description: Generate a new set of credentials for a path.
+      description: |-
+        Generate a new set of credentials for a path.
+
+         Only external storage paths (external locations and external tables) are
+         supported; managed tables are not. The metastore must have the
+         `external_access_enabled` flag set to true (default false). The caller must
+         have the `EXTERNAL_USE_LOCATION` privilege on the external location
+         (granted by its owner) and, for existing external tables, the
+         `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
       operationId: GenerateTemporaryPathCredentials
       requestBody:
         content:
@@ -3074,7 +3082,12 @@ paths:
     post:
       tags:
         - TemporaryCredentialsService
-      description: Generate a new set of credentials for a table.
+      description: |-
+        Generate a new set of credentials for a table.
+
+         The metastore must have the `external_access_enabled` flag set to true
+         (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+         privilege on the parent schema (granted by a catalog owner).
       operationId: GenerateTemporaryTableCredentials
       requestBody:
         content:
@@ -3158,7 +3171,7 @@ paths:
             type: string
         - name: include_browse
           in: query
-          description: Whether to include schemas in the response for which the principal can only access selective metadata for
+          description: Whether to include volumes in the response for which the principal can only access selective metadata for
           schema:
             type: boolean
       responses:
@@ -3211,7 +3224,7 @@ paths:
             type: string
         - name: include_browse
           in: query
-          description: Whether to include schemas in the response for which the principal can only access selective metadata for
+          description: Whether to include volumes in the response for which the principal can only access selective metadata for
           schema:
             type: boolean
       responses:
@@ -4255,7 +4268,8 @@ components:
           type: string
           description: |-
             The recipient profile (credential file contents) used to connect to the
-             sharing server, required for TOKEN authentication.
+             sharing server. Required when authentication_type is TOKEN or
+             OAUTH_CLIENT_CREDENTIALS.
         properties:
           type: object
           additionalProperties:
@@ -4564,7 +4578,7 @@ components:
           description: The storage location on the cloud
         comment:
           type: string
-          description: The storage location on the cloud
+          description: The comment attached to the volume.
           minLength: 1
           maxLength: 65536
       description: Create a new Volume
@@ -4714,7 +4728,9 @@ components:
           description: |-
             If this new name is not provided, the object's original name will be used as the shared_as name.
              The shared_as name must be unique within a share.
-             For tables, the new name must follow the format of <schema>.<table>.
+             For tables, the new name must follow the format of <schema>.<table>: two parts, each
+             consisting only of alphanumeric characters and underscores, without the catalog part.
+             Do not set it for non-table data objects.
           title: A user-provided new name for the data object within the share.
         partitions:
           type: array
@@ -4755,13 +4771,13 @@ components:
             - REMOVE
             - UPDATE
           type: string
-          description: Name of the share.
+          description: The action to perform on the data object.
           format: enum
           title: Action
         data_object:
           allOf:
             - $ref: "#/components/schemas/DataObject"
-          description: User-provided free-form text description.
+          description: The data object that is being added, removed, or updated.
           additionalProperties: false
           required:
             - name
@@ -5016,7 +5032,7 @@ components:
           title: Security Type
         specific_name:
           type: string
-          description: The type of the function (SCALAR or TABLE).
+          description: Specific name of the function; reserved for future use.
         routine_body:
           enum:
             - ROUTINE_BODY_UNSPECIFIED
@@ -5800,7 +5816,7 @@ components:
             Absent if there are no more pages. page_token should be set to
              this value for the next request to retrieve the next page of results.
           title: Opaque token to retrieve the next page of results.
-      description: List Schemas response.
+      description: List volumes response.
       additionalProperties: false
       title: List Volumes Response
     MatchColumn:
@@ -6098,7 +6114,7 @@ components:
           type: string
           description: |-
             The recipient profile (credential file contents) used to connect to the
-             sharing server, present only for TOKEN authentication.
+             sharing server. Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
         properties:
           type: object
           additionalProperties:
@@ -6180,11 +6196,11 @@ components:
         created_at:
           readOnly: true
           type: string
-          description: Time at which this share was created, in epoch milliseconds.
+          description: Time at which this recipient was created, in epoch milliseconds.
         created_by:
           readOnly: true
           type: string
-          description: Username of the creator of the share.
+          description: Username of recipient creator.
         tokens:
           readOnly: true
           type: array
@@ -6204,11 +6220,11 @@ components:
         updated_at:
           readOnly: true
           type: string
-          description: Time at which this share was updated, in epoch milliseconds.
+          description: Time at which this recipient was updated, in epoch milliseconds.
         updated_by:
           readOnly: true
           type: string
-          description: Username of share updater.
+          description: Username of recipient updater.
       additionalProperties: false
       title: Recipient
     RecipientToken:
@@ -6402,7 +6418,7 @@ components:
         id:
           readOnly: true
           type: string
-          description: Unique ID of the recipient.
+          description: Unique ID of the share.
         name:
           type: string
           description: Name of the share.
@@ -6908,7 +6924,7 @@ components:
           title: A map of key-value properties attached to the securable.
         new_name:
           type: string
-          description: Name of catalog.
+          description: New name for the catalog.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
       description: Update a catalog
@@ -7145,7 +7161,8 @@ components:
           type: string
           description: |-
             The recipient profile (credential file contents) used to connect to the
-             sharing server.
+             sharing server. Required when authentication_type is TOKEN or
+             OAUTH_CLIENT_CREDENTIALS.
         properties:
           type: object
           additionalProperties:
@@ -7222,7 +7239,7 @@ components:
           title: A map of key-value properties attached to the securable.
         new_name:
           type: string
-          description: Name of schema.
+          description: New name for the schema.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
       description: Update a Schema
@@ -7371,21 +7388,21 @@ components:
         created_at:
           readOnly: true
           type: string
-          description: Time at which this catalog was created, in epoch milliseconds.
+          description: Time at which this volume was created, in epoch milliseconds.
           minimum: 0
           exclusiveMinimum: true
         created_by:
           readOnly: true
           type: string
-          description: Username of catalog creator.
+          description: Username of volume creator.
         updated_at:
           readOnly: true
           type: string
-          description: Time at which this catalog was last updated, in epoch milliseconds.
+          description: Time at which this volume was last updated, in epoch milliseconds.
         updated_by:
           readOnly: true
           type: string
-          description: Username of user who last modified catalog.
+          description: Username of user who last modified the volume.
         browse_only:
           readOnly: true
           type: boolean

@@ -209,7 +209,7 @@ impl UpdateCatalogBuilder {
             .collect();
         self
     }
-    /// Name of catalog.
+    /// New name for the catalog.
     pub fn with_new_name(mut self, new_name: impl Into<Option<String>>) -> Self {
         self.request.new_name = new_name.into();
         self

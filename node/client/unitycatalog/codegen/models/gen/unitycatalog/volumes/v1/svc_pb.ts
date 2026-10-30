@@ -59,7 +59,7 @@ export type ListVolumesRequest = Message<"unitycatalog.volumes.v1.ListVolumesReq
   pageToken?: string | undefined;
 
   /**
-   * Whether to include schemas in the response for which the principal can only access selective metadata for
+   * Whether to include volumes in the response for which the principal can only access selective metadata for
    *
    * @generated from field: optional bool include_browse = 5;
    */
@@ -74,7 +74,7 @@ export const ListVolumesRequestSchema: GenMessage<ListVolumesRequest> = /*@__PUR
   messageDesc(file_unitycatalog_volumes_v1_svc, 0);
 
 /**
- * List Schemas response.
+ * List volumes response.
  *
  * @generated from message unitycatalog.volumes.v1.ListVolumesResponse
  */
@@ -150,7 +150,7 @@ export type CreateVolumeRequest = Message<"unitycatalog.volumes.v1.CreateVolumeR
   storageLocation?: string | undefined;
 
   /**
-   * The storage location on the cloud
+   * The comment attached to the volume.
    *
    * @generated from field: optional string comment = 6;
    */
@@ -176,7 +176,7 @@ export type GetVolumeRequest = Message<"unitycatalog.volumes.v1.GetVolumeRequest
   name: string;
 
   /**
-   * Whether to include schemas in the response for which the principal can only access selective metadata for
+   * Whether to include volumes in the response for which the principal can only access selective metadata for
    *
    * @generated from field: optional bool include_browse = 1005;
    */

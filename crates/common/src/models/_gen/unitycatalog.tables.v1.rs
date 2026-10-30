@@ -2336,6 +2336,8 @@ pub struct Table {
     /// derived from the view_definition by the server (the definition is the
     /// single source of truth).
     ///
+    /// When unset, dependencies were not provided; an empty list means there are none.
+    ///
     /// Field 9: `view_dependencies`
     #[serde(
         rename = "view_dependencies",
@@ -8306,6 +8308,8 @@ pub mod __buffa {
             /// derived from the view_definition by the server (the definition is the
             /// single source of truth).
             ///
+            /// When unset, dependencies were not provided; an empty list means there are none.
+            ///
             /// Field 9: `view_dependencies`
             pub view_dependencies: ::buffa::MessageFieldView<
                 super::super::__buffa::view::DependencyListView<'a>,
@@ -9388,6 +9392,8 @@ pub mod __buffa {
             /// Tables and functions the view-like table reads. For metric views this is
             /// derived from the view_definition by the server (the definition is the
             /// single source of truth).
+            ///
+            /// When unset, dependencies were not provided; an empty list means there are none.
             ///
             /// Field 9: `view_dependencies`
             #[must_use]

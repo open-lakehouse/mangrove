@@ -79,10 +79,10 @@ enum Action {
 
 // Data object update.
 message DataObjectUpdate {
-  // Name of the share.
+  // The action to perform on the data object.
   Action action = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // User-provided free-form text description.
+  // The data object that is being added, removed, or updated.
   DataObject data_object = 2 [(google.api.field_behavior) = REQUIRED];
 }
 

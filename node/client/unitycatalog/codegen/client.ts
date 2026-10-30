@@ -294,7 +294,7 @@ export interface UpdateCatalogOptions {
    *  When provided in update request, the specified properties will override the existing properties.
    *  To add and remove properties, one would need to perform a read-modify-write. */
   properties?: Record<string, string>;
-  /** Name of catalog. */
+  /** New name for the catalog. */
   newName?: string;
 }
 
@@ -484,7 +484,8 @@ export interface CreateProviderOptions {
   /** Description about the provider. */
   comment?: string;
   /** The recipient profile (credential file contents) used to connect to the
-   *  sharing server, required for TOKEN authentication. */
+   *  sharing server. Required when authentication_type is TOKEN or
+   *  OAUTH_CLIENT_CREDENTIALS. */
   recipientProfileStr?: string;
   /** Provider properties as map of string key-value pairs. */
   properties?: Record<string, string>;
@@ -498,7 +499,8 @@ export interface UpdateProviderOptions {
   /** Description about the provider. */
   comment?: string;
   /** The recipient profile (credential file contents) used to connect to the
-   *  sharing server. */
+   *  sharing server. Required when authentication_type is TOKEN or
+   *  OAUTH_CLIENT_CREDENTIALS. */
   recipientProfileStr?: string;
   /** Provider properties as map of string key-value pairs.
    * 
@@ -616,7 +618,7 @@ export interface UpdateSchemaOptions {
    *  When provided in update request, the specified properties will override the existing properties.
    *  To add and remove properties, one would need to perform a read-modify-write. */
   properties?: Record<string, string>;
-  /** Name of schema. */
+  /** New name for the schema. */
   newName?: string;
 }
 
@@ -755,19 +757,19 @@ export interface ListVolumesOptions {
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
-  /** Whether to include schemas in the response for which the principal can only access selective metadata for */
+  /** Whether to include volumes in the response for which the principal can only access selective metadata for */
   includeBrowse?: boolean;
 }
 
 export interface CreateVolumeOptions {
   /** The storage location on the cloud */
   storageLocation?: string;
-  /** The storage location on the cloud */
+  /** The comment attached to the volume. */
   comment?: string;
 }
 
 export interface GetVolumeOptions {
-  /** Whether to include schemas in the response for which the principal can only access selective metadata for */
+  /** Whether to include volumes in the response for which the principal can only access selective metadata for */
   includeBrowse?: boolean;
 }
 
@@ -2090,6 +2092,10 @@ export class UnityCatalogClient {
 
   /**
      * Generate a new set of credentials for a table.
+     * 
+     * The metastore must have the `external_access_enabled` flag set to true
+     * (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+     * privilege on the parent schema (granted by a catalog owner).
      */
   async generateTemporaryTableCredentials(tableId: string, operation: number): Promise<TemporaryCredential> {
     try {
@@ -2099,6 +2105,13 @@ export class UnityCatalogClient {
 
   /**
      * Generate a new set of credentials for a path.
+     * 
+     * Only external storage paths (external locations and external tables) are
+     * supported; managed tables are not. The metastore must have the
+     * `external_access_enabled` flag set to true (default false). The caller must
+     * have the `EXTERNAL_USE_LOCATION` privilege on the external location
+     * (granted by its owner) and, for existing external tables, the
+     * `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
      */
   async generateTemporaryPathCredentials(url: string, operation: number, options?: GenerateTemporaryPathCredentialsOptions): Promise<TemporaryCredential> {
     const { dryRun } = options || {};

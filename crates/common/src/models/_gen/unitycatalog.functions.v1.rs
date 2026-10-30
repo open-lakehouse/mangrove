@@ -2536,7 +2536,7 @@ pub struct Function {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
     pub security_type: ::buffa::EnumValue<SecurityType>,
-    /// The type of the function (SCALAR or TABLE).
+    /// Specific name of the function; reserved for future use.
     ///
     /// Field 17: `specific_name`
     #[serde(
@@ -6986,7 +6986,7 @@ pub mod __buffa {
             ///
             /// Field 16: `security_type`
             pub security_type: ::buffa::EnumValue<super::super::SecurityType>,
-            /// The type of the function (SCALAR or TABLE).
+            /// Specific name of the function; reserved for future use.
             ///
             /// Field 17: `specific_name`
             pub specific_name: ::core::option::Option<&'a str>,
@@ -8273,7 +8273,7 @@ pub mod __buffa {
             ) -> ::buffa::EnumValue<super::super::SecurityType> {
                 self.0.reborrow().security_type
             }
-            /// The type of the function (SCALAR or TABLE).
+            /// Specific name of the function; reserved for future use.
             ///
             /// Field 17: `specific_name`
             #[must_use]

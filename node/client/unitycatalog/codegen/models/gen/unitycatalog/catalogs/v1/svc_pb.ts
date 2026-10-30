@@ -204,7 +204,7 @@ export type UpdateCatalogRequest = Message<"unitycatalog.catalogs.v1.UpdateCatal
   properties: { [key: string]: string };
 
   /**
-   * Name of catalog.
+   * New name for the catalog.
    *
    * @generated from field: optional string new_name = 5;
    */

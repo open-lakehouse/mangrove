@@ -43,11 +43,11 @@ message ListVolumesRequest {
   // Opaque pagination token to go to next page based on previous query.
   optional string page_token = 4 [(google.api.field_behavior) = OPTIONAL];
 
-  // Whether to include schemas in the response for which the principal can only access selective metadata for
+  // Whether to include volumes in the response for which the principal can only access selective metadata for
   optional bool include_browse = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// List Schemas response.
+// List volumes response.
 message ListVolumesResponse {
   // The volumes returned.
   repeated Volume volumes = 1;
@@ -97,7 +97,7 @@ message CreateVolumeRequest {
   // The storage location on the cloud
   optional string storage_location = 5 [(google.api.field_behavior) = OPTIONAL];
 
-  // The storage location on the cloud
+  // The comment attached to the volume.
   optional string comment = 6 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 65536,
@@ -113,7 +113,7 @@ message GetVolumeRequest {
     (google.api.resource_reference) = {type: "unitycatalog.io/Volume"}
   ];
 
-  // Whether to include schemas in the response for which the principal can only access selective metadata for
+  // Whether to include volumes in the response for which the principal can only access selective metadata for
   optional bool include_browse = 1005 [(google.api.field_behavior) = OPTIONAL];
 }
 

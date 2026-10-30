@@ -2023,7 +2023,7 @@ pub struct UpdateCatalogRequest {
         ::buffa::alloc::string::String,
         ::buffa::alloc::string::String,
     >,
-    /// Name of catalog.
+    /// New name for the catalog.
     ///
     /// Field 5: `new_name`
     #[serde(
@@ -5197,7 +5197,7 @@ pub mod __buffa {
             ///
             /// Field 4: `properties` (map)
             pub properties: ::buffa::MapView<'a, &'a str, &'a str>,
-            /// Name of catalog.
+            /// New name for the catalog.
             ///
             /// Field 5: `new_name`
             pub new_name: ::core::option::Option<&'a str>,
@@ -5679,7 +5679,7 @@ pub mod __buffa {
             pub fn properties(&self) -> &::buffa::MapView<'_, &'_ str, &'_ str> {
                 &self.0.reborrow().properties
             }
-            /// Name of catalog.
+            /// New name for the catalog.
             ///
             /// Field 5: `new_name`
             #[must_use]

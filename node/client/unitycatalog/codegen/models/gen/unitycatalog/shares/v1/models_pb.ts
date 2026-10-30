@@ -60,7 +60,9 @@ export type DataObject = Message<"unitycatalog.shares.v1.DataObject"> & {
    *
    * If this new name is not provided, the object's original name will be used as the shared_as name.
    * The shared_as name must be unique within a share.
-   * For tables, the new name must follow the format of <schema>.<table>.
+   * For tables, the new name must follow the format of <schema>.<table>: two parts, each
+   * consisting only of alphanumeric characters and underscores, without the catalog part.
+   * Do not set it for non-table data objects.
    *
    * @generated from field: optional string shared_as = 6;
    */
@@ -113,7 +115,7 @@ export const DataObjectSchema: GenMessage<DataObject> = /*@__PURE__*/
  */
 export type Share = Message<"unitycatalog.shares.v1.Share"> & {
   /**
-   * Unique ID of the recipient.
+   * Unique ID of the share.
    *
    * @generated from field: optional string id = 100;
    */

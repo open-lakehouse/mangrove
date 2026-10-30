@@ -207,7 +207,7 @@ pub struct Provider {
     #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
     pub comment: ::core::option::Option<::buffa::alloc::string::String>,
     /// The recipient profile (credential file contents) used to connect to the
-    /// sharing server, present only for TOKEN authentication.
+    /// sharing server. Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
     ///
     /// Field 5: `recipient_profile_str`
     #[serde(
@@ -1224,7 +1224,8 @@ pub struct CreateProviderRequest {
     #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
     pub comment: ::core::option::Option<::buffa::alloc::string::String>,
     /// The recipient profile (credential file contents) used to connect to the
-    /// sharing server, required for TOKEN authentication.
+    /// sharing server. Required when authentication_type is TOKEN or
+    /// OAUTH_CLIENT_CREDENTIALS.
     ///
     /// Field 5: `recipient_profile_str`
     #[serde(
@@ -1778,7 +1779,8 @@ pub struct UpdateProviderRequest {
     #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
     pub comment: ::core::option::Option<::buffa::alloc::string::String>,
     /// The recipient profile (credential file contents) used to connect to the
-    /// sharing server.
+    /// sharing server. Required when authentication_type is TOKEN or
+    /// OAUTH_CLIENT_CREDENTIALS.
     ///
     /// Field 5: `recipient_profile_str`
     #[serde(
@@ -2358,7 +2360,7 @@ pub mod __buffa {
             /// Field 4: `comment`
             pub comment: ::core::option::Option<&'a str>,
             /// The recipient profile (credential file contents) used to connect to the
-            /// sharing server, present only for TOKEN authentication.
+            /// sharing server. Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
             ///
             /// Field 5: `recipient_profile_str`
             pub recipient_profile_str: ::core::option::Option<&'a str>,
@@ -3063,7 +3065,7 @@ pub mod __buffa {
                 self.0.reborrow().comment
             }
             /// The recipient profile (credential file contents) used to connect to the
-            /// sharing server, present only for TOKEN authentication.
+            /// sharing server. Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
             ///
             /// Field 5: `recipient_profile_str`
             #[must_use]
@@ -3886,7 +3888,8 @@ pub mod __buffa {
             /// Field 4: `comment`
             pub comment: ::core::option::Option<&'a str>,
             /// The recipient profile (credential file contents) used to connect to the
-            /// sharing server, required for TOKEN authentication.
+            /// sharing server. Required when authentication_type is TOKEN or
+            /// OAUTH_CLIENT_CREDENTIALS.
             ///
             /// Field 5: `recipient_profile_str`
             pub recipient_profile_str: ::core::option::Option<&'a str>,
@@ -4415,7 +4418,8 @@ pub mod __buffa {
                 self.0.reborrow().comment
             }
             /// The recipient profile (credential file contents) used to connect to the
-            /// sharing server, required for TOKEN authentication.
+            /// sharing server. Required when authentication_type is TOKEN or
+            /// OAUTH_CLIENT_CREDENTIALS.
             ///
             /// Field 5: `recipient_profile_str`
             #[must_use]
@@ -4784,7 +4788,8 @@ pub mod __buffa {
             /// Field 4: `comment`
             pub comment: ::core::option::Option<&'a str>,
             /// The recipient profile (credential file contents) used to connect to the
-            /// sharing server.
+            /// sharing server. Required when authentication_type is TOKEN or
+            /// OAUTH_CLIENT_CREDENTIALS.
             ///
             /// Field 5: `recipient_profile_str`
             pub recipient_profile_str: ::core::option::Option<&'a str>,
@@ -5302,7 +5307,8 @@ pub mod __buffa {
                 self.0.reborrow().comment
             }
             /// The recipient profile (credential file contents) used to connect to the
-            /// sharing server.
+            /// sharing server. Required when authentication_type is TOKEN or
+            /// OAUTH_CLIENT_CREDENTIALS.
             ///
             /// Field 5: `recipient_profile_str`
             #[must_use]

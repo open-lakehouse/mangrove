@@ -386,7 +386,7 @@ export type Function = Message<"unitycatalog.functions.v1.Function"> & {
   securityType: SecurityType;
 
   /**
-   * The type of the function (SCALAR or TABLE).
+   * Specific name of the function; reserved for future use.
    *
    * @generated from field: optional string specific_name = 17;
    */

@@ -123,14 +123,14 @@ export type Recipient = Message<"unitycatalog.recipients.v1.Recipient"> & {
   properties: { [key: string]: string };
 
   /**
-   * Time at which this share was created, in epoch milliseconds.
+   * Time at which this recipient was created, in epoch milliseconds.
    *
    * @generated from field: optional int64 created_at = 7;
    */
   createdAt?: bigint | undefined;
 
   /**
-   * Username of the creator of the share.
+   * Username of recipient creator.
    *
    * @generated from field: optional string created_by = 8;
    */
@@ -144,14 +144,14 @@ export type Recipient = Message<"unitycatalog.recipients.v1.Recipient"> & {
   tokens: RecipientToken[];
 
   /**
-   * Time at which this share was updated, in epoch milliseconds.
+   * Time at which this recipient was updated, in epoch milliseconds.
    *
    * @generated from field: optional int64 updated_at = 10;
    */
   updatedAt?: bigint | undefined;
 
   /**
-   * Username of share updater.
+   * Username of recipient updater.
    *
    * @generated from field: optional string updated_by = 11;
    */

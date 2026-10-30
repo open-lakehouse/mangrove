@@ -105,7 +105,7 @@ message UpdateSchemaRequest {
   // To add and remove properties, one would need to perform a read-modify-write.
   map<string, string> properties = 3 [(google.api.field_behavior) = OPTIONAL];
 
-  // Name of schema.
+  // New name for the schema.
   optional string new_name = 4 [
     (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
     (buf.validate.field).string.min_len = 3,

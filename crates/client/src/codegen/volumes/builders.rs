@@ -47,7 +47,7 @@ impl ListVolumesBuilder {
         self.request.page_token = page_token.into();
         self
     }
-    /// Whether to include schemas in the response for which the principal can only access selective metadata for
+    /// Whether to include volumes in the response for which the principal can only access selective metadata for
     pub fn with_include_browse(mut self, include_browse: impl Into<Option<bool>>) -> Self {
         self.request.include_browse = include_browse.into();
         self
@@ -118,7 +118,7 @@ impl CreateVolumeBuilder {
         self.request.storage_location = storage_location.into();
         self
     }
-    /// The storage location on the cloud
+    /// The comment attached to the volume.
     pub fn with_comment(mut self, comment: impl Into<Option<String>>) -> Self {
         self.request.comment = comment.into();
         self
@@ -148,7 +148,7 @@ impl GetVolumeBuilder {
         };
         Self { client, request }
     }
-    /// Whether to include schemas in the response for which the principal can only access selective metadata for
+    /// Whether to include volumes in the response for which the principal can only access selective metadata for
     pub fn with_include_browse(mut self, include_browse: impl Into<Option<bool>>) -> Self {
         self.request.include_browse = include_browse.into();
         self

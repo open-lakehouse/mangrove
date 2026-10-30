@@ -201,7 +201,7 @@ impl UpdateSchemaBuilder {
             .collect();
         self
     }
-    /// Name of schema.
+    /// New name for the schema.
     pub fn with_new_name(mut self, new_name: impl Into<Option<String>>) -> Self {
         self.request.new_name = new_name.into();
         self

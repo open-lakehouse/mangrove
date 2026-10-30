@@ -151,14 +151,14 @@ export const GetShareRequestSchema: GenMessage<GetShareRequest> = /*@__PURE__*/
  */
 export type DataObjectUpdate = Message<"unitycatalog.shares.v1.DataObjectUpdate"> & {
   /**
-   * Name of the share.
+   * The action to perform on the data object.
    *
    * @generated from field: unitycatalog.shares.v1.Action action = 1;
    */
   action: Action;
 
   /**
-   * User-provided free-form text description.
+   * The data object that is being added, removed, or updated.
    *
    * @generated from field: unitycatalog.shares.v1.DataObject data_object = 2;
    */
