@@ -148,6 +148,11 @@ impl GetExternalLocationBuilder {
         };
         Self { client, request }
     }
+    /// Whether to include external locations in the response for which the principal can only access selective metadata for
+    pub fn with_include_browse(mut self, include_browse: impl Into<Option<bool>>) -> Self {
+        self.request.include_browse = include_browse.into();
+        self
+    }
 }
 impl IntoFuture for GetExternalLocationBuilder {
     type Output = Result<ExternalLocation>;

@@ -310,4 +310,9 @@ message Function {
 
   // Username of user who last modified the function.
   optional string updated_by = 1003 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Indicates whether the principal is limited to retrieving metadata
+  // for the associated object through the BROWSE privilege when include_browse
+  // is enabled in the request.
+  optional bool browse_only = 1004 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

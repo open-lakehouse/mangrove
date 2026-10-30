@@ -717,6 +717,11 @@ class ExternalLocation:
 class Function:
     """A User-Defined Function (UDF) registered under a catalog + schema hierarchy."""
 
+    browse_only: Optional[bool]
+    """
+    Indicates whether the principal is limited to retrieving metadata for the associated
+    object through the BROWSE privilege when include_browse is enabled in the request.
+    """
     catalog_name: str
     """Name of parent catalog."""
     comment: Optional[str]
@@ -775,6 +780,7 @@ class Function:
 
     def __init__(
         self,
+        browse_only: Optional[bool] = None,
         catalog_name: Optional[str] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
@@ -1381,6 +1387,11 @@ class RegisteredModel:
 class Schema:
     """A schema is a namespace within a catalog that contains tables."""
 
+    browse_only: Optional[bool]
+    """
+    Indicates whether the principal is limited to retrieving metadata for the associated
+    object through the BROWSE privilege when include_browse is enabled in the request.
+    """
     catalog_name: str
     """Name of parent catalog."""
     comment: Optional[str]
@@ -1419,6 +1430,7 @@ class Schema:
 
     def __init__(
         self,
+        browse_only: Optional[bool] = None,
         catalog_name: Optional[str] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
@@ -2278,9 +2290,14 @@ class ExternalLocationClient:
             None
         """
         ...
-    def get(self) -> ExternalLocation:
+    def get(self, include_browse: Optional[bool] = None) -> ExternalLocation:
         """
         Get an external location
+
+
+        Args:
+            include_browse: Whether to include external locations in the response for which the principal
+                            can only access selective metadata for
 
 
         Returns:
@@ -2336,12 +2353,17 @@ class FunctionClient:
             None
         """
         ...
-    def get(self) -> Function:
+    def get(self, include_browse: Optional[bool] = None) -> Function:
         """
         Get a function
 
         Gets a function from within a parent catalog and schema. For the fetch to succeed, the caller must
         be a metastore admin, the owner of the function, or have SELECT on the function.
+
+
+        Args:
+            include_browse: Whether to include functions in the response for which the principal can only
+                            access selective metadata for
 
 
         Returns:
@@ -2620,10 +2642,15 @@ class SchemaClient:
             None
         """
         ...
-    def get(self) -> Schema:
+    def get(self, include_browse: Optional[bool] = None) -> Schema:
         """
         Gets the specified schema within the metastore. The caller must be a metastore admin, the owner of
         the schema, or a user that has the USE_SCHEMA privilege on the schema.
+
+
+        Args:
+            include_browse: Whether to include schemas in the response for which the principal can only
+                            access selective metadata for
 
 
         Returns:

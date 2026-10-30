@@ -14,8 +14,10 @@ pub struct PySchemaClient {
 }
 #[pymethods]
 impl PySchemaClient {
-    pub fn get(&self, py: Python<'_>) -> PyResult<PySchema> {
-        let request = self.client.get();
+    #[pyo3(signature = (include_browse = None))]
+    pub fn get(&self, py: Python<'_>, include_browse: Option<bool>) -> PyResult<PySchema> {
+        let mut request = self.client.get();
+        request = request.with_include_browse(include_browse);
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PySchema::from(result))
     }

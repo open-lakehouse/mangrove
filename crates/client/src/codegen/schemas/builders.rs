@@ -155,6 +155,11 @@ impl GetSchemaBuilder {
         };
         Self { client, request }
     }
+    /// Whether to include schemas in the response for which the principal can only access selective metadata for
+    pub fn with_include_browse(mut self, include_browse: impl Into<Option<bool>>) -> Self {
+        self.request.include_browse = include_browse.into();
+        self
+    }
 }
 impl IntoFuture for GetSchemaBuilder {
     type Output = Result<Schema>;

@@ -385,6 +385,11 @@ export interface CreateExternalLocationOptions {
   skipValidation?: boolean;
 }
 
+export interface GetExternalLocationOptions {
+  /** Whether to include external locations in the response for which the principal can only access selective metadata for */
+  includeBrowse?: boolean;
+}
+
 export interface UpdateExternalLocationOptions {
   /** Path URL of the external location. */
   url?: string;
@@ -417,6 +422,11 @@ export interface ListFunctionsOptions {
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
   /** Whether to include functions in the response for which the principal can only access selective metadata for. */
+  includeBrowse?: boolean;
+}
+
+export interface GetFunctionOptions {
+  /** Whether to include functions in the response for which the principal can only access selective metadata for */
   includeBrowse?: boolean;
 }
 
@@ -636,6 +646,11 @@ export interface CreateSchemaOptions {
    *  If not set, managed securables under this schema fall back to the parent
    *  catalog's storage location. Example: `s3://bucket/ucroot`. */
   storageRoot?: string;
+}
+
+export interface GetSchemaOptions {
+  /** Whether to include schemas in the response for which the principal can only access selective metadata for */
+  includeBrowse?: boolean;
 }
 
 export interface UpdateSchemaOptions {
@@ -970,9 +985,10 @@ export class ExternalLocationClient {
   /**
      * Get an external location
      */
-  async get(): Promise<ExternalLocation> {
+  async get(options?: GetExternalLocationOptions): Promise<ExternalLocation> {
+    const { includeBrowse } = options || {};
     try {
-      return fromBinary(ExternalLocationSchema, await this.inner.get());
+      return fromBinary(ExternalLocationSchema, await this.inner.get(includeBrowse));
     } catch (e) { throw parseNativeError(e); }
   }
 
@@ -1013,9 +1029,10 @@ export class FunctionClient {
      * the caller must be a metastore admin, the owner of the function, or have SELECT on
      * the function.
      */
-  async get(): Promise<Function$> {
+  async get(options?: GetFunctionOptions): Promise<Function$> {
+    const { includeBrowse } = options || {};
     try {
-      return fromBinary(FunctionSchema, await this.inner.get());
+      return fromBinary(FunctionSchema, await this.inner.get(includeBrowse));
     } catch (e) { throw parseNativeError(e); }
   }
 
@@ -1229,9 +1246,10 @@ export class SchemaClient {
      * The caller must be a metastore admin, the owner of the schema,
      * or a user that has the USE_SCHEMA privilege on the schema.
      */
-  async get(): Promise<Schema> {
+  async get(options?: GetSchemaOptions): Promise<Schema> {
+    const { includeBrowse } = options || {};
     try {
-      return fromBinary(SchemaSchema, await this.inner.get());
+      return fromBinary(SchemaSchema, await this.inner.get(includeBrowse));
     } catch (e) { throw parseNativeError(e); }
   }
 

@@ -86,6 +86,9 @@ message GetSchemaRequest {
     (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
     (google.api.field_behavior) = REQUIRED
   ];
+
+  // Whether to include schemas in the response for which the principal can only access selective metadata for
+  optional bool include_browse = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Update a Schema

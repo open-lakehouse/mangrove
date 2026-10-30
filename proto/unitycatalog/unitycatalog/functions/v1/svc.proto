@@ -73,6 +73,9 @@ message GetFunctionRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "unitycatalog.io/Function"}
   ];
+
+  // Whether to include functions in the response for which the principal can only access selective metadata for
+  optional bool include_browse = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Update a function

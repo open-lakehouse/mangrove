@@ -2254,6 +2254,12 @@ export interface components {
             readonly updated_at?: string;
             /** @description Username of user who last modified the function. */
             readonly updated_by?: string;
+            /**
+             * @description Indicates whether the principal is limited to retrieving metadata
+             *      for the associated object through the BROWSE privilege when include_browse
+             *      is enabled in the request.
+             */
+            readonly browse_only?: boolean;
         };
         /**
          * Function Arg
@@ -3004,6 +3010,12 @@ export interface components {
          * @description A schema is a namespace within a catalog that contains tables.
          */
         SchemaInfo: {
+            /**
+             * @description Indicates whether the principal is limited to retrieving metadata
+             *      for the associated object through the BROWSE privilege when include_browse
+             *      is enabled in the request.
+             */
+            browse_only?: boolean;
             /** @description Name of parent catalog. */
             catalog_name: string;
             /** @description User-provided free-form text description. */
@@ -4653,7 +4665,10 @@ export interface operations {
     };
     GetExternalLocation: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Whether to include external locations in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+            };
             header?: never;
             path: {
                 /** @description Name of external location. */
@@ -4831,7 +4846,10 @@ export interface operations {
     };
     GetFunction: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Whether to include functions in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+            };
             header?: never;
             path: {
                 /** @description The fully-qualified name of the function (three-level name: catalog.schema.function). */
@@ -5992,7 +6010,10 @@ export interface operations {
     };
     GetSchema: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Whether to include schemas in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+            };
             header?: never;
             path: {
                 /**

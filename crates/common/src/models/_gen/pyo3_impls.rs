@@ -5754,11 +5754,18 @@ pub struct PyGetExternalLocationRequest(
 #[::pyo3::pymethods]
 impl PyGetExternalLocationRequest {
     #[new]
-    #[pyo3(signature = (name = None))]
-    fn new(name: ::core::option::Option<::std::string::String>) -> Self {
+    #[pyo3(signature = (name = None, include_browse = None))]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        include_browse: ::core::option::Option<bool>,
+    ) -> Self {
         let mut inner = <super::external_locations::v1::GetExternalLocationRequest as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
             inner.name = value;
+        }
+        {
+            let value = include_browse;
+            inner.include_browse = value;
         }
         Self(inner)
     }
@@ -5766,9 +5773,17 @@ impl PyGetExternalLocationRequest {
     fn name(&self) -> ::std::string::String {
         self.0.name.clone()
     }
+    #[getter]
+    fn include_browse(&self) -> ::core::option::Option<bool> {
+        self.0.include_browse
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
+    }
+    #[setter(include_browse)]
+    fn set_include_browse(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_browse = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -6573,7 +6588,8 @@ impl PyFunction {
             created_at = None,
             created_by = None,
             updated_at = None,
-            updated_by = None
+            updated_by = None,
+            browse_only = None
         )
     )]
     fn new(
@@ -6603,6 +6619,7 @@ impl PyFunction {
         created_by: ::core::option::Option<::std::string::String>,
         updated_at: ::core::option::Option<i64>,
         updated_by: ::core::option::Option<::std::string::String>,
+        browse_only: ::core::option::Option<bool>,
     ) -> Self {
         let mut inner = <super::functions::v1::Function as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
@@ -6710,6 +6727,10 @@ impl PyFunction {
         {
             let value = updated_by;
             inner.updated_by = value;
+        }
+        {
+            let value = browse_only;
+            inner.browse_only = value;
         }
         Self(inner)
     }
@@ -6829,6 +6850,10 @@ impl PyFunction {
     fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
         self.0.updated_by.clone()
     }
+    #[getter]
+    fn browse_only(&self) -> ::core::option::Option<bool> {
+        self.0.browse_only
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
@@ -6946,6 +6971,10 @@ impl PyFunction {
     #[setter(updated_by)]
     fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.updated_by = value;
+    }
+    #[setter(browse_only)]
+    fn set_browse_only(&mut self, value: ::core::option::Option<bool>) {
+        self.0.browse_only = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -7236,12 +7265,19 @@ pub struct PyGetFunctionRequest(pub super::functions::v1::GetFunctionRequest);
 #[::pyo3::pymethods]
 impl PyGetFunctionRequest {
     #[new]
-    #[pyo3(signature = (name = None))]
-    fn new(name: ::core::option::Option<::std::string::String>) -> Self {
+    #[pyo3(signature = (name = None, include_browse = None))]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        include_browse: ::core::option::Option<bool>,
+    ) -> Self {
         let mut inner =
             <super::functions::v1::GetFunctionRequest as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
             inner.name = value;
+        }
+        {
+            let value = include_browse;
+            inner.include_browse = value;
         }
         Self(inner)
     }
@@ -7249,9 +7285,17 @@ impl PyGetFunctionRequest {
     fn name(&self) -> ::std::string::String {
         self.0.name.clone()
     }
+    #[getter]
+    fn include_browse(&self) -> ::core::option::Option<bool> {
+        self.0.include_browse
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
+    }
+    #[setter(include_browse)]
+    fn set_include_browse(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_browse = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -12229,12 +12273,19 @@ pub struct PyGetSchemaRequest(pub super::schemas::v1::GetSchemaRequest);
 #[::pyo3::pymethods]
 impl PyGetSchemaRequest {
     #[new]
-    #[pyo3(signature = (full_name = None))]
-    fn new(full_name: ::core::option::Option<::std::string::String>) -> Self {
+    #[pyo3(signature = (full_name = None, include_browse = None))]
+    fn new(
+        full_name: ::core::option::Option<::std::string::String>,
+        include_browse: ::core::option::Option<bool>,
+    ) -> Self {
         let mut inner =
             <super::schemas::v1::GetSchemaRequest as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = full_name {
             inner.full_name = value;
+        }
+        {
+            let value = include_browse;
+            inner.include_browse = value;
         }
         Self(inner)
     }
@@ -12242,9 +12293,17 @@ impl PyGetSchemaRequest {
     fn full_name(&self) -> ::std::string::String {
         self.0.full_name.clone()
     }
+    #[getter]
+    fn include_browse(&self) -> ::core::option::Option<bool> {
+        self.0.include_browse
+    }
     #[setter(full_name)]
     fn set_full_name(&mut self, value: ::std::string::String) {
         self.0.full_name = value;
+    }
+    #[setter(include_browse)]
+    fn set_include_browse(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_browse = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -12429,7 +12488,8 @@ impl PySchema {
             updated_by = None,
             schema_id = None,
             storage_root = None,
-            storage_location = None
+            storage_location = None,
+            browse_only = None
         )
     )]
     fn new(
@@ -12448,6 +12508,7 @@ impl PySchema {
         schema_id: ::core::option::Option<::std::string::String>,
         storage_root: ::core::option::Option<::std::string::String>,
         storage_location: ::core::option::Option<::std::string::String>,
+        browse_only: ::core::option::Option<bool>,
     ) -> Self {
         let mut inner = <super::schemas::v1::Schema as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
@@ -12497,6 +12558,10 @@ impl PySchema {
         {
             let value = storage_location;
             inner.storage_location = value;
+        }
+        {
+            let value = browse_only;
+            inner.browse_only = value;
         }
         Self(inner)
     }
@@ -12554,6 +12619,10 @@ impl PySchema {
     fn storage_location(&self) -> ::core::option::Option<::std::string::String> {
         self.0.storage_location.clone()
     }
+    #[getter]
+    fn browse_only(&self) -> ::core::option::Option<bool> {
+        self.0.browse_only
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
@@ -12608,6 +12677,10 @@ impl PySchema {
     #[setter(storage_location)]
     fn set_storage_location(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.storage_location = value;
+    }
+    #[setter(browse_only)]
+    fn set_browse_only(&mut self, value: ::core::option::Option<bool>) {
+        self.0.browse_only = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)

@@ -80,6 +80,9 @@ message GetExternalLocationRequest {
     (buf.validate.field).string.min_len = 3,
     (google.api.field_behavior) = REQUIRED
   ];
+
+  // Whether to include external locations in the response for which the principal can only access selective metadata for
+  optional bool include_browse = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Update an external location

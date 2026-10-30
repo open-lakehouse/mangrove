@@ -987,6 +987,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: include_browse
+          in: query
+          description: Whether to include external locations in the response for which the principal can only access selective metadata for
+          schema:
+            type: boolean
       responses:
         "200":
           description: OK
@@ -1159,6 +1164,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: include_browse
+          in: query
+          description: Whether to include functions in the response for which the principal can only access selective metadata for
+          schema:
+            type: boolean
       responses:
         "200":
           description: OK
@@ -2272,6 +2282,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: include_browse
+          in: query
+          description: Whether to include schemas in the response for which the principal can only access selective metadata for
+          schema:
+            type: boolean
       responses:
         "200":
           description: OK
@@ -5232,6 +5247,13 @@ components:
           readOnly: true
           type: string
           description: Username of user who last modified the function.
+        browse_only:
+          readOnly: true
+          type: boolean
+          description: |-
+            Indicates whether the principal is limited to retrieving metadata
+             for the associated object through the BROWSE privilege when include_browse
+             is enabled in the request.
       description: A User-Defined Function (UDF) registered under a catalog + schema hierarchy.
       additionalProperties: false
       title: Function
@@ -6599,6 +6621,12 @@ components:
       additionalProperties: false
       description: A schema is a namespace within a catalog that contains tables.
       properties:
+        browse_only:
+          description: |-
+            Indicates whether the principal is limited to retrieving metadata
+             for the associated object through the BROWSE privilege when include_browse
+             is enabled in the request.
+          type: boolean
         catalog_name:
           description: Name of parent catalog.
           type: string

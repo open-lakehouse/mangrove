@@ -65,7 +65,11 @@ impl ExternalLocationServiceClient {
         request: &GetExternalLocationRequest,
     ) -> Result<ExternalLocation> {
         let formatted_path = format!("external-locations/{}", request.name);
-        let url = self.base_url.join(&formatted_path)?;
+        let mut url = self.base_url.join(&formatted_path)?;
+        if let Some(ref value) = request.include_browse {
+            url.query_pairs_mut()
+                .append_pair("include_browse", &value.to_string());
+        }
         let response = self.client.get(url).send().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);

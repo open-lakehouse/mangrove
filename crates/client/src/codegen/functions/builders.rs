@@ -129,6 +129,11 @@ impl GetFunctionBuilder {
         };
         Self { client, request }
     }
+    /// Whether to include functions in the response for which the principal can only access selective metadata for
+    pub fn with_include_browse(mut self, include_browse: impl Into<Option<bool>>) -> Self {
+        self.request.include_browse = include_browse.into();
+        self
+    }
 }
 impl IntoFuture for GetFunctionBuilder {
     type Output = Result<Function>;

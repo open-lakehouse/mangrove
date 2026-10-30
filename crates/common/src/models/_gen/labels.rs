@@ -1979,6 +1979,10 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
                 name: "updated_by",
                 role: ::olai_store::FieldRole::Managed,
             },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "browse_only",
+                role: ::olai_store::FieldRole::Data,
+            },
         ],
         path_names: &["catalog_name", "schema_name", "name"],
         parent_label: Some(ObjectLabel::Catalog),
@@ -2343,6 +2347,10 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
             },
             ::olai_store::ResourceFieldDescriptor {
                 name: "storage_location",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "browse_only",
                 role: ::olai_store::FieldRole::Data,
             },
         ],

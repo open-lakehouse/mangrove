@@ -130,6 +130,17 @@ pub struct Schema {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub storage_location: ::core::option::Option<::buffa::alloc::string::String>,
+    /// Indicates whether the principal is limited to retrieving metadata
+    /// for the associated object through the BROWSE privilege when include_browse
+    /// is enabled in the request.
+    ///
+    /// Field 14: `browse_only`
+    #[serde(
+        rename = "browse_only",
+        alias = "browseOnly",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub browse_only: ::core::option::Option<bool>,
     #[serde(skip)]
     #[doc(hidden)]
     pub __buffa_unknown_fields: ::buffa::UnknownFields,
@@ -150,6 +161,7 @@ impl ::core::fmt::Debug for Schema {
             .field("schema_id", &self.schema_id)
             .field("storage_root", &self.storage_root)
             .field("storage_location", &self.storage_location)
+            .field("browse_only", &self.browse_only)
             .finish()
     }
 }
@@ -245,6 +257,13 @@ impl Schema {
         self.storage_location = Some(value.into());
         self
     }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::browse_only`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_browse_only(mut self, value: bool) -> Self {
+        self.browse_only = Some(value);
+        self
+    }
 }
 impl ::buffa::DefaultInstance for Schema {
     fn default_instance() -> &'static Self {
@@ -312,6 +331,9 @@ impl ::buffa::Message for Schema {
         }
         if let Some(ref v) = self.storage_location {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        if self.browse_only.is_some() {
+            size += 1u32 + ::buffa::types::BOOL_ENCODED_LEN as u32;
         }
         size += self.__buffa_unknown_fields.encoded_len() as u32;
         size
@@ -434,6 +456,11 @@ impl ::buffa::Message for Schema {
                 )
                 .encode(buf);
             ::buffa::types::encode_string(v, buf);
+        }
+        if let Some(v) = self.browse_only {
+            ::buffa::encoding::Tag::new(14u32, ::buffa::encoding::WireType::Varint)
+                .encode(buf);
+            ::buffa::types::encode_bool(v, buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
     }
@@ -666,6 +693,18 @@ impl ::buffa::Message for Schema {
                     buf,
                 )?;
             }
+            14u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 14u32,
+                        expected: 0u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.browse_only = ::core::option::Option::Some(
+                    ::buffa::types::decode_bool(buf)?,
+                );
+            }
             _ => {
                 self.__buffa_unknown_fields
                     .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
@@ -687,6 +726,7 @@ impl ::buffa::Message for Schema {
         self.schema_id = ::core::option::Option::None;
         self.storage_root = ::core::option::Option::None;
         self.storage_location = ::core::option::Option::None;
+        self.browse_only = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
 }
@@ -1575,13 +1615,25 @@ pub struct GetSchemaRequest {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
     pub full_name: ::buffa::alloc::string::String,
+    /// Whether to include schemas in the response for which the principal can only access selective metadata for
+    ///
+    /// Field 2: `include_browse`
+    #[serde(
+        rename = "include_browse",
+        alias = "includeBrowse",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub include_browse: ::core::option::Option<bool>,
     #[serde(skip)]
     #[doc(hidden)]
     pub __buffa_unknown_fields: ::buffa::UnknownFields,
 }
 impl ::core::fmt::Debug for GetSchemaRequest {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-        f.debug_struct("GetSchemaRequest").field("full_name", &self.full_name).finish()
+        f.debug_struct("GetSchemaRequest")
+            .field("full_name", &self.full_name)
+            .field("include_browse", &self.include_browse)
+            .finish()
     }
 }
 impl GetSchemaRequest {
@@ -1590,6 +1642,15 @@ impl GetSchemaRequest {
     ///
     /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
     pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.schemas.v1.GetSchemaRequest";
+}
+impl GetSchemaRequest {
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::include_browse`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_include_browse(mut self, value: bool) -> Self {
+        self.include_browse = Some(value);
+        self
+    }
 }
 impl ::buffa::DefaultInstance for GetSchemaRequest {
     fn default_instance() -> &'static Self {
@@ -1617,6 +1678,9 @@ impl ::buffa::Message for GetSchemaRequest {
         if !self.full_name.is_empty() {
             size += 1u32 + ::buffa::types::string_encoded_len(&self.full_name) as u32;
         }
+        if self.include_browse.is_some() {
+            size += 1u32 + ::buffa::types::BOOL_ENCODED_LEN as u32;
+        }
         size += self.__buffa_unknown_fields.encoded_len() as u32;
         size
     }
@@ -1634,6 +1698,11 @@ impl ::buffa::Message for GetSchemaRequest {
                 )
                 .encode(buf);
             ::buffa::types::encode_string(&self.full_name, buf);
+        }
+        if let Some(v) = self.include_browse {
+            ::buffa::encoding::Tag::new(2u32, ::buffa::encoding::WireType::Varint)
+                .encode(buf);
+            ::buffa::types::encode_bool(v, buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
     }
@@ -1658,6 +1727,18 @@ impl ::buffa::Message for GetSchemaRequest {
                 }
                 ::buffa::types::merge_string(&mut self.full_name, buf)?;
             }
+            2u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 2u32,
+                        expected: 0u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.include_browse = ::core::option::Option::Some(
+                    ::buffa::types::decode_bool(buf)?,
+                );
+            }
             _ => {
                 self.__buffa_unknown_fields
                     .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
@@ -1667,6 +1748,7 @@ impl ::buffa::Message for GetSchemaRequest {
     }
     fn clear(&mut self) {
         self.full_name.clear();
+        self.include_browse = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
 }
@@ -2300,6 +2382,12 @@ pub mod __buffa {
             ///
             /// Field 13: `storage_location`
             pub storage_location: ::core::option::Option<&'a str>,
+            /// Indicates whether the principal is limited to retrieving metadata
+            /// for the associated object through the BROWSE privilege when include_browse
+            /// is enabled in the request.
+            ///
+            /// Field 14: `browse_only`
+            pub browse_only: ::core::option::Option<bool>,
             pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
         }
         impl<'a> SchemaView<'a> {
@@ -2492,6 +2580,18 @@ pub mod __buffa {
                                 ::buffa::types::borrow_str(&mut cur)?,
                             );
                         }
+                        14u32 => {
+                            if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 14u32,
+                                    expected: 0u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.browse_only = Some(
+                                ::buffa::types::decode_bool(&mut cur)?,
+                            );
+                        }
                         5u32 => {
                             if tag.wire_type()
                                 != ::buffa::encoding::WireType::LengthDelimited
@@ -2599,6 +2699,7 @@ pub mod __buffa {
                     schema_id: self.schema_id.map(|s| s.to_string()),
                     storage_root: self.storage_root.map(|s| s.to_string()),
                     storage_location: self.storage_location.map(|s| s.to_string()),
+                    browse_only: self.browse_only,
                     __buffa_unknown_fields: self
                         .__buffa_unknown_fields
                         .to_owned()
@@ -2663,6 +2764,9 @@ pub mod __buffa {
                 }
                 if let Some(ref v) = self.storage_location {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if self.browse_only.is_some() {
+                    size += 1u32 + ::buffa::types::BOOL_ENCODED_LEN as u32;
                 }
                 size += self.__buffa_unknown_fields.encoded_len() as u32;
                 size
@@ -2794,6 +2898,14 @@ pub mod __buffa {
                         .encode(buf);
                     ::buffa::types::encode_string(v, buf);
                 }
+                if let Some(v) = self.browse_only {
+                    ::buffa::encoding::Tag::new(
+                            14u32,
+                            ::buffa::encoding::WireType::Varint,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_bool(v, buf);
+                }
                 self.__buffa_unknown_fields.write_to(buf);
             }
         }
@@ -2888,6 +3000,9 @@ pub mod __buffa {
                 }
                 if let ::core::option::Option::Some(__v) = self.storage_location {
                     __map.serialize_entry("storage_location", __v)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.browse_only {
+                    __map.serialize_entry("browse_only", &__v)?;
                 }
                 __map.end()
             }
@@ -3089,6 +3204,15 @@ pub mod __buffa {
             #[must_use]
             pub fn storage_location(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().storage_location
+            }
+            /// Indicates whether the principal is limited to retrieving metadata
+            /// for the associated object through the BROWSE privilege when include_browse
+            /// is enabled in the request.
+            ///
+            /// Field 14: `browse_only`
+            #[must_use]
+            pub fn browse_only(&self) -> ::core::option::Option<bool> {
+                self.0.reborrow().browse_only
             }
         }
         impl ::core::convert::From<::buffa::OwnedView<SchemaView<'static>>>
@@ -4481,6 +4605,10 @@ pub mod __buffa {
             ///
             /// Field 1: `full_name`
             pub full_name: &'a str,
+            /// Whether to include schemas in the response for which the principal can only access selective metadata for
+            ///
+            /// Field 2: `include_browse`
+            pub include_browse: ::core::option::Option<bool>,
             pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
         }
         impl<'a> GetSchemaRequestView<'a> {
@@ -4533,6 +4661,18 @@ pub mod __buffa {
                             }
                             view.full_name = ::buffa::types::borrow_str(&mut cur)?;
                         }
+                        2u32 => {
+                            if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 2u32,
+                                    expected: 0u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.include_browse = Some(
+                                ::buffa::types::decode_bool(&mut cur)?,
+                            );
+                        }
                         _ => {
                             ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
                             let span_len = before_tag.len() - cur.len();
@@ -4570,6 +4710,7 @@ pub mod __buffa {
                 let _ = __buffa_src;
                 super::super::GetSchemaRequest {
                     full_name: self.full_name.to_string(),
+                    include_browse: self.include_browse,
                     __buffa_unknown_fields: self
                         .__buffa_unknown_fields
                         .to_owned()
@@ -4590,6 +4731,9 @@ pub mod __buffa {
                         += 1u32
                             + ::buffa::types::string_encoded_len(&self.full_name) as u32;
                 }
+                if self.include_browse.is_some() {
+                    size += 1u32 + ::buffa::types::BOOL_ENCODED_LEN as u32;
+                }
                 size += self.__buffa_unknown_fields.encoded_len() as u32;
                 size
             }
@@ -4608,6 +4752,14 @@ pub mod __buffa {
                         )
                         .encode(buf);
                     ::buffa::types::encode_string(&self.full_name, buf);
+                }
+                if let Some(v) = self.include_browse {
+                    ::buffa::encoding::Tag::new(
+                            2u32,
+                            ::buffa::encoding::WireType::Varint,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_bool(v, buf);
                 }
                 self.__buffa_unknown_fields.write_to(buf);
             }
@@ -4632,6 +4784,9 @@ pub mod __buffa {
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.full_name) {
                     __map.serialize_entry("full_name", self.full_name)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.include_browse {
+                    __map.serialize_entry("include_browse", &__v)?;
                 }
                 __map.end()
             }
@@ -4746,6 +4901,13 @@ pub mod __buffa {
             #[must_use]
             pub fn full_name(&self) -> &'_ str {
                 self.0.reborrow().full_name
+            }
+            /// Whether to include schemas in the response for which the principal can only access selective metadata for
+            ///
+            /// Field 2: `include_browse`
+            #[must_use]
+            pub fn include_browse(&self) -> ::core::option::Option<bool> {
+                self.0.reborrow().include_browse
             }
         }
         impl ::core::convert::From<::buffa::OwnedView<GetSchemaRequestView<'static>>>
