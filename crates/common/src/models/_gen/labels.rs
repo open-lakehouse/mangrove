@@ -2200,7 +2200,7 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
                 role: ::olai_store::FieldRole::Data,
             },
             ::olai_store::ResourceFieldDescriptor {
-                name: "properties",
+                name: "properties_kvpairs",
                 role: ::olai_store::FieldRole::Data,
             },
             ::olai_store::ResourceFieldDescriptor {

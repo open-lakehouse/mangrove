@@ -74,11 +74,11 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateRecipientRequest {
             .extract()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        let (new_name, owner, comment, properties, expiration_time) = (
+        let (new_name, owner, comment, properties_kvpairs, expiration_time) = (
             body.new_name,
             body.owner,
             body.comment,
-            body.properties,
+            body.properties_kvpairs,
             body.expiration_time,
         );
         Ok(UpdateRecipientRequest {
@@ -86,7 +86,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateRecipientRequest {
             new_name,
             owner,
             comment,
-            properties,
+            properties_kvpairs,
             expiration_time,
             ..Default::default()
         })

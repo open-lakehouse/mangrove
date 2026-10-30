@@ -24,7 +24,7 @@ impl PyRecipientClient {
             new_name = None,
             owner = None,
             comment = None,
-            properties = None,
+            properties_kvpairs = None,
             expiration_time = None
         )
     )]
@@ -34,16 +34,15 @@ impl PyRecipientClient {
         new_name: Option<String>,
         owner: Option<String>,
         comment: Option<String>,
-        properties: Option<HashMap<String, String>>,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
         expiration_time: Option<i64>,
     ) -> PyResult<PyRecipient> {
         let mut request = self.client.update();
         request = request.with_new_name(new_name);
         request = request.with_owner(owner);
         request = request.with_comment(comment);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
+        request =
+            request.with_properties_kvpairs(properties_kvpairs.map(::core::convert::Into::into));
         request = request.with_expiration_time(expiration_time);
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PyRecipient::from(result))

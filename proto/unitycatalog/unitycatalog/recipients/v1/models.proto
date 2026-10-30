@@ -17,6 +17,12 @@ enum AuthenticationType {
   OAUTH_CLIENT_CREDENTIALS = 2;
 }
 
+// An object with the properties of a securable as key-value pairs.
+message SecurablePropertiesKvPairs {
+  // A map of key-value properties attached to the securable.
+  map<string, string> properties = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
 message RecipientToken {
   // Unique ID of the recipient token.
   string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -66,8 +72,8 @@ message Recipient {
   // Description about the recipient.
   optional string comment = 4 [(google.api.field_behavior) = OPTIONAL];
 
-  // A map of key-value properties attached to the securable.
-  map<string, string> properties = 6;
+  // Recipient properties as map of string key-value pairs.
+  optional SecurablePropertiesKvPairs properties_kvpairs = 6 [(google.api.field_behavior) = OPTIONAL];
 
   // Time at which this recipient was created, in epoch milliseconds.
   optional int64 created_at = 7 [(google.api.field_behavior) = OUTPUT_ONLY];

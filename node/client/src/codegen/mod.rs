@@ -752,7 +752,6 @@ impl NapiUnityCatalogClient {
         authentication_type: i32,
         owner: String,
         comment: Option<String>,
-        properties: Option<HashMap<String, String>>,
         expiration_time: Option<i64>,
     ) -> napi::Result<Buffer> {
         let mut request = self.client.create_recipient(
@@ -763,9 +762,6 @@ impl NapiUnityCatalogClient {
             owner,
         );
         request = request.with_comment(comment);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
         request = request.with_expiration_time(expiration_time);
         request
             .await

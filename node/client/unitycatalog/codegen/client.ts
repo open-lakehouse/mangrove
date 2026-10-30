@@ -559,11 +559,6 @@ export interface ListRecipientsOptions {
 export interface CreateRecipientOptions {
   /** Description about the recipient. */
   comment?: string;
-  /** Recipient properties as map of string key-value pairs.
-   * 
-   *  When provided in update request, the specified properties will override the existing properties.
-   *  To add and remove properties, one would need to perform a read-modify-write. */
-  properties?: Record<string, string>;
   /** Expiration timestamp of the token, in epoch milliseconds. */
   expirationTime?: number;
 }
@@ -575,11 +570,6 @@ export interface UpdateRecipientOptions {
   owner?: string;
   /** Description about the recipient. */
   comment?: string;
-  /** Recipient properties as map of string key-value pairs.
-   * 
-   *  When provided in update request, the specified properties will override the existing properties.
-   *  To add and remove properties, one would need to perform a read-modify-write. */
-  properties?: Record<string, string>;
   /** Expiration timestamp of the token, in epoch milliseconds. */
   expirationTime?: number;
 }
@@ -1160,9 +1150,9 @@ export class RecipientClient {
      * Update a recipient.
      */
   async update(options?: UpdateRecipientOptions): Promise<Recipient> {
-    const { newName, owner, comment, properties, expirationTime } = options || {};
+    const { newName, owner, comment, expirationTime } = options || {};
     try {
-      return fromBinary(RecipientSchema, await this.inner.update(newName, owner, comment, properties, expirationTime));
+      return fromBinary(RecipientSchema, await this.inner.update(newName, owner, comment, expirationTime));
     } catch (e) { throw parseNativeError(e); }
   }
 
@@ -1898,9 +1888,9 @@ export class UnityCatalogClient {
      * Create a new recipient.
      */
   async createRecipient(name: string, authenticationType: number, owner: string, options?: CreateRecipientOptions): Promise<Recipient> {
-    const { comment, properties, expirationTime } = options || {};
+    const { comment, expirationTime } = options || {};
     try {
-      return fromBinary(RecipientSchema, await this.inner.createRecipient(name, authenticationType, owner, comment, properties, expirationTime));
+      return fromBinary(RecipientSchema, await this.inner.createRecipient(name, authenticationType, owner, comment, expirationTime));
     } catch (e) { throw parseNativeError(e); }
   }
 

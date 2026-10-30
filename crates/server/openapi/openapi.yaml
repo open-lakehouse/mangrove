@@ -4408,14 +4408,12 @@ components:
         comment:
           type: string
           description: Description about the recipient.
-        properties:
-          type: object
-          additionalProperties:
-            type: string
-          description: |-
-            When provided in update request, the specified properties will override the existing properties.
-             To add and remove properties, one would need to perform a read-modify-write.
-          title: Recipient properties as map of string key-value pairs.
+        properties_kvpairs:
+          allOf:
+            - $ref: "#/components/schemas/SecurablePropertiesKvPairs"
+          description: An object with the properties of a securable as key-value pairs.
+          additionalProperties: false
+          title: Securable Properties Kv Pairs
         expiration_time:
           type: string
           description: Expiration timestamp of the token, in epoch milliseconds.
@@ -6435,11 +6433,12 @@ components:
         comment:
           type: string
           description: Description about the recipient.
-        properties:
-          type: object
-          additionalProperties:
-            type: string
-          description: A map of key-value properties attached to the securable.
+        properties_kvpairs:
+          allOf:
+            - $ref: "#/components/schemas/SecurablePropertiesKvPairs"
+          description: An object with the properties of a securable as key-value pairs.
+          additionalProperties: false
+          title: Securable Properties Kv Pairs
         created_at:
           readOnly: true
           type: string
@@ -6657,6 +6656,19 @@ components:
         - catalog_name
         - full_name
       title: Schema
+    SecurablePropertiesKvPairs:
+      required:
+        - properties
+      type: object
+      properties:
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+          description: A map of key-value properties attached to the securable.
+      description: An object with the properties of a securable as key-value pairs.
+      additionalProperties: false
+      title: Securable Properties Kv Pairs
     Share:
       required:
         - name
@@ -7488,14 +7500,12 @@ components:
         comment:
           type: string
           description: Description about the recipient.
-        properties:
-          type: object
-          additionalProperties:
-            type: string
-          description: |-
-            When provided in update request, the specified properties will override the existing properties.
-             To add and remove properties, one would need to perform a read-modify-write.
-          title: Recipient properties as map of string key-value pairs.
+        properties_kvpairs:
+          allOf:
+            - $ref: "#/components/schemas/SecurablePropertiesKvPairs"
+          description: An object with the properties of a securable as key-value pairs.
+          additionalProperties: false
+          title: Securable Properties Kv Pairs
         expiration_time:
           type: string
           description: Expiration timestamp of the token, in epoch milliseconds.

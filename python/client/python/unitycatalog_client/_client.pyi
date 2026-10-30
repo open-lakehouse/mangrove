@@ -1265,8 +1265,8 @@ class Recipient:
     """The name of the recipient."""
     owner: Optional[str]
     """Username of the recipient owner."""
-    properties: Dict[str, str]
-    """A map of key-value properties attached to the securable."""
+    properties_kvpairs: Optional[SecurablePropertiesKvPairs]
+    """Recipient properties as map of string key-value pairs."""
     tokens: List[RecipientToken]
     """This field is only present when the authentication_type is TOKEN."""
     updated_at: Optional[int]
@@ -1283,7 +1283,7 @@ class Recipient:
         id: Optional[str] = None,
         name: Optional[str] = None,
         owner: Optional[str] = None,
-        properties: Optional[Dict[str, str]] = None,
+        properties_kvpairs: Optional[SecurablePropertiesKvPairs] = None,
         tokens: Optional[List[RecipientToken]] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
@@ -1433,6 +1433,14 @@ class Schema:
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
     ) -> None: ...
+
+class SecurablePropertiesKvPairs:
+    """An object with the properties of a securable as key-value pairs."""
+
+    properties: Dict[str, str]
+    """A map of key-value properties attached to the securable."""
+
+    def __init__(self, properties: Optional[Dict[str, str]] = None) -> None: ...
 
 class Share:
     comment: Optional[str]
@@ -2510,7 +2518,7 @@ class RecipientClient:
         new_name: Optional[str] = None,
         owner: Optional[str] = None,
         comment: Optional[str] = None,
-        properties: Optional[Dict[str, str]] = None,
+        properties_kvpairs: Optional[SecurablePropertiesKvPairs] = None,
         expiration_time: Optional[int] = None,
     ) -> Recipient:
         """
@@ -2521,9 +2529,10 @@ class RecipientClient:
             new_name: New name for the recipient
             owner: Username of the recipient owner.
             comment: Description about the recipient.
-            properties: Recipient properties as map of string key-value pairs. When provided in update
-                        request, the specified properties will override the existing properties. To add and
-                        remove properties, one would need to perform a read-modify-write.
+            properties_kvpairs: Recipient properties as map of string key-value pairs. When provided
+                                in update request, the specified properties will override the existing
+                                properties. To add and remove properties, one would need to perform a read-
+                                modify-write.
             expiration_time: Expiration timestamp of the token, in epoch milliseconds.
 
 
@@ -3173,7 +3182,7 @@ class UnityCatalogClient:
         authentication_type: AuthenticationType,
         owner: str,
         comment: Optional[str] = None,
-        properties: Optional[Dict[str, str]] = None,
+        properties_kvpairs: Optional[SecurablePropertiesKvPairs] = None,
         expiration_time: Optional[int] = None,
     ) -> Recipient:
         """
@@ -3185,9 +3194,10 @@ class UnityCatalogClient:
             authentication_type: The delta sharing authentication type.
             owner: Username of the recipient owner.
             comment: Description about the recipient.
-            properties: Recipient properties as map of string key-value pairs. When provided in update
-                        request, the specified properties will override the existing properties. To add and
-                        remove properties, one would need to perform a read-modify-write.
+            properties_kvpairs: Recipient properties as map of string key-value pairs. When provided
+                                in update request, the specified properties will override the existing
+                                properties. To add and remove properties, one would need to perform a read-
+                                modify-write.
             expiration_time: Expiration timestamp of the token, in epoch milliseconds.
 
 

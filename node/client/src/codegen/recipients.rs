@@ -27,16 +27,12 @@ impl NapiRecipientClient {
         new_name: Option<String>,
         owner: Option<String>,
         comment: Option<String>,
-        properties: Option<HashMap<String, String>>,
         expiration_time: Option<i64>,
     ) -> napi::Result<Buffer> {
         let mut request = self.client.update();
         request = request.with_new_name(new_name);
         request = request.with_owner(owner);
         request = request.with_comment(comment);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
         request = request.with_expiration_time(expiration_time);
         request
             .await

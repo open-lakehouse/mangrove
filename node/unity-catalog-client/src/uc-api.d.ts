@@ -1754,13 +1754,10 @@ export interface components {
             /** @description Description about the recipient. */
             comment?: string;
             /**
-             * Recipient properties as map of string key-value pairs.
-             * @description When provided in update request, the specified properties will override the existing properties.
-             *      To add and remove properties, one would need to perform a read-modify-write.
+             * Securable Properties Kv Pairs
+             * @description An object with the properties of a securable as key-value pairs.
              */
-            properties?: {
-                [key: string]: string;
-            };
+            properties_kvpairs?: components["schemas"]["SecurablePropertiesKvPairs"];
             /** @description Expiration timestamp of the token, in epoch milliseconds. */
             expiration_time?: string;
         };
@@ -2926,10 +2923,11 @@ export interface components {
             owner?: string;
             /** @description Description about the recipient. */
             comment?: string;
-            /** @description A map of key-value properties attached to the securable. */
-            properties?: {
-                [key: string]: string;
-            };
+            /**
+             * Securable Properties Kv Pairs
+             * @description An object with the properties of a securable as key-value pairs.
+             */
+            properties_kvpairs?: components["schemas"]["SecurablePropertiesKvPairs"];
             /** @description Time at which this recipient was created, in epoch milliseconds. */
             readonly created_at?: string;
             /** @description Username of recipient creator. */
@@ -3045,6 +3043,16 @@ export interface components {
             updated_at?: number;
             /** @description Username of user who last modified schema. */
             updated_by?: string;
+        };
+        /**
+         * Securable Properties Kv Pairs
+         * @description An object with the properties of a securable as key-value pairs.
+         */
+        SecurablePropertiesKvPairs: {
+            /** @description A map of key-value properties attached to the securable. */
+            properties: {
+                [key: string]: string;
+            };
         };
         /**
          * Share
@@ -3538,13 +3546,10 @@ export interface components {
             /** @description Description about the recipient. */
             comment?: string;
             /**
-             * Recipient properties as map of string key-value pairs.
-             * @description When provided in update request, the specified properties will override the existing properties.
-             *      To add and remove properties, one would need to perform a read-modify-write.
+             * Securable Properties Kv Pairs
+             * @description An object with the properties of a securable as key-value pairs.
              */
-            properties?: {
-                [key: string]: string;
-            };
+            properties_kvpairs?: components["schemas"]["SecurablePropertiesKvPairs"];
             /** @description Expiration timestamp of the token, in epoch milliseconds. */
             expiration_time?: string;
         };

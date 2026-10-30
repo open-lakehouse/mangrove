@@ -24,7 +24,7 @@ impl<T: ResourceStore + Policy<RequestContext>> RecipientHandler<RequestContext>
             name: request.name,
             authentication_type: request.authentication_type,
             comment: request.comment,
-            properties: request.properties,
+            properties_kvpairs: request.properties_kvpairs,
             ..Default::default()
         };
 
@@ -107,11 +107,11 @@ impl<T: ResourceStore + Policy<RequestContext>> RecipientHandler<RequestContext>
             name: request.new_name.unwrap_or(request.name),
             owner: request.owner.or(current.owner),
             comment: request.comment.or(current.comment),
-            properties: if request.properties.is_empty() {
-                current.properties
-            } else {
-                request.properties
-            },
+            properties_kvpairs: request
+                .properties_kvpairs
+                .into_option()
+                .or(current.properties_kvpairs.into_option())
+                .into(),
             // Preserve all fields managed by the store.
             ..current
         };

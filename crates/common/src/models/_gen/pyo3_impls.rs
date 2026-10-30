@@ -10505,7 +10505,7 @@ impl PyCreateRecipientRequest {
             authentication_type = None,
             owner = None,
             comment = None,
-            properties = None,
+            properties_kvpairs = None,
             expiration_time = None
         )
     )]
@@ -10514,9 +10514,7 @@ impl PyCreateRecipientRequest {
         authentication_type: ::core::option::Option<PyAuthenticationType>,
         owner: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
-        properties: ::core::option::Option<
-            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-        >,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
         expiration_time: ::core::option::Option<i64>,
     ) -> Self {
         let mut inner =
@@ -10538,8 +10536,11 @@ impl PyCreateRecipientRequest {
             let value = comment;
             inner.comment = value;
         }
-        if let ::core::option::Option::Some(value) = properties {
-            inner.properties = value;
+        {
+            let value = properties_kvpairs;
+            inner.properties_kvpairs = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = expiration_time;
@@ -10564,10 +10565,12 @@ impl PyCreateRecipientRequest {
         self.0.comment.clone()
     }
     #[getter]
-    fn properties(
-        &self,
-    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
-        self.0.properties.clone()
+    fn properties_kvpairs(&self) -> ::core::option::Option<PySecurablePropertiesKvPairs> {
+        self.0
+            .properties_kvpairs
+            .clone()
+            .into_option()
+            .map(PySecurablePropertiesKvPairs::from)
     }
     #[getter]
     fn expiration_time(&self) -> ::core::option::Option<i64> {
@@ -10591,12 +10594,14 @@ impl PyCreateRecipientRequest {
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
     }
-    #[setter(properties)]
-    fn set_properties(
+    #[setter(properties_kvpairs)]
+    fn set_properties_kvpairs(
         &mut self,
-        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        value: ::core::option::Option<PySecurablePropertiesKvPairs>,
     ) {
-        self.0.properties = value;
+        self.0.properties_kvpairs = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(expiration_time)]
     fn set_expiration_time(&mut self, value: ::core::option::Option<i64>) {
@@ -10849,7 +10854,7 @@ impl PyRecipient {
             authentication_type = None,
             owner = None,
             comment = None,
-            properties = None,
+            properties_kvpairs = None,
             created_at = None,
             created_by = None,
             tokens = None,
@@ -10863,9 +10868,7 @@ impl PyRecipient {
         authentication_type: ::core::option::Option<PyAuthenticationType>,
         owner: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
-        properties: ::core::option::Option<
-            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-        >,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
         created_at: ::core::option::Option<i64>,
         created_by: ::core::option::Option<::std::string::String>,
         tokens: ::core::option::Option<::std::vec::Vec<PyRecipientToken>>,
@@ -10895,8 +10898,11 @@ impl PyRecipient {
             let value = comment;
             inner.comment = value;
         }
-        if let ::core::option::Option::Some(value) = properties {
-            inner.properties = value;
+        {
+            let value = properties_kvpairs;
+            inner.properties_kvpairs = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = created_at;
@@ -10940,10 +10946,12 @@ impl PyRecipient {
         self.0.comment.clone()
     }
     #[getter]
-    fn properties(
-        &self,
-    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
-        self.0.properties.clone()
+    fn properties_kvpairs(&self) -> ::core::option::Option<PySecurablePropertiesKvPairs> {
+        self.0
+            .properties_kvpairs
+            .clone()
+            .into_option()
+            .map(PySecurablePropertiesKvPairs::from)
     }
     #[getter]
     fn created_at(&self) -> ::core::option::Option<i64> {
@@ -10992,12 +11000,14 @@ impl PyRecipient {
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
     }
-    #[setter(properties)]
-    fn set_properties(
+    #[setter(properties_kvpairs)]
+    fn set_properties_kvpairs(
         &mut self,
-        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        value: ::core::option::Option<PySecurablePropertiesKvPairs>,
     ) {
-        self.0.properties = value;
+        self.0.properties_kvpairs = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(created_at)]
     fn set_created_at(&mut self, value: ::core::option::Option<i64>) {
@@ -11161,6 +11171,59 @@ impl ::core::convert::From<PyRecipientToken> for super::recipients::v1::Recipien
         value.0
     }
 }
+#[::pyo3::pyclass(name = "SecurablePropertiesKvPairs", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PySecurablePropertiesKvPairs(pub super::recipients::v1::SecurablePropertiesKvPairs);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PySecurablePropertiesKvPairs {
+    #[new]
+    #[pyo3(signature = (properties = None))]
+    fn new(
+        properties: ::core::option::Option<
+            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        >,
+    ) -> Self {
+        let mut inner = <super::recipients::v1::SecurablePropertiesKvPairs as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = properties {
+            inner.properties = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn properties(
+        &self,
+    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
+        self.0.properties.clone()
+    }
+    #[setter(properties)]
+    fn set_properties(
+        &mut self,
+        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+    ) {
+        self.0.properties = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::SecurablePropertiesKvPairs>
+    for PySecurablePropertiesKvPairs
+{
+    fn from(value: super::recipients::v1::SecurablePropertiesKvPairs) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PySecurablePropertiesKvPairs>
+    for super::recipients::v1::SecurablePropertiesKvPairs
+{
+    fn from(value: PySecurablePropertiesKvPairs) -> Self {
+        value.0
+    }
+}
 #[::pyo3::pyclass(name = "UpdateRecipientRequest", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyUpdateRecipientRequest(pub super::recipients::v1::UpdateRecipientRequest);
@@ -11174,7 +11237,7 @@ impl PyUpdateRecipientRequest {
             new_name = None,
             owner = None,
             comment = None,
-            properties = None,
+            properties_kvpairs = None,
             expiration_time = None
         )
     )]
@@ -11183,9 +11246,7 @@ impl PyUpdateRecipientRequest {
         new_name: ::core::option::Option<::std::string::String>,
         owner: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
-        properties: ::core::option::Option<
-            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-        >,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
         expiration_time: ::core::option::Option<i64>,
     ) -> Self {
         let mut inner =
@@ -11205,8 +11266,11 @@ impl PyUpdateRecipientRequest {
             let value = comment;
             inner.comment = value;
         }
-        if let ::core::option::Option::Some(value) = properties {
-            inner.properties = value;
+        {
+            let value = properties_kvpairs;
+            inner.properties_kvpairs = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = expiration_time;
@@ -11231,10 +11295,12 @@ impl PyUpdateRecipientRequest {
         self.0.comment.clone()
     }
     #[getter]
-    fn properties(
-        &self,
-    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
-        self.0.properties.clone()
+    fn properties_kvpairs(&self) -> ::core::option::Option<PySecurablePropertiesKvPairs> {
+        self.0
+            .properties_kvpairs
+            .clone()
+            .into_option()
+            .map(PySecurablePropertiesKvPairs::from)
     }
     #[getter]
     fn expiration_time(&self) -> ::core::option::Option<i64> {
@@ -11256,12 +11322,14 @@ impl PyUpdateRecipientRequest {
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
     }
-    #[setter(properties)]
-    fn set_properties(
+    #[setter(properties_kvpairs)]
+    fn set_properties_kvpairs(
         &mut self,
-        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        value: ::core::option::Option<PySecurablePropertiesKvPairs>,
     ) {
-        self.0.properties = value;
+        self.0.properties_kvpairs = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(expiration_time)]
     fn set_expiration_time(&mut self, value: ::core::option::Option<i64>) {

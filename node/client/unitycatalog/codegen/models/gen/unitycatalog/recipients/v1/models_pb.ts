@@ -13,7 +13,28 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file unitycatalog/recipients/v1/models.proto.
  */
 export const file_unitycatalog_recipients_v1_models: GenFile = /*@__PURE__*/
-  fileDesc("Cid1bml0eWNhdGFsb2cvcmVjaXBpZW50cy92MS9tb2RlbHMucHJvdG8SGnVuaXR5Y2F0YWxvZy5yZWNpcGllbnRzLnYxIsABCg5SZWNpcGllbnRUb2tlbhIPCgJpZBgBIAEoCUID4EEDEhcKCmNyZWF0ZWRfYXQYAiABKANCA+BBAxIXCgpjcmVhdGVkX2J5GAMgASgJQgPgQQMSGwoOYWN0aXZhdGlvbl91cmwYBCABKAlCA+BBAxIcCg9leHBpcmF0aW9uX3RpbWUYBSABKANCA+BBAxIXCgp1cGRhdGVkX2F0GAYgASgDQgPgQQMSFwoKdXBkYXRlZF9ieRgHIAEoCUID4EEDIpwFCglSZWNpcGllbnQSFwoCaWQYZCABKAlCBuBBA+BBCEgAiAEBEhEKBG5hbWUYASABKAlCA+BBAhJQChNhdXRoZW50aWNhdGlvbl90eXBlGAIgASgOMi4udW5pdHljYXRhbG9nLnJlY2lwaWVudHMudjEuQXV0aGVudGljYXRpb25UeXBlQgPgQQISFwoFb3duZXIYAyABKAlCA+BBAUgBiAEBEhkKB2NvbW1lbnQYBCABKAlCA+BBAUgCiAEBEkkKCnByb3BlcnRpZXMYBiADKAsyNS51bml0eWNhdGFsb2cucmVjaXBpZW50cy52MS5SZWNpcGllbnQuUHJvcGVydGllc0VudHJ5EhwKCmNyZWF0ZWRfYXQYByABKANCA+BBA0gDiAEBEhwKCmNyZWF0ZWRfYnkYCCABKAlCA+BBA0gEiAEBEj8KBnRva2VucxgJIAMoCzIqLnVuaXR5Y2F0YWxvZy5yZWNpcGllbnRzLnYxLlJlY2lwaWVudFRva2VuQgPgQQMSHAoKdXBkYXRlZF9hdBgKIAEoA0ID4EEDSAWIAQESHAoKdXBkYXRlZF9ieRgLIAEoCUID4EEDSAaIAQEaMQoPUHJvcGVydGllc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6TepBSgoZdW5pdHljYXRhbG9nLmlvL1JlY2lwaWVudBIWcmVjaXBpZW50cy97cmVjaXBpZW50fSoKcmVjaXBpZW50czIJcmVjaXBpZW50QgUKA19pZEIICgZfb3duZXJCCgoIX2NvbW1lbnRCDQoLX2NyZWF0ZWRfYXRCDQoLX2NyZWF0ZWRfYnlCDQoLX3VwZGF0ZWRfYXRCDQoLX3VwZGF0ZWRfYnkqYgoSQXV0aGVudGljYXRpb25UeXBlEiMKH0FVVEhFTlRJQ0FUSU9OX1RZUEVfVU5TUEVDSUZJRUQQABIJCgVUT0tFThABEhwKGE9BVVRIX0NMSUVOVF9DUkVERU5USUFMUxACQo8CCh5jb20udW5pdHljYXRhbG9nLnJlY2lwaWVudHMudjFCC01vZGVsc1Byb3RvUAFaVmdpdGh1Yi5jb20vZGVsdGEtaW5jdWJhdG9yL2RlbHRhLXNoYXJpbmctcnMvZ28vdW5pdHljYXRhbG9nL3JlY2lwaWVudHMvdjE7cmVjaXBpZW50c3YxogIDVVJYqgIaVW5pdHljYXRhbG9nLlJlY2lwaWVudHMuVjHKAhpVbml0eWNhdGFsb2dcUmVjaXBpZW50c1xWMeICJlVuaXR5Y2F0YWxvZ1xSZWNpcGllbnRzXFYxXEdQQk1ldGFkYXRh6gIcVW5pdHljYXRhbG9nOjpSZWNpcGllbnRzOjpWMWIGcHJvdG8z", [file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_struct]);
+  fileDesc("Cid1bml0eWNhdGFsb2cvcmVjaXBpZW50cy92MS9tb2RlbHMucHJvdG8SGnVuaXR5Y2F0YWxvZy5yZWNpcGllbnRzLnYxIrABChpTZWN1cmFibGVQcm9wZXJ0aWVzS3ZQYWlycxJfCgpwcm9wZXJ0aWVzGAEgAygLMkYudW5pdHljYXRhbG9nLnJlY2lwaWVudHMudjEuU2VjdXJhYmxlUHJvcGVydGllc0t2UGFpcnMuUHJvcGVydGllc0VudHJ5QgPgQQIaMQoPUHJvcGVydGllc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiwAEKDlJlY2lwaWVudFRva2VuEg8KAmlkGAEgASgJQgPgQQMSFwoKY3JlYXRlZF9hdBgCIAEoA0ID4EEDEhcKCmNyZWF0ZWRfYnkYAyABKAlCA+BBAxIbCg5hY3RpdmF0aW9uX3VybBgEIAEoCUID4EEDEhwKD2V4cGlyYXRpb25fdGltZRgFIAEoA0ID4EEDEhcKCnVwZGF0ZWRfYXQYBiABKANCA+BBAxIXCgp1cGRhdGVkX2J5GAcgASgJQgPgQQMikwUKCVJlY2lwaWVudBIXCgJpZBhkIAEoCUIG4EED4EEISACIAQESEQoEbmFtZRgBIAEoCUID4EECElAKE2F1dGhlbnRpY2F0aW9uX3R5cGUYAiABKA4yLi51bml0eWNhdGFsb2cucmVjaXBpZW50cy52MS5BdXRoZW50aWNhdGlvblR5cGVCA+BBAhIXCgVvd25lchgDIAEoCUID4EEBSAGIAQESGQoHY29tbWVudBgEIAEoCUID4EEBSAKIAQESXAoScHJvcGVydGllc19rdnBhaXJzGAYgASgLMjYudW5pdHljYXRhbG9nLnJlY2lwaWVudHMudjEuU2VjdXJhYmxlUHJvcGVydGllc0t2UGFpcnNCA+BBAUgDiAEBEhwKCmNyZWF0ZWRfYXQYByABKANCA+BBA0gEiAEBEhwKCmNyZWF0ZWRfYnkYCCABKAlCA+BBA0gFiAEBEj8KBnRva2VucxgJIAMoCzIqLnVuaXR5Y2F0YWxvZy5yZWNpcGllbnRzLnYxLlJlY2lwaWVudFRva2VuQgPgQQMSHAoKdXBkYXRlZF9hdBgKIAEoA0ID4EEDSAaIAQESHAoKdXBkYXRlZF9ieRgLIAEoCUID4EEDSAeIAQE6TepBSgoZdW5pdHljYXRhbG9nLmlvL1JlY2lwaWVudBIWcmVjaXBpZW50cy97cmVjaXBpZW50fSoKcmVjaXBpZW50czIJcmVjaXBpZW50QgUKA19pZEIICgZfb3duZXJCCgoIX2NvbW1lbnRCFQoTX3Byb3BlcnRpZXNfa3ZwYWlyc0INCgtfY3JlYXRlZF9hdEINCgtfY3JlYXRlZF9ieUINCgtfdXBkYXRlZF9hdEINCgtfdXBkYXRlZF9ieSpiChJBdXRoZW50aWNhdGlvblR5cGUSIwofQVVUSEVOVElDQVRJT05fVFlQRV9VTlNQRUNJRklFRBAAEgkKBVRPS0VOEAESHAoYT0FVVEhfQ0xJRU5UX0NSRURFTlRJQUxTEAJCjwIKHmNvbS51bml0eWNhdGFsb2cucmVjaXBpZW50cy52MUILTW9kZWxzUHJvdG9QAVpWZ2l0aHViLmNvbS9kZWx0YS1pbmN1YmF0b3IvZGVsdGEtc2hhcmluZy1ycy9nby91bml0eWNhdGFsb2cvcmVjaXBpZW50cy92MTtyZWNpcGllbnRzdjGiAgNVUliqAhpVbml0eWNhdGFsb2cuUmVjaXBpZW50cy5WMcoCGlVuaXR5Y2F0YWxvZ1xSZWNpcGllbnRzXFYx4gImVW5pdHljYXRhbG9nXFJlY2lwaWVudHNcVjFcR1BCTWV0YWRhdGHqAhxVbml0eWNhdGFsb2c6OlJlY2lwaWVudHM6OlYxYgZwcm90bzM", [file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_struct]);
+
+/**
+ * An object with the properties of a securable as key-value pairs.
+ *
+ * @generated from message unitycatalog.recipients.v1.SecurablePropertiesKvPairs
+ */
+export type SecurablePropertiesKvPairs = Message<"unitycatalog.recipients.v1.SecurablePropertiesKvPairs"> & {
+  /**
+   * A map of key-value properties attached to the securable.
+   *
+   * @generated from field: map<string, string> properties = 1;
+   */
+  properties: { [key: string]: string };
+};
+
+/**
+ * Describes the message unitycatalog.recipients.v1.SecurablePropertiesKvPairs.
+ * Use `create(SecurablePropertiesKvPairsSchema)` to create a new message.
+ */
+export const SecurablePropertiesKvPairsSchema: GenMessage<SecurablePropertiesKvPairs> = /*@__PURE__*/
+  messageDesc(file_unitycatalog_recipients_v1_models, 0);
 
 /**
  * @generated from message unitycatalog.recipients.v1.RecipientToken
@@ -74,7 +95,7 @@ export type RecipientToken = Message<"unitycatalog.recipients.v1.RecipientToken"
  * Use `create(RecipientTokenSchema)` to create a new message.
  */
 export const RecipientTokenSchema: GenMessage<RecipientToken> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_recipients_v1_models, 0);
+  messageDesc(file_unitycatalog_recipients_v1_models, 1);
 
 /**
  * @generated from message unitycatalog.recipients.v1.Recipient
@@ -116,11 +137,11 @@ export type Recipient = Message<"unitycatalog.recipients.v1.Recipient"> & {
   comment?: string | undefined;
 
   /**
-   * A map of key-value properties attached to the securable.
+   * Recipient properties as map of string key-value pairs.
    *
-   * @generated from field: map<string, string> properties = 6;
+   * @generated from field: optional unitycatalog.recipients.v1.SecurablePropertiesKvPairs properties_kvpairs = 6;
    */
-  properties: { [key: string]: string };
+  propertiesKvpairs?: SecurablePropertiesKvPairs | undefined;
 
   /**
    * Time at which this recipient was created, in epoch milliseconds.
@@ -163,7 +184,7 @@ export type Recipient = Message<"unitycatalog.recipients.v1.Recipient"> & {
  * Use `create(RecipientSchema)` to create a new message.
  */
 export const RecipientSchema: GenMessage<Recipient> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_recipients_v1_models, 1);
+  messageDesc(file_unitycatalog_recipients_v1_models, 2);
 
 /**
  * @generated from enum unitycatalog.recipients.v1.AuthenticationType

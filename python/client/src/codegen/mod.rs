@@ -716,7 +716,7 @@ impl PyUnityCatalogClient {
             authentication_type,
             owner,
             comment = None,
-            properties = None,
+            properties_kvpairs = None,
             expiration_time = None
         )
     )]
@@ -727,16 +727,15 @@ impl PyUnityCatalogClient {
         authentication_type: PyAuthenticationType,
         owner: String,
         comment: Option<String>,
-        properties: Option<HashMap<String, String>>,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
         expiration_time: Option<i64>,
     ) -> PyResult<PyRecipient> {
         let mut request = self
             .client
             .create_recipient(name, authentication_type.into(), owner);
         request = request.with_comment(comment);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
+        request =
+            request.with_properties_kvpairs(properties_kvpairs.map(::core::convert::Into::into));
         request = request.with_expiration_time(expiration_time);
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PyRecipient::from(result))
