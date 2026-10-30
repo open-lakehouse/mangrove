@@ -124,16 +124,16 @@ jobs:
             os: macos-latest
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Build the exact commit the release tag points at, not the branch tip.
           ref: ${{ needs.release.outputs.tag }}
           persist-credentials: false
 
-      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           # Matches the rest of CI; stays above the workspace floor.
-          toolchain: "1.97"
+          toolchain: "1.99"
           targets: ${{ matrix.target }}
 
       # Build a release abi3 wheel for this target into dist/. maturin-action
@@ -164,6 +164,6 @@ jobs:
       # Key-free SLSA build provenance over the built wheel(s), verifiable with
       # `gh attestation verify <wheel> --repo open-lakehouse/mangrove`.
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/*.whl
