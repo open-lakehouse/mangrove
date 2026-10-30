@@ -52,57 +52,20 @@ pub enum DeltaDataSourceFormat {
 }
 
 /// The permission level for a storage credential.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum DeltaCredentialOperation {
-    Read,
-    ReadWrite,
-}
+pub use olai_storage_credentials::wire::delta_api::Operation as DeltaCredentialOperation;
 
 // ===================================================================
 // Shared credential types
 // ===================================================================
 
-/// Cloud provider-specific credential configuration. Only keys for the relevant
-/// cloud provider are populated; the others are omitted (`None`).
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DeltaStorageCredentialConfig {
-    #[serde(rename = "s3.access-key-id", skip_serializing_if = "Option::is_none")]
-    pub s3_access_key_id: Option<String>,
-    #[serde(
-        rename = "s3.secret-access-key",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub s3_secret_access_key: Option<String>,
-    #[serde(rename = "s3.session-token", skip_serializing_if = "Option::is_none")]
-    pub s3_session_token: Option<String>,
-    #[serde(rename = "azure.sas-token", skip_serializing_if = "Option::is_none")]
-    pub azure_sas_token: Option<String>,
-    #[serde(rename = "gcs.oauth-token", skip_serializing_if = "Option::is_none")]
-    pub gcs_oauth_token: Option<String>,
-}
-
-/// Temporary storage credential with prefix and config.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct DeltaStorageCredential {
-    /// Storage path prefix this credential applies to.
-    pub prefix: String,
-    pub operation: DeltaCredentialOperation,
-    pub config: DeltaStorageCredentialConfig,
-    /// Credential expiration time in epoch milliseconds. `None` for credentials
-    /// that do not expire — the Unity Catalog reference server sends an explicit
-    /// `"expiration-time-ms": null` for local-filesystem (non-cloud) credentials.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub expiration_time_ms: Option<i64>,
-}
+/// Temporary storage credential with prefix and config: the config keys are
+/// `s3.access-key-id`, `s3.secret-access-key`, `s3.session-token`,
+/// `azure.sas-token` and `gcs.oauth-token` (see
+/// [`olai_storage_credentials::wire::delta_api`]).
+pub use olai_storage_credentials::wire::delta_api::StorageCredential as DeltaStorageCredential;
 
 /// Response carrying temporary cloud storage credentials.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub struct DeltaCredentialsResponse {
-    pub storage_credentials: Vec<DeltaStorageCredential>,
-}
+pub use olai_storage_credentials::wire::delta_api::CredentialsResponse as DeltaCredentialsResponse;
 
 // ===================================================================
 // Configuration

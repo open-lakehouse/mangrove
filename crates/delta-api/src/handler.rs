@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use crate::authz::DeltaAction;
 use crate::backend::{
     CreateTableSpec, CredentialAccess, DeltaBackend, ResolvedTable, SchemaRef, TableRef,
-    UpdateTableSpec, VendedCredential, VendedCredentialKind, etag_of,
+    UpdateTableSpec, VendedCredential, etag_of,
 };
 use crate::column::Column;
 use crate::contract;
@@ -167,7 +167,7 @@ where
                 &staging.location,
                 &creds,
                 DeltaCredentialOperation::ReadWrite,
-            )],
+            )?],
             required_protocol: DeltaProtocol {
                 min_reader_version: contract::REQUIRED_MIN_READER_VERSION,
                 min_writer_version: contract::REQUIRED_MIN_WRITER_VERSION,
@@ -345,7 +345,7 @@ where
             .vend_table_credential(&table_id, access, &context)
             .await?;
         Ok(DeltaCredentialsResponse {
-            storage_credentials: vec![to_storage_credential(&creds.url, &creds, operation)],
+            storage_credentials: vec![to_storage_credential(&creds.url, &creds, operation)?],
         })
     }
 
@@ -415,7 +415,7 @@ where
                 &staging.location,
                 &creds,
                 DeltaCredentialOperation::ReadWrite,
-            )],
+            )?],
         })
     }
 
@@ -438,7 +438,7 @@ where
             .vend_path_credential(&location, access, &context)
             .await?;
         Ok(DeltaCredentialsResponse {
-            storage_credentials: vec![to_storage_credential(&creds.url, &creds, operation)],
+            storage_credentials: vec![to_storage_credential(&creds.url, &creds, operation)?],
         })
     }
 }
@@ -842,10 +842,7 @@ fn feature_vec(features: &[&str]) -> Vec<String> {
 }
 
 fn to_access(op: DeltaCredentialOperation) -> CredentialAccess {
-    match op {
-        DeltaCredentialOperation::Read => CredentialAccess::Read,
-        DeltaCredentialOperation::ReadWrite => CredentialAccess::ReadWrite,
-    }
+    op.into()
 }
 
 /// The partition-column names of a column set, ordered by partition index.
@@ -880,35 +877,16 @@ fn commit_error(err: crate::coordinator::CommitError) -> DeltaApiError {
     })
 }
 
-/// Map a vended [`VendedCredential`] onto the wire `DeltaStorageCredential`.
+/// Map a vended [`VendedCredential`] onto the wire `DeltaStorageCredential`,
+/// covering `prefix` (as the catalog spells it) at `operation`.
 fn to_storage_credential(
     prefix: &str,
     creds: &VendedCredential,
     operation: DeltaCredentialOperation,
-) -> DeltaStorageCredential {
-    let mut config = DeltaStorageCredentialConfig::default();
-    match &creds.kind {
-        VendedCredentialKind::S3 {
-            access_key_id,
-            secret_access_key,
-            session_token,
-        } => {
-            config.s3_access_key_id = Some(access_key_id.clone());
-            config.s3_secret_access_key = Some(secret_access_key.clone());
-            config.s3_session_token = session_token.clone();
-        }
-        VendedCredentialKind::AzureSas { sas_token } => {
-            config.azure_sas_token = Some(sas_token.clone());
-        }
-        VendedCredentialKind::GcsOauth { oauth_token } => {
-            config.gcs_oauth_token = Some(oauth_token.clone());
-        }
-        VendedCredentialKind::None => {}
-    }
-    DeltaStorageCredential {
-        prefix: prefix.to_string(),
-        operation,
-        config,
-        expiration_time_ms: Some(creds.expiration_time_ms),
-    }
+) -> Result<DeltaStorageCredential> {
+    let mut wire = DeltaStorageCredential::try_from(&creds.credential)
+        .map_err(|e| DeltaApiError(DeltaBackendError::Internal(e.to_string())))?;
+    wire.prefix = prefix.to_string();
+    wire.operation = operation;
+    Ok(wire)
 }

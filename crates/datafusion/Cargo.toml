@@ -24,6 +24,8 @@ dashmap = { workspace = true }
 datafusion = { workspace = true }
 futures = { workspace = true }
 object_store = { workspace = true }
+# The Delta API `storage-credentials` config keys.
+olai-storage-credentials = { workspace = true, features = ["delta-api"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread"] }
 tracing = { workspace = true }

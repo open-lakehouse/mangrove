@@ -131,38 +131,17 @@ pub struct StagingReservation {
 }
 
 /// The access level for a vended storage credential.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CredentialAccess {
-    Read,
-    ReadWrite,
-}
+pub use olai_storage_credentials::AccessLevel as CredentialAccess;
 
-/// A credential vended by the backend, in a cloud-neutral shape the handler maps
-/// onto the wire `DeltaStorageCredential`.
+/// A credential vended by the backend: the catalog-independent model, plus the
+/// location it covers as the catalog spells it, which the handler sends as the
+/// wire `prefix`.
 #[derive(Debug, Clone)]
 pub struct VendedCredential {
     /// The prefix / URL the credential applies to.
     pub url: String,
-    /// Expiration, epoch milliseconds.
-    pub expiration_time_ms: i64,
-    pub kind: VendedCredentialKind,
-}
-
-/// Cloud-provider-specific credential material.
-#[derive(Debug, Clone)]
-pub enum VendedCredentialKind {
-    /// AWS (and R2, which reuses the S3-shaped fields).
-    S3 {
-        access_key_id: String,
-        secret_access_key: String,
-        session_token: Option<String>,
-    },
-    /// Azure user-delegation SAS.
-    AzureSas { sas_token: String },
-    /// GCS OAuth token.
-    GcsOauth { oauth_token: String },
-    /// No recognized credential material (an empty config is vended).
-    None,
+    /// The credential.
+    pub credential: olai_storage_credentials::VendedCredential,
 }
 
 /// Specification for persisting a new Delta table row. The handler has already
