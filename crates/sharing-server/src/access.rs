@@ -1,26 +1,35 @@
 //! [`SourceStorageAccess`]: storage access for shared assets, delegated to the
 //! source catalog or served from the server's own credentials.
 //!
-//! Either way, access starts from one short-lived [`TemporaryCredential`] for the
+//! Either way, access starts from one short-lived [`VendedCredential`] for the
 //! asset's location, from which everything else is derived:
 //!
-//! - the server's own reads go through a store built from it
-//!   ([`store_from_vended_credential`]);
-//! - query responses carry URLs presigned with it
-//!   ([`presign_from_vended_credential`]), which never outlive it;
+//! - the server's own reads go through a store built from it ([`build_store`]);
+//! - query responses carry URLs presigned with it ([`presign`]), which never
+//!   outlive it;
 //! - the recipient credential endpoints hand it on.
 //!
 //! In **delegated** mode the credential comes from the source catalog, so the
-//! server holds no storage secrets. In **local** mode it is minted by the shared
-//! `olai-uc-credentials` vending code from a stored, sealed credential governing
-//! the location's external location — the same implementation the Unity Catalog
-//! server uses.
+//! server holds no storage secrets. In **local** mode it is minted by
+//! `olai-credential-vending` from a stored, sealed credential governing the
+//! location's external location — the same minters the Unity Catalog server uses.
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use async_trait::async_trait;
+use axum::http::Method;
+use chrono::{TimeDelta, Utc};
+use olai_credential_vending::{
+    CredentialMinter, CredentialResolver, LocalMinter, MintRequest, RegisteredCredential, Vendor,
+};
+use olai_storage_credentials::location::longest_match;
+use olai_storage_credentials::wire::sharing as wire;
+use olai_storage_credentials::{
+    AccessLevel, StorageLocation, StorageProvider, StorageScope, VendedCredential,
+};
+use olai_vended_store::{CredentialSource, StoreOptions, build_store, presign};
 use open_sharing_api::access::{FileSigner, SignedFile, StorageAccess, TableStorage};
 use open_sharing_api::auth::Recipient;
 use open_sharing_api::catalog::{AssetKind, SharedAsset};
@@ -29,12 +38,6 @@ use open_sharing_common::models::open_sharing::v1::{
     SharingR2Credentials, SharingTemporaryCredentials,
     sharing_temporary_credentials::Credentials as SharingCredentials,
 };
-use unitycatalog_credentials::location::{StorageLocationUrl, longest_prefix_match};
-use unitycatalog_credentials::{
-    CredentialResolver, StorageCredential, TemporaryCredential, VendOperation, VendedCredential,
-    local_path_credential,
-};
-use unitycatalog_object_store::{presign_from_vended_credential, store_from_vended_credential};
 use url::Url;
 
 use crate::secrets::Secrets;
@@ -42,17 +45,18 @@ use crate::source::{AccessMode, SourceRegistry};
 use crate::store::ShareStore;
 use crate::{Error, Result};
 
-/// Re-vend this long before a cached credential expires.
-const REFRESH_MARGIN_MILLIS: i64 = 60_000;
+/// Re-vend this long before a cached delegated credential expires.
+const REFRESH_MARGIN: TimeDelta = TimeDelta::seconds(60);
 
 /// Storage access for shared assets. See the module docs.
 pub struct SourceStorageAccess {
     sources: SourceRegistry,
-    resolver: Arc<StoreCredentialResolver>,
+    /// Mints (and caches, per stored credential) for local access.
+    vendor: Vendor<StoreCredentialResolver>,
     presign_ttl: Duration,
-    aws_region: Option<String>,
+    options: StoreOptions,
     /// Delegated credentials, by asset kind and source name.
-    cache: Mutex<HashMap<(AssetKindKey, String), TemporaryCredential>>,
+    cache: Mutex<HashMap<(AssetKindKey, String), VendedCredential>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -69,17 +73,21 @@ impl SourceStorageAccess {
         presign_ttl: Duration,
         aws_region: Option<String>,
     ) -> Self {
+        let mut options = StoreOptions::new();
+        if let Some(region) = aws_region {
+            options = options.with_aws_region(region);
+        }
         Self {
             sources,
-            resolver: Arc::new(StoreCredentialResolver { store, secrets }),
+            vendor: Vendor::new(StoreCredentialResolver { store, secrets }),
             presign_ttl,
-            aws_region,
+            options,
             cache: Mutex::default(),
         }
     }
 
     /// A read credential for the asset's location.
-    async fn credential(&self, asset: &SharedAsset) -> Result<TemporaryCredential> {
+    async fn credential(&self, asset: &SharedAsset) -> Result<VendedCredential> {
         let source_name = asset
             .source_name
             .as_deref()
@@ -87,16 +95,19 @@ impl SourceStorageAccess {
         let source = self.sources.for_name(source_name)?;
         match source.access {
             AccessMode::Local => {
-                if asset.location.url.scheme() == "file" {
-                    return Ok(local_path_credential(&asset.location.raw));
-                }
-                unitycatalog_credentials::vend_for_location(
-                    self.resolver.as_ref(),
-                    &asset.location.raw,
-                    VendOperation::Read,
-                )
-                .await
-                .map_err(credentials_error)
+                let (location, hints) = StorageLocation::parse_with_hints(&asset.location.url)
+                    .map_err(|e| Error::invalid_argument(format!("invalid asset location: {e}")))?;
+                let request = MintRequest::new(StorageScope::new(location), AccessLevel::Read);
+                let minted = if request.scope.location().provider() == StorageProvider::Local {
+                    LocalMinter.mint(&request).await
+                } else {
+                    self.vendor.vend(&request).await
+                };
+                let mut credential = minted.map_err(vending_error)?;
+                // What the location URL implies (an Azurite endpoint, a regional S3
+                // host) fills what the minter left out.
+                credential.hints.fill_from(&hints);
+                Ok(credential)
             }
             AccessMode::Delegated => {
                 let kind = match asset.reference.kind {
@@ -104,13 +115,16 @@ impl SourceStorageAccess {
                     AssetKind::Volume | AssetKind::AgentSkill => AssetKindKey::Volume,
                 };
                 let key = (kind, source_name.to_string());
-                let now = chrono::Utc::now().timestamp_millis();
+                let fresh = |c: &&VendedCredential| {
+                    c.expires_at
+                        .is_none_or(|expires_at| expires_at - REFRESH_MARGIN > Utc::now())
+                };
                 if let Some(cached) = self
                     .cache
                     .lock()
                     .expect("credential cache poisoned")
                     .get(&key)
-                    .filter(|c| c.expiration_time - REFRESH_MARGIN_MILLIS > now)
+                    .filter(fresh)
                 {
                     return Ok(cached.clone());
                 }
@@ -134,25 +148,36 @@ impl SourceStorageAccess {
     }
 }
 
+/// The scope of the asset's location.
+fn scope(asset: &SharedAsset) -> Result<StorageScope> {
+    StorageLocation::parse(&asset.location.url)
+        .map(StorageScope::new)
+        .map_err(|e| Error::invalid_argument(format!("invalid asset location: {e}")))
+}
+
 #[async_trait]
 impl StorageAccess<Recipient> for SourceStorageAccess {
     async fn table_storage(&self, asset: &SharedAsset, _cx: &Recipient) -> Result<TableStorage> {
         let credential = self.credential(asset).await?;
-        let store = store_from_vended_credential(&credential, None, self.aws_region.clone())
-            .map_err(|e| Error::generic(format!("building storage access: {e}")))?;
-        // Address the table the way the store is rooted (e.g. a path-style
-        // Azurite URL becomes `azurite://<container>/…`).
-        let root = StorageLocationUrl::parse(&asset.location.raw)
-            .map_err(|e| Error::invalid_argument(format!("invalid table location: {e}")))?
-            .location()
-            .clone();
+        // A store serves one query, which never outlives its credential: no re-vend.
+        let store = build_store(
+            &credential,
+            Arc::new(Fixed(credential.clone())),
+            &self.options,
+        )
+        .await
+        .map_err(|e| Error::generic(format!("building storage access: {e}")))?;
+        // Address the table the way the store is rooted: the canonical location,
+        // whose path starts at the bucket or container (a path-style Azurite URL
+        // also carries `/<account>/<container>`).
+        let root = scope(asset)?.location().to_url();
         Ok(TableStorage {
             store: store.root(),
             root,
             signer: Arc::new(VendedSigner {
                 credential,
                 ttl: self.presign_ttl,
-                aws_region: self.aws_region.clone(),
+                options: self.options.clone(),
             }),
         })
     }
@@ -162,34 +187,57 @@ impl StorageAccess<Recipient> for SourceStorageAccess {
         asset: &SharedAsset,
         _cx: &Recipient,
     ) -> Result<SharingTemporaryCredentials> {
-        to_sharing_credentials(self.credential(asset).await?)
+        let credential = self.credential(asset).await?;
+        let mut credentials = to_sharing_credentials(&credential)?;
+        // Name the location as the catalog spelled it: emulator and endpoint URLs do
+        // not survive the canonical form.
+        credentials.url = Some(asset.location.raw.clone());
+        Ok(credentials)
+    }
+}
+
+/// Hands out one credential, for stores that never outlive it.
+#[derive(Debug)]
+struct Fixed(VendedCredential);
+
+#[async_trait]
+impl CredentialSource for Fixed {
+    async fn fetch(&self) -> olai_vended_store::Result<VendedCredential> {
+        Ok(self.0.clone())
     }
 }
 
 /// Presigns files with a vended credential.
 struct VendedSigner {
-    credential: TemporaryCredential,
+    credential: VendedCredential,
     ttl: Duration,
-    aws_region: Option<String>,
+    options: StoreOptions,
 }
 
 #[async_trait]
 impl FileSigner for VendedSigner {
     async fn sign(&self, files: &[Url]) -> Result<Vec<SignedFile>> {
-        let signed = presign_from_vended_credential(
+        let locations = files
+            .iter()
+            .map(StorageLocation::parse)
+            .collect::<std::result::Result<Vec<_>, _>>()
+            .map_err(|e| Error::invalid_argument(format!("invalid file location: {e}")))?;
+        let signed = presign(
             &self.credential,
-            files,
+            Method::GET,
+            &locations,
             self.ttl,
-            self.aws_region.clone(),
+            &self.options,
         )
         .await
         .map_err(|e| Error::generic(format!("presigning files: {e}")))?;
+        let expiration_timestamp = signed.expires_at.map(|t| t.timestamp_millis());
         Ok(signed
             .urls
             .into_iter()
             .map(|url| SignedFile {
                 url: url.to_string(),
-                expiration_timestamp: signed.expiration_time,
+                expiration_timestamp,
             })
             .collect())
     }
@@ -197,59 +245,60 @@ impl FileSigner for VendedSigner {
 
 /// Map a vended credential into the Open Sharing credential envelope.
 pub(crate) fn to_sharing_credentials(
-    credential: TemporaryCredential,
+    credential: &VendedCredential,
 ) -> Result<SharingTemporaryCredentials> {
-    let credentials = match credential.credentials {
-        None => None,
-        Some(VendedCredential::AwsTempCredentials(aws)) => Some(
-            SharingCredentials::AwsTempCredentials(Box::new(SharingAwsCredentials {
+    let wire = wire::SharingTemporaryCredentials::try_from(credential).map_err(|_| {
+        Error::invalid_argument("the storage credential type cannot be handed to recipients")
+    })?;
+    let credentials = if let Some(aws) = wire.aws_temp_credentials {
+        Some(SharingCredentials::AwsTempCredentials(Box::new(
+            SharingAwsCredentials {
                 access_key_id: aws.access_key_id,
                 secret_access_key: aws.secret_access_key,
                 session_token: aws.session_token,
                 ..Default::default()
-            })),
-        ),
-        Some(VendedCredential::AzureUserDelegationSas(sas)) => Some(
-            SharingCredentials::AzureUserDelegationSas(Box::new(SharingAzureUserDelegationSas {
+            },
+        )))
+    } else if let Some(sas) = wire.azure_user_delegation_sas {
+        Some(SharingCredentials::AzureUserDelegationSas(Box::new(
+            SharingAzureUserDelegationSas {
                 sas_token: sas.sas_token,
                 ..Default::default()
-            })),
-        ),
-        Some(VendedCredential::GcpOauthToken(gcp)) => Some(SharingCredentials::GcpOauthToken(
-            Box::new(SharingGcpOauthToken {
+            },
+        )))
+    } else if let Some(gcp) = wire.gcp_oauth_token {
+        Some(SharingCredentials::GcpOauthToken(Box::new(
+            SharingGcpOauthToken {
                 oauth_token: gcp.oauth_token,
                 ..Default::default()
-            }),
-        )),
-        Some(VendedCredential::R2TempCredentials(r2)) => Some(SharingCredentials::R2Credentials(
-            Box::new(SharingR2Credentials {
+            },
+        )))
+    } else {
+        wire.r2_credentials.map(|r2| {
+            SharingCredentials::R2Credentials(Box::new(SharingR2Credentials {
                 access_key_id: r2.access_key_id,
                 secret_access_key: r2.secret_access_key,
                 session_token: r2.session_token,
                 ..Default::default()
-            }),
-        )),
-        Some(_) => {
-            return Err(Error::invalid_argument(
-                "the storage credential type cannot be handed to recipients",
-            ));
-        }
+            }))
+        })
     };
     Ok(SharingTemporaryCredentials {
-        expiration_time: credential.expiration_time,
-        url: Some(credential.url),
+        expiration_time: wire.expiration_time.unwrap_or_default(),
+        url: wire.url,
         credentials,
         ..Default::default()
     })
 }
 
-pub(crate) fn credentials_error(e: unitycatalog_credentials::Error) -> Error {
+pub(crate) fn vending_error(e: olai_credential_vending::Error) -> Error {
+    use olai_credential_vending::Error as E;
     match e {
-        unitycatalog_credentials::Error::NotFound => Error::invalid_argument(
+        E::NotFound { .. } => Error::invalid_argument(
             "no external location with a credential covers this storage location",
         ),
-        unitycatalog_credentials::Error::InvalidArgument(message) => {
-            Error::InvalidArgument(message)
+        E::Overlapping { .. } | E::Unsupported { .. } | E::Credentials(_) => {
+            Error::InvalidArgument(e.to_string())
         }
         e => Error::generic(format!("vending storage credentials: {e}")),
     }
@@ -264,7 +313,7 @@ pub(crate) struct StoreCredentialResolver {
 
 impl StoreCredentialResolver {
     /// Open the stored credential `name`, migrating it to the active key.
-    pub(crate) async fn open(&self, name: &str) -> Result<StorageCredential> {
+    pub(crate) async fn open(&self, name: &str) -> Result<RegisteredCredential> {
         open_credential(self.store.as_ref(), &self.secrets, name).await
     }
 }
@@ -278,7 +327,7 @@ pub(crate) async fn open_credential(
     store: &dyn ShareStore,
     secrets: &Secrets,
     name: &str,
-) -> Result<StorageCredential> {
+) -> Result<RegisteredCredential> {
     let sealed = store.get_credential(name).await?;
     let (plaintext, rewrapped) = secrets.open(&credential_aad(name), &sealed.sealed).await?;
     if let Some(sealed) = rewrapped {
@@ -301,18 +350,39 @@ pub(crate) fn credential_aad(name: &str) -> String {
 impl CredentialResolver for StoreCredentialResolver {
     async fn resolve(
         &self,
-        location: &StorageLocationUrl,
-    ) -> unitycatalog_credentials::Result<StorageCredential> {
-        let to_credentials = |e: Error| unitycatalog_credentials::Error::generic(e.to_string());
+        location: &StorageLocation,
+    ) -> olai_credential_vending::Result<RegisteredCredential> {
+        let to_vending = |e: Error| olai_credential_vending::Error::mint(e.to_string());
         let locations = self
             .store
             .list_external_locations()
             .await
-            .map_err(to_credentials)?;
-        let location = longest_prefix_match(location, locations, |l| l.url.as_str())
-            .ok_or(unitycatalog_credentials::Error::NotFound)?;
-        self.open(&location.credential_name)
+            .map_err(to_vending)?;
+        // Registrations whose URL no longer parses govern nothing.
+        let scopes: Vec<_> = locations
+            .iter()
+            .filter_map(|l| Some((l.url.parse::<StorageScope>().ok()?, l)))
+            .collect();
+        let governing =
+            longest_match(scopes.iter().map(|(s, l)| (s, *l)), location).ok_or_else(|| {
+                olai_credential_vending::Error::NotFound {
+                    location: location.to_string(),
+                }
+            })?;
+        // A credential minted here covers everything below `location`, so refuse a
+        // location containing one another credential governs.
+        if let Some((nested, _)) = scopes.iter().find(|(scope, other)| {
+            other.credential_name != governing.credential_name
+                && scope.location().starts_with(location)
+                && scope.location() != location
+        }) {
+            return Err(olai_credential_vending::Error::Overlapping {
+                location: location.to_string(),
+                nested: nested.to_string(),
+            });
+        }
+        self.open(&governing.credential_name)
             .await
-            .map_err(to_credentials)
+            .map_err(to_vending)
     }
 }

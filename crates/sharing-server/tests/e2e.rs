@@ -12,6 +12,7 @@ use async_trait::async_trait;
 use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
+use olai_storage_credentials::{AccessLevel, StorageCredentials, VendedCredential};
 use open_sharing_server::Result;
 use open_sharing_server::config::{ConfigValue, EncryptionConfig, KeyConfig, KeyProviderKind};
 use open_sharing_server::embed::{self, Settings};
@@ -24,7 +25,6 @@ use open_sharing_server::store::ShareStore;
 use open_sharing_server::store::memory::InMemoryStore;
 use serde_json::{Value, json};
 use tower::ServiceExt;
-use unitycatalog_credentials::{TemporaryCredential, local_path_credential};
 
 const ADMIN: &str = "provider-secret";
 const PUBLIC_URL: &str = "https://sharing.example.com";
@@ -427,11 +427,13 @@ impl CatalogSource for VendingCatalog {
         Err(open_sharing_server::Error::NotFound)
     }
 
-    async fn vend_table(&self, table: &SourceTable) -> Result<TemporaryCredential> {
+    async fn vend_table(&self, table: &SourceTable) -> Result<VendedCredential> {
         self.vends.fetch_add(1, Ordering::SeqCst);
-        let mut credential = local_path_credential(&table.location);
-        credential.expiration_time = chrono::Utc::now().timestamp_millis() + 3_600_000;
-        Ok(credential)
+        let scope = table.location.parse().expect("table location parses");
+        Ok(
+            VendedCredential::new(StorageCredentials::None, scope, AccessLevel::Read)
+                .with_expiry(Some(chrono::Utc::now() + chrono::TimeDelta::hours(1))),
+        )
     }
 }
 

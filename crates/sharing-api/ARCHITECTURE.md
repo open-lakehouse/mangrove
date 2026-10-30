@@ -134,8 +134,8 @@ the `temporary-{table,volume,skill}-credentials` endpoints.
   UC's model: a storage `Credential` (IAM role, Azure service principal or
   managed identity, storage key) plus external locations matched by longest
   URL prefix. It presigns and vends with the **same** code `uc-server` uses,
-  extracted into `olai-uc-credentials`, so the workspace has exactly one
-  vending implementation.
+  the trestle `olai-credential-vending` minters and `olai-vended-store`
+  presigning, so the workspace has exactly one vending implementation.
 
 Each catalog source chooses its mode (`access = delegated | local`).
 
@@ -233,16 +233,16 @@ should be able to host them. The layering:
   on no catalog crate. `Error` owns its `{ "errorCode", "message" }` envelope.
 - `olai-sharing-server`'s core (store, recipients, secrets, `StoreCatalog`,
   `CatalogSource`, storage access) uses catalog-independent types:
-  `ShareObject` for share entries and `olai-uc-credentials`' own
-  `StorageCredential` / `TemporaryCredential` for vending.
+  `ShareObject` for share entries and the trestle crates'
+  `RegisteredCredential` / `VendedCredential` for vending.
 - Unity Catalog comes in only through the `unity` feature (`src/unity/`): the UC
   REST `CatalogSource` and the UC-shaped admin API. It converts UC models at
-  that boundary (`olai-uc-common`'s `credentials` feature for credentials).
+  that boundary (`olai-uc-common`'s `credential-vending` feature for credentials).
 
-Credential vending (`olai-uc-credentials`) and the object-store primitives
-(`olai-uc-object-store`) are accepted storage dependencies. Vending already
-owns its credential shapes; `olai-uc-object-store` still pulls the UC client
-transitively, and carving its primitives out is a follow-up.
+Credential vending, the object-store primitives and presigning come from the
+catalog-independent trestle crates (`olai-storage-credentials`,
+`olai-vended-store`, `olai-credential-vending`), which own their credential
+shapes and depend on no catalog crate.
 
 ## Delivery
 

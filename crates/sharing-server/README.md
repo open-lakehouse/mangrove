@@ -12,8 +12,8 @@ implementation in [`olai-sharing-api`](../sharing-api). See
   resolved from the source at request time.
 - **Storage access is delegated or local.** A *delegated* source vends
   short-lived, downscoped credentials, so the server stores no storage secrets.
-  A *local* source uses credentials stored in the server, sealed, and vended by
-  the same `olai-uc-credentials` code the UC server uses. Either way, query
+  A *local* source uses credentials stored in the server, sealed, and minted by
+  the same `olai-credential-vending` minters the UC server uses. Either way, query
   responses carry presigned URLs that never outlive the credential, and the
   Open Sharing `temporary-*-credentials` endpoints hand the credential on.
 - **Recipients use bearer tokens.** Creating a recipient issues a token with a
@@ -44,9 +44,9 @@ implementation in [`olai-sharing-api`](../sharing-api). See
 
 With `default-features = false` (optionally plus `postgres`) the crate uses no
 catalog's models: the store, recipient tokens and activation, sealed secrets,
-the static source and storage access remain. Credential vending and object
-stores come from `olai-uc-credentials` / `olai-uc-object-store`, over their own
-credential types. A catalog that already has discovery and an admin surface
+the static source and storage access remain. Credential minting, object stores
+and presigning come from the catalog-independent trestle crates
+(`olai-credential-vending`, `olai-vended-store`, `olai-storage-credentials`). A catalog that already has discovery and an admin surface
 implements `CatalogSource` (or the `olai-sharing-api` ports directly),
 provisions shares and recipients through the `ShareStore`
 (`recipients::issue_token` issues tokens), and serves `embed::router`. See

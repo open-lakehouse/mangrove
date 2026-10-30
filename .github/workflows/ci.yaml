@@ -123,9 +123,9 @@ jobs:
   # The sharing crates are headed for their own repository and must stay
   # mountable without Unity Catalog. Guard the boundaries:
   # - olai-sharing-api (protocol) depends on no olai-uc-* crate at all;
-  # - olai-uc-credentials (vending) owns its credential types — no olai-uc-common;
-  # - olai-sharing-server without `unity` names no UC model crate directly
-  #   (olai-uc-object-store still pulls them transitively — tracked follow-up).
+  # - olai-sharing-server without `unity` depends on no olai-uc-* crate either:
+  #   its storage access comes from the catalog-independent trestle vending
+  #   crates (olai-storage-credentials, olai-vended-store, olai-credential-vending).
   catalog-independence:
     name: catalog-independence
     runs-on: ubuntu-latest
@@ -159,10 +159,8 @@ jobs:
           }
           deny "olai-sharing-api must not depend on olai-uc-* crates" \
             '^olai-uc-' -p olai-sharing-api --all-features
-          deny "olai-uc-credentials must not depend on olai-uc-common" \
-            '^olai-uc-common ' -p olai-uc-credentials --all-features
-          deny "olai-sharing-server (no unity) must not depend directly on UC model crates" \
-            '^olai-uc-(common|client) ' -p olai-sharing-server --no-default-features --features postgres --depth 1
+          deny "olai-sharing-server (no unity) must not depend on olai-uc-* crates" \
+            '^olai-uc-' -p olai-sharing-server --no-default-features --features postgres
 
       - name: Build without Unity Catalog
         env:
@@ -170,7 +168,6 @@ jobs:
         run: |
           cargo check --locked --all-targets -p olai-sharing-api --no-default-features
           cargo check --locked --all-targets -p olai-sharing-server --no-default-features --features postgres
-          cargo check --locked -p olai-uc-credentials --no-default-features
 
   test:
     name: test

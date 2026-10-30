@@ -7,13 +7,15 @@
 
 use async_trait::async_trait;
 use futures::TryStreamExt;
+use olai_storage_credentials::wire::{VendContext, unity};
+use olai_storage_credentials::{AccessLevel, StorageLocation, StorageScope, VendedCredential};
 use open_sharing_api::catalog::DataFormat;
 use unitycatalog_client::{
     TableOperation, TableReference, UnityCatalogClient, VolumeOperation, VolumeReference,
 };
 use unitycatalog_common::models::tables::v1::{DataSourceFormat, GetTableRequest, Table};
+use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
 use unitycatalog_common::models::volumes::v1::GetVolumeRequest;
-use unitycatalog_credentials::TemporaryCredential;
 use url::Url;
 
 use crate::source::{CatalogSource, SourceTable, SourceVolume, split_name};
@@ -136,21 +138,17 @@ impl CatalogSource for UnitySource {
         })
     }
 
-    async fn vend_table(&self, table: &SourceTable) -> Result<TemporaryCredential> {
+    async fn vend_table(&self, table: &SourceTable) -> Result<VendedCredential> {
         let (credential, _) = self
             .client
             .temporary_credentials()
             .temporary_table_credential(table_id(table)?, TableOperation::Read)
             .await
             .map_err(client_error)?;
-        let mut credential = TemporaryCredential::from(credential);
-        if credential.url.is_empty() {
-            credential.url = table.location.clone();
-        }
-        Ok(credential)
+        read_credential(credential, &table.location)
     }
 
-    async fn vend_volume(&self, volume: &SourceVolume) -> Result<TemporaryCredential> {
+    async fn vend_volume(&self, volume: &SourceVolume) -> Result<VendedCredential> {
         let reference = match &volume.id {
             Some(id) => uuid::Uuid::parse_str(id)
                 .map(VolumeReference::Id)
@@ -165,10 +163,24 @@ impl CatalogSource for UnitySource {
             .temporary_volume_credential(reference, VolumeOperation::Read)
             .await
             .map_err(client_error)?;
-        let mut credential = TemporaryCredential::from(credential);
-        if credential.url.is_empty() {
-            credential.url = volume.location.clone();
-        }
-        Ok(credential)
+        read_credential(credential, &volume.location)
     }
+}
+
+/// Read a catalog-vended read credential for the securable stored at `location`.
+///
+/// A response URL may narrow the credential below `location` but never widen it;
+/// what the location URL implies (an Azurite endpoint, an S3 region) fills what
+/// the response left out.
+fn read_credential(credential: TemporaryCredential, location: &str) -> Result<VendedCredential> {
+    let url = Url::parse(location)
+        .map_err(|e| Error::generic(format!("invalid storage location '{location}': {e}")))?;
+    let (location, hints) = StorageLocation::parse_with_hints(&url)
+        .map_err(|e| Error::generic(format!("catalog source: {e}")))?;
+    let context = VendContext::new(StorageScope::new(location), AccessLevel::Read);
+    let mut vended = unity::TemporaryCredential::from(credential)
+        .to_vended(&context)
+        .map_err(|e| Error::generic(format!("catalog source: {e}")))?;
+    vended.hints.fill_from(&hints);
+    Ok(vended)
 }

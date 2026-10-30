@@ -12,7 +12,7 @@
 //!   (feature `unity`), or your own;
 //! - [`catalog`] and [`access`]: the recipient-facing share catalog, and storage
 //!   access that is either *delegated* to the source catalog (no stored secrets)
-//!   or *local* (sealed credentials, vended by `olai-uc-credentials`);
+//!   or *local* (sealed credentials, minted by `olai-credential-vending`);
 //! - [`secrets`]: envelope encryption with lazy key rotation;
 //! - [`recipients`]: recipient tokens with activation links;
 //! - [`embed`]: the socket-less [`Router`](axum::Router) any host can serve;
@@ -23,7 +23,7 @@
 //!
 //! With `default-features = false` the crate depends on no catalog's models:
 //! the host core, the static source and storage access (over the
-//! catalog-independent `olai-uc-credentials` types) remain. A host with its own
+//! catalog-independent trestle credential vending crates) remain. A host with its own
 //! catalog implements [`CatalogSource`](source::CatalogSource) and manages
 //! shares and recipients through the [`ShareStore`](store::ShareStore) (or its
 //! own admin surface), then serves [`embed::router`].

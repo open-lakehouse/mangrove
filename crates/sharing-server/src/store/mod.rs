@@ -149,7 +149,7 @@ pub struct TokenRecord {
 }
 
 /// A storage credential, sealed. The clear value is a
-/// [`StorageCredential`](unitycatalog_credentials::StorageCredential) (JSON).
+/// [`RegisteredCredential`](olai_credential_vending::RegisteredCredential) (JSON).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SealedCredential {
     pub name: String,
