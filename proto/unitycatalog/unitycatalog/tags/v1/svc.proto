@@ -12,11 +12,10 @@ import "unitycatalog/tags/v1/models.proto";
 // List tag policies
 message ListTagPoliciesRequest {
   // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
   optional int32 max_results = 1 [
-    (buf.validate.field).int32 = {
-      gt: 0
-      lte: 1000
-    },
+    (buf.validate.field).int32.gte = 0,
     (google.api.field_behavior) = OPTIONAL
   ];
 
@@ -148,11 +147,10 @@ message ListEntityTagAssignmentsRequest {
   ];
 
   // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
   optional int32 max_results = 3 [
-    (buf.validate.field).int32 = {
-      gt: 0
-      lte: 1000
-    },
+    (buf.validate.field).int32.gte = 0,
     (google.api.field_behavior) = OPTIONAL
   ];
 

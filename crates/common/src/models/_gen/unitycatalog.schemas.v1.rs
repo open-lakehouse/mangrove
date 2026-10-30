@@ -736,6 +736,8 @@ pub struct ListSchemasRequest {
     pub catalog_name: ::buffa::alloc::string::String,
     /// The maximum number of results per page that should be returned.
     ///
+    /// If unset or 0, the server's default page size is used. Negative values are rejected.
+    ///
     /// Field 2: `max_results`
     #[serde(
         rename = "max_results",
@@ -3128,6 +3130,8 @@ pub mod __buffa {
             pub catalog_name: &'a str,
             /// The maximum number of results per page that should be returned.
             ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
+            ///
             /// Field 2: `max_results`
             pub max_results: ::core::option::Option<i32>,
             /// Opaque pagination token to go to next page based on previous query.
@@ -3496,6 +3500,8 @@ pub mod __buffa {
                 self.0.reborrow().catalog_name
             }
             /// The maximum number of results per page that should be returned.
+            ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
             ///
             /// Field 2: `max_results`
             #[must_use]

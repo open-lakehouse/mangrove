@@ -146,7 +146,7 @@ impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<Reque
                 &entity,
                 &AssociationLabel::Tagged,
                 None,
-                request.max_results.map(|v| v as usize),
+                super::page_size(request.max_results)?,
                 request.page_token,
             )
             .await?;

@@ -182,10 +182,7 @@ impl<T: ResourceStore + Policy<RequestContext>> PolicyHandler<RequestContext> fo
         let mut resources: Vec<Resource> = policies.into_iter().map(Resource::PolicyInfo).collect();
         process_resources(self, &context, &Permission::Read, &mut resources).await?;
 
-        let max_results = request
-            .max_results
-            .map(|v| v as usize)
-            .unwrap_or(resources.len());
+        let max_results = super::page_size(request.max_results)?.unwrap_or(resources.len());
         let offset = request
             .page_token
             .as_deref()

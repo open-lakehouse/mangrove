@@ -3221,6 +3221,8 @@ pub struct ListTableSummariesRequest {
     pub table_name_pattern: ::core::option::Option<::buffa::alloc::string::String>,
     /// The maximum number of results per page that should be returned.
     ///
+    /// If unset or 0, the server's default page size is used. Negative values are rejected.
+    ///
     /// Field 100: `max_results`
     #[serde(
         rename = "max_results",
@@ -3768,6 +3770,8 @@ pub struct ListTablesRequest {
     )]
     pub schema_name: ::buffa::alloc::string::String,
     /// The maximum number of results per page that should be returned.
+    ///
+    /// If unset or 0, the server's default page size is used. Negative values are rejected.
     ///
     /// Field 3: `max_results`
     #[serde(
@@ -9465,6 +9469,8 @@ pub mod __buffa {
             pub table_name_pattern: ::core::option::Option<&'a str>,
             /// The maximum number of results per page that should be returned.
             ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
+            ///
             /// Field 100: `max_results`
             pub max_results: ::core::option::Option<i32>,
             /// Opaque pagination token to go to next page based on previous query.
@@ -9912,6 +9918,8 @@ pub mod __buffa {
             }
             /// The maximum number of results per page that should be returned.
             ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
+            ///
             /// Field 100: `max_results`
             #[must_use]
             pub fn max_results(&self) -> ::core::option::Option<i32> {
@@ -10356,6 +10364,8 @@ pub mod __buffa {
             /// Field 2: `schema_name`
             pub schema_name: &'a str,
             /// The maximum number of results per page that should be returned.
+            ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
             ///
             /// Field 3: `max_results`
             pub max_results: ::core::option::Option<i32>,
@@ -10919,6 +10929,8 @@ pub mod __buffa {
                 self.0.reborrow().schema_name
             }
             /// The maximum number of results per page that should be returned.
+            ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
             ///
             /// Field 3: `max_results`
             #[must_use]

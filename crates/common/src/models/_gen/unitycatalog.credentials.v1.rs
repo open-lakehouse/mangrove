@@ -2545,6 +2545,8 @@ pub struct ListCredentialsRequest {
     pub purpose: ::core::option::Option<::buffa::EnumValue<Purpose>>,
     /// The maximum number of results per page that should be returned.
     ///
+    /// If unset or 0, the server's default page size is used. Negative values are rejected.
+    ///
     /// Field 2: `max_results`
     #[serde(
         rename = "max_results",
@@ -8002,6 +8004,8 @@ pub mod __buffa {
             >,
             /// The maximum number of results per page that should be returned.
             ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
+            ///
             /// Field 2: `max_results`
             pub max_results: ::core::option::Option<i32>,
             /// Opaque pagination token to go to next page based on previous query.
@@ -8340,6 +8344,8 @@ pub mod __buffa {
                 self.0.reborrow().purpose
             }
             /// The maximum number of results per page that should be returned.
+            ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
             ///
             /// Field 2: `max_results`
             #[must_use]

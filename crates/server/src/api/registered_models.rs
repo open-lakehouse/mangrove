@@ -39,7 +39,7 @@ impl<
             .list(
                 &ObjectLabel::RegisteredModel,
                 namespace.as_ref(),
-                request.max_results.map(|v| v as usize),
+                super::page_size(request.max_results)?,
                 request.page_token,
             )
             .await?;

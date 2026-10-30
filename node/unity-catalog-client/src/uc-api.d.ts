@@ -3789,7 +3789,11 @@ export interface operations {
     ListCatalogs: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -3962,7 +3966,11 @@ export interface operations {
             query?: {
                 /** @description Return only credentials for the specified purpose. */
                 purpose?: "PURPOSE_UNSPECIFIED" | "STORAGE" | "SERVICE";
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -4160,7 +4168,11 @@ export interface operations {
     ListEntityTagAssignments: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -4309,7 +4321,11 @@ export interface operations {
     ListExternalLocations: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -4483,7 +4499,11 @@ export interface operations {
                 catalog_name?: string;
                 /** @description Parent schema of functions. */
                 schema_name?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -4657,7 +4677,11 @@ export interface operations {
                 catalog_name?: string;
                 /** @description Name of parent schema for models of interest. */
                 schema_name?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -4878,7 +4902,11 @@ export interface operations {
     ListModelVersions: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5090,7 +5118,11 @@ export interface operations {
                  *      where it was defined.
                  */
                 include_inherited?: boolean;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5297,7 +5329,11 @@ export interface operations {
     ListProviders: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5462,7 +5498,11 @@ export interface operations {
     ListRecipients: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5629,7 +5669,11 @@ export interface operations {
             query?: {
                 /** @description Name of parent catalog. */
                 catalog_name?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5807,7 +5851,11 @@ export interface operations {
     ListShares: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5975,7 +6023,11 @@ export interface operations {
     GetPermissions: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -6087,7 +6139,11 @@ export interface operations {
                 schema_name_pattern?: string;
                 /** @description A sql LIKE pattern (% and _) for table names. All tables will be returned if not set or empty. */
                 table_name_pattern?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -6127,7 +6183,11 @@ export interface operations {
                 catalog_name?: string;
                 /** @description Name of parent schema for tables of interest. */
                 schema_name?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -6307,7 +6367,11 @@ export interface operations {
     ListTagPolicies: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -6608,7 +6672,11 @@ export interface operations {
                 catalog_name?: string;
                 /** @description The identifier of the schema */
                 schema_name?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;

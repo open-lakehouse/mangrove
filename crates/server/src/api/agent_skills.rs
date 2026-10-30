@@ -112,7 +112,7 @@ impl<
                     &request.catalog_name,
                     &request.schema_name,
                 ])),
-                request.max_results.map(|v| v as usize),
+                super::page_size(request.max_results)?,
                 request.page_token,
             )
             .await?;

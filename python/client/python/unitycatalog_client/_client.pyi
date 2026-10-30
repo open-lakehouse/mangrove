@@ -3377,7 +3377,8 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
 
 
         Returns:
@@ -3390,7 +3391,8 @@ class UnityCatalogClient:
         """
         Args:
             purpose: Return only credentials for the specified purpose.
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
 
 
         Returns:
@@ -3411,7 +3413,8 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             page_token: Opaque pagination token to go to next page based on previous query.
 
 
@@ -3427,7 +3430,8 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_browse: Whether to include schemas in the response for which the principal can only
                             access selective metadata for
 
@@ -3455,7 +3459,8 @@ class UnityCatalogClient:
         Args:
             catalog_name: Name of parent catalog for functions of interest.
             schema_name: Parent schema of functions.
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_browse: Whether to include functions in the response for which the principal can only
                             access selective metadata for.
 
@@ -3479,7 +3484,8 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_browse: Whether to include model versions in the response for which the principal can
                             only access selective metadata for.
 
@@ -3494,7 +3500,8 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
 
 
         Returns:
@@ -3507,7 +3514,8 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
 
 
         Returns:
@@ -3533,7 +3541,8 @@ class UnityCatalogClient:
         Args:
             catalog_name: Name of parent catalog for models of interest.
             schema_name: Name of parent schema for models of interest.
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_browse: Whether to include registered models in the response for which the principal can
                             only access selective metadata for.
 
@@ -3557,7 +3566,8 @@ class UnityCatalogClient:
 
         Args:
             catalog_name: Name of parent catalog.
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_browse: Whether to include schemas in the response for which the principal can only
                             access selective metadata for
 
@@ -3572,7 +3582,8 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
 
 
         Returns:
@@ -3603,7 +3614,8 @@ class UnityCatalogClient:
         Args:
             catalog_name: Name of parent catalog for tables of interest.
             schema_name: Name of parent schema for tables of interest.
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_delta_metadata: Whether delta metadata should be included in the response.
             omit_columns: Whether to omit the columns of the table from the response or not.
             omit_properties: Whether to omit the properties of the table from the response or not.
@@ -3628,7 +3640,8 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
 
 
         Returns:
@@ -3649,7 +3662,8 @@ class UnityCatalogClient:
         Args:
             catalog_name: The identifier of the catalog
             schema_name: The identifier of the schema
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_browse: Whether to include schemas in the response for which the principal can only
                             access selective metadata for
 

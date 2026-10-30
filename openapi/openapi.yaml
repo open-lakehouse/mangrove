@@ -414,7 +414,10 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -583,7 +586,10 @@ paths:
             format: enum
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -756,7 +762,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -911,7 +920,10 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -1071,7 +1083,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -1249,7 +1264,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -1467,7 +1485,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -1698,7 +1719,10 @@ paths:
             type: boolean
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -1905,7 +1929,10 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2039,7 +2066,10 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2182,7 +2212,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2343,7 +2376,10 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2488,7 +2524,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2600,7 +2639,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2652,7 +2694,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2830,7 +2875,10 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -3096,7 +3144,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32

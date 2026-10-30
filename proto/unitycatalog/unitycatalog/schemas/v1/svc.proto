@@ -21,9 +21,13 @@ message ListSchemasRequest {
   ];
 
   // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
   optional int32 max_results = 2 [
-    (buf.validate.field).int32.gt = 0,
-    (buf.validate.field).int32.lt = 1000,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    },
     (google.api.field_behavior) = OPTIONAL
   ];
 

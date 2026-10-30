@@ -256,7 +256,9 @@ export interface UpdateAgentOptions {
 }
 
 export interface ListCatalogsOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -304,7 +306,9 @@ export interface DeleteCatalogOptions {
 export interface ListCredentialsOptions {
   /** Return only credentials for the specified purpose. */
   purpose?: number;
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -336,7 +340,9 @@ export interface UpdateCredentialOptions {
 }
 
 export interface ListEntityTagAssignmentsOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -348,7 +354,9 @@ export interface UpdateEntityTagAssignmentOptions {
 }
 
 export interface ListExternalLocationsOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -390,7 +398,9 @@ export interface DeleteExternalLocationOptions {
 }
 
 export interface ListFunctionsOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -409,7 +419,9 @@ export interface DeleteFunctionOptions {
 }
 
 export interface ListModelVersionsOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -442,7 +454,9 @@ export interface ListPoliciesOptions {
    *  carries its own on_securable_type / on_securable_fullname, so callers can see
    *  where it was defined. */
   includeInherited?: boolean;
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -454,7 +468,9 @@ export interface UpdatePolicyOptions {
 }
 
 export interface ListProvidersOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -490,7 +506,9 @@ export interface UpdateProviderOptions {
 }
 
 export interface ListRecipientsOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -529,7 +547,9 @@ export interface ListRegisteredModelsOptions {
   catalogName?: string;
   /** Name of parent schema for models of interest. */
   schemaName?: string;
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -564,7 +584,9 @@ export interface DeleteRegisteredModelOptions {
 }
 
 export interface ListSchemasOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -602,7 +624,9 @@ export interface DeleteSchemaOptions {
 }
 
 export interface ListSharesOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -628,7 +652,9 @@ export interface UpdateShareOptions {
 }
 
 export interface GetPermissionsOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -644,7 +670,9 @@ export interface ListTableSummariesOptions {
   schemaNamePattern?: string;
   /** A sql LIKE pattern (% and _) for table names. All tables will be returned if not set or empty. */
   tableNamePattern?: string;
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -653,7 +681,9 @@ export interface ListTableSummariesOptions {
 }
 
 export interface ListTablesOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -694,7 +724,9 @@ export interface GetTableOptions {
 }
 
 export interface ListTagPoliciesOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
@@ -713,7 +745,9 @@ export interface GenerateTemporaryPathCredentialsOptions {
 }
 
 export interface ListVolumesOptions {
-  /** The maximum number of results per page that should be returned. */
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;

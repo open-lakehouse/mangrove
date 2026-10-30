@@ -100,7 +100,7 @@ impl<T: ResourceStore + Policy<RequestContext> + ProvidesLocalStoragePolicy>
             .list(
                 &ObjectLabel::Table,
                 Some(&ResourceName::new([&request.catalog_name])),
-                request.max_results.map(|v| v as usize),
+                super::page_size(request.max_results)?,
                 request.page_token,
             )
             .await?;
@@ -129,9 +129,7 @@ impl<T: ResourceStore + Policy<RequestContext> + ProvidesLocalStoragePolicy>
                     &request.catalog_name,
                     &request.schema_name,
                 ])),
-                request
-                    .max_results
-                    .map(|v| usize::min(v as usize, MAX_RESULTS_TABLES)),
+                super::page_size(request.max_results)?.map(|v| usize::min(v, MAX_RESULTS_TABLES)),
                 request.page_token,
             )
             .await?;

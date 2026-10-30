@@ -54,6 +54,20 @@ pub mod tag_policies;
 pub mod temporary_credentials;
 pub mod volumes;
 
+/// Translate a list request's `max_results` into a store page size.
+///
+/// Unset and `0` both mean "use the server default", which the store reads as `None`.
+/// Negative values are rejected.
+pub(crate) fn page_size(max_results: Option<i32>) -> crate::Result<Option<usize>> {
+    match max_results {
+        Some(v) if v < 0 => Err(crate::Error::invalid_argument(
+            "max_results must not be negative",
+        )),
+        Some(v) if v > 0 => Ok(Some(v as usize)),
+        _ => Ok(None),
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct RequestContext {
     pub recipient: Principal,
@@ -90,4 +104,17 @@ pub trait SecuredAction: Send + Sync {
 
     /// The permission required to perform the action.
     fn permission(&self) -> &'static Permission;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::page_size;
+
+    #[test]
+    fn test_page_size() {
+        assert_eq!(page_size(None).unwrap(), None);
+        assert_eq!(page_size(Some(0)).unwrap(), None);
+        assert_eq!(page_size(Some(25)).unwrap(), Some(25));
+        assert!(page_size(Some(-1)).is_err());
+    }
 }
