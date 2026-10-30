@@ -179,7 +179,8 @@ Use a `(scope)` matching the affected crate's short name — `common`, `client`,
 right crate. Prefer several focused commits over one
 mixed commit; keep generated output in the same commit as its source.
 
-**Cross-repo (trestle) dependencies.** `olai-http` / `olai-store` are declared as plain
+**Cross-repo (trestle) dependencies.** The trestle crates (`olai-http`, `olai-store`,
+`olai-storage-credentials`, `olai-vended-store`, `olai-credential-vending`) are declared as plain
 published `version` deps in the root `Cargo.toml` (e.g. `olai-http = { version = "0.0.3" }`).
 They are **not** `path` deps: a committed `path` must physically exist for *every* cargo
 command, but CI has no `../trestle` checkout, so a committed path aborts CI; and a `git`
@@ -187,16 +188,21 @@ source would block `cargo publish`. CI and `cargo publish` resolve the version f
 crates.io natively.
 
 To build against **local trestle source** — e.g. before a change is published, or while
-the crates.io proxy's 7-day age filter still hides a freshly published version — add a
-**local, uncommitted** `[patch.crates-io]` to the root `Cargo.toml`:
+the crates.io proxy's 7-day age filter still hides a freshly published version — run
+`just configure-trestle-deps`. It writes a gitignored `.cargo/config.toml` with a
+`[patch.crates-io]` pointing every trestle crate at the local checkout:
 
 ```toml
 [patch.crates-io]
-olai-http  = { path = "../trestle/crates/olai-http", version = "X.Y.Z" }
-olai-store = { path = "../trestle/crates/olai-store", version = "X.Y.Z" }
+olai-http  = { path = "/path/to/trestle/crates/olai-http" }
+olai-vended-store = { path = "/path/to/trestle/crates/olai-vended-store" }
+# ...
 ```
 
-Do **not** commit that block (CI has no `../trestle`, so it would fail). When you need a
+Cargo also reads it when building from `wasm/`. A build under the patch rewrites
+`Cargo.lock` without the crates' registry `source`/`checksum`; restore the committed lock
+before committing (`scripts/check-cargo-lock-trestle.sh` catches it). Do **not** commit
+a patch (CI has no `../trestle`, so it would fail). When you need a
 trestle change permanently, release trestle to crates.io *first*, then bump the `version`
 here.
 

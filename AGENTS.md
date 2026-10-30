@@ -135,7 +135,7 @@ lock when stale (see **Git hooks** below).
 
 **File:** [`.agents/rules/cargo-lock-trestle-rule.mdc`](.agents/rules/cargo-lock-trestle-rule.mdc)
 
-CI resolves `olai-http` / `olai-store` from crates.io. Local `just configure-trestle-deps`
+CI resolves the trestle `olai-*` crates from crates.io. Local `just configure-trestle-deps`
 patches from `../trestle` must not alter committed `Cargo.lock`.
 
 Before any PR that touches `Cargo.lock`:
@@ -190,7 +190,7 @@ git config --get core.hooksPath   # should print: .githooks
 | 1 | Always | Re-invokes any **global** `pre-commit` hook first (e.g. Databricks gitleaks), so enabling repo hooks does not disable corporate scanners |
 | 2 | `bun.lock` staged | Strips private npm proxy URLs from the resolution field and re-stages the file |
 | 3 | `node/` or `crates/server/ui.lock` staged | Regenerates `ui.lock` when `node/` changes are staged; runs `just ui-fingerprint-check` |
-| 4 | `Cargo.lock` staged | Verifies `olai-http` / `olai-store` still have crates.io `source` + `checksum` lines |
+| 4 | `Cargo.lock` staged | Verifies the trestle `olai-*` crates still have crates.io `source` + `checksum` lines |
 
 **What `post-merge` does** (after `git merge` / `git pull` that merges):
 
