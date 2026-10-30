@@ -1321,7 +1321,7 @@ export interface components {
              * @description Data type name.
              * @enum {string}
              */
-            type_name: "COLUMN_TYPE_NAME_UNSPECIFIED" | "BOOLEAN" | "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "STRING" | "BINARY" | "DECIMAL" | "INTERVAL" | "ARRAY" | "STRUCT" | "MAP" | "CHAR" | "NULL" | "USER_DEFINED_TYPE" | "TIMESTAMP_NTZ" | "VARIANT" | "TABLE_TYPE";
+            type_name: "COLUMN_TYPE_NAME_UNSPECIFIED" | "BOOLEAN" | "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "STRING" | "BINARY" | "DECIMAL" | "INTERVAL" | "ARRAY" | "STRUCT" | "MAP" | "CHAR" | "NULL" | "USER_DEFINED_TYPE" | "TIMESTAMP_NTZ" | "VARIANT" | "TABLE_TYPE" | "GEOMETRY" | "GEOGRAPHY";
             /**
              * Format: int32
              * @description Digits of precision; required for DecimalTypes.
@@ -1734,13 +1734,13 @@ export interface components {
              * Format: enum
              * @enum {string}
              */
-            table_type: "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "METRIC_VIEW";
+            table_type: "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "MANAGED_SHALLOW_CLONE" | "EXTERNAL_SHALLOW_CLONE" | "METRIC_VIEW";
             /**
              * Data Source Format
              * Format: enum
              * @enum {string}
              */
-            data_source_format: "DELTA" | "ICEBERG" | "HUDI" | "PARQUET" | "CSV" | "JSON" | "ORC" | "AVRO" | "TEXT" | "UNITY_CATALOG" | "DELTASHARING";
+            data_source_format: "DELTA" | "ICEBERG" | "HUDI" | "PARQUET" | "CSV" | "JSON" | "ORC" | "AVRO" | "TEXT" | "UNITY_CATALOG" | "DELTASHARING" | "DELTA_UNIFORM_ICEBERG" | "DELTA_UNIFORM_HUDI" | "HIVE";
             /** @description The array of Column definitions of the table's columns. */
             columns?: components["schemas"]["ColumnInfo"][];
             /** @description Storage root URL for external table. */
@@ -2156,7 +2156,7 @@ export interface components {
              * @description Data type name.
              * @enum {string}
              */
-            type_name: "COLUMN_TYPE_NAME_UNSPECIFIED" | "BOOLEAN" | "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "STRING" | "BINARY" | "DECIMAL" | "INTERVAL" | "ARRAY" | "STRUCT" | "MAP" | "CHAR" | "NULL" | "USER_DEFINED_TYPE" | "TIMESTAMP_NTZ" | "VARIANT" | "TABLE_TYPE";
+            type_name: "COLUMN_TYPE_NAME_UNSPECIFIED" | "BOOLEAN" | "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "STRING" | "BINARY" | "DECIMAL" | "INTERVAL" | "ARRAY" | "STRUCT" | "MAP" | "CHAR" | "NULL" | "USER_DEFINED_TYPE" | "TIMESTAMP_NTZ" | "VARIANT" | "TABLE_TYPE" | "GEOMETRY" | "GEOGRAPHY";
             /**
              * Format: int32
              * @description Digits of precision; required for DecimalTypes.
@@ -2938,14 +2938,14 @@ export interface components {
              * Format: enum
              * @enum {string}
              */
-            table_type: "TABLE_TYPE_UNSPECIFIED" | "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "METRIC_VIEW";
+            table_type: "TABLE_TYPE_UNSPECIFIED" | "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "MANAGED_SHALLOW_CLONE" | "EXTERNAL_SHALLOW_CLONE" | "METRIC_VIEW";
             /**
              * Data Source Format
              * Format: enum
              * @description Data source format of the table.
              * @enum {string}
              */
-            data_source_format: "DATA_SOURCE_FORMAT_UNSPECIFIED" | "DELTA" | "ICEBERG" | "HUDI" | "PARQUET" | "CSV" | "JSON" | "ORC" | "AVRO" | "TEXT" | "UNITY_CATALOG" | "DELTASHARING";
+            data_source_format: "DATA_SOURCE_FORMAT_UNSPECIFIED" | "DELTA" | "ICEBERG" | "HUDI" | "PARQUET" | "CSV" | "JSON" | "ORC" | "AVRO" | "TEXT" | "UNITY_CATALOG" | "DELTASHARING" | "DELTA_UNIFORM_ICEBERG" | "DELTA_UNIFORM_HUDI" | "HIVE";
             /** @description The array of Column definitions of the table's columns. */
             columns?: components["schemas"]["ColumnInfo"][];
             /** @description Storage root URL for table (for MANAGED, EXTERNAL tables) */
@@ -3006,7 +3006,7 @@ export interface components {
              * Format: enum
              * @enum {string}
              */
-            table_type: "TABLE_TYPE_UNSPECIFIED" | "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "METRIC_VIEW";
+            table_type: "TABLE_TYPE_UNSPECIFIED" | "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "MANAGED_SHALLOW_CLONE" | "EXTERNAL_SHALLOW_CLONE" | "METRIC_VIEW";
         };
         /**
          * A governed tag definition (tag policy).

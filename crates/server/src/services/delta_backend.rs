@@ -159,7 +159,10 @@ fn to_uc_table_type(t: DeltaTableType) -> TableType {
 fn to_delta_format(f: i32) -> Option<unitycatalog_delta_api::models::DeltaDataSourceFormat> {
     use unitycatalog_delta_api::models::DeltaDataSourceFormat as F;
     match DataSourceFormat::from_i32(f)? {
-        DataSourceFormat::DELTA => Some(F::Delta),
+        // UniForm tables are Delta tables that also publish Iceberg/Hudi metadata.
+        DataSourceFormat::DELTA
+        | DataSourceFormat::DELTA_UNIFORM_ICEBERG
+        | DataSourceFormat::DELTA_UNIFORM_HUDI => Some(F::Delta),
         DataSourceFormat::ICEBERG => Some(F::Iceberg),
         DataSourceFormat::HUDI => Some(F::Hudi),
         DataSourceFormat::PARQUET => Some(F::Parquet),
@@ -170,7 +173,7 @@ fn to_delta_format(f: i32) -> Option<unitycatalog_delta_api::models::DeltaDataSo
         DataSourceFormat::TEXT => Some(F::Text),
         DataSourceFormat::UNITY_CATALOG => Some(F::UnityCatalog),
         DataSourceFormat::DELTASHARING => Some(F::Deltasharing),
-        DataSourceFormat::DATA_SOURCE_FORMAT_UNSPECIFIED => None,
+        DataSourceFormat::HIVE | DataSourceFormat::DATA_SOURCE_FORMAT_UNSPECIFIED => None,
     }
 }
 

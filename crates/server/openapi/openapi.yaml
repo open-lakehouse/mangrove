@@ -3759,6 +3759,8 @@ components:
             - TIMESTAMP_NTZ
             - VARIANT
             - TABLE_TYPE
+            - GEOMETRY
+            - GEOGRAPHY
           type: string
           description: Data type name.
           format: enum
@@ -4435,6 +4437,8 @@ components:
             - VIEW
             - MATERIALIZED_VIEW
             - STREAMING_TABLE
+            - MANAGED_SHALLOW_CLONE
+            - EXTERNAL_SHALLOW_CLONE
             - METRIC_VIEW
           type: string
           format: enum
@@ -4452,6 +4456,9 @@ components:
             - TEXT
             - UNITY_CATALOG
             - DELTASHARING
+            - DELTA_UNIFORM_ICEBERG
+            - DELTA_UNIFORM_HUDI
+            - HIVE
           type: string
           format: enum
           title: Data Source Format
@@ -5117,6 +5124,8 @@ components:
             - TIMESTAMP_NTZ
             - VARIANT
             - TABLE_TYPE
+            - GEOMETRY
+            - GEOGRAPHY
           type: string
           description: Data type name.
           format: enum
@@ -6541,6 +6550,8 @@ components:
             - VIEW
             - MATERIALIZED_VIEW
             - STREAMING_TABLE
+            - MANAGED_SHALLOW_CLONE
+            - EXTERNAL_SHALLOW_CLONE
             - METRIC_VIEW
           type: string
           format: enum
@@ -6559,6 +6570,9 @@ components:
             - TEXT
             - UNITY_CATALOG
             - DELTASHARING
+            - DELTA_UNIFORM_ICEBERG
+            - DELTA_UNIFORM_HUDI
+            - HIVE
           type: string
           description: Data source format of the table.
           format: enum
@@ -6664,6 +6678,8 @@ components:
             - VIEW
             - MATERIALIZED_VIEW
             - STREAMING_TABLE
+            - MANAGED_SHALLOW_CLONE
+            - EXTERNAL_SHALLOW_CLONE
             - METRIC_VIEW
           type: string
           format: enum

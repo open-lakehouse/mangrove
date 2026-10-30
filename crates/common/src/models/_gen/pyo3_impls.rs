@@ -707,6 +707,8 @@ pub enum PyColumnTypeName {
     TIMESTAMP_NTZ = 20isize,
     VARIANT = 21isize,
     TABLE_TYPE = 22isize,
+    GEOMETRY = 23isize,
+    GEOGRAPHY = 24isize,
 }
 impl PyColumnTypeName {
     fn __to_proto_i32(self) -> i32 {
@@ -734,6 +736,8 @@ impl PyColumnTypeName {
             PyColumnTypeName::TIMESTAMP_NTZ => 20i32,
             PyColumnTypeName::VARIANT => 21i32,
             PyColumnTypeName::TABLE_TYPE => 22i32,
+            PyColumnTypeName::GEOMETRY => 23i32,
+            PyColumnTypeName::GEOGRAPHY => 24i32,
         }
     }
     fn __from_proto_i32(value: i32) -> Self {
@@ -761,6 +765,8 @@ impl PyColumnTypeName {
             20i32 => PyColumnTypeName::TIMESTAMP_NTZ,
             21i32 => PyColumnTypeName::VARIANT,
             22i32 => PyColumnTypeName::TABLE_TYPE,
+            23i32 => PyColumnTypeName::GEOMETRY,
+            24i32 => PyColumnTypeName::GEOGRAPHY,
             _ => PyColumnTypeName::COLUMN_TYPE_NAME_UNSPECIFIED,
         }
     }
@@ -794,6 +800,9 @@ pub enum PyDataSourceFormat {
     TEXT = 9isize,
     UNITY_CATALOG = 10isize,
     DELTASHARING = 11isize,
+    DELTA_UNIFORM_ICEBERG = 12isize,
+    DELTA_UNIFORM_HUDI = 13isize,
+    HIVE = 14isize,
 }
 impl PyDataSourceFormat {
     fn __to_proto_i32(self) -> i32 {
@@ -810,6 +819,9 @@ impl PyDataSourceFormat {
             PyDataSourceFormat::TEXT => 9i32,
             PyDataSourceFormat::UNITY_CATALOG => 10i32,
             PyDataSourceFormat::DELTASHARING => 11i32,
+            PyDataSourceFormat::DELTA_UNIFORM_ICEBERG => 12i32,
+            PyDataSourceFormat::DELTA_UNIFORM_HUDI => 13i32,
+            PyDataSourceFormat::HIVE => 14i32,
         }
     }
     fn __from_proto_i32(value: i32) -> Self {
@@ -826,6 +838,9 @@ impl PyDataSourceFormat {
             9i32 => PyDataSourceFormat::TEXT,
             10i32 => PyDataSourceFormat::UNITY_CATALOG,
             11i32 => PyDataSourceFormat::DELTASHARING,
+            12i32 => PyDataSourceFormat::DELTA_UNIFORM_ICEBERG,
+            13i32 => PyDataSourceFormat::DELTA_UNIFORM_HUDI,
+            14i32 => PyDataSourceFormat::HIVE,
             _ => PyDataSourceFormat::DATA_SOURCE_FORMAT_UNSPECIFIED,
         }
     }
@@ -854,6 +869,8 @@ pub enum PyTableType {
     VIEW = 3isize,
     MATERIALIZED_VIEW = 4isize,
     STREAMING_TABLE = 5isize,
+    MANAGED_SHALLOW_CLONE = 6isize,
+    EXTERNAL_SHALLOW_CLONE = 8isize,
     METRIC_VIEW = 9isize,
 }
 impl PyTableType {
@@ -865,6 +882,8 @@ impl PyTableType {
             PyTableType::VIEW => 3i32,
             PyTableType::MATERIALIZED_VIEW => 4i32,
             PyTableType::STREAMING_TABLE => 5i32,
+            PyTableType::MANAGED_SHALLOW_CLONE => 6i32,
+            PyTableType::EXTERNAL_SHALLOW_CLONE => 8i32,
             PyTableType::METRIC_VIEW => 9i32,
         }
     }
@@ -876,6 +895,8 @@ impl PyTableType {
             3i32 => PyTableType::VIEW,
             4i32 => PyTableType::MATERIALIZED_VIEW,
             5i32 => PyTableType::STREAMING_TABLE,
+            6i32 => PyTableType::MANAGED_SHALLOW_CLONE,
+            8i32 => PyTableType::EXTERNAL_SHALLOW_CLONE,
             9i32 => PyTableType::METRIC_VIEW,
             _ => PyTableType::TABLE_TYPE_UNSPECIFIED,
         }

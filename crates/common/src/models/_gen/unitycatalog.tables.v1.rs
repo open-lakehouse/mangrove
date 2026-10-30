@@ -10,11 +10,9 @@ pub enum TableType {
     VIEW = 3i32,
     MATERIALIZED_VIEW = 4i32,
     STREAMING_TABLE = 5i32,
-    /// MANAGED_SHALLOW_CLONE = 6;
-    ///
+    MANAGED_SHALLOW_CLONE = 6i32,
     /// FOREIGN = 7;
-    ///
-    /// EXTERNAL_SHALLOW_CLONE = 8;
+    EXTERNAL_SHALLOW_CLONE = 8i32,
     METRIC_VIEW = 9i32,
 }
 impl TableType {
@@ -36,6 +34,12 @@ impl TableType {
     ///Idiomatic alias for [`Self::STREAMING_TABLE`]; `Debug` prints the variant name.
     #[allow(non_upper_case_globals)]
     pub const StreamingTable: Self = Self::STREAMING_TABLE;
+    ///Idiomatic alias for [`Self::MANAGED_SHALLOW_CLONE`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const ManagedShallowClone: Self = Self::MANAGED_SHALLOW_CLONE;
+    ///Idiomatic alias for [`Self::EXTERNAL_SHALLOW_CLONE`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const ExternalShallowClone: Self = Self::EXTERNAL_SHALLOW_CLONE;
     ///Idiomatic alias for [`Self::METRIC_VIEW`]; `Debug` prints the variant name.
     #[allow(non_upper_case_globals)]
     pub const MetricView: Self = Self::METRIC_VIEW;
@@ -140,6 +144,8 @@ impl ::buffa::Enumeration for TableType {
             3i32 => ::core::option::Option::Some(Self::VIEW),
             4i32 => ::core::option::Option::Some(Self::MATERIALIZED_VIEW),
             5i32 => ::core::option::Option::Some(Self::STREAMING_TABLE),
+            6i32 => ::core::option::Option::Some(Self::MANAGED_SHALLOW_CLONE),
+            8i32 => ::core::option::Option::Some(Self::EXTERNAL_SHALLOW_CLONE),
             9i32 => ::core::option::Option::Some(Self::METRIC_VIEW),
             _ => ::core::option::Option::None,
         }
@@ -155,6 +161,8 @@ impl ::buffa::Enumeration for TableType {
             Self::VIEW => "VIEW",
             Self::MATERIALIZED_VIEW => "MATERIALIZED_VIEW",
             Self::STREAMING_TABLE => "STREAMING_TABLE",
+            Self::MANAGED_SHALLOW_CLONE => "MANAGED_SHALLOW_CLONE",
+            Self::EXTERNAL_SHALLOW_CLONE => "EXTERNAL_SHALLOW_CLONE",
             Self::METRIC_VIEW => "METRIC_VIEW",
         }
     }
@@ -168,6 +176,12 @@ impl ::buffa::Enumeration for TableType {
             "VIEW" => ::core::option::Option::Some(Self::VIEW),
             "MATERIALIZED_VIEW" => ::core::option::Option::Some(Self::MATERIALIZED_VIEW),
             "STREAMING_TABLE" => ::core::option::Option::Some(Self::STREAMING_TABLE),
+            "MANAGED_SHALLOW_CLONE" => {
+                ::core::option::Option::Some(Self::MANAGED_SHALLOW_CLONE)
+            }
+            "EXTERNAL_SHALLOW_CLONE" => {
+                ::core::option::Option::Some(Self::EXTERNAL_SHALLOW_CLONE)
+            }
             "METRIC_VIEW" => ::core::option::Option::Some(Self::METRIC_VIEW),
             _ => ::core::option::Option::None,
         }
@@ -180,6 +194,8 @@ impl ::buffa::Enumeration for TableType {
             Self::VIEW,
             Self::MATERIALIZED_VIEW,
             Self::STREAMING_TABLE,
+            Self::MANAGED_SHALLOW_CLONE,
+            Self::EXTERNAL_SHALLOW_CLONE,
             Self::METRIC_VIEW,
         ]
     }
@@ -199,6 +215,9 @@ pub enum DataSourceFormat {
     TEXT = 9i32,
     UNITY_CATALOG = 10i32,
     DELTASHARING = 11i32,
+    DELTA_UNIFORM_ICEBERG = 12i32,
+    DELTA_UNIFORM_HUDI = 13i32,
+    HIVE = 14i32,
 }
 impl DataSourceFormat {
     ///Idiomatic alias for [`Self::DATA_SOURCE_FORMAT_UNSPECIFIED`]; `Debug` prints the variant name.
@@ -237,6 +256,15 @@ impl DataSourceFormat {
     ///Idiomatic alias for [`Self::DELTASHARING`]; `Debug` prints the variant name.
     #[allow(non_upper_case_globals)]
     pub const Deltasharing: Self = Self::DELTASHARING;
+    ///Idiomatic alias for [`Self::DELTA_UNIFORM_ICEBERG`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const DeltaUniformIceberg: Self = Self::DELTA_UNIFORM_ICEBERG;
+    ///Idiomatic alias for [`Self::DELTA_UNIFORM_HUDI`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const DeltaUniformHudi: Self = Self::DELTA_UNIFORM_HUDI;
+    ///Idiomatic alias for [`Self::HIVE`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const Hive: Self = Self::HIVE;
 }
 impl ::core::default::Default for DataSourceFormat {
     fn default() -> Self {
@@ -346,6 +374,9 @@ impl ::buffa::Enumeration for DataSourceFormat {
             9i32 => ::core::option::Option::Some(Self::TEXT),
             10i32 => ::core::option::Option::Some(Self::UNITY_CATALOG),
             11i32 => ::core::option::Option::Some(Self::DELTASHARING),
+            12i32 => ::core::option::Option::Some(Self::DELTA_UNIFORM_ICEBERG),
+            13i32 => ::core::option::Option::Some(Self::DELTA_UNIFORM_HUDI),
+            14i32 => ::core::option::Option::Some(Self::HIVE),
             _ => ::core::option::Option::None,
         }
     }
@@ -366,6 +397,9 @@ impl ::buffa::Enumeration for DataSourceFormat {
             Self::TEXT => "TEXT",
             Self::UNITY_CATALOG => "UNITY_CATALOG",
             Self::DELTASHARING => "DELTASHARING",
+            Self::DELTA_UNIFORM_ICEBERG => "DELTA_UNIFORM_ICEBERG",
+            Self::DELTA_UNIFORM_HUDI => "DELTA_UNIFORM_HUDI",
+            Self::HIVE => "HIVE",
         }
     }
     fn from_proto_name(name: &str) -> ::core::option::Option<Self> {
@@ -384,6 +418,13 @@ impl ::buffa::Enumeration for DataSourceFormat {
             "TEXT" => ::core::option::Option::Some(Self::TEXT),
             "UNITY_CATALOG" => ::core::option::Option::Some(Self::UNITY_CATALOG),
             "DELTASHARING" => ::core::option::Option::Some(Self::DELTASHARING),
+            "DELTA_UNIFORM_ICEBERG" => {
+                ::core::option::Option::Some(Self::DELTA_UNIFORM_ICEBERG)
+            }
+            "DELTA_UNIFORM_HUDI" => {
+                ::core::option::Option::Some(Self::DELTA_UNIFORM_HUDI)
+            }
+            "HIVE" => ::core::option::Option::Some(Self::HIVE),
             _ => ::core::option::Option::None,
         }
     }
@@ -401,6 +442,9 @@ impl ::buffa::Enumeration for DataSourceFormat {
             Self::TEXT,
             Self::UNITY_CATALOG,
             Self::DELTASHARING,
+            Self::DELTA_UNIFORM_ICEBERG,
+            Self::DELTA_UNIFORM_HUDI,
+            Self::HIVE,
         ]
     }
 }
@@ -430,6 +474,8 @@ pub enum ColumnTypeName {
     TIMESTAMP_NTZ = 20i32,
     VARIANT = 21i32,
     TABLE_TYPE = 22i32,
+    GEOMETRY = 23i32,
+    GEOGRAPHY = 24i32,
 }
 impl ColumnTypeName {
     ///Idiomatic alias for [`Self::COLUMN_TYPE_NAME_UNSPECIFIED`]; `Debug` prints the variant name.
@@ -501,6 +547,12 @@ impl ColumnTypeName {
     ///Idiomatic alias for [`Self::TABLE_TYPE`]; `Debug` prints the variant name.
     #[allow(non_upper_case_globals)]
     pub const TableType: Self = Self::TABLE_TYPE;
+    ///Idiomatic alias for [`Self::GEOMETRY`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const Geometry: Self = Self::GEOMETRY;
+    ///Idiomatic alias for [`Self::GEOGRAPHY`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const Geography: Self = Self::GEOGRAPHY;
 }
 impl ::core::default::Default for ColumnTypeName {
     fn default() -> Self {
@@ -621,6 +673,8 @@ impl ::buffa::Enumeration for ColumnTypeName {
             20i32 => ::core::option::Option::Some(Self::TIMESTAMP_NTZ),
             21i32 => ::core::option::Option::Some(Self::VARIANT),
             22i32 => ::core::option::Option::Some(Self::TABLE_TYPE),
+            23i32 => ::core::option::Option::Some(Self::GEOMETRY),
+            24i32 => ::core::option::Option::Some(Self::GEOGRAPHY),
             _ => ::core::option::Option::None,
         }
     }
@@ -652,6 +706,8 @@ impl ::buffa::Enumeration for ColumnTypeName {
             Self::TIMESTAMP_NTZ => "TIMESTAMP_NTZ",
             Self::VARIANT => "VARIANT",
             Self::TABLE_TYPE => "TABLE_TYPE",
+            Self::GEOMETRY => "GEOMETRY",
+            Self::GEOGRAPHY => "GEOGRAPHY",
         }
     }
     fn from_proto_name(name: &str) -> ::core::option::Option<Self> {
@@ -681,6 +737,8 @@ impl ::buffa::Enumeration for ColumnTypeName {
             "TIMESTAMP_NTZ" => ::core::option::Option::Some(Self::TIMESTAMP_NTZ),
             "VARIANT" => ::core::option::Option::Some(Self::VARIANT),
             "TABLE_TYPE" => ::core::option::Option::Some(Self::TABLE_TYPE),
+            "GEOMETRY" => ::core::option::Option::Some(Self::GEOMETRY),
+            "GEOGRAPHY" => ::core::option::Option::Some(Self::GEOGRAPHY),
             _ => ::core::option::Option::None,
         }
     }
@@ -709,6 +767,8 @@ impl ::buffa::Enumeration for ColumnTypeName {
             Self::TIMESTAMP_NTZ,
             Self::VARIANT,
             Self::TABLE_TYPE,
+            Self::GEOMETRY,
+            Self::GEOGRAPHY,
         ]
     }
 }
