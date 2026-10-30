@@ -256,7 +256,6 @@ pub async fn discover_log(
 // wasm-bindgen-test), and the async ones need tokio.
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
-    use object_store::ObjectStoreExt as _;
     use object_store::memory::InMemory;
 
     use super::*;
