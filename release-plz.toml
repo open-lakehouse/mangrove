@@ -125,6 +125,13 @@ release = false
 [[package]]
 name = "olai-uc-server"
 changelog_path = "crates/server/CHANGELOG.md"
+# The Docker image bakes in the web UI built from node/, which lives outside
+# this crate. Commits to the `uc-app` placeholder (every tracked file under
+# node/) and to the `unity-catalog-client` package the app imports release the
+# server too, at most as a patch bump, so a UI-only change still produces a
+# server tag and a Docker rebuild. (This replaced the crates/server/ui.lock
+# fingerprint; it needs release-plz >= 0.4.1.)
+changelog_include = ["uc-app", "unity-catalog-client"]
 
 [[package]]
 name = "olai-uc-storage-proxy"
@@ -170,6 +177,19 @@ changelog_path = "node/unity-catalog-client/CHANGELOG.md"
 git_only = true
 publish = false # required alongside git_only
 semver_check = false
+
+# The web UI bundled into the server image, through its placeholder crate at
+# node/Cargo.toml. It only exists so the server's `changelog_include` sees UI
+# commits; release-plz needs it to take part in the release for that, so it is
+# `git_only` (versioned from `uc-app-v*` tags) rather than `release = false`.
+# Nothing is published, and the tag is enough — no GitHub release.
+[[package]]
+name = "uc-app"
+changelog_path = "node/CHANGELOG.md"
+git_only = true
+publish = false # required alongside git_only
+semver_check = false
+git_release_enable = false
 
 [[package]]
 name = "unitycatalog-client-py"
@@ -219,5 +239,5 @@ commit_parsers = [
 # is already crate-scoped. Scopes use the crate directory names / short names
 # the repo's conventional commits already use.
 commit_preprocessors = [
-  { pattern = '\((delta-api|common|client|object-store|postgres|sqlite|datafusion|server|storage-proxy|cli|unity-catalog-node|unity-catalog-client)\)', replace = "" },
+  { pattern = '\((delta-api|common|client|object-store|postgres|sqlite|datafusion|server|storage-proxy|cli|unity-catalog-node|unity-catalog-client|uc-app|app|ui)\)', replace = "" },
 ]

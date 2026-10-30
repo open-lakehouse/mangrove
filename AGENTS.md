@@ -113,25 +113,7 @@ bun run strip-lock-proxy:check
 - Only the resolution field is modified; names, versions, dependency maps, and integrity hashes are untouched.
 - Enforced by the pre-commit hook when `bun.lock` is staged (see **Git hooks** below).
 
-### 4. UI fingerprint
-
-**File:** [`.agents/rules/ui-fingerprint-rule.mdc`](.agents/rules/ui-fingerprint-rule.mdc)
-
-After editing anything under `node/`, regenerate `crates/server/ui.lock` before opening a PR:
-
-```bash
-just ui-fingerprint
-just ui-fingerprint-check   # same check CI runs
-```
-
-The pre-commit hook regenerates `ui.lock` when `node/` files are staged and runs
-`ui-fingerprint-check` before the commit completes (see **Git hooks** below).
-
-After **merging `main`**, always run `just ui-fingerprint` on the merged tree — do not
-keep either side's `ui.lock` hash in a conflict. The post-merge hook regenerates the
-lock when stale (see **Git hooks** below).
-
-### 5. Cargo.lock and trestle
+### 4. Cargo.lock and trestle
 
 **File:** [`.agents/rules/cargo-lock-trestle-rule.mdc`](.agents/rules/cargo-lock-trestle-rule.mdc)
 
@@ -148,7 +130,7 @@ If it fails after building with local patches: `git checkout main -- Cargo.lock`
 
 Enforced by the pre-commit hook when `Cargo.lock` is staged (see **Git hooks** below).
 
-### 6. JS/TS release (release-plz, GitHub Packages)
+### 5. JS/TS release (release-plz, GitHub Packages)
 
 **File:** [`.agents/rules/js-release-rule.mdc`](.agents/rules/js-release-rule.mdc)
 
@@ -163,7 +145,10 @@ The publishable npm packages are released by **release-plz**, through crates:
   job ([`js-release.yaml`](.github/workflows/js-release.yaml)) publishes to
   **GitHub Packages only** (no npmjs yet), gated on the `JS_PUBLISH_ENABLED` repo
   variable.
-- The UI packages stay `private: true` and are not released.
+- The UI packages stay `private: true` and are not released to npm. The server's
+  bundled UI is tracked by a third placeholder, `uc-app` (`node/Cargo.toml`, every
+  tracked file under `node/`), which the server lists in `changelog_include`: a UI
+  change releases the server and rebuilds its Docker image. Nothing to regenerate.
 
 ### Git hooks (`setup-hooks`)
 
@@ -189,19 +174,9 @@ git config --get core.hooksPath   # should print: .githooks
 |------|------|--------|
 | 1 | Always | Re-invokes any **global** `pre-commit` hook first (e.g. Databricks gitleaks), so enabling repo hooks does not disable corporate scanners |
 | 2 | `bun.lock` staged | Strips private npm proxy URLs from the resolution field and re-stages the file |
-| 3 | `node/` or `crates/server/ui.lock` staged | Regenerates `ui.lock` when `node/` changes are staged; runs `just ui-fingerprint-check` |
-| 4 | `Cargo.lock` staged | Verifies the trestle `olai-*` crates still have crates.io `source` + `checksum` lines |
+| 3 | `Cargo.lock` staged | Verifies the trestle `olai-*` crates still have crates.io `source` + `checksum` lines |
 
-**What `post-merge` does** (after `git merge` / `git pull` that merges):
-
-| When | Action |
-|------|--------|
-| Merge changed `node/` (or is a merge commit that did) | Runs `just ui-fingerprint-check`; regenerates `ui.lock` if stale and prints commit instructions |
-
-Use this after merging `main` — `ui.lock` conflicts should be resolved with
-`just ui-fingerprint`, not by keeping one side's hash.
-
-**Prerequisites on PATH:** `bun` (pre-commit step 2), `just` (pre-commit step 3, post-merge).
+**Prerequisites on PATH:** `bun` (pre-commit step 2).
 If a tool is missing, that step is skipped with a warning — run the manual checks below
 before opening a PR.
 
@@ -209,7 +184,6 @@ before opening a PR.
 
 ```bash
 bun run strip-lock-proxy:check
-just ui-fingerprint-check
 bun run cargo-lock-trestle:check
 ```
 
@@ -245,7 +219,7 @@ inputs and regenerate with `just generate`; commit generated output in the same 
 | `just fmt` | Format all code |
 | `cargo nextest run --workspace --all-features` | Run Rust test suite |
 | `bun run test:coverage` | TypeScript tests with LCOV coverage |
-| `bun run setup-hooks` | Enable repo git hooks (pre-commit, post-merge; once per clone) |
+| `bun run setup-hooks` | Enable repo git hooks (pre-commit; once per clone) |
 
 ### Pre-push check (mimics CI)
 

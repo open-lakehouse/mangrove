@@ -1,5 +1,5 @@
 # Test & CI-gate recipes: unit/integration/conformance test batteries plus the
-# drift guards CI runs (`sync-server-openapi-check`, `ui-fingerprint-check`).
+# the drift guard CI runs (`sync-server-openapi-check`).
 #
 # Recipes anchor paths on `{{ justfile_directory() }}` (repo root) and carry
 # `[no-cd]` where they use bare relative paths.
@@ -30,28 +30,6 @@ sync-server-openapi-check:
             exit 1
         fi
     done
-
-# Regenerate with `just build ui-fingerprint`. This gate is what makes the
-# olai-uc-server version bump (and Docker rebuild) fire on a UI change. The lock
-# path is duplicated from `build`'s UI_LOCK — modules cannot share variables, so
-# keep the two in sync by hand.
-#
-# CI gate: fail if the UI fingerprint lock is stale vs the current node/ tree
-[group('test')]
-[no-cd]
-ui-fingerprint-check:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    ui_lock="crates/server/ui.lock"
-    current=$(git ls-files node/ | LC_ALL=C sort | git hash-object --stdin-paths | sha256sum | cut -d' ' -f1)
-    committed=$(grep -v '^#' "$ui_lock" | tr -d '[:space:]')
-    if [ "$current" != "$committed" ]; then
-        echo "::error::UI changed but $ui_lock is stale — run \`just build ui-fingerprint\` and commit the result." >&2
-        echo "  committed: $committed" >&2
-        echo "  current:   $current" >&2
-        exit 1
-    fi
-    echo "→ $ui_lock is up to date ($current)"
 
 # run node binding unit tests
 [group('test')]

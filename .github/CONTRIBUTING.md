@@ -35,7 +35,7 @@ Invoke recipes namespaced — `just codegen generate`, `just build ui-build`,
 `just test test-node`, `just dev rest`, `just meta fmt`. List a module's recipes
 with `just --list <module>` (e.g. `just --list codegen`) or the whole tree with
 `just --list`. A handful of names CI and this guide depend on (`just generate`,
-`just ui-fingerprint-check`, …) are kept working flat via aliases in the root
+`just sync-server-openapi-check`, …) are kept working flat via aliases in the root
 `justfile`; new usage should prefer the namespaced form.
 
 ## Generated Code
@@ -152,7 +152,7 @@ new deployable service or CLI, keep to this contract so the two stay aligned:
   `./web`. *(Publishing the shared component packages to npm is deferred while names
   settle — they stay workspace-internal for now.)*
 - **Release.** The server is a deployable (`git_only`, Docker), not a crates.io library;
-  its `node/` UI is tied to the crate via `crates/server/ui.lock`. See **Releases** below.
+  its `node/` UI releases it through the `uc-app` placeholder crate. See **Releases** below.
 
 ## Releases
 
@@ -238,9 +238,11 @@ packages rely on it.) Flipping the server to `publish = true` (after the sibling
 in `releases` and re-activates the Docker build automatically — no workflow edit needed; the
 image then builds only on an actual server release or a manual `workflow_dispatch` rebuild
 (there is no per-push/edge build). The server's bundled web UI lives in `node/` — outside the
-crate's packaged fileset — so a UI change is tied to the crate via `crates/server/ui.lock`;
-after editing anything under `node/`, run `just ui-fingerprint` and commit the updated lock
-(CI's `ui-fingerprint` job enforces this).
+crate's packaged fileset. A placeholder crate at `node/Cargo.toml` (`uc-app`, `git_only`,
+never published) owns every tracked file under `node/`, and the server lists it (with
+`unity-catalog-client`) in `changelog_include` in `release-plz.toml`. A UI change therefore
+releases `uc-app` and the server (at most a patch bump), and the server tag rebuilds the
+image. Nothing needs regenerating by hand.
 
 The Python binding (`python/client`) is `publish = false` and released by hand (see
 `python-wheels.yml`); so are `unitycatalog-acceptance` and the doc `examples`.

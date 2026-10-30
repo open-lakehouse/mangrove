@@ -48,8 +48,8 @@ jobs:
       - name: Format
         run: cargo fmt --all --check
 
-  ui-fingerprint:
-    name: ui-fingerprint
+  drift-guards:
+    name: drift-guards
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -59,14 +59,7 @@ jobs:
         with:
           persist-credentials: false
 
-      # The bundled UI lives in node/, outside the olai-uc-server crate's
-      # packaged fileset, so a UI change is tied to the crate via
-      # crates/server/ui.lock. Fail the PR if that lock wasn't regenerated —
-      # otherwise release-plz wouldn't bump the server crate and the Docker image
-      # (which embeds the UI) would never rebuild. See `just ui-fingerprint`.
       - uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff # v3
-      - name: Check UI fingerprint is in sync
-        run: just ui-fingerprint-check
 
       # The server crate embeds the OpenAPI specs via include_str! for Swagger UI.
       # The canonical specs are at the repo root, but a cargo-publish tarball only

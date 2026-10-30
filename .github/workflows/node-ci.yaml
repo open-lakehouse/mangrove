@@ -106,7 +106,7 @@ jobs:
   # the canonical spec. The spec itself is NOT regenerated here (that needs the
   # trestle CLI + a ../trestle checkout, unavailable in CI) — we only re-run
   # openapi-typescript against the already-committed openapi/openapi.yaml and
-  # fail if src/uc-api.d.ts is stale. Mirrors the ui-fingerprint-check pattern.
+  # fail if src/uc-api.d.ts is stale. Mirrors the sync-server-openapi-check pattern.
   uc-client-types-drift:
     name: uc-client-types-drift
     runs-on: ubuntu-latest

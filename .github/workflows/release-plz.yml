@@ -13,7 +13,9 @@ name: Release-plz
 # off the version release-plz just tagged. Running it in the SAME workflow keeps
 # the build explicitly gated on "the server was released this run" — no second
 # trigger to reason about, and the version is passed in directly rather than
-# re-derived from a tag event.
+# re-derived from a tag event. The server's bundled web UI (node/) releases the
+# server through the `uc-app` placeholder crate and `changelog_include` (see
+# release-plz.toml), so a UI-only change also lands here as a server release.
 #
 # Bootstrap note: crates with `release = false` in release-plz.toml have not yet
 # had their one-time token bootstrap publish (.github/workflows/bootstrap-
@@ -59,7 +61,7 @@ jobs:
           # Matches the rest of CI; stays above the 1.95.0 workspace floor.
           toolchain: "1.97"
       - name: Run release-plz (release-pr)
-        uses: release-plz/action@8921286633dfa0c4020f7f30bd1c14fe19cbb10e # v0.5.142
+        uses: release-plz/action@f67a7e724bdad4a0f6875f186060a0ca2770d76c # v0.5.147
         with:
           command: release-pr
         env:
@@ -118,7 +120,7 @@ jobs:
       # (`id-token: write`). Crates with `release = false` are skipped.
       - name: Run release-plz (release)
         id: release
-        uses: release-plz/action@8921286633dfa0c4020f7f30bd1c14fe19cbb10e # v0.5.142
+        uses: release-plz/action@f67a7e724bdad4a0f6875f186060a0ca2770d76c # v0.5.147
         with:
           command: release
         env:
