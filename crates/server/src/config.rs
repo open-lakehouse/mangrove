@@ -469,10 +469,6 @@ pub struct RoutingConfig {
     pub external_locations: RoutingMode,
     #[serde(default)]
     pub functions: RoutingMode,
-    #[serde(default)]
-    pub recipients: RoutingMode,
-    #[serde(default)]
-    pub shares: RoutingMode,
 }
 
 impl RoutingConfig {
@@ -502,8 +498,6 @@ impl RoutingConfig {
             ("credentials", self.credentials),
             ("external-locations", self.external_locations),
             ("functions", self.functions),
-            ("recipients", self.recipients),
-            ("shares", self.shares),
         ]
         .into_iter()
         .filter(|(_, mode)| *mode == RoutingMode::Upstream)
@@ -511,7 +505,7 @@ impl RoutingConfig {
         .collect()
     }
 
-    fn surfaces(&self) -> [(&'static str, RoutingMode); 8] {
+    fn surfaces(&self) -> [(&'static str, RoutingMode); 6] {
         [
             ("catalogs", self.catalogs),
             ("schemas", self.schemas),
@@ -519,8 +513,6 @@ impl RoutingConfig {
             ("credentials", self.credentials),
             ("external-locations", self.external_locations),
             ("functions", self.functions),
-            ("recipients", self.recipients),
-            ("shares", self.shares),
         ]
     }
 }
@@ -1092,14 +1084,14 @@ mod tests {
         let yaml = r#"
             routing:
               catalogs: upstream
+              credentials: upstream
               functions: upstream
-              shares: upstream
         "#;
         let config: Config = serde_yml::from_str(yaml).unwrap();
         assert!(config.routing.any_upstream());
         assert_eq!(
             config.routing.unsupported_upstream(),
-            vec!["functions", "shares"]
+            vec!["credentials", "functions"]
         );
     }
 }

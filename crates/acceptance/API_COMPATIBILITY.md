@@ -38,9 +38,9 @@ Legend: ✅ defined · ❌ absent · — n/a
 | **External Locations** C/G/L/U/D | ✅ | ✅ | ✅ | aligned |
 | **Credentials** (storage) C/G/L/U/D | ✅ | ✅ | ✅ | aligned |
 | **Temporary Credentials** (table/path/volume/model-version) | ✅ | ✅ | ✅ | aligned |
-| **Shares** + share permissions | ✅ | ❌ (no sharing server) | ✅ | OSS-Rust / DBX only |
-| **Recipients** C/G/L/U/D | ✅ | ❌ | ✅ | OSS-Rust / DBX only |
-| **Providers** C/G/L/U/D | ✅ | ❌ | ✅ | OSS-Rust / DBX only |
+| **Shares** + share permissions | ❌ (moved to [distributary](https://github.com/open-lakehouse/distributary)) | ❌ (no sharing server) | ✅ | served by distributary's sharing server |
+| **Recipients** C/G/L/U/D | ❌ (moved to distributary) | ❌ | ✅ | served by distributary's sharing server |
+| **Providers** C/G/L/U/D | ❌ (moved to distributary) | ❌ | ✅ | models in distributary (`olai-sharing-admin`) |
 | **Grants / Permissions** (`/permissions/{securable_type}/{full_name}`) | ❌ (share-scoped only) | ✅ | ✅ (`/grants/...` + `geteffective`) | **deferred** — see below |
 | **Metastore summary** (`/metastore_summary`) | ❌ | ✅ | ✅ | minor gap, deferred |
 | **Registered Models / Versions** | ✅ | ✅ | ✅ | aligned (incl. `/temporary-model-version-credentials`) |
@@ -120,9 +120,6 @@ remaining gaps are journey-coverage gaps, not client gaps. Coverage after this c
 | External Locations | ✅ | ✅ | ✅ | ✅ | ✅ | `external_location_lifecycle` |
 | Credentials | ✅ | ✅ | ✅ | ✅ | ✅ | `credential_lifecycle` |
 | Temporary Credentials | — | — | — | — | — | `temporary_{table,path,volume}_credentials` |
-| Shares | ✅ | ✅ | ✅ | ✅ | ✅ | `share_lifecycle` |
-| Recipients | ✅ | ✅ | ✅ | ✅ | ✅ | `recipient_lifecycle` |
-| Providers | ✅ | ✅ | ✅ | ✅ | ✅ | `provider_lifecycle` |
 
 Journeys touching Databricks-only or external-storage-dependent resources are tagged via
 `JourneyMetadata.implementations` so the `oss_java` CI run only executes compatible ones.

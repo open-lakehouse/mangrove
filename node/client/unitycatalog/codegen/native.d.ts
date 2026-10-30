@@ -51,18 +51,6 @@ export declare class NapiPolicyClient {
   delete(): Promise<void>
 }
 
-export declare class NapiProviderClient {
-  get(): Promise<Buffer>
-  update(newName?: string | undefined | null, owner?: string | undefined | null, comment?: string | undefined | null, recipientProfileStr?: string | undefined | null, properties?: Record<string, string> | undefined | null): Promise<Buffer>
-  delete(): Promise<void>
-}
-
-export declare class NapiRecipientClient {
-  get(): Promise<Buffer>
-  update(newName?: string | undefined | null, owner?: string | undefined | null, comment?: string | undefined | null, expirationTime?: number | undefined | null): Promise<Buffer>
-  delete(): Promise<void>
-}
-
 export declare class NapiRegisteredModelClient {
   get(includeBrowse?: boolean | undefined | null): Promise<Buffer>
   update(newName?: string | undefined | null, comment?: string | undefined | null, owner?: string | undefined | null): Promise<Buffer>
@@ -73,14 +61,6 @@ export declare class NapiSchemaClient {
   get(includeBrowse?: boolean | undefined | null): Promise<Buffer>
   update(comment?: string | undefined | null, properties?: Record<string, string> | undefined | null, newName?: string | undefined | null): Promise<Buffer>
   delete(force?: boolean | undefined | null): Promise<void>
-}
-
-export declare class NapiShareClient {
-  get(includeSharedData?: boolean | undefined | null): Promise<Buffer>
-  update(newName?: string | undefined | null, owner?: string | undefined | null, comment?: string | undefined | null): Promise<Buffer>
-  delete(): Promise<void>
-  getPermissions(maxResults?: number | undefined | null, pageToken?: string | undefined | null): Promise<Buffer>
-  updatePermissions(omitPermissionsList?: boolean | undefined | null): Promise<Buffer>
 }
 
 export declare class NapiStagingTableClient {}
@@ -130,21 +110,12 @@ export declare class NapiUnityCatalogClient {
   deleteModelVersion(fullName: string, version: number): Promise<void>
   finalizeModelVersion(fullName: string, version: number): Promise<Buffer>
   createPolicy(name: string, onSecurableType: string, onSecurableFullname: string, policyType: number, comment?: string | undefined | null, toPrincipals?: Array<string> | undefined | null, exceptPrincipals?: Array<string> | undefined | null, forSecurableType?: string | undefined | null, whenCondition?: string | undefined | null): Promise<Buffer>
-  listProviders(maxResults?: number | undefined | null): Promise<Array<Buffer>>
-  listProvidersStream(maxResults?: number | undefined | null): ReadableStream<Buffer>
-  createProvider(name: string, authenticationType: number, owner?: string | undefined | null, comment?: string | undefined | null, recipientProfileStr?: string | undefined | null, properties?: Record<string, string> | undefined | null): Promise<Buffer>
-  listRecipients(maxResults?: number | undefined | null): Promise<Array<Buffer>>
-  listRecipientsStream(maxResults?: number | undefined | null): ReadableStream<Buffer>
-  createRecipient(name: string, authenticationType: number, owner: string, comment?: string | undefined | null, expirationTime?: number | undefined | null): Promise<Buffer>
   listRegisteredModels(catalogName?: string | undefined | null, schemaName?: string | undefined | null, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
   listRegisteredModelsStream(catalogName?: string | undefined | null, schemaName?: string | undefined | null, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
   createRegisteredModel(name: string, catalogName: string, schemaName: string, comment?: string | undefined | null): Promise<Buffer>
   listSchemas(catalogName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
   listSchemasStream(catalogName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
   createSchema(name: string, catalogName: string, comment?: string | undefined | null, properties?: Record<string, string> | undefined | null, storageRoot?: string | undefined | null): Promise<Buffer>
-  listShares(maxResults?: number | undefined | null): Promise<Array<Buffer>>
-  listSharesStream(maxResults?: number | undefined | null): ReadableStream<Buffer>
-  createShare(name: string, comment?: string | undefined | null, storageRoot?: string | undefined | null): Promise<Buffer>
   createStagingTable(name: string, catalogName: string, schemaName: string): Promise<Buffer>
   listTables(catalogName: string, schemaName: string, maxResults?: number | undefined | null, includeDeltaMetadata?: boolean | undefined | null, omitColumns?: boolean | undefined | null, omitProperties?: boolean | undefined | null, omitUsername?: boolean | undefined | null, includeBrowse?: boolean | undefined | null, includeManifestCapabilities?: boolean | undefined | null): Promise<Array<Buffer>>
   listTablesStream(catalogName: string, schemaName: string, maxResults?: number | undefined | null, includeDeltaMetadata?: boolean | undefined | null, omitColumns?: boolean | undefined | null, omitProperties?: boolean | undefined | null, omitUsername?: boolean | undefined | null, includeBrowse?: boolean | undefined | null, includeManifestCapabilities?: boolean | undefined | null): ReadableStream<Buffer>
@@ -166,11 +137,8 @@ export declare class NapiUnityCatalogClient {
   externalLocation(externalLocationName: string): NapiExternalLocationClient
   function(catalogName: string, schemaName: string, functionName: string): NapiFunctionClient
   policy(policyName: string): NapiPolicyClient
-  provider(providerName: string): NapiProviderClient
-  recipient(recipientName: string): NapiRecipientClient
   registeredModel(catalogName: string, schemaName: string, registeredModelName: string): NapiRegisteredModelClient
   schema(catalogName: string, schemaName: string): NapiSchemaClient
-  share(shareName: string): NapiShareClient
   stagingTable(stagingTableName: string): NapiStagingTableClient
   table(catalogName: string, schemaName: string, tableName: string): NapiTableClient
   tagPolicy(tagPolicyName: string): NapiTagPolicyClient

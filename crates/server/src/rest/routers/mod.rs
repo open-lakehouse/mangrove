@@ -1,8 +1,8 @@
 use crate::api::{
     AgentHandler, AgentSkillHandler, CatalogHandler, CredentialHandler, EntityTagAssignmentHandler,
-    ExternalLocationHandler, FunctionHandler, ModelVersionHandler, PolicyHandler, ProviderHandler,
-    RecipientHandler, RegisteredModelHandler, SchemaHandler, ShareHandler, StagingTableHandler,
-    TableHandler, TagPolicyHandler, TemporaryCredentialHandler, VolumeHandler,
+    ExternalLocationHandler, FunctionHandler, ModelVersionHandler, PolicyHandler,
+    RegisteredModelHandler, SchemaHandler, StagingTableHandler, TableHandler, TagPolicyHandler,
+    TemporaryCredentialHandler, VolumeHandler,
 };
 use axum::routing::{delete, get, patch, post};
 
@@ -131,38 +131,6 @@ where
         .with_state(handler)
 }
 
-pub fn create_recipients_router<T, Cx>(handler: T) -> axum::Router
-where
-    T: RecipientHandler<Cx> + Clone,
-    Cx: axum::extract::FromRequestParts<T> + Send + 'static,
-{
-    use crate::codegen::recipients::server::*;
-
-    axum::Router::new()
-        .route("/recipients", get(list_recipients::<T, Cx>))
-        .route("/recipients", post(create_recipient::<T, Cx>))
-        .route("/recipients/{name}", get(get_recipient::<T, Cx>))
-        .route("/recipients/{name}", patch(update_recipient::<T, Cx>))
-        .route("/recipients/{name}", delete(delete_recipient::<T, Cx>))
-        .with_state(handler)
-}
-
-pub fn create_providers_router<T, Cx>(handler: T) -> axum::Router
-where
-    T: ProviderHandler<Cx> + Clone,
-    Cx: axum::extract::FromRequestParts<T> + Send + 'static,
-{
-    use crate::codegen::providers::server::*;
-
-    axum::Router::new()
-        .route("/providers", get(list_providers::<T, Cx>))
-        .route("/providers", post(create_provider::<T, Cx>))
-        .route("/providers/{name}", get(get_provider::<T, Cx>))
-        .route("/providers/{name}", patch(update_provider::<T, Cx>))
-        .route("/providers/{name}", delete(delete_provider::<T, Cx>))
-        .with_state(handler)
-}
-
 pub fn create_schemas_router<T, Cx>(handler: T) -> axum::Router
 where
     T: SchemaHandler<Cx> + Clone,
@@ -188,27 +156,6 @@ where
 
     axum::Router::new()
         .route("/staging-tables", post(create_staging_table::<T, Cx>))
-        .with_state(handler)
-}
-
-pub fn create_shares_router<T, Cx>(handler: T) -> axum::Router
-where
-    T: ShareHandler<Cx> + Clone,
-    Cx: axum::extract::FromRequestParts<T> + Send + 'static,
-{
-    use crate::codegen::shares::server::*;
-
-    axum::Router::new()
-        .route("/shares", get(list_shares::<T, Cx>))
-        .route("/shares", post(create_share::<T, Cx>))
-        .route("/shares/{name}", get(get_share::<T, Cx>))
-        .route("/shares/{name}", patch(update_share::<T, Cx>))
-        .route("/shares/{name}", delete(delete_share::<T, Cx>))
-        .route("/shares/{name}/permissions", get(get_permissions::<T, Cx>))
-        .route(
-            "/shares/{name}/permissions",
-            patch(update_permissions::<T, Cx>),
-        )
         .with_state(handler)
 }
 

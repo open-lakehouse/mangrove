@@ -281,11 +281,11 @@ mod test {
     use super::*;
     use unitycatalog_common::models::{ResourceName, ResourceRef, resource_name};
 
-    /// Minimal resource carrying a share name, for exercising [`filter_authorized`].
+    /// Minimal resource carrying a catalog name, for exercising [`filter_authorized`].
     #[derive(Debug, Clone, PartialEq)]
-    struct TestShare(&'static str);
+    struct TestCatalog(&'static str);
 
-    impl ResourceExt for TestShare {
+    impl ResourceExt for TestCatalog {
         fn resource_name(&self) -> ResourceName {
             ResourceName::new([self.0])
         }
@@ -293,7 +293,7 @@ mod test {
             ResourceRef::Name(self.resource_name())
         }
         fn resource_ident(&self) -> ResourceIdent {
-            ResourceIdent::share(self.resource_name())
+            ResourceIdent::catalog(self.resource_name())
         }
     }
 
@@ -327,24 +327,24 @@ mod test {
     async fn filter_authorized_pairs_decision_with_correct_resource() {
         let policy = AllowListPolicy {
             allow: vec![
-                ResourceIdent::share(resource_name!("a")),
-                ResourceIdent::share(resource_name!("c")),
+                ResourceIdent::catalog(resource_name!("a")),
+                ResourceIdent::catalog(resource_name!("c")),
             ],
         };
 
         // Asymmetric layout so a reversed mapping yields a different result:
         // allowed at indices 0 and 2, denied at 1 and 3.
         let mut resources = vec![
-            TestShare("a"),
-            TestShare("b"),
-            TestShare("c"),
-            TestShare("d"),
+            TestCatalog("a"),
+            TestCatalog("b"),
+            TestCatalog("c"),
+            TestCatalog("d"),
         ];
 
         filter_authorized(&policy, &(), &Permission::Read, &mut resources)
             .await
             .unwrap();
 
-        assert_eq!(resources, vec![TestShare("a"), TestShare("c")]);
+        assert_eq!(resources, vec![TestCatalog("a"), TestCatalog("c")]);
     }
 }
