@@ -50,9 +50,7 @@ export type AzureServicePrincipal = Message<"unitycatalog.credentials.v1.AzureSe
     case: "clientSecret";
   } | {
     /**
-     * Location of the file containing a federated token.
-     *
-     * Specifically useful for workload identity federation.
+     * Location of the file containing a federated token, for workload identity federation.
      *
      * @generated from field: string federated_token_file = 5;
      */

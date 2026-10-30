@@ -4090,9 +4090,7 @@ impl PyAzureServicePrincipal {
             _ => ::core::option::Option::None,
         }
     }
-    /**Location of the file containing a federated token.
-
-    Specifically useful for workload identity federation.*/
+    ///Location of the file containing a federated token, for workload identity federation.
     #[getter]
     fn federated_token_file(&self) -> ::core::option::Option<::std::string::String> {
         match &self.0.credential {

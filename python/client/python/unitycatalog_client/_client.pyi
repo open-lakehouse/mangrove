@@ -243,9 +243,7 @@ class AzureServicePrincipal:
     client_secret: Optional[str]
     """The client secret generated for the above app ID in AAD."""
     federated_token_file: Optional[str]
-    """Location of the file containing a federated token.
-
-Specifically useful for workload identity federation."""
+    """Location of the file containing a federated token, for workload identity federation."""
 
     def __init__(
         self,

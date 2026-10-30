@@ -1256,10 +1256,7 @@ export interface components {
             application_id: string;
             /** @description The client secret generated for the above app ID in AAD. */
             client_secret?: string;
-            /**
-             * Location of the file containing a federated token.
-             * @description Specifically useful for workload identity federation.
-             */
+            /** @description Location of the file containing a federated token, for workload identity federation. */
             federated_token_file?: string;
         };
         /**
