@@ -44,21 +44,15 @@
 
 use std::sync::Arc;
 
-use object_store::azure::MicrosoftAzureBuilder;
 use object_store::path::Path;
 use object_store::prefix::PrefixStore;
 use object_store::{ObjectStore, Result};
+use olai_storage_credentials::AccessLevel;
+use olai_vended_store::{CredentialSource, StoreOptions, build_store};
 use unitycatalog_client::{TemporaryCredentialClient, UnityCatalogClient};
 
-// Native-only object_store backends and I/O handle. On `wasm32` the AWS/GCP
-// stores are unsupported (Azure-first), `LocalFileSystem` is absent from
-// object_store, and there is no tokio runtime.
-#[cfg(not(target_arch = "wasm32"))]
-use object_store::aws::AmazonS3Builder;
-#[cfg(not(target_arch = "wasm32"))]
-use object_store::client::SpawnedReqwestConnector;
-#[cfg(not(target_arch = "wasm32"))]
-use object_store::gcp::GoogleCloudStorageBuilder;
+// Native-only: the local file system and the I/O runtime handle. On `wasm32`
+// `LocalFileSystem` is absent from object_store, and there is no tokio runtime.
 #[cfg(not(target_arch = "wasm32"))]
 use object_store::local::LocalFileSystem;
 #[cfg(not(target_arch = "wasm32"))]
@@ -75,19 +69,17 @@ use olai_http::CloudClient as Transport;
 use olai_http::service::{HttpService, ReqwestService};
 #[cfg(target_arch = "wasm32")]
 use olai_http_wasm::WasmClient as Transport;
+// Native vending goes through olai-vended-store's Unity Catalog client; the
+// browser build vends through the generated client (see `source`).
+#[cfg(not(target_arch = "wasm32"))]
+use olai_vended_store::unity::{Securable, UnityClient as VendingClient, UnitySource};
 use unitycatalog_common::tables::v1::GetTableRequest;
 use unitycatalog_common::volumes::v1::GetVolumeRequest;
-use unitycatalog_credentials::model::TemporaryCredential;
 use url::Url;
 
-use crate::credential::{SecurableRef, as_aws, as_azure, as_gcp, new_azure};
-// AWS/GCP provider constructors + the access-point helper are native-only: on
-// wasm the store is Azure-first and these are never constructed.
-#[cfg(not(target_arch = "wasm32"))]
-use crate::credential::{aws_access_point, new_aws, new_gcp};
 pub use crate::error::Error;
-#[cfg(not(target_arch = "wasm32"))]
-pub use crate::presign::{PresignedUrls, presign_from_vended_credential};
+#[cfg(target_arch = "wasm32")]
+use crate::source::{Securable, UcRestSource};
 pub use unitycatalog_common::UCReference;
 // Re-export the reference / operation enums so consumers do not need a direct
 // dependency on `unitycatalog-client` for the common case.
@@ -95,11 +87,10 @@ pub use unitycatalog_client::{
     PathOperation, TableOperation, TableReference, VolumeOperation, VolumeReference,
 };
 
-mod credential;
 mod error;
-#[cfg(not(target_arch = "wasm32"))]
-mod presign;
 mod proxy;
+#[cfg(target_arch = "wasm32")]
+mod source;
 
 /// An [`HttpService`] decorator that injects a fixed request header on every
 /// outbound request before delegating to an inner service.
@@ -289,12 +280,9 @@ impl UnityObjectStoreFactoryBuilder {
 
     /// Override the AWS region used for vended AWS credentials.
     ///
-    /// When unset the factory falls back to (in order):
-    /// 1. The `AWS_REGION` environment variable.
-    /// 2. The `object_store` default region (`us-east-1`).
-    ///
-    /// This is a stop-gap until the server reliably returns region info
-    /// alongside the credential.
+    /// When unset the region comes from the vended credential, the bucket
+    /// (an anonymous `HeadBucket`), or the `AWS_REGION` environment variable.
+    /// Ignored on `wasm32`, whose stores are Azure-first.
     pub fn with_aws_region(mut self, aws_region: impl Into<Option<String>>) -> Self {
         self.aws_region = aws_region.into();
         self
@@ -342,18 +330,30 @@ impl UnityObjectStoreFactoryBuilder {
         #[cfg(target_arch = "wasm32")]
         let storage_access = proxy::discover_storage_access(&url, self.token.as_deref()).await;
 
+        #[allow(unused_mut)]
+        let mut store_options = StoreOptions::new();
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            if let Some(region) = &self.aws_region {
+                store_options = store_options.with_aws_region(region.clone());
+            }
+            if let Some(handle) = &self.io_handle {
+                store_options = store_options.with_io_runtime(handle.clone());
+            }
+        }
+
         let creds = TemporaryCredentialClient::new_with_url(transport.clone(), url.clone());
-        let uc = UnityCatalogClient::new(transport, url.clone());
+        let uc = UnityCatalogClient::new(transport.clone(), url.clone());
         Ok(UnityObjectStoreFactory {
             creds,
             uc,
-            aws_region: self.aws_region,
+            store_options,
+            #[cfg(not(target_arch = "wasm32"))]
+            vending: VendingClient::new(transport, url.clone()),
             #[cfg(not(target_arch = "wasm32"))]
             io_handle: self.io_handle,
             #[cfg(not(target_arch = "wasm32"))]
             base_url: url,
-            #[cfg(not(target_arch = "wasm32"))]
-            allow_unauthenticated: self.allow_unauthenticated,
             #[cfg(target_arch = "wasm32")]
             storage_access,
             #[cfg(target_arch = "wasm32")]
@@ -461,6 +461,15 @@ pub struct UCStore {
 }
 
 impl UCStore {
+    /// The store for `scoped`, addressed by `url` as the catalog spelled it.
+    fn from_scoped(scoped: &olai_vended_store::ScopedStore, url: Url) -> Self {
+        Self {
+            root: scoped.root(),
+            url,
+            path: scoped.prefix().clone(),
+        }
+    }
+
     /// Returns the credential-scoped store (prefixed at [`Self::prefix`]).
     ///
     /// This is the common case: callers list / read / write paths inside
@@ -498,13 +507,16 @@ impl UCStore {
 /// credential vending.
 #[derive(Clone)]
 pub struct UnityObjectStoreFactory {
+    // The browser build vends through the generated client; native vends
+    // through `vending`, but keeps this for `credentials_client`.
     creds: TemporaryCredentialClient,
     uc: UnityCatalogClient,
-    // Read only by the native AWS store branch; the wasm build is Azure-first and
-    // never consults it, but keeping the field (and `with_aws_region`) uniform
-    // across targets avoids splitting the builder API.
-    #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
-    aws_region: Option<String>,
+    /// How stores are built: region, I/O runtime, refresh margin.
+    store_options: StoreOptions,
+    /// The Unity Catalog vend client of `olai-vended-store`, over the same
+    /// transport as `uc`.
+    #[cfg(not(target_arch = "wasm32"))]
+    vending: VendingClient,
     /// Dedicated runtime for object-store HTTP I/O, if configured via
     /// [`UnityObjectStoreFactoryBuilder::with_io_runtime`]. Absent on `wasm32`.
     #[cfg(not(target_arch = "wasm32"))]
@@ -515,15 +527,6 @@ pub struct UnityObjectStoreFactory {
     /// [`with_forwarded_user`]: UnityObjectStoreFactory::with_forwarded_user
     #[cfg(not(target_arch = "wasm32"))]
     base_url: Url,
-    /// Whether the factory was built without a token, retained for parity when
-    /// [`with_forwarded_user`] derives a transport (the forwarded-identity path
-    /// is unauthenticated by design; this field documents that the base factory
-    /// also tolerated no token).
-    ///
-    /// [`with_forwarded_user`]: UnityObjectStoreFactory::with_forwarded_user
-    #[cfg(not(target_arch = "wasm32"))]
-    #[allow(dead_code)]
-    allow_unauthenticated: bool,
     /// Storage-access posture discovered from the server's `/capabilities`
     /// endpoint at build time. `Proxy` routes every byte through the server's
     /// same-origin storage byte-proxy instead of vending + direct cloud IO.
@@ -604,14 +607,14 @@ impl UnityObjectStoreFactory {
         // (Arc bumps) plus a `Url`.
         let creds =
             TemporaryCredentialClient::new_with_url(transport.clone(), self.base_url.clone());
-        let uc = UnityCatalogClient::new(transport, self.base_url.clone());
+        let uc = UnityCatalogClient::new(transport.clone(), self.base_url.clone());
         Ok(UnityObjectStoreFactory {
             creds,
             uc,
-            aws_region: self.aws_region.clone(),
+            store_options: self.store_options.clone(),
+            vending: VendingClient::new(transport, self.base_url.clone()),
             io_handle: self.io_handle.clone(),
             base_url: self.base_url.clone(),
-            allow_unauthenticated: self.allow_unauthenticated,
         })
     }
 
@@ -670,51 +673,53 @@ impl UnityObjectStoreFactory {
     /// The `table` argument accepts a `Uuid`, a [`String`] / `&str`
     /// containing a three-level `<catalog>.<schema>.<table>` name, or any
     /// [`TableReference`].
+    ///
+    /// A name is looked up once (GetTable) for the table's id and storage
+    /// location; the store then vends by id, and re-vends the same table at the
+    /// same access before the credential expires. A table backed by local
+    /// (`file://`) storage gets a local store and is never vended for.
     pub async fn for_table(
         &self,
         table: impl Into<TableReference>,
         operation: TableOperation,
     ) -> Result<UCStore> {
-        let table = table.into();
-        // For name references, resolve the storage location up front (a lookup
-        // name-based vending makes anyway). Two branches consume it before
-        // vending:
-        //   - a `file://` location has no cloud credential to vend → local store;
-        //   - on wasm under a proxy posture → route through the byte-proxy.
-        // A UUID-only reference skips both (a local-fs or proxied table by UUID
-        // is an unsupported edge case — use the three-level name).
-        if let TableReference::Name(name) = &table
-            && let Some(location) = self.table_storage_location(name).await?
-            && let Ok(url) = Url::parse(&location)
-        {
-            if url.scheme() == "file" {
-                let path_op = match operation {
-                    TableOperation::Read => PathOperation::Read,
-                    TableOperation::ReadWrite => PathOperation::ReadWrite,
-                };
-                return local_store(&url, path_op);
+        let access = match operation {
+            TableOperation::Read => AccessLevel::Read,
+            TableOperation::ReadWrite => AccessLevel::ReadWrite,
+        };
+        let (table_id, location) = match table.into() {
+            TableReference::Name(name) => {
+                let (table_id, location) = self.table_location(&name).await?;
+                if location.scheme() == "file" {
+                    return local_store(&location, operation.into_path());
+                }
+                // Proxy posture (wasm): route table bytes through the server's
+                // storage byte-proxy.
+                #[cfg(target_arch = "wasm32")]
+                if matches!(self.storage_access, proxy::StorageAccess::Proxy { .. }) {
+                    let seg = format!("table:{name}");
+                    return self.proxy_store(&seg, &location);
+                }
+                (table_id, location)
             }
-            #[cfg(target_arch = "wasm32")]
-            if matches!(self.storage_access, proxy::StorageAccess::Proxy { .. }) {
-                let seg = format!("table:{name}");
-                return self.proxy_store(&seg, &url);
+            // A UUID carries no storage location: the first vend supplies it. A
+            // local-fs or proxied table addressed by UUID is unsupported — use the
+            // three-level name.
+            TableReference::Id(id) => {
+                let (credential, _) = self
+                    .creds
+                    .temporary_table_credential(id, operation)
+                    .await
+                    .map_err(Error::from)?;
+                (id, Url::parse(&credential.url).map_err(Error::from)?)
             }
-        }
-        let (credential, table_id) = self
-            .creds
-            .temporary_table_credential(table, operation)
+        };
+        self.open(SecurableId::Table(table_id), location, access)
             .await
-            .map_err(Error::from)?;
-        let securable = SecurableRef::Table(table_id, operation);
-        self.build_store(credential.into(), securable).await
     }
 
-    /// Look up a table's `storage_location` by its three-level name.
-    ///
-    /// Returns `None` when the table has no storage location set. Used by
-    /// [`for_table`](Self::for_table) to detect `file://`-backed tables before
-    /// vending.
-    async fn table_storage_location(&self, full_name: &str) -> Result<Option<String>> {
+    /// Look up a table's id and `storage_location` by its three-level name.
+    async fn table_location(&self, full_name: &str) -> Result<(uuid::Uuid, Url)> {
         let table = self
             .uc
             .tables_client()
@@ -727,63 +732,65 @@ impl UnityObjectStoreFactory {
             })
             .await
             .map_err(Error::from)?;
-        Ok(table.storage_location.filter(|s| !s.is_empty()))
+        let id = table
+            .table_id
+            .as_deref()
+            .and_then(|id| uuid::Uuid::parse_str(id).ok())
+            .ok_or_else(|| Error::invalid_config(format!("table `{full_name}` has no id")))?;
+        let location = table
+            .storage_location
+            .filter(|s| !s.is_empty())
+            .ok_or_else(|| {
+                Error::invalid_config(format!("table `{full_name}` has no storage location"))
+            })?;
+        Ok((id, Url::parse(&location).map_err(Error::from)?))
     }
 
     /// Vend credentials for a volume and return a prefixed store rooted at
     /// the volume's storage location.
     ///
-    /// A volume whose storage location is a `file://` path is served by a local
-    /// [`LocalFileSystem`] store and never hits the credential-vending API —
-    /// local storage has no cloud credential to vend.
+    /// As for [`for_table`](Self::for_table), a name is looked up once and a
+    /// volume whose storage location is a `file://` path is served by a local
+    /// [`LocalFileSystem`] store without vending.
     pub async fn for_volume(
         &self,
         volume: impl Into<VolumeReference>,
         operation: VolumeOperation,
     ) -> Result<UCStore> {
-        let volume = volume.into();
-        // As with `for_table`: a volume backed by local filesystem storage has
-        // no cloud credential to vend. Resolve its storage location up front
-        // (the same `GetVolume` lookup name-based vending makes) and, when it is
-        // `file://`, build a local store directly — skipping vending.
-        //
-        // Only possible for name references; a caller holding only the volume
-        // UUID still vends (a local-fs volume addressed by UUID is unsupported —
-        // use the three-level name).
-        if let VolumeReference::Name(name) = &volume
-            && let Some(location) = self.volume_storage_location(name).await?
-            && let Ok(url) = Url::parse(&location)
-        {
-            if url.scheme() == "file" {
-                let path_op = match operation {
-                    VolumeOperation::Read => PathOperation::Read,
-                    VolumeOperation::ReadWrite => PathOperation::ReadWrite,
-                };
-                return local_store(&url, path_op);
+        let access = match operation {
+            VolumeOperation::Read => AccessLevel::Read,
+            VolumeOperation::ReadWrite => AccessLevel::ReadWrite,
+        };
+        let (volume_id, location) = match volume.into() {
+            VolumeReference::Name(name) => {
+                let (volume_id, location) = self.volume_location(&name).await?;
+                if location.scheme() == "file" {
+                    return local_store(&location, operation.into_path());
+                }
+                // Proxy posture (wasm): route volume bytes (read + write) through
+                // the server's storage byte-proxy.
+                #[cfg(target_arch = "wasm32")]
+                if matches!(self.storage_access, proxy::StorageAccess::Proxy { .. }) {
+                    let seg = format!("vol:{name}");
+                    return self.proxy_store(&seg, &location);
+                }
+                (volume_id, location)
             }
-            // Proxy posture (wasm): route volume bytes (read + write) through
-            // the server's storage byte-proxy.
-            #[cfg(target_arch = "wasm32")]
-            if matches!(self.storage_access, proxy::StorageAccess::Proxy { .. }) {
-                let seg = format!("vol:{name}");
-                return self.proxy_store(&seg, &url);
+            VolumeReference::Id(id) => {
+                let (credential, _) = self
+                    .creds
+                    .temporary_volume_credential(id, operation)
+                    .await
+                    .map_err(Error::from)?;
+                (id, Url::parse(&credential.url).map_err(Error::from)?)
             }
-        }
-        let (credential, volume_id) = self
-            .creds
-            .temporary_volume_credential(volume, operation)
+        };
+        self.open(SecurableId::Volume(volume_id), location, access)
             .await
-            .map_err(Error::from)?;
-        let securable = SecurableRef::Volume(volume_id, operation);
-        self.build_store(credential.into(), securable).await
     }
 
-    /// Look up a volume's `storage_location` by its three-level name.
-    ///
-    /// Returns `None` when the volume has no storage location set. Used by
-    /// [`for_volume`](Self::for_volume) to detect `file://`-backed volumes
-    /// before vending.
-    async fn volume_storage_location(&self, name: &str) -> Result<Option<String>> {
+    /// Look up a volume's id and `storage_location` by its three-level name.
+    async fn volume_location(&self, name: &str) -> Result<(uuid::Uuid, Url)> {
         let volume = self
             .uc
             .volumes_client()
@@ -794,7 +801,17 @@ impl UnityObjectStoreFactory {
             })
             .await
             .map_err(Error::from)?;
-        Ok(Some(volume.storage_location).filter(|s| !s.is_empty()))
+        let id = uuid::Uuid::parse_str(&volume.volume_id)
+            .map_err(|_| Error::invalid_config(format!("volume `{name}` has no valid id")))?;
+        if volume.storage_location.is_empty() {
+            return Err(
+                Error::invalid_config(format!("volume `{name}` has no storage location")).into(),
+            );
+        }
+        Ok((
+            id,
+            Url::parse(&volume.storage_location).map_err(Error::from)?,
+        ))
     }
 
     /// Vend credentials for a raw cloud URL (`s3://`, `gs://`, `abfss://`,
@@ -815,32 +832,29 @@ impl UnityObjectStoreFactory {
             let seg = proxy::path_securable(path);
             return self.proxy_store(&seg, path);
         }
-        let (credential, _resolved) = self
-            .creds
-            .temporary_path_credential(path.clone(), operation, false)
+        let access = match operation {
+            PathOperation::Read => AccessLevel::Read,
+            PathOperation::ReadWrite | PathOperation::CreateTable => AccessLevel::ReadWrite,
+        };
+        self.open(SecurableId::Path(path.clone()), path.clone(), access)
             .await
-            .map_err(Error::from)?;
-        let securable = SecurableRef::Path(path.clone(), operation, Some(false));
-        self.build_store(credential.into(), securable).await
     }
 
     /// Vend credentials for a raw cloud URL with `dry_run` set to true.
     /// The server validates that credentials *could* be issued but the
     /// returned token is not usable for IO; useful for permission probes.
     ///
-    /// For `file://` URLs there is nothing to probe — a local store is
-    /// returned directly, identical to [`for_path`](Self::for_path).
-    pub async fn dry_run_path(&self, path: &Url, operation: PathOperation) -> Result<UCStore> {
+    /// For `file://` URLs there is nothing to probe: local storage is never
+    /// vended for (see [`for_path`](Self::for_path)).
+    pub async fn dry_run_path(&self, path: &Url, operation: PathOperation) -> Result<()> {
         if path.scheme() == "file" {
-            return local_store(path, operation);
+            return Ok(());
         }
-        let (credential, _resolved) = self
-            .creds
+        self.creds
             .temporary_path_credential(path.clone(), operation, true)
             .await
             .map_err(Error::from)?;
-        let securable = SecurableRef::Path(path.clone(), operation, Some(true));
-        self.build_store(credential.into(), securable).await
+        Ok(())
     }
 
     /// Build a proxy-backed [`UCStore`] for `securable_seg` (a typed
@@ -861,13 +875,13 @@ impl UnityObjectStoreFactory {
             )
             .into());
         };
-        // The bucket-relative prefix of the securable root — the same value
-        // `build_store` records as `UCStore.path`, and exactly what the routing
+        // The bucket-relative prefix of the securable root — the same value a
+        // vended store records as `UCStore.path`, and exactly what the routing
         // store forwards ahead of the object key.
-        let path = match parse_azurite(location) {
-            Some(loc) => Path::from(loc.prefix),
-            None => Path::from_url_path(location.path())?,
-        };
+        let path = olai_storage_credentials::StorageLocation::parse(location)
+            .map_err(olai_vended_store::Error::from)?
+            .path()
+            .clone();
         let root = proxy::build_proxy_store(base, securable_seg, path.clone(), self.token())?;
         Ok(UCStore {
             root,
@@ -883,136 +897,58 @@ impl UnityObjectStoreFactory {
         self.token.as_deref()
     }
 
-    async fn build_store(
+    /// Vend for `securable`, stored at `location`, and build its store: the
+    /// store re-vends the same securable at the same access before expiry.
+    async fn open(
         &self,
-        credential: TemporaryCredential,
-        securable: SecurableRef,
+        securable: SecurableId,
+        location: Url,
+        access: AccessLevel,
     ) -> Result<UCStore> {
-        let url = Url::parse(&credential.url).map_err(Error::from)?;
-        // The emulator store is rooted at the container, so the prefix is the
-        // blob path *within* the container — not the full URL path (which for
-        // path-style Azurite also carries `/<account>/<container>`).
-        let path = match parse_azurite(&url) {
-            Some(loc) => Path::from(loc.prefix),
-            None => Path::from_url_path(url.path())?,
-        };
-        let store = self.to_store(credential, securable).await?;
-        Ok(UCStore {
-            root: store,
-            url,
-            path,
-        })
+        let source = self.source(securable, &location, access)?;
+        let seed = source.fetch().await?;
+        let scoped = build_store(&seed, source, &self.store_options).await?;
+        Ok(UCStore::from_scoped(&scoped, location))
     }
 
-    async fn to_store(
+    #[cfg(not(target_arch = "wasm32"))]
+    fn source(
         &self,
-        credential: TemporaryCredential,
-        securable: SecurableRef,
-    ) -> Result<Arc<dyn ObjectStore>> {
-        if as_azure(&credential).is_ok() {
-            let url = Url::parse(&credential.url).map_err(Error::from)?;
-
-            // Azurite (local Blob emulator): the URL is path-style and
-            // `with_url` does not understand it, and in emulator mode the
-            // builder ignores a `with_credentials` provider — it only honours
-            // an explicit access key / bearer / SAS. So set account + container
-            // explicitly and pass the vended SAS via `SasKey`.
-            if let Some(loc) = parse_azurite(&url) {
-                let sas = azure_sas_token(&credential).ok_or_else(|| {
-                    Error::invalid_config(
-                        "Azurite store requires a SAS-token credential".to_string(),
-                    )
-                })?;
-                #[allow(unused_mut)]
-                let mut builder = MicrosoftAzureBuilder::new()
-                    .with_use_emulator(true)
-                    .with_account(loc.account)
-                    .with_container_name(loc.container)
-                    .with_config(object_store::azure::AzureConfigKey::SasKey, sas);
-                // Native: route object-store HTTP onto the dedicated I/O runtime
-                // when one was supplied. On wasm, use object_store's default
-                // browser-Fetch connector (no runtime to route onto).
-                #[cfg(not(target_arch = "wasm32"))]
-                if let Some(handle) = &self.io_handle {
-                    builder =
-                        builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
-                }
-                // Belt-and-braces: object_store's retry path panics on wasm
-                // without a timer, so disable retries on the browser store.
-                #[cfg(target_arch = "wasm32")]
-                {
-                    builder = builder.with_retry(object_store::RetryConfig {
-                        max_retries: 0,
-                        ..Default::default()
-                    });
-                }
-                let store = builder.build()?;
-                return Ok(Arc::new(store));
-            }
-
-            let provider = new_azure(self.creds.clone(), &credential, securable).await?;
-            #[allow(unused_mut)]
-            let mut builder = MicrosoftAzureBuilder::new()
-                .with_url(url.to_string())
-                .with_credentials(Arc::new(provider));
-            #[cfg(not(target_arch = "wasm32"))]
-            if let Some(handle) = &self.io_handle {
-                builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
-            }
-            #[cfg(target_arch = "wasm32")]
-            {
-                builder = builder.with_retry(object_store::RetryConfig {
-                    max_retries: 0,
-                    ..Default::default()
-                });
-            }
-            let store = builder.build()?;
-            return Ok(Arc::new(store));
-        }
-
-        #[cfg(not(target_arch = "wasm32"))]
-        if as_aws(&credential).is_ok() {
-            let access_point = aws_access_point(&credential);
-            let provider = new_aws(self.creds.clone(), &credential, securable).await?;
-            let url = Url::parse(&credential.url).map_err(Error::from)?;
-            let mut builder = s3_builder(&url, self.aws_region.clone(), access_point)?
-                .with_credentials(Arc::new(provider));
-            if let Some(handle) = &self.io_handle {
-                builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
-            }
-            let store = builder.build()?;
-            return Ok(Arc::new(store));
-        }
-
-        #[cfg(not(target_arch = "wasm32"))]
-        if as_gcp(&credential).is_ok() {
-            let provider = new_gcp(self.creds.clone(), &credential, securable).await?;
-            let url = Url::parse(&credential.url).map_err(Error::from)?;
-            let mut builder = GoogleCloudStorageBuilder::new()
-                .with_url(url.to_string())
-                .with_credentials(Arc::new(provider));
-            if let Some(handle) = &self.io_handle {
-                builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
-            }
-            let store = builder.build()?;
-            return Ok(Arc::new(store));
-        }
-
-        // wasm is Azure-first: AWS/GCP stores are gated out above, so a
-        // non-Azure credential here is unsupported rather than unmatched.
-        #[cfg(target_arch = "wasm32")]
-        if as_aws(&credential).is_ok() || as_gcp(&credential).is_ok() {
-            return Err(Error::invalid_config(
-                "AWS/GCP object stores are not supported on wasm (Azure-first)",
-            )
-            .into());
-        }
-
-        Err(
-            Error::InvalidCredential("Failed to match credential with storage type".to_string())
-                .into(),
-        )
+        securable: SecurableId,
+        location: &Url,
+        access: AccessLevel,
+    ) -> Result<Arc<dyn CredentialSource>> {
+        let securable = match securable {
+            SecurableId::Table(id) => Securable::Table(id.as_hyphenated().to_string()),
+            SecurableId::Volume(id) => Securable::Volume(id.as_hyphenated().to_string()),
+            SecurableId::Path(url) => Securable::Path(url),
+        };
+        let source = UnitySource::new(self.vending.clone(), securable, location.as_str(), access)?;
+        Ok(Arc::new(source))
     }
+
+    #[cfg(target_arch = "wasm32")]
+    fn source(
+        &self,
+        securable: SecurableId,
+        location: &Url,
+        access: AccessLevel,
+    ) -> Result<Arc<dyn CredentialSource>> {
+        let securable = match securable {
+            SecurableId::Table(id) => Securable::Table(id),
+            SecurableId::Volume(id) => Securable::Volume(id),
+            SecurableId::Path(url) => Securable::Path(url),
+        };
+        let source = UcRestSource::new(self.creds.clone(), securable, location, access)?;
+        Ok(Arc::new(source))
+    }
+}
+
+/// What a store vends for: a table or volume by id, or a storage URL.
+enum SecurableId {
+    Table(uuid::Uuid),
+    Volume(uuid::Uuid),
+    Path(Url),
 }
 
 /// Unified read/write operation used by [`UnityObjectStoreFactory::for_url`].
@@ -1049,6 +985,29 @@ impl Operation {
         match self {
             Operation::Read => PathOperation::Read,
             Operation::ReadWrite => PathOperation::ReadWrite,
+        }
+    }
+}
+
+/// The path operation equivalent of a securable operation, for local stores.
+trait IntoPathOperation {
+    fn into_path(self) -> PathOperation;
+}
+
+impl IntoPathOperation for TableOperation {
+    fn into_path(self) -> PathOperation {
+        match self {
+            TableOperation::Read => PathOperation::Read,
+            TableOperation::ReadWrite => PathOperation::ReadWrite,
+        }
+    }
+}
+
+impl IntoPathOperation for VolumeOperation {
+    fn into_path(self) -> PathOperation {
+        match self {
+            VolumeOperation::Read => PathOperation::Read,
+            VolumeOperation::ReadWrite => PathOperation::ReadWrite,
         }
     }
 }
@@ -1132,168 +1091,6 @@ fn local_store(url: &Url, operation: PathOperation) -> Result<UCStore> {
     })
 }
 
-/// A [`CredentialProvider`] that always hands back a fixed, already-materialized
-/// credential. Unlike `object_store::StaticCredentialProvider` (which takes the
-/// credential by value), this holds an `Arc<T>` directly — the shape
-/// [`as_azure`]/[`as_aws`]/[`as_gcp`] already produce — so no `Clone` on the
-/// (non-`Clone`) cloud credential types is required.
-#[cfg(not(target_arch = "wasm32"))]
-#[derive(Debug)]
-struct StaticArcProvider<T>(Arc<T>);
-
-#[cfg(not(target_arch = "wasm32"))]
-#[async_trait::async_trait]
-impl<T: std::fmt::Debug + Send + Sync> object_store::CredentialProvider for StaticArcProvider<T> {
-    type Credential = T;
-    async fn get_credential(&self) -> Result<Arc<T>> {
-        Ok(self.0.clone())
-    }
-}
-
-/// Build a [`UCStore`] from a credential that has **already been vended**
-/// out-of-band, using a *static* credential provider (no Unity Catalog client,
-/// no auto-refresh).
-///
-/// This is the escape hatch for an in-process caller — e.g. a server-side storage
-/// byte-proxy — that authorizes and vends the credential itself and then only
-/// needs it turned into an [`ObjectStore`]. Unlike [`UnityObjectStoreFactory`]'s
-/// `for_*` entry points, this takes no factory and constructs no
-/// [`UnityCatalogClient`]: the store is bound to the exact `credential` passed,
-/// valid for that credential's lifetime. A single short-lived proxy request never
-/// outlives the vended credential, so the lack of refresh is fine; a caller that
-/// needs long-lived refresh should use the factory `for_*` methods instead.
-///
-/// The returned [`UCStore`] is scoped exactly as [`UnityObjectStoreFactory::for_path`]
-/// would produce it; call [`UCStore::as_dyn`] for a store prefixed at the
-/// credential-scoped root. `io_handle` (when `Some`) routes object-store HTTP onto
-/// a dedicated I/O runtime; `aws_region` overrides the S3 region (else `AWS_REGION`
-/// / the object_store default).
-///
-/// A `file://` URL yields a [`LocalFileSystem`] store and needs no credential.
-#[cfg(not(target_arch = "wasm32"))]
-pub fn store_from_vended_credential(
-    credential: &TemporaryCredential,
-    io_handle: Option<tokio::runtime::Handle>,
-    aws_region: Option<String>,
-) -> Result<UCStore> {
-    let url = Url::parse(&credential.url).map_err(Error::from)?;
-
-    // Local storage: no cloud credential to apply.
-    if url.scheme() == "file" {
-        let store = LocalFileSystem::new();
-        let path = Path::from_url_path(url.path())?;
-        return Ok(UCStore {
-            root: Arc::new(store),
-            url,
-            path,
-        });
-    }
-
-    // The credential-scoped prefix within the bucket/container root. For
-    // path-style Azurite the store is rooted at the container, so the prefix is
-    // the blob path only (not the full `/<account>/<container>/...` URL path).
-    let path = match parse_azurite(&url) {
-        Some(loc) => Path::from(loc.prefix),
-        None => Path::from_url_path(url.path())?,
-    };
-
-    let root: Arc<dyn ObjectStore> = if as_azure(credential).is_ok() {
-        // Azurite: the emulator ignores a credentials provider — set account +
-        // container explicitly and pass the vended SAS via `SasKey` (identical to
-        // the factory path).
-        if let Some(loc) = parse_azurite(&url) {
-            let sas = azure_sas_token(credential).ok_or_else(|| {
-                Error::invalid_config("Azurite store requires a SAS-token credential".to_string())
-            })?;
-            let mut builder = MicrosoftAzureBuilder::new()
-                .with_use_emulator(true)
-                .with_account(loc.account)
-                .with_container_name(loc.container)
-                .with_config(object_store::azure::AzureConfigKey::SasKey, sas);
-            if let Some(handle) = &io_handle {
-                builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
-            }
-            Arc::new(builder.build()?)
-        } else {
-            let token = as_azure(credential)?.token;
-            let mut builder = MicrosoftAzureBuilder::new()
-                .with_url(url.to_string())
-                .with_credentials(Arc::new(StaticArcProvider(token)));
-            if let Some(handle) = &io_handle {
-                builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
-            }
-            Arc::new(builder.build()?)
-        }
-    } else if as_aws(credential).is_ok() {
-        let access_point = aws_access_point(credential);
-        let token = as_aws(credential)?.token;
-        let mut builder = s3_builder(&url, aws_region, access_point)?
-            .with_credentials(Arc::new(StaticArcProvider(token)));
-        if let Some(handle) = &io_handle {
-            builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
-        }
-        Arc::new(builder.build()?)
-    } else if as_gcp(credential).is_ok() {
-        let token = as_gcp(credential)?.token;
-        let mut builder = GoogleCloudStorageBuilder::new()
-            .with_url(url.to_string())
-            .with_credentials(Arc::new(StaticArcProvider(token)));
-        if let Some(handle) = &io_handle {
-            builder = builder.with_http_connector(SpawnedReqwestConnector::new(handle.clone()));
-        }
-        Arc::new(builder.build()?)
-    } else {
-        return Err(Error::InvalidCredential(
-            "Failed to match credential with storage type".to_string(),
-        )
-        .into());
-    };
-
-    Ok(UCStore { root, url, path })
-}
-
-/// Start an [`AmazonS3Builder`] for a vended S3-compatible storage URL.
-///
-/// Cloudflare R2 locations arrive as
-/// `r2://<bucket>@<account>.r2.cloudflarestorage.com/<path>`, a scheme
-/// object_store does not parse, so the bucket, the account endpoint
-/// (`https://<account>.r2.cloudflarestorage.com`) and R2's `auto` region are
-/// set explicitly — an AWS region override must not clobber the latter.
-///
-/// For S3 the region is `aws_region`, else `AWS_REGION`, else the object_store
-/// default. Where the server returns an S3 access-point ARN, it is used as the
-/// bucket so SigV4 signatures match what STS authorised.
-#[cfg(not(target_arch = "wasm32"))]
-fn s3_builder(
-    url: &Url,
-    aws_region: Option<String>,
-    access_point: Option<String>,
-) -> Result<AmazonS3Builder> {
-    if url.scheme() == "r2" {
-        let bucket = url.username();
-        let host = url.host_str().unwrap_or_default();
-        if bucket.is_empty() || !host.ends_with(".r2.cloudflarestorage.com") {
-            return Err(Error::invalid_url(format!(
-                "expected r2://<bucket>@<account>.r2.cloudflarestorage.com/..., got {url}"
-            ))
-            .into());
-        }
-        return Ok(AmazonS3Builder::new()
-            .with_bucket_name(bucket)
-            .with_endpoint(format!("https://{host}"))
-            .with_region("auto"));
-    }
-
-    let mut builder = AmazonS3Builder::new().with_url(url.to_string());
-    if let Some(region) = aws_region.or_else(|| std::env::var("AWS_REGION").ok()) {
-        builder = builder.with_region(region);
-    }
-    if let Some(ap) = access_point {
-        builder = builder.with_bucket_name(ap);
-    }
-    Ok(builder)
-}
-
 /// wasm has no local filesystem; a `file://` reference is unsupported.
 #[cfg(target_arch = "wasm32")]
 fn local_store(url: &Url, _operation: PathOperation) -> Result<UCStore> {
@@ -1301,70 +1098,6 @@ fn local_store(url: &Url, _operation: PathOperation) -> Result<UCStore> {
         "local (file://) storage is not supported on wasm: {url}"
     ))
     .into())
-}
-
-/// Parsed components of an Azurite (Azure Blob emulator) storage URL.
-///
-/// Azurite is path-style — the account, container, and blob prefix are all
-/// segments of the path rather than the host (real Azure encodes the account in
-/// the host: `https://<account>.blob.core.windows.net/<container>/<prefix>`).
-struct AzuriteLocation {
-    account: String,
-    container: String,
-    prefix: String,
-}
-
-/// Detect and parse an Azurite endpoint from a storage URL.
-///
-/// Recognised forms (mirroring the server's `is_azurite` / `StorageLocationUrl`):
-/// - `http://127.0.0.1:10000/<account>/<container>/<prefix>` (default Azurite
-///   blob endpoint on localhost / 127.0.0.1, port 10000), and
-/// - `azurite://<container>/<prefix>` (custom scheme; the account is implicit,
-///   defaulting to the well-known emulator account).
-///
-/// Returns `None` for any non-Azurite URL so the caller falls through to the
-/// real-Azure path. `object_store`'s `MicrosoftAzureBuilder::with_url` does not
-/// understand either form, so the Azurite branch must set account/container
-/// explicitly rather than going through `with_url`.
-fn parse_azurite(url: &Url) -> Option<AzuriteLocation> {
-    const EMULATOR_ACCOUNT: &str = "devstoreaccount1";
-
-    if url.scheme() == "azurite" {
-        // azurite://<container>/<prefix>
-        let container = url.host_str().filter(|s| !s.is_empty())?.to_owned();
-        let prefix = url.path().trim_start_matches('/').to_owned();
-        return Some(AzuriteLocation {
-            account: EMULATOR_ACCOUNT.to_owned(),
-            container,
-            prefix,
-        });
-    }
-
-    let is_localhost = matches!(url.host_str(), Some("localhost") | Some("127.0.0.1"));
-    if url.scheme() == "http" && is_localhost && url.port() == Some(10000) {
-        // http://127.0.0.1:10000/<account>/<container>/<prefix>
-        let mut segments = url.path_segments()?;
-        let account = segments.next().filter(|s| !s.is_empty())?.to_owned();
-        let container = segments.next().filter(|s| !s.is_empty())?.to_owned();
-        let prefix = segments.collect::<Vec<_>>().join("/");
-        return Some(AzuriteLocation {
-            account,
-            container,
-            prefix,
-        });
-    }
-
-    None
-}
-
-/// Extract the raw SAS query string (`k1=v1&k2=v2&…`) from a vended credential,
-/// if it carries an Azure User Delegation / service SAS.
-fn azure_sas_token(credential: &TemporaryCredential) -> Option<String> {
-    use unitycatalog_credentials::model::VendedCredential;
-    match credential.credentials.as_ref()? {
-        VendedCredential::AzureUserDelegationSas(sas) => Some(sas.sas_token.clone()),
-        _ => None,
-    }
 }
 
 /// Returns a [`UCStore`] whose prefix is `store.prefix() + extra`, leaving
@@ -1646,152 +1379,67 @@ mod tests {
         });
     }
 
-    #[test]
-    fn parse_azurite_path_style() {
-        let url =
-            Url::parse("http://127.0.0.1:10000/devstoreaccount1/mycontainer/some/prefix").unwrap();
-        let loc = parse_azurite(&url).expect("should parse path-style azurite URL");
-        assert_eq!(loc.account, "devstoreaccount1");
-        assert_eq!(loc.container, "mycontainer");
-        assert_eq!(loc.prefix, "some/prefix");
-    }
-
-    #[test]
-    fn parse_azurite_custom_scheme() {
-        let url = Url::parse("azurite://mycontainer/some/prefix").unwrap();
-        let loc = parse_azurite(&url).expect("should parse azurite:// URL");
-        assert_eq!(loc.account, "devstoreaccount1");
-        assert_eq!(loc.container, "mycontainer");
-        assert_eq!(loc.prefix, "some/prefix");
-    }
-
-    #[test]
-    fn parse_azurite_localhost_alias() {
-        let url = Url::parse("http://localhost:10000/acct/cont/p").unwrap();
-        let loc = parse_azurite(&url).expect("localhost is also an azurite host");
-        assert_eq!(loc.account, "acct");
-        assert_eq!(loc.container, "cont");
-        assert_eq!(loc.prefix, "p");
-    }
-
-    #[test]
-    fn parse_azurite_rejects_real_cloud_urls() {
-        // Real Azure, S3, and a non-Azurite localhost port must all be `None`.
-        for raw in [
-            "https://acct.blob.core.windows.net/container/path",
-            "s3://bucket/prefix",
-            "http://127.0.0.1:9000/acct/cont/p", // not the Azurite port
-        ] {
-            let url = Url::parse(raw).unwrap();
-            assert!(parse_azurite(&url).is_none(), "should not match: {raw}");
-        }
-    }
-
-    /// Building a store from an Azurite SAS credential targets the emulator and
-    /// roots the prefix at the blob path within the container (not the full URL
-    /// path, which also carries `/<account>/<container>`).
+    /// A name-referenced table backed by Azurite: one GetTable, one vend, and a
+    /// store rooted at the container whose prefix is the blob path within it (the
+    /// path-style URL also carries `/<account>/<container>`). The URL stays as the
+    /// catalog spelled it.
     #[tokio::test]
-    async fn azurite_store_targets_emulator_and_roots_prefix() {
-        use unitycatalog_credentials::model::AzureUserDelegationSas;
+    async fn azurite_table_store_roots_prefix_in_container() {
+        let mut server = mockito::Server::new_async().await;
+        let location = "http://127.0.0.1:10000/devstoreaccount1/mycontainer/tbl/data";
+        let table_id = "6f1b1d4e-9d1c-4f43-9a37-7d3f1b2f8c11";
+        let get_table = server
+            .mock("GET", "/api/2.1/unity-catalog/tables/main.default.tbl")
+            .match_query(mockito::Matcher::Any)
+            .with_header("content-type", "application/json")
+            .with_body(
+                serde_json::json!({
+                    "name": "tbl",
+                    "catalog_name": "main",
+                    "schema_name": "default",
+                    "table_id": table_id,
+                    "storage_location": location,
+                })
+                .to_string(),
+            )
+            .expect(1)
+            .create_async()
+            .await;
+        let vend = server
+            .mock("POST", "/api/2.1/unity-catalog/temporary-table-credentials")
+            .match_body(mockito::Matcher::PartialJson(
+                serde_json::json!({ "table_id": table_id, "operation": "READ" }),
+            ))
+            .with_header("content-type", "application/json")
+            .with_body(
+                serde_json::json!({
+                    "azure_user_delegation_sas": {
+                        "sas_token": "sv=2021-08-06&sr=c&sp=rl&se=2999-01-01T00:00:00Z&sig=AAAA"
+                    },
+                    "expiration_time": 32503680000000_i64,
+                    "url": location,
+                })
+                .to_string(),
+            )
+            .expect(1)
+            .create_async()
+            .await;
 
-        let url = "http://127.0.0.1:10000/devstoreaccount1/mycontainer/tbl/data";
-        let credential = TemporaryCredential {
-            expiration_time: now_epoch_millis() + 3_600_000,
-            url: url.to_string(),
-            credentials: Some(
-                AzureUserDelegationSas {
-                    // A minimal, well-formed SAS query string. `split_sas` parses it
-                    // into query pairs; the emulator never sees it in this test.
-                    sas_token: "sv=2021-08-06&ss=b&srt=co&sp=rl&se=2999-01-01T00:00:00Z&sig=AAAA"
-                        .to_string(),
-                }
-                .into(),
-            ),
-        };
+        let factory = UnityObjectStoreFactory::builder()
+            .with_uri(format!("{}/api/2.1/unity-catalog/", server.url()))
+            .with_allow_unauthenticated(true)
+            .build()
+            .await
+            .unwrap();
+        let store = factory
+            .for_table("main.default.tbl", TableOperation::Read)
+            .await
+            .unwrap();
 
-        let factory = offline_factory().await;
-        let securable =
-            SecurableRef::Path(Url::parse(url).unwrap(), PathOperation::Read, Some(false));
-        // `build_store` does no network I/O — it only constructs the emulator
-        // store and computes the prefix — so the dead-endpoint factory is fine.
-        let store = factory.build_store(credential, securable).await.unwrap();
-
-        // The container-relative blob prefix, with `/<account>/<container>` stripped.
         assert_eq!(store.prefix(), &Path::from("tbl/data"));
-    }
-
-    /// `now_epoch_millis` is defined in the credential-vending crate, not here;
-    /// the store crate just needs a future timestamp for the test credential.
-    fn now_epoch_millis() -> i64 {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as i64
-    }
-
-    /// R2 locations are rewritten to the R2 endpoint form, keep the `auto`
-    /// region despite an AWS region override, and scope the prefix to the path.
-    #[test]
-    fn s3_builder_rewrites_r2_urls() {
-        use object_store::aws::AmazonS3ConfigKey;
-
-        let url = Url::parse("r2://my-bucket@acct123.r2.cloudflarestorage.com/tables/t1/").unwrap();
-        let builder = s3_builder(&url, Some("eu-west-1".to_string()), None).unwrap();
-        assert_eq!(
-            builder
-                .get_config_value(&AmazonS3ConfigKey::Endpoint)
-                .as_deref(),
-            Some("https://acct123.r2.cloudflarestorage.com")
-        );
-        assert_eq!(
-            builder
-                .get_config_value(&AmazonS3ConfigKey::Bucket)
-                .as_deref(),
-            Some("my-bucket")
-        );
-        assert_eq!(
-            builder
-                .get_config_value(&AmazonS3ConfigKey::Region)
-                .as_deref(),
-            Some("auto")
-        );
-        // `build_store` derives the prefix from the vended URL's path.
-        assert_eq!(
-            Path::from_url_path(url.path()).unwrap(),
-            Path::from("tables/t1")
-        );
-    }
-
-    #[test]
-    fn s3_builder_rejects_r2_url_without_bucket() {
-        let url = Url::parse("r2://acct123.r2.cloudflarestorage.com/tables/").unwrap();
-        assert!(s3_builder(&url, None, None).is_err());
-    }
-
-    #[test]
-    fn s3_builder_applies_region_and_access_point() {
-        use object_store::aws::AmazonS3ConfigKey;
-
-        let url = Url::parse("s3://bucket/prefix/").unwrap();
-        let builder = s3_builder(
-            &url,
-            Some("eu-north-1".to_string()),
-            Some("arn:aws:s3:eu-north-1:123:accesspoint/ap".to_string()),
-        )
-        .unwrap();
-        assert_eq!(
-            builder
-                .get_config_value(&AmazonS3ConfigKey::Region)
-                .as_deref(),
-            Some("eu-north-1")
-        );
-        assert_eq!(
-            builder
-                .get_config_value(&AmazonS3ConfigKey::Bucket)
-                .as_deref(),
-            Some("arn:aws:s3:eu-north-1:123:accesspoint/ap")
-        );
+        assert_eq!(store.url().as_str(), location);
+        get_table.assert_async().await;
+        vend.assert_async().await;
     }
 
     // ---- Databricks auth options -------------------------------------------
@@ -1835,7 +1483,8 @@ mod tests {
             .build()
             .await
             .unwrap();
-        let url = Url::parse("abfss://mycontainer@devstoreaccount1/prefix/").unwrap();
+        let url =
+            Url::parse("http://127.0.0.1:10000/devstoreaccount1/mycontainer/prefix/").unwrap();
         factory
             .for_path(&url, PathOperation::Read)
             .await
@@ -1874,7 +1523,8 @@ mod tests {
             .build()
             .await
             .unwrap();
-        let url = Url::parse("abfss://mycontainer@devstoreaccount1/prefix/").unwrap();
+        let url =
+            Url::parse("http://127.0.0.1:10000/devstoreaccount1/mycontainer/prefix/").unwrap();
         factory.for_path(&url, PathOperation::Read).await.unwrap();
 
         token.assert_async().await;
@@ -1899,6 +1549,7 @@ mod tests {
     /// Azurite SAS credential — enough for `for_path` to build an emulator store
     /// with no real cloud I/O. `url` is a path-style Azurite endpoint.
     fn azurite_credential_body() -> String {
+        let now_epoch_millis = || chrono::Utc::now().timestamp_millis();
         format!(
             r#"{{"expiration_time":{},"url":"http://127.0.0.1:10000/devstoreaccount1/mycontainer/prefix/","azure_user_delegation_sas":{{"sas_token":"sv=2021-08-06&ss=b&srt=co&sp=rl&se=2999-01-01T00:00:00Z&sig=AAAA"}}}}"#,
             now_epoch_millis() + 3_600_000
@@ -1937,7 +1588,8 @@ mod tests {
         let scoped = factory
             .with_forwarded_user("x-forwarded-user", Some("alice"))
             .unwrap();
-        let url = Url::parse("abfss://mycontainer@devstoreaccount1/prefix/").unwrap();
+        let url =
+            Url::parse("http://127.0.0.1:10000/devstoreaccount1/mycontainer/prefix/").unwrap();
         scoped
             .for_path(&url, PathOperation::Read)
             .await
@@ -1968,7 +1620,8 @@ mod tests {
         let scoped = factory
             .with_forwarded_user("x-forwarded-user", None)
             .unwrap();
-        let url = Url::parse("abfss://mycontainer@devstoreaccount1/prefix/").unwrap();
+        let url =
+            Url::parse("http://127.0.0.1:10000/devstoreaccount1/mycontainer/prefix/").unwrap();
         scoped
             .for_path(&url, PathOperation::Read)
             .await
@@ -1995,7 +1648,8 @@ mod tests {
         let scoped = factory
             .with_forwarded_user("x-remote-user", Some("bob"))
             .unwrap();
-        let url = Url::parse("abfss://mycontainer@devstoreaccount1/prefix/").unwrap();
+        let url =
+            Url::parse("http://127.0.0.1:10000/devstoreaccount1/mycontainer/prefix/").unwrap();
         scoped.for_path(&url, PathOperation::Read).await.unwrap();
 
         mock.assert_async().await;

@@ -30,7 +30,8 @@ fn get_path_req() -> ProxyReq {
     ProxyReq {
         verb: ProxyVerb::Get,
         securable: Securable::Path {
-            url: url::Url::parse("abfss://mycontainer@devstoreaccount1/prefix/").unwrap(),
+            url: url::Url::parse("http://127.0.0.1:10000/devstoreaccount1/mycontainer/prefix/")
+                .unwrap(),
         },
         key: "part-0.parquet".to_string(),
         range: None,
