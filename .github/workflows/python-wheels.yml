@@ -133,7 +133,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
           # Matches the rest of CI; stays above the workspace floor.
-          toolchain: "1.97"
+          toolchain: "1.99"
           targets: ${{ matrix.target }}
 
       # Build a release abi3 wheel for this target into dist/. maturin-action

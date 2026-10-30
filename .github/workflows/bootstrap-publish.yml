@@ -78,7 +78,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
-          toolchain: "1.97"
+          toolchain: "1.99"
 
       # ----- Tier 0: olai-uc-files-api (deps all on crates.io; graph is git-free) -----
       # Publish the `bin`-featured build — the `uc-server` binary is what ships

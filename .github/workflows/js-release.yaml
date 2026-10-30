@@ -127,7 +127,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
-          toolchain: "1.97"
+          toolchain: "1.99"
           targets: ${{ matrix.target }}
 
       # One cache per target (release builds are rare, so this mostly saves the
