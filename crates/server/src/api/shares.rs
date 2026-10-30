@@ -24,6 +24,7 @@ impl<T: ResourceStore + Policy<RequestContext>> ShareHandler<RequestContext> for
         let resource = Share {
             name: request.name,
             comment: request.comment,
+            storage_root: request.storage_root,
             ..Default::default()
         };
         // TODO:
@@ -54,7 +55,7 @@ impl<T: ResourceStore + Policy<RequestContext>> ShareHandler<RequestContext> for
             .list(
                 &ObjectLabel::Share,
                 None,
-                request.max_results.map(|v| v as usize),
+                super::page_size(request.max_results)?,
                 request.page_token,
             )
             .await?;

@@ -67,25 +67,25 @@ message Volume {
   // by the parent schema, or the parent catalog, or the Metastore.
   VolumeType volume_type = 7 [(google.api.field_behavior) = REQUIRED];
 
-  // Username of current owner of table.
-  optional string owner = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Username of current owner of volume.
+  optional string owner = 8 [(google.api.field_behavior) = OPTIONAL];
 
   // User-provided free-form text description.
   optional string comment = 9 [(google.api.field_behavior) = OPTIONAL];
 
-  // Time at which this catalog was created, in epoch milliseconds.
+  // Time at which this volume was created, in epoch milliseconds.
   optional int64 created_at = 1000 [
     (buf.validate.field).int64.gt = 0,
     (google.api.field_behavior) = OUTPUT_ONLY
   ];
 
-  // Username of catalog creator.
+  // Username of volume creator.
   optional string created_by = 1001 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Time at which this catalog was last updated, in epoch milliseconds.
+  // Time at which this volume was last updated, in epoch milliseconds.
   optional int64 updated_at = 1002 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Username of user who last modified catalog.
+  // Username of user who last modified the volume.
   optional string updated_by = 1003 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Indicates whether the principal is limited to retrieving metadata

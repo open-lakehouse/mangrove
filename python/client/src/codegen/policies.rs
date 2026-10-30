@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
-use crate::error::{PyUnityCatalogError, PyUnityCatalogResult};
-use crate::runtime::get_runtime;
+use crate::codegen::runtime::{ListIterator, block_on};
+use crate::error::PyUnityCatalogError;
+use futures::stream::StreamExt;
+use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::PolicyClient;
@@ -12,52 +14,74 @@ pub struct PyPolicyClient {
 }
 #[pymethods]
 impl PyPolicyClient {
-    #[pyo3(signature = (policy_info))]
-    pub fn create_policy(
-        &self,
-        py: Python,
-        policy_info: PyPolicyInfo,
-    ) -> PyUnityCatalogResult<PyPolicyInfo> {
-        let request = self.client.create_policy(policy_info.into());
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyPolicyInfo::from(result))
-        })
-    }
-    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyPolicyInfo> {
+    pub fn get(&self, py: Python<'_>) -> PyResult<PyPolicyInfo> {
         let request = self.client.get();
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyPolicyInfo::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyPolicyInfo::from(result))
     }
-    #[pyo3(signature = (policy_info, update_mask = None))]
+    #[pyo3(
+        signature = (
+            policy_type = None,
+            comment = None,
+            to_principals = None,
+            except_principals = None,
+            for_securable_type = None,
+            when_condition = None,
+            match_columns = None,
+            row_filter = None,
+            column_mask = None,
+            deny = None,
+            grant = None,
+            update_mask = None
+        )
+    )]
     pub fn update(
         &self,
-        py: Python,
-        policy_info: PyPolicyInfo,
+        py: Python<'_>,
+        policy_type: ::core::option::Option<PyPolicyType>,
+        comment: Option<String>,
+        to_principals: Option<Vec<String>>,
+        except_principals: Option<Vec<String>>,
+        for_securable_type: Option<String>,
+        when_condition: Option<String>,
+        match_columns: ::core::option::Option<::std::vec::Vec<PyMatchColumn>>,
+        row_filter: ::core::option::Option<PyFunctionRef>,
+        column_mask: ::core::option::Option<PyFunctionRef>,
+        deny: ::core::option::Option<PyPrivilegeOptions>,
+        grant: ::core::option::Option<PyPrivilegeOptions>,
         update_mask: Option<String>,
-    ) -> PyUnityCatalogResult<PyPolicyInfo> {
-        let mut request = self.client.update(policy_info.into());
+    ) -> PyResult<PyPolicyInfo> {
+        let mut request = self.client.update();
+        request = request.with_policy_type(policy_type.map(::core::convert::Into::into));
+        request = request.with_comment(comment);
+        if let Some(to_principals) = to_principals {
+            request = request.with_to_principals(to_principals);
+        }
+        if let Some(except_principals) = except_principals {
+            request = request.with_except_principals(except_principals);
+        }
+        request = request.with_for_securable_type(for_securable_type);
+        request = request.with_when_condition(when_condition);
+        if let Some(match_columns) = match_columns {
+            request = request.with_match_columns(
+                match_columns
+                    .into_iter()
+                    .map(::core::convert::Into::into)
+                    .collect::<::std::vec::Vec<_>>(),
+            );
+        }
+        request = request.with_row_filter(row_filter.map(::core::convert::Into::into));
+        request = request.with_column_mask(column_mask.map(::core::convert::Into::into));
+        request = request.with_deny(deny.map(::core::convert::Into::into));
+        request = request.with_grant(grant.map(::core::convert::Into::into));
         request = request.with_update_mask(update_mask);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyPolicyInfo::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyPolicyInfo::from(result))
     }
-    pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
+    pub fn delete(&self, py: Python<'_>) -> PyResult<()> {
         let request = self.client.delete();
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(())
-        })
+        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(())
     }
 }
 impl PyPolicyClient {

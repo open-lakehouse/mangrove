@@ -17,6 +17,12 @@ enum AuthenticationType {
   OAUTH_CLIENT_CREDENTIALS = 2;
 }
 
+// An object with the properties of a securable as key-value pairs.
+message SecurablePropertiesKvPairs {
+  // A map of key-value properties attached to the securable.
+  map<string, string> properties = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
 message RecipientToken {
   // Unique ID of the recipient token.
   string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -31,7 +37,7 @@ message RecipientToken {
   string activation_url = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Expiration timestamp of the token in epoch milliseconds.
-  int64 expiration_time = 5 [(google.api.field_behavior) = REQUIRED];
+  int64 expiration_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Time at which this recipient token was updated, in epoch milliseconds.
   int64 updated_at = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -66,21 +72,21 @@ message Recipient {
   // Description about the recipient.
   optional string comment = 4 [(google.api.field_behavior) = OPTIONAL];
 
-  // A map of key-value properties attached to the securable.
-  map<string, string> properties = 6;
+  // Recipient properties as map of string key-value pairs.
+  optional SecurablePropertiesKvPairs properties_kvpairs = 6 [(google.api.field_behavior) = OPTIONAL];
 
-  // Time at which this share was created, in epoch milliseconds.
+  // Time at which this recipient was created, in epoch milliseconds.
   optional int64 created_at = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Username of the creator of the share.
+  // Username of recipient creator.
   optional string created_by = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // This field is only present when the authentication_type is TOKEN.
   repeated RecipientToken tokens = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Time at which this share was updated, in epoch milliseconds.
+  // Time at which this recipient was updated, in epoch milliseconds.
   optional int64 updated_at = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Username of share updater.
+  // Username of recipient updater.
   optional string updated_by = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

@@ -30,20 +30,24 @@ message ListVolumesRequest {
   ];
 
   // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
   optional int32 max_results = 3 [
-    (buf.validate.field).int32.gt = 0,
-    (buf.validate.field).int32.lt = 1000,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 10000
+    },
     (google.api.field_behavior) = OPTIONAL
   ];
 
   // Opaque pagination token to go to next page based on previous query.
   optional string page_token = 4 [(google.api.field_behavior) = OPTIONAL];
 
-  // Whether to include schemas in the response for which the principal can only access selective metadata for
+  // Whether to include volumes in the response for which the principal can only access selective metadata for
   optional bool include_browse = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// List Schemas response.
+// List volumes response.
 message ListVolumesResponse {
   // The volumes returned.
   repeated Volume volumes = 1;
@@ -85,13 +89,15 @@ message CreateVolumeRequest {
   // by the parent schema, or the parent catalog, or the Metastore.
   VolumeType volume_type = 4 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 
   // The storage location on the cloud
   optional string storage_location = 5 [(google.api.field_behavior) = OPTIONAL];
 
-  // The storage location on the cloud
+  // The comment attached to the volume.
   optional string comment = 6 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 65536,
@@ -107,7 +113,7 @@ message GetVolumeRequest {
     (google.api.resource_reference) = {type: "unitycatalog.io/Volume"}
   ];
 
-  // Whether to include schemas in the response for which the principal can only access selective metadata for
+  // Whether to include volumes in the response for which the principal can only access selective metadata for
   optional bool include_browse = 1005 [(google.api.field_behavior) = OPTIONAL];
 }
 

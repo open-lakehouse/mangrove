@@ -29,7 +29,9 @@ impl ListCatalogsBuilder {
         };
         Self { client, request }
     }
-    /// The maximum number of results per page that should be returned.
+    /** The maximum number of results per page that should be returned.
+
+    If unset or 0, the server's default page size is used. Negative values are rejected.*/
     pub fn with_max_results(mut self, max_results: impl Into<Option<i32>>) -> Self {
         self.request.max_results = max_results.into();
         self
@@ -207,7 +209,7 @@ impl UpdateCatalogBuilder {
             .collect();
         self
     }
-    /// Name of catalog.
+    /// New name for the catalog.
     pub fn with_new_name(mut self, new_name: impl Into<Option<String>>) -> Self {
         self.request.new_name = new_name.into();
         self

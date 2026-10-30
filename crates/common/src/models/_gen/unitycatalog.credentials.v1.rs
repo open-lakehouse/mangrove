@@ -2545,6 +2545,8 @@ pub struct ListCredentialsRequest {
     pub purpose: ::core::option::Option<::buffa::EnumValue<Purpose>>,
     /// The maximum number of results per page that should be returned.
     ///
+    /// If unset or 0, the server's default page size is used. Negative values are rejected.
+    ///
     /// Field 2: `max_results`
     #[serde(
         rename = "max_results",
@@ -2999,7 +3001,8 @@ pub struct CreateCredentialRequest {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub read_only: ::core::option::Option<bool>,
-    /// Optional. Supplying true to this argument skips validation of the created set of credentials.
+    /// Supplying true to this argument skips validation of the created set of credentials.
+    /// Defaults to false.
     ///
     /// Field 5: `skip_validation`
     #[serde(
@@ -3654,6 +3657,7 @@ pub struct UpdateCredentialRequest {
     #[serde(rename = "owner", skip_serializing_if = "::core::option::Option::is_none")]
     pub owner: ::core::option::Option<::buffa::alloc::string::String>,
     /// Supply true to this argument to skip validation of the updated credential.
+    /// Defaults to false.
     ///
     /// Field 6: `skip_validation`
     #[serde(
@@ -8002,6 +8006,8 @@ pub mod __buffa {
             >,
             /// The maximum number of results per page that should be returned.
             ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
+            ///
             /// Field 2: `max_results`
             pub max_results: ::core::option::Option<i32>,
             /// Opaque pagination token to go to next page based on previous query.
@@ -8340,6 +8346,8 @@ pub mod __buffa {
                 self.0.reborrow().purpose
             }
             /// The maximum number of results per page that should be returned.
+            ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
             ///
             /// Field 2: `max_results`
             #[must_use]
@@ -8784,7 +8792,8 @@ pub mod __buffa {
             ///
             /// Field 4: `read_only`
             pub read_only: ::core::option::Option<bool>,
-            /// Optional. Supplying true to this argument skips validation of the created set of credentials.
+            /// Supplying true to this argument skips validation of the created set of credentials.
+            /// Defaults to false.
             ///
             /// Field 5: `skip_validation`
             pub skip_validation: ::core::option::Option<bool>,
@@ -9523,7 +9532,8 @@ pub mod __buffa {
             pub fn read_only(&self) -> ::core::option::Option<bool> {
                 self.0.reborrow().read_only
             }
-            /// Optional. Supplying true to this argument skips validation of the created set of credentials.
+            /// Supplying true to this argument skips validation of the created set of credentials.
+            /// Defaults to false.
             ///
             /// Field 5: `skip_validation`
             #[must_use]
@@ -9949,6 +9959,7 @@ pub mod __buffa {
             /// Field 5: `owner`
             pub owner: ::core::option::Option<&'a str>,
             /// Supply true to this argument to skip validation of the updated credential.
+            /// Defaults to false.
             ///
             /// Field 6: `skip_validation`
             pub skip_validation: ::core::option::Option<bool>,
@@ -10744,6 +10755,7 @@ pub mod __buffa {
                 self.0.reborrow().owner
             }
             /// Supply true to this argument to skip validation of the updated credential.
+            /// Defaults to false.
             ///
             /// Field 6: `skip_validation`
             #[must_use]

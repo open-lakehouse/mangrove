@@ -12,7 +12,75 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file unitycatalog/shares/v1/models.proto.
  */
 export const file_unitycatalog_shares_v1_models: GenFile = /*@__PURE__*/
-  fileDesc("CiN1bml0eWNhdGFsb2cvc2hhcmVzL3YxL21vZGVscy5wcm90bxIWdW5pdHljYXRhbG9nLnNoYXJlcy52MSL0AwoKRGF0YU9iamVjdBIRCgRuYW1lGAEgASgJQgPgQQISRQoQZGF0YV9vYmplY3RfdHlwZRgCIAEoDjImLnVuaXR5Y2F0YWxvZy5zaGFyZXMudjEuRGF0YU9iamVjdFR5cGVCA+BBAhIaCghhZGRlZF9hdBgDIAEoA0ID4EEDSACIAQESGgoIYWRkZWRfYnkYBCABKAlCA+BBA0gBiAEBEhkKB2NvbW1lbnQYBSABKAlCA+BBAUgCiAEBEhsKCXNoYXJlZF9hcxgGIAEoCUID4EEBSAOIAQESEgoKcGFydGl0aW9ucxgHIAMoCRIcCgplbmFibGVfY2RmGAggASgIQgPgQQFIBIgBARJUChtoaXN0b3J5X2RhdGFfc2hhcmluZ19zdGF0dXMYCSABKA4yJS51bml0eWNhdGFsb2cuc2hhcmVzLnYxLkhpc3RvcnlTdGF0dXNCA+BBAUgFiAEBEh8KDXN0YXJ0X3ZlcnNpb24YCiABKANCA+BBAUgGiAEBQgsKCV9hZGRlZF9hdEILCglfYWRkZWRfYnlCCgoIX2NvbW1lbnRCDAoKX3NoYXJlZF9hc0INCgtfZW5hYmxlX2NkZkIeChxfaGlzdG9yeV9kYXRhX3NoYXJpbmdfc3RhdHVzQhAKDl9zdGFydF92ZXJzaW9uIpcECgVTaGFyZRIXCgJpZBhkIAEoCUIG4EED4EEISACIAQESEQoEbmFtZRgBIAEoCUID4EECEjgKB29iamVjdHMYBiADKAsyIi51bml0eWNhdGFsb2cuc2hhcmVzLnYxLkRhdGFPYmplY3RCA+BBARIXCgVvd25lchgCIAEoCUID4EEBSAGIAQESGQoHY29tbWVudBgDIAEoCUID4EEBSAKIAQESIgoQc3RvcmFnZV9sb2NhdGlvbhgEIAEoCUID4EEDSAOIAQESHgoMc3RvcmFnZV9yb290GAUgASgJQgPgQQNIBIgBARIcCgpjcmVhdGVkX2F0GAcgASgDQgPgQQNIBYgBARIcCgpjcmVhdGVkX2J5GAggASgJQgPgQQNIBogBARIcCgp1cGRhdGVkX2F0GAkgASgDQgPgQQNIB4gBARIcCgp1cGRhdGVkX2J5GAogASgJQgPgQQNICIgBATo56kE2ChV1bml0eWNhdGFsb2cuaW8vU2hhcmUSDnNoYXJlcy97c2hhcmV9KgZzaGFyZXMyBXNoYXJlQgUKA19pZEIICgZfb3duZXJCCgoIX2NvbW1lbnRCEwoRX3N0b3JhZ2VfbG9jYXRpb25CDwoNX3N0b3JhZ2Vfcm9vdEINCgtfY3JlYXRlZF9hdEINCgtfY3JlYXRlZF9ieUINCgtfdXBkYXRlZF9hdEINCgtfdXBkYXRlZF9ieSI8ChNQcml2aWxlZ2VBc3NpZ25tZW50EhEKCXByaW5jaXBhbBgBIAEoCRISCgpwcml2aWxlZ2VzGAIgAygJIkMKEVBlcm1pc3Npb25zQ2hhbmdlEhEKCXByaW5jaXBhbBgBIAEoCRILCgNhZGQYAiADKAkSDgoGcmVtb3ZlGAMgAygJKmYKDkRhdGFPYmplY3RUeXBlEiAKHERBVEFfT0JKRUNUX1RZUEVfVU5TUEVDSUZJRUQQABIJCgVUQUJMRRABEgoKBlNDSEVNQRACEgoKBlZPTFVNRRAKEg8KC0FHRU5UX1NLSUxMEAsqKgoNSGlzdG9yeVN0YXR1cxIMCghESVNBQkxFRBAAEgsKB0VOQUJMRUQQAULzAQoaY29tLnVuaXR5Y2F0YWxvZy5zaGFyZXMudjFCC01vZGVsc1Byb3RvUAFaTmdpdGh1Yi5jb20vZGVsdGEtaW5jdWJhdG9yL2RlbHRhLXNoYXJpbmctcnMvZ28vdW5pdHljYXRhbG9nL3NoYXJlcy92MTtzaGFyZXN2MaICA1VTWKoCFlVuaXR5Y2F0YWxvZy5TaGFyZXMuVjHKAhZVbml0eWNhdGFsb2dcU2hhcmVzXFYx4gIiVW5pdHljYXRhbG9nXFNoYXJlc1xWMVxHUEJNZXRhZGF0YeoCGFVuaXR5Y2F0YWxvZzo6U2hhcmVzOjpWMWIGcHJvdG8z", [file_google_api_field_behavior, file_google_api_resource]);
+  fileDesc("CiN1bml0eWNhdGFsb2cvc2hhcmVzL3YxL21vZGVscy5wcm90bxIWdW5pdHljYXRhbG9nLnNoYXJlcy52MSLGAQoOUGFydGl0aW9uVmFsdWUSEQoEbmFtZRgBIAEoCUID4EECEhcKBXZhbHVlGAIgASgJQgPgQQFIAIgBARIoChZyZWNpcGllbnRfcHJvcGVydHlfa2V5GAMgASgJQgPgQQFIAYgBARI5CgJvcBgEIAEoDjIoLnVuaXR5Y2F0YWxvZy5zaGFyZXMudjEuUGFydGl0aW9uVmFsdWVPcEID4EEBQggKBl92YWx1ZUIZChdfcmVjaXBpZW50X3Byb3BlcnR5X2tleSJICglQYXJ0aXRpb24SOwoGdmFsdWVzGAEgAygLMiYudW5pdHljYXRhbG9nLnNoYXJlcy52MS5QYXJ0aXRpb25WYWx1ZUID4EEBIqYFCgpEYXRhT2JqZWN0EhEKBG5hbWUYASABKAlCA+BBAhJFChBkYXRhX29iamVjdF90eXBlGAIgASgOMiYudW5pdHljYXRhbG9nLnNoYXJlcy52MS5EYXRhT2JqZWN0VHlwZUID4EECEhoKCGFkZGVkX2F0GAMgASgDQgPgQQNIAIgBARIaCghhZGRlZF9ieRgEIAEoCUID4EEDSAGIAQESGQoHY29tbWVudBgFIAEoCUID4EEBSAKIAQESGwoJc2hhcmVkX2FzGAYgASgJQgPgQQFIA4gBARI6CgpwYXJ0aXRpb25zGAcgAygLMiEudW5pdHljYXRhbG9nLnNoYXJlcy52MS5QYXJ0aXRpb25CA+BBARIdCgtjZGZfZW5hYmxlZBgIIAEoCEID4EEBSASIAQESVAobaGlzdG9yeV9kYXRhX3NoYXJpbmdfc3RhdHVzGAkgASgOMiUudW5pdHljYXRhbG9nLnNoYXJlcy52MS5IaXN0b3J5U3RhdHVzQgPgQQFIBYgBARIfCg1zdGFydF92ZXJzaW9uGAogASgDQgPgQQFIBogBARIiChBzdHJpbmdfc2hhcmVkX2FzGAsgASgJQgPgQQFIB4gBARJCCgZzdGF0dXMYDCABKA4yKC51bml0eWNhdGFsb2cuc2hhcmVzLnYxLkRhdGFPYmplY3RTdGF0dXNCA+BBA0gIiAEBQgsKCV9hZGRlZF9hdEILCglfYWRkZWRfYnlCCgoIX2NvbW1lbnRCDAoKX3NoYXJlZF9hc0IOCgxfY2RmX2VuYWJsZWRCHgocX2hpc3RvcnlfZGF0YV9zaGFyaW5nX3N0YXR1c0IQCg5fc3RhcnRfdmVyc2lvbkITChFfc3RyaW5nX3NoYXJlZF9hc0IJCgdfc3RhdHVzIpcECgVTaGFyZRIXCgJpZBhkIAEoCUIG4EED4EEISACIAQESEQoEbmFtZRgBIAEoCUID4EECEjgKB29iamVjdHMYBiADKAsyIi51bml0eWNhdGFsb2cuc2hhcmVzLnYxLkRhdGFPYmplY3RCA+BBARIXCgVvd25lchgCIAEoCUID4EEBSAGIAQESGQoHY29tbWVudBgDIAEoCUID4EEBSAKIAQESIgoQc3RvcmFnZV9sb2NhdGlvbhgEIAEoCUID4EEDSAOIAQESHgoMc3RvcmFnZV9yb290GAUgASgJQgPgQQFIBIgBARIcCgpjcmVhdGVkX2F0GAcgASgDQgPgQQNIBYgBARIcCgpjcmVhdGVkX2J5GAggASgJQgPgQQNIBogBARIcCgp1cGRhdGVkX2F0GAkgASgDQgPgQQNIB4gBARIcCgp1cGRhdGVkX2J5GAogASgJQgPgQQNICIgBATo56kE2ChV1bml0eWNhdGFsb2cuaW8vU2hhcmUSDnNoYXJlcy97c2hhcmV9KgZzaGFyZXMyBXNoYXJlQgUKA19pZEIICgZfb3duZXJCCgoIX2NvbW1lbnRCEwoRX3N0b3JhZ2VfbG9jYXRpb25CDwoNX3N0b3JhZ2Vfcm9vdEINCgtfY3JlYXRlZF9hdEINCgtfY3JlYXRlZF9ieUINCgtfdXBkYXRlZF9hdEINCgtfdXBkYXRlZF9ieSI8ChNQcml2aWxlZ2VBc3NpZ25tZW50EhEKCXByaW5jaXBhbBgBIAEoCRISCgpwcml2aWxlZ2VzGAIgAygJIkMKEVBlcm1pc3Npb25zQ2hhbmdlEhEKCXByaW5jaXBhbBgBIAEoCRILCgNhZGQYAiADKAkSDgoGcmVtb3ZlGAMgAygJKrUBCg5EYXRhT2JqZWN0VHlwZRIgChxEQVRBX09CSkVDVF9UWVBFX1VOU1BFQ0lGSUVEEAASCQoFVEFCTEUQARIKCgZTQ0hFTUEQAhIICgRWSUVXEAMSFQoRTUFURVJJQUxJWkVEX1ZJRVcQBBITCg9TVFJFQU1JTkdfVEFCTEUQBRIJCgVNT0RFTBAGEgwKCEZVTkNUSU9OEAgSCgoGVk9MVU1FEAoSDwoLQUdFTlRfU0tJTEwQCypZChBEYXRhT2JqZWN0U3RhdHVzEiIKHkRBVEFfT0JKRUNUX1NUQVRVU19VTlNQRUNJRklFRBAAEgoKBkFDVElWRRABEhUKEVBFUk1JU1NJT05fREVOSUVEEAIqSwoQUGFydGl0aW9uVmFsdWVPcBIiCh5QQVJUSVRJT05fVkFMVUVfT1BfVU5TUEVDSUZJRUQQABIJCgVFUVVBTBABEggKBExJS0UQAioqCg1IaXN0b3J5U3RhdHVzEgwKCERJU0FCTEVEEAASCwoHRU5BQkxFRBABQvMBChpjb20udW5pdHljYXRhbG9nLnNoYXJlcy52MUILTW9kZWxzUHJvdG9QAVpOZ2l0aHViLmNvbS9kZWx0YS1pbmN1YmF0b3IvZGVsdGEtc2hhcmluZy1ycy9nby91bml0eWNhdGFsb2cvc2hhcmVzL3YxO3NoYXJlc3YxogIDVVNYqgIWVW5pdHljYXRhbG9nLlNoYXJlcy5WMcoCFlVuaXR5Y2F0YWxvZ1xTaGFyZXNcVjHiAiJVbml0eWNhdGFsb2dcU2hhcmVzXFYxXEdQQk1ldGFkYXRh6gIYVW5pdHljYXRhbG9nOjpTaGFyZXM6OlYxYgZwcm90bzM", [file_google_api_field_behavior, file_google_api_resource]);
+
+/**
+ * A partition column value a shared table is restricted to.
+ *
+ * @generated from message unitycatalog.shares.v1.PartitionValue
+ */
+export type PartitionValue = Message<"unitycatalog.shares.v1.PartitionValue"> & {
+  /**
+   * The name of the partition column.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The value of the partition column; unset means a `null` value.
+   *
+   * Mutually exclusive with recipient_property_key.
+   *
+   * @generated from field: optional string value = 2;
+   */
+  value?: string | undefined;
+
+  /**
+   * The key of a Delta Sharing recipient property whose value the partition column is
+   * matched against, e.g. "databricks-account-id".
+   *
+   * Mutually exclusive with value.
+   *
+   * @generated from field: optional string recipient_property_key = 3;
+   */
+  recipientPropertyKey?: string | undefined;
+
+  /**
+   * The operator to apply for the value.
+   *
+   * @generated from field: unitycatalog.shares.v1.PartitionValueOp op = 4;
+   */
+  op: PartitionValueOp;
+};
+
+/**
+ * Describes the message unitycatalog.shares.v1.PartitionValue.
+ * Use `create(PartitionValueSchema)` to create a new message.
+ */
+export const PartitionValueSchema: GenMessage<PartitionValue> = /*@__PURE__*/
+  messageDesc(file_unitycatalog_shares_v1_models, 0);
+
+/**
+ * A partition specification: the conjunction of its partition values.
+ *
+ * @generated from message unitycatalog.shares.v1.Partition
+ */
+export type Partition = Message<"unitycatalog.shares.v1.Partition"> & {
+  /**
+   * An array of partition values.
+   *
+   * @generated from field: repeated unitycatalog.shares.v1.PartitionValue values = 1;
+   */
+  values: PartitionValue[];
+};
+
+/**
+ * Describes the message unitycatalog.shares.v1.Partition.
+ * Use `create(PartitionSchema)` to create a new message.
+ */
+export const PartitionSchema: GenMessage<Partition> = /*@__PURE__*/
+  messageDesc(file_unitycatalog_shares_v1_models, 1);
 
 /**
  * @generated from message unitycatalog.shares.v1.DataObject
@@ -60,7 +128,9 @@ export type DataObject = Message<"unitycatalog.shares.v1.DataObject"> & {
    *
    * If this new name is not provided, the object's original name will be used as the shared_as name.
    * The shared_as name must be unique within a share.
-   * For tables, the new name must follow the format of <schema>.<table>.
+   * For tables, the new name must follow the format of <schema>.<table>: two parts, each
+   * consisting only of alphanumeric characters and underscores, without the catalog part.
+   * Do not set it for non-table data objects; use string_shared_as instead.
    *
    * @generated from field: optional string shared_as = 6;
    */
@@ -69,16 +139,16 @@ export type DataObject = Message<"unitycatalog.shares.v1.DataObject"> & {
   /**
    * Array of partitions for the shared data.
    *
-   * @generated from field: repeated string partitions = 7;
+   * @generated from field: repeated unitycatalog.shares.v1.Partition partitions = 7;
    */
-  partitions: string[];
+  partitions: Partition[];
 
   /**
    * Whether to enable cdf or indicate if cdf is enabled on the shared object.
    *
-   * @generated from field: optional bool enable_cdf = 8;
+   * @generated from field: optional bool cdf_enabled = 8;
    */
-  enableCdf?: boolean | undefined;
+  cdfEnabled?: boolean | undefined;
 
   /**
    * Whether to enable or disable sharing of data history. If not specified, the default is DISABLED.
@@ -99,6 +169,26 @@ export type DataObject = Message<"unitycatalog.shares.v1.DataObject"> & {
    * @generated from field: optional int64 start_version = 10;
    */
   startVersion?: bigint | undefined;
+
+  /**
+   * A user-provided alias for a non-table data object (e.g. a volume) within the share.
+   *
+   * For volumes, functions and models it is a two-part name <schema>.<name>, each part
+   * consisting only of alphanumeric characters and underscores. If not provided, the
+   * object's original name minus its catalog is used. It must be unique among objects of
+   * the same type within the share. Do not set it for table-like data objects; use
+   * shared_as instead.
+   *
+   * @generated from field: optional string string_shared_as = 11;
+   */
+  stringSharedAs?: string | undefined;
+
+  /**
+   * Whether the data object is still accessible to the share.
+   *
+   * @generated from field: optional unitycatalog.shares.v1.DataObjectStatus status = 12;
+   */
+  status?: DataObjectStatus | undefined;
 };
 
 /**
@@ -106,14 +196,14 @@ export type DataObject = Message<"unitycatalog.shares.v1.DataObject"> & {
  * Use `create(DataObjectSchema)` to create a new message.
  */
 export const DataObjectSchema: GenMessage<DataObject> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_shares_v1_models, 0);
+  messageDesc(file_unitycatalog_shares_v1_models, 2);
 
 /**
  * @generated from message unitycatalog.shares.v1.Share
  */
 export type Share = Message<"unitycatalog.shares.v1.Share"> & {
   /**
-   * Unique ID of the recipient.
+   * Unique ID of the share.
    *
    * @generated from field: optional string id = 100;
    */
@@ -195,7 +285,7 @@ export type Share = Message<"unitycatalog.shares.v1.Share"> & {
  * Use `create(ShareSchema)` to create a new message.
  */
 export const ShareSchema: GenMessage<Share> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_shares_v1_models, 1);
+  messageDesc(file_unitycatalog_shares_v1_models, 3);
 
 /**
  * @generated from message unitycatalog.shares.v1.PrivilegeAssignment
@@ -223,7 +313,7 @@ export type PrivilegeAssignment = Message<"unitycatalog.shares.v1.PrivilegeAssig
  * Use `create(PrivilegeAssignmentSchema)` to create a new message.
  */
 export const PrivilegeAssignmentSchema: GenMessage<PrivilegeAssignment> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_shares_v1_models, 2);
+  messageDesc(file_unitycatalog_shares_v1_models, 4);
 
 /**
  * @generated from message unitycatalog.shares.v1.PermissionsChange
@@ -256,7 +346,7 @@ export type PermissionsChange = Message<"unitycatalog.shares.v1.PermissionsChang
  * Use `create(PermissionsChangeSchema)` to create a new message.
  */
 export const PermissionsChangeSchema: GenMessage<PermissionsChange> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_shares_v1_models, 3);
+  messageDesc(file_unitycatalog_shares_v1_models, 5);
 
 /**
  * @generated from enum unitycatalog.shares.v1.DataObjectType
@@ -278,6 +368,31 @@ export enum DataObjectType {
    * @generated from enum value: SCHEMA = 2;
    */
   SCHEMA = 2,
+
+  /**
+   * @generated from enum value: VIEW = 3;
+   */
+  VIEW = 3,
+
+  /**
+   * @generated from enum value: MATERIALIZED_VIEW = 4;
+   */
+  MATERIALIZED_VIEW = 4,
+
+  /**
+   * @generated from enum value: STREAMING_TABLE = 5;
+   */
+  STREAMING_TABLE = 5,
+
+  /**
+   * @generated from enum value: MODEL = 6;
+   */
+  MODEL = 6,
+
+  /**
+   * @generated from enum value: FUNCTION = 8;
+   */
+  FUNCTION = 8,
 
   /**
    * A Unity Catalog volume shared as a storage-backed asset (Open Sharing).
@@ -302,6 +417,70 @@ export const DataObjectTypeSchema: GenEnum<DataObjectType> = /*@__PURE__*/
   enumDesc(file_unitycatalog_shares_v1_models, 0);
 
 /**
+ * Whether a shared data object is still accessible to the share.
+ *
+ * @generated from enum unitycatalog.shares.v1.DataObjectStatus
+ */
+export enum DataObjectStatus {
+  /**
+   * @generated from enum value: DATA_OBJECT_STATUS_UNSPECIFIED = 0;
+   */
+  DATA_OBJECT_STATUS_UNSPECIFIED = 0,
+
+  /**
+   * The data object is accessible.
+   *
+   * @generated from enum value: ACTIVE = 1;
+   */
+  ACTIVE = 1,
+
+  /**
+   * The share owner lost access to the data object.
+   *
+   * @generated from enum value: PERMISSION_DENIED = 2;
+   */
+  PERMISSION_DENIED = 2,
+}
+
+/**
+ * Describes the enum unitycatalog.shares.v1.DataObjectStatus.
+ */
+export const DataObjectStatusSchema: GenEnum<DataObjectStatus> = /*@__PURE__*/
+  enumDesc(file_unitycatalog_shares_v1_models, 1);
+
+/**
+ * The operator a partition value is matched with.
+ *
+ * @generated from enum unitycatalog.shares.v1.PartitionValueOp
+ */
+export enum PartitionValueOp {
+  /**
+   * @generated from enum value: PARTITION_VALUE_OP_UNSPECIFIED = 0;
+   */
+  PARTITION_VALUE_OP_UNSPECIFIED = 0,
+
+  /**
+   * The partition column equals the value.
+   *
+   * @generated from enum value: EQUAL = 1;
+   */
+  EQUAL = 1,
+
+  /**
+   * The partition column matches the value as a SQL LIKE pattern.
+   *
+   * @generated from enum value: LIKE = 2;
+   */
+  LIKE = 2,
+}
+
+/**
+ * Describes the enum unitycatalog.shares.v1.PartitionValueOp.
+ */
+export const PartitionValueOpSchema: GenEnum<PartitionValueOp> = /*@__PURE__*/
+  enumDesc(file_unitycatalog_shares_v1_models, 2);
+
+/**
  * @generated from enum unitycatalog.shares.v1.HistoryStatus
  */
 export enum HistoryStatus {
@@ -324,5 +503,5 @@ export enum HistoryStatus {
  * Describes the enum unitycatalog.shares.v1.HistoryStatus.
  */
 export const HistoryStatusSchema: GenEnum<HistoryStatus> = /*@__PURE__*/
-  enumDesc(file_unitycatalog_shares_v1_models, 1);
+  enumDesc(file_unitycatalog_shares_v1_models, 3);
 

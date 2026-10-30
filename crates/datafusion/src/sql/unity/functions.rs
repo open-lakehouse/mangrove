@@ -129,8 +129,7 @@ impl CreateFunctionStatement {
             RoutineBody::Sql,
         )
         .with_input_params(Some(params))
-        .with_routine_definition(self.routine_definition.clone())
-        .with_routine_body_language("SQL");
+        .with_routine_definition(self.routine_definition.clone());
         if let Some(comment) = self.comment.clone() {
             function_info = function_info.with_comment(comment);
         }

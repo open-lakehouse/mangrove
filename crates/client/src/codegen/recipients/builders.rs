@@ -29,7 +29,9 @@ impl ListRecipientsBuilder {
         };
         Self { client, request }
     }
-    /// The maximum number of results per page that should be returned.
+    /** The maximum number of results per page that should be returned.
+
+    If unset or 0, the server's default page size is used. Negative values are rejected.*/
     pub fn with_max_results(mut self, max_results: impl Into<Option<i32>>) -> Self {
         self.request.max_results = max_results.into();
         self
@@ -107,16 +109,14 @@ impl CreateRecipientBuilder {
 
     When provided in update request, the specified properties will override the existing properties.
     To add and remove properties, one would need to perform a read-modify-write.*/
-    pub fn with_properties<I, K, V>(mut self, properties: I) -> Self
-    where
-        I: IntoIterator<Item = (K, V)>,
-        K: Into<String>,
-        V: Into<String>,
-    {
-        self.request.properties = properties
-            .into_iter()
-            .map(|(k, v)| (k.into(), v.into()))
-            .collect();
+    pub fn with_properties_kvpairs(
+        mut self,
+        properties_kvpairs: impl Into<Option<SecurablePropertiesKvPairs>>,
+    ) -> Self {
+        self.request.properties_kvpairs = {
+            let properties_kvpairs: ::core::option::Option<_> = properties_kvpairs.into();
+            buffa::MessageField::from(properties_kvpairs)
+        };
         self
     }
     /// Expiration timestamp of the token, in epoch milliseconds.
@@ -193,16 +193,14 @@ impl UpdateRecipientBuilder {
 
     When provided in update request, the specified properties will override the existing properties.
     To add and remove properties, one would need to perform a read-modify-write.*/
-    pub fn with_properties<I, K, V>(mut self, properties: I) -> Self
-    where
-        I: IntoIterator<Item = (K, V)>,
-        K: Into<String>,
-        V: Into<String>,
-    {
-        self.request.properties = properties
-            .into_iter()
-            .map(|(k, v)| (k.into(), v.into()))
-            .collect();
+    pub fn with_properties_kvpairs(
+        mut self,
+        properties_kvpairs: impl Into<Option<SecurablePropertiesKvPairs>>,
+    ) -> Self {
+        self.request.properties_kvpairs = {
+            let properties_kvpairs: ::core::option::Option<_> = properties_kvpairs.into();
+            buffa::MessageField::from(properties_kvpairs)
+        };
         self
     }
     /// Expiration timestamp of the token, in epoch milliseconds.

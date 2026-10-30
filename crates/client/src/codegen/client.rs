@@ -456,17 +456,25 @@ impl UnityCatalogClient {
     ///
     /// # Arguments
     ///
-    /// * `tag_assignment` - The tag assignment to create.
+    /// * `entity_type` - The type of the entity to which the tag is assigned.
+    ///
+    /// Supported values: catalogs, schemas, tables, columns, volumes.
+    /// * `entity_name` - The fully qualified name of the entity to which the tag is assigned.
+    /// * `tag_key` - The key of the tag.
     pub fn create_entity_tag_assignment(
         &self,
-        tag_assignment: EntityTagAssignment,
+        entity_type: impl Into<String>,
+        entity_name: impl Into<String>,
+        tag_key: impl Into<String>,
     ) -> CreateEntityTagAssignmentBuilder {
         CreateEntityTagAssignmentBuilder::new(
             crate::codegen::entity_tag_assignments::EntityTagAssignmentClient::new(
                 self.client.clone(),
                 self.base_url.clone(),
             ),
-            tag_assignment,
+            entity_type,
+            entity_name,
+            tag_key,
         )
     }
     /// Get an entity tag assignment
@@ -503,13 +511,11 @@ impl UnityCatalogClient {
     /// * `entity_type` - The type of the entity to which the tag is assigned.
     /// * `entity_name` - The fully qualified name of the entity to which the tag is assigned.
     /// * `tag_key` - The key of the tag to update.
-    /// * `tag_assignment` - The tag assignment with the updated fields.
     pub fn update_entity_tag_assignment(
         &self,
         entity_type: impl Into<String>,
         entity_name: impl Into<String>,
         tag_key: impl Into<String>,
-        tag_assignment: EntityTagAssignment,
     ) -> UpdateEntityTagAssignmentBuilder {
         UpdateEntityTagAssignmentBuilder::new(
             crate::codegen::entity_tag_assignments::EntityTagAssignmentClient::new(
@@ -519,7 +525,6 @@ impl UnityCatalogClient {
             entity_type,
             entity_name,
             tag_key,
-            tag_assignment,
         )
     }
     /// Delete an entity tag assignment
@@ -815,7 +820,7 @@ impl UnityCatalogClient {
     ///
     /// * `on_securable_type` - The type of the securable to list policies on.
     ///
-    /// Supported values: catalogs, schemas, tables.
+    /// Supported values: CATALOG, SCHEMA, TABLE.
     /// * `on_securable_fullname` - The fully qualified name of the securable to list policies on.
     pub fn list_policies(
         &self,
@@ -829,6 +834,36 @@ impl UnityCatalogClient {
             ),
             on_securable_type,
             on_securable_fullname,
+        )
+    }
+    /// Create a new policy
+    ///
+    /// Creates a new row-filter or column-mask policy on the specified securable.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the policy. Unique within the securable it is defined on.
+    /// * `on_securable_type` - The type of securable the policy is defined on.
+    ///
+    /// Supported values: CATALOG, SCHEMA, TABLE.
+    /// * `on_securable_fullname` - The fully qualified name of the securable the policy is defined on.
+    /// * `policy_type` - The kind of enforcement this policy applies.
+    pub fn create_policy(
+        &self,
+        name: impl Into<String>,
+        on_securable_type: impl Into<String>,
+        on_securable_fullname: impl Into<String>,
+        policy_type: PolicyType,
+    ) -> CreatePolicyBuilder {
+        CreatePolicyBuilder::new(
+            crate::codegen::policies::PolicyServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            name,
+            on_securable_type,
+            on_securable_fullname,
+            policy_type,
         )
     }
     /// Access the `policy` resource scoped to the given name.
@@ -1236,14 +1271,14 @@ impl UnityCatalogClient {
     ///
     /// # Arguments
     ///
-    /// * `tag_policy` - The tag policy to create.
-    pub fn create_tag_policy(&self, tag_policy: TagPolicy) -> CreateTagPolicyBuilder {
+    /// * `tag_key` - The key of the governed tag.
+    pub fn create_tag_policy(&self, tag_key: impl Into<String>) -> CreateTagPolicyBuilder {
         CreateTagPolicyBuilder::new(
             crate::codegen::tag_policies::TagPolicyServiceClient::new(
                 self.client.clone(),
                 self.base_url.clone(),
             ),
-            tag_policy,
+            tag_key,
         )
     }
     /// Access the `tag_policy` resource scoped to the given name.
@@ -1257,6 +1292,10 @@ impl UnityCatalogClient {
         )
     }
     /// Generate a new set of credentials for a table.
+    ///
+    /// The metastore must have the `external_access_enabled` flag set to true
+    /// (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+    /// privilege on the parent schema (granted by a catalog owner).
     ///
     /// # Arguments
     ///
@@ -1279,6 +1318,13 @@ impl UnityCatalogClient {
         )
     }
     /// Generate a new set of credentials for a path.
+    ///
+    /// Only external storage paths (external locations and external tables) are
+    /// supported; managed tables are not. The metastore must have the
+    /// `external_access_enabled` flag set to true (default false). The caller must
+    /// have the `EXTERNAL_USE_LOCATION` privilege on the external location
+    /// (granted by its owner) and, for existing external tables, the
+    /// `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
     ///
     /// # Arguments
     ///

@@ -49,7 +49,7 @@ impl<T: ResourceStore + Policy<RequestContext>> CredentialHandler<RequestContext
             .list(
                 &ObjectLabel::Credential,
                 None,
-                request.max_results.map(|v| v as usize),
+                super::page_size(request.max_results)?,
                 request.page_token,
             )
             .await?;

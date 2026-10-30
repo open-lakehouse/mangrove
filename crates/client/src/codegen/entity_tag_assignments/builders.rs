@@ -29,7 +29,9 @@ impl ListEntityTagAssignmentsBuilder {
         };
         Self { client, request }
     }
-    /// The maximum number of results per page that should be returned.
+    /** The maximum number of results per page that should be returned.
+
+    If unset or 0, the server's default page size is used. Negative values are rejected.*/
     pub fn with_max_results(mut self, max_results: impl Into<Option<i32>>) -> Self {
         self.request.max_results = max_results.into();
         self
@@ -59,13 +61,22 @@ impl CreateEntityTagAssignmentBuilder {
     /// Obtain via the corresponding method on `EntityTagAssignmentClient`.
     pub(crate) fn new(
         client: EntityTagAssignmentClient,
-        tag_assignment: EntityTagAssignment,
+        entity_type: impl Into<String>,
+        entity_name: impl Into<String>,
+        tag_key: impl Into<String>,
     ) -> Self {
         let request = CreateEntityTagAssignmentRequest {
-            tag_assignment: buffa::MessageField::some(tag_assignment),
+            entity_type: entity_type.into(),
+            entity_name: entity_name.into(),
+            tag_key: tag_key.into(),
             ..Default::default()
         };
         Self { client, request }
+    }
+    /// The value of the tag.
+    pub fn with_tag_value(mut self, tag_value: impl Into<Option<String>>) -> Self {
+        self.request.tag_value = tag_value.into();
+        self
     }
 }
 impl IntoFuture for CreateEntityTagAssignmentBuilder {
@@ -122,18 +133,24 @@ impl UpdateEntityTagAssignmentBuilder {
         entity_type: impl Into<String>,
         entity_name: impl Into<String>,
         tag_key: impl Into<String>,
-        tag_assignment: EntityTagAssignment,
     ) -> Self {
         let request = UpdateEntityTagAssignmentRequest {
             entity_type: entity_type.into(),
             entity_name: entity_name.into(),
             tag_key: tag_key.into(),
-            tag_assignment: buffa::MessageField::some(tag_assignment),
             ..Default::default()
         };
         Self { client, request }
     }
-    /// The list of fields to update, as a comma-separated string.
+    /// The value of the tag.
+    pub fn with_tag_value(mut self, tag_value: impl Into<Option<String>>) -> Self {
+        self.request.tag_value = tag_value.into();
+        self
+    }
+    /** The fields to update, as a comma-separated list of field names.
+
+    If empty or "*", every field set in the request is updated. Otherwise only the
+    listed fields are updated, and a listed field that is unset in the request is cleared.*/
     pub fn with_update_mask(mut self, update_mask: impl Into<Option<String>>) -> Self {
         self.request.update_mask = update_mask.into();
         self

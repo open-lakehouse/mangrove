@@ -34,7 +34,9 @@ impl ListCredentialsBuilder {
         self.request.purpose = purpose.into().map(buffa::EnumValue::Known);
         self
     }
-    /// The maximum number of results per page that should be returned.
+    /** The maximum number of results per page that should be returned.
+
+    If unset or 0, the server's default page size is used. Negative values are rejected.*/
     pub fn with_max_results(mut self, max_results: impl Into<Option<i32>>) -> Self {
         self.request.max_results = max_results.into();
         self
@@ -111,7 +113,8 @@ impl CreateCredentialBuilder {
         self.request.read_only = read_only.into();
         self
     }
-    /// Optional. Supplying true to this argument skips validation of the created set of credentials.
+    /** Supplying true to this argument skips validation of the created set of credentials.
+    Defaults to false.*/
     pub fn with_skip_validation(mut self, skip_validation: impl Into<Option<bool>>) -> Self {
         self.request.skip_validation = skip_validation.into();
         self
@@ -239,7 +242,8 @@ impl UpdateCredentialBuilder {
         self.request.owner = owner.into();
         self
     }
-    /// Supply true to this argument to skip validation of the updated credential.
+    /** Supply true to this argument to skip validation of the updated credential.
+    Defaults to false.*/
     pub fn with_skip_validation(mut self, skip_validation: impl Into<Option<bool>>) -> Self {
         self.request.skip_validation = skip_validation.into();
         self

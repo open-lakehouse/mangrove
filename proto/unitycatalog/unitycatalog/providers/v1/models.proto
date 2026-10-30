@@ -49,7 +49,7 @@ message Provider {
   optional string comment = 4 [(google.api.field_behavior) = OPTIONAL];
 
   // The recipient profile (credential file contents) used to connect to the
-  // sharing server, present only for TOKEN authentication.
+  // sharing server. Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
   optional string recipient_profile_str = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // A map of key-value properties attached to the provider.

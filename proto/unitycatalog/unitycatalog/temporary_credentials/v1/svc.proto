@@ -29,7 +29,9 @@ message GenerateTemporaryTableCredentialsRequest {
   // permissions, otherwise, it will be read only.
   Operation operation = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 }
 
@@ -54,7 +56,9 @@ message GenerateTemporaryVolumeCredentialsRequest {
   // have write permissions, otherwise, it will be read only.
   Operation operation = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 }
 
@@ -80,7 +84,9 @@ message GenerateTemporaryPathCredentialsRequest {
   // The operation being performed on the path.
   Operation operation = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 
   // When set to true, the service will not validate that the generated
@@ -120,7 +126,9 @@ message GenerateTemporaryModelVersionCredentialsRequest {
   // otherwise, it will be read only.
   Operation operation = 5 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 }
 
@@ -128,6 +136,10 @@ message GenerateTemporaryModelVersionCredentialsRequest {
 // Credentials are short-lived and scoped to a specific operation (read or read/write).
 service TemporaryCredentialsService {
   // Generate a new set of credentials for a table.
+  //
+  // The metastore must have the `external_access_enabled` flag set to true
+  // (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+  // privilege on the parent schema (granted by a catalog owner).
   rpc GenerateTemporaryTableCredentials(GenerateTemporaryTableCredentialsRequest) returns (TemporaryCredential) {
     option (google.api.http) = {
       post: "/temporary-table-credentials"
@@ -137,6 +149,13 @@ service TemporaryCredentialsService {
   }
 
   // Generate a new set of credentials for a path.
+  //
+  // Only external storage paths (external locations and external tables) are
+  // supported; managed tables are not. The metastore must have the
+  // `external_access_enabled` flag set to true (default false). The caller must
+  // have the `EXTERNAL_USE_LOCATION` privilege on the external location
+  // (granted by its owner) and, for existing external tables, the
+  // `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
   rpc GenerateTemporaryPathCredentials(GenerateTemporaryPathCredentialsRequest) returns (TemporaryCredential) {
     option (google.api.http) = {
       post: "/temporary-path-credentials"

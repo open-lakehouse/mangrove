@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
-use crate::error::{PyUnityCatalogError, PyUnityCatalogResult};
-use crate::runtime::get_runtime;
+use crate::codegen::runtime::{ListIterator, block_on};
+use crate::error::PyUnityCatalogError;
+use futures::stream::StreamExt;
+use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::ExternalLocationClient;
@@ -12,14 +14,16 @@ pub struct PyExternalLocationClient {
 }
 #[pymethods]
 impl PyExternalLocationClient {
-    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyExternalLocation> {
-        let request = self.client.get();
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
-        })
+    #[pyo3(signature = (include_browse = None))]
+    pub fn get(
+        &self,
+        py: Python<'_>,
+        include_browse: Option<bool>,
+    ) -> PyResult<PyExternalLocation> {
+        let mut request = self.client.get();
+        request = request.with_include_browse(include_browse);
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyExternalLocation::from(result))
     }
     #[pyo3(
         signature = (
@@ -35,7 +39,7 @@ impl PyExternalLocationClient {
     )]
     pub fn update(
         &self,
-        py: Python,
+        py: Python<'_>,
         url: Option<String>,
         credential_name: Option<String>,
         read_only: Option<bool>,
@@ -44,7 +48,7 @@ impl PyExternalLocationClient {
         new_name: Option<String>,
         force: Option<bool>,
         skip_validation: Option<bool>,
-    ) -> PyUnityCatalogResult<PyExternalLocation> {
+    ) -> PyResult<PyExternalLocation> {
         let mut request = self.client.update();
         request = request.with_url(url);
         request = request.with_credential_name(credential_name);
@@ -54,22 +58,15 @@ impl PyExternalLocationClient {
         request = request.with_new_name(new_name);
         request = request.with_force(force);
         request = request.with_skip_validation(skip_validation);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyExternalLocation::from(result))
     }
     #[pyo3(signature = (force = None))]
-    pub fn delete(&self, py: Python, force: Option<bool>) -> PyUnityCatalogResult<()> {
+    pub fn delete(&self, py: Python<'_>, force: Option<bool>) -> PyResult<()> {
         let mut request = self.client.delete();
         request = request.with_force(force);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(())
-        })
+        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(())
     }
 }
 impl PyExternalLocationClient {

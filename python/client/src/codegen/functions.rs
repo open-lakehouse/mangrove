@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
-use crate::error::{PyUnityCatalogError, PyUnityCatalogResult};
-use crate::runtime::get_runtime;
+use crate::codegen::runtime::{ListIterator, block_on};
+use crate::error::PyUnityCatalogError;
+use futures::stream::StreamExt;
+use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::FunctionClient;
@@ -12,35 +14,26 @@ pub struct PyFunctionClient {
 }
 #[pymethods]
 impl PyFunctionClient {
-    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyFunction> {
-        let request = self.client.get();
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyFunction::from(result))
-        })
+    #[pyo3(signature = (include_browse = None))]
+    pub fn get(&self, py: Python<'_>, include_browse: Option<bool>) -> PyResult<PyFunction> {
+        let mut request = self.client.get();
+        request = request.with_include_browse(include_browse);
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyFunction::from(result))
     }
     #[pyo3(signature = (owner = None))]
-    pub fn update(&self, py: Python, owner: Option<String>) -> PyUnityCatalogResult<PyFunction> {
+    pub fn update(&self, py: Python<'_>, owner: Option<String>) -> PyResult<PyFunction> {
         let mut request = self.client.update();
         request = request.with_owner(owner);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyFunction::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyFunction::from(result))
     }
     #[pyo3(signature = (force = None))]
-    pub fn delete(&self, py: Python, force: Option<bool>) -> PyUnityCatalogResult<()> {
+    pub fn delete(&self, py: Python<'_>, force: Option<bool>) -> PyResult<()> {
         let mut request = self.client.delete();
         request = request.with_force(force);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(())
-        })
+        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(())
     }
 }
 impl PyFunctionClient {

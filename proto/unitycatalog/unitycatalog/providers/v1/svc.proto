@@ -12,9 +12,13 @@ import "unitycatalog/providers/v1/models.proto";
 // Request to list providers.
 message ListProvidersRequest {
   // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
   optional int32 max_results = 1 [
-    (buf.validate.field).int32.gt = 0,
-    (buf.validate.field).int32.lt = 1000,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    },
     (google.api.field_behavior) = OPTIONAL
   ];
 
@@ -42,7 +46,9 @@ message CreateProviderRequest {
   // The delta sharing authentication type.
   ProviderAuthenticationType authentication_type = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 
   // Username of the provider owner.
@@ -52,7 +58,8 @@ message CreateProviderRequest {
   optional string comment = 4 [(google.api.field_behavior) = OPTIONAL];
 
   // The recipient profile (credential file contents) used to connect to the
-  // sharing server, required for TOKEN authentication.
+  // sharing server. Required when authentication_type is TOKEN or
+  // OAUTH_CLIENT_CREDENTIALS.
   optional string recipient_profile_str = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Provider properties as map of string key-value pairs.
@@ -89,7 +96,8 @@ message UpdateProviderRequest {
   optional string comment = 4 [(google.api.field_behavior) = OPTIONAL];
 
   // The recipient profile (credential file contents) used to connect to the
-  // sharing server.
+  // sharing server. Required when authentication_type is TOKEN or
+  // OAUTH_CLIENT_CREDENTIALS.
   optional string recipient_profile_str = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Provider properties as map of string key-value pairs.

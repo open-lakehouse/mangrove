@@ -219,7 +219,7 @@ pub struct Volume {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
     pub volume_type: ::buffa::EnumValue<VolumeType>,
-    /// Username of current owner of table.
+    /// Username of current owner of volume.
     ///
     /// Field 8: `owner`
     #[serde(rename = "owner", skip_serializing_if = "::core::option::Option::is_none")]
@@ -229,7 +229,7 @@ pub struct Volume {
     /// Field 9: `comment`
     #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
     pub comment: ::core::option::Option<::buffa::alloc::string::String>,
-    /// Time at which this catalog was created, in epoch milliseconds.
+    /// Time at which this volume was created, in epoch milliseconds.
     ///
     /// Field 1000: `created_at`
     #[serde(
@@ -239,7 +239,7 @@ pub struct Volume {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_at: ::core::option::Option<i64>,
-    /// Username of catalog creator.
+    /// Username of volume creator.
     ///
     /// Field 1001: `created_by`
     #[serde(
@@ -248,7 +248,7 @@ pub struct Volume {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
-    /// Time at which this catalog was last updated, in epoch milliseconds.
+    /// Time at which this volume was last updated, in epoch milliseconds.
     ///
     /// Field 1002: `updated_at`
     #[serde(
@@ -258,7 +258,7 @@ pub struct Volume {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_at: ::core::option::Option<i64>,
-    /// Username of user who last modified catalog.
+    /// Username of user who last modified the volume.
     ///
     /// Field 1003: `updated_by`
     #[serde(
@@ -860,6 +860,8 @@ pub struct ListVolumesRequest {
     pub schema_name: ::buffa::alloc::string::String,
     /// The maximum number of results per page that should be returned.
     ///
+    /// If unset or 0, the server's default page size is used. Negative values are rejected.
+    ///
     /// Field 3: `max_results`
     #[serde(
         rename = "max_results",
@@ -877,7 +879,7 @@ pub struct ListVolumesRequest {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub page_token: ::core::option::Option<::buffa::alloc::string::String>,
-    /// Whether to include schemas in the response for which the principal can only access selective metadata for
+    /// Whether to include volumes in the response for which the principal can only access selective metadata for
     ///
     /// Field 5: `include_browse`
     #[serde(
@@ -1133,7 +1135,7 @@ pub const __LIST_VOLUMES_REQUEST_JSON_ANY: ::buffa::type_registry::JsonAnyEntry 
     from_json: ::buffa::type_registry::any_from_json::<ListVolumesRequest>,
     is_wkt: false,
 };
-/// List Schemas response.
+/// List volumes response.
 #[derive(Clone, PartialEq, Default)]
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[serde(default)]
@@ -1390,7 +1392,7 @@ pub struct CreateVolumeRequest {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub storage_location: ::core::option::Option<::buffa::alloc::string::String>,
-    /// The storage location on the cloud
+    /// The comment attached to the volume.
     ///
     /// Field 6: `comment`
     #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
@@ -1684,7 +1686,7 @@ pub struct GetVolumeRequest {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
     pub name: ::buffa::alloc::string::String,
-    /// Whether to include schemas in the response for which the principal can only access selective metadata for
+    /// Whether to include volumes in the response for which the principal can only access selective metadata for
     ///
     /// Field 1005: `include_browse`
     #[serde(
@@ -2308,7 +2310,7 @@ pub mod __buffa {
             ///
             /// Field 7: `volume_type`
             pub volume_type: ::buffa::EnumValue<super::super::VolumeType>,
-            /// Username of current owner of table.
+            /// Username of current owner of volume.
             ///
             /// Field 8: `owner`
             pub owner: ::core::option::Option<&'a str>,
@@ -2316,19 +2318,19 @@ pub mod __buffa {
             ///
             /// Field 9: `comment`
             pub comment: ::core::option::Option<&'a str>,
-            /// Time at which this catalog was created, in epoch milliseconds.
+            /// Time at which this volume was created, in epoch milliseconds.
             ///
             /// Field 1000: `created_at`
             pub created_at: ::core::option::Option<i64>,
-            /// Username of catalog creator.
+            /// Username of volume creator.
             ///
             /// Field 1001: `created_by`
             pub created_by: ::core::option::Option<&'a str>,
-            /// Time at which this catalog was last updated, in epoch milliseconds.
+            /// Time at which this volume was last updated, in epoch milliseconds.
             ///
             /// Field 1002: `updated_at`
             pub updated_at: ::core::option::Option<i64>,
-            /// Username of user who last modified catalog.
+            /// Username of user who last modified the volume.
             ///
             /// Field 1003: `updated_by`
             pub updated_by: ::core::option::Option<&'a str>,
@@ -3071,7 +3073,7 @@ pub mod __buffa {
             pub fn volume_type(&self) -> ::buffa::EnumValue<super::super::VolumeType> {
                 self.0.reborrow().volume_type
             }
-            /// Username of current owner of table.
+            /// Username of current owner of volume.
             ///
             /// Field 8: `owner`
             #[must_use]
@@ -3085,28 +3087,28 @@ pub mod __buffa {
             pub fn comment(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().comment
             }
-            /// Time at which this catalog was created, in epoch milliseconds.
+            /// Time at which this volume was created, in epoch milliseconds.
             ///
             /// Field 1000: `created_at`
             #[must_use]
             pub fn created_at(&self) -> ::core::option::Option<i64> {
                 self.0.reborrow().created_at
             }
-            /// Username of catalog creator.
+            /// Username of volume creator.
             ///
             /// Field 1001: `created_by`
             #[must_use]
             pub fn created_by(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().created_by
             }
-            /// Time at which this catalog was last updated, in epoch milliseconds.
+            /// Time at which this volume was last updated, in epoch milliseconds.
             ///
             /// Field 1002: `updated_at`
             #[must_use]
             pub fn updated_at(&self) -> ::core::option::Option<i64> {
                 self.0.reborrow().updated_at
             }
-            /// Username of user who last modified catalog.
+            /// Username of user who last modified the volume.
             ///
             /// Field 1003: `updated_by`
             #[must_use]
@@ -3173,13 +3175,15 @@ pub mod __buffa {
             pub schema_name: &'a str,
             /// The maximum number of results per page that should be returned.
             ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
+            ///
             /// Field 3: `max_results`
             pub max_results: ::core::option::Option<i32>,
             /// Opaque pagination token to go to next page based on previous query.
             ///
             /// Field 4: `page_token`
             pub page_token: ::core::option::Option<&'a str>,
-            /// Whether to include schemas in the response for which the principal can only access selective metadata for
+            /// Whether to include volumes in the response for which the principal can only access selective metadata for
             ///
             /// Field 5: `include_browse`
             pub include_browse: ::core::option::Option<bool>,
@@ -3579,6 +3583,8 @@ pub mod __buffa {
             }
             /// The maximum number of results per page that should be returned.
             ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
+            ///
             /// Field 3: `max_results`
             #[must_use]
             pub fn max_results(&self) -> ::core::option::Option<i32> {
@@ -3591,7 +3597,7 @@ pub mod __buffa {
             pub fn page_token(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().page_token
             }
-            /// Whether to include schemas in the response for which the principal can only access selective metadata for
+            /// Whether to include volumes in the response for which the principal can only access selective metadata for
             ///
             /// Field 5: `include_browse`
             #[must_use]
@@ -3629,7 +3635,7 @@ pub mod __buffa {
                 ::serde::Serialize::serialize(&self.0, __s)
             }
         }
-        /// List Schemas response.
+        /// List volumes response.
         #[derive(Clone, Debug, Default)]
         pub struct ListVolumesResponseView<'a> {
             /// The volumes returned.
@@ -4032,7 +4038,7 @@ pub mod __buffa {
             ///
             /// Field 5: `storage_location`
             pub storage_location: ::core::option::Option<&'a str>,
-            /// The storage location on the cloud
+            /// The comment attached to the volume.
             ///
             /// Field 6: `comment`
             pub comment: ::core::option::Option<&'a str>,
@@ -4481,7 +4487,7 @@ pub mod __buffa {
             pub fn storage_location(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().storage_location
             }
-            /// The storage location on the cloud
+            /// The comment attached to the volume.
             ///
             /// Field 6: `comment`
             #[must_use]
@@ -4527,7 +4533,7 @@ pub mod __buffa {
             ///
             /// Field 1: `name`
             pub name: &'a str,
-            /// Whether to include schemas in the response for which the principal can only access selective metadata for
+            /// Whether to include volumes in the response for which the principal can only access selective metadata for
             ///
             /// Field 1005: `include_browse`
             pub include_browse: ::core::option::Option<bool>,
@@ -4820,7 +4826,7 @@ pub mod __buffa {
             pub fn name(&self) -> &'_ str {
                 self.0.reborrow().name
             }
-            /// Whether to include schemas in the response for which the principal can only access selective metadata for
+            /// Whether to include volumes in the response for which the principal can only access selective metadata for
             ///
             /// Field 1005: `include_browse`
             #[must_use]

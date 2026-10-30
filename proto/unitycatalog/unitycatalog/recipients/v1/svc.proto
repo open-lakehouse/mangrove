@@ -12,9 +12,13 @@ import "unitycatalog/recipients/v1/models.proto";
 // Request to list recipients.
 message ListRecipientsRequest {
   // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
   optional int32 max_results = 1 [
-    (buf.validate.field).int32.gt = 0,
-    (buf.validate.field).int32.lt = 1000,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    },
     (google.api.field_behavior) = OPTIONAL
   ];
 
@@ -42,7 +46,9 @@ message CreateRecipientRequest {
   // The delta sharing authentication type.
   AuthenticationType authentication_type = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 
   // Username of the recipient owner.
@@ -59,7 +65,7 @@ message CreateRecipientRequest {
   //
   // When provided in update request, the specified properties will override the existing properties.
   // To add and remove properties, one would need to perform a read-modify-write.
-  map<string, string> properties = 5 [(google.api.field_behavior) = OPTIONAL];
+  optional SecurablePropertiesKvPairs properties_kvpairs = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Expiration timestamp of the token, in epoch milliseconds.
   optional int64 expiration_time = 6 [(google.api.field_behavior) = OPTIONAL];
@@ -98,7 +104,7 @@ message UpdateRecipientRequest {
   //
   // When provided in update request, the specified properties will override the existing properties.
   // To add and remove properties, one would need to perform a read-modify-write.
-  map<string, string> properties = 5 [(google.api.field_behavior) = OPTIONAL];
+  optional SecurablePropertiesKvPairs properties_kvpairs = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Expiration timestamp of the token, in epoch milliseconds.
   optional int64 expiration_time = 6 [(google.api.field_behavior) = OPTIONAL];

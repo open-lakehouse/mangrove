@@ -13,9 +13,9 @@ import "unitycatalog/policies/v1/models.proto";
 message ListPoliciesRequest {
   // The type of the securable to list policies on.
   //
-  // Supported values: catalogs, schemas, tables.
+  // Supported values: CATALOG, SCHEMA, TABLE.
   string on_securable_type = 1 [
-    (buf.validate.field).string.pattern = "^(catalogs|schemas|tables)$",
+    (buf.validate.field).string.pattern = "^(CATALOG|SCHEMA|TABLE)$",
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
@@ -34,11 +34,10 @@ message ListPoliciesRequest {
   optional bool include_inherited = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
   optional int32 max_results = 4 [
-    (buf.validate.field).int32 = {
-      gt: 0
-      lte: 1000
-    },
+    (buf.validate.field).int32.gte = 0,
     (google.api.field_behavior) = OPTIONAL
   ];
 
@@ -56,37 +55,89 @@ message ListPoliciesResponse {
 }
 
 // Create a new policy on a securable.
+//
+// The body is the policy itself; the new policy applies to the securable and all its
+// descendants.
 message CreatePolicyRequest {
-  // The type of the securable to create the policy on.
-  //
-  // Supported values: catalogs, schemas, tables.
-  string on_securable_type = 1 [
-    (buf.validate.field).string.pattern = "^(catalogs|schemas|tables)$",
-    (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
-  ];
+  // At most one of the enforcement options may be set.
+  option (buf.validate.message).cel = {
+    id: "policy.options.at_most_one"
+    message: "at most one of row_filter, column_mask, deny and grant may be set"
+    expression: "[has(this.row_filter), has(this.column_mask), has(this.deny), has(this.grant)].filter(x, x).size() <= 1"
+  };
 
-  // The fully qualified name of the securable to create the policy on.
-  string on_securable_fullname = 2 [
+  // The name of the policy. Unique within the securable it is defined on.
+  string name = 1 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
 
-  // The policy to create.
-  PolicyInfo policy_info = 3 [
+  // The type of securable the policy is defined on.
+  //
+  // Supported values: CATALOG, SCHEMA, TABLE.
+  string on_securable_type = 2 [
+    (buf.validate.field).string.pattern = "^(CATALOG|SCHEMA|TABLE)$",
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
+
+  // The fully qualified name of the securable the policy is defined on.
+  string on_securable_fullname = 3 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // The kind of enforcement this policy applies.
+  PolicyType policy_type = 4 [
+    (buf.validate.field).enum = {
+      not_in: [0]
+    },
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // User-provided free-form text description of the policy.
+  optional string comment = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // The principals the policy applies to. Empty means "all principals".
+  repeated string to_principals = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // The principals explicitly excluded from the policy, even if matched by to_principals.
+  repeated string except_principals = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // The type of securables the policy takes effect on.
+  optional string for_securable_type = 8 [
+    (buf.validate.field).string.pattern = "^(CATALOG|SCHEMA|TABLE)$",
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // An opaque condition expression evaluated by the query engine at enforcement time.
+  optional string when_condition = 9 [(google.api.field_behavior) = OPTIONAL];
+
+  // The columns referenced by the policy function, and the aliases they are bound to.
+  repeated MatchColumn match_columns = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+  optional FunctionRef row_filter = 11;
+
+  // The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+  optional FunctionRef column_mask = 12;
+
+  // The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+  optional PrivilegeOptions deny = 13;
+
+  // The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+  optional PrivilegeOptions grant = 14;
 }
 
 // Get a policy defined on a securable.
 message GetPolicyRequest {
   // The type of the securable the policy is defined on.
   //
-  // Supported values: catalogs, schemas, tables.
+  // Supported values: CATALOG, SCHEMA, TABLE.
   string on_securable_type = 1 [
-    (buf.validate.field).string.pattern = "^(catalogs|schemas|tables)$",
+    (buf.validate.field).string.pattern = "^(CATALOG|SCHEMA|TABLE)$",
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
@@ -107,12 +158,21 @@ message GetPolicyRequest {
 }
 
 // Update a policy defined on a securable.
+//
+// The policy is identified by the path; the body carries the fields to update.
 message UpdatePolicyRequest {
-  // The type of the securable the policy is defined on.
+  // At most one of the enforcement options may be set.
+  option (buf.validate.message).cel = {
+    id: "policy.options.at_most_one"
+    message: "at most one of row_filter, column_mask, deny and grant may be set"
+    expression: "[has(this.row_filter), has(this.column_mask), has(this.deny), has(this.grant)].filter(x, x).size() <= 1"
+  };
+
+  // The type of securable the policy is defined on.
   //
-  // Supported values: catalogs, schemas, tables.
+  // Supported values: CATALOG, SCHEMA, TABLE.
   string on_securable_type = 1 [
-    (buf.validate.field).string.pattern = "^(catalogs|schemas|tables)$",
+    (buf.validate.field).string.pattern = "^(CATALOG|SCHEMA|TABLE)$",
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
@@ -131,23 +191,56 @@ message UpdatePolicyRequest {
     (google.api.field_behavior) = REQUIRED
   ];
 
-  // The policy with the updated fields.
-  PolicyInfo policy_info = 4 [
-    (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
+  // The kind of enforcement this policy applies.
+  optional PolicyType policy_type = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // User-provided free-form text description of the policy.
+  optional string comment = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // The principals the policy applies to. Empty means "all principals".
+  repeated string to_principals = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // The principals explicitly excluded from the policy, even if matched by to_principals.
+  repeated string except_principals = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // The type of securables the policy takes effect on.
+  optional string for_securable_type = 8 [
+    (buf.validate.field).string.pattern = "^(CATALOG|SCHEMA|TABLE)$",
+    (google.api.field_behavior) = OPTIONAL
   ];
 
-  // The list of fields to update, as a comma-separated string.
-  optional string update_mask = 5 [(google.api.field_behavior) = OPTIONAL];
+  // An opaque condition expression evaluated by the query engine at enforcement time.
+  optional string when_condition = 9 [(google.api.field_behavior) = OPTIONAL];
+
+  // The columns referenced by the policy function, and the aliases they are bound to.
+  repeated MatchColumn match_columns = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+  optional FunctionRef row_filter = 11;
+
+  // The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+  optional FunctionRef column_mask = 12;
+
+  // The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+  optional PrivilegeOptions deny = 13;
+
+  // The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+  optional PrivilegeOptions grant = 14;
+
+  // The fields to update, as a comma-separated list of field names.
+  //
+  // If empty or "*", every field set in the request is updated. Otherwise only the
+  // listed fields are updated, and a listed field that is unset in the request is cleared.
+  optional string update_mask = 15 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Delete a policy defined on a securable.
 message DeletePolicyRequest {
   // The type of the securable the policy is defined on.
   //
-  // Supported values: catalogs, schemas, tables.
+  // Supported values: CATALOG, SCHEMA, TABLE.
   string on_securable_type = 1 [
-    (buf.validate.field).string.pattern = "^(catalogs|schemas|tables)$",
+    (buf.validate.field).string.pattern = "^(CATALOG|SCHEMA|TABLE)$",
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
@@ -183,8 +276,8 @@ service PoliciesService {
   // Creates a new row-filter or column-mask policy on the specified securable.
   rpc CreatePolicy(CreatePolicyRequest) returns (PolicyInfo) {
     option (google.api.http) = {
-      post: "/policies/{on_securable_type}/{on_securable_fullname}"
-      body: "policy_info"
+      post: "/policies"
+      body: "*"
     };
     option (gnostic.openapi.v3.operation) = {operation_id: "CreatePolicy"};
   }

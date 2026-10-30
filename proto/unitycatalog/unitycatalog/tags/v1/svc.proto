@@ -11,12 +11,12 @@ import "unitycatalog/tags/v1/models.proto";
 
 // List tag policies
 message ListTagPoliciesRequest {
-  // The maximum number of results per page that should be returned.
+  // The maximum number of results to return in this request.
+  //
+  // Fewer results may be returned than requested. If unset or 0, this defaults to 1000;
+  // larger values are coerced down to 1000. Negative values are rejected.
   optional int32 max_results = 1 [
-    (buf.validate.field).int32 = {
-      gt: 0
-      lte: 1000
-    },
+    (buf.validate.field).int32.gte = 0,
     (google.api.field_behavior) = OPTIONAL
   ];
 
@@ -35,10 +35,27 @@ message ListTagPoliciesResponse {
 
 // Create a new tag policy
 message CreateTagPolicyRequest {
-  // The tag policy to create.
-  TagPolicy tag_policy = 1 [
+  // The key of the governed tag.
+  string tag_key = 1 [
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 256
+    },
     (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // User-provided free-form text description of the tag policy.
+  optional string description = 2 [
+    (buf.validate.field).string.max_len = 4096,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // The set of allowed values for the governed tag. The list is unordered.
+  repeated Value values = 3 [
+    (buf.validate.field).repeated.max_items = 500,
+    (google.api.field_behavior) = OPTIONAL
   ];
 }
 
@@ -61,14 +78,23 @@ message UpdateTagPolicyRequest {
     (google.api.field_behavior) = REQUIRED
   ];
 
-  // The tag policy with the updated fields.
-  TagPolicy tag_policy = 2 [
-    (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
+  // User-provided free-form text description of the tag policy.
+  optional string description = 2 [
+    (buf.validate.field).string.max_len = 4096,
+    (google.api.field_behavior) = OPTIONAL
   ];
 
-  // The list of fields to update, as a comma-separated string.
-  optional string update_mask = 3 [(google.api.field_behavior) = OPTIONAL];
+  // The set of allowed values for the governed tag. The list is unordered.
+  repeated Value values = 3 [
+    (buf.validate.field).repeated.max_items = 500,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // The fields to update, as a comma-separated list of field names.
+  //
+  // If empty or "*", every field set in the request is updated. Otherwise only the
+  // listed fields are updated, and a listed field that is unset in the request is cleared.
+  optional string update_mask = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Delete a tag policy
@@ -148,11 +174,10 @@ message ListEntityTagAssignmentsRequest {
   ];
 
   // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
   optional int32 max_results = 3 [
-    (buf.validate.field).int32 = {
-      gt: 0
-      lte: 1000
-    },
+    (buf.validate.field).int32.gte = 0,
     (google.api.field_behavior) = OPTIONAL
   ];
 
@@ -171,11 +196,31 @@ message ListEntityTagAssignmentsResponse {
 
 // Create an entity tag assignment
 message CreateEntityTagAssignmentRequest {
-  // The tag assignment to create.
-  EntityTagAssignment tag_assignment = 1 [
+  // The type of the entity to which the tag is assigned.
+  //
+  // Supported values: catalogs, schemas, tables, columns, volumes.
+  string entity_type = 1 [
+    (buf.validate.field).string.pattern = "^(catalogs|schemas|tables|columns|volumes)$",
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
+
+  // The fully qualified name of the entity to which the tag is assigned.
+  string entity_name = 2 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // The key of the tag.
+  string tag_key = 3 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).required = true,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // The value of the tag.
+  optional string tag_value = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Get an entity tag assignment
@@ -225,13 +270,13 @@ message UpdateEntityTagAssignmentRequest {
     (google.api.field_behavior) = REQUIRED
   ];
 
-  // The tag assignment with the updated fields.
-  EntityTagAssignment tag_assignment = 4 [
-    (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
-  ];
+  // The value of the tag.
+  optional string tag_value = 4 [(google.api.field_behavior) = OPTIONAL];
 
-  // The list of fields to update, as a comma-separated string.
+  // The fields to update, as a comma-separated list of field names.
+  //
+  // If empty or "*", every field set in the request is updated. Otherwise only the
+  // listed fields are updated, and a listed field that is unset in the request is cleared.
   optional string update_mask = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 

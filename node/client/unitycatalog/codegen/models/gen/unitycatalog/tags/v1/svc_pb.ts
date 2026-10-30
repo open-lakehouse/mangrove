@@ -10,7 +10,7 @@ import { file_google_api_annotations } from "../../../google/api/annotations_pb"
 import { file_google_api_field_behavior } from "../../../google/api/field_behavior_pb";
 import type { EmptySchema } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_empty } from "@bufbuild/protobuf/wkt";
-import type { EntityTagAssignment, EntityTagAssignmentSchema, TagPolicy, TagPolicySchema } from "./models_pb";
+import type { EntityTagAssignment, EntityTagAssignmentSchema, TagPolicy, TagPolicySchema, Value } from "./models_pb";
 import { file_unitycatalog_tags_v1_models } from "./models_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file unitycatalog/tags/v1/svc.proto.
  */
 export const file_unitycatalog_tags_v1_svc: GenFile = /*@__PURE__*/
-  fileDesc("Ch51bml0eWNhdGFsb2cvdGFncy92MS9zdmMucHJvdG8SFHVuaXR5Y2F0YWxvZy50YWdzLnYxIn4KFkxpc3RUYWdQb2xpY2llc1JlcXVlc3QSJwoLbWF4X3Jlc3VsdHMYASABKAVCDeBBAbpIBxoFGOgHIABIAIgBARIcCgpwYWdlX3Rva2VuGAIgASgJQgPgQQFIAYgBAUIOCgxfbWF4X3Jlc3VsdHNCDQoLX3BhZ2VfdG9rZW4iggEKF0xpc3RUYWdQb2xpY2llc1Jlc3BvbnNlEjUKDHRhZ19wb2xpY2llcxgBIAMoCzIfLnVuaXR5Y2F0YWxvZy50YWdzLnYxLlRhZ1BvbGljeRIcCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAlIAIgBAUISChBfbmV4dF9wYWdlX3Rva2VuIlgKFkNyZWF0ZVRhZ1BvbGljeVJlcXVlc3QSPgoKdGFnX3BvbGljeRgBIAEoCzIfLnVuaXR5Y2F0YWxvZy50YWdzLnYxLlRhZ1BvbGljeUIJ4EECukgDyAEBIjUKE0dldFRhZ1BvbGljeVJlcXVlc3QSHgoHdGFnX2tleRgBIAEoCUIN4EECukgHyAEBcgIQASKnAQoWVXBkYXRlVGFnUG9saWN5UmVxdWVzdBIeCgd0YWdfa2V5GAEgASgJQg3gQQK6SAfIAQFyAhABEj4KCnRhZ19wb2xpY3kYAiABKAsyHy51bml0eWNhdGFsb2cudGFncy52MS5UYWdQb2xpY3lCCeBBArpIA8gBARIdCgt1cGRhdGVfbWFzaxgDIAEoCUID4EEBSACIAQFCDgoMX3VwZGF0ZV9tYXNrIjgKFkRlbGV0ZVRhZ1BvbGljeVJlcXVlc3QSHgoHdGFnX2tleRgBIAEoCUIN4EECukgHyAEBcgIQASL6AQofTGlzdEVudGl0eVRhZ0Fzc2lnbm1lbnRzUmVxdWVzdBJNCgtlbnRpdHlfdHlwZRgBIAEoCUI44EECukgyyAEBci0yK14oY2F0YWxvZ3N8c2NoZW1hc3x0YWJsZXN8Y29sdW1uc3x2b2x1bWVzKSQSIgoLZW50aXR5X25hbWUYAiABKAlCDeBBArpIB8gBAXICEAESJwoLbWF4X3Jlc3VsdHMYAyABKAVCDeBBAbpIBxoFGOgHIABIAIgBARIcCgpwYWdlX3Rva2VuGAQgASgJQgPgQQFIAYgBAUIOCgxfbWF4X3Jlc3VsdHNCDQoLX3BhZ2VfdG9rZW4imAEKIExpc3RFbnRpdHlUYWdBc3NpZ25tZW50c1Jlc3BvbnNlEkIKD3RhZ19hc3NpZ25tZW50cxgBIAMoCzIpLnVuaXR5Y2F0YWxvZy50YWdzLnYxLkVudGl0eVRhZ0Fzc2lnbm1lbnQSHAoPbmV4dF9wYWdlX3Rva2VuGAIgASgJSACIAQFCEgoQX25leHRfcGFnZV90b2tlbiJwCiBDcmVhdGVFbnRpdHlUYWdBc3NpZ25tZW50UmVxdWVzdBJMCg50YWdfYXNzaWdubWVudBgBIAEoCzIpLnVuaXR5Y2F0YWxvZy50YWdzLnYxLkVudGl0eVRhZ0Fzc2lnbm1lbnRCCeBBArpIA8gBASKyAQodR2V0RW50aXR5VGFnQXNzaWdubWVudFJlcXVlc3QSTQoLZW50aXR5X3R5cGUYASABKAlCOOBBArpIMsgBAXItMiteKGNhdGFsb2dzfHNjaGVtYXN8dGFibGVzfGNvbHVtbnN8dm9sdW1lcykkEiIKC2VudGl0eV9uYW1lGAIgASgJQg3gQQK6SAfIAQFyAhABEh4KB3RhZ19rZXkYAyABKAlCDeBBArpIB8gBAXICEAEisgIKIFVwZGF0ZUVudGl0eVRhZ0Fzc2lnbm1lbnRSZXF1ZXN0Ek0KC2VudGl0eV90eXBlGAEgASgJQjjgQQK6SDLIAQFyLTIrXihjYXRhbG9nc3xzY2hlbWFzfHRhYmxlc3xjb2x1bW5zfHZvbHVtZXMpJBIiCgtlbnRpdHlfbmFtZRgCIAEoCUIN4EECukgHyAEBcgIQARIeCgd0YWdfa2V5GAMgASgJQg3gQQK6SAfIAQFyAhABEkwKDnRhZ19hc3NpZ25tZW50GAQgASgLMikudW5pdHljYXRhbG9nLnRhZ3MudjEuRW50aXR5VGFnQXNzaWdubWVudEIJ4EECukgDyAEBEh0KC3VwZGF0ZV9tYXNrGAUgASgJQgPgQQFIAIgBAUIOCgxfdXBkYXRlX21hc2sitQEKIERlbGV0ZUVudGl0eVRhZ0Fzc2lnbm1lbnRSZXF1ZXN0Ek0KC2VudGl0eV90eXBlGAEgASgJQjjgQQK6SDLIAQFyLTIrXihjYXRhbG9nc3xzY2hlbWFzfHRhYmxlc3xjb2x1bW5zfHZvbHVtZXMpJBIiCgtlbnRpdHlfbmFtZRgCIAEoCUIN4EECukgHyAEBcgIQARIeCgd0YWdfa2V5GAMgASgJQg3gQQK6SAfIAQFyAhABMvoFChJUYWdQb2xpY2llc1NlcnZpY2USmQEKD0xpc3RUYWdQb2xpY2llcxIsLnVuaXR5Y2F0YWxvZy50YWdzLnYxLkxpc3RUYWdQb2xpY2llc1JlcXVlc3QaLS51bml0eWNhdGFsb2cudGFncy52MS5MaXN0VGFnUG9saWNpZXNSZXNwb25zZSIpukcRKg9MaXN0VGFnUG9saWNpZXOC0+STAg8SDS90YWctcG9saWNpZXMSjgEKD0NyZWF0ZVRhZ1BvbGljeRIsLnVuaXR5Y2F0YWxvZy50YWdzLnYxLkNyZWF0ZVRhZ1BvbGljeVJlcXVlc3QaHy51bml0eWNhdGFsb2cudGFncy52MS5UYWdQb2xpY3kiLLpHESoPQ3JlYXRlVGFnUG9saWN5gtPkkwISOgEqIg0vdGFnLXBvbGljaWVzEowBCgxHZXRUYWdQb2xpY3kSKS51bml0eWNhdGFsb2cudGFncy52MS5HZXRUYWdQb2xpY3lSZXF1ZXN0Gh8udW5pdHljYXRhbG9nLnRhZ3MudjEuVGFnUG9saWN5IjC6Rw4qDEdldFRhZ1BvbGljeYLT5JMCGRIXL3RhZy1wb2xpY2llcy97dGFnX2tleX0SmAEKD1VwZGF0ZVRhZ1BvbGljeRIsLnVuaXR5Y2F0YWxvZy50YWdzLnYxLlVwZGF0ZVRhZ1BvbGljeVJlcXVlc3QaHy51bml0eWNhdGFsb2cudGFncy52MS5UYWdQb2xpY3kiNrpHESoPVXBkYXRlVGFnUG9saWN5gtPkkwIcOgEqMhcvdGFnLXBvbGljaWVzL3t0YWdfa2V5fRKMAQoPRGVsZXRlVGFnUG9saWN5EiwudW5pdHljYXRhbG9nLnRhZ3MudjEuRGVsZXRlVGFnUG9saWN5UmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIzukcRKg9EZWxldGVUYWdQb2xpY3mC0+STAhkqFy90YWctcG9saWNpZXMve3RhZ19rZXl9MvMIChtFbnRpdHlUYWdBc3NpZ25tZW50c1NlcnZpY2US6AEKGExpc3RFbnRpdHlUYWdBc3NpZ25tZW50cxI1LnVuaXR5Y2F0YWxvZy50YWdzLnYxLkxpc3RFbnRpdHlUYWdBc3NpZ25tZW50c1JlcXVlc3QaNi51bml0eWNhdGFsb2cudGFncy52MS5MaXN0RW50aXR5VGFnQXNzaWdubWVudHNSZXNwb25zZSJdukcaKhhMaXN0RW50aXR5VGFnQXNzaWdubWVudHOC0+STAjoSOC9lbnRpdHktdGFnLWFzc2lnbm1lbnRzL3tlbnRpdHlfdHlwZX0ve2VudGl0eV9uYW1lfS90YWdzEsABChlDcmVhdGVFbnRpdHlUYWdBc3NpZ25tZW50EjYudW5pdHljYXRhbG9nLnRhZ3MudjEuQ3JlYXRlRW50aXR5VGFnQXNzaWdubWVudFJlcXVlc3QaKS51bml0eWNhdGFsb2cudGFncy52MS5FbnRpdHlUYWdBc3NpZ25tZW50IkC6RxsqGUNyZWF0ZUVudGl0eVRhZ0Fzc2lnbm1lbnSC0+STAhw6ASoiFy9lbnRpdHktdGFnLWFzc2lnbm1lbnRzEt8BChZHZXRFbnRpdHlUYWdBc3NpZ25tZW50EjMudW5pdHljYXRhbG9nLnRhZ3MudjEuR2V0RW50aXR5VGFnQXNzaWdubWVudFJlcXVlc3QaKS51bml0eWNhdGFsb2cudGFncy52MS5FbnRpdHlUYWdBc3NpZ25tZW50ImW6RxgqFkdldEVudGl0eVRhZ0Fzc2lnbm1lbnSC0+STAkQSQi9lbnRpdHktdGFnLWFzc2lnbm1lbnRzL3tlbnRpdHlfdHlwZX0ve2VudGl0eV9uYW1lfS90YWdzL3t0YWdfa2V5fRLrAQoZVXBkYXRlRW50aXR5VGFnQXNzaWdubWVudBI2LnVuaXR5Y2F0YWxvZy50YWdzLnYxLlVwZGF0ZUVudGl0eVRhZ0Fzc2lnbm1lbnRSZXF1ZXN0GikudW5pdHljYXRhbG9nLnRhZ3MudjEuRW50aXR5VGFnQXNzaWdubWVudCJrukcbKhlVcGRhdGVFbnRpdHlUYWdBc3NpZ25tZW50gtPkkwJHOgEqMkIvZW50aXR5LXRhZy1hc3NpZ25tZW50cy97ZW50aXR5X3R5cGV9L3tlbnRpdHlfbmFtZX0vdGFncy97dGFnX2tleX0S1QEKGURlbGV0ZUVudGl0eVRhZ0Fzc2lnbm1lbnQSNi51bml0eWNhdGFsb2cudGFncy52MS5EZWxldGVFbnRpdHlUYWdBc3NpZ25tZW50UmVxdWVzdBoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSJoukcbKhlEZWxldGVFbnRpdHlUYWdBc3NpZ25tZW50gtPkkwJEKkIvZW50aXR5LXRhZy1hc3NpZ25tZW50cy97ZW50aXR5X3R5cGV9L3tlbnRpdHlfbmFtZX0vdGFncy97dGFnX2tleX1C4gEKGGNvbS51bml0eWNhdGFsb2cudGFncy52MUIIU3ZjUHJvdG9QAVpKZ2l0aHViLmNvbS9kZWx0YS1pbmN1YmF0b3IvZGVsdGEtc2hhcmluZy1ycy9nby91bml0eWNhdGFsb2cvdGFncy92MTt0YWdzdjGiAgNVVFiqAhRVbml0eWNhdGFsb2cuVGFncy5WMcoCFFVuaXR5Y2F0YWxvZ1xUYWdzXFYx4gIgVW5pdHljYXRhbG9nXFRhZ3NcVjFcR1BCTWV0YWRhdGHqAhZVbml0eWNhdGFsb2c6OlRhZ3M6OlYxYgZwcm90bzM", [file_buf_validate_validate, file_gnostic_openapi_v3_annotations, file_google_api_annotations, file_google_api_field_behavior, file_google_protobuf_empty, file_unitycatalog_tags_v1_models]);
+  fileDesc("Ch51bml0eWNhdGFsb2cvdGFncy92MS9zdmMucHJvdG8SFHVuaXR5Y2F0YWxvZy50YWdzLnYxInsKFkxpc3RUYWdQb2xpY2llc1JlcXVlc3QSJAoLbWF4X3Jlc3VsdHMYASABKAVCCuBBAbpIBBoCKABIAIgBARIcCgpwYWdlX3Rva2VuGAIgASgJQgPgQQFIAYgBAUIOCgxfbWF4X3Jlc3VsdHNCDQoLX3BhZ2VfdG9rZW4iggEKF0xpc3RUYWdQb2xpY2llc1Jlc3BvbnNlEjUKDHRhZ19wb2xpY2llcxgBIAMoCzIfLnVuaXR5Y2F0YWxvZy50YWdzLnYxLlRhZ1BvbGljeRIcCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAlIAIgBAUISChBfbmV4dF9wYWdlX3Rva2VuIrABChZDcmVhdGVUYWdQb2xpY3lSZXF1ZXN0EiQKB3RhZ19rZXkYASABKAlCE+BBAuBBBbpICsgBAXIFEAEYgAISJQoLZGVzY3JpcHRpb24YAiABKAlCC+BBAbpIBXIDGIAgSACIAQESOQoGdmFsdWVzGAMgAygLMhsudW5pdHljYXRhbG9nLnRhZ3MudjEuVmFsdWVCDOBBAbpIBpIBAxD0A0IOCgxfZGVzY3JpcHRpb24iNQoTR2V0VGFnUG9saWN5UmVxdWVzdBIeCgd0YWdfa2V5GAEgASgJQg3gQQK6SAfIAQFyAhABItkBChZVcGRhdGVUYWdQb2xpY3lSZXF1ZXN0Eh4KB3RhZ19rZXkYASABKAlCDeBBArpIB8gBAXICEAESJQoLZGVzY3JpcHRpb24YAiABKAlCC+BBAbpIBXIDGIAgSACIAQESOQoGdmFsdWVzGAMgAygLMhsudW5pdHljYXRhbG9nLnRhZ3MudjEuVmFsdWVCDOBBAbpIBpIBAxD0AxIdCgt1cGRhdGVfbWFzaxgEIAEoCUID4EEBSAGIAQFCDgoMX2Rlc2NyaXB0aW9uQg4KDF91cGRhdGVfbWFzayI4ChZEZWxldGVUYWdQb2xpY3lSZXF1ZXN0Eh4KB3RhZ19rZXkYASABKAlCDeBBArpIB8gBAXICEAEi9wEKH0xpc3RFbnRpdHlUYWdBc3NpZ25tZW50c1JlcXVlc3QSTQoLZW50aXR5X3R5cGUYASABKAlCOOBBArpIMsgBAXItMiteKGNhdGFsb2dzfHNjaGVtYXN8dGFibGVzfGNvbHVtbnN8dm9sdW1lcykkEiIKC2VudGl0eV9uYW1lGAIgASgJQg3gQQK6SAfIAQFyAhABEiQKC21heF9yZXN1bHRzGAMgASgFQgrgQQG6SAQaAigASACIAQESHAoKcGFnZV90b2tlbhgEIAEoCUID4EEBSAGIAQFCDgoMX21heF9yZXN1bHRzQg0KC19wYWdlX3Rva2VuIpgBCiBMaXN0RW50aXR5VGFnQXNzaWdubWVudHNSZXNwb25zZRJCCg90YWdfYXNzaWdubWVudHMYASADKAsyKS51bml0eWNhdGFsb2cudGFncy52MS5FbnRpdHlUYWdBc3NpZ25tZW50EhwKD25leHRfcGFnZV90b2tlbhgCIAEoCUgAiAEBQhIKEF9uZXh0X3BhZ2VfdG9rZW4i4AEKIENyZWF0ZUVudGl0eVRhZ0Fzc2lnbm1lbnRSZXF1ZXN0Ek0KC2VudGl0eV90eXBlGAEgASgJQjjgQQK6SDLIAQFyLTIrXihjYXRhbG9nc3xzY2hlbWFzfHRhYmxlc3xjb2x1bW5zfHZvbHVtZXMpJBIiCgtlbnRpdHlfbmFtZRgCIAEoCUIN4EECukgHyAEBcgIQARIeCgd0YWdfa2V5GAMgASgJQg3gQQK6SAfIAQFyAhABEhsKCXRhZ192YWx1ZRgEIAEoCUID4EEBSACIAQFCDAoKX3RhZ192YWx1ZSKyAQodR2V0RW50aXR5VGFnQXNzaWdubWVudFJlcXVlc3QSTQoLZW50aXR5X3R5cGUYASABKAlCOOBBArpIMsgBAXItMiteKGNhdGFsb2dzfHNjaGVtYXN8dGFibGVzfGNvbHVtbnN8dm9sdW1lcykkEiIKC2VudGl0eV9uYW1lGAIgASgJQg3gQQK6SAfIAQFyAhABEh4KB3RhZ19rZXkYAyABKAlCDeBBArpIB8gBAXICEAEijwIKIFVwZGF0ZUVudGl0eVRhZ0Fzc2lnbm1lbnRSZXF1ZXN0Ek0KC2VudGl0eV90eXBlGAEgASgJQjjgQQK6SDLIAQFyLTIrXihjYXRhbG9nc3xzY2hlbWFzfHRhYmxlc3xjb2x1bW5zfHZvbHVtZXMpJBIiCgtlbnRpdHlfbmFtZRgCIAEoCUIN4EECukgHyAEBcgIQARIeCgd0YWdfa2V5GAMgASgJQg3gQQK6SAfIAQFyAhABEhsKCXRhZ192YWx1ZRgEIAEoCUID4EEBSACIAQESHQoLdXBkYXRlX21hc2sYBSABKAlCA+BBAUgBiAEBQgwKCl90YWdfdmFsdWVCDgoMX3VwZGF0ZV9tYXNrIrUBCiBEZWxldGVFbnRpdHlUYWdBc3NpZ25tZW50UmVxdWVzdBJNCgtlbnRpdHlfdHlwZRgBIAEoCUI44EECukgyyAEBci0yK14oY2F0YWxvZ3N8c2NoZW1hc3x0YWJsZXN8Y29sdW1uc3x2b2x1bWVzKSQSIgoLZW50aXR5X25hbWUYAiABKAlCDeBBArpIB8gBAXICEAESHgoHdGFnX2tleRgDIAEoCUIN4EECukgHyAEBcgIQATL6BQoSVGFnUG9saWNpZXNTZXJ2aWNlEpkBCg9MaXN0VGFnUG9saWNpZXMSLC51bml0eWNhdGFsb2cudGFncy52MS5MaXN0VGFnUG9saWNpZXNSZXF1ZXN0Gi0udW5pdHljYXRhbG9nLnRhZ3MudjEuTGlzdFRhZ1BvbGljaWVzUmVzcG9uc2UiKbpHESoPTGlzdFRhZ1BvbGljaWVzgtPkkwIPEg0vdGFnLXBvbGljaWVzEo4BCg9DcmVhdGVUYWdQb2xpY3kSLC51bml0eWNhdGFsb2cudGFncy52MS5DcmVhdGVUYWdQb2xpY3lSZXF1ZXN0Gh8udW5pdHljYXRhbG9nLnRhZ3MudjEuVGFnUG9saWN5Iiy6RxEqD0NyZWF0ZVRhZ1BvbGljeYLT5JMCEjoBKiINL3RhZy1wb2xpY2llcxKMAQoMR2V0VGFnUG9saWN5EikudW5pdHljYXRhbG9nLnRhZ3MudjEuR2V0VGFnUG9saWN5UmVxdWVzdBofLnVuaXR5Y2F0YWxvZy50YWdzLnYxLlRhZ1BvbGljeSIwukcOKgxHZXRUYWdQb2xpY3mC0+STAhkSFy90YWctcG9saWNpZXMve3RhZ19rZXl9EpgBCg9VcGRhdGVUYWdQb2xpY3kSLC51bml0eWNhdGFsb2cudGFncy52MS5VcGRhdGVUYWdQb2xpY3lSZXF1ZXN0Gh8udW5pdHljYXRhbG9nLnRhZ3MudjEuVGFnUG9saWN5Ija6RxEqD1VwZGF0ZVRhZ1BvbGljeYLT5JMCHDoBKjIXL3RhZy1wb2xpY2llcy97dGFnX2tleX0SjAEKD0RlbGV0ZVRhZ1BvbGljeRIsLnVuaXR5Y2F0YWxvZy50YWdzLnYxLkRlbGV0ZVRhZ1BvbGljeVJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiM7pHESoPRGVsZXRlVGFnUG9saWN5gtPkkwIZKhcvdGFnLXBvbGljaWVzL3t0YWdfa2V5fTLzCAobRW50aXR5VGFnQXNzaWdubWVudHNTZXJ2aWNlEugBChhMaXN0RW50aXR5VGFnQXNzaWdubWVudHMSNS51bml0eWNhdGFsb2cudGFncy52MS5MaXN0RW50aXR5VGFnQXNzaWdubWVudHNSZXF1ZXN0GjYudW5pdHljYXRhbG9nLnRhZ3MudjEuTGlzdEVudGl0eVRhZ0Fzc2lnbm1lbnRzUmVzcG9uc2UiXbpHGioYTGlzdEVudGl0eVRhZ0Fzc2lnbm1lbnRzgtPkkwI6EjgvZW50aXR5LXRhZy1hc3NpZ25tZW50cy97ZW50aXR5X3R5cGV9L3tlbnRpdHlfbmFtZX0vdGFncxLAAQoZQ3JlYXRlRW50aXR5VGFnQXNzaWdubWVudBI2LnVuaXR5Y2F0YWxvZy50YWdzLnYxLkNyZWF0ZUVudGl0eVRhZ0Fzc2lnbm1lbnRSZXF1ZXN0GikudW5pdHljYXRhbG9nLnRhZ3MudjEuRW50aXR5VGFnQXNzaWdubWVudCJAukcbKhlDcmVhdGVFbnRpdHlUYWdBc3NpZ25tZW50gtPkkwIcOgEqIhcvZW50aXR5LXRhZy1hc3NpZ25tZW50cxLfAQoWR2V0RW50aXR5VGFnQXNzaWdubWVudBIzLnVuaXR5Y2F0YWxvZy50YWdzLnYxLkdldEVudGl0eVRhZ0Fzc2lnbm1lbnRSZXF1ZXN0GikudW5pdHljYXRhbG9nLnRhZ3MudjEuRW50aXR5VGFnQXNzaWdubWVudCJlukcYKhZHZXRFbnRpdHlUYWdBc3NpZ25tZW50gtPkkwJEEkIvZW50aXR5LXRhZy1hc3NpZ25tZW50cy97ZW50aXR5X3R5cGV9L3tlbnRpdHlfbmFtZX0vdGFncy97dGFnX2tleX0S6wEKGVVwZGF0ZUVudGl0eVRhZ0Fzc2lnbm1lbnQSNi51bml0eWNhdGFsb2cudGFncy52MS5VcGRhdGVFbnRpdHlUYWdBc3NpZ25tZW50UmVxdWVzdBopLnVuaXR5Y2F0YWxvZy50YWdzLnYxLkVudGl0eVRhZ0Fzc2lnbm1lbnQia7pHGyoZVXBkYXRlRW50aXR5VGFnQXNzaWdubWVudILT5JMCRzoBKjJCL2VudGl0eS10YWctYXNzaWdubWVudHMve2VudGl0eV90eXBlfS97ZW50aXR5X25hbWV9L3RhZ3Mve3RhZ19rZXl9EtUBChlEZWxldGVFbnRpdHlUYWdBc3NpZ25tZW50EjYudW5pdHljYXRhbG9nLnRhZ3MudjEuRGVsZXRlRW50aXR5VGFnQXNzaWdubWVudFJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiaLpHGyoZRGVsZXRlRW50aXR5VGFnQXNzaWdubWVudILT5JMCRCpCL2VudGl0eS10YWctYXNzaWdubWVudHMve2VudGl0eV90eXBlfS97ZW50aXR5X25hbWV9L3RhZ3Mve3RhZ19rZXl9QuIBChhjb20udW5pdHljYXRhbG9nLnRhZ3MudjFCCFN2Y1Byb3RvUAFaSmdpdGh1Yi5jb20vZGVsdGEtaW5jdWJhdG9yL2RlbHRhLXNoYXJpbmctcnMvZ28vdW5pdHljYXRhbG9nL3RhZ3MvdjE7dGFnc3YxogIDVVRYqgIUVW5pdHljYXRhbG9nLlRhZ3MuVjHKAhRVbml0eWNhdGFsb2dcVGFnc1xWMeICIFVuaXR5Y2F0YWxvZ1xUYWdzXFYxXEdQQk1ldGFkYXRh6gIWVW5pdHljYXRhbG9nOjpUYWdzOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_gnostic_openapi_v3_annotations, file_google_api_annotations, file_google_api_field_behavior, file_google_protobuf_empty, file_unitycatalog_tags_v1_models]);
 
 /**
  * List tag policies
@@ -27,7 +27,10 @@ export const file_unitycatalog_tags_v1_svc: GenFile = /*@__PURE__*/
  */
 export type ListTagPoliciesRequest = Message<"unitycatalog.tags.v1.ListTagPoliciesRequest"> & {
   /**
-   * The maximum number of results per page that should be returned.
+   * The maximum number of results to return in this request.
+   *
+   * Fewer results may be returned than requested. If unset or 0, this defaults to 1000;
+   * larger values are coerced down to 1000. Negative values are rejected.
    *
    * @generated from field: optional int32 max_results = 1;
    */
@@ -83,11 +86,25 @@ export const ListTagPoliciesResponseSchema: GenMessage<ListTagPoliciesResponse> 
  */
 export type CreateTagPolicyRequest = Message<"unitycatalog.tags.v1.CreateTagPolicyRequest"> & {
   /**
-   * The tag policy to create.
+   * The key of the governed tag.
    *
-   * @generated from field: unitycatalog.tags.v1.TagPolicy tag_policy = 1;
+   * @generated from field: string tag_key = 1;
    */
-  tagPolicy?: TagPolicy | undefined;
+  tagKey: string;
+
+  /**
+   * User-provided free-form text description of the tag policy.
+   *
+   * @generated from field: optional string description = 2;
+   */
+  description?: string | undefined;
+
+  /**
+   * The set of allowed values for the governed tag. The list is unordered.
+   *
+   * @generated from field: repeated unitycatalog.tags.v1.Value values = 3;
+   */
+  values: Value[];
 };
 
 /**
@@ -132,16 +149,26 @@ export type UpdateTagPolicyRequest = Message<"unitycatalog.tags.v1.UpdateTagPoli
   tagKey: string;
 
   /**
-   * The tag policy with the updated fields.
+   * User-provided free-form text description of the tag policy.
    *
-   * @generated from field: unitycatalog.tags.v1.TagPolicy tag_policy = 2;
+   * @generated from field: optional string description = 2;
    */
-  tagPolicy?: TagPolicy | undefined;
+  description?: string | undefined;
 
   /**
-   * The list of fields to update, as a comma-separated string.
+   * The set of allowed values for the governed tag. The list is unordered.
    *
-   * @generated from field: optional string update_mask = 3;
+   * @generated from field: repeated unitycatalog.tags.v1.Value values = 3;
+   */
+  values: Value[];
+
+  /**
+   * The fields to update, as a comma-separated list of field names.
+   *
+   * If empty or "*", every field set in the request is updated. Otherwise only the
+   * listed fields are updated, and a listed field that is unset in the request is cleared.
+   *
+   * @generated from field: optional string update_mask = 4;
    */
   updateMask?: string | undefined;
 };
@@ -197,6 +224,8 @@ export type ListEntityTagAssignmentsRequest = Message<"unitycatalog.tags.v1.List
   /**
    * The maximum number of results per page that should be returned.
    *
+   * If unset or 0, the server's default page size is used. Negative values are rejected.
+   *
    * @generated from field: optional int32 max_results = 3;
    */
   maxResults?: number | undefined;
@@ -251,11 +280,34 @@ export const ListEntityTagAssignmentsResponseSchema: GenMessage<ListEntityTagAss
  */
 export type CreateEntityTagAssignmentRequest = Message<"unitycatalog.tags.v1.CreateEntityTagAssignmentRequest"> & {
   /**
-   * The tag assignment to create.
+   * The type of the entity to which the tag is assigned.
    *
-   * @generated from field: unitycatalog.tags.v1.EntityTagAssignment tag_assignment = 1;
+   * Supported values: catalogs, schemas, tables, columns, volumes.
+   *
+   * @generated from field: string entity_type = 1;
    */
-  tagAssignment?: EntityTagAssignment | undefined;
+  entityType: string;
+
+  /**
+   * The fully qualified name of the entity to which the tag is assigned.
+   *
+   * @generated from field: string entity_name = 2;
+   */
+  entityName: string;
+
+  /**
+   * The key of the tag.
+   *
+   * @generated from field: string tag_key = 3;
+   */
+  tagKey: string;
+
+  /**
+   * The value of the tag.
+   *
+   * @generated from field: optional string tag_value = 4;
+   */
+  tagValue?: string | undefined;
 };
 
 /**
@@ -328,14 +380,17 @@ export type UpdateEntityTagAssignmentRequest = Message<"unitycatalog.tags.v1.Upd
   tagKey: string;
 
   /**
-   * The tag assignment with the updated fields.
+   * The value of the tag.
    *
-   * @generated from field: unitycatalog.tags.v1.EntityTagAssignment tag_assignment = 4;
+   * @generated from field: optional string tag_value = 4;
    */
-  tagAssignment?: EntityTagAssignment | undefined;
+  tagValue?: string | undefined;
 
   /**
-   * The list of fields to update, as a comma-separated string.
+   * The fields to update, as a comma-separated list of field names.
+   *
+   * If empty or "*", every field set in the request is updated. Otherwise only the
+   * listed fields are updated, and a listed field that is unset in the request is cleared.
    *
    * @generated from field: optional string update_mask = 5;
    */

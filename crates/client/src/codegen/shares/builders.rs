@@ -29,7 +29,9 @@ impl ListSharesBuilder {
         };
         Self { client, request }
     }
-    /// The maximum number of results per page that should be returned.
+    /** The maximum number of results per page that should be returned.
+
+    If unset or 0, the server's default page size is used. Negative values are rejected.*/
     pub fn with_max_results(mut self, max_results: impl Into<Option<i32>>) -> Self {
         self.request.max_results = max_results.into();
         self
@@ -96,6 +98,11 @@ impl CreateShareBuilder {
         self.request.comment = comment.into();
         self
     }
+    /// Storage root URL for the share.
+    pub fn with_storage_root(mut self, storage_root: impl Into<Option<String>>) -> Self {
+        self.request.storage_root = storage_root.into();
+        self
+    }
 }
 impl IntoFuture for CreateShareBuilder {
     type Output = Result<Share>;
@@ -154,7 +161,9 @@ impl UpdateShareBuilder {
         };
         Self { client, request }
     }
-    /// Array of shared data object updates.
+    /** Array of shared data object updates.
+
+    At most 100 data objects may be updated per request.*/
     pub fn with_updates<I>(mut self, updates: I) -> Self
     where
         I: IntoIterator<Item = DataObjectUpdate>,
@@ -227,7 +236,9 @@ impl GetPermissionsBuilder {
         };
         Self { client, request }
     }
-    /// The maximum number of results per page that should be returned.
+    /** The maximum number of results per page that should be returned.
+
+    If unset or 0, the server's default page size is used. Negative values are rejected.*/
     pub fn with_max_results(mut self, max_results: impl Into<Option<i32>>) -> Self {
         self.request.max_results = max_results.into();
         self

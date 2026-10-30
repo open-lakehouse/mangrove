@@ -60,8 +60,18 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetSchemaRequest {
                 .extract::<axum::extract::Path<String>>()
                 .await
                 .map_err(axum::response::IntoResponse::into_response)?;
+        #[derive(serde::Deserialize)]
+        struct QueryParams {
+            #[serde(default)]
+            include_browse: Option<bool>,
+        }
+        let axum_extra::extract::Query(QueryParams { include_browse }) = parts
+            .extract::<axum_extra::extract::Query<QueryParams>>()
+            .await
+            .map_err(axum::response::IntoResponse::into_response)?;
         Ok(GetSchemaRequest {
             full_name,
+            include_browse,
             ..Default::default()
         })
     }

@@ -21,11 +21,11 @@ enum TableType {
 
   STREAMING_TABLE = 5;
 
-  // MANAGED_SHALLOW_CLONE = 6;
+  MANAGED_SHALLOW_CLONE = 6;
 
   // FOREIGN = 7;
 
-  // EXTERNAL_SHALLOW_CLONE = 8;
+  EXTERNAL_SHALLOW_CLONE = 8;
 
   METRIC_VIEW = 9;
 }
@@ -50,6 +50,9 @@ enum DataSourceFormat {
   TEXT = 9;
   UNITY_CATALOG = 10;
   DELTASHARING = 11;
+  DELTA_UNIFORM_ICEBERG = 12;
+  DELTA_UNIFORM_HUDI = 13;
+  HIVE = 14;
 }
 
 enum ColumnTypeName {
@@ -76,6 +79,8 @@ enum ColumnTypeName {
   TIMESTAMP_NTZ = 20;
   VARIANT = 21;
   TABLE_TYPE = 22;
+  GEOMETRY = 23;
+  GEOGRAPHY = 24;
 }
 
 message Column {
@@ -113,7 +118,7 @@ message Column {
   // User-provided free-form text description.
   optional string comment = 9 [(google.api.field_behavior) = OPTIONAL];
 
-  // Whether field may be Null.
+  // Whether field may be Null (default: true).
   optional bool nullable = 10 [(google.api.field_behavior) = OPTIONAL];
 
   // Partition index for column.
@@ -203,6 +208,8 @@ message Table {
   // Tables and functions the view-like table reads. For metric views this is
   // derived from the view_definition by the server (the definition is the
   // single source of truth).
+  //
+  // When unset, dependencies were not provided; an empty list means there are none.
   optional DependencyList view_dependencies = 9 [(google.api.field_behavior) = OPTIONAL];
 
   // optional string sql_path = 10;

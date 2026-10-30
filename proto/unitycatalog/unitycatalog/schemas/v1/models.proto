@@ -66,4 +66,9 @@ message Schema {
   // catalog's storage location.
   // Example: `s3://bucket/ucroot/__unitystorage/schemas/{schema_id}`.
   optional string storage_location = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Indicates whether the principal is limited to retrieving metadata
+  // for the associated object through the BROWSE privilege when include_browse
+  // is enabled in the request.
+  optional bool browse_only = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

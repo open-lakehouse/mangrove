@@ -35,7 +35,9 @@ impl ListFunctionsBuilder {
         };
         Self { client, request }
     }
-    /// The maximum number of results per page that should be returned.
+    /** The maximum number of results per page that should be returned.
+
+    If unset or 0, the server's default page size is used. Negative values are rejected.*/
     pub fn with_max_results(mut self, max_results: impl Into<Option<i32>>) -> Self {
         self.request.max_results = max_results.into();
         self
@@ -126,6 +128,11 @@ impl GetFunctionBuilder {
             ..Default::default()
         };
         Self { client, request }
+    }
+    /// Whether to include functions in the response for which the principal can only access selective metadata for
+    pub fn with_include_browse(mut self, include_browse: impl Into<Option<bool>>) -> Self {
+        self.request.include_browse = include_browse.into();
+        self
     }
 }
 impl IntoFuture for GetFunctionBuilder {

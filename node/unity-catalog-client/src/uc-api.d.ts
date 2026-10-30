@@ -507,6 +507,27 @@ export interface paths {
         patch: operations["FinalizeModelVersion"];
         trace?: never;
     };
+    "/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Create a new policy
+         *
+         *      Creates a new row-filter or column-mask policy on the specified securable.
+         */
+        post: operations["CreatePolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/policies/{on_securable_type}/{on_securable_fullname}": {
         parameters: {
             query?: never;
@@ -522,12 +543,7 @@ export interface paths {
          */
         get: operations["ListPolicies"];
         put?: never;
-        /**
-         * @description Create a new policy
-         *
-         *      Creates a new row-filter or column-mask policy on the specified securable.
-         */
-        post: operations["CreatePolicy"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -947,7 +963,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Generate a new set of credentials for a path. */
+        /**
+         * @description Generate a new set of credentials for a path.
+         *
+         *      Only external storage paths (external locations and external tables) are
+         *      supported; managed tables are not. The metastore must have the
+         *      `external_access_enabled` flag set to true (default false). The caller must
+         *      have the `EXTERNAL_USE_LOCATION` privilege on the external location
+         *      (granted by its owner) and, for existing external tables, the
+         *      `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
+         */
         post: operations["GenerateTemporaryPathCredentials"];
         delete?: never;
         options?: never;
@@ -964,7 +989,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Generate a new set of credentials for a table. */
+        /**
+         * @description Generate a new set of credentials for a table.
+         *
+         *      The metastore must have the `external_access_enabled` flag set to true
+         *      (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+         *      privilege on the parent schema (granted by a catalog owner).
+         */
         post: operations["GenerateTemporaryTableCredentials"];
         delete?: never;
         options?: never;
@@ -1202,7 +1233,7 @@ export interface components {
              */
             access_connector_id: string;
             /** @description The Databricks internal ID that represents this managed identity. */
-            credential_id?: string;
+            readonly credential_id?: string;
             /**
              * @description The Azure resource ID of the managed identity.
              *      Use the format /subscriptions/{guid}/resourceGroups/{rg-name}/providers/
@@ -1225,10 +1256,7 @@ export interface components {
             application_id: string;
             /** @description The client secret generated for the above app ID in AAD. */
             client_secret?: string;
-            /**
-             * Location of the file containing a federated token.
-             * @description Specifically useful for workload identity federation.
-             */
+            /** @description Location of the file containing a federated token, for workload identity federation. */
             federated_token_file?: string;
         };
         /**
@@ -1321,7 +1349,7 @@ export interface components {
              * @description Data type name.
              * @enum {string}
              */
-            type_name: "COLUMN_TYPE_NAME_UNSPECIFIED" | "BOOLEAN" | "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "STRING" | "BINARY" | "DECIMAL" | "INTERVAL" | "ARRAY" | "STRUCT" | "MAP" | "CHAR" | "NULL" | "USER_DEFINED_TYPE" | "TIMESTAMP_NTZ" | "VARIANT" | "TABLE_TYPE";
+            type_name: "COLUMN_TYPE_NAME_UNSPECIFIED" | "BOOLEAN" | "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "STRING" | "BINARY" | "DECIMAL" | "INTERVAL" | "ARRAY" | "STRUCT" | "MAP" | "CHAR" | "NULL" | "USER_DEFINED_TYPE" | "TIMESTAMP_NTZ" | "VARIANT" | "TABLE_TYPE" | "GEOMETRY" | "GEOGRAPHY";
             /**
              * Format: int32
              * @description Digits of precision; required for DecimalTypes.
@@ -1336,7 +1364,7 @@ export interface components {
             type_interval_type?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-            /** @description Whether field may be Null. */
+            /** @description Whether field may be Null (default: true). */
             nullable?: boolean;
             /**
              * Format: int32
@@ -1452,7 +1480,10 @@ export interface components {
             comment?: string;
             /** @description Whether the credential is usable only for read operations. Only applicable when purpose is STORAGE. */
             read_only?: boolean;
-            /** @description Optional. Supplying true to this argument skips validation of the created set of credentials. */
+            /**
+             * @description Supplying true to this argument skips validation of the created set of credentials.
+             *      Defaults to false.
+             */
             skip_validation?: boolean;
             /**
              * Azure Service Principal
@@ -1488,14 +1519,16 @@ export interface components {
          */
         CreateEntityTagAssignmentRequest: {
             /**
-             * The assignment of a tag to a Unity Catalog entity.
-             * @description Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
-             *      of a tag to a specific securable. It has no identifier of its own — its identity is
-             *      the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
-             *      `google.api.resource`: assignments are stored as associations between the entity and
-             *      its tag, not as standalone objects.
+             * The type of the entity to which the tag is assigned.
+             * @description Supported values: catalogs, schemas, tables, columns, volumes.
              */
-            tag_assignment: WithRequired<components["schemas"]["EntityTagAssignment"], "entity_type" | "entity_name" | "tag_key">;
+            entity_type: string;
+            /** @description The fully qualified name of the entity to which the tag is assigned. */
+            entity_name: string;
+            /** @description The key of the tag. */
+            tag_key: string;
+            /** @description The value of the tag. */
+            tag_value?: string;
         };
         /**
          * Create External Location Request
@@ -1570,14 +1603,27 @@ export interface components {
             routine_body: "ROUTINE_BODY_UNSPECIFIED" | "SQL" | "EXTERNAL";
             /** @description Function body. */
             routine_definition?: string;
-            /** @description The language of the function routine body. */
-            routine_body_language?: string;
+            /**
+             * External language of the function.
+             * @description Set when routine_body is EXTERNAL.
+             */
+            external_language?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-            /** @description A map of key-value properties attached to the securable. */
-            properties?: {
-                [key: string]: string;
-            };
+            /** @description JSON-serialized key-value pair map, encoded (escaped) as a string. */
+            properties?: string;
+            /**
+             * Function Parameter Infos
+             * @description A collection of function parameters.
+             */
+            return_params?: components["schemas"]["FunctionParameterInfos"];
+            /**
+             * Dependency List
+             * @description A list of dependencies referenced by a view-like table.
+             */
+            routine_dependencies?: components["schemas"]["DependencyList"];
+            /** @description Specific name of the function; reserved for future use. */
+            specific_name?: string;
         };
         /**
          * Create Model Version Request
@@ -1601,6 +1647,63 @@ export interface components {
             comment?: string;
         };
         /**
+         * Create a new policy on a securable.
+         * @description The body is the policy itself; the new policy applies to the securable and all its
+         *      descendants.
+         */
+        CreatePolicyRequest: {
+            /** @description The name of the policy. Unique within the securable it is defined on. */
+            name: string;
+            /**
+             * The type of securable the policy is defined on.
+             * @description Supported values: CATALOG, SCHEMA, TABLE.
+             */
+            on_securable_type: string;
+            /** @description The fully qualified name of the securable the policy is defined on. */
+            on_securable_fullname: string;
+            /**
+             * Policy Type
+             * Format: enum
+             * @description The kind of enforcement this policy applies.
+             * @enum {string}
+             */
+            policy_type: "POLICY_TYPE_ROW_FILTER" | "POLICY_TYPE_COLUMN_MASK" | "POLICY_TYPE_DENY" | "POLICY_TYPE_GRANT";
+            /** @description User-provided free-form text description of the policy. */
+            comment?: string;
+            /** @description The principals the policy applies to. Empty means "all principals". */
+            to_principals?: string[];
+            /** @description The principals explicitly excluded from the policy, even if matched by to_principals. */
+            except_principals?: string[];
+            /** @description The type of securables the policy takes effect on. */
+            for_securable_type?: string;
+            /** @description An opaque condition expression evaluated by the query engine at enforcement time. */
+            when_condition?: string;
+            /** @description The columns referenced by the policy function, and the aliases they are bound to. */
+            match_columns?: components["schemas"]["MatchColumn"][];
+            /**
+             * Function Ref
+             * @description A reference to the SQL function that implements a row-filter or column-mask policy,
+             *      together with the arguments it is invoked with.
+             */
+            row_filter?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /**
+             * Function Ref
+             * @description A reference to the SQL function that implements a row-filter or column-mask policy,
+             *      together with the arguments it is invoked with.
+             */
+            column_mask?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            deny?: components["schemas"]["PrivilegeOptions"];
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            grant?: components["schemas"]["PrivilegeOptions"];
+        };
+        /**
          * Create Provider Request
          * @description Creates a new provider
          */
@@ -1620,7 +1723,8 @@ export interface components {
             comment?: string;
             /**
              * @description The recipient profile (credential file contents) used to connect to the
-             *      sharing server, required for TOKEN authentication.
+             *      sharing server. Required when authentication_type is TOKEN or
+             *      OAUTH_CLIENT_CREDENTIALS.
              */
             recipient_profile_str?: string;
             /** @description Provider properties as map of string key-value pairs. */
@@ -1647,13 +1751,10 @@ export interface components {
             /** @description Description about the recipient. */
             comment?: string;
             /**
-             * Recipient properties as map of string key-value pairs.
-             * @description When provided in update request, the specified properties will override the existing properties.
-             *      To add and remove properties, one would need to perform a read-modify-write.
+             * Securable Properties Kv Pairs
+             * @description An object with the properties of a securable as key-value pairs.
              */
-            properties?: {
-                [key: string]: string;
-            };
+            properties_kvpairs?: components["schemas"]["SecurablePropertiesKvPairs"];
             /** @description Expiration timestamp of the token, in epoch milliseconds. */
             expiration_time?: string;
         };
@@ -1703,6 +1804,8 @@ export interface components {
             name: string;
             /** @description User-provided free-form text description. */
             comment?: string;
+            /** @description Storage root URL for the share. */
+            storage_root?: string;
         };
         /**
          * Create Staging Table Request
@@ -1732,13 +1835,13 @@ export interface components {
              * Format: enum
              * @enum {string}
              */
-            table_type: "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "METRIC_VIEW";
+            table_type: "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "MANAGED_SHALLOW_CLONE" | "EXTERNAL_SHALLOW_CLONE" | "METRIC_VIEW";
             /**
              * Data Source Format
              * Format: enum
              * @enum {string}
              */
-            data_source_format: "DELTA" | "ICEBERG" | "HUDI" | "PARQUET" | "CSV" | "JSON" | "ORC" | "AVRO" | "TEXT" | "UNITY_CATALOG" | "DELTASHARING";
+            data_source_format: "DELTA" | "ICEBERG" | "HUDI" | "PARQUET" | "CSV" | "JSON" | "ORC" | "AVRO" | "TEXT" | "UNITY_CATALOG" | "DELTASHARING" | "DELTA_UNIFORM_ICEBERG" | "DELTA_UNIFORM_HUDI" | "HIVE";
             /** @description The array of Column definitions of the table's columns. */
             columns?: components["schemas"]["ColumnInfo"][];
             /** @description Storage root URL for external table. */
@@ -1766,13 +1869,12 @@ export interface components {
          * @description Create a new tag policy
          */
         CreateTagPolicyRequest: {
-            /**
-             * A governed tag definition (tag policy).
-             * @description A tag policy defines a tag key together with the rules that govern how it can
-             *      be used, including the optional set of allowed values. Assigning a governed
-             *      tag to an entity is done through the Entity Tag Assignments API.
-             */
-            tag_policy: WithRequired<components["schemas"]["TagPolicy"], "tag_key">;
+            /** @description The key of the governed tag. */
+            tag_key: string;
+            /** @description User-provided free-form text description of the tag policy. */
+            description?: string;
+            /** @description The set of allowed values for the governed tag. The list is unordered. */
+            values?: components["schemas"]["Value"][];
         };
         /**
          * Create Volume Request
@@ -1796,7 +1898,7 @@ export interface components {
             volume_type: "EXTERNAL" | "MANAGED";
             /** @description The storage location on the cloud */
             storage_location?: string;
-            /** @description The storage location on the cloud */
+            /** @description The comment attached to the volume. */
             comment?: string;
         };
         /**
@@ -1883,7 +1985,7 @@ export interface components {
              * @description Type of the data object.
              * @enum {string}
              */
-            data_object_type: "DATA_OBJECT_TYPE_UNSPECIFIED" | "TABLE" | "SCHEMA" | "VOLUME" | "AGENT_SKILL";
+            data_object_type: "DATA_OBJECT_TYPE_UNSPECIFIED" | "TABLE" | "SCHEMA" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "MODEL" | "FUNCTION" | "VOLUME" | "AGENT_SKILL";
             /** @description The time when this data object is added to the share, in epoch milliseconds. */
             readonly added_at?: string;
             /** @description Username of the sharer. */
@@ -1894,13 +1996,15 @@ export interface components {
              * A user-provided new name for the data object within the share.
              * @description If this new name is not provided, the object's original name will be used as the shared_as name.
              *      The shared_as name must be unique within a share.
-             *      For tables, the new name must follow the format of <schema>.<table>.
+             *      For tables, the new name must follow the format of <schema>.<table>: two parts, each
+             *      consisting only of alphanumeric characters and underscores, without the catalog part.
+             *      Do not set it for non-table data objects; use string_shared_as instead.
              */
             shared_as?: string;
             /** @description Array of partitions for the shared data. */
-            partitions?: string[];
+            partitions?: components["schemas"]["Partition"][];
             /** @description Whether to enable cdf or indicate if cdf is enabled on the shared object. */
-            enable_cdf?: boolean;
+            cdf_enabled?: boolean;
             /**
              * History Status
              * Format: enum
@@ -1917,6 +2021,22 @@ export interface components {
              *      NOTE: The start_version should be <= the current version of the object.
              */
             start_version?: string;
+            /**
+             * A user-provided alias for a non-table data object (e.g. a volume) within the share.
+             * @description For volumes, functions and models it is a two-part name <schema>.<name>, each part
+             *      consisting only of alphanumeric characters and underscores. If not provided, the
+             *      object's original name minus its catalog is used. It must be unique among objects of
+             *      the same type within the share. Do not set it for table-like data objects; use
+             *      shared_as instead.
+             */
+            string_shared_as?: string;
+            /**
+             * Data Object Status
+             * Format: enum
+             * @description Whether the data object is still accessible to the share.
+             * @enum {string}
+             */
+            readonly status?: "DATA_OBJECT_STATUS_UNSPECIFIED" | "ACTIVE" | "PERMISSION_DENIED";
         };
         /**
          * Data Object Update
@@ -1926,13 +2046,13 @@ export interface components {
             /**
              * Action
              * Format: enum
-             * @description Name of the share.
+             * @description The action to perform on the data object.
              * @enum {string}
              */
             action: "ACTION_UNSPECIFIED" | "ADD" | "REMOVE" | "UPDATE";
             /**
              * Data Object
-             * @description User-provided free-form text description.
+             * @description The data object that is being added, removed, or updated.
              */
             data_object?: WithRequired<components["schemas"]["DataObject"], "name" | "data_object_type">;
         };
@@ -1942,11 +2062,11 @@ export interface components {
          */
         DatabricksGcpServiceAccount: {
             /** @description The Databricks internal ID that represents this managed identity. */
-            credential_id?: string;
+            readonly credential_id?: string;
             /** @description The email of the service account. */
-            email?: string;
+            readonly email?: string;
             /** @description The ID that represents the private key for this Service Account. */
-            private_key_id?: string;
+            readonly private_key_id?: string;
         };
         /**
          * Dependency
@@ -1992,6 +2112,15 @@ export interface components {
             tag_key: string;
             /** @description The value of the tag. */
             tag_value?: string;
+            /** @description The user or principal who last updated the tag assignment. */
+            readonly updated_by?: string;
+            /**
+             * Tag Assignment Source Type
+             * Format: enum
+             * @description The source of the tag assignment, e.g. user-assigned or system-assigned.
+             * @enum {string}
+             */
+            readonly source_type?: "TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED" | "TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION";
         };
         /** External Location */
         ExternalLocationInfo: {
@@ -2055,14 +2184,23 @@ export interface components {
              * @description A collection of function parameters.
              */
             input_params?: components["schemas"]["FunctionParameterInfos"];
-            /** @description The return type of the function in JSON format. */
-            return_params?: string;
-            /** @description The language of the function routine body. */
-            routine_body_language?: string;
+            /**
+             * Function Parameter Infos
+             * @description A collection of function parameters.
+             */
+            return_params?: components["schemas"]["FunctionParameterInfos"];
+            /**
+             * External language of the function.
+             * @description Set when routine_body is EXTERNAL.
+             */
+            external_language?: string;
             /** @description Function body. */
             routine_definition?: string;
-            /** @description Function dependencies (in JSON form). */
-            routine_dependencies?: string;
+            /**
+             * Dependency List
+             * @description A list of dependencies referenced by a view-like table.
+             */
+            routine_dependencies?: components["schemas"]["DependencyList"];
             /**
              * Parameter Style
              * Format: enum
@@ -2088,7 +2226,7 @@ export interface components {
              * @enum {string}
              */
             security_type: "SECURITY_TYPE_UNSPECIFIED" | "DEFINER";
-            /** @description The type of the function (SCALAR or TABLE). */
+            /** @description Specific name of the function; reserved for future use. */
             specific_name?: string;
             /**
              * Routine Body
@@ -2099,10 +2237,8 @@ export interface components {
             routine_body: "ROUTINE_BODY_UNSPECIFIED" | "SQL" | "EXTERNAL";
             /** @description User-provided free-form text description. */
             comment?: string;
-            /** @description A map of key-value properties attached to the securable. */
-            properties?: {
-                [key: string]: string;
-            };
+            /** @description JSON-serialized key-value pair map, encoded (escaped) as a string. */
+            properties?: string;
             /** @description Username of current owner of the function. */
             owner?: string;
             /** @description Unique identifier for the function. */
@@ -2115,6 +2251,12 @@ export interface components {
             readonly updated_at?: string;
             /** @description Username of user who last modified the function. */
             readonly updated_by?: string;
+            /**
+             * @description Indicates whether the principal is limited to retrieving metadata
+             *      for the associated object through the BROWSE privilege when include_browse
+             *      is enabled in the request.
+             */
+            readonly browse_only?: boolean;
         };
         /**
          * Function Arg
@@ -2154,7 +2296,7 @@ export interface components {
              * @description Data type name.
              * @enum {string}
              */
-            type_name: "COLUMN_TYPE_NAME_UNSPECIFIED" | "BOOLEAN" | "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "STRING" | "BINARY" | "DECIMAL" | "INTERVAL" | "ARRAY" | "STRUCT" | "MAP" | "CHAR" | "NULL" | "USER_DEFINED_TYPE" | "TIMESTAMP_NTZ" | "VARIANT" | "TABLE_TYPE";
+            type_name: "COLUMN_TYPE_NAME_UNSPECIFIED" | "BOOLEAN" | "BYTE" | "SHORT" | "INT" | "LONG" | "FLOAT" | "DOUBLE" | "DATE" | "TIMESTAMP" | "STRING" | "BINARY" | "DECIMAL" | "INTERVAL" | "ARRAY" | "STRUCT" | "MAP" | "CHAR" | "NULL" | "USER_DEFINED_TYPE" | "TIMESTAMP_NTZ" | "VARIANT" | "TABLE_TYPE" | "GEOMETRY" | "GEOGRAPHY";
             /**
              * Format: int32
              * @description Digits of precision; required for DecimalTypes.
@@ -2209,6 +2351,12 @@ export interface components {
             function_name: string;
             /** @description The arguments passed to the function, in declaration order. */
             using?: components["schemas"]["FunctionArg"][];
+            /**
+             * The alias of the column to be masked; it must refer to one of the policy's match_columns.
+             * @description Required for column masks: the column value is passed to the mask function as its
+             *      first argument. Not used for row filters.
+             */
+            on_column?: string;
         };
         /** Gcp Oauth Token */
         GcpOauthToken: {
@@ -2490,7 +2638,7 @@ export interface components {
         };
         /**
          * List Volumes Response
-         * @description List Schemas response.
+         * @description List volumes response.
          */
         ListVolumesResponseContent: {
             /** @description The volumes returned. */
@@ -2512,7 +2660,7 @@ export interface components {
              * @description The name of the alias the column is bound to when invoking the row-filter or
              *      column-mask function.
              */
-            alias: string;
+            alias?: string;
             /** @description The condition on the column, e.g. its name, that must match for this binding to apply. */
             condition: string;
         };
@@ -2572,6 +2720,40 @@ export interface components {
              */
             readonly browse_only?: boolean;
         };
+        /**
+         * Partition
+         * @description A partition specification: the conjunction of its partition values.
+         */
+        Partition: {
+            /** @description An array of partition values. */
+            values?: components["schemas"]["PartitionValue"][];
+        };
+        /**
+         * Partition Value
+         * @description A partition column value a shared table is restricted to.
+         */
+        PartitionValue: {
+            /** @description The name of the partition column. */
+            name: string;
+            /**
+             * The value of the partition column; unset means a `null` value.
+             * @description Mutually exclusive with recipient_property_key.
+             */
+            value?: string;
+            /**
+             * The key of a Delta Sharing recipient property whose value the partition column is
+             *      matched against, e.g. "databricks-account-id".
+             * @description Mutually exclusive with value.
+             */
+            recipient_property_key?: string;
+            /**
+             * Partition Value Op
+             * Format: enum
+             * @description The operator to apply for the value.
+             * @enum {string}
+             */
+            op: "PARTITION_VALUE_OP_UNSPECIFIED" | "EQUAL" | "LIKE";
+        };
         /** Permissions Change */
         PermissionsChange: {
             /** @description The principal (user email address or group name). */
@@ -2594,7 +2776,7 @@ export interface components {
             readonly id?: string;
             /**
              * The type of securable the policy is defined on.
-             * @description Supported values: catalogs, schemas, tables.
+             * @description Supported values: CATALOG, SCHEMA, TABLE.
              */
             on_securable_type: string;
             /** @description The fully qualified name of the securable the policy is defined on. */
@@ -2605,7 +2787,7 @@ export interface components {
              * @description The kind of enforcement this policy applies.
              * @enum {string}
              */
-            policy_type: "POLICY_TYPE_UNSPECIFIED" | "POLICY_TYPE_ROW_FILTER" | "POLICY_TYPE_COLUMN_MASK";
+            policy_type: "POLICY_TYPE_UNSPECIFIED" | "POLICY_TYPE_ROW_FILTER" | "POLICY_TYPE_COLUMN_MASK" | "POLICY_TYPE_DENY" | "POLICY_TYPE_GRANT";
             /** @description The principals the policy applies to. Empty means "all principals". */
             to_principals?: string[];
             /** @description The principals explicitly excluded from the policy, even if matched by to_principals. */
@@ -2616,8 +2798,10 @@ export interface components {
              */
             when_condition?: string;
             /**
-             * @description The columns referenced by the row-filter or column-mask function, and the aliases
+             * The columns referenced by the row-filter or column-mask function, and the aliases
              *      they are bound to.
+             * @description Only valid when for_securable_type is TABLE; the policy then applies only to tables
+             *      whose columns satisfy all match conditions.
              */
             match_columns?: components["schemas"]["MatchColumn"][];
             /**
@@ -2632,12 +2816,31 @@ export interface components {
              *      together with the arguments it is invoked with.
              */
             column_mask?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            deny?: components["schemas"]["PrivilegeOptions"];
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            grant?: components["schemas"]["PrivilegeOptions"];
             /** @description User-provided free-form text description of the policy. */
             comment?: string;
             /** @description Time at which this policy was created, in epoch milliseconds. */
             readonly created_at?: string;
             /** @description Time at which this policy was last updated, in epoch milliseconds. */
             readonly updated_at?: string;
+            /** @description Username of the user who created the policy. */
+            readonly created_by?: string;
+            /** @description Username of the user who last modified the policy. */
+            readonly updated_by?: string;
+            /**
+             * @description The type of securables the policy takes effect on, e.g. TABLE for a policy defined
+             *      on a schema that applies to the tables within it.
+             */
+            for_securable_type?: string;
         };
         /** Privilege Assignment */
         PrivilegeAssignment: {
@@ -2648,6 +2851,14 @@ export interface components {
             principal: string;
             /** @description The privileges assigned to the principal. */
             privileges?: string[];
+        };
+        /**
+         * Privilege Options
+         * @description The privileges a deny or grant policy applies to.
+         */
+        PrivilegeOptions: {
+            /** @description The privileges to deny or grant when the principal and condition match. */
+            privileges: string[];
         };
         /**
          * A provider represents an organization sharing data with this metastore.
@@ -2673,7 +2884,7 @@ export interface components {
             comment?: string;
             /**
              * @description The recipient profile (credential file contents) used to connect to the
-             *      sharing server, present only for TOKEN authentication.
+             *      sharing server. Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
              */
             recipient_profile_str?: string;
             /** @description A map of key-value properties attached to the provider. */
@@ -2715,19 +2926,20 @@ export interface components {
             owner?: string;
             /** @description Description about the recipient. */
             comment?: string;
-            /** @description A map of key-value properties attached to the securable. */
-            properties?: {
-                [key: string]: string;
-            };
-            /** @description Time at which this share was created, in epoch milliseconds. */
+            /**
+             * Securable Properties Kv Pairs
+             * @description An object with the properties of a securable as key-value pairs.
+             */
+            properties_kvpairs?: components["schemas"]["SecurablePropertiesKvPairs"];
+            /** @description Time at which this recipient was created, in epoch milliseconds. */
             readonly created_at?: string;
-            /** @description Username of the creator of the share. */
+            /** @description Username of recipient creator. */
             readonly created_by?: string;
             /** @description This field is only present when the authentication_type is TOKEN. */
             readonly tokens?: components["schemas"]["RecipientToken"][];
-            /** @description Time at which this share was updated, in epoch milliseconds. */
+            /** @description Time at which this recipient was updated, in epoch milliseconds. */
             readonly updated_at?: string;
-            /** @description Username of share updater. */
+            /** @description Username of recipient updater. */
             readonly updated_by?: string;
         };
         /** Recipient Token */
@@ -2741,7 +2953,7 @@ export interface components {
             /** @description Full activation URL to retrieve the access token. It will be empty if the token is already retrieved. */
             readonly activation_url: string;
             /** @description Expiration timestamp of the token in epoch milliseconds. */
-            expiration_time: string;
+            readonly expiration_time: string;
             /** @description Time at which this recipient token was updated, in epoch milliseconds. */
             readonly updated_at: string;
             /** @description Username of recipient token updater. */
@@ -2768,7 +2980,7 @@ export interface components {
             /** @description The storage location under which model version data files are stored. */
             readonly storage_location?: string;
             /** @description Username of current owner of the registered model. */
-            readonly owner?: string;
+            owner?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
             /** @description Unique identifier for the registered model. */
@@ -2795,6 +3007,12 @@ export interface components {
          * @description A schema is a namespace within a catalog that contains tables.
          */
         SchemaInfo: {
+            /**
+             * @description Indicates whether the principal is limited to retrieving metadata
+             *      for the associated object through the BROWSE privilege when include_browse
+             *      is enabled in the request.
+             */
+            browse_only?: boolean;
             /** @description Name of parent catalog. */
             catalog_name: string;
             /** @description User-provided free-form text description. */
@@ -2836,12 +3054,22 @@ export interface components {
             updated_by?: string;
         };
         /**
+         * Securable Properties Kv Pairs
+         * @description An object with the properties of a securable as key-value pairs.
+         */
+        SecurablePropertiesKvPairs: {
+            /** @description A map of key-value properties attached to the securable. */
+            properties: {
+                [key: string]: string;
+            };
+        };
+        /**
          * Share
          * @description A share is a logical grouping to share with recipients. A share can be shared with one or multiple recipients.
          *      A recipient can access all resources in a share. A share may contain multiple schemas.
          */
         Share: {
-            /** @description Unique ID of the recipient. */
+            /** @description Unique ID of the share. */
             readonly id?: string;
             /**
              * Name of the share.
@@ -2857,7 +3085,7 @@ export interface components {
             /** @description Storage Location URL (full path) for the share. */
             readonly storage_location?: string;
             /** @description Storage root URL for the share. */
-            readonly storage_root?: string;
+            storage_root?: string;
             /** @description Time at which this share was created, in epoch milliseconds. */
             readonly created_at?: string;
             /** @description Username of the creator of the share. */
@@ -2932,14 +3160,14 @@ export interface components {
              * Format: enum
              * @enum {string}
              */
-            table_type: "TABLE_TYPE_UNSPECIFIED" | "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "METRIC_VIEW";
+            table_type: "TABLE_TYPE_UNSPECIFIED" | "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "MANAGED_SHALLOW_CLONE" | "EXTERNAL_SHALLOW_CLONE" | "METRIC_VIEW";
             /**
              * Data Source Format
              * Format: enum
              * @description Data source format of the table.
              * @enum {string}
              */
-            data_source_format: "DATA_SOURCE_FORMAT_UNSPECIFIED" | "DELTA" | "ICEBERG" | "HUDI" | "PARQUET" | "CSV" | "JSON" | "ORC" | "AVRO" | "TEXT" | "UNITY_CATALOG" | "DELTASHARING";
+            data_source_format: "DATA_SOURCE_FORMAT_UNSPECIFIED" | "DELTA" | "ICEBERG" | "HUDI" | "PARQUET" | "CSV" | "JSON" | "ORC" | "AVRO" | "TEXT" | "UNITY_CATALOG" | "DELTASHARING" | "DELTA_UNIFORM_ICEBERG" | "DELTA_UNIFORM_HUDI" | "HIVE";
             /** @description The array of Column definitions of the table's columns. */
             columns?: components["schemas"]["ColumnInfo"][];
             /** @description Storage root URL for table (for MANAGED, EXTERNAL tables) */
@@ -3000,7 +3228,7 @@ export interface components {
              * Format: enum
              * @enum {string}
              */
-            table_type: "TABLE_TYPE_UNSPECIFIED" | "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "METRIC_VIEW";
+            table_type: "TABLE_TYPE_UNSPECIFIED" | "MANAGED" | "EXTERNAL" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "MANAGED_SHALLOW_CLONE" | "EXTERNAL_SHALLOW_CLONE" | "METRIC_VIEW";
         };
         /**
          * A governed tag definition (tag policy).
@@ -3016,6 +3244,7 @@ export interface components {
             /**
              * The set of allowed values for the governed tag.
              * @description When empty, the governed tag does not restrict the values that may be assigned.
+             *      The list is unordered.
              */
             values?: components["schemas"]["Value"][];
             /** @description Unique identifier for the tag policy. */
@@ -3117,7 +3346,7 @@ export interface components {
             properties?: {
                 [key: string]: string;
             };
-            /** @description Name of catalog. */
+            /** @description New name for the catalog. */
             new_name?: string;
         };
         /**
@@ -3133,7 +3362,10 @@ export interface components {
             read_only?: boolean;
             /** @description Username of current owner of credential. */
             owner?: string;
-            /** @description Supply true to this argument to skip validation of the updated credential. */
+            /**
+             * @description Supply true to this argument to skip validation of the updated credential.
+             *      Defaults to false.
+             */
             skip_validation?: boolean;
             /**
              * @description Force an update even if there are dependent services (when purpose is SERVICE)
@@ -3173,16 +3405,13 @@ export interface components {
          * @description Update an entity tag assignment
          */
         UpdateEntityTagAssignmentRequest: {
+            /** @description The value of the tag. */
+            tag_value?: string;
             /**
-             * The assignment of a tag to a Unity Catalog entity.
-             * @description Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
-             *      of a tag to a specific securable. It has no identifier of its own — its identity is
-             *      the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
-             *      `google.api.resource`: assignments are stored as associations between the entity and
-             *      its tag, not as standalone objects.
+             * The fields to update, as a comma-separated list of field names.
+             * @description If empty or "*", every field set in the request is updated. Otherwise only the
+             *      listed fields are updated, and a listed field that is unset in the request is cleared.
              */
-            tag_assignment: WithRequired<components["schemas"]["EntityTagAssignment"], "entity_type" | "entity_name" | "tag_key">;
-            /** @description The list of fields to update, as a comma-separated string. */
             update_mask?: string;
         };
         /**
@@ -3236,18 +3465,56 @@ export interface components {
             privilege_assignments?: components["schemas"]["PrivilegeAssignment"][];
         };
         /**
-         * Update Policy Request
-         * @description Update a policy defined on a securable.
+         * Update a policy defined on a securable.
+         * @description The policy is identified by the path; the body carries the fields to update.
          */
         UpdatePolicyRequest: {
             /**
-             * A row-filter or column-mask policy bound to principals and scoped to a securable.
-             * @description Policies are read as whole documents; enforcement is performed by the query engine,
-             *      not by this service. `when_condition` is stored and returned opaque — this service does
-             *      not parse or evaluate it.
+             * Policy Type
+             * Format: enum
+             * @description The kind of enforcement this policy applies.
+             * @enum {string}
              */
-            policy_info: WithRequired<components["schemas"]["PolicyInfo"], "name" | "on_securable_type" | "on_securable_fullname" | "policy_type">;
-            /** @description The list of fields to update, as a comma-separated string. */
+            policy_type?: "POLICY_TYPE_UNSPECIFIED" | "POLICY_TYPE_ROW_FILTER" | "POLICY_TYPE_COLUMN_MASK" | "POLICY_TYPE_DENY" | "POLICY_TYPE_GRANT";
+            /** @description User-provided free-form text description of the policy. */
+            comment?: string;
+            /** @description The principals the policy applies to. Empty means "all principals". */
+            to_principals?: string[];
+            /** @description The principals explicitly excluded from the policy, even if matched by to_principals. */
+            except_principals?: string[];
+            /** @description The type of securables the policy takes effect on. */
+            for_securable_type?: string;
+            /** @description An opaque condition expression evaluated by the query engine at enforcement time. */
+            when_condition?: string;
+            /** @description The columns referenced by the policy function, and the aliases they are bound to. */
+            match_columns?: components["schemas"]["MatchColumn"][];
+            /**
+             * Function Ref
+             * @description A reference to the SQL function that implements a row-filter or column-mask policy,
+             *      together with the arguments it is invoked with.
+             */
+            row_filter?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /**
+             * Function Ref
+             * @description A reference to the SQL function that implements a row-filter or column-mask policy,
+             *      together with the arguments it is invoked with.
+             */
+            column_mask?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            deny?: components["schemas"]["PrivilegeOptions"];
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            grant?: components["schemas"]["PrivilegeOptions"];
+            /**
+             * The fields to update, as a comma-separated list of field names.
+             * @description If empty or "*", every field set in the request is updated. Otherwise only the
+             *      listed fields are updated, and a listed field that is unset in the request is cleared.
+             */
             update_mask?: string;
         };
         /**
@@ -3263,7 +3530,8 @@ export interface components {
             comment?: string;
             /**
              * @description The recipient profile (credential file contents) used to connect to the
-             *      sharing server.
+             *      sharing server. Required when authentication_type is TOKEN or
+             *      OAUTH_CLIENT_CREDENTIALS.
              */
             recipient_profile_str?: string;
             /**
@@ -3287,13 +3555,10 @@ export interface components {
             /** @description Description about the recipient. */
             comment?: string;
             /**
-             * Recipient properties as map of string key-value pairs.
-             * @description When provided in update request, the specified properties will override the existing properties.
-             *      To add and remove properties, one would need to perform a read-modify-write.
+             * Securable Properties Kv Pairs
+             * @description An object with the properties of a securable as key-value pairs.
              */
-            properties?: {
-                [key: string]: string;
-            };
+            properties_kvpairs?: components["schemas"]["SecurablePropertiesKvPairs"];
             /** @description Expiration timestamp of the token, in epoch milliseconds. */
             expiration_time?: string;
         };
@@ -3324,7 +3589,7 @@ export interface components {
             properties?: {
                 [key: string]: string;
             };
-            /** @description Name of schema. */
+            /** @description New name for the schema. */
             new_name?: string;
         };
         /**
@@ -3332,7 +3597,10 @@ export interface components {
          * @description The caller must be a metastore admin or have the UPDATE_SHARE privilege on the metastore.
          */
         UpdateShareRequest: {
-            /** @description Array of shared data object updates. */
+            /**
+             * Array of shared data object updates.
+             * @description At most 100 data objects may be updated per request.
+             */
             updates?: components["schemas"]["DataObjectUpdate"][];
             /** @description A new name for the share. */
             new_name?: string;
@@ -3346,14 +3614,15 @@ export interface components {
          * @description Update a tag policy
          */
         UpdateTagPolicyRequest: {
+            /** @description User-provided free-form text description of the tag policy. */
+            description?: string;
+            /** @description The set of allowed values for the governed tag. The list is unordered. */
+            values?: components["schemas"]["Value"][];
             /**
-             * A governed tag definition (tag policy).
-             * @description A tag policy defines a tag key together with the rules that govern how it can
-             *      be used, including the optional set of allowed values. Assigning a governed
-             *      tag to an entity is done through the Entity Tag Assignments API.
+             * The fields to update, as a comma-separated list of field names.
+             * @description If empty or "*", every field set in the request is updated. Otherwise only the
+             *      listed fields are updated, and a listed field that is unset in the request is cleared.
              */
-            tag_policy: WithRequired<components["schemas"]["TagPolicy"], "tag_key">;
-            /** @description The list of fields to update, as a comma-separated string. */
             update_mask?: string;
         };
         /** Update Volume Request */
@@ -3396,17 +3665,17 @@ export interface components {
              * @enum {string}
              */
             volume_type: "VOLUME_TYPE_UNSPECIFIED" | "EXTERNAL" | "MANAGED";
-            /** @description Username of current owner of table. */
-            readonly owner?: string;
+            /** @description Username of current owner of volume. */
+            owner?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-            /** @description Time at which this catalog was created, in epoch milliseconds. */
+            /** @description Time at which this volume was created, in epoch milliseconds. */
             readonly created_at?: string;
-            /** @description Username of catalog creator. */
+            /** @description Username of volume creator. */
             readonly created_by?: string;
-            /** @description Time at which this catalog was last updated, in epoch milliseconds. */
+            /** @description Time at which this volume was last updated, in epoch milliseconds. */
             readonly updated_at?: string;
-            /** @description Username of user who last modified catalog. */
+            /** @description Username of user who last modified the volume. */
             readonly updated_by?: string;
             /**
              * @description Indicates whether the principal is limited to retrieving metadata
@@ -3789,7 +4058,11 @@ export interface operations {
     ListCatalogs: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -3962,7 +4235,11 @@ export interface operations {
             query?: {
                 /** @description Return only credentials for the specified purpose. */
                 purpose?: "PURPOSE_UNSPECIFIED" | "STORAGE" | "SERVICE";
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -4160,7 +4437,11 @@ export interface operations {
     ListEntityTagAssignments: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -4309,7 +4590,11 @@ export interface operations {
     ListExternalLocations: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -4377,7 +4662,10 @@ export interface operations {
     };
     GetExternalLocation: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Whether to include external locations in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+            };
             header?: never;
             path: {
                 /** @description Name of external location. */
@@ -4483,7 +4771,11 @@ export interface operations {
                 catalog_name?: string;
                 /** @description Parent schema of functions. */
                 schema_name?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -4551,7 +4843,10 @@ export interface operations {
     };
     GetFunction: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Whether to include functions in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+            };
             header?: never;
             path: {
                 /** @description The fully-qualified name of the function (three-level name: catalog.schema.function). */
@@ -4657,7 +4952,11 @@ export interface operations {
                 catalog_name?: string;
                 /** @description Name of parent schema for models of interest. */
                 schema_name?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -4878,7 +5177,11 @@ export interface operations {
     ListModelVersions: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5080,6 +5383,39 @@ export interface operations {
             };
         };
     };
+    CreatePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
     ListPolicies: {
         parameters: {
             query?: {
@@ -5090,7 +5426,11 @@ export interface operations {
                  *      where it was defined.
                  */
                 include_inherited?: boolean;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5100,7 +5440,7 @@ export interface operations {
                 /**
                  * @description The type of the securable to list policies on.
                  *
-                 *      Supported values: catalogs, schemas, tables.
+                 *      Supported values: CATALOG, SCHEMA, TABLE.
                  */
                 on_securable_type: string;
                 /** @description The fully qualified name of the securable to list policies on. */
@@ -5130,48 +5470,6 @@ export interface operations {
             };
         };
     };
-    CreatePolicy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /**
-                 * @description The type of the securable to create the policy on.
-                 *
-                 *      Supported values: catalogs, schemas, tables.
-                 */
-                on_securable_type: string;
-                /** @description The fully qualified name of the securable to create the policy on. */
-                on_securable_fullname: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PolicyInfo"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PolicyInfo"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
-    };
     GetPolicy: {
         parameters: {
             query?: never;
@@ -5180,7 +5478,7 @@ export interface operations {
                 /**
                  * @description The type of the securable the policy is defined on.
                  *
-                 *      Supported values: catalogs, schemas, tables.
+                 *      Supported values: CATALOG, SCHEMA, TABLE.
                  */
                 on_securable_type: string;
                 /** @description The fully qualified name of the securable the policy is defined on. */
@@ -5220,7 +5518,7 @@ export interface operations {
                 /**
                  * @description The type of the securable the policy is defined on.
                  *
-                 *      Supported values: catalogs, schemas, tables.
+                 *      Supported values: CATALOG, SCHEMA, TABLE.
                  */
                 on_securable_type: string;
                 /** @description The fully qualified name of the securable the policy is defined on. */
@@ -5256,9 +5554,9 @@ export interface operations {
             header?: never;
             path: {
                 /**
-                 * @description The type of the securable the policy is defined on.
+                 * @description The type of securable the policy is defined on.
                  *
-                 *      Supported values: catalogs, schemas, tables.
+                 *      Supported values: CATALOG, SCHEMA, TABLE.
                  */
                 on_securable_type: string;
                 /** @description The fully qualified name of the securable the policy is defined on. */
@@ -5297,7 +5595,11 @@ export interface operations {
     ListProviders: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5462,7 +5764,11 @@ export interface operations {
     ListRecipients: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5629,7 +5935,11 @@ export interface operations {
             query?: {
                 /** @description Name of parent catalog. */
                 catalog_name?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5697,7 +6007,10 @@ export interface operations {
     };
     GetSchema: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Whether to include schemas in the response for which the principal can only access selective metadata for */
+                include_browse?: boolean;
+            };
             header?: never;
             path: {
                 /**
@@ -5807,7 +6120,11 @@ export interface operations {
     ListShares: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -5975,7 +6292,11 @@ export interface operations {
     GetPermissions: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -6087,7 +6408,11 @@ export interface operations {
                 schema_name_pattern?: string;
                 /** @description A sql LIKE pattern (% and _) for table names. All tables will be returned if not set or empty. */
                 table_name_pattern?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -6127,7 +6452,11 @@ export interface operations {
                 catalog_name?: string;
                 /** @description Name of parent schema for tables of interest. */
                 schema_name?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -6307,7 +6636,12 @@ export interface operations {
     ListTagPolicies: {
         parameters: {
             query?: {
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results to return in this request.
+                 *
+                 *      Fewer results may be returned than requested. If unset or 0, this defaults to 1000;
+                 *      larger values are coerced down to 1000. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
@@ -6608,11 +6942,15 @@ export interface operations {
                 catalog_name?: string;
                 /** @description The identifier of the schema */
                 schema_name?: string;
-                /** @description The maximum number of results per page that should be returned. */
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */
                 page_token?: string;
-                /** @description Whether to include schemas in the response for which the principal can only access selective metadata for */
+                /** @description Whether to include volumes in the response for which the principal can only access selective metadata for */
                 include_browse?: boolean;
             };
             header?: never;
@@ -6677,7 +7015,7 @@ export interface operations {
     GetVolume: {
         parameters: {
             query?: {
-                /** @description Whether to include schemas in the response for which the principal can only access selective metadata for */
+                /** @description Whether to include volumes in the response for which the principal can only access selective metadata for */
                 include_browse?: boolean;
             };
             header?: never;

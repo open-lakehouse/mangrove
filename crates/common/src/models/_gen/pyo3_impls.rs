@@ -445,6 +445,8 @@ pub enum PyPolicyType {
     POLICY_TYPE_UNSPECIFIED = 0isize,
     POLICY_TYPE_ROW_FILTER = 1isize,
     POLICY_TYPE_COLUMN_MASK = 2isize,
+    POLICY_TYPE_DENY = 3isize,
+    POLICY_TYPE_GRANT = 4isize,
 }
 impl PyPolicyType {
     fn __to_proto_i32(self) -> i32 {
@@ -452,6 +454,8 @@ impl PyPolicyType {
             PyPolicyType::POLICY_TYPE_UNSPECIFIED => 0i32,
             PyPolicyType::POLICY_TYPE_ROW_FILTER => 1i32,
             PyPolicyType::POLICY_TYPE_COLUMN_MASK => 2i32,
+            PyPolicyType::POLICY_TYPE_DENY => 3i32,
+            PyPolicyType::POLICY_TYPE_GRANT => 4i32,
         }
     }
     fn __from_proto_i32(value: i32) -> Self {
@@ -459,6 +463,8 @@ impl PyPolicyType {
             0i32 => PyPolicyType::POLICY_TYPE_UNSPECIFIED,
             1i32 => PyPolicyType::POLICY_TYPE_ROW_FILTER,
             2i32 => PyPolicyType::POLICY_TYPE_COLUMN_MASK,
+            3i32 => PyPolicyType::POLICY_TYPE_DENY,
+            4i32 => PyPolicyType::POLICY_TYPE_GRANT,
             _ => PyPolicyType::POLICY_TYPE_UNSPECIFIED,
         }
     }
@@ -602,12 +608,56 @@ impl ::core::convert::From<PyAction> for super::shares::v1::Action {
     }
 }
 #[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "DataObjectStatus", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyDataObjectStatus {
+    DATA_OBJECT_STATUS_UNSPECIFIED = 0isize,
+    ACTIVE = 1isize,
+    PERMISSION_DENIED = 2isize,
+}
+impl PyDataObjectStatus {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyDataObjectStatus::DATA_OBJECT_STATUS_UNSPECIFIED => 0i32,
+            PyDataObjectStatus::ACTIVE => 1i32,
+            PyDataObjectStatus::PERMISSION_DENIED => 2i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyDataObjectStatus::DATA_OBJECT_STATUS_UNSPECIFIED,
+            1i32 => PyDataObjectStatus::ACTIVE,
+            2i32 => PyDataObjectStatus::PERMISSION_DENIED,
+            _ => PyDataObjectStatus::DATA_OBJECT_STATUS_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::shares::v1::DataObjectStatus> for PyDataObjectStatus {
+    fn from(value: super::shares::v1::DataObjectStatus) -> Self {
+        PyDataObjectStatus::__from_proto_i32(
+            <super::shares::v1::DataObjectStatus as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyDataObjectStatus> for super::shares::v1::DataObjectStatus {
+    fn from(value: PyDataObjectStatus) -> Self {
+        let n = value.__to_proto_i32();
+        <super::shares::v1::DataObjectStatus as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
 #[::pyo3::pyclass(eq, eq_int, name = "DataObjectType", from_py_object)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum PyDataObjectType {
     DATA_OBJECT_TYPE_UNSPECIFIED = 0isize,
     TABLE = 1isize,
     SCHEMA = 2isize,
+    VIEW = 3isize,
+    MATERIALIZED_VIEW = 4isize,
+    STREAMING_TABLE = 5isize,
+    MODEL = 6isize,
+    FUNCTION = 8isize,
     VOLUME = 10isize,
     AGENT_SKILL = 11isize,
 }
@@ -617,6 +667,11 @@ impl PyDataObjectType {
             PyDataObjectType::DATA_OBJECT_TYPE_UNSPECIFIED => 0i32,
             PyDataObjectType::TABLE => 1i32,
             PyDataObjectType::SCHEMA => 2i32,
+            PyDataObjectType::VIEW => 3i32,
+            PyDataObjectType::MATERIALIZED_VIEW => 4i32,
+            PyDataObjectType::STREAMING_TABLE => 5i32,
+            PyDataObjectType::MODEL => 6i32,
+            PyDataObjectType::FUNCTION => 8i32,
             PyDataObjectType::VOLUME => 10i32,
             PyDataObjectType::AGENT_SKILL => 11i32,
         }
@@ -626,6 +681,11 @@ impl PyDataObjectType {
             0i32 => PyDataObjectType::DATA_OBJECT_TYPE_UNSPECIFIED,
             1i32 => PyDataObjectType::TABLE,
             2i32 => PyDataObjectType::SCHEMA,
+            3i32 => PyDataObjectType::VIEW,
+            4i32 => PyDataObjectType::MATERIALIZED_VIEW,
+            5i32 => PyDataObjectType::STREAMING_TABLE,
+            6i32 => PyDataObjectType::MODEL,
+            8i32 => PyDataObjectType::FUNCTION,
             10i32 => PyDataObjectType::VOLUME,
             11i32 => PyDataObjectType::AGENT_SKILL,
             _ => PyDataObjectType::DATA_OBJECT_TYPE_UNSPECIFIED,
@@ -681,6 +741,45 @@ impl ::core::convert::From<PyHistoryStatus> for super::shares::v1::HistoryStatus
     }
 }
 #[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "PartitionValueOp", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyPartitionValueOp {
+    PARTITION_VALUE_OP_UNSPECIFIED = 0isize,
+    EQUAL = 1isize,
+    LIKE = 2isize,
+}
+impl PyPartitionValueOp {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyPartitionValueOp::PARTITION_VALUE_OP_UNSPECIFIED => 0i32,
+            PyPartitionValueOp::EQUAL => 1i32,
+            PyPartitionValueOp::LIKE => 2i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyPartitionValueOp::PARTITION_VALUE_OP_UNSPECIFIED,
+            1i32 => PyPartitionValueOp::EQUAL,
+            2i32 => PyPartitionValueOp::LIKE,
+            _ => PyPartitionValueOp::PARTITION_VALUE_OP_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::shares::v1::PartitionValueOp> for PyPartitionValueOp {
+    fn from(value: super::shares::v1::PartitionValueOp) -> Self {
+        PyPartitionValueOp::__from_proto_i32(
+            <super::shares::v1::PartitionValueOp as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyPartitionValueOp> for super::shares::v1::PartitionValueOp {
+    fn from(value: PyPartitionValueOp) -> Self {
+        let n = value.__to_proto_i32();
+        <super::shares::v1::PartitionValueOp as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
 #[::pyo3::pyclass(eq, eq_int, name = "ColumnTypeName", from_py_object)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum PyColumnTypeName {
@@ -707,6 +806,8 @@ pub enum PyColumnTypeName {
     TIMESTAMP_NTZ = 20isize,
     VARIANT = 21isize,
     TABLE_TYPE = 22isize,
+    GEOMETRY = 23isize,
+    GEOGRAPHY = 24isize,
 }
 impl PyColumnTypeName {
     fn __to_proto_i32(self) -> i32 {
@@ -734,6 +835,8 @@ impl PyColumnTypeName {
             PyColumnTypeName::TIMESTAMP_NTZ => 20i32,
             PyColumnTypeName::VARIANT => 21i32,
             PyColumnTypeName::TABLE_TYPE => 22i32,
+            PyColumnTypeName::GEOMETRY => 23i32,
+            PyColumnTypeName::GEOGRAPHY => 24i32,
         }
     }
     fn __from_proto_i32(value: i32) -> Self {
@@ -761,6 +864,8 @@ impl PyColumnTypeName {
             20i32 => PyColumnTypeName::TIMESTAMP_NTZ,
             21i32 => PyColumnTypeName::VARIANT,
             22i32 => PyColumnTypeName::TABLE_TYPE,
+            23i32 => PyColumnTypeName::GEOMETRY,
+            24i32 => PyColumnTypeName::GEOGRAPHY,
             _ => PyColumnTypeName::COLUMN_TYPE_NAME_UNSPECIFIED,
         }
     }
@@ -794,6 +899,9 @@ pub enum PyDataSourceFormat {
     TEXT = 9isize,
     UNITY_CATALOG = 10isize,
     DELTASHARING = 11isize,
+    DELTA_UNIFORM_ICEBERG = 12isize,
+    DELTA_UNIFORM_HUDI = 13isize,
+    HIVE = 14isize,
 }
 impl PyDataSourceFormat {
     fn __to_proto_i32(self) -> i32 {
@@ -810,6 +918,9 @@ impl PyDataSourceFormat {
             PyDataSourceFormat::TEXT => 9i32,
             PyDataSourceFormat::UNITY_CATALOG => 10i32,
             PyDataSourceFormat::DELTASHARING => 11i32,
+            PyDataSourceFormat::DELTA_UNIFORM_ICEBERG => 12i32,
+            PyDataSourceFormat::DELTA_UNIFORM_HUDI => 13i32,
+            PyDataSourceFormat::HIVE => 14i32,
         }
     }
     fn __from_proto_i32(value: i32) -> Self {
@@ -826,6 +937,9 @@ impl PyDataSourceFormat {
             9i32 => PyDataSourceFormat::TEXT,
             10i32 => PyDataSourceFormat::UNITY_CATALOG,
             11i32 => PyDataSourceFormat::DELTASHARING,
+            12i32 => PyDataSourceFormat::DELTA_UNIFORM_ICEBERG,
+            13i32 => PyDataSourceFormat::DELTA_UNIFORM_HUDI,
+            14i32 => PyDataSourceFormat::HIVE,
             _ => PyDataSourceFormat::DATA_SOURCE_FORMAT_UNSPECIFIED,
         }
     }
@@ -854,6 +968,8 @@ pub enum PyTableType {
     VIEW = 3isize,
     MATERIALIZED_VIEW = 4isize,
     STREAMING_TABLE = 5isize,
+    MANAGED_SHALLOW_CLONE = 6isize,
+    EXTERNAL_SHALLOW_CLONE = 8isize,
     METRIC_VIEW = 9isize,
 }
 impl PyTableType {
@@ -865,6 +981,8 @@ impl PyTableType {
             PyTableType::VIEW => 3i32,
             PyTableType::MATERIALIZED_VIEW => 4i32,
             PyTableType::STREAMING_TABLE => 5i32,
+            PyTableType::MANAGED_SHALLOW_CLONE => 6i32,
+            PyTableType::EXTERNAL_SHALLOW_CLONE => 8i32,
             PyTableType::METRIC_VIEW => 9i32,
         }
     }
@@ -876,6 +994,8 @@ impl PyTableType {
             3i32 => PyTableType::VIEW,
             4i32 => PyTableType::MATERIALIZED_VIEW,
             5i32 => PyTableType::STREAMING_TABLE,
+            6i32 => PyTableType::MANAGED_SHALLOW_CLONE,
+            8i32 => PyTableType::EXTERNAL_SHALLOW_CLONE,
             9i32 => PyTableType::METRIC_VIEW,
             _ => PyTableType::TABLE_TYPE_UNSPECIFIED,
         }
@@ -892,6 +1012,46 @@ impl ::core::convert::From<PyTableType> for super::tables::v1::TableType {
     fn from(value: PyTableType) -> Self {
         let n = value.__to_proto_i32();
         <super::tables::v1::TableType as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "TagAssignmentSourceType", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyTagAssignmentSourceType {
+    TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED = 0isize,
+    TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION = 1isize,
+}
+impl PyTagAssignmentSourceType {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyTagAssignmentSourceType::TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED => 0i32,
+            PyTagAssignmentSourceType::TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION => {
+                1i32
+            }
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyTagAssignmentSourceType::TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED,
+            1i32 => {
+                PyTagAssignmentSourceType::TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION
+            }
+            _ => PyTagAssignmentSourceType::TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::tags::v1::TagAssignmentSourceType> for PyTagAssignmentSourceType {
+    fn from(value: super::tags::v1::TagAssignmentSourceType) -> Self {
+        PyTagAssignmentSourceType::__from_proto_i32(
+            <super::tags::v1::TagAssignmentSourceType as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyTagAssignmentSourceType> for super::tags::v1::TagAssignmentSourceType {
+    fn from(value: PyTagAssignmentSourceType) -> Self {
+        let n = value.__to_proto_i32();
+        <super::tags::v1::TagAssignmentSourceType as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -3868,10 +4028,19 @@ pub struct PyAzureServicePrincipal(pub super::credentials::v1::AzureServicePrinc
 #[::pyo3::pymethods]
 impl PyAzureServicePrincipal {
     #[new]
-    #[pyo3(signature = (directory_id = None, application_id = None))]
+    #[pyo3(
+        signature = (
+            directory_id = None,
+            application_id = None,
+            client_secret = None,
+            federated_token_file = None
+        )
+    )]
     fn new(
         directory_id: ::core::option::Option<::std::string::String>,
         application_id: ::core::option::Option<::std::string::String>,
+        client_secret: ::core::option::Option<::std::string::String>,
+        federated_token_file: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner =
             <super::credentials::v1::AzureServicePrincipal as ::core::default::Default>::default();
@@ -3880,6 +4049,18 @@ impl PyAzureServicePrincipal {
         }
         if let ::core::option::Option::Some(value) = application_id {
             inner.application_id = value;
+        }
+        if let ::core::option::Option::Some(value) = client_secret {
+            inner.credential = ::core::option::Option::Some(
+                super::credentials::v1::azure_service_principal::Credential::ClientSecret(value),
+            );
+        }
+        if let ::core::option::Option::Some(value) = federated_token_file {
+            inner.credential = ::core::option::Option::Some(
+                super::credentials::v1::azure_service_principal::Credential::FederatedTokenFile(
+                    value,
+                ),
+            );
         }
         Self(inner)
     }
@@ -3898,6 +4079,72 @@ impl PyAzureServicePrincipal {
     #[setter(application_id)]
     fn set_application_id(&mut self, value: ::std::string::String) {
         self.0.application_id = value;
+    }
+    ///The client secret generated for the above app ID in AAD.
+    #[getter]
+    fn client_secret(&self) -> ::core::option::Option<::std::string::String> {
+        match &self.0.credential {
+            ::core::option::Option::Some(
+                super::credentials::v1::azure_service_principal::Credential::ClientSecret(value),
+            ) => ::core::option::Option::Some(::core::clone::Clone::clone(value)),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///Location of the file containing a federated token, for workload identity federation.
+    #[getter]
+    fn federated_token_file(&self) -> ::core::option::Option<::std::string::String> {
+        match &self.0.credential {
+            ::core::option::Option::Some(
+                super::credentials::v1::azure_service_principal::Credential::FederatedTokenFile(
+                    value,
+                ),
+            ) => ::core::option::Option::Some(::core::clone::Clone::clone(value)),
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[setter(client_secret)]
+    fn set_client_secret(&mut self, value: ::core::option::Option<::std::string::String>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credential = ::core::option::Option::Some(
+                    super::credentials::v1::azure_service_principal::Credential::ClientSecret(
+                        value,
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.credential,
+                    ::core::option::Option::Some(
+                        super::credentials::v1::azure_service_principal::Credential::ClientSecret(
+                            _
+                        )
+                    )
+                ) {
+                    self.0.credential = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(federated_token_file)]
+    fn set_federated_token_file(&mut self, value: ::core::option::Option<::std::string::String>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credential = ::core::option::Option::Some(
+                    super::credentials::v1::azure_service_principal::Credential::FederatedTokenFile(
+                        value,
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credential,
+                    ::core::option::Option::Some(super::credentials::v1::azure_service_principal::Credential::FederatedTokenFile(_))
+                ) {
+                    self.0.credential = ::core::option::Option::None;
+                }
+            }
+        }
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -5505,11 +5752,18 @@ pub struct PyGetExternalLocationRequest(
 #[::pyo3::pymethods]
 impl PyGetExternalLocationRequest {
     #[new]
-    #[pyo3(signature = (name = None))]
-    fn new(name: ::core::option::Option<::std::string::String>) -> Self {
+    #[pyo3(signature = (name = None, include_browse = None))]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        include_browse: ::core::option::Option<bool>,
+    ) -> Self {
         let mut inner = <super::external_locations::v1::GetExternalLocationRequest as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
             inner.name = value;
+        }
+        {
+            let value = include_browse;
+            inner.include_browse = value;
         }
         Self(inner)
     }
@@ -5517,9 +5771,17 @@ impl PyGetExternalLocationRequest {
     fn name(&self) -> ::std::string::String {
         self.0.name.clone()
     }
+    #[getter]
+    fn include_browse(&self) -> ::core::option::Option<bool> {
+        self.0.include_browse
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
+    }
+    #[setter(include_browse)]
+    fn set_include_browse(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_browse = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -5869,9 +6131,12 @@ impl PyCreateFunction {
             security_type = None,
             routine_body = None,
             routine_definition = None,
-            routine_body_language = None,
+            external_language = None,
             comment = None,
-            properties = None
+            properties = None,
+            return_params = None,
+            routine_dependencies = None,
+            specific_name = None
         )
     )]
     fn new(
@@ -5888,11 +6153,12 @@ impl PyCreateFunction {
         security_type: ::core::option::Option<PySecurityType>,
         routine_body: ::core::option::Option<PyRoutineBody>,
         routine_definition: ::core::option::Option<::std::string::String>,
-        routine_body_language: ::core::option::Option<::std::string::String>,
+        external_language: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
-        properties: ::core::option::Option<
-            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-        >,
+        properties: ::core::option::Option<::std::string::String>,
+        return_params: ::core::option::Option<PyFunctionParameterInfos>,
+        routine_dependencies: ::core::option::Option<PyDependencyList>,
+        specific_name: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner =
             <super::functions::v1::CreateFunction as ::core::default::Default>::default();
@@ -5948,15 +6214,32 @@ impl PyCreateFunction {
             inner.routine_definition = value;
         }
         {
-            let value = routine_body_language;
-            inner.routine_body_language = value;
+            let value = external_language;
+            inner.external_language = value;
         }
         {
             let value = comment;
             inner.comment = value;
         }
-        if let ::core::option::Option::Some(value) = properties {
+        {
+            let value = properties;
             inner.properties = value;
+        }
+        {
+            let value = return_params;
+            inner.return_params = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = routine_dependencies;
+            inner.routine_dependencies = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = specific_name;
+            inner.specific_name = value;
         }
         Self(inner)
     }
@@ -6017,18 +6300,36 @@ impl PyCreateFunction {
         self.0.routine_definition.clone()
     }
     #[getter]
-    fn routine_body_language(&self) -> ::core::option::Option<::std::string::String> {
-        self.0.routine_body_language.clone()
+    fn external_language(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.external_language.clone()
     }
     #[getter]
     fn comment(&self) -> ::core::option::Option<::std::string::String> {
         self.0.comment.clone()
     }
     #[getter]
-    fn properties(
-        &self,
-    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
+    fn properties(&self) -> ::core::option::Option<::std::string::String> {
         self.0.properties.clone()
+    }
+    #[getter]
+    fn return_params(&self) -> ::core::option::Option<PyFunctionParameterInfos> {
+        self.0
+            .return_params
+            .clone()
+            .into_option()
+            .map(PyFunctionParameterInfos::from)
+    }
+    #[getter]
+    fn routine_dependencies(&self) -> ::core::option::Option<PyDependencyList> {
+        self.0
+            .routine_dependencies
+            .clone()
+            .into_option()
+            .map(PyDependencyList::from)
+    }
+    #[getter]
+    fn specific_name(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.specific_name.clone()
     }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
@@ -6092,20 +6393,33 @@ impl PyCreateFunction {
     fn set_routine_definition(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.routine_definition = value;
     }
-    #[setter(routine_body_language)]
-    fn set_routine_body_language(&mut self, value: ::core::option::Option<::std::string::String>) {
-        self.0.routine_body_language = value;
+    #[setter(external_language)]
+    fn set_external_language(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.external_language = value;
     }
     #[setter(comment)]
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
     }
     #[setter(properties)]
-    fn set_properties(
-        &mut self,
-        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-    ) {
+    fn set_properties(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.properties = value;
+    }
+    #[setter(return_params)]
+    fn set_return_params(&mut self, value: ::core::option::Option<PyFunctionParameterInfos>) {
+        self.0.return_params = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(routine_dependencies)]
+    fn set_routine_dependencies(&mut self, value: ::core::option::Option<PyDependencyList>) {
+        self.0.routine_dependencies = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(specific_name)]
+    fn set_specific_name(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.specific_name = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -6255,7 +6569,7 @@ impl PyFunction {
             full_data_type = None,
             input_params = None,
             return_params = None,
-            routine_body_language = None,
+            external_language = None,
             routine_definition = None,
             routine_dependencies = None,
             parameter_style = None,
@@ -6272,7 +6586,8 @@ impl PyFunction {
             created_at = None,
             created_by = None,
             updated_at = None,
-            updated_by = None
+            updated_by = None,
+            browse_only = None
         )
     )]
     fn new(
@@ -6283,10 +6598,10 @@ impl PyFunction {
         data_type: ::core::option::Option<::std::string::String>,
         full_data_type: ::core::option::Option<::std::string::String>,
         input_params: ::core::option::Option<PyFunctionParameterInfos>,
-        return_params: ::core::option::Option<::std::string::String>,
-        routine_body_language: ::core::option::Option<::std::string::String>,
+        return_params: ::core::option::Option<PyFunctionParameterInfos>,
+        external_language: ::core::option::Option<::std::string::String>,
         routine_definition: ::core::option::Option<::std::string::String>,
-        routine_dependencies: ::core::option::Option<::std::string::String>,
+        routine_dependencies: ::core::option::Option<PyDependencyList>,
         parameter_style: ::core::option::Option<PyParameterStyle>,
         is_deterministic: ::core::option::Option<bool>,
         sql_data_access: ::core::option::Option<PySqlDataAccess>,
@@ -6295,15 +6610,14 @@ impl PyFunction {
         specific_name: ::core::option::Option<::std::string::String>,
         routine_body: ::core::option::Option<PyRoutineBody>,
         comment: ::core::option::Option<::std::string::String>,
-        properties: ::core::option::Option<
-            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-        >,
+        properties: ::core::option::Option<::std::string::String>,
         owner: ::core::option::Option<::std::string::String>,
         function_id: ::core::option::Option<::std::string::String>,
         created_at: ::core::option::Option<i64>,
         created_by: ::core::option::Option<::std::string::String>,
         updated_at: ::core::option::Option<i64>,
         updated_by: ::core::option::Option<::std::string::String>,
+        browse_only: ::core::option::Option<bool>,
     ) -> Self {
         let mut inner = <super::functions::v1::Function as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
@@ -6332,11 +6646,13 @@ impl PyFunction {
         }
         {
             let value = return_params;
-            inner.return_params = value;
+            inner.return_params = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
-            let value = routine_body_language;
-            inner.routine_body_language = value;
+            let value = external_language;
+            inner.external_language = value;
         }
         {
             let value = routine_definition;
@@ -6344,7 +6660,9 @@ impl PyFunction {
         }
         {
             let value = routine_dependencies;
-            inner.routine_dependencies = value;
+            inner.routine_dependencies = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         if let ::core::option::Option::Some(value) = parameter_style {
             inner.parameter_style = ::buffa::EnumValue::Known(
@@ -6380,7 +6698,8 @@ impl PyFunction {
             let value = comment;
             inner.comment = value;
         }
-        if let ::core::option::Option::Some(value) = properties {
+        {
+            let value = properties;
             inner.properties = value;
         }
         {
@@ -6406,6 +6725,10 @@ impl PyFunction {
         {
             let value = updated_by;
             inner.updated_by = value;
+        }
+        {
+            let value = browse_only;
+            inner.browse_only = value;
         }
         Self(inner)
     }
@@ -6442,20 +6765,28 @@ impl PyFunction {
             .map(PyFunctionParameterInfos::from)
     }
     #[getter]
-    fn return_params(&self) -> ::core::option::Option<::std::string::String> {
-        self.0.return_params.clone()
+    fn return_params(&self) -> ::core::option::Option<PyFunctionParameterInfos> {
+        self.0
+            .return_params
+            .clone()
+            .into_option()
+            .map(PyFunctionParameterInfos::from)
     }
     #[getter]
-    fn routine_body_language(&self) -> ::core::option::Option<::std::string::String> {
-        self.0.routine_body_language.clone()
+    fn external_language(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.external_language.clone()
     }
     #[getter]
     fn routine_definition(&self) -> ::core::option::Option<::std::string::String> {
         self.0.routine_definition.clone()
     }
     #[getter]
-    fn routine_dependencies(&self) -> ::core::option::Option<::std::string::String> {
-        self.0.routine_dependencies.clone()
+    fn routine_dependencies(&self) -> ::core::option::Option<PyDependencyList> {
+        self.0
+            .routine_dependencies
+            .clone()
+            .into_option()
+            .map(PyDependencyList::from)
     }
     #[getter]
     fn parameter_style(&self) -> PyParameterStyle {
@@ -6490,9 +6821,7 @@ impl PyFunction {
         self.0.comment.clone()
     }
     #[getter]
-    fn properties(
-        &self,
-    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
+    fn properties(&self) -> ::core::option::Option<::std::string::String> {
         self.0.properties.clone()
     }
     #[getter]
@@ -6518,6 +6847,10 @@ impl PyFunction {
     #[getter]
     fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
         self.0.updated_by.clone()
+    }
+    #[getter]
+    fn browse_only(&self) -> ::core::option::Option<bool> {
+        self.0.browse_only
     }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
@@ -6550,20 +6883,24 @@ impl PyFunction {
             .unwrap_or_default();
     }
     #[setter(return_params)]
-    fn set_return_params(&mut self, value: ::core::option::Option<::std::string::String>) {
-        self.0.return_params = value;
+    fn set_return_params(&mut self, value: ::core::option::Option<PyFunctionParameterInfos>) {
+        self.0.return_params = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
-    #[setter(routine_body_language)]
-    fn set_routine_body_language(&mut self, value: ::core::option::Option<::std::string::String>) {
-        self.0.routine_body_language = value;
+    #[setter(external_language)]
+    fn set_external_language(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.external_language = value;
     }
     #[setter(routine_definition)]
     fn set_routine_definition(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.routine_definition = value;
     }
     #[setter(routine_dependencies)]
-    fn set_routine_dependencies(&mut self, value: ::core::option::Option<::std::string::String>) {
-        self.0.routine_dependencies = value;
+    fn set_routine_dependencies(&mut self, value: ::core::option::Option<PyDependencyList>) {
+        self.0.routine_dependencies = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(parameter_style)]
     fn set_parameter_style(&mut self, value: PyParameterStyle) {
@@ -6606,10 +6943,7 @@ impl PyFunction {
         self.0.comment = value;
     }
     #[setter(properties)]
-    fn set_properties(
-        &mut self,
-        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-    ) {
+    fn set_properties(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.properties = value;
     }
     #[setter(owner)]
@@ -6635,6 +6969,10 @@ impl PyFunction {
     #[setter(updated_by)]
     fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.updated_by = value;
+    }
+    #[setter(browse_only)]
+    fn set_browse_only(&mut self, value: ::core::option::Option<bool>) {
+        self.0.browse_only = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -6925,12 +7263,19 @@ pub struct PyGetFunctionRequest(pub super::functions::v1::GetFunctionRequest);
 #[::pyo3::pymethods]
 impl PyGetFunctionRequest {
     #[new]
-    #[pyo3(signature = (name = None))]
-    fn new(name: ::core::option::Option<::std::string::String>) -> Self {
+    #[pyo3(signature = (name = None, include_browse = None))]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        include_browse: ::core::option::Option<bool>,
+    ) -> Self {
         let mut inner =
             <super::functions::v1::GetFunctionRequest as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
             inner.name = value;
+        }
+        {
+            let value = include_browse;
+            inner.include_browse = value;
         }
         Self(inner)
     }
@@ -6938,9 +7283,17 @@ impl PyGetFunctionRequest {
     fn name(&self) -> ::std::string::String {
         self.0.name.clone()
     }
+    #[getter]
+    fn include_browse(&self) -> ::core::option::Option<bool> {
+        self.0.include_browse
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
+    }
+    #[setter(include_browse)]
+    fn set_include_browse(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_browse = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -7988,31 +8341,104 @@ impl PyCreatePolicyRequest {
     #[new]
     #[pyo3(
         signature = (
+            name = None,
             on_securable_type = None,
             on_securable_fullname = None,
-            policy_info = None
+            policy_type = None,
+            comment = None,
+            to_principals = None,
+            except_principals = None,
+            for_securable_type = None,
+            when_condition = None,
+            match_columns = None,
+            row_filter = None,
+            column_mask = None,
+            deny = None,
+            grant = None
         )
     )]
     fn new(
+        name: ::core::option::Option<::std::string::String>,
         on_securable_type: ::core::option::Option<::std::string::String>,
         on_securable_fullname: ::core::option::Option<::std::string::String>,
-        policy_info: ::core::option::Option<PyPolicyInfo>,
+        policy_type: ::core::option::Option<PyPolicyType>,
+        comment: ::core::option::Option<::std::string::String>,
+        to_principals: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        except_principals: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        for_securable_type: ::core::option::Option<::std::string::String>,
+        when_condition: ::core::option::Option<::std::string::String>,
+        match_columns: ::core::option::Option<::std::vec::Vec<PyMatchColumn>>,
+        row_filter: ::core::option::Option<PyFunctionRef>,
+        column_mask: ::core::option::Option<PyFunctionRef>,
+        deny: ::core::option::Option<PyPrivilegeOptions>,
+        grant: ::core::option::Option<PyPrivilegeOptions>,
     ) -> Self {
         let mut inner =
             <super::policies::v1::CreatePolicyRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
         if let ::core::option::Option::Some(value) = on_securable_type {
             inner.on_securable_type = value;
         }
         if let ::core::option::Option::Some(value) = on_securable_fullname {
             inner.on_securable_fullname = value;
         }
+        if let ::core::option::Option::Some(value) = policy_type {
+            inner.policy_type = ::buffa::EnumValue::Known(
+                <super::policies::v1::PolicyType as ::core::convert::From<_>>::from(value),
+            );
+        }
         {
-            let value = policy_info;
-            inner.policy_info = value
+            let value = comment;
+            inner.comment = value;
+        }
+        if let ::core::option::Option::Some(value) = to_principals {
+            inner.to_principals = value;
+        }
+        if let ::core::option::Option::Some(value) = except_principals {
+            inner.except_principals = value;
+        }
+        {
+            let value = for_securable_type;
+            inner.for_securable_type = value;
+        }
+        {
+            let value = when_condition;
+            inner.when_condition = value;
+        }
+        if let ::core::option::Option::Some(value) = match_columns {
+            inner.match_columns = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = row_filter;
+            inner.row_filter = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = column_mask;
+            inner.column_mask = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = deny;
+            inner.deny = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = grant;
+            inner.grant = value
                 .map(|w| ::buffa::MessageField::some(w.into()))
                 .unwrap_or_default();
         }
         Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
     }
     #[getter]
     fn on_securable_type(&self) -> ::std::string::String {
@@ -8023,12 +8449,73 @@ impl PyCreatePolicyRequest {
         self.0.on_securable_fullname.clone()
     }
     #[getter]
-    fn policy_info(&self) -> ::core::option::Option<PyPolicyInfo> {
+    fn policy_type(&self) -> PyPolicyType {
+        PyPolicyType::from(self.0.policy_type.as_known().unwrap_or_default())
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn to_principals(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.to_principals.clone()
+    }
+    #[getter]
+    fn except_principals(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.except_principals.clone()
+    }
+    #[getter]
+    fn for_securable_type(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.for_securable_type.clone()
+    }
+    #[getter]
+    fn when_condition(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.when_condition.clone()
+    }
+    #[getter]
+    fn match_columns(&self) -> ::std::vec::Vec<PyMatchColumn> {
         self.0
-            .policy_info
+            .match_columns
+            .iter()
+            .cloned()
+            .map(PyMatchColumn::from)
+            .collect()
+    }
+    #[getter]
+    fn row_filter(&self) -> ::core::option::Option<PyFunctionRef> {
+        self.0
+            .row_filter
             .clone()
             .into_option()
-            .map(PyPolicyInfo::from)
+            .map(PyFunctionRef::from)
+    }
+    #[getter]
+    fn column_mask(&self) -> ::core::option::Option<PyFunctionRef> {
+        self.0
+            .column_mask
+            .clone()
+            .into_option()
+            .map(PyFunctionRef::from)
+    }
+    #[getter]
+    fn deny(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        self.0
+            .deny
+            .clone()
+            .into_option()
+            .map(PyPrivilegeOptions::from)
+    }
+    #[getter]
+    fn grant(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        self.0
+            .grant
+            .clone()
+            .into_option()
+            .map(PyPrivilegeOptions::from)
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
     }
     #[setter(on_securable_type)]
     fn set_on_securable_type(&mut self, value: ::std::string::String) {
@@ -8038,9 +8525,58 @@ impl PyCreatePolicyRequest {
     fn set_on_securable_fullname(&mut self, value: ::std::string::String) {
         self.0.on_securable_fullname = value;
     }
-    #[setter(policy_info)]
-    fn set_policy_info(&mut self, value: ::core::option::Option<PyPolicyInfo>) {
-        self.0.policy_info = value
+    #[setter(policy_type)]
+    fn set_policy_type(&mut self, value: PyPolicyType) {
+        self.0.policy_type =
+            ::buffa::EnumValue::Known(<super::policies::v1::PolicyType as ::core::convert::From<
+                _,
+            >>::from(value));
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(to_principals)]
+    fn set_to_principals(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.to_principals = value;
+    }
+    #[setter(except_principals)]
+    fn set_except_principals(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.except_principals = value;
+    }
+    #[setter(for_securable_type)]
+    fn set_for_securable_type(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.for_securable_type = value;
+    }
+    #[setter(when_condition)]
+    fn set_when_condition(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.when_condition = value;
+    }
+    #[setter(match_columns)]
+    fn set_match_columns(&mut self, value: ::std::vec::Vec<PyMatchColumn>) {
+        self.0.match_columns = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(row_filter)]
+    fn set_row_filter(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        self.0.row_filter = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(column_mask)]
+    fn set_column_mask(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        self.0.column_mask = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(deny)]
+    fn set_deny(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        self.0.deny = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(grant)]
+    fn set_grant(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        self.0.grant = value
             .map(|w| ::buffa::MessageField::some(w.into()))
             .unwrap_or_default();
     }
@@ -8137,8 +8673,83 @@ pub struct PyFunctionArg(pub super::policies::v1::FunctionArg);
 #[::pyo3::pymethods]
 impl PyFunctionArg {
     #[new]
-    fn new() -> Self {
-        Self(::core::default::Default::default())
+    #[pyo3(signature = (alias = None, constant = None))]
+    fn new(
+        alias: ::core::option::Option<::std::string::String>,
+        constant: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner = <super::policies::v1::FunctionArg as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = alias {
+            inner.value = ::core::option::Option::Some(
+                super::policies::v1::function_arg::Value::Alias(value),
+            );
+        }
+        if let ::core::option::Option::Some(value) = constant {
+            inner.value = ::core::option::Option::Some(
+                super::policies::v1::function_arg::Value::Constant(value),
+            );
+        }
+        Self(inner)
+    }
+    ///References a column via its `MatchColumn.alias`.
+    #[getter]
+    fn alias(&self) -> ::core::option::Option<::std::string::String> {
+        match &self.0.value {
+            ::core::option::Option::Some(super::policies::v1::function_arg::Value::Alias(
+                value,
+            )) => ::core::option::Option::Some(::core::clone::Clone::clone(value)),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///A literal constant value, passed as-is to the function.
+    #[getter]
+    fn constant(&self) -> ::core::option::Option<::std::string::String> {
+        match &self.0.value {
+            ::core::option::Option::Some(super::policies::v1::function_arg::Value::Constant(
+                value,
+            )) => ::core::option::Option::Some(::core::clone::Clone::clone(value)),
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[setter(alias)]
+    fn set_alias(&mut self, value: ::core::option::Option<::std::string::String>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.value = ::core::option::Option::Some(
+                    super::policies::v1::function_arg::Value::Alias(value),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.value,
+                    ::core::option::Option::Some(super::policies::v1::function_arg::Value::Alias(
+                        _
+                    ))
+                ) {
+                    self.0.value = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(constant)]
+    fn set_constant(&mut self, value: ::core::option::Option<::std::string::String>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.value = ::core::option::Option::Some(
+                    super::policies::v1::function_arg::Value::Constant(value),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.value,
+                    ::core::option::Option::Some(
+                        super::policies::v1::function_arg::Value::Constant(_)
+                    )
+                ) {
+                    self.0.value = ::core::option::Option::None;
+                }
+            }
+        }
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -8164,10 +8775,11 @@ pub struct PyFunctionRef(pub super::policies::v1::FunctionRef);
 #[::pyo3::pymethods]
 impl PyFunctionRef {
     #[new]
-    #[pyo3(signature = (function_name = None, using = None))]
+    #[pyo3(signature = (function_name = None, using = None, on_column = None))]
     fn new(
         function_name: ::core::option::Option<::std::string::String>,
         using: ::core::option::Option<::std::vec::Vec<PyFunctionArg>>,
+        on_column: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner = <super::policies::v1::FunctionRef as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = function_name {
@@ -8175,6 +8787,10 @@ impl PyFunctionRef {
         }
         if let ::core::option::Option::Some(value) = using {
             inner.using = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = on_column;
+            inner.on_column = value;
         }
         Self(inner)
     }
@@ -8191,6 +8807,10 @@ impl PyFunctionRef {
             .map(PyFunctionArg::from)
             .collect()
     }
+    #[getter]
+    fn on_column(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.on_column.clone()
+    }
     #[setter(function_name)]
     fn set_function_name(&mut self, value: ::std::string::String) {
         self.0.function_name = value;
@@ -8198,6 +8818,10 @@ impl PyFunctionRef {
     #[setter(using)]
     fn set_using(&mut self, value: ::std::vec::Vec<PyFunctionArg>) {
         self.0.using = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(on_column)]
+    fn set_on_column(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.on_column = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -8461,7 +9085,8 @@ impl PyMatchColumn {
         condition: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner = <super::policies::v1::MatchColumn as ::core::default::Default>::default();
-        if let ::core::option::Option::Some(value) = alias {
+        {
+            let value = alias;
             inner.alias = value;
         }
         if let ::core::option::Option::Some(value) = condition {
@@ -8470,7 +9095,7 @@ impl PyMatchColumn {
         Self(inner)
     }
     #[getter]
-    fn alias(&self) -> ::std::string::String {
+    fn alias(&self) -> ::core::option::Option<::std::string::String> {
         self.0.alias.clone()
     }
     #[getter]
@@ -8478,7 +9103,7 @@ impl PyMatchColumn {
         self.0.condition.clone()
     }
     #[setter(alias)]
-    fn set_alias(&mut self, value: ::std::string::String) {
+    fn set_alias(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.alias = value;
     }
     #[setter(condition)]
@@ -8522,7 +9147,14 @@ impl PyPolicyInfo {
             match_columns = None,
             comment = None,
             created_at = None,
-            updated_at = None
+            updated_at = None,
+            created_by = None,
+            updated_by = None,
+            for_securable_type = None,
+            row_filter = None,
+            column_mask = None,
+            deny = None,
+            grant = None
         )
     )]
     fn new(
@@ -8538,6 +9170,13 @@ impl PyPolicyInfo {
         comment: ::core::option::Option<::std::string::String>,
         created_at: ::core::option::Option<i64>,
         updated_at: ::core::option::Option<i64>,
+        created_by: ::core::option::Option<::std::string::String>,
+        updated_by: ::core::option::Option<::std::string::String>,
+        for_securable_type: ::core::option::Option<::std::string::String>,
+        row_filter: ::core::option::Option<PyFunctionRef>,
+        column_mask: ::core::option::Option<PyFunctionRef>,
+        deny: ::core::option::Option<PyPrivilegeOptions>,
+        grant: ::core::option::Option<PyPrivilegeOptions>,
     ) -> Self {
         let mut inner = <super::policies::v1::PolicyInfo as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
@@ -8582,6 +9221,43 @@ impl PyPolicyInfo {
         {
             let value = updated_at;
             inner.updated_at = value;
+        }
+        {
+            let value = created_by;
+            inner.created_by = value;
+        }
+        {
+            let value = updated_by;
+            inner.updated_by = value;
+        }
+        {
+            let value = for_securable_type;
+            inner.for_securable_type = value;
+        }
+        if let ::core::option::Option::Some(value) = row_filter {
+            inner.options =
+                ::core::option::Option::Some(super::policies::v1::policy_info::Options::RowFilter(
+                    ::std::boxed::Box::new(value.into()),
+                ));
+        }
+        if let ::core::option::Option::Some(value) = column_mask {
+            inner.options = ::core::option::Option::Some(
+                super::policies::v1::policy_info::Options::ColumnMask(::std::boxed::Box::new(
+                    value.into(),
+                )),
+            );
+        }
+        if let ::core::option::Option::Some(value) = deny {
+            inner.options =
+                ::core::option::Option::Some(super::policies::v1::policy_info::Options::Deny(
+                    ::std::boxed::Box::new(value.into()),
+                ));
+        }
+        if let ::core::option::Option::Some(value) = grant {
+            inner.options =
+                ::core::option::Option::Some(super::policies::v1::policy_info::Options::Grant(
+                    ::std::boxed::Box::new(value.into()),
+                ));
         }
         Self(inner)
     }
@@ -8638,6 +9314,18 @@ impl PyPolicyInfo {
     fn updated_at(&self) -> ::core::option::Option<i64> {
         self.0.updated_at
     }
+    #[getter]
+    fn created_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.created_by.clone()
+    }
+    #[getter]
+    fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.updated_by.clone()
+    }
+    #[getter]
+    fn for_securable_type(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.for_securable_type.clone()
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
@@ -8689,6 +9377,144 @@ impl PyPolicyInfo {
     fn set_updated_at(&mut self, value: ::core::option::Option<i64>) {
         self.0.updated_at = value;
     }
+    #[setter(created_by)]
+    fn set_created_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.created_by = value;
+    }
+    #[setter(updated_by)]
+    fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.updated_by = value;
+    }
+    #[setter(for_securable_type)]
+    fn set_for_securable_type(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.for_securable_type = value;
+    }
+    ///The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+    #[getter]
+    fn row_filter(&self) -> ::core::option::Option<PyFunctionRef> {
+        match &self.0.options {
+            ::core::option::Option::Some(super::policies::v1::policy_info::Options::RowFilter(
+                value,
+            )) => ::core::option::Option::Some(<PyFunctionRef>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+    #[getter]
+    fn column_mask(&self) -> ::core::option::Option<PyFunctionRef> {
+        match &self.0.options {
+            ::core::option::Option::Some(
+                super::policies::v1::policy_info::Options::ColumnMask(value),
+            ) => ::core::option::Option::Some(<PyFunctionRef>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+    #[getter]
+    fn deny(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        match &self.0.options {
+            ::core::option::Option::Some(super::policies::v1::policy_info::Options::Deny(
+                value,
+            )) => ::core::option::Option::Some(<PyPrivilegeOptions>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+    #[getter]
+    fn grant(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        match &self.0.options {
+            ::core::option::Option::Some(super::policies::v1::policy_info::Options::Grant(
+                value,
+            )) => ::core::option::Option::Some(<PyPrivilegeOptions>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[setter(row_filter)]
+    fn set_row_filter(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.options = ::core::option::Option::Some(
+                    super::policies::v1::policy_info::Options::RowFilter(::std::boxed::Box::new(
+                        value.into(),
+                    )),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.options,
+                    ::core::option::Option::Some(
+                        super::policies::v1::policy_info::Options::RowFilter(_)
+                    )
+                ) {
+                    self.0.options = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(column_mask)]
+    fn set_column_mask(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.options = ::core::option::Option::Some(
+                    super::policies::v1::policy_info::Options::ColumnMask(::std::boxed::Box::new(
+                        value.into(),
+                    )),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.options,
+                    ::core::option::Option::Some(
+                        super::policies::v1::policy_info::Options::ColumnMask(_)
+                    )
+                ) {
+                    self.0.options = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(deny)]
+    fn set_deny(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.options =
+                    ::core::option::Option::Some(super::policies::v1::policy_info::Options::Deny(
+                        ::std::boxed::Box::new(value.into()),
+                    ));
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.options,
+                    ::core::option::Option::Some(super::policies::v1::policy_info::Options::Deny(
+                        _
+                    ))
+                ) {
+                    self.0.options = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(grant)]
+    fn set_grant(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.options =
+                    ::core::option::Option::Some(super::policies::v1::policy_info::Options::Grant(
+                        ::std::boxed::Box::new(value.into()),
+                    ));
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.options,
+                    ::core::option::Option::Some(super::policies::v1::policy_info::Options::Grant(
+                        _
+                    ))
+                ) {
+                    self.0.options = ::core::option::Option::None;
+                }
+            }
+        }
+    }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
     }
@@ -8706,6 +9532,47 @@ impl ::core::convert::From<PyPolicyInfo> for super::policies::v1::PolicyInfo {
         value.0
     }
 }
+#[::pyo3::pyclass(name = "PrivilegeOptions", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyPrivilegeOptions(pub super::policies::v1::PrivilegeOptions);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyPrivilegeOptions {
+    #[new]
+    #[pyo3(signature = (privileges = None))]
+    fn new(privileges: ::core::option::Option<::std::vec::Vec<::std::string::String>>) -> Self {
+        let mut inner =
+            <super::policies::v1::PrivilegeOptions as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = privileges {
+            inner.privileges = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn privileges(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.privileges.clone()
+    }
+    #[setter(privileges)]
+    fn set_privileges(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.privileges = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::PrivilegeOptions> for PyPrivilegeOptions {
+    fn from(value: super::policies::v1::PrivilegeOptions) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyPrivilegeOptions> for super::policies::v1::PrivilegeOptions {
+    fn from(value: PyPrivilegeOptions) -> Self {
+        value.0
+    }
+}
 #[::pyo3::pyclass(name = "UpdatePolicyRequest", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyUpdatePolicyRequest(pub super::policies::v1::UpdatePolicyRequest);
@@ -8718,7 +9585,17 @@ impl PyUpdatePolicyRequest {
             on_securable_type = None,
             on_securable_fullname = None,
             name = None,
-            policy_info = None,
+            policy_type = None,
+            comment = None,
+            to_principals = None,
+            except_principals = None,
+            for_securable_type = None,
+            when_condition = None,
+            match_columns = None,
+            row_filter = None,
+            column_mask = None,
+            deny = None,
+            grant = None,
             update_mask = None
         )
     )]
@@ -8726,7 +9603,17 @@ impl PyUpdatePolicyRequest {
         on_securable_type: ::core::option::Option<::std::string::String>,
         on_securable_fullname: ::core::option::Option<::std::string::String>,
         name: ::core::option::Option<::std::string::String>,
-        policy_info: ::core::option::Option<PyPolicyInfo>,
+        policy_type: ::core::option::Option<PyPolicyType>,
+        comment: ::core::option::Option<::std::string::String>,
+        to_principals: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        except_principals: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        for_securable_type: ::core::option::Option<::std::string::String>,
+        when_condition: ::core::option::Option<::std::string::String>,
+        match_columns: ::core::option::Option<::std::vec::Vec<PyMatchColumn>>,
+        row_filter: ::core::option::Option<PyFunctionRef>,
+        column_mask: ::core::option::Option<PyFunctionRef>,
+        deny: ::core::option::Option<PyPrivilegeOptions>,
+        grant: ::core::option::Option<PyPrivilegeOptions>,
         update_mask: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner =
@@ -8741,8 +9628,55 @@ impl PyUpdatePolicyRequest {
             inner.name = value;
         }
         {
-            let value = policy_info;
-            inner.policy_info = value
+            let value = policy_type;
+            inner.policy_type = value.map(|e| {
+                ::buffa::EnumValue::Known(
+                    <super::policies::v1::PolicyType as ::core::convert::From<_>>::from(e),
+                )
+            });
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        if let ::core::option::Option::Some(value) = to_principals {
+            inner.to_principals = value;
+        }
+        if let ::core::option::Option::Some(value) = except_principals {
+            inner.except_principals = value;
+        }
+        {
+            let value = for_securable_type;
+            inner.for_securable_type = value;
+        }
+        {
+            let value = when_condition;
+            inner.when_condition = value;
+        }
+        if let ::core::option::Option::Some(value) = match_columns {
+            inner.match_columns = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = row_filter;
+            inner.row_filter = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = column_mask;
+            inner.column_mask = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = deny;
+            inner.deny = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = grant;
+            inner.grant = value
                 .map(|w| ::buffa::MessageField::some(w.into()))
                 .unwrap_or_default();
         }
@@ -8765,12 +9699,73 @@ impl PyUpdatePolicyRequest {
         self.0.name.clone()
     }
     #[getter]
-    fn policy_info(&self) -> ::core::option::Option<PyPolicyInfo> {
+    fn policy_type(&self) -> ::core::option::Option<PyPolicyType> {
         self.0
-            .policy_info
+            .policy_type
+            .as_ref()
+            .and_then(|e| e.as_known())
+            .map(PyPolicyType::from)
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn to_principals(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.to_principals.clone()
+    }
+    #[getter]
+    fn except_principals(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.except_principals.clone()
+    }
+    #[getter]
+    fn for_securable_type(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.for_securable_type.clone()
+    }
+    #[getter]
+    fn when_condition(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.when_condition.clone()
+    }
+    #[getter]
+    fn match_columns(&self) -> ::std::vec::Vec<PyMatchColumn> {
+        self.0
+            .match_columns
+            .iter()
+            .cloned()
+            .map(PyMatchColumn::from)
+            .collect()
+    }
+    #[getter]
+    fn row_filter(&self) -> ::core::option::Option<PyFunctionRef> {
+        self.0
+            .row_filter
             .clone()
             .into_option()
-            .map(PyPolicyInfo::from)
+            .map(PyFunctionRef::from)
+    }
+    #[getter]
+    fn column_mask(&self) -> ::core::option::Option<PyFunctionRef> {
+        self.0
+            .column_mask
+            .clone()
+            .into_option()
+            .map(PyFunctionRef::from)
+    }
+    #[getter]
+    fn deny(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        self.0
+            .deny
+            .clone()
+            .into_option()
+            .map(PyPrivilegeOptions::from)
+    }
+    #[getter]
+    fn grant(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        self.0
+            .grant
+            .clone()
+            .into_option()
+            .map(PyPrivilegeOptions::from)
     }
     #[getter]
     fn update_mask(&self) -> ::core::option::Option<::std::string::String> {
@@ -8788,9 +9783,59 @@ impl PyUpdatePolicyRequest {
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
     }
-    #[setter(policy_info)]
-    fn set_policy_info(&mut self, value: ::core::option::Option<PyPolicyInfo>) {
-        self.0.policy_info = value
+    #[setter(policy_type)]
+    fn set_policy_type(&mut self, value: ::core::option::Option<PyPolicyType>) {
+        self.0.policy_type = value.map(|e| {
+            ::buffa::EnumValue::Known(<super::policies::v1::PolicyType as ::core::convert::From<
+                _,
+            >>::from(e))
+        });
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(to_principals)]
+    fn set_to_principals(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.to_principals = value;
+    }
+    #[setter(except_principals)]
+    fn set_except_principals(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.except_principals = value;
+    }
+    #[setter(for_securable_type)]
+    fn set_for_securable_type(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.for_securable_type = value;
+    }
+    #[setter(when_condition)]
+    fn set_when_condition(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.when_condition = value;
+    }
+    #[setter(match_columns)]
+    fn set_match_columns(&mut self, value: ::std::vec::Vec<PyMatchColumn>) {
+        self.0.match_columns = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(row_filter)]
+    fn set_row_filter(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        self.0.row_filter = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(column_mask)]
+    fn set_column_mask(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        self.0.column_mask = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(deny)]
+    fn set_deny(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        self.0.deny = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(grant)]
+    fn set_grant(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        self.0.grant = value
             .map(|w| ::buffa::MessageField::some(w.into()))
             .unwrap_or_default();
     }
@@ -9502,7 +10547,7 @@ impl PyCreateRecipientRequest {
             authentication_type = None,
             owner = None,
             comment = None,
-            properties = None,
+            properties_kvpairs = None,
             expiration_time = None
         )
     )]
@@ -9511,9 +10556,7 @@ impl PyCreateRecipientRequest {
         authentication_type: ::core::option::Option<PyAuthenticationType>,
         owner: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
-        properties: ::core::option::Option<
-            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-        >,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
         expiration_time: ::core::option::Option<i64>,
     ) -> Self {
         let mut inner =
@@ -9535,8 +10578,11 @@ impl PyCreateRecipientRequest {
             let value = comment;
             inner.comment = value;
         }
-        if let ::core::option::Option::Some(value) = properties {
-            inner.properties = value;
+        {
+            let value = properties_kvpairs;
+            inner.properties_kvpairs = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = expiration_time;
@@ -9561,10 +10607,12 @@ impl PyCreateRecipientRequest {
         self.0.comment.clone()
     }
     #[getter]
-    fn properties(
-        &self,
-    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
-        self.0.properties.clone()
+    fn properties_kvpairs(&self) -> ::core::option::Option<PySecurablePropertiesKvPairs> {
+        self.0
+            .properties_kvpairs
+            .clone()
+            .into_option()
+            .map(PySecurablePropertiesKvPairs::from)
     }
     #[getter]
     fn expiration_time(&self) -> ::core::option::Option<i64> {
@@ -9588,12 +10636,14 @@ impl PyCreateRecipientRequest {
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
     }
-    #[setter(properties)]
-    fn set_properties(
+    #[setter(properties_kvpairs)]
+    fn set_properties_kvpairs(
         &mut self,
-        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        value: ::core::option::Option<PySecurablePropertiesKvPairs>,
     ) {
-        self.0.properties = value;
+        self.0.properties_kvpairs = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(expiration_time)]
     fn set_expiration_time(&mut self, value: ::core::option::Option<i64>) {
@@ -9846,7 +10896,7 @@ impl PyRecipient {
             authentication_type = None,
             owner = None,
             comment = None,
-            properties = None,
+            properties_kvpairs = None,
             created_at = None,
             created_by = None,
             tokens = None,
@@ -9860,9 +10910,7 @@ impl PyRecipient {
         authentication_type: ::core::option::Option<PyAuthenticationType>,
         owner: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
-        properties: ::core::option::Option<
-            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-        >,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
         created_at: ::core::option::Option<i64>,
         created_by: ::core::option::Option<::std::string::String>,
         tokens: ::core::option::Option<::std::vec::Vec<PyRecipientToken>>,
@@ -9892,8 +10940,11 @@ impl PyRecipient {
             let value = comment;
             inner.comment = value;
         }
-        if let ::core::option::Option::Some(value) = properties {
-            inner.properties = value;
+        {
+            let value = properties_kvpairs;
+            inner.properties_kvpairs = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = created_at;
@@ -9937,10 +10988,12 @@ impl PyRecipient {
         self.0.comment.clone()
     }
     #[getter]
-    fn properties(
-        &self,
-    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
-        self.0.properties.clone()
+    fn properties_kvpairs(&self) -> ::core::option::Option<PySecurablePropertiesKvPairs> {
+        self.0
+            .properties_kvpairs
+            .clone()
+            .into_option()
+            .map(PySecurablePropertiesKvPairs::from)
     }
     #[getter]
     fn created_at(&self) -> ::core::option::Option<i64> {
@@ -9989,12 +11042,14 @@ impl PyRecipient {
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
     }
-    #[setter(properties)]
-    fn set_properties(
+    #[setter(properties_kvpairs)]
+    fn set_properties_kvpairs(
         &mut self,
-        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        value: ::core::option::Option<PySecurablePropertiesKvPairs>,
     ) {
-        self.0.properties = value;
+        self.0.properties_kvpairs = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(created_at)]
     fn set_created_at(&mut self, value: ::core::option::Option<i64>) {
@@ -10158,6 +11213,59 @@ impl ::core::convert::From<PyRecipientToken> for super::recipients::v1::Recipien
         value.0
     }
 }
+#[::pyo3::pyclass(name = "SecurablePropertiesKvPairs", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PySecurablePropertiesKvPairs(pub super::recipients::v1::SecurablePropertiesKvPairs);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PySecurablePropertiesKvPairs {
+    #[new]
+    #[pyo3(signature = (properties = None))]
+    fn new(
+        properties: ::core::option::Option<
+            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        >,
+    ) -> Self {
+        let mut inner = <super::recipients::v1::SecurablePropertiesKvPairs as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = properties {
+            inner.properties = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn properties(
+        &self,
+    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
+        self.0.properties.clone()
+    }
+    #[setter(properties)]
+    fn set_properties(
+        &mut self,
+        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+    ) {
+        self.0.properties = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::SecurablePropertiesKvPairs>
+    for PySecurablePropertiesKvPairs
+{
+    fn from(value: super::recipients::v1::SecurablePropertiesKvPairs) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PySecurablePropertiesKvPairs>
+    for super::recipients::v1::SecurablePropertiesKvPairs
+{
+    fn from(value: PySecurablePropertiesKvPairs) -> Self {
+        value.0
+    }
+}
 #[::pyo3::pyclass(name = "UpdateRecipientRequest", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyUpdateRecipientRequest(pub super::recipients::v1::UpdateRecipientRequest);
@@ -10171,7 +11279,7 @@ impl PyUpdateRecipientRequest {
             new_name = None,
             owner = None,
             comment = None,
-            properties = None,
+            properties_kvpairs = None,
             expiration_time = None
         )
     )]
@@ -10180,9 +11288,7 @@ impl PyUpdateRecipientRequest {
         new_name: ::core::option::Option<::std::string::String>,
         owner: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
-        properties: ::core::option::Option<
-            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-        >,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
         expiration_time: ::core::option::Option<i64>,
     ) -> Self {
         let mut inner =
@@ -10202,8 +11308,11 @@ impl PyUpdateRecipientRequest {
             let value = comment;
             inner.comment = value;
         }
-        if let ::core::option::Option::Some(value) = properties {
-            inner.properties = value;
+        {
+            let value = properties_kvpairs;
+            inner.properties_kvpairs = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
             let value = expiration_time;
@@ -10228,10 +11337,12 @@ impl PyUpdateRecipientRequest {
         self.0.comment.clone()
     }
     #[getter]
-    fn properties(
-        &self,
-    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
-        self.0.properties.clone()
+    fn properties_kvpairs(&self) -> ::core::option::Option<PySecurablePropertiesKvPairs> {
+        self.0
+            .properties_kvpairs
+            .clone()
+            .into_option()
+            .map(PySecurablePropertiesKvPairs::from)
     }
     #[getter]
     fn expiration_time(&self) -> ::core::option::Option<i64> {
@@ -10253,12 +11364,14 @@ impl PyUpdateRecipientRequest {
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
     }
-    #[setter(properties)]
-    fn set_properties(
+    #[setter(properties_kvpairs)]
+    fn set_properties_kvpairs(
         &mut self,
-        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        value: ::core::option::Option<PySecurablePropertiesKvPairs>,
     ) {
-        self.0.properties = value;
+        self.0.properties_kvpairs = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(expiration_time)]
     fn set_expiration_time(&mut self, value: ::core::option::Option<i64>) {
@@ -11158,12 +12271,19 @@ pub struct PyGetSchemaRequest(pub super::schemas::v1::GetSchemaRequest);
 #[::pyo3::pymethods]
 impl PyGetSchemaRequest {
     #[new]
-    #[pyo3(signature = (full_name = None))]
-    fn new(full_name: ::core::option::Option<::std::string::String>) -> Self {
+    #[pyo3(signature = (full_name = None, include_browse = None))]
+    fn new(
+        full_name: ::core::option::Option<::std::string::String>,
+        include_browse: ::core::option::Option<bool>,
+    ) -> Self {
         let mut inner =
             <super::schemas::v1::GetSchemaRequest as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = full_name {
             inner.full_name = value;
+        }
+        {
+            let value = include_browse;
+            inner.include_browse = value;
         }
         Self(inner)
     }
@@ -11171,9 +12291,17 @@ impl PyGetSchemaRequest {
     fn full_name(&self) -> ::std::string::String {
         self.0.full_name.clone()
     }
+    #[getter]
+    fn include_browse(&self) -> ::core::option::Option<bool> {
+        self.0.include_browse
+    }
     #[setter(full_name)]
     fn set_full_name(&mut self, value: ::std::string::String) {
         self.0.full_name = value;
+    }
+    #[setter(include_browse)]
+    fn set_include_browse(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_browse = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -11358,7 +12486,8 @@ impl PySchema {
             updated_by = None,
             schema_id = None,
             storage_root = None,
-            storage_location = None
+            storage_location = None,
+            browse_only = None
         )
     )]
     fn new(
@@ -11377,6 +12506,7 @@ impl PySchema {
         schema_id: ::core::option::Option<::std::string::String>,
         storage_root: ::core::option::Option<::std::string::String>,
         storage_location: ::core::option::Option<::std::string::String>,
+        browse_only: ::core::option::Option<bool>,
     ) -> Self {
         let mut inner = <super::schemas::v1::Schema as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
@@ -11426,6 +12556,10 @@ impl PySchema {
         {
             let value = storage_location;
             inner.storage_location = value;
+        }
+        {
+            let value = browse_only;
+            inner.browse_only = value;
         }
         Self(inner)
     }
@@ -11483,6 +12617,10 @@ impl PySchema {
     fn storage_location(&self) -> ::core::option::Option<::std::string::String> {
         self.0.storage_location.clone()
     }
+    #[getter]
+    fn browse_only(&self) -> ::core::option::Option<bool> {
+        self.0.browse_only
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
@@ -11537,6 +12675,10 @@ impl PySchema {
     #[setter(storage_location)]
     fn set_storage_location(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.storage_location = value;
+    }
+    #[setter(browse_only)]
+    fn set_browse_only(&mut self, value: ::core::option::Option<bool>) {
+        self.0.browse_only = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -11657,10 +12799,11 @@ pub struct PyCreateShareRequest(pub super::shares::v1::CreateShareRequest);
 #[::pyo3::pymethods]
 impl PyCreateShareRequest {
     #[new]
-    #[pyo3(signature = (name = None, comment = None))]
+    #[pyo3(signature = (name = None, comment = None, storage_root = None))]
     fn new(
         name: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
+        storage_root: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner =
             <super::shares::v1::CreateShareRequest as ::core::default::Default>::default();
@@ -11670,6 +12813,10 @@ impl PyCreateShareRequest {
         {
             let value = comment;
             inner.comment = value;
+        }
+        {
+            let value = storage_root;
+            inner.storage_root = value;
         }
         Self(inner)
     }
@@ -11681,6 +12828,10 @@ impl PyCreateShareRequest {
     fn comment(&self) -> ::core::option::Option<::std::string::String> {
         self.0.comment.clone()
     }
+    #[getter]
+    fn storage_root(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.storage_root.clone()
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
@@ -11688,6 +12839,10 @@ impl PyCreateShareRequest {
     #[setter(comment)]
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
+    }
+    #[setter(storage_root)]
+    fn set_storage_root(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.storage_root = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -11722,9 +12877,11 @@ impl PyDataObject {
             comment = None,
             shared_as = None,
             partitions = None,
-            enable_cdf = None,
+            cdf_enabled = None,
             history_data_sharing_status = None,
-            start_version = None
+            start_version = None,
+            string_shared_as = None,
+            status = None
         )
     )]
     fn new(
@@ -11734,10 +12891,12 @@ impl PyDataObject {
         added_by: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
         shared_as: ::core::option::Option<::std::string::String>,
-        partitions: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
-        enable_cdf: ::core::option::Option<bool>,
+        partitions: ::core::option::Option<::std::vec::Vec<PyPartition>>,
+        cdf_enabled: ::core::option::Option<bool>,
         history_data_sharing_status: ::core::option::Option<PyHistoryStatus>,
         start_version: ::core::option::Option<i64>,
+        string_shared_as: ::core::option::Option<::std::string::String>,
+        status: ::core::option::Option<PyDataObjectStatus>,
     ) -> Self {
         let mut inner = <super::shares::v1::DataObject as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
@@ -11765,11 +12924,11 @@ impl PyDataObject {
             inner.shared_as = value;
         }
         if let ::core::option::Option::Some(value) = partitions {
-            inner.partitions = value;
+            inner.partitions = value.into_iter().map(::core::convert::Into::into).collect();
         }
         {
-            let value = enable_cdf;
-            inner.enable_cdf = value;
+            let value = cdf_enabled;
+            inner.cdf_enabled = value;
         }
         {
             let value = history_data_sharing_status;
@@ -11782,6 +12941,18 @@ impl PyDataObject {
         {
             let value = start_version;
             inner.start_version = value;
+        }
+        {
+            let value = string_shared_as;
+            inner.string_shared_as = value;
+        }
+        {
+            let value = status;
+            inner.status = value.map(|e| {
+                ::buffa::EnumValue::Known(
+                    <super::shares::v1::DataObjectStatus as ::core::convert::From<_>>::from(e),
+                )
+            });
         }
         Self(inner)
     }
@@ -11810,12 +12981,17 @@ impl PyDataObject {
         self.0.shared_as.clone()
     }
     #[getter]
-    fn partitions(&self) -> ::std::vec::Vec<::std::string::String> {
-        self.0.partitions.clone()
+    fn partitions(&self) -> ::std::vec::Vec<PyPartition> {
+        self.0
+            .partitions
+            .iter()
+            .cloned()
+            .map(PyPartition::from)
+            .collect()
     }
     #[getter]
-    fn enable_cdf(&self) -> ::core::option::Option<bool> {
-        self.0.enable_cdf
+    fn cdf_enabled(&self) -> ::core::option::Option<bool> {
+        self.0.cdf_enabled
     }
     #[getter]
     fn history_data_sharing_status(&self) -> ::core::option::Option<PyHistoryStatus> {
@@ -11828,6 +13004,18 @@ impl PyDataObject {
     #[getter]
     fn start_version(&self) -> ::core::option::Option<i64> {
         self.0.start_version
+    }
+    #[getter]
+    fn string_shared_as(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.string_shared_as.clone()
+    }
+    #[getter]
+    fn status(&self) -> ::core::option::Option<PyDataObjectStatus> {
+        self.0
+            .status
+            .as_ref()
+            .and_then(|e| e.as_known())
+            .map(PyDataObjectStatus::from)
     }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
@@ -11856,12 +13044,12 @@ impl PyDataObject {
         self.0.shared_as = value;
     }
     #[setter(partitions)]
-    fn set_partitions(&mut self, value: ::std::vec::Vec<::std::string::String>) {
-        self.0.partitions = value;
+    fn set_partitions(&mut self, value: ::std::vec::Vec<PyPartition>) {
+        self.0.partitions = value.into_iter().map(::core::convert::Into::into).collect();
     }
-    #[setter(enable_cdf)]
-    fn set_enable_cdf(&mut self, value: ::core::option::Option<bool>) {
-        self.0.enable_cdf = value;
+    #[setter(cdf_enabled)]
+    fn set_cdf_enabled(&mut self, value: ::core::option::Option<bool>) {
+        self.0.cdf_enabled = value;
     }
     #[setter(history_data_sharing_status)]
     fn set_history_data_sharing_status(&mut self, value: ::core::option::Option<PyHistoryStatus>) {
@@ -11874,6 +13062,18 @@ impl PyDataObject {
     #[setter(start_version)]
     fn set_start_version(&mut self, value: ::core::option::Option<i64>) {
         self.0.start_version = value;
+    }
+    #[setter(string_shared_as)]
+    fn set_string_shared_as(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.string_shared_as = value;
+    }
+    #[setter(status)]
+    fn set_status(&mut self, value: ::core::option::Option<PyDataObjectStatus>) {
+        self.0.status = value.map(|e| {
+            ::buffa::EnumValue::Known(
+                <super::shares::v1::DataObjectStatus as ::core::convert::From<_>>::from(e),
+            )
+        });
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -12298,6 +13498,137 @@ impl ::core::convert::From<super::shares::v1::ListSharesResponse> for PyListShar
 }
 impl ::core::convert::From<PyListSharesResponse> for super::shares::v1::ListSharesResponse {
     fn from(value: PyListSharesResponse) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "Partition", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyPartition(pub super::shares::v1::Partition);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyPartition {
+    #[new]
+    #[pyo3(signature = (values = None))]
+    fn new(values: ::core::option::Option<::std::vec::Vec<PyPartitionValue>>) -> Self {
+        let mut inner = <super::shares::v1::Partition as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = values {
+            inner.values = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn values(&self) -> ::std::vec::Vec<PyPartitionValue> {
+        self.0
+            .values
+            .iter()
+            .cloned()
+            .map(PyPartitionValue::from)
+            .collect()
+    }
+    #[setter(values)]
+    fn set_values(&mut self, value: ::std::vec::Vec<PyPartitionValue>) {
+        self.0.values = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::Partition> for PyPartition {
+    fn from(value: super::shares::v1::Partition) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyPartition> for super::shares::v1::Partition {
+    fn from(value: PyPartition) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "PartitionValue", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyPartitionValue(pub super::shares::v1::PartitionValue);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyPartitionValue {
+    #[new]
+    #[pyo3(
+        signature = (name = None, value = None, recipient_property_key = None, op = None)
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        value: ::core::option::Option<::std::string::String>,
+        recipient_property_key: ::core::option::Option<::std::string::String>,
+        op: ::core::option::Option<PyPartitionValueOp>,
+    ) -> Self {
+        let mut inner = <super::shares::v1::PartitionValue as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        {
+            let value = value;
+            inner.value = value;
+        }
+        {
+            let value = recipient_property_key;
+            inner.recipient_property_key = value;
+        }
+        if let ::core::option::Option::Some(value) = op {
+            inner.op = ::buffa::EnumValue::Known(
+                <super::shares::v1::PartitionValueOp as ::core::convert::From<_>>::from(value),
+            );
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn value(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.value.clone()
+    }
+    #[getter]
+    fn recipient_property_key(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.recipient_property_key.clone()
+    }
+    #[getter]
+    fn op(&self) -> PyPartitionValueOp {
+        PyPartitionValueOp::from(self.0.op.as_known().unwrap_or_default())
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(value)]
+    fn set_value(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.value = value;
+    }
+    #[setter(recipient_property_key)]
+    fn set_recipient_property_key(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.recipient_property_key = value;
+    }
+    #[setter(op)]
+    fn set_op(&mut self, value: PyPartitionValueOp) {
+        self.0.op = ::buffa::EnumValue::Known(
+            <super::shares::v1::PartitionValueOp as ::core::convert::From<_>>::from(value),
+        );
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::PartitionValue> for PyPartitionValue {
+    fn from(value: super::shares::v1::PartitionValue) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyPartitionValue> for super::shares::v1::PartitionValue {
+    fn from(value: PyPartitionValue) -> Self {
         value.0
     }
 }
@@ -13513,8 +14844,86 @@ pub struct PyDependency(pub super::tables::v1::Dependency);
 #[::pyo3::pymethods]
 impl PyDependency {
     #[new]
-    fn new() -> Self {
-        Self(::core::default::Default::default())
+    #[pyo3(signature = (table = None, function = None))]
+    fn new(
+        table: ::core::option::Option<PyTableDependency>,
+        function: ::core::option::Option<PyFunctionDependency>,
+    ) -> Self {
+        let mut inner = <super::tables::v1::Dependency as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = table {
+            inner.dependency =
+                ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Table(
+                    ::std::boxed::Box::new(value.into()),
+                ));
+        }
+        if let ::core::option::Option::Some(value) = function {
+            inner.dependency =
+                ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Function(
+                    ::std::boxed::Box::new(value.into()),
+                ));
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn table(&self) -> ::core::option::Option<PyTableDependency> {
+        match &self.0.dependency {
+            ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Table(
+                value,
+            )) => ::core::option::Option::Some(<PyTableDependency>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[getter]
+    fn function(&self) -> ::core::option::Option<PyFunctionDependency> {
+        match &self.0.dependency {
+            ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Function(
+                value,
+            )) => ::core::option::Option::Some(<PyFunctionDependency>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[setter(table)]
+    fn set_table(&mut self, value: ::core::option::Option<PyTableDependency>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.dependency =
+                    ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Table(
+                        ::std::boxed::Box::new(value.into()),
+                    ));
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.dependency,
+                    ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Table(
+                        _
+                    ))
+                ) {
+                    self.0.dependency = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(function)]
+    fn set_function(&mut self, value: ::core::option::Option<PyFunctionDependency>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.dependency = ::core::option::Option::Some(
+                    super::tables::v1::dependency::Dependency::Function(::std::boxed::Box::new(
+                        value.into(),
+                    )),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.dependency,
+                    ::core::option::Option::Some(
+                        super::tables::v1::dependency::Dependency::Function(_)
+                    )
+                ) {
+                    self.0.dependency = ::core::option::Option::None;
+                }
+            }
+        }
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -14641,30 +16050,67 @@ pub struct PyCreateEntityTagAssignmentRequest(
 #[::pyo3::pymethods]
 impl PyCreateEntityTagAssignmentRequest {
     #[new]
-    #[pyo3(signature = (tag_assignment = None))]
-    fn new(tag_assignment: ::core::option::Option<PyEntityTagAssignment>) -> Self {
+    #[pyo3(
+        signature = (
+            entity_type = None,
+            entity_name = None,
+            tag_key = None,
+            tag_value = None
+        )
+    )]
+    fn new(
+        entity_type: ::core::option::Option<::std::string::String>,
+        entity_name: ::core::option::Option<::std::string::String>,
+        tag_key: ::core::option::Option<::std::string::String>,
+        tag_value: ::core::option::Option<::std::string::String>,
+    ) -> Self {
         let mut inner = <super::tags::v1::CreateEntityTagAssignmentRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = entity_type {
+            inner.entity_type = value;
+        }
+        if let ::core::option::Option::Some(value) = entity_name {
+            inner.entity_name = value;
+        }
+        if let ::core::option::Option::Some(value) = tag_key {
+            inner.tag_key = value;
+        }
         {
-            let value = tag_assignment;
-            inner.tag_assignment = value
-                .map(|w| ::buffa::MessageField::some(w.into()))
-                .unwrap_or_default();
+            let value = tag_value;
+            inner.tag_value = value;
         }
         Self(inner)
     }
     #[getter]
-    fn tag_assignment(&self) -> ::core::option::Option<PyEntityTagAssignment> {
-        self.0
-            .tag_assignment
-            .clone()
-            .into_option()
-            .map(PyEntityTagAssignment::from)
+    fn entity_type(&self) -> ::std::string::String {
+        self.0.entity_type.clone()
     }
-    #[setter(tag_assignment)]
-    fn set_tag_assignment(&mut self, value: ::core::option::Option<PyEntityTagAssignment>) {
-        self.0.tag_assignment = value
-            .map(|w| ::buffa::MessageField::some(w.into()))
-            .unwrap_or_default();
+    #[getter]
+    fn entity_name(&self) -> ::std::string::String {
+        self.0.entity_name.clone()
+    }
+    #[getter]
+    fn tag_key(&self) -> ::std::string::String {
+        self.0.tag_key.clone()
+    }
+    #[getter]
+    fn tag_value(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.tag_value.clone()
+    }
+    #[setter(entity_type)]
+    fn set_entity_type(&mut self, value: ::std::string::String) {
+        self.0.entity_type = value;
+    }
+    #[setter(entity_name)]
+    fn set_entity_name(&mut self, value: ::std::string::String) {
+        self.0.entity_name = value;
+    }
+    #[setter(tag_key)]
+    fn set_tag_key(&mut self, value: ::std::string::String) {
+        self.0.tag_key = value;
+    }
+    #[setter(tag_value)]
+    fn set_tag_value(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.tag_value = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -14694,31 +16140,49 @@ pub struct PyCreateTagPolicyRequest(pub super::tags::v1::CreateTagPolicyRequest)
 #[::pyo3::pymethods]
 impl PyCreateTagPolicyRequest {
     #[new]
-    #[pyo3(signature = (tag_policy = None))]
-    fn new(tag_policy: ::core::option::Option<PyTagPolicy>) -> Self {
+    #[pyo3(signature = (tag_key = None, description = None, values = None))]
+    fn new(
+        tag_key: ::core::option::Option<::std::string::String>,
+        description: ::core::option::Option<::std::string::String>,
+        values: ::core::option::Option<::std::vec::Vec<PyValue>>,
+    ) -> Self {
         let mut inner =
             <super::tags::v1::CreateTagPolicyRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = tag_key {
+            inner.tag_key = value;
+        }
         {
-            let value = tag_policy;
-            inner.tag_policy = value
-                .map(|w| ::buffa::MessageField::some(w.into()))
-                .unwrap_or_default();
+            let value = description;
+            inner.description = value;
+        }
+        if let ::core::option::Option::Some(value) = values {
+            inner.values = value.into_iter().map(::core::convert::Into::into).collect();
         }
         Self(inner)
     }
     #[getter]
-    fn tag_policy(&self) -> ::core::option::Option<PyTagPolicy> {
-        self.0
-            .tag_policy
-            .clone()
-            .into_option()
-            .map(PyTagPolicy::from)
+    fn tag_key(&self) -> ::std::string::String {
+        self.0.tag_key.clone()
     }
-    #[setter(tag_policy)]
-    fn set_tag_policy(&mut self, value: ::core::option::Option<PyTagPolicy>) {
-        self.0.tag_policy = value
-            .map(|w| ::buffa::MessageField::some(w.into()))
-            .unwrap_or_default();
+    #[getter]
+    fn description(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.description.clone()
+    }
+    #[getter]
+    fn values(&self) -> ::std::vec::Vec<PyValue> {
+        self.0.values.iter().cloned().map(PyValue::from).collect()
+    }
+    #[setter(tag_key)]
+    fn set_tag_key(&mut self, value: ::std::string::String) {
+        self.0.tag_key = value;
+    }
+    #[setter(description)]
+    fn set_description(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.description = value;
+    }
+    #[setter(values)]
+    fn set_values(&mut self, value: ::std::vec::Vec<PyValue>) {
+        self.0.values = value.into_iter().map(::core::convert::Into::into).collect();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -14862,7 +16326,9 @@ impl PyEntityTagAssignment {
             entity_type = None,
             entity_name = None,
             tag_key = None,
-            tag_value = None
+            tag_value = None,
+            updated_by = None,
+            source_type = None
         )
     )]
     fn new(
@@ -14870,6 +16336,8 @@ impl PyEntityTagAssignment {
         entity_name: ::core::option::Option<::std::string::String>,
         tag_key: ::core::option::Option<::std::string::String>,
         tag_value: ::core::option::Option<::std::string::String>,
+        updated_by: ::core::option::Option<::std::string::String>,
+        source_type: ::core::option::Option<PyTagAssignmentSourceType>,
     ) -> Self {
         let mut inner =
             <super::tags::v1::EntityTagAssignment as ::core::default::Default>::default();
@@ -14885,6 +16353,18 @@ impl PyEntityTagAssignment {
         {
             let value = tag_value;
             inner.tag_value = value;
+        }
+        {
+            let value = updated_by;
+            inner.updated_by = value;
+        }
+        {
+            let value = source_type;
+            inner.source_type = value.map(|e| {
+                ::buffa::EnumValue::Known(
+                    <super::tags::v1::TagAssignmentSourceType as ::core::convert::From<_>>::from(e),
+                )
+            });
         }
         Self(inner)
     }
@@ -14904,6 +16384,18 @@ impl PyEntityTagAssignment {
     fn tag_value(&self) -> ::core::option::Option<::std::string::String> {
         self.0.tag_value.clone()
     }
+    #[getter]
+    fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.updated_by.clone()
+    }
+    #[getter]
+    fn source_type(&self) -> ::core::option::Option<PyTagAssignmentSourceType> {
+        self.0
+            .source_type
+            .as_ref()
+            .and_then(|e| e.as_known())
+            .map(PyTagAssignmentSourceType::from)
+    }
     #[setter(entity_type)]
     fn set_entity_type(&mut self, value: ::std::string::String) {
         self.0.entity_type = value;
@@ -14919,6 +16411,18 @@ impl PyEntityTagAssignment {
     #[setter(tag_value)]
     fn set_tag_value(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.tag_value = value;
+    }
+    #[setter(updated_by)]
+    fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.updated_by = value;
+    }
+    #[setter(source_type)]
+    fn set_source_type(&mut self, value: ::core::option::Option<PyTagAssignmentSourceType>) {
+        self.0.source_type = value.map(|e| {
+            ::buffa::EnumValue::Known(
+                <super::tags::v1::TagAssignmentSourceType as ::core::convert::From<_>>::from(e),
+            )
+        });
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -15455,7 +16959,7 @@ impl PyUpdateEntityTagAssignmentRequest {
             entity_type = None,
             entity_name = None,
             tag_key = None,
-            tag_assignment = None,
+            tag_value = None,
             update_mask = None
         )
     )]
@@ -15463,7 +16967,7 @@ impl PyUpdateEntityTagAssignmentRequest {
         entity_type: ::core::option::Option<::std::string::String>,
         entity_name: ::core::option::Option<::std::string::String>,
         tag_key: ::core::option::Option<::std::string::String>,
-        tag_assignment: ::core::option::Option<PyEntityTagAssignment>,
+        tag_value: ::core::option::Option<::std::string::String>,
         update_mask: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner = <super::tags::v1::UpdateEntityTagAssignmentRequest as ::core::default::Default>::default();
@@ -15477,10 +16981,8 @@ impl PyUpdateEntityTagAssignmentRequest {
             inner.tag_key = value;
         }
         {
-            let value = tag_assignment;
-            inner.tag_assignment = value
-                .map(|w| ::buffa::MessageField::some(w.into()))
-                .unwrap_or_default();
+            let value = tag_value;
+            inner.tag_value = value;
         }
         {
             let value = update_mask;
@@ -15501,12 +17003,8 @@ impl PyUpdateEntityTagAssignmentRequest {
         self.0.tag_key.clone()
     }
     #[getter]
-    fn tag_assignment(&self) -> ::core::option::Option<PyEntityTagAssignment> {
-        self.0
-            .tag_assignment
-            .clone()
-            .into_option()
-            .map(PyEntityTagAssignment::from)
+    fn tag_value(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.tag_value.clone()
     }
     #[getter]
     fn update_mask(&self) -> ::core::option::Option<::std::string::String> {
@@ -15524,11 +17022,9 @@ impl PyUpdateEntityTagAssignmentRequest {
     fn set_tag_key(&mut self, value: ::std::string::String) {
         self.0.tag_key = value;
     }
-    #[setter(tag_assignment)]
-    fn set_tag_assignment(&mut self, value: ::core::option::Option<PyEntityTagAssignment>) {
-        self.0.tag_assignment = value
-            .map(|w| ::buffa::MessageField::some(w.into()))
-            .unwrap_or_default();
+    #[setter(tag_value)]
+    fn set_tag_value(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.tag_value = value;
     }
     #[setter(update_mask)]
     fn set_update_mask(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -15562,10 +17058,18 @@ pub struct PyUpdateTagPolicyRequest(pub super::tags::v1::UpdateTagPolicyRequest)
 #[::pyo3::pymethods]
 impl PyUpdateTagPolicyRequest {
     #[new]
-    #[pyo3(signature = (tag_key = None, tag_policy = None, update_mask = None))]
+    #[pyo3(
+        signature = (
+            tag_key = None,
+            description = None,
+            values = None,
+            update_mask = None
+        )
+    )]
     fn new(
         tag_key: ::core::option::Option<::std::string::String>,
-        tag_policy: ::core::option::Option<PyTagPolicy>,
+        description: ::core::option::Option<::std::string::String>,
+        values: ::core::option::Option<::std::vec::Vec<PyValue>>,
         update_mask: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner =
@@ -15574,10 +17078,11 @@ impl PyUpdateTagPolicyRequest {
             inner.tag_key = value;
         }
         {
-            let value = tag_policy;
-            inner.tag_policy = value
-                .map(|w| ::buffa::MessageField::some(w.into()))
-                .unwrap_or_default();
+            let value = description;
+            inner.description = value;
+        }
+        if let ::core::option::Option::Some(value) = values {
+            inner.values = value.into_iter().map(::core::convert::Into::into).collect();
         }
         {
             let value = update_mask;
@@ -15590,12 +17095,12 @@ impl PyUpdateTagPolicyRequest {
         self.0.tag_key.clone()
     }
     #[getter]
-    fn tag_policy(&self) -> ::core::option::Option<PyTagPolicy> {
-        self.0
-            .tag_policy
-            .clone()
-            .into_option()
-            .map(PyTagPolicy::from)
+    fn description(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.description.clone()
+    }
+    #[getter]
+    fn values(&self) -> ::std::vec::Vec<PyValue> {
+        self.0.values.iter().cloned().map(PyValue::from).collect()
     }
     #[getter]
     fn update_mask(&self) -> ::core::option::Option<::std::string::String> {
@@ -15605,11 +17110,13 @@ impl PyUpdateTagPolicyRequest {
     fn set_tag_key(&mut self, value: ::std::string::String) {
         self.0.tag_key = value;
     }
-    #[setter(tag_policy)]
-    fn set_tag_policy(&mut self, value: ::core::option::Option<PyTagPolicy>) {
-        self.0.tag_policy = value
-            .map(|w| ::buffa::MessageField::some(w.into()))
-            .unwrap_or_default();
+    #[setter(description)]
+    fn set_description(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.description = value;
+    }
+    #[setter(values)]
+    fn set_values(&mut self, value: ::std::vec::Vec<PyValue>) {
+        self.0.values = value.into_iter().map(::core::convert::Into::into).collect();
     }
     #[setter(update_mask)]
     fn set_update_mask(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -16328,10 +17835,25 @@ pub struct PyTemporaryCredential(pub super::temporary_credentials::v1::Temporary
 #[::pyo3::pymethods]
 impl PyTemporaryCredential {
     #[new]
-    #[pyo3(signature = (expiration_time = None, url = None))]
+    #[pyo3(
+        signature = (
+            expiration_time = None,
+            url = None,
+            azure_user_delegation_sas = None,
+            azure_aad = None,
+            aws_temp_credentials = None,
+            gcp_oauth_token = None,
+            r2_temp_credentials = None
+        )
+    )]
     fn new(
         expiration_time: ::core::option::Option<i64>,
         url: ::core::option::Option<::std::string::String>,
+        azure_user_delegation_sas: ::core::option::Option<PyAzureUserDelegationSas>,
+        azure_aad: ::core::option::Option<PyAzureAad>,
+        aws_temp_credentials: ::core::option::Option<PyAwsTemporaryCredentials>,
+        gcp_oauth_token: ::core::option::Option<PyGcpOauthToken>,
+        r2_temp_credentials: ::core::option::Option<PyR2TemporaryCredentials>,
     ) -> Self {
         let mut inner = <super::temporary_credentials::v1::TemporaryCredential as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = expiration_time {
@@ -16339,6 +17861,41 @@ impl PyTemporaryCredential {
         }
         if let ::core::option::Option::Some(value) = url {
             inner.url = value;
+        }
+        if let ::core::option::Option::Some(value) = azure_user_delegation_sas {
+            inner.credentials = ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AzureUserDelegationSas(
+                    ::std::boxed::Box::new(value.into()),
+                ),
+            );
+        }
+        if let ::core::option::Option::Some(value) = azure_aad {
+            inner.credentials = ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AzureAad(
+                    ::std::boxed::Box::new(value.into()),
+                ),
+            );
+        }
+        if let ::core::option::Option::Some(value) = aws_temp_credentials {
+            inner.credentials = ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AwsTempCredentials(
+                    ::std::boxed::Box::new(value.into()),
+                ),
+            );
+        }
+        if let ::core::option::Option::Some(value) = gcp_oauth_token {
+            inner.credentials = ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::GcpOauthToken(
+                    ::std::boxed::Box::new(value.into()),
+                ),
+            );
+        }
+        if let ::core::option::Option::Some(value) = r2_temp_credentials {
+            inner.credentials = ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::R2TempCredentials(
+                    ::std::boxed::Box::new(value.into()),
+                ),
+            );
         }
         Self(inner)
     }
@@ -16357,6 +17914,184 @@ impl PyTemporaryCredential {
     #[setter(url)]
     fn set_url(&mut self, value: ::std::string::String) {
         self.0.url = value;
+    }
+    ///Credentials for Azure Blob Storage.
+    #[getter]
+    fn azure_user_delegation_sas(&self) -> ::core::option::Option<PyAzureUserDelegationSas> {
+        match &self.0.credentials {
+            ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AzureUserDelegationSas(
+                    value,
+                ),
+            ) => {
+                ::core::option::Option::Some(
+                    <PyAzureUserDelegationSas>::from((**value).clone()),
+                )
+            }
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///Credentials for Azure Active Directory.
+    #[getter]
+    fn azure_aad(&self) -> ::core::option::Option<PyAzureAad> {
+        match &self.0.credentials {
+            ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AzureAad(
+                    value,
+                ),
+            ) => ::core::option::Option::Some(<PyAzureAad>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///Credentials for AWS S3.
+    #[getter]
+    fn aws_temp_credentials(&self) -> ::core::option::Option<PyAwsTemporaryCredentials> {
+        match &self.0.credentials {
+            ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AwsTempCredentials(
+                    value,
+                ),
+            ) => {
+                ::core::option::Option::Some(
+                    <PyAwsTemporaryCredentials>::from((**value).clone()),
+                )
+            }
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///Credentials for Google Cloud Storage.
+    #[getter]
+    fn gcp_oauth_token(&self) -> ::core::option::Option<PyGcpOauthToken> {
+        match &self.0.credentials {
+            ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::GcpOauthToken(
+                    value,
+                ),
+            ) => ::core::option::Option::Some(<PyGcpOauthToken>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///Credentials for R2.
+    #[getter]
+    fn r2_temp_credentials(&self) -> ::core::option::Option<PyR2TemporaryCredentials> {
+        match &self.0.credentials {
+            ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::R2TempCredentials(
+                    value,
+                ),
+            ) => {
+                ::core::option::Option::Some(
+                    <PyR2TemporaryCredentials>::from((**value).clone()),
+                )
+            }
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[setter(azure_user_delegation_sas)]
+    fn set_azure_user_delegation_sas(
+        &mut self,
+        value: ::core::option::Option<PyAzureUserDelegationSas>,
+    ) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credentials = ::core::option::Option::Some(
+                    super::temporary_credentials::v1::temporary_credential::Credentials::AzureUserDelegationSas(
+                        ::std::boxed::Box::new(value.into()),
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credentials,
+                    ::core::option::Option::Some(super::temporary_credentials::v1::temporary_credential::Credentials::AzureUserDelegationSas(_))
+                ) {
+                    self.0.credentials = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(azure_aad)]
+    fn set_azure_aad(&mut self, value: ::core::option::Option<PyAzureAad>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credentials = ::core::option::Option::Some(
+                    super::temporary_credentials::v1::temporary_credential::Credentials::AzureAad(
+                        ::std::boxed::Box::new(value.into()),
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credentials,
+                    ::core::option::Option::Some(super::temporary_credentials::v1::temporary_credential::Credentials::AzureAad(_))
+                ) {
+                    self.0.credentials = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(aws_temp_credentials)]
+    fn set_aws_temp_credentials(
+        &mut self,
+        value: ::core::option::Option<PyAwsTemporaryCredentials>,
+    ) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credentials = ::core::option::Option::Some(
+                    super::temporary_credentials::v1::temporary_credential::Credentials::AwsTempCredentials(
+                        ::std::boxed::Box::new(value.into()),
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credentials,
+                    ::core::option::Option::Some(super::temporary_credentials::v1::temporary_credential::Credentials::AwsTempCredentials(_))
+                ) {
+                    self.0.credentials = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(gcp_oauth_token)]
+    fn set_gcp_oauth_token(&mut self, value: ::core::option::Option<PyGcpOauthToken>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credentials = ::core::option::Option::Some(
+                    super::temporary_credentials::v1::temporary_credential::Credentials::GcpOauthToken(
+                        ::std::boxed::Box::new(value.into()),
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credentials,
+                    ::core::option::Option::Some(super::temporary_credentials::v1::temporary_credential::Credentials::GcpOauthToken(_))
+                ) {
+                    self.0.credentials = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(r2_temp_credentials)]
+    fn set_r2_temp_credentials(&mut self, value: ::core::option::Option<PyR2TemporaryCredentials>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credentials = ::core::option::Option::Some(
+                    super::temporary_credentials::v1::temporary_credential::Credentials::R2TempCredentials(
+                        ::std::boxed::Box::new(value.into()),
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credentials,
+                    ::core::option::Option::Some(super::temporary_credentials::v1::temporary_credential::Credentials::R2TempCredentials(_))
+                ) {
+                    self.0.credentials = ::core::option::Option::None;
+                }
+            }
+        }
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)

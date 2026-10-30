@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
-use crate::error::{PyUnityCatalogError, PyUnityCatalogResult};
-use crate::runtime::get_runtime;
+use crate::codegen::runtime::{ListIterator, block_on};
+use crate::error::PyUnityCatalogError;
+use futures::stream::StreamExt;
+use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::ProviderClient;
@@ -12,14 +14,10 @@ pub struct PyProviderClient {
 }
 #[pymethods]
 impl PyProviderClient {
-    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyProvider> {
+    pub fn get(&self, py: Python<'_>) -> PyResult<PyProvider> {
         let request = self.client.get();
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyProvider::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyProvider::from(result))
     }
     #[pyo3(
         signature = (
@@ -32,13 +30,13 @@ impl PyProviderClient {
     )]
     pub fn update(
         &self,
-        py: Python,
+        py: Python<'_>,
         new_name: Option<String>,
         owner: Option<String>,
         comment: Option<String>,
         recipient_profile_str: Option<String>,
         properties: Option<HashMap<String, String>>,
-    ) -> PyUnityCatalogResult<PyProvider> {
+    ) -> PyResult<PyProvider> {
         let mut request = self.client.update();
         request = request.with_new_name(new_name);
         request = request.with_owner(owner);
@@ -47,20 +45,13 @@ impl PyProviderClient {
         if let Some(properties) = properties {
             request = request.with_properties(properties);
         }
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyProvider::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyProvider::from(result))
     }
-    pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
+    pub fn delete(&self, py: Python<'_>) -> PyResult<()> {
         let request = self.client.delete();
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(())
-        })
+        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(())
     }
 }
 impl PyProviderClient {

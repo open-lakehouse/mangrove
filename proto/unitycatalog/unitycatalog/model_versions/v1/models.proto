@@ -78,7 +78,11 @@ message ModelVersion {
   optional string storage_location = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // User-provided free-form text description.
-  optional string comment = 9 [(google.api.field_behavior) = OPTIONAL];
+  optional string comment = 9 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 65536,
+    (google.api.field_behavior) = OPTIONAL
+  ];
 
   // Unique identifier for the model version.
   optional string id = 10 [

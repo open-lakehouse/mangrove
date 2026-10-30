@@ -3,7 +3,7 @@ use unitycatalog_common::models::{
     AssociationLabel, ObjectLabel, PropertyMap, ResourceIdent, ResourceName, ResourceRef,
 };
 
-use super::{RequestContext, SecuredAction};
+use super::{RequestContext, SecuredAction, UpdateMask};
 use crate::Result;
 pub use crate::codegen::entity_tag_assignments::EntityTagAssignmentHandler;
 use crate::policy::{Permission, Policy};
@@ -70,10 +70,13 @@ impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<Reque
         context: RequestContext,
     ) -> Result<EntityTagAssignment> {
         self.check_required(&request, &context).await?;
-        let assignment = request
-            .tag_assignment
-            .into_option()
-            .ok_or_else(|| crate::Error::invalid_argument("tag_assignment must be provided"))?;
+        let assignment = EntityTagAssignment {
+            entity_type: request.entity_type,
+            entity_name: request.entity_name,
+            tag_key: request.tag_key,
+            tag_value: request.tag_value,
+            ..Default::default()
+        };
         tracing::Span::current().record("resource_name", &assignment.entity_name);
 
         let entity = entity_ident(&assignment.entity_type, &assignment.entity_name)?;
@@ -146,7 +149,7 @@ impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<Reque
                 &entity,
                 &AssociationLabel::Tagged,
                 None,
-                request.max_results.map(|v| v as usize),
+                super::page_size(request.max_results)?,
                 request.page_token,
             )
             .await?;
@@ -179,12 +182,27 @@ impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<Reque
     ) -> Result<EntityTagAssignment> {
         tracing::Span::current().record("resource_name", &request.entity_name);
         self.check_required(&request, &context).await?;
-        let assignment = request
-            .tag_assignment
-            .into_option()
-            .ok_or_else(|| crate::Error::invalid_argument("tag_assignment must be provided"))?;
+        let mask = UpdateMask::parse(request.update_mask.as_deref(), &["tag_value"])?;
         let entity = entity_ident(&request.entity_type, &request.entity_name)?;
         let tag = tag_ident(&request.tag_key);
+        // Without an explicit mask an unset tag_value leaves the current value in place.
+        let tag_value = if request.tag_value.is_none() && !mask.names("tag_value") {
+            let (edges, _) = self
+                .list_associations_with_properties(
+                    &entity,
+                    &AssociationLabel::Tagged,
+                    Some(&tag),
+                    None,
+                    None,
+                )
+                .await?;
+            edges
+                .into_iter()
+                .next()
+                .and_then(|(_, props)| tag_value_from_props(props))
+        } else {
+            request.tag_value
+        };
         // The edge store's `add` rejects an existing edge rather than upserting, so
         // updating the tag value is remove-then-add (both carry the inverse edge).
         // A missing edge on remove is fine — treat update as an upsert.
@@ -199,14 +217,14 @@ impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<Reque
             &entity,
             &tag,
             &AssociationLabel::Tagged,
-            props_for_value(&assignment.tag_value),
+            props_for_value(&tag_value),
         )
         .await?;
         Ok(EntityTagAssignment {
             entity_type: request.entity_type,
             entity_name: request.entity_name,
             tag_key: request.tag_key,
-            tag_value: assignment.tag_value,
+            tag_value,
             ..Default::default()
         })
     }
@@ -232,11 +250,8 @@ async fn tag_key_for<S: ResourceStore>(store: &S, tag_ref: &ResourceIdent) -> Re
 // entity's metadata, so the caller needs the corresponding permission on the entity.
 impl SecuredAction for CreateEntityTagAssignmentRequest {
     fn resource(&self) -> ResourceIdent {
-        match self.tag_assignment.as_option() {
-            Some(a) => entity_ident(&a.entity_type, &a.entity_name)
-                .unwrap_or_else(|_| ResourceIdent::catalog(ResourceRef::Undefined)),
-            None => ResourceIdent::catalog(ResourceRef::Undefined),
-        }
+        entity_ident(&self.entity_type, &self.entity_name)
+            .unwrap_or_else(|_| ResourceIdent::catalog(ResourceRef::Undefined))
     }
 
     fn permission(&self) -> &'static Permission {
@@ -338,12 +353,21 @@ mod tests {
         }
     }
 
-    fn assignment(tag_key: &str, tag_value: Option<&str>) -> EntityTagAssignment {
-        EntityTagAssignment {
+    fn create_request(tag_key: &str, tag_value: Option<&str>) -> CreateEntityTagAssignmentRequest {
+        CreateEntityTagAssignmentRequest {
             entity_type: "catalogs".to_string(),
             entity_name: "cat".to_string(),
             tag_key: tag_key.to_string(),
             tag_value: tag_value.map(str::to_string),
+            ..Default::default()
+        }
+    }
+
+    fn update_request(tag_key: &str) -> UpdateEntityTagAssignmentRequest {
+        UpdateEntityTagAssignmentRequest {
+            entity_type: "catalogs".to_string(),
+            entity_name: "cat".to_string(),
+            tag_key: tag_key.to_string(),
             ..Default::default()
         }
     }
@@ -353,24 +377,12 @@ mod tests {
         let h = handler().await;
 
         // assign two distinct tags to the same entity (exercises the multimap)
-        h.create_entity_tag_assignment(
-            CreateEntityTagAssignmentRequest {
-                tag_assignment: Some(assignment("pii", Some("true"))).into(),
-                ..Default::default()
-            },
-            ctx(),
-        )
-        .await
-        .unwrap();
-        h.create_entity_tag_assignment(
-            CreateEntityTagAssignmentRequest {
-                tag_assignment: Some(assignment("team", Some("data-eng"))).into(),
-                ..Default::default()
-            },
-            ctx(),
-        )
-        .await
-        .unwrap();
+        h.create_entity_tag_assignment(create_request("pii", Some("true")), ctx())
+            .await
+            .unwrap();
+        h.create_entity_tag_assignment(create_request("team", Some("data-eng")), ctx())
+            .await
+            .unwrap();
 
         // list returns BOTH tags for the entity
         let listed = h
@@ -417,12 +429,8 @@ mod tests {
         let updated = h
             .update_entity_tag_assignment(
                 UpdateEntityTagAssignmentRequest {
-                    entity_type: "catalogs".to_string(),
-                    entity_name: "cat".to_string(),
-                    tag_key: "pii".to_string(),
-                    tag_assignment: Some(assignment("pii", Some("false"))).into(),
-                    update_mask: None,
-                    ..Default::default()
+                    tag_value: Some("false".to_string()),
+                    ..update_request("pii")
                 },
                 ctx(),
             )
@@ -490,17 +498,35 @@ mod tests {
     #[tokio::test]
     async fn create_rejects_unknown_entity_type() {
         let h = handler().await;
-        let mut bad = assignment("pii", Some("x"));
+        let mut bad = create_request("pii", Some("x"));
         bad.entity_type = "notebooks".to_string();
-        let result = h
-            .create_entity_tag_assignment(
-                CreateEntityTagAssignmentRequest {
-                    tag_assignment: Some(bad).into(),
-                    ..Default::default()
+        let result = h.create_entity_tag_assignment(bad, ctx()).await;
+        assert!(result.is_err(), "unsupported entity_type must be rejected");
+    }
+
+    #[tokio::test]
+    async fn update_without_mask_keeps_value_and_mask_clears_it() {
+        let h = handler().await;
+        h.create_entity_tag_assignment(create_request("pii", Some("true")), ctx())
+            .await
+            .unwrap();
+
+        let kept = h
+            .update_entity_tag_assignment(update_request("pii"), ctx())
+            .await
+            .unwrap();
+        assert_eq!(kept.tag_value.as_deref(), Some("true"));
+
+        let cleared = h
+            .update_entity_tag_assignment(
+                UpdateEntityTagAssignmentRequest {
+                    update_mask: Some("tag_value".to_string()),
+                    ..update_request("pii")
                 },
                 ctx(),
             )
-            .await;
-        assert!(result.is_err(), "unsupported entity_type must be rejected");
+            .await
+            .unwrap();
+        assert_eq!(cleared.tag_value, None);
     }
 }

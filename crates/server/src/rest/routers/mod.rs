@@ -374,7 +374,8 @@ where
         .with_state(handler)
 }
 
-/// Router for the ABAC Policies API (row-filter / column-mask policies bound to securables).
+/// Router for the ABAC Policies API (row-filter, column-mask, deny and grant policies bound to
+/// securables).
 pub fn create_policies_router<T, Cx>(handler: T) -> axum::Router
 where
     T: PolicyHandler<Cx> + Clone,
@@ -387,10 +388,7 @@ where
             "/policies/{on_securable_type}/{on_securable_fullname}",
             get(list_policies::<T, Cx>),
         )
-        .route(
-            "/policies/{on_securable_type}/{on_securable_fullname}",
-            post(create_policy::<T, Cx>),
-        )
+        .route("/policies", post(create_policy::<T, Cx>))
         .route(
             "/policies/{on_securable_type}/{on_securable_fullname}/{name}",
             get(get_policy::<T, Cx>),

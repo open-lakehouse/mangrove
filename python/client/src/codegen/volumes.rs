@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
-use crate::error::{PyUnityCatalogError, PyUnityCatalogResult};
-use crate::runtime::get_runtime;
+use crate::codegen::runtime::{ListIterator, block_on};
+use crate::error::PyUnityCatalogError;
+use futures::stream::StreamExt;
+use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::VolumeClient;
@@ -13,42 +15,31 @@ pub struct PyVolumeClient {
 #[pymethods]
 impl PyVolumeClient {
     #[pyo3(signature = (include_browse = None))]
-    pub fn get(&self, py: Python, include_browse: Option<bool>) -> PyUnityCatalogResult<PyVolume> {
+    pub fn get(&self, py: Python<'_>, include_browse: Option<bool>) -> PyResult<PyVolume> {
         let mut request = self.client.get();
         request = request.with_include_browse(include_browse);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyVolume::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyVolume::from(result))
     }
     #[pyo3(signature = (new_name = None, comment = None, owner = None))]
     pub fn update(
         &self,
-        py: Python,
+        py: Python<'_>,
         new_name: Option<String>,
         comment: Option<String>,
         owner: Option<String>,
-    ) -> PyUnityCatalogResult<PyVolume> {
+    ) -> PyResult<PyVolume> {
         let mut request = self.client.update();
         request = request.with_new_name(new_name);
         request = request.with_comment(comment);
         request = request.with_owner(owner);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyVolume::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyVolume::from(result))
     }
-    pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
+    pub fn delete(&self, py: Python<'_>) -> PyResult<()> {
         let request = self.client.delete();
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(())
-        })
+        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(())
     }
 }
 impl PyVolumeClient {

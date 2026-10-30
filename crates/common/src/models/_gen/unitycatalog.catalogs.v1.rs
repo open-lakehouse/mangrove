@@ -983,6 +983,8 @@ pub const __CATALOG_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = ::buffa::ty
 pub struct ListCatalogsRequest {
     /// The maximum number of results per page that should be returned.
     ///
+    /// If unset or 0, the server's default page size is used. Negative values are rejected.
+    ///
     /// Field 2: `max_results`
     #[serde(
         rename = "max_results",
@@ -2021,7 +2023,7 @@ pub struct UpdateCatalogRequest {
         ::buffa::alloc::string::String,
         ::buffa::alloc::string::String,
     >,
-    /// Name of catalog.
+    /// New name for the catalog.
     ///
     /// Field 5: `new_name`
     #[serde(
@@ -3527,6 +3529,8 @@ pub mod __buffa {
         pub struct ListCatalogsRequestView<'a> {
             /// The maximum number of results per page that should be returned.
             ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
+            ///
             /// Field 2: `max_results`
             pub max_results: ::core::option::Option<i32>,
             /// Opaque pagination token to go to next page based on previous query.
@@ -3827,6 +3831,8 @@ pub mod __buffa {
                 self.0.into_bytes()
             }
             /// The maximum number of results per page that should be returned.
+            ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
             ///
             /// Field 2: `max_results`
             #[must_use]
@@ -5191,7 +5197,7 @@ pub mod __buffa {
             ///
             /// Field 4: `properties` (map)
             pub properties: ::buffa::MapView<'a, &'a str, &'a str>,
-            /// Name of catalog.
+            /// New name for the catalog.
             ///
             /// Field 5: `new_name`
             pub new_name: ::core::option::Option<&'a str>,
@@ -5673,7 +5679,7 @@ pub mod __buffa {
             pub fn properties(&self) -> &::buffa::MapView<'_, &'_ str, &'_ str> {
                 &self.0.reborrow().properties
             }
-            /// Name of catalog.
+            /// New name for the catalog.
             ///
             /// Field 5: `new_name`
             #[must_use]

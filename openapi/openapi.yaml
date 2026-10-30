@@ -414,7 +414,10 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -583,7 +586,10 @@ paths:
             format: enum
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -756,7 +762,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -911,7 +920,10 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -975,6 +987,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: include_browse
+          in: query
+          description: Whether to include external locations in the response for which the principal can only access selective metadata for
+          schema:
+            type: boolean
       responses:
         "200":
           description: OK
@@ -1071,7 +1088,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -1144,6 +1164,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: include_browse
+          in: query
+          description: Whether to include functions in the response for which the principal can only access selective metadata for
+          schema:
+            type: boolean
       responses:
         "200":
           description: OK
@@ -1249,7 +1274,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -1467,7 +1495,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -1661,6 +1692,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
+  /policies:
+    post:
+      tags:
+        - PoliciesService
+      description: |-
+        Create a new policy
+
+         Creates a new row-filter or column-mask policy on the specified securable.
+      operationId: CreatePolicy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePolicyRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyInfo"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
   /policies/{on_securable_type}/{on_securable_fullname}:
     get:
       tags:
@@ -1677,7 +1736,7 @@ paths:
           description: |-
             The type of the securable to list policies on.
 
-             Supported values: catalogs, schemas, tables.
+             Supported values: CATALOG, SCHEMA, TABLE.
           required: true
           schema:
             type: string
@@ -1698,7 +1757,10 @@ paths:
             type: boolean
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -1720,49 +1782,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-    post:
-      tags:
-        - PoliciesService
-      description: |-
-        Create a new policy
-
-         Creates a new row-filter or column-mask policy on the specified securable.
-      operationId: CreatePolicy
-      parameters:
-        - name: on_securable_type
-          in: path
-          description: |-
-            The type of the securable to create the policy on.
-
-             Supported values: catalogs, schemas, tables.
-          required: true
-          schema:
-            type: string
-        - name: on_securable_fullname
-          in: path
-          description: The fully qualified name of the securable to create the policy on.
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PolicyInfo"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PolicyInfo"
-        default:
-          description: Default error response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Status"
   /policies/{on_securable_type}/{on_securable_fullname}/{name}:
     get:
       tags:
@@ -1778,7 +1797,7 @@ paths:
           description: |-
             The type of the securable the policy is defined on.
 
-             Supported values: catalogs, schemas, tables.
+             Supported values: CATALOG, SCHEMA, TABLE.
           required: true
           schema:
             type: string
@@ -1821,7 +1840,7 @@ paths:
           description: |-
             The type of the securable the policy is defined on.
 
-             Supported values: catalogs, schemas, tables.
+             Supported values: CATALOG, SCHEMA, TABLE.
           required: true
           schema:
             type: string
@@ -1859,9 +1878,9 @@ paths:
         - name: on_securable_type
           in: path
           description: |-
-            The type of the securable the policy is defined on.
+            The type of securable the policy is defined on.
 
-             Supported values: catalogs, schemas, tables.
+             Supported values: CATALOG, SCHEMA, TABLE.
           required: true
           schema:
             type: string
@@ -1905,7 +1924,10 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2039,7 +2061,10 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2182,7 +2207,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2254,6 +2282,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: include_browse
+          in: query
+          description: Whether to include schemas in the response for which the principal can only access selective metadata for
+          schema:
+            type: boolean
       responses:
         "200":
           description: OK
@@ -2343,7 +2376,10 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2488,7 +2524,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2600,7 +2639,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2652,7 +2694,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -2830,7 +2875,11 @@ paths:
       parameters:
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results to return in this request.
+
+             Fewer results may be returned than requested. If unset or 0, this defaults to 1000;
+             larger values are coerced down to 1000. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -3001,7 +3050,15 @@ paths:
     post:
       tags:
         - TemporaryCredentialsService
-      description: Generate a new set of credentials for a path.
+      description: |-
+        Generate a new set of credentials for a path.
+
+         Only external storage paths (external locations and external tables) are
+         supported; managed tables are not. The metastore must have the
+         `external_access_enabled` flag set to true (default false). The caller must
+         have the `EXTERNAL_USE_LOCATION` privilege on the external location
+         (granted by its owner) and, for existing external tables, the
+         `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
       operationId: GenerateTemporaryPathCredentials
       requestBody:
         content:
@@ -3026,7 +3083,12 @@ paths:
     post:
       tags:
         - TemporaryCredentialsService
-      description: Generate a new set of credentials for a table.
+      description: |-
+        Generate a new set of credentials for a table.
+
+         The metastore must have the `external_access_enabled` flag set to true
+         (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
+         privilege on the parent schema (granted by a catalog owner).
       operationId: GenerateTemporaryTableCredentials
       requestBody:
         content:
@@ -3096,7 +3158,10 @@ paths:
             type: string
         - name: max_results
           in: query
-          description: The maximum number of results per page that should be returned.
+          description: |-
+            The maximum number of results per page that should be returned.
+
+             If unset or 0, the server's default page size is used. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -3107,7 +3172,7 @@ paths:
             type: string
         - name: include_browse
           in: query
-          description: Whether to include schemas in the response for which the principal can only access selective metadata for
+          description: Whether to include volumes in the response for which the principal can only access selective metadata for
           schema:
             type: boolean
       responses:
@@ -3160,7 +3225,7 @@ paths:
             type: string
         - name: include_browse
           in: query
-          description: Whether to include schemas in the response for which the principal can only access selective metadata for
+          description: Whether to include volumes in the response for which the principal can only access selective metadata for
           schema:
             type: boolean
       responses:
@@ -3517,6 +3582,7 @@ components:
              Use the format /subscriptions/{guid}/resourceGroups/{rg-name}/providers/
              Microsoft.Databricks/accessConnectors/{connector-name}.
         credential_id:
+          readOnly: true
           type: string
           description: The Databricks internal ID that represents this managed identity.
         managed_identity_id:
@@ -3549,8 +3615,7 @@ components:
           description: The client secret generated for the above app ID in AAD.
         federated_token_file:
           type: string
-          description: Specifically useful for workload identity federation.
-          title: Location of the file containing a federated token.
+          description: Location of the file containing a federated token, for workload identity federation.
       description: The Azure service principal configuration.
       additionalProperties: false
       title: Azure Service Principal
@@ -3707,6 +3772,8 @@ components:
             - TIMESTAMP_NTZ
             - VARIANT
             - TABLE_TYPE
+            - GEOMETRY
+            - GEOGRAPHY
           type: string
           description: Data type name.
           format: enum
@@ -3731,7 +3798,7 @@ components:
           description: User-provided free-form text description.
         nullable:
           type: boolean
-          description: Whether field may be Null.
+          description: "Whether field may be Null (default: true)."
         partition_index:
           type: integer
           description: Partition index for column.
@@ -3927,7 +3994,9 @@ components:
           description: Whether the credential is usable only for read operations. Only applicable when purpose is STORAGE.
         skip_validation:
           type: boolean
-          description: Optional. Supplying true to this argument skips validation of the created set of credentials.
+          description: |-
+            Supplying true to this argument skips validation of the created set of credentials.
+             Defaults to false.
         azure_service_principal:
           allOf:
             - $ref: "#/components/schemas/AzureServicePrincipal"
@@ -3976,24 +4045,28 @@ components:
       title: Create Credential Request
     CreateEntityTagAssignmentRequest:
       required:
-        - tag_assignment
+        - entity_type
+        - entity_name
+        - tag_key
       type: object
       properties:
-        tag_assignment:
-          allOf:
-            - $ref: "#/components/schemas/EntityTagAssignment"
-          description: |-
-            Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
-             of a tag to a specific securable. It has no identifier of its own — its identity is
-             the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
-             `google.api.resource`: assignments are stored as associations between the entity and
-             its tag, not as standalone objects.
-          additionalProperties: false
-          required:
-            - entity_type
-            - entity_name
-            - tag_key
-          title: The assignment of a tag to a Unity Catalog entity.
+        entity_type:
+          type: string
+          description: "Supported values: catalogs, schemas, tables, columns, volumes."
+          minLength: 1
+          pattern: ^(catalogs|schemas|tables|columns|volumes)$
+          title: The type of the entity to which the tag is assigned.
+        entity_name:
+          type: string
+          description: The fully qualified name of the entity to which the tag is assigned.
+          minLength: 1
+        tag_key:
+          type: string
+          description: The key of the tag.
+          minLength: 1
+        tag_value:
+          type: string
+          description: The value of the tag.
       description: Create an entity tag assignment
       additionalProperties: false
       title: Create Entity Tag Assignment Request
@@ -4116,17 +4189,31 @@ components:
         routine_definition:
           type: string
           description: Function body.
-        routine_body_language:
+        external_language:
           type: string
-          description: The language of the function routine body.
+          description: Set when routine_body is EXTERNAL.
+          title: External language of the function.
         comment:
           type: string
           description: User-provided free-form text description.
         properties:
-          type: object
-          additionalProperties:
-            type: string
-          description: A map of key-value properties attached to the securable.
+          type: string
+          description: JSON-serialized key-value pair map, encoded (escaped) as a string.
+        return_params:
+          allOf:
+            - $ref: "#/components/schemas/FunctionParameterInfos"
+          description: A collection of function parameters.
+          additionalProperties: false
+          title: Function Parameter Infos
+        routine_dependencies:
+          allOf:
+            - $ref: "#/components/schemas/DependencyList"
+          description: A list of dependencies referenced by a view-like table.
+          additionalProperties: false
+          title: Dependency List
+        specific_name:
+          type: string
+          description: Specific name of the function; reserved for future use.
       description: |-
         Wrapped in the `function_info` envelope of a `CreateFunctionRequest`, matching
          the Unity Catalog `POST /functions` wire contract.
@@ -4166,9 +4253,112 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
       description: Create a new model version.
       additionalProperties: false
       title: Create Model Version Request
+    CreatePolicyRequest:
+      required:
+        - name
+        - on_securable_type
+        - on_securable_fullname
+        - policy_type
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the policy. Unique within the securable it is defined on.
+          minLength: 1
+        on_securable_type:
+          type: string
+          description: "Supported values: CATALOG, SCHEMA, TABLE."
+          minLength: 1
+          pattern: ^(CATALOG|SCHEMA|TABLE)$
+          title: The type of securable the policy is defined on.
+        on_securable_fullname:
+          type: string
+          description: The fully qualified name of the securable the policy is defined on.
+          minLength: 1
+        policy_type:
+          enum:
+            - POLICY_TYPE_ROW_FILTER
+            - POLICY_TYPE_COLUMN_MASK
+            - POLICY_TYPE_DENY
+            - POLICY_TYPE_GRANT
+          type: string
+          description: The kind of enforcement this policy applies.
+          format: enum
+          title: Policy Type
+        comment:
+          type: string
+          description: User-provided free-form text description of the policy.
+        to_principals:
+          type: array
+          items:
+            type: string
+          description: The principals the policy applies to. Empty means "all principals".
+        except_principals:
+          type: array
+          items:
+            type: string
+          description: The principals explicitly excluded from the policy, even if matched by to_principals.
+        for_securable_type:
+          type: string
+          description: The type of securables the policy takes effect on.
+          pattern: ^(CATALOG|SCHEMA|TABLE)$
+        when_condition:
+          type: string
+          description: An opaque condition expression evaluated by the query engine at enforcement time.
+        match_columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchColumn"
+            additionalProperties: false
+            required:
+              - condition
+            description: |-
+              A column referenced by a policy, together with the alias it is bound to in the
+               row-filter or column-mask function invocation.
+            title: Match Column
+          description: The columns referenced by the policy function, and the aliases they are bound to.
+        row_filter:
+          allOf:
+            - $ref: "#/components/schemas/FunctionRef"
+          description: |-
+            A reference to the SQL function that implements a row-filter or column-mask policy,
+             together with the arguments it is invoked with.
+          additionalProperties: false
+          required:
+            - function_name
+          title: Function Ref
+        column_mask:
+          allOf:
+            - $ref: "#/components/schemas/FunctionRef"
+          description: |-
+            A reference to the SQL function that implements a row-filter or column-mask policy,
+             together with the arguments it is invoked with.
+          additionalProperties: false
+          required:
+            - function_name
+          title: Function Ref
+        deny:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
+        grant:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
+      description: |-
+        The body is the policy itself; the new policy applies to the securable and all its
+         descendants.
+      additionalProperties: false
+      title: Create a new policy on a securable.
     CreateProviderRequest:
       required:
         - name
@@ -4197,7 +4387,8 @@ components:
           type: string
           description: |-
             The recipient profile (credential file contents) used to connect to the
-             sharing server, required for TOKEN authentication.
+             sharing server. Required when authentication_type is TOKEN or
+             OAUTH_CLIENT_CREDENTIALS.
         properties:
           type: object
           additionalProperties:
@@ -4231,14 +4422,12 @@ components:
         comment:
           type: string
           description: Description about the recipient.
-        properties:
-          type: object
-          additionalProperties:
-            type: string
-          description: |-
-            When provided in update request, the specified properties will override the existing properties.
-             To add and remove properties, one would need to perform a read-modify-write.
-          title: Recipient properties as map of string key-value pairs.
+        properties_kvpairs:
+          allOf:
+            - $ref: "#/components/schemas/SecurablePropertiesKvPairs"
+          description: An object with the properties of a securable as key-value pairs.
+          additionalProperties: false
+          title: Securable Properties Kv Pairs
         expiration_time:
           type: string
           description: Expiration timestamp of the token, in epoch milliseconds.
@@ -4270,6 +4459,8 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
       description: Create a new registered model.
       additionalProperties: false
       title: Create Registered Model Request
@@ -4319,6 +4510,9 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+        storage_root:
+          type: string
+          description: Storage root URL for the share.
       description: |-
         Data objects can be added after creation with update.
          The caller must be a metastore admin or have the CREATE_SHARE privilege on the metastore.
@@ -4380,6 +4574,8 @@ components:
             - VIEW
             - MATERIALIZED_VIEW
             - STREAMING_TABLE
+            - MANAGED_SHALLOW_CLONE
+            - EXTERNAL_SHALLOW_CLONE
             - METRIC_VIEW
           type: string
           format: enum
@@ -4397,6 +4593,9 @@ components:
             - TEXT
             - UNITY_CATALOG
             - DELTASHARING
+            - DELTA_UNIFORM_ICEBERG
+            - DELTA_UNIFORM_HUDI
+            - HIVE
           type: string
           format: enum
           title: Data Source Format
@@ -4440,20 +4639,29 @@ components:
       title: Create a table
     CreateTagPolicyRequest:
       required:
-        - tag_policy
+        - tag_key
       type: object
       properties:
-        tag_policy:
-          allOf:
-            - $ref: "#/components/schemas/TagPolicy"
-          description: |-
-            A tag policy defines a tag key together with the rules that govern how it can
-             be used, including the optional set of allowed values. Assigning a governed
-             tag to an entity is done through the Entity Tag Assignments API.
-          additionalProperties: false
-          required:
-            - tag_key
-          title: A governed tag definition (tag policy).
+        tag_key:
+          type: string
+          description: The key of the governed tag.
+          minLength: 1
+          maxLength: 256
+        description:
+          type: string
+          description: User-provided free-form text description of the tag policy.
+          maxLength: 4096
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/Value"
+            additionalProperties: false
+            required:
+              - name
+            description: An allowed value for a governed tag.
+            title: Value
+          description: The set of allowed values for the governed tag. The list is unordered.
+          maxItems: 500
       description: Create a new tag policy
       additionalProperties: false
       title: Create Tag Policy Request
@@ -4496,7 +4704,7 @@ components:
           description: The storage location on the cloud
         comment:
           type: string
-          description: The storage location on the cloud
+          description: The comment attached to the volume.
           minLength: 1
           maxLength: 65536
       description: Create a new Volume
@@ -4624,6 +4832,11 @@ components:
             - DATA_OBJECT_TYPE_UNSPECIFIED
             - TABLE
             - SCHEMA
+            - VIEW
+            - MATERIALIZED_VIEW
+            - STREAMING_TABLE
+            - MODEL
+            - FUNCTION
             - VOLUME
             - AGENT_SKILL
           type: string
@@ -4646,14 +4859,19 @@ components:
           description: |-
             If this new name is not provided, the object's original name will be used as the shared_as name.
              The shared_as name must be unique within a share.
-             For tables, the new name must follow the format of <schema>.<table>.
+             For tables, the new name must follow the format of <schema>.<table>: two parts, each
+             consisting only of alphanumeric characters and underscores, without the catalog part.
+             Do not set it for non-table data objects; use string_shared_as instead.
           title: A user-provided new name for the data object within the share.
         partitions:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/Partition"
+            additionalProperties: false
+            description: "A partition specification: the conjunction of its partition values."
+            title: Partition
           description: Array of partitions for the shared data.
-        enable_cdf:
+        cdf_enabled:
           type: boolean
           description: Whether to enable cdf or indicate if cdf is enabled on the shared object.
         history_data_sharing_status:
@@ -4673,6 +4891,25 @@ components:
 
              NOTE: The start_version should be <= the current version of the object.
           title: The start version associated with the object.
+        string_shared_as:
+          type: string
+          description: |-
+            For volumes, functions and models it is a two-part name <schema>.<name>, each part
+             consisting only of alphanumeric characters and underscores. If not provided, the
+             object's original name minus its catalog is used. It must be unique among objects of
+             the same type within the share. Do not set it for table-like data objects; use
+             shared_as instead.
+          title: A user-provided alias for a non-table data object (e.g. a volume) within the share.
+        status:
+          readOnly: true
+          enum:
+            - DATA_OBJECT_STATUS_UNSPECIFIED
+            - ACTIVE
+            - PERMISSION_DENIED
+          type: string
+          description: Whether the data object is still accessible to the share.
+          format: enum
+          title: Data Object Status
       additionalProperties: false
       title: Data Object
     DataObjectUpdate:
@@ -4687,13 +4924,13 @@ components:
             - REMOVE
             - UPDATE
           type: string
-          description: Name of the share.
+          description: The action to perform on the data object.
           format: enum
           title: Action
         data_object:
           allOf:
             - $ref: "#/components/schemas/DataObject"
-          description: User-provided free-form text description.
+          description: The data object that is being added, removed, or updated.
           additionalProperties: false
           required:
             - name
@@ -4706,12 +4943,15 @@ components:
       type: object
       properties:
         credential_id:
+          readOnly: true
           type: string
           description: The Databricks internal ID that represents this managed identity.
         email:
+          readOnly: true
           type: string
           description: The email of the service account.
         private_key_id:
+          readOnly: true
           type: string
           description: The ID that represents the private key for this Service Account.
       description: The Databricks managed GCP service account configuration.
@@ -4775,6 +5015,19 @@ components:
         tag_value:
           type: string
           description: The value of the tag.
+        updated_by:
+          readOnly: true
+          type: string
+          description: The user or principal who last updated the tag assignment.
+        source_type:
+          readOnly: true
+          enum:
+            - TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED
+            - TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION
+          type: string
+          description: The source of the tag assignment, e.g. user-assigned or system-assigned.
+          format: enum
+          title: Tag Assignment Source Type
       description: |-
         Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
          of a tag to a specific securable. It has no identifier of its own — its identity is
@@ -4900,17 +5153,24 @@ components:
           additionalProperties: false
           title: Function Parameter Infos
         return_params:
+          allOf:
+            - $ref: "#/components/schemas/FunctionParameterInfos"
+          description: A collection of function parameters.
+          additionalProperties: false
+          title: Function Parameter Infos
+        external_language:
           type: string
-          description: The return type of the function in JSON format.
-        routine_body_language:
-          type: string
-          description: The language of the function routine body.
+          description: Set when routine_body is EXTERNAL.
+          title: External language of the function.
         routine_definition:
           type: string
           description: Function body.
         routine_dependencies:
-          type: string
-          description: Function dependencies (in JSON form).
+          allOf:
+            - $ref: "#/components/schemas/DependencyList"
+          description: A list of dependencies referenced by a view-like table.
+          additionalProperties: false
+          title: Dependency List
         parameter_style:
           enum:
             - PARAMETER_STYLE_UNSPECIFIED
@@ -4945,7 +5205,7 @@ components:
           title: Security Type
         specific_name:
           type: string
-          description: The type of the function (SCALAR or TABLE).
+          description: Specific name of the function; reserved for future use.
         routine_body:
           enum:
             - ROUTINE_BODY_UNSPECIFIED
@@ -4959,10 +5219,8 @@ components:
           type: string
           description: User-provided free-form text description.
         properties:
-          type: object
-          additionalProperties:
-            type: string
-          description: A map of key-value properties attached to the securable.
+          type: string
+          description: JSON-serialized key-value pair map, encoded (escaped) as a string.
         owner:
           type: string
           description: Username of current owner of the function.
@@ -4988,6 +5246,13 @@ components:
           readOnly: true
           type: string
           description: Username of user who last modified the function.
+        browse_only:
+          readOnly: true
+          type: boolean
+          description: |-
+            Indicates whether the principal is limited to retrieving metadata
+             for the associated object through the BROWSE privilege when include_browse
+             is enabled in the request.
       description: A User-Defined Function (UDF) registered under a catalog + schema hierarchy.
       additionalProperties: false
       title: Function
@@ -5059,6 +5324,8 @@ components:
             - TIMESTAMP_NTZ
             - VARIANT
             - TABLE_TYPE
+            - GEOMETRY
+            - GEOGRAPHY
           type: string
           description: Data type name.
           format: enum
@@ -5146,6 +5413,12 @@ components:
             description: An argument passed to a row-filter or column-mask function.
             title: Function Arg
           description: The arguments passed to the function, in declaration order.
+        on_column:
+          type: string
+          description: |-
+            Required for column masks: the column value is passed to the mask function as its
+             first argument. Not used for row filters.
+          title: The alias of the column to be masked; it must refer to one of the policy's match_columns.
       description: |-
         A reference to the SQL function that implements a row-filter or column-mask policy,
          together with the arguments it is invoked with.
@@ -5727,12 +6000,11 @@ components:
             Absent if there are no more pages. page_token should be set to
              this value for the next request to retrieve the next page of results.
           title: Opaque token to retrieve the next page of results.
-      description: List Schemas response.
+      description: List volumes response.
       additionalProperties: false
       title: List Volumes Response
     MatchColumn:
       required:
-        - alias
         - condition
       type: object
       properties:
@@ -5806,6 +6078,8 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
         id:
           readOnly: true
           type: string
@@ -5846,6 +6120,54 @@ components:
          via the finalize operation.
       additionalProperties: false
       title: A model version under a registered model.
+    Partition:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartitionValue"
+            additionalProperties: false
+            required:
+              - name
+              - op
+            description: A partition column value a shared table is restricted to.
+            title: Partition Value
+          description: An array of partition values.
+      description: "A partition specification: the conjunction of its partition values."
+      additionalProperties: false
+      title: Partition
+    PartitionValue:
+      required:
+        - name
+        - op
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the partition column.
+        value:
+          type: string
+          description: Mutually exclusive with recipient_property_key.
+          title: The value of the partition column; unset means a `null` value.
+        recipient_property_key:
+          type: string
+          description: Mutually exclusive with value.
+          title: |-
+            The key of a Delta Sharing recipient property whose value the partition column is
+             matched against, e.g. "databricks-account-id".
+        op:
+          enum:
+            - PARTITION_VALUE_OP_UNSPECIFIED
+            - EQUAL
+            - LIKE
+          type: string
+          description: The operator to apply for the value.
+          format: enum
+          title: Partition Value Op
+      description: A partition column value a shared table is restricted to.
+      additionalProperties: false
+      title: Partition Value
     PermissionsChange:
       type: object
       properties:
@@ -5883,9 +6205,9 @@ components:
           description: Server-assigned unique identifier for the policy.
         on_securable_type:
           type: string
-          description: "Supported values: catalogs, schemas, tables."
+          description: "Supported values: CATALOG, SCHEMA, TABLE."
           minLength: 1
-          pattern: ^(catalogs|schemas|tables)$
+          pattern: ^(CATALOG|SCHEMA|TABLE)$
           title: The type of securable the policy is defined on.
         on_securable_fullname:
           type: string
@@ -5896,6 +6218,8 @@ components:
             - POLICY_TYPE_UNSPECIFIED
             - POLICY_TYPE_ROW_FILTER
             - POLICY_TYPE_COLUMN_MASK
+            - POLICY_TYPE_DENY
+            - POLICY_TYPE_GRANT
           type: string
           description: The kind of enforcement this policy applies.
           format: enum
@@ -5921,13 +6245,15 @@ components:
             $ref: "#/components/schemas/MatchColumn"
             additionalProperties: false
             required:
-              - alias
               - condition
             description: |-
               A column referenced by a policy, together with the alias it is bound to in the
                row-filter or column-mask function invocation.
             title: Match Column
           description: |-
+            Only valid when for_securable_type is TABLE; the policy then applies only to tables
+             whose columns satisfy all match conditions.
+          title: |-
             The columns referenced by the row-filter or column-mask function, and the aliases
              they are bound to.
         row_filter:
@@ -5950,6 +6276,18 @@ components:
           required:
             - function_name
           title: Function Ref
+        deny:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
+        grant:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
         comment:
           type: string
           description: User-provided free-form text description of the policy.
@@ -5961,6 +6299,20 @@ components:
           readOnly: true
           type: string
           description: Time at which this policy was last updated, in epoch milliseconds.
+        created_by:
+          readOnly: true
+          type: string
+          description: Username of the user who created the policy.
+        updated_by:
+          readOnly: true
+          type: string
+          description: Username of the user who last modified the policy.
+        for_securable_type:
+          type: string
+          description: |-
+            The type of securables the policy takes effect on, e.g. TABLE for a policy defined
+             on a schema that applies to the tables within it.
+          pattern: ^(CATALOG|SCHEMA|TABLE)$
       description: |-
         Policies are read as whole documents; enforcement is performed by the query engine,
          not by this service. `when_condition` is stored and returned opaque — this service does
@@ -5983,6 +6335,19 @@ components:
       required:
         - principal
       title: Privilege Assignment
+    PrivilegeOptions:
+      required:
+        - privileges
+      type: object
+      properties:
+        privileges:
+          type: array
+          items:
+            type: string
+          description: The privileges to deny or grant when the principal and condition match.
+      description: The privileges a deny or grant policy applies to.
+      additionalProperties: false
+      title: Privilege Options
     Provider:
       required:
         - name
@@ -6015,7 +6380,7 @@ components:
           type: string
           description: |-
             The recipient profile (credential file contents) used to connect to the
-             sharing server, present only for TOKEN authentication.
+             sharing server. Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
         properties:
           type: object
           additionalProperties:
@@ -6089,19 +6454,20 @@ components:
         comment:
           type: string
           description: Description about the recipient.
-        properties:
-          type: object
-          additionalProperties:
-            type: string
-          description: A map of key-value properties attached to the securable.
+        properties_kvpairs:
+          allOf:
+            - $ref: "#/components/schemas/SecurablePropertiesKvPairs"
+          description: An object with the properties of a securable as key-value pairs.
+          additionalProperties: false
+          title: Securable Properties Kv Pairs
         created_at:
           readOnly: true
           type: string
-          description: Time at which this share was created, in epoch milliseconds.
+          description: Time at which this recipient was created, in epoch milliseconds.
         created_by:
           readOnly: true
           type: string
-          description: Username of the creator of the share.
+          description: Username of recipient creator.
         tokens:
           readOnly: true
           type: array
@@ -6121,22 +6487,14 @@ components:
         updated_at:
           readOnly: true
           type: string
-          description: Time at which this share was updated, in epoch milliseconds.
+          description: Time at which this recipient was updated, in epoch milliseconds.
         updated_by:
           readOnly: true
           type: string
-          description: Username of share updater.
+          description: Username of recipient updater.
       additionalProperties: false
       title: Recipient
     RecipientToken:
-      required:
-        - id
-        - created_at
-        - created_by
-        - activation_url
-        - expiration_time
-        - updated_at
-        - updated_by
       type: object
       properties:
         id:
@@ -6156,6 +6514,7 @@ components:
           type: string
           description: Full activation URL to retrieve the access token. It will be empty if the token is already retrieved.
         expiration_time:
+          readOnly: true
           type: string
           description: Expiration timestamp of the token in epoch milliseconds.
         updated_at:
@@ -6167,6 +6526,14 @@ components:
           type: string
           description: Username of recipient token updater.
       additionalProperties: false
+      required:
+        - id
+        - created_at
+        - created_by
+        - activation_url
+        - expiration_time
+        - updated_at
+        - updated_by
       title: Recipient Token
     RegisteredModelInfo:
       required:
@@ -6202,12 +6569,13 @@ components:
           type: string
           description: The storage location under which model version data files are stored.
         owner:
-          readOnly: true
           type: string
           description: Username of current owner of the registered model.
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
         id:
           readOnly: true
           type: string
@@ -6252,6 +6620,12 @@ components:
       additionalProperties: false
       description: A schema is a namespace within a catalog that contains tables.
       properties:
+        browse_only:
+          description: |-
+            Indicates whether the principal is limited to retrieving metadata
+             for the associated object through the BROWSE privilege when include_browse
+             is enabled in the request.
+          type: boolean
         catalog_name:
           description: Name of parent catalog.
           type: string
@@ -6309,6 +6683,19 @@ components:
         - catalog_name
         - full_name
       title: Schema
+    SecurablePropertiesKvPairs:
+      required:
+        - properties
+      type: object
+      properties:
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+          description: A map of key-value properties attached to the securable.
+      description: An object with the properties of a securable as key-value pairs.
+      additionalProperties: false
+      title: Securable Properties Kv Pairs
     Share:
       required:
         - name
@@ -6317,7 +6704,7 @@ components:
         id:
           readOnly: true
           type: string
-          description: Unique ID of the recipient.
+          description: Unique ID of the share.
         name:
           type: string
           description: Name of the share.
@@ -6346,7 +6733,6 @@ components:
           type: string
           description: Storage Location URL (full path) for the share.
         storage_root:
-          readOnly: true
           type: string
           description: Storage root URL for the share.
         created_at:
@@ -6476,6 +6862,8 @@ components:
             - VIEW
             - MATERIALIZED_VIEW
             - STREAMING_TABLE
+            - MANAGED_SHALLOW_CLONE
+            - EXTERNAL_SHALLOW_CLONE
             - METRIC_VIEW
           type: string
           format: enum
@@ -6494,6 +6882,9 @@ components:
             - TEXT
             - UNITY_CATALOG
             - DELTASHARING
+            - DELTA_UNIFORM_ICEBERG
+            - DELTA_UNIFORM_HUDI
+            - HIVE
           type: string
           description: Data source format of the table.
           format: enum
@@ -6599,6 +6990,8 @@ components:
             - VIEW
             - MATERIALIZED_VIEW
             - STREAMING_TABLE
+            - MANAGED_SHALLOW_CLONE
+            - EXTERNAL_SHALLOW_CLONE
             - METRIC_VIEW
           type: string
           format: enum
@@ -6617,9 +7010,11 @@ components:
           type: string
           description: The key of the governed tag.
           minLength: 1
+          maxLength: 256
         description:
           type: string
           description: User-provided free-form text description of the tag policy.
+          maxLength: 4096
         values:
           type: array
           items:
@@ -6629,7 +7024,10 @@ components:
               - name
             description: An allowed value for a governed tag.
             title: Value
-          description: When empty, the governed tag does not restrict the values that may be assigned.
+          description: |-
+            When empty, the governed tag does not restrict the values that may be assigned.
+             The list is unordered.
+          maxItems: 500
           title: The set of allowed values for the governed tag.
         id:
           readOnly: true
@@ -6812,7 +7210,7 @@ components:
           title: A map of key-value properties attached to the securable.
         new_name:
           type: string
-          description: Name of catalog.
+          description: New name for the catalog.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
       description: Update a catalog
@@ -6838,7 +7236,9 @@ components:
           description: Username of current owner of credential.
         skip_validation:
           type: boolean
-          description: Supply true to this argument to skip validation of the updated credential.
+          description: |-
+            Supply true to this argument to skip validation of the updated credential.
+             Defaults to false.
         force:
           type: boolean
           description: |-
@@ -6891,28 +7291,18 @@ components:
       additionalProperties: false
       title: Update Credential Request
     UpdateEntityTagAssignmentRequest:
-      required:
-        - tag_assignment
+      required: []
       type: object
       properties:
-        tag_assignment:
-          allOf:
-            - $ref: "#/components/schemas/EntityTagAssignment"
-          description: |-
-            Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
-             of a tag to a specific securable. It has no identifier of its own — its identity is
-             the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
-             `google.api.resource`: assignments are stored as associations between the entity and
-             its tag, not as standalone objects.
-          additionalProperties: false
-          required:
-            - entity_type
-            - entity_name
-            - tag_key
-          title: The assignment of a tag to a Unity Catalog entity.
+        tag_value:
+          type: string
+          description: The value of the tag.
         update_mask:
           type: string
-          description: The list of fields to update, as a comma-separated string.
+          description: |-
+            If empty or "*", every field set in the request is updated. Otherwise only the
+             listed fields are updated, and a listed field that is unset in the request is cleared.
+          title: The fields to update, as a comma-separated list of field names.
       description: Update an entity tag assignment
       additionalProperties: false
       title: Update Entity Tag Assignment Request
@@ -6967,6 +7357,8 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
       description: Update a model version.
       additionalProperties: false
       title: Update Model Version Request
@@ -7003,30 +7395,93 @@ components:
       additionalProperties: false
       title: Update Permissions Response
     UpdatePolicyRequest:
-      required:
-        - policy_info
+      required: []
       type: object
       properties:
-        policy_info:
+        policy_type:
+          enum:
+            - POLICY_TYPE_UNSPECIFIED
+            - POLICY_TYPE_ROW_FILTER
+            - POLICY_TYPE_COLUMN_MASK
+            - POLICY_TYPE_DENY
+            - POLICY_TYPE_GRANT
+          type: string
+          description: The kind of enforcement this policy applies.
+          format: enum
+          title: Policy Type
+        comment:
+          type: string
+          description: User-provided free-form text description of the policy.
+        to_principals:
+          type: array
+          items:
+            type: string
+          description: The principals the policy applies to. Empty means "all principals".
+        except_principals:
+          type: array
+          items:
+            type: string
+          description: The principals explicitly excluded from the policy, even if matched by to_principals.
+        for_securable_type:
+          type: string
+          description: The type of securables the policy takes effect on.
+          pattern: ^(CATALOG|SCHEMA|TABLE)$
+        when_condition:
+          type: string
+          description: An opaque condition expression evaluated by the query engine at enforcement time.
+        match_columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchColumn"
+            additionalProperties: false
+            required:
+              - condition
+            description: |-
+              A column referenced by a policy, together with the alias it is bound to in the
+               row-filter or column-mask function invocation.
+            title: Match Column
+          description: The columns referenced by the policy function, and the aliases they are bound to.
+        row_filter:
           allOf:
-            - $ref: "#/components/schemas/PolicyInfo"
+            - $ref: "#/components/schemas/FunctionRef"
           description: |-
-            Policies are read as whole documents; enforcement is performed by the query engine,
-             not by this service. `when_condition` is stored and returned opaque — this service does
-             not parse or evaluate it.
+            A reference to the SQL function that implements a row-filter or column-mask policy,
+             together with the arguments it is invoked with.
           additionalProperties: false
           required:
-            - name
-            - on_securable_type
-            - on_securable_fullname
-            - policy_type
-          title: A row-filter or column-mask policy bound to principals and scoped to a securable.
+            - function_name
+          title: Function Ref
+        column_mask:
+          allOf:
+            - $ref: "#/components/schemas/FunctionRef"
+          description: |-
+            A reference to the SQL function that implements a row-filter or column-mask policy,
+             together with the arguments it is invoked with.
+          additionalProperties: false
+          required:
+            - function_name
+          title: Function Ref
+        deny:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
+        grant:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
         update_mask:
           type: string
-          description: The list of fields to update, as a comma-separated string.
-      description: Update a policy defined on a securable.
+          description: |-
+            If empty or "*", every field set in the request is updated. Otherwise only the
+             listed fields are updated, and a listed field that is unset in the request is cleared.
+          title: The fields to update, as a comma-separated list of field names.
+      description: The policy is identified by the path; the body carries the fields to update.
       additionalProperties: false
-      title: Update Policy Request
+      title: Update a policy defined on a securable.
     UpdateProviderRequest:
       required: []
       type: object
@@ -7045,7 +7500,8 @@ components:
           type: string
           description: |-
             The recipient profile (credential file contents) used to connect to the
-             sharing server.
+             sharing server. Required when authentication_type is TOKEN or
+             OAUTH_CLIENT_CREDENTIALS.
         properties:
           type: object
           additionalProperties:
@@ -7071,14 +7527,12 @@ components:
         comment:
           type: string
           description: Description about the recipient.
-        properties:
-          type: object
-          additionalProperties:
-            type: string
-          description: |-
-            When provided in update request, the specified properties will override the existing properties.
-             To add and remove properties, one would need to perform a read-modify-write.
-          title: Recipient properties as map of string key-value pairs.
+        properties_kvpairs:
+          allOf:
+            - $ref: "#/components/schemas/SecurablePropertiesKvPairs"
+          description: An object with the properties of a securable as key-value pairs.
+          additionalProperties: false
+          title: Securable Properties Kv Pairs
         expiration_time:
           type: string
           description: Expiration timestamp of the token, in epoch milliseconds.
@@ -7097,6 +7551,8 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
         owner:
           type: string
           description: Username of new owner of the registered model.
@@ -7120,7 +7576,7 @@ components:
           title: A map of key-value properties attached to the securable.
         new_name:
           type: string
-          description: Name of schema.
+          description: New name for the schema.
           minLength: 3
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
       description: Update a Schema
@@ -7139,7 +7595,9 @@ components:
               - action
             description: Data object update.
             title: Data Object Update
-          description: Array of shared data object updates.
+          description: At most 100 data objects may be updated per request.
+          maxItems: 100
+          title: Array of shared data object updates.
         new_name:
           type: string
           description: A new name for the share.
@@ -7155,24 +7613,30 @@ components:
       additionalProperties: false
       title: Update a share.
     UpdateTagPolicyRequest:
-      required:
-        - tag_policy
+      required: []
       type: object
       properties:
-        tag_policy:
-          allOf:
-            - $ref: "#/components/schemas/TagPolicy"
-          description: |-
-            A tag policy defines a tag key together with the rules that govern how it can
-             be used, including the optional set of allowed values. Assigning a governed
-             tag to an entity is done through the Entity Tag Assignments API.
-          additionalProperties: false
-          required:
-            - tag_key
-          title: A governed tag definition (tag policy).
+        description:
+          type: string
+          description: User-provided free-form text description of the tag policy.
+          maxLength: 4096
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/Value"
+            additionalProperties: false
+            required:
+              - name
+            description: An allowed value for a governed tag.
+            title: Value
+          description: The set of allowed values for the governed tag. The list is unordered.
+          maxItems: 500
         update_mask:
           type: string
-          description: The list of fields to update, as a comma-separated string.
+          description: |-
+            If empty or "*", every field set in the request is updated. Otherwise only the
+             listed fields are updated, and a listed field that is unset in the request is cleared.
+          title: The fields to update, as a comma-separated list of field names.
       description: Update a tag policy
       additionalProperties: false
       title: Update Tag Policy Request
@@ -7202,6 +7666,8 @@ components:
         name:
           type: string
           description: The name of the allowed value.
+          minLength: 1
+          maxLength: 256
       description: An allowed value for a governed tag.
       additionalProperties: false
       title: Value
@@ -7257,30 +7723,29 @@ components:
           format: enum
           title: Volume Type
         owner:
-          readOnly: true
           type: string
-          description: Username of current owner of table.
+          description: Username of current owner of volume.
         comment:
           type: string
           description: User-provided free-form text description.
         created_at:
           readOnly: true
           type: string
-          description: Time at which this catalog was created, in epoch milliseconds.
+          description: Time at which this volume was created, in epoch milliseconds.
           minimum: 0
           exclusiveMinimum: true
         created_by:
           readOnly: true
           type: string
-          description: Username of catalog creator.
+          description: Username of volume creator.
         updated_at:
           readOnly: true
           type: string
-          description: Time at which this catalog was last updated, in epoch milliseconds.
+          description: Time at which this volume was last updated, in epoch milliseconds.
         updated_by:
           readOnly: true
           type: string
-          description: Username of user who last modified catalog.
+          description: Username of user who last modified the volume.
         browse_only:
           readOnly: true
           type: boolean

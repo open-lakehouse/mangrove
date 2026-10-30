@@ -61,7 +61,7 @@ export type Provider = Message<"unitycatalog.providers.v1.Provider"> & {
 
   /**
    * The recipient profile (credential file contents) used to connect to the
-   * sharing server, present only for TOKEN authentication.
+   * sharing server. Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
    *
    * @generated from field: optional string recipient_profile_str = 5;
    */

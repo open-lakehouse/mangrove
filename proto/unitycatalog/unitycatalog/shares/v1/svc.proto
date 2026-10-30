@@ -12,9 +12,13 @@ import "unitycatalog/shares/v1/models.proto";
 // Request to list shares.
 message ListSharesRequest {
   // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
   optional int32 max_results = 1 [
-    (buf.validate.field).int32.gt = 0,
-    (buf.validate.field).int32.lt = 1000,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    },
     (google.api.field_behavior) = OPTIONAL
   ];
 
@@ -46,8 +50,8 @@ message CreateShareRequest {
   // User-provided free-form text description.
   optional string comment = 2 [(google.api.field_behavior) = OPTIONAL];
 
-  // A map of key-value properties attached to the securable.
-  // optional string storage_root = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Storage root URL for the share.
+  optional string storage_root = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Get a share by name.
@@ -75,10 +79,10 @@ enum Action {
 
 // Data object update.
 message DataObjectUpdate {
-  // Name of the share.
+  // The action to perform on the data object.
   Action action = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // User-provided free-form text description.
+  // The data object that is being added, removed, or updated.
   DataObject data_object = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -94,7 +98,12 @@ message UpdateShareRequest {
   ];
 
   // Array of shared data object updates.
-  repeated DataObjectUpdate updates = 2 [(google.api.field_behavior) = OPTIONAL];
+  //
+  // At most 100 data objects may be updated per request.
+  repeated DataObjectUpdate updates = 2 [
+    (buf.validate.field).repeated.max_items = 100,
+    (google.api.field_behavior) = OPTIONAL
+  ];
 
   // A new name for the share.
   optional string new_name = 3 [
@@ -135,9 +144,13 @@ message GetPermissionsRequest {
   ];
 
   // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
   optional int32 max_results = 2 [
-    (buf.validate.field).int32.gt = 0,
-    (buf.validate.field).int32.lt = 1000,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    },
     (google.api.field_behavior) = OPTIONAL
   ];
 

@@ -14,8 +14,9 @@ pub struct NapiExternalLocationClient {
 #[napi]
 impl NapiExternalLocationClient {
     #[napi(catch_unwind)]
-    pub async fn get(&self) -> napi::Result<Buffer> {
+    pub async fn get(&self, include_browse: Option<bool>) -> napi::Result<Buffer> {
         let mut request = self.client.get();
+        request = request.with_include_browse(include_browse);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))

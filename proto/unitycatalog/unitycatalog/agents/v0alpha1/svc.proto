@@ -81,7 +81,9 @@ message CreateAgentRequest {
   // The protocol a recipient uses to invoke the agent.
   InvocationProtocol invocation_protocol = 4 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 
   // The agent's invocation endpoint URL.

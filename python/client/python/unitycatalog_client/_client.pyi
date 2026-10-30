@@ -1,6 +1,6 @@
 # @generated — do not edit by hand.
 from __future__ import annotations
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Iterator
 import enum
 
 class Agent:
@@ -243,9 +243,7 @@ class AzureServicePrincipal:
     client_secret: Optional[str]
     """The client secret generated for the above app ID in AAD."""
     federated_token_file: Optional[str]
-    """Location of the file containing a federated token.
-
-Specifically useful for workload identity federation."""
+    """Location of the file containing a federated token, for workload identity federation."""
 
     def __init__(
         self,
@@ -345,7 +343,7 @@ class Column:
     name: str
     """Name of the column"""
     nullable: Optional[bool]
-    """Whether field may be Null."""
+    """Whether field may be Null (default: true)."""
     partition_index: Optional[int]
     """Partition index for column."""
     position: Optional[int]
@@ -391,6 +389,8 @@ class CreateFunction:
     """User-provided free-form text description."""
     data_type: str
     """Full data type specification of the return type of the function."""
+    external_language: Optional[str]
+    """External language of the function. Set when routine_body is EXTERNAL."""
     full_data_type: str
     """Full data type specification as SQL/catalogString text."""
     input_params: Optional[FunctionParameterInfos]
@@ -403,18 +403,22 @@ class CreateFunction:
     """Name of function, relative to parent schema."""
     parameter_style: ParameterStyle
     """The parameter-passing style."""
-    properties: Dict[str, str]
-    """A map of key-value properties attached to the securable."""
+    properties: Optional[str]
+    """JSON-serialized key-value pair map, encoded (escaped) as a string."""
+    return_params: Optional[FunctionParameterInfos]
+    """The return parameters of a table-valued function."""
     routine_body: RoutineBody
     """The routine body."""
-    routine_body_language: Optional[str]
-    """The language of the function routine body."""
     routine_definition: Optional[str]
     """Function body."""
+    routine_dependencies: Optional[DependencyList]
+    """The tables and functions the function depends on."""
     schema_name: str
     """Name of parent schema."""
     security_type: SecurityType
     """The security type of the function."""
+    specific_name: Optional[str]
+    """Specific name of the function; reserved for future use."""
     sql_data_access: SqlDataAccess
     """SQL data access information."""
 
@@ -423,18 +427,21 @@ class CreateFunction:
         catalog_name: Optional[str] = None,
         comment: Optional[str] = None,
         data_type: Optional[str] = None,
+        external_language: Optional[str] = None,
         full_data_type: Optional[str] = None,
         input_params: Optional[FunctionParameterInfos] = None,
         is_deterministic: Optional[bool] = None,
         is_null_call: Optional[bool] = None,
         name: Optional[str] = None,
         parameter_style: Optional[ParameterStyle] = None,
-        properties: Optional[Dict[str, str]] = None,
+        properties: Optional[str] = None,
+        return_params: Optional[FunctionParameterInfos] = None,
         routine_body: Optional[RoutineBody] = None,
-        routine_body_language: Optional[str] = None,
         routine_definition: Optional[str] = None,
+        routine_dependencies: Optional[DependencyList] = None,
         schema_name: Optional[str] = None,
         security_type: Optional[SecurityType] = None,
+        specific_name: Optional[str] = None,
         sql_data_access: Optional[SqlDataAccess] = None,
     ) -> None: ...
 
@@ -515,12 +522,12 @@ class DataObject:
     """The time when this data object is added to the share, in epoch milliseconds."""
     added_by: Optional[str]
     """Username of the sharer."""
+    cdf_enabled: Optional[bool]
+    """Whether to enable cdf or indicate if cdf is enabled on the shared object."""
     comment: Optional[str]
     """A user-provided comment when adding the data object to the share."""
     data_object_type: DataObjectType
     """Type of the data object."""
-    enable_cdf: Optional[bool]
-    """Whether to enable cdf or indicate if cdf is enabled on the shared object."""
     history_data_sharing_status: Optional[HistoryStatus]
     """
     Whether to enable or disable sharing of data history. If not specified, the default is
@@ -531,14 +538,16 @@ class DataObject:
     A fully qualified name that uniquely identifies a data object. For example, a table's
     fully qualified name is in the format of <catalog>.<schema>.<table>,
     """
-    partitions: List[str]
+    partitions: List[Partition]
     """Array of partitions for the shared data."""
     shared_as: Optional[str]
     """
     A user-provided new name for the data object within the share. If this new name is not
     provided, the object's original name will be used as the shared_as name. The shared_as
-    name must be unique within a share. For tables, the new name must follow the format of
-    <schema>.<table>.
+    name must be unique within a share. For tables, the new name must follow the format
+    of <schema>.<table>: two parts, each consisting only of alphanumeric characters and
+    underscores, without the catalog part. Do not set it for non-table data objects; use
+    string_shared_as instead.
     """
     start_version: Optional[int]
     """
@@ -548,28 +557,40 @@ class DataObject:
     query starting from the version of the object at the time it was added to the share. NOTE:
     The start_version should be <= the current version of the object.
     """
+    status: Optional[DataObjectStatus]
+    """Whether the data object is still accessible to the share."""
+    string_shared_as: Optional[str]
+    """
+    A user-provided alias for a non-table data object (e.g. a volume) within the share. For
+    volumes, functions and models it is a two-part name <schema>.<name>, each part consisting
+    only of alphanumeric characters and underscores. If not provided, the object's original
+    name minus its catalog is used. It must be unique among objects of the same type within
+    the share. Do not set it for table-like data objects; use shared_as instead.
+    """
 
     def __init__(
         self,
         added_at: Optional[int] = None,
         added_by: Optional[str] = None,
+        cdf_enabled: Optional[bool] = None,
         comment: Optional[str] = None,
         data_object_type: Optional[DataObjectType] = None,
-        enable_cdf: Optional[bool] = None,
         history_data_sharing_status: Optional[HistoryStatus] = None,
         name: Optional[str] = None,
-        partitions: Optional[List[str]] = None,
+        partitions: Optional[List[Partition]] = None,
         shared_as: Optional[str] = None,
         start_version: Optional[int] = None,
+        status: Optional[DataObjectStatus] = None,
+        string_shared_as: Optional[str] = None,
     ) -> None: ...
 
 class DataObjectUpdate:
     """Data object update."""
 
     action: Action
-    """Name of the share."""
+    """The action to perform on the data object."""
     data_object: Optional[DataObject]
-    """User-provided free-form text description."""
+    """The data object that is being added, removed, or updated."""
 
     def __init__(
         self, action: Optional[Action] = None, data_object: Optional[DataObject] = None
@@ -625,17 +646,23 @@ class EntityTagAssignment:
     The type of the entity to which the tag is assigned. Supported values: catalogs, schemas,
     tables, columns, volumes.
     """
+    source_type: Optional[TagAssignmentSourceType]
+    """The source of the tag assignment, e.g. user-assigned or system-assigned."""
     tag_key: str
     """The key of the tag."""
     tag_value: Optional[str]
     """The value of the tag."""
+    updated_by: Optional[str]
+    """The user or principal who last updated the tag assignment."""
 
     def __init__(
         self,
         entity_name: Optional[str] = None,
         entity_type: Optional[str] = None,
+        source_type: Optional[TagAssignmentSourceType] = None,
         tag_key: Optional[str] = None,
         tag_value: Optional[str] = None,
+        updated_by: Optional[str] = None,
     ) -> None: ...
 
 class ExternalLocation:
@@ -688,6 +715,11 @@ class ExternalLocation:
 class Function:
     """A User-Defined Function (UDF) registered under a catalog + schema hierarchy."""
 
+    browse_only: Optional[bool]
+    """
+    Indicates whether the principal is limited to retrieving metadata for the associated
+    object through the BROWSE privilege when include_browse is enabled in the request.
+    """
     catalog_name: str
     """Name of parent catalog."""
     comment: Optional[str]
@@ -698,6 +730,8 @@ class Function:
     """Username of function creator."""
     data_type: str
     """Full data type specification of the return type of the function."""
+    external_language: Optional[str]
+    """External language of the function. Set when routine_body is EXTERNAL."""
     full_data_type: str
     """Full data type specification as SQL/catalogString text."""
     full_name: str
@@ -719,24 +753,22 @@ class Function:
     """Username of current owner of the function."""
     parameter_style: ParameterStyle
     """The parameter-passing style."""
-    properties: Dict[str, str]
-    """A map of key-value properties attached to the securable."""
-    return_params: Optional[str]
-    """The return type of the function in JSON format."""
+    properties: Optional[str]
+    """JSON-serialized key-value pair map, encoded (escaped) as a string."""
+    return_params: Optional[FunctionParameterInfos]
+    """The return parameters of a table-valued function."""
     routine_body: RoutineBody
     """The routine body."""
-    routine_body_language: Optional[str]
-    """The language of the function routine body."""
     routine_definition: Optional[str]
     """Function body."""
-    routine_dependencies: Optional[str]
-    """Function dependencies (in JSON form)."""
+    routine_dependencies: Optional[DependencyList]
+    """The tables and functions the function depends on."""
     schema_name: str
     """Name of parent schema."""
     security_type: SecurityType
     """The security type of the function."""
     specific_name: Optional[str]
-    """The type of the function (SCALAR or TABLE)."""
+    """Specific name of the function; reserved for future use."""
     sql_data_access: SqlDataAccess
     """SQL data access information."""
     updated_at: Optional[int]
@@ -746,11 +778,13 @@ class Function:
 
     def __init__(
         self,
+        browse_only: Optional[bool] = None,
         catalog_name: Optional[str] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
         data_type: Optional[str] = None,
+        external_language: Optional[str] = None,
         full_data_type: Optional[str] = None,
         full_name: Optional[str] = None,
         function_id: Optional[str] = None,
@@ -760,12 +794,11 @@ class Function:
         name: Optional[str] = None,
         owner: Optional[str] = None,
         parameter_style: Optional[ParameterStyle] = None,
-        properties: Optional[Dict[str, str]] = None,
-        return_params: Optional[str] = None,
+        properties: Optional[str] = None,
+        return_params: Optional[FunctionParameterInfos] = None,
         routine_body: Optional[RoutineBody] = None,
-        routine_body_language: Optional[str] = None,
         routine_definition: Optional[str] = None,
-        routine_dependencies: Optional[str] = None,
+        routine_dependencies: Optional[DependencyList] = None,
         schema_name: Optional[str] = None,
         security_type: Optional[SecurityType] = None,
         specific_name: Optional[str] = None,
@@ -852,11 +885,20 @@ class FunctionRef:
 
     function_name: str
     """Fully qualified name of the function (catalog.schema.function) to invoke."""
+    on_column: Optional[str]
+    """
+    The alias of the column to be masked; it must refer to one of the policy's match_columns.
+    Required for column masks: the column value is passed to the mask function as its first
+    argument. Not used for row filters.
+    """
     using: List[FunctionArg]
     """The arguments passed to the function, in declaration order."""
 
     def __init__(
-        self, function_name: Optional[str] = None, using: Optional[List[FunctionArg]] = None
+        self,
+        function_name: Optional[str] = None,
+        on_column: Optional[str] = None,
+        using: Optional[List[FunctionArg]] = None,
     ) -> None: ...
 
 class GcpOauthToken:
@@ -925,7 +967,7 @@ class MatchColumn:
     """A column referenced by a policy, together with the alias it is bound to in the row-filter or column-
     mask function invocation."""
 
-    alias: str
+    alias: Optional[str]
     """
     The name of the alias the column is bound to when invoking the row-filter or column-mask
     function.
@@ -1001,6 +1043,40 @@ class ModelVersion:
         version: Optional[int] = None,
     ) -> None: ...
 
+class Partition:
+    """A partition specification: the conjunction of its partition values."""
+
+    values: List[PartitionValue]
+    """An array of partition values."""
+
+    def __init__(self, values: Optional[List[PartitionValue]] = None) -> None: ...
+
+class PartitionValue:
+    """A partition column value a shared table is restricted to."""
+
+    name: str
+    """The name of the partition column."""
+    op: PartitionValueOp
+    """The operator to apply for the value."""
+    recipient_property_key: Optional[str]
+    """
+    The key of a Delta Sharing recipient property whose value the partition column is matched
+    against, e.g. "databricks-account-id". Mutually exclusive with value.
+    """
+    value: Optional[str]
+    """
+    The value of the partition column; unset means a `null` value. Mutually exclusive with
+    recipient_property_key.
+    """
+
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        op: Optional[PartitionValueOp] = None,
+        recipient_property_key: Optional[str] = None,
+        value: Optional[str] = None,
+    ) -> None: ...
+
 class PermissionsChange:
     add: List[str]
     """The set of privileges to add."""
@@ -1027,30 +1103,37 @@ class PolicyInfo:
     """User-provided free-form text description of the policy."""
     created_at: Optional[int]
     """Time at which this policy was created, in epoch milliseconds."""
+    created_by: Optional[str]
+    """Username of the user who created the policy."""
     except_principals: List[str]
     """The principals explicitly excluded from the policy, even if matched by to_principals."""
+    for_securable_type: Optional[str]
+    """
+    The type of securables the policy takes effect on, e.g. TABLE for a policy defined on a
+    schema that applies to the tables within it.
+    """
     id: Optional[str]
     """Server-assigned unique identifier for the policy."""
     match_columns: List[MatchColumn]
     """
-    The columns referenced by the row-filter or column-mask function, and the aliases they are
-    bound to.
+    The columns referenced by the row-filter or column-mask function, and the aliases they
+    are bound to. Only valid when for_securable_type is TABLE; the policy then applies only to
+    tables whose columns satisfy all match conditions.
     """
     name: str
     """The name of the policy. Unique within the securable it is defined on."""
     on_securable_fullname: str
     """The fully qualified name of the securable the policy is defined on."""
     on_securable_type: str
-    """
-    The type of securable the policy is defined on. Supported values: catalogs, schemas,
-    tables.
-    """
+    """The type of securable the policy is defined on. Supported values: CATALOG, SCHEMA, TABLE."""
     policy_type: PolicyType
     """The kind of enforcement this policy applies."""
     to_principals: List[str]
     """The principals the policy applies to. Empty means "all principals"."""
     updated_at: Optional[int]
     """Time at which this policy was last updated, in epoch milliseconds."""
+    updated_by: Optional[str]
+    """Username of the user who last modified the policy."""
     when_condition: Optional[str]
     """
     An opaque condition expression, e.g. "hasTagValue('env','prod')", evaluated by the query
@@ -1058,6 +1141,10 @@ class PolicyInfo:
     """
     column_mask: Optional[FunctionRef]
     """The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK."""
+    deny: Optional[PrivilegeOptions]
+    """The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY."""
+    grant: Optional[PrivilegeOptions]
+    """The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT."""
     row_filter: Optional[FunctionRef]
     """The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER."""
 
@@ -1065,7 +1152,9 @@ class PolicyInfo:
         self,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
+        created_by: Optional[str] = None,
         except_principals: Optional[List[str]] = None,
+        for_securable_type: Optional[str] = None,
         id: Optional[str] = None,
         match_columns: Optional[List[MatchColumn]] = None,
         name: Optional[str] = None,
@@ -1074,8 +1163,11 @@ class PolicyInfo:
         policy_type: Optional[PolicyType] = None,
         to_principals: Optional[List[str]] = None,
         updated_at: Optional[int] = None,
+        updated_by: Optional[str] = None,
         when_condition: Optional[str] = None,
         column_mask: Optional[FunctionRef] = None,
+        deny: Optional[PrivilegeOptions] = None,
+        grant: Optional[PrivilegeOptions] = None,
         row_filter: Optional[FunctionRef] = None,
     ) -> None: ...
 
@@ -1091,6 +1183,14 @@ class PrivilegeAssignment:
     def __init__(
         self, principal: Optional[str] = None, privileges: Optional[List[str]] = None
     ) -> None: ...
+
+class PrivilegeOptions:
+    """The privileges a deny or grant policy applies to."""
+
+    privileges: List[str]
+    """The privileges to deny or grant when the principal and condition match."""
+
+    def __init__(self, privileges: Optional[List[str]] = None) -> None: ...
 
 class Provider:
     """A provider represents an organization sharing data with this metastore.
@@ -1116,8 +1216,8 @@ class Provider:
     """A map of key-value properties attached to the provider."""
     recipient_profile_str: Optional[str]
     """
-    The recipient profile (credential file contents) used to connect to the sharing server,
-    present only for TOKEN authentication.
+    The recipient profile (credential file contents) used to connect to the sharing server.
+    Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
     """
     updated_at: Optional[int]
     """Time at which this provider was updated, in epoch milliseconds."""
@@ -1160,23 +1260,23 @@ class Recipient:
     comment: Optional[str]
     """Description about the recipient."""
     created_at: Optional[int]
-    """Time at which this share was created, in epoch milliseconds."""
+    """Time at which this recipient was created, in epoch milliseconds."""
     created_by: Optional[str]
-    """Username of the creator of the share."""
+    """Username of recipient creator."""
     id: Optional[str]
     """Unique ID of the recipient."""
     name: str
     """The name of the recipient."""
     owner: Optional[str]
     """Username of the recipient owner."""
-    properties: Dict[str, str]
-    """A map of key-value properties attached to the securable."""
+    properties_kvpairs: Optional[SecurablePropertiesKvPairs]
+    """Recipient properties as map of string key-value pairs."""
     tokens: List[RecipientToken]
     """This field is only present when the authentication_type is TOKEN."""
     updated_at: Optional[int]
-    """Time at which this share was updated, in epoch milliseconds."""
+    """Time at which this recipient was updated, in epoch milliseconds."""
     updated_by: Optional[str]
-    """Username of share updater."""
+    """Username of recipient updater."""
 
     def __init__(
         self,
@@ -1187,7 +1287,7 @@ class Recipient:
         id: Optional[str] = None,
         name: Optional[str] = None,
         owner: Optional[str] = None,
-        properties: Optional[Dict[str, str]] = None,
+        properties_kvpairs: Optional[SecurablePropertiesKvPairs] = None,
         tokens: Optional[List[RecipientToken]] = None,
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
@@ -1285,6 +1385,11 @@ class RegisteredModel:
 class Schema:
     """A schema is a namespace within a catalog that contains tables."""
 
+    browse_only: Optional[bool]
+    """
+    Indicates whether the principal is limited to retrieving metadata for the associated
+    object through the BROWSE privilege when include_browse is enabled in the request.
+    """
     catalog_name: str
     """Name of parent catalog."""
     comment: Optional[str]
@@ -1323,6 +1428,7 @@ class Schema:
 
     def __init__(
         self,
+        browse_only: Optional[bool] = None,
         catalog_name: Optional[str] = None,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
@@ -1338,6 +1444,14 @@ class Schema:
         updated_by: Optional[str] = None,
     ) -> None: ...
 
+class SecurablePropertiesKvPairs:
+    """An object with the properties of a securable as key-value pairs."""
+
+    properties: Dict[str, str]
+    """A map of key-value properties attached to the securable."""
+
+    def __init__(self, properties: Optional[Dict[str, str]] = None) -> None: ...
+
 class Share:
     comment: Optional[str]
     """User-provided free-form text description."""
@@ -1346,7 +1460,7 @@ class Share:
     created_by: Optional[str]
     """Username of the creator of the share."""
     id: Optional[str]
-    """Unique ID of the recipient."""
+    """Unique ID of the share."""
     name: str
     """Name of the share."""
     objects: List[DataObject]
@@ -1474,7 +1588,8 @@ class Table:
     view_dependencies: Optional[DependencyList]
     """
     Tables and functions the view-like table reads. For metric views this is derived from the
-    view_definition by the server (the definition is the single source of truth).
+    view_definition by the server (the definition is the single source of truth). When unset,
+    dependencies were not provided; an empty list means there are none.
     """
 
     def __init__(
@@ -1538,7 +1653,7 @@ class TagPolicy:
     values: List[Value]
     """
     The set of allowed values for the governed tag. When empty, the governed tag does not
-    restrict the values that may be assigned.
+    restrict the values that may be assigned. The list is unordered.
     """
 
     def __init__(
@@ -1610,9 +1725,9 @@ class Volume:
     comment: Optional[str]
     """User-provided free-form text description."""
     created_at: Optional[int]
-    """Time at which this catalog was created, in epoch milliseconds."""
+    """Time at which this volume was created, in epoch milliseconds."""
     created_by: Optional[str]
-    """Username of catalog creator."""
+    """Username of volume creator."""
     full_name: str
     """The three-level (fully qualified) name of the volume"""
     metastore_id: Optional[str]
@@ -1620,15 +1735,15 @@ class Volume:
     name: str
     """Name of volume, relative to parent schema."""
     owner: Optional[str]
-    """Username of current owner of table."""
+    """Username of current owner of volume."""
     schema_name: str
     """Name of parent schema."""
     storage_location: str
     """The storage location on the cloud"""
     updated_at: Optional[int]
-    """Time at which this catalog was last updated, in epoch milliseconds."""
+    """Time at which this volume was last updated, in epoch milliseconds."""
     updated_by: Optional[str]
-    """Username of user who last modified catalog."""
+    """Username of user who last modified the volume."""
     volume_id: str
     """The unique identifier of the volume"""
     volume_type: VolumeType
@@ -1702,6 +1817,8 @@ class ColumnTypeName(enum.Enum):
     DECIMAL = "DECIMAL"
     DOUBLE = "DOUBLE"
     FLOAT = "FLOAT"
+    GEOGRAPHY = "GEOGRAPHY"
+    GEOMETRY = "GEOMETRY"
     INT = "INT"
     INTERVAL = "INTERVAL"
     LONG = "LONG"
@@ -1716,14 +1833,28 @@ class ColumnTypeName(enum.Enum):
     USER_DEFINED_TYPE = "USER_DEFINED_TYPE"
     VARIANT = "VARIANT"
 
+class DataObjectStatus(enum.Enum):
+    """Whether a shared data object is still accessible to the share."""
+
+    ACTIVE = "ACTIVE"
+    """The data object is accessible."""
+    DATA_OBJECT_STATUS_UNSPECIFIED = "DATA_OBJECT_STATUS_UNSPECIFIED"
+    PERMISSION_DENIED = "PERMISSION_DENIED"
+    """The share owner lost access to the data object."""
+
 class DataObjectType(enum.Enum):
     AGENT_SKILL = "AGENT_SKILL"
     """An agent skill (a directory of SKILL.md + scripts/assets) shared as a storage-backed asset on top of
     a volume (Open Sharing)."""
     DATA_OBJECT_TYPE_UNSPECIFIED = "DATA_OBJECT_TYPE_UNSPECIFIED"
     """Unknown data object type."""
+    FUNCTION = "FUNCTION"
+    MATERIALIZED_VIEW = "MATERIALIZED_VIEW"
+    MODEL = "MODEL"
     SCHEMA = "SCHEMA"
+    STREAMING_TABLE = "STREAMING_TABLE"
     TABLE = "TABLE"
+    VIEW = "VIEW"
     VOLUME = "VOLUME"
     """A Unity Catalog volume shared as a storage-backed asset (Open Sharing)."""
 
@@ -1733,6 +1864,9 @@ class DataSourceFormat(enum.Enum):
     DATA_SOURCE_FORMAT_UNSPECIFIED = "DATA_SOURCE_FORMAT_UNSPECIFIED"
     DELTA = "DELTA"
     DELTASHARING = "DELTASHARING"
+    DELTA_UNIFORM_HUDI = "DELTA_UNIFORM_HUDI"
+    DELTA_UNIFORM_ICEBERG = "DELTA_UNIFORM_ICEBERG"
+    HIVE = "HIVE"
     HUDI = "HUDI"
     ICEBERG = "ICEBERG"
     JSON = "JSON"
@@ -1833,11 +1967,24 @@ class ParameterStyle(enum.Enum):
     S = "S"
     """The parameters are passed positionally (S = SQL)."""
 
+class PartitionValueOp(enum.Enum):
+    """The operator a partition value is matched with."""
+
+    EQUAL = "EQUAL"
+    """The partition column equals the value."""
+    LIKE = "LIKE"
+    """The partition column matches the value as a SQL LIKE pattern."""
+    PARTITION_VALUE_OP_UNSPECIFIED = "PARTITION_VALUE_OP_UNSPECIFIED"
+
 class PolicyType(enum.Enum):
     """The kind of enforcement a policy applies."""
 
     POLICY_TYPE_COLUMN_MASK = "POLICY_TYPE_COLUMN_MASK"
     """Masks a column's values for callers matched by the when_condition."""
+    POLICY_TYPE_DENY = "POLICY_TYPE_DENY"
+    """Denies the listed privileges to callers matched by the when_condition."""
+    POLICY_TYPE_GRANT = "POLICY_TYPE_GRANT"
+    """Grants the listed privileges to callers matched by the when_condition."""
     POLICY_TYPE_ROW_FILTER = "POLICY_TYPE_ROW_FILTER"
     """Filters rows returned from the securable based on the when_condition and match_columns."""
     POLICY_TYPE_UNSPECIFIED = "POLICY_TYPE_UNSPECIFIED"
@@ -1892,12 +2039,24 @@ class TableType(enum.Enum):
     """The type of the table."""
 
     EXTERNAL = "EXTERNAL"
+    EXTERNAL_SHALLOW_CLONE = "EXTERNAL_SHALLOW_CLONE"
     MANAGED = "MANAGED"
+    MANAGED_SHALLOW_CLONE = "MANAGED_SHALLOW_CLONE"
     MATERIALIZED_VIEW = "MATERIALIZED_VIEW"
     METRIC_VIEW = "METRIC_VIEW"
     STREAMING_TABLE = "STREAMING_TABLE"
     TABLE_TYPE_UNSPECIFIED = "TABLE_TYPE_UNSPECIFIED"
     VIEW = "VIEW"
+
+class TagAssignmentSourceType(enum.Enum):
+    """The source of an entity tag assignment."""
+
+    TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION = (
+        "TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION"
+    )
+    """Assigned by system data classification."""
+    TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED = "TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED"
+    """Assigned by a user (or unspecified)."""
 
 class VolumeType(enum.Enum):
     EXTERNAL = "EXTERNAL"
@@ -2044,7 +2203,7 @@ class CatalogClient:
             properties: A map of key-value properties attached to the securable. When provided in update
                         request, the specified properties will override the existing properties. To add and
                         remove properties, one would need to perform a read-modify-write.
-            new_name: Name of catalog.
+            new_name: New name for the catalog.
 
 
         Returns:
@@ -2100,6 +2259,7 @@ class CredentialClient:
                        purpose is STORAGE.
             owner: Username of current owner of credential.
             skip_validation: Supply true to this argument to skip validation of the updated credential.
+                             Defaults to false.
             force: Force an update even if there are dependent services (when purpose is SERVICE) or
                    dependent external locations and external tables (when purpose is STORAGE).
             azure_service_principal: The Azure service principal configuration.
@@ -2128,9 +2288,14 @@ class ExternalLocationClient:
             None
         """
         ...
-    def get(self) -> ExternalLocation:
+    def get(self, include_browse: Optional[bool] = None) -> ExternalLocation:
         """
         Get an external location
+
+
+        Args:
+            include_browse: Whether to include external locations in the response for which the principal
+                            can only access selective metadata for
 
 
         Returns:
@@ -2186,12 +2351,17 @@ class FunctionClient:
             None
         """
         ...
-    def get(self) -> Function:
+    def get(self, include_browse: Optional[bool] = None) -> Function:
         """
         Get a function
 
         Gets a function from within a parent catalog and schema. For the fetch to succeed, the caller must
         be a metastore admin, the owner of the function, or have SELECT on the function.
+
+
+        Args:
+            include_browse: Whether to include functions in the response for which the principal can only
+                            access selective metadata for
 
 
         Returns:
@@ -2215,24 +2385,6 @@ class FunctionClient:
         ...
 
 class PolicyClient:
-    def create_policy(self, policy_info: PolicyInfo) -> PolicyInfo:
-        """
-        Create a new policy
-
-        Creates a new row-filter or column-mask policy on the specified securable.
-
-
-        Args:
-            policy_info: The policy to create.
-
-
-        Returns:
-            A row-filter or column-mask policy bound to principals and scoped to a securable. Policies
-            are
-            read as whole documents; enforcement is performed by the query engine, not by this service.
-            `when_condition` is stored and returned opaque — this service does not parse or evaluate it.
-        """
-        ...
     def delete(self) -> None:
         """
         Delete a policy
@@ -2258,7 +2410,21 @@ class PolicyClient:
             `when_condition` is stored and returned opaque — this service does not parse or evaluate it.
         """
         ...
-    def update(self, policy_info: PolicyInfo, update_mask: Optional[str] = None) -> PolicyInfo:
+    def update(
+        self,
+        policy_type: Optional[PolicyType] = None,
+        comment: Optional[str] = None,
+        to_principals: Optional[List[str]] = None,
+        except_principals: Optional[List[str]] = None,
+        for_securable_type: Optional[str] = None,
+        when_condition: Optional[str] = None,
+        match_columns: Optional[List[MatchColumn]] = None,
+        row_filter: Optional[FunctionRef] = None,
+        column_mask: Optional[FunctionRef] = None,
+        deny: Optional[PrivilegeOptions] = None,
+        grant: Optional[PrivilegeOptions] = None,
+        update_mask: Optional[str] = None,
+    ) -> PolicyInfo:
         """
         Update a policy
 
@@ -2266,8 +2432,24 @@ class PolicyClient:
 
 
         Args:
-            policy_info: The policy with the updated fields.
-            update_mask: The list of fields to update, as a comma-separated string.
+            policy_type: The kind of enforcement this policy applies.
+            comment: User-provided free-form text description of the policy.
+            to_principals: The principals the policy applies to. Empty means "all principals".
+            except_principals: The principals explicitly excluded from the policy, even if matched by
+                               to_principals.
+            for_securable_type: The type of securables the policy takes effect on.
+            when_condition: An opaque condition expression evaluated by the query engine at enforcement
+                            time.
+            match_columns: The columns referenced by the policy function, and the aliases they are bound to.
+            row_filter: The row-filter function to invoke. Set only when policy_type is
+                        POLICY_TYPE_ROW_FILTER.
+            column_mask: The column-mask function to invoke. Set only when policy_type is
+                         POLICY_TYPE_COLUMN_MASK.
+            deny: The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+            grant: The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+            update_mask: The fields to update, as a comma-separated list of field names. If empty or "*",
+                         every field set in the request is updated. Otherwise only the listed fields are
+                         updated, and a listed field that is unset in the request is cleared.
 
 
         Returns:
@@ -2316,8 +2498,9 @@ class ProviderClient:
             new_name: New name for the provider.
             owner: Username of the provider owner.
             comment: Description about the provider.
-            recipient_profile_str: The recipient profile (credential file contents) used to connect to the
-                                   sharing server.
+            recipient_profile_str: The recipient profile (credential file contents) used to connect to
+                                   the sharing server. Required when authentication_type is TOKEN or
+                                   OAUTH_CLIENT_CREDENTIALS.
             properties: Provider properties as map of string key-value pairs. When provided in update
                         request, the specified properties will override the existing properties. To add and
                         remove properties, one would need to perform a read-modify-write.
@@ -2355,7 +2538,7 @@ class RecipientClient:
         new_name: Optional[str] = None,
         owner: Optional[str] = None,
         comment: Optional[str] = None,
-        properties: Optional[Dict[str, str]] = None,
+        properties_kvpairs: Optional[SecurablePropertiesKvPairs] = None,
         expiration_time: Optional[int] = None,
     ) -> Recipient:
         """
@@ -2366,9 +2549,10 @@ class RecipientClient:
             new_name: New name for the recipient
             owner: Username of the recipient owner.
             comment: Description about the recipient.
-            properties: Recipient properties as map of string key-value pairs. When provided in update
-                        request, the specified properties will override the existing properties. To add and
-                        remove properties, one would need to perform a read-modify-write.
+            properties_kvpairs: Recipient properties as map of string key-value pairs. When provided
+                                in update request, the specified properties will override the existing
+                                properties. To add and remove properties, one would need to perform a read-
+                                modify-write.
             expiration_time: Expiration timestamp of the token, in epoch milliseconds.
 
 
@@ -2456,10 +2640,15 @@ class SchemaClient:
             None
         """
         ...
-    def get(self) -> Schema:
+    def get(self, include_browse: Optional[bool] = None) -> Schema:
         """
         Gets the specified schema within the metastore. The caller must be a metastore admin, the owner of
         the schema, or a user that has the USE_SCHEMA privilege on the schema.
+
+
+        Args:
+            include_browse: Whether to include schemas in the response for which the principal can only
+                            access selective metadata for
 
 
         Returns:
@@ -2484,7 +2673,7 @@ class SchemaClient:
             properties: A map of key-value properties attached to the securable. When provided in update
                         request, the specified properties will override the existing properties. To add and
                         remove properties, one would need to perform a read-modify-write.
-            new_name: Name of schema.
+            new_name: New name for the schema.
 
 
         Returns:
@@ -2558,7 +2747,8 @@ class ShareClient:
 
 
         Args:
-            updates: Array of shared data object updates.
+            updates: Array of shared data object updates. At most 100 data objects may be updated per
+                     request.
             new_name: A new name for the share.
             owner: Owner of the share.
             comment: User-provided free-form text description.
@@ -2630,7 +2820,12 @@ class TagPolicyClient:
             governed tag to an entity is done through the Entity Tag Assignments API.
         """
         ...
-    def update(self, tag_policy: TagPolicy, update_mask: Optional[str] = None) -> TagPolicy:
+    def update(
+        self,
+        description: Optional[str] = None,
+        values: Optional[List[Value]] = None,
+        update_mask: Optional[str] = None,
+    ) -> TagPolicy:
         """
         Update a tag policy
 
@@ -2638,8 +2833,11 @@ class TagPolicyClient:
 
 
         Args:
-            tag_policy: The tag policy with the updated fields.
-            update_mask: The list of fields to update, as a comma-separated string.
+            description: User-provided free-form text description of the tag policy.
+            values: The set of allowed values for the governed tag. The list is unordered.
+            update_mask: The fields to update, as a comma-separated list of field names. If empty or "*",
+                         every field set in the request is updated. Otherwise only the listed fields are
+                         updated, and a listed field that is unset in the request is cleared.
 
 
         Returns:
@@ -2660,7 +2858,7 @@ class VolumeClient:
     def get(self, include_browse: Optional[bool] = None) -> Volume:
         """
         Args:
-            include_browse: Whether to include schemas in the response for which the principal can only
+            include_browse: Whether to include volumes in the response for which the principal can only
                             access selective metadata for
 
 
@@ -2800,8 +2998,8 @@ class UnityCatalogClient:
             comment: Comment associated with the credential.
             read_only: Whether the credential is usable only for read operations. Only applicable when
                        purpose is STORAGE.
-            skip_validation: Optional. Supplying true to this argument skips validation of the created set
-                             of credentials.
+            skip_validation: Supplying true to this argument skips validation of the created set of
+                             credentials. Defaults to false.
             azure_service_principal: The Azure service principal configuration.
             azure_managed_identity: The Azure managed identity configuration.
             azure_storage_key: The Azure storage key configuration.
@@ -2814,7 +3012,7 @@ class UnityCatalogClient:
         """
         ...
     def create_entity_tag_assignment(
-        self, tag_assignment: EntityTagAssignment
+        self, entity_type: str, entity_name: str, tag_key: str, tag_value: Optional[str] = None
     ) -> EntityTagAssignment:
         """
         Create an entity tag assignment
@@ -2823,7 +3021,11 @@ class UnityCatalogClient:
 
 
         Args:
-            tag_assignment: The tag assignment to create.
+            entity_type: The type of the entity to which the tag is assigned. Supported values: catalogs,
+                         schemas, tables, columns, volumes.
+            entity_name: The fully qualified name of the entity to which the tag is assigned.
+            tag_key: The key of the tag.
+            tag_value: The value of the tag.
 
 
         Returns:
@@ -2916,6 +3118,58 @@ class UnityCatalogClient:
             operation.
         """
         ...
+    def create_policy(
+        self,
+        name: str,
+        on_securable_type: str,
+        on_securable_fullname: str,
+        policy_type: PolicyType,
+        comment: Optional[str] = None,
+        to_principals: Optional[List[str]] = None,
+        except_principals: Optional[List[str]] = None,
+        for_securable_type: Optional[str] = None,
+        when_condition: Optional[str] = None,
+        match_columns: Optional[List[MatchColumn]] = None,
+        row_filter: Optional[FunctionRef] = None,
+        column_mask: Optional[FunctionRef] = None,
+        deny: Optional[PrivilegeOptions] = None,
+        grant: Optional[PrivilegeOptions] = None,
+    ) -> PolicyInfo:
+        """
+        Create a new policy
+
+        Creates a new row-filter or column-mask policy on the specified securable.
+
+
+        Args:
+            name: The name of the policy. Unique within the securable it is defined on.
+            on_securable_type: The type of securable the policy is defined on. Supported values: CATALOG,
+                               SCHEMA, TABLE.
+            on_securable_fullname: The fully qualified name of the securable the policy is defined on.
+            policy_type: The kind of enforcement this policy applies.
+            comment: User-provided free-form text description of the policy.
+            to_principals: The principals the policy applies to. Empty means "all principals".
+            except_principals: The principals explicitly excluded from the policy, even if matched by
+                               to_principals.
+            for_securable_type: The type of securables the policy takes effect on.
+            when_condition: An opaque condition expression evaluated by the query engine at enforcement
+                            time.
+            match_columns: The columns referenced by the policy function, and the aliases they are bound to.
+            row_filter: The row-filter function to invoke. Set only when policy_type is
+                        POLICY_TYPE_ROW_FILTER.
+            column_mask: The column-mask function to invoke. Set only when policy_type is
+                         POLICY_TYPE_COLUMN_MASK.
+            deny: The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+            grant: The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+
+
+        Returns:
+            A row-filter or column-mask policy bound to principals and scoped to a securable. Policies
+            are
+            read as whole documents; enforcement is performed by the query engine, not by this service.
+            `when_condition` is stored and returned opaque — this service does not parse or evaluate it.
+        """
+        ...
     def create_provider(
         self,
         name: str,
@@ -2934,8 +3188,9 @@ class UnityCatalogClient:
             authentication_type: The delta sharing authentication type.
             owner: Username of the provider owner.
             comment: Description about the provider.
-            recipient_profile_str: The recipient profile (credential file contents) used to connect to the
-                                   sharing server, required for TOKEN authentication.
+            recipient_profile_str: The recipient profile (credential file contents) used to connect to
+                                   the sharing server. Required when authentication_type is TOKEN or
+                                   OAUTH_CLIENT_CREDENTIALS.
             properties: Provider properties as map of string key-value pairs.
 
 
@@ -2952,7 +3207,7 @@ class UnityCatalogClient:
         authentication_type: AuthenticationType,
         owner: str,
         comment: Optional[str] = None,
-        properties: Optional[Dict[str, str]] = None,
+        properties_kvpairs: Optional[SecurablePropertiesKvPairs] = None,
         expiration_time: Optional[int] = None,
     ) -> Recipient:
         """
@@ -2964,9 +3219,10 @@ class UnityCatalogClient:
             authentication_type: The delta sharing authentication type.
             owner: Username of the recipient owner.
             comment: Description about the recipient.
-            properties: Recipient properties as map of string key-value pairs. When provided in update
-                        request, the specified properties will override the existing properties. To add and
-                        remove properties, one would need to perform a read-modify-write.
+            properties_kvpairs: Recipient properties as map of string key-value pairs. When provided
+                                in update request, the specified properties will override the existing
+                                properties. To add and remove properties, one would need to perform a read-
+                                modify-write.
             expiration_time: Expiration timestamp of the token, in epoch milliseconds.
 
 
@@ -3025,7 +3281,9 @@ class UnityCatalogClient:
             A schema is a namespace within a catalog that contains tables.
         """
         ...
-    def create_share(self, name: str, comment: Optional[str] = None) -> Share:
+    def create_share(
+        self, name: str, comment: Optional[str] = None, storage_root: Optional[str] = None
+    ) -> Share:
         """
         Create a new share.
 
@@ -3033,6 +3291,7 @@ class UnityCatalogClient:
         Args:
             name: Name of the share.
             comment: User-provided free-form text description.
+            storage_root: Storage root URL for the share.
 
 
         Returns:
@@ -3102,7 +3361,9 @@ class UnityCatalogClient:
             The requested resource
         """
         ...
-    def create_tag_policy(self, tag_policy: TagPolicy) -> TagPolicy:
+    def create_tag_policy(
+        self, tag_key: str, description: Optional[str] = None, values: Optional[List[Value]] = None
+    ) -> TagPolicy:
         """
         Create a new tag policy
 
@@ -3110,7 +3371,9 @@ class UnityCatalogClient:
 
 
         Args:
-            tag_policy: The tag policy to create.
+            tag_key: The key of the governed tag.
+            description: User-provided free-form text description of the tag policy.
+            values: The set of allowed values for the governed tag. The list is unordered.
 
 
         Returns:
@@ -3138,7 +3401,7 @@ class UnityCatalogClient:
                          location. A managed volume is located in the default location which is specified by
                          the parent schema, or the parent catalog, or the Metastore.
             storage_location: The storage location on the cloud
-            comment: The storage location on the cloud
+            comment: The comment attached to the volume.
 
 
         Returns:
@@ -3225,6 +3488,11 @@ class UnityCatalogClient:
         """
         Generate a new set of credentials for a path.
 
+        Only external storage paths (external locations and external tables) are supported; managed tables
+        are not. The metastore must have the `external_access_enabled` flag set to true (default false).
+        The caller must have the `EXTERNAL_USE_LOCATION` privilege on the external location (granted by its
+        owner) and, for existing external tables, the `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
+
 
         Args:
             url: URL for path-based access.
@@ -3243,6 +3511,9 @@ class UnityCatalogClient:
     ) -> TemporaryCredential:
         """
         Generate a new set of credentials for a table.
+
+        The metastore must have the `external_access_enabled` flag set to true (default false). The caller
+        must have the `EXTERNAL_USE_SCHEMA` privilege on the parent schema (granted by a catalog owner).
 
 
         Args:
@@ -3326,7 +3597,7 @@ class UnityCatalogClient:
         schema_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[AgentSkill]:
+    ) -> Iterator[AgentSkill]:
         """
         Lists agent skills.
 
@@ -3349,7 +3620,7 @@ class UnityCatalogClient:
         schema_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[Agent]:
+    ) -> Iterator[Agent]:
         """
         Lists agents.
 
@@ -3366,7 +3637,7 @@ class UnityCatalogClient:
             List of The agents returned.
         """
         ...
-    def list_catalogs(self, max_results: Optional[int] = None) -> List[Catalog]:
+    def list_catalogs(self, max_results: Optional[int] = None) -> Iterator[Catalog]:
         """
         List catalogs
 
@@ -3377,7 +3648,8 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
 
 
         Returns:
@@ -3386,11 +3658,12 @@ class UnityCatalogClient:
         ...
     def list_credentials(
         self, purpose: Optional[Purpose] = None, max_results: Optional[int] = None
-    ) -> List[Credential]:
+    ) -> Iterator[Credential]:
         """
         Args:
             purpose: Return only credentials for the specified purpose.
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
 
 
         Returns:
@@ -3411,7 +3684,8 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             page_token: Opaque pagination token to go to next page based on previous query.
 
 
@@ -3421,13 +3695,14 @@ class UnityCatalogClient:
         ...
     def list_external_locations(
         self, max_results: Optional[int] = None, include_browse: Optional[bool] = None
-    ) -> List[ExternalLocation]:
+    ) -> Iterator[ExternalLocation]:
         """
         List external locations
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_browse: Whether to include schemas in the response for which the principal can only
                             access selective metadata for
 
@@ -3442,7 +3717,7 @@ class UnityCatalogClient:
         schema_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[Function]:
+    ) -> Iterator[Function]:
         """
         List functions
 
@@ -3455,7 +3730,8 @@ class UnityCatalogClient:
         Args:
             catalog_name: Name of parent catalog for functions of interest.
             schema_name: Parent schema of functions.
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_browse: Whether to include functions in the response for which the principal can only
                             access selective metadata for.
 
@@ -3469,7 +3745,7 @@ class UnityCatalogClient:
         full_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[ModelVersion]:
+    ) -> Iterator[ModelVersion]:
         """
         List model versions
 
@@ -3479,7 +3755,8 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_browse: Whether to include model versions in the response for which the principal can
                             only access selective metadata for.
 
@@ -3488,26 +3765,28 @@ class UnityCatalogClient:
             List of The model versions returned.
         """
         ...
-    def list_providers(self, max_results: Optional[int] = None) -> List[Provider]:
+    def list_providers(self, max_results: Optional[int] = None) -> Iterator[Provider]:
         """
         List providers.
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
 
 
         Returns:
             List of List of providers.
         """
         ...
-    def list_recipients(self, max_results: Optional[int] = None) -> List[Recipient]:
+    def list_recipients(self, max_results: Optional[int] = None) -> Iterator[Recipient]:
         """
         List recipients.
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
 
 
         Returns:
@@ -3520,7 +3799,7 @@ class UnityCatalogClient:
         schema_name: Optional[str] = None,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[RegisteredModel]:
+    ) -> Iterator[RegisteredModel]:
         """
         List registered models
 
@@ -3533,7 +3812,8 @@ class UnityCatalogClient:
         Args:
             catalog_name: Name of parent catalog for models of interest.
             schema_name: Name of parent schema for models of interest.
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_browse: Whether to include registered models in the response for which the principal can
                             only access selective metadata for.
 
@@ -3547,7 +3827,7 @@ class UnityCatalogClient:
         catalog_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[Schema]:
+    ) -> Iterator[Schema]:
         """
         Gets an array of schemas for a catalog in the metastore. If the caller is the metastore admin or the
         owner of the parent catalog, all schemas for the catalog will be retrieved. Otherwise, only schemas
@@ -3557,7 +3837,8 @@ class UnityCatalogClient:
 
         Args:
             catalog_name: Name of parent catalog.
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_browse: Whether to include schemas in the response for which the principal can only
                             access selective metadata for
 
@@ -3566,13 +3847,14 @@ class UnityCatalogClient:
             List of The schemas returned.
         """
         ...
-    def list_shares(self, max_results: Optional[int] = None) -> List[Share]:
+    def list_shares(self, max_results: Optional[int] = None) -> Iterator[Share]:
         """
         List shares.
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
 
 
         Returns:
@@ -3590,7 +3872,7 @@ class UnityCatalogClient:
         omit_username: Optional[bool] = None,
         include_browse: Optional[bool] = None,
         include_manifest_capabilities: Optional[bool] = None,
-    ) -> List[Table]:
+    ) -> Iterator[Table]:
         """
         Gets an array of all tables for the current metastore under the parent catalog and schema.
 
@@ -3603,7 +3885,8 @@ class UnityCatalogClient:
         Args:
             catalog_name: Name of parent catalog for tables of interest.
             schema_name: Name of parent schema for tables of interest.
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
             include_delta_metadata: Whether delta metadata should be included in the response.
             omit_columns: Whether to omit the columns of the table from the response or not.
             omit_properties: Whether to omit the properties of the table from the response or not.
@@ -3619,7 +3902,7 @@ class UnityCatalogClient:
             List of The tables returned.
         """
         ...
-    def list_tag_policies(self, max_results: Optional[int] = None) -> List[TagPolicy]:
+    def list_tag_policies(self, max_results: Optional[int] = None) -> Iterator[TagPolicy]:
         """
         List tag policies
 
@@ -3628,7 +3911,9 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned.
+            max_results: The maximum number of results to return in this request. Fewer results may be
+                         returned than requested. If unset or 0, this defaults to 1000; larger values are
+                         coerced down to 1000. Negative values are rejected.
 
 
         Returns:
@@ -3641,7 +3926,7 @@ class UnityCatalogClient:
         schema_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[Volume]:
+    ) -> Iterator[Volume]:
         """
         Lists volumes.
 
@@ -3649,8 +3934,9 @@ class UnityCatalogClient:
         Args:
             catalog_name: The identifier of the catalog
             schema_name: The identifier of the schema
-            max_results: The maximum number of results per page that should be returned.
-            include_browse: Whether to include schemas in the response for which the principal can only
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
+            include_browse: Whether to include volumes in the response for which the principal can only
                             access selective metadata for
 
 
@@ -3663,7 +3949,7 @@ class UnityCatalogClient:
         entity_type: str,
         entity_name: str,
         tag_key: str,
-        tag_assignment: EntityTagAssignment,
+        tag_value: Optional[str] = None,
         update_mask: Optional[str] = None,
     ) -> EntityTagAssignment:
         """
@@ -3673,8 +3959,10 @@ class UnityCatalogClient:
 
 
         Args:
-            tag_assignment: The tag assignment with the updated fields.
-            update_mask: The list of fields to update, as a comma-separated string.
+            tag_value: The value of the tag.
+            update_mask: The fields to update, as a comma-separated list of field names. If empty or "*",
+                         every field set in the request is updated. Otherwise only the listed fields are
+                         updated, and a listed field that is unset in the request is cleared.
 
 
         Returns:

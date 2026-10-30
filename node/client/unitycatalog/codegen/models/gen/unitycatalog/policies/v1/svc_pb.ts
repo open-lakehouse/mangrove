@@ -10,7 +10,7 @@ import { file_google_api_annotations } from "../../../google/api/annotations_pb"
 import { file_google_api_field_behavior } from "../../../google/api/field_behavior_pb";
 import type { EmptySchema } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_empty } from "@bufbuild/protobuf/wkt";
-import type { PolicyInfo, PolicyInfoSchema } from "./models_pb";
+import type { FunctionRef, MatchColumn, PolicyInfo, PolicyInfoSchema, PolicyType, PrivilegeOptions } from "./models_pb";
 import { file_unitycatalog_policies_v1_models } from "./models_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file unitycatalog/policies/v1/svc.proto.
  */
 export const file_unitycatalog_policies_v1_svc: GenFile = /*@__PURE__*/
-  fileDesc("CiJ1bml0eWNhdGFsb2cvcG9saWNpZXMvdjEvc3ZjLnByb3RvEhh1bml0eWNhdGFsb2cucG9saWNpZXMudjEiqQIKE0xpc3RQb2xpY2llc1JlcXVlc3QSQwoRb25fc2VjdXJhYmxlX3R5cGUYASABKAlCKOBBArpIIsgBAXIdMhteKGNhdGFsb2dzfHNjaGVtYXN8dGFibGVzKSQSLAoVb25fc2VjdXJhYmxlX2Z1bGxuYW1lGAIgASgJQg3gQQK6SAfIAQFyAhABEiMKEWluY2x1ZGVfaW5oZXJpdGVkGAMgASgIQgPgQQFIAIgBARInCgttYXhfcmVzdWx0cxgEIAEoBUIN4EEBukgHGgUY6AcgAEgBiAEBEhwKCnBhZ2VfdG9rZW4YBSABKAlCA+BBAUgCiAEBQhQKEl9pbmNsdWRlX2luaGVyaXRlZEIOCgxfbWF4X3Jlc3VsdHNCDQoLX3BhZ2VfdG9rZW4igAEKFExpc3RQb2xpY2llc1Jlc3BvbnNlEjYKCHBvbGljaWVzGAEgAygLMiQudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLlBvbGljeUluZm8SHAoPbmV4dF9wYWdlX3Rva2VuGAIgASgJSACIAQFCEgoQX25leHRfcGFnZV90b2tlbiLOAQoTQ3JlYXRlUG9saWN5UmVxdWVzdBJDChFvbl9zZWN1cmFibGVfdHlwZRgBIAEoCUIo4EECukgiyAEBch0yG14oY2F0YWxvZ3N8c2NoZW1hc3x0YWJsZXMpJBIsChVvbl9zZWN1cmFibGVfZnVsbG5hbWUYAiABKAlCDeBBArpIB8gBAXICEAESRAoLcG9saWN5X2luZm8YAyABKAsyJC51bml0eWNhdGFsb2cucG9saWNpZXMudjEuUG9saWN5SW5mb0IJ4EECukgDyAEBIqIBChBHZXRQb2xpY3lSZXF1ZXN0EkMKEW9uX3NlY3VyYWJsZV90eXBlGAEgASgJQijgQQK6SCLIAQFyHTIbXihjYXRhbG9nc3xzY2hlbWFzfHRhYmxlcykkEiwKFW9uX3NlY3VyYWJsZV9mdWxsbmFtZRgCIAEoCUIN4EECukgHyAEBcgIQARIbCgRuYW1lGAMgASgJQg3gQQK6SAfIAQFyAhABIpoCChNVcGRhdGVQb2xpY3lSZXF1ZXN0EkMKEW9uX3NlY3VyYWJsZV90eXBlGAEgASgJQijgQQK6SCLIAQFyHTIbXihjYXRhbG9nc3xzY2hlbWFzfHRhYmxlcykkEiwKFW9uX3NlY3VyYWJsZV9mdWxsbmFtZRgCIAEoCUIN4EECukgHyAEBcgIQARIbCgRuYW1lGAMgASgJQg3gQQK6SAfIAQFyAhABEkQKC3BvbGljeV9pbmZvGAQgASgLMiQudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLlBvbGljeUluZm9CCeBBArpIA8gBARIdCgt1cGRhdGVfbWFzaxgFIAEoCUID4EEBSACIAQFCDgoMX3VwZGF0ZV9tYXNrIqUBChNEZWxldGVQb2xpY3lSZXF1ZXN0EkMKEW9uX3NlY3VyYWJsZV90eXBlGAEgASgJQijgQQK6SCLIAQFyHTIbXihjYXRhbG9nc3xzY2hlbWFzfHRhYmxlcykkEiwKFW9uX3NlY3VyYWJsZV9mdWxsbmFtZRgCIAEoCUIN4EECukgHyAEBcgIQARIbCgRuYW1lGAMgASgJQg3gQQK6SAfIAQFyAhABMrcHCg9Qb2xpY2llc1NlcnZpY2USvQEKDExpc3RQb2xpY2llcxItLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5MaXN0UG9saWNpZXNSZXF1ZXN0Gi4udW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLkxpc3RQb2xpY2llc1Jlc3BvbnNlIk66Rw4qDExpc3RQb2xpY2llc4LT5JMCNxI1L3BvbGljaWVzL3tvbl9zZWN1cmFibGVfdHlwZX0ve29uX3NlY3VyYWJsZV9mdWxsbmFtZX0SwAEKDENyZWF0ZVBvbGljeRItLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5DcmVhdGVQb2xpY3lSZXF1ZXN0GiQudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLlBvbGljeUluZm8iW7pHDioMQ3JlYXRlUG9saWN5gtPkkwJEOgtwb2xpY3lfaW5mbyI1L3BvbGljaWVzL3tvbl9zZWN1cmFibGVfdHlwZX0ve29uX3NlY3VyYWJsZV9mdWxsbmFtZX0SsQEKCUdldFBvbGljeRIqLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5HZXRQb2xpY3lSZXF1ZXN0GiQudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLlBvbGljeUluZm8iUrpHCyoJR2V0UG9saWN5gtPkkwI+EjwvcG9saWNpZXMve29uX3NlY3VyYWJsZV90eXBlfS97b25fc2VjdXJhYmxlX2Z1bGxuYW1lfS97bmFtZX0SvQEKDFVwZGF0ZVBvbGljeRItLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5VcGRhdGVQb2xpY3lSZXF1ZXN0GiQudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLlBvbGljeUluZm8iWLpHDioMVXBkYXRlUG9saWN5gtPkkwJBOgEqMjwvcG9saWNpZXMve29uX3NlY3VyYWJsZV90eXBlfS97b25fc2VjdXJhYmxlX2Z1bGxuYW1lfS97bmFtZX0SrAEKDERlbGV0ZVBvbGljeRItLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5EZWxldGVQb2xpY3lSZXF1ZXN0GhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IlW6Rw4qDERlbGV0ZVBvbGljeYLT5JMCPio8L3BvbGljaWVzL3tvbl9zZWN1cmFibGVfdHlwZX0ve29uX3NlY3VyYWJsZV9mdWxsbmFtZX0ve25hbWV9Qv4BChxjb20udW5pdHljYXRhbG9nLnBvbGljaWVzLnYxQghTdmNQcm90b1ABWlJnaXRodWIuY29tL2RlbHRhLWluY3ViYXRvci9kZWx0YS1zaGFyaW5nLXJzL2dvL3VuaXR5Y2F0YWxvZy9wb2xpY2llcy92MTtwb2xpY2llc3YxogIDVVBYqgIYVW5pdHljYXRhbG9nLlBvbGljaWVzLlYxygIYVW5pdHljYXRhbG9nXFBvbGljaWVzXFYx4gIkVW5pdHljYXRhbG9nXFBvbGljaWVzXFYxXEdQQk1ldGFkYXRh6gIaVW5pdHljYXRhbG9nOjpQb2xpY2llczo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_gnostic_openapi_v3_annotations, file_google_api_annotations, file_google_api_field_behavior, file_google_protobuf_empty, file_unitycatalog_policies_v1_models]);
+  fileDesc("CiJ1bml0eWNhdGFsb2cvcG9saWNpZXMvdjEvc3ZjLnByb3RvEhh1bml0eWNhdGFsb2cucG9saWNpZXMudjEiowIKE0xpc3RQb2xpY2llc1JlcXVlc3QSQAoRb25fc2VjdXJhYmxlX3R5cGUYASABKAlCJeBBArpIH8gBAXIaMhheKENBVEFMT0d8U0NIRU1BfFRBQkxFKSQSLAoVb25fc2VjdXJhYmxlX2Z1bGxuYW1lGAIgASgJQg3gQQK6SAfIAQFyAhABEiMKEWluY2x1ZGVfaW5oZXJpdGVkGAMgASgIQgPgQQFIAIgBARIkCgttYXhfcmVzdWx0cxgEIAEoBUIK4EEBukgEGgIoAEgBiAEBEhwKCnBhZ2VfdG9rZW4YBSABKAlCA+BBAUgCiAEBQhQKEl9pbmNsdWRlX2luaGVyaXRlZEIOCgxfbWF4X3Jlc3VsdHNCDQoLX3BhZ2VfdG9rZW4igAEKFExpc3RQb2xpY2llc1Jlc3BvbnNlEjYKCHBvbGljaWVzGAEgAygLMiQudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLlBvbGljeUluZm8SHAoPbmV4dF9wYWdlX3Rva2VuGAIgASgJSACIAQFCEgoQX25leHRfcGFnZV90b2tlbiKlCAoTQ3JlYXRlUG9saWN5UmVxdWVzdBIbCgRuYW1lGAEgASgJQg3gQQK6SAfIAQFyAhABEkAKEW9uX3NlY3VyYWJsZV90eXBlGAIgASgJQiXgQQK6SB/IAQFyGjIYXihDQVRBTE9HfFNDSEVNQXxUQUJMRSkkEiwKFW9uX3NlY3VyYWJsZV9mdWxsbmFtZRgDIAEoCUIN4EECukgHyAEBcgIQARJGCgtwb2xpY3lfdHlwZRgEIAEoDjIkLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5Qb2xpY3lUeXBlQgvgQQK6SAWCAQIgABIZCgdjb21tZW50GAUgASgJQgPgQQFIAIgBARIaCg10b19wcmluY2lwYWxzGAYgAygJQgPgQQESHgoRZXhjZXB0X3ByaW5jaXBhbHMYByADKAlCA+BBARJDChJmb3Jfc2VjdXJhYmxlX3R5cGUYCCABKAlCIuBBAbpIHHIaMhheKENBVEFMT0d8U0NIRU1BfFRBQkxFKSRIAYgBARIgCg53aGVuX2NvbmRpdGlvbhgJIAEoCUID4EEBSAKIAQESQQoNbWF0Y2hfY29sdW1ucxgKIAMoCzIlLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5NYXRjaENvbHVtbkID4EEBEj4KCnJvd19maWx0ZXIYCyABKAsyJS51bml0eWNhdGFsb2cucG9saWNpZXMudjEuRnVuY3Rpb25SZWZIA4gBARI/Cgtjb2x1bW5fbWFzaxgMIAEoCzIlLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5GdW5jdGlvblJlZkgEiAEBEj0KBGRlbnkYDSABKAsyKi51bml0eWNhdGFsb2cucG9saWNpZXMudjEuUHJpdmlsZWdlT3B0aW9uc0gFiAEBEj4KBWdyYW50GA4gASgLMioudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLlByaXZpbGVnZU9wdGlvbnNIBogBATrPAbpIywEayAEKGnBvbGljeS5vcHRpb25zLmF0X21vc3Rfb25lEkFhdCBtb3N0IG9uZSBvZiByb3dfZmlsdGVyLCBjb2x1bW5fbWFzaywgZGVueSBhbmQgZ3JhbnQgbWF5IGJlIHNldBpnW2hhcyh0aGlzLnJvd19maWx0ZXIpLCBoYXModGhpcy5jb2x1bW5fbWFzayksIGhhcyh0aGlzLmRlbnkpLCBoYXModGhpcy5ncmFudCldLmZpbHRlcih4LCB4KS5zaXplKCkgPD0gMUIKCghfY29tbWVudEIVChNfZm9yX3NlY3VyYWJsZV90eXBlQhEKD193aGVuX2NvbmRpdGlvbkINCgtfcm93X2ZpbHRlckIOCgxfY29sdW1uX21hc2tCBwoFX2RlbnlCCAoGX2dyYW50Ip8BChBHZXRQb2xpY3lSZXF1ZXN0EkAKEW9uX3NlY3VyYWJsZV90eXBlGAEgASgJQiXgQQK6SB/IAQFyGjIYXihDQVRBTE9HfFNDSEVNQXxUQUJMRSkkEiwKFW9uX3NlY3VyYWJsZV9mdWxsbmFtZRgCIAEoCUIN4EECukgHyAEBcgIQARIbCgRuYW1lGAMgASgJQg3gQQK6SAfIAQFyAhABIuEIChNVcGRhdGVQb2xpY3lSZXF1ZXN0EkAKEW9uX3NlY3VyYWJsZV90eXBlGAEgASgJQiXgQQK6SB/IAQFyGjIYXihDQVRBTE9HfFNDSEVNQXxUQUJMRSkkEiwKFW9uX3NlY3VyYWJsZV9mdWxsbmFtZRgCIAEoCUIN4EECukgHyAEBcgIQARIbCgRuYW1lGAMgASgJQg3gQQK6SAfIAQFyAhABEkMKC3BvbGljeV90eXBlGAQgASgOMiQudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLlBvbGljeVR5cGVCA+BBAUgAiAEBEhkKB2NvbW1lbnQYBSABKAlCA+BBAUgBiAEBEhoKDXRvX3ByaW5jaXBhbHMYBiADKAlCA+BBARIeChFleGNlcHRfcHJpbmNpcGFscxgHIAMoCUID4EEBEkMKEmZvcl9zZWN1cmFibGVfdHlwZRgIIAEoCUIi4EEBukgcchoyGF4oQ0FUQUxPR3xTQ0hFTUF8VEFCTEUpJEgCiAEBEiAKDndoZW5fY29uZGl0aW9uGAkgASgJQgPgQQFIA4gBARJBCg1tYXRjaF9jb2x1bW5zGAogAygLMiUudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLk1hdGNoQ29sdW1uQgPgQQESPgoKcm93X2ZpbHRlchgLIAEoCzIlLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5GdW5jdGlvblJlZkgEiAEBEj8KC2NvbHVtbl9tYXNrGAwgASgLMiUudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLkZ1bmN0aW9uUmVmSAWIAQESPQoEZGVueRgNIAEoCzIqLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5Qcml2aWxlZ2VPcHRpb25zSAaIAQESPgoFZ3JhbnQYDiABKAsyKi51bml0eWNhdGFsb2cucG9saWNpZXMudjEuUHJpdmlsZWdlT3B0aW9uc0gHiAEBEh0KC3VwZGF0ZV9tYXNrGA8gASgJQgPgQQFICIgBATrPAbpIywEayAEKGnBvbGljeS5vcHRpb25zLmF0X21vc3Rfb25lEkFhdCBtb3N0IG9uZSBvZiByb3dfZmlsdGVyLCBjb2x1bW5fbWFzaywgZGVueSBhbmQgZ3JhbnQgbWF5IGJlIHNldBpnW2hhcyh0aGlzLnJvd19maWx0ZXIpLCBoYXModGhpcy5jb2x1bW5fbWFzayksIGhhcyh0aGlzLmRlbnkpLCBoYXModGhpcy5ncmFudCldLmZpbHRlcih4LCB4KS5zaXplKCkgPD0gMUIOCgxfcG9saWN5X3R5cGVCCgoIX2NvbW1lbnRCFQoTX2Zvcl9zZWN1cmFibGVfdHlwZUIRCg9fd2hlbl9jb25kaXRpb25CDQoLX3Jvd19maWx0ZXJCDgoMX2NvbHVtbl9tYXNrQgcKBV9kZW55QggKBl9ncmFudEIOCgxfdXBkYXRlX21hc2siogEKE0RlbGV0ZVBvbGljeVJlcXVlc3QSQAoRb25fc2VjdXJhYmxlX3R5cGUYASABKAlCJeBBArpIH8gBAXIaMhheKENBVEFMT0d8U0NIRU1BfFRBQkxFKSQSLAoVb25fc2VjdXJhYmxlX2Z1bGxuYW1lGAIgASgJQg3gQQK6SAfIAQFyAhABEhsKBG5hbWUYAyABKAlCDeBBArpIB8gBAXICEAEygQcKD1BvbGljaWVzU2VydmljZRK9AQoMTGlzdFBvbGljaWVzEi0udW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLkxpc3RQb2xpY2llc1JlcXVlc3QaLi51bml0eWNhdGFsb2cucG9saWNpZXMudjEuTGlzdFBvbGljaWVzUmVzcG9uc2UiTrpHDioMTGlzdFBvbGljaWVzgtPkkwI3EjUvcG9saWNpZXMve29uX3NlY3VyYWJsZV90eXBlfS97b25fc2VjdXJhYmxlX2Z1bGxuYW1lfRKKAQoMQ3JlYXRlUG9saWN5Ei0udW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLkNyZWF0ZVBvbGljeVJlcXVlc3QaJC51bml0eWNhdGFsb2cucG9saWNpZXMudjEuUG9saWN5SW5mbyIlukcOKgxDcmVhdGVQb2xpY3mC0+STAg46ASoiCS9wb2xpY2llcxKxAQoJR2V0UG9saWN5EioudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLkdldFBvbGljeVJlcXVlc3QaJC51bml0eWNhdGFsb2cucG9saWNpZXMudjEuUG9saWN5SW5mbyJSukcLKglHZXRQb2xpY3mC0+STAj4SPC9wb2xpY2llcy97b25fc2VjdXJhYmxlX3R5cGV9L3tvbl9zZWN1cmFibGVfZnVsbG5hbWV9L3tuYW1lfRK9AQoMVXBkYXRlUG9saWN5Ei0udW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLlVwZGF0ZVBvbGljeVJlcXVlc3QaJC51bml0eWNhdGFsb2cucG9saWNpZXMudjEuUG9saWN5SW5mbyJYukcOKgxVcGRhdGVQb2xpY3mC0+STAkE6ASoyPC9wb2xpY2llcy97b25fc2VjdXJhYmxlX3R5cGV9L3tvbl9zZWN1cmFibGVfZnVsbG5hbWV9L3tuYW1lfRKsAQoMRGVsZXRlUG9saWN5Ei0udW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLkRlbGV0ZVBvbGljeVJlcXVlc3QaFi5nb29nbGUucHJvdG9idWYuRW1wdHkiVbpHDioMRGVsZXRlUG9saWN5gtPkkwI+KjwvcG9saWNpZXMve29uX3NlY3VyYWJsZV90eXBlfS97b25fc2VjdXJhYmxlX2Z1bGxuYW1lfS97bmFtZX1C/gEKHGNvbS51bml0eWNhdGFsb2cucG9saWNpZXMudjFCCFN2Y1Byb3RvUAFaUmdpdGh1Yi5jb20vZGVsdGEtaW5jdWJhdG9yL2RlbHRhLXNoYXJpbmctcnMvZ28vdW5pdHljYXRhbG9nL3BvbGljaWVzL3YxO3BvbGljaWVzdjGiAgNVUFiqAhhVbml0eWNhdGFsb2cuUG9saWNpZXMuVjHKAhhVbml0eWNhdGFsb2dcUG9saWNpZXNcVjHiAiRVbml0eWNhdGFsb2dcUG9saWNpZXNcVjFcR1BCTWV0YWRhdGHqAhpVbml0eWNhdGFsb2c6OlBvbGljaWVzOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_gnostic_openapi_v3_annotations, file_google_api_annotations, file_google_api_field_behavior, file_google_protobuf_empty, file_unitycatalog_policies_v1_models]);
 
 /**
  * List policies defined on a securable.
@@ -29,7 +29,7 @@ export type ListPoliciesRequest = Message<"unitycatalog.policies.v1.ListPolicies
   /**
    * The type of the securable to list policies on.
    *
-   * Supported values: catalogs, schemas, tables.
+   * Supported values: CATALOG, SCHEMA, TABLE.
    *
    * @generated from field: string on_securable_type = 1;
    */
@@ -54,6 +54,8 @@ export type ListPoliciesRequest = Message<"unitycatalog.policies.v1.ListPolicies
 
   /**
    * The maximum number of results per page that should be returned.
+   *
+   * If unset or 0, the server's default page size is used. Negative values are rejected.
    *
    * @generated from field: optional int32 max_results = 4;
    */
@@ -105,31 +107,111 @@ export const ListPoliciesResponseSchema: GenMessage<ListPoliciesResponse> = /*@_
 /**
  * Create a new policy on a securable.
  *
+ * The body is the policy itself; the new policy applies to the securable and all its
+ * descendants.
+ *
  * @generated from message unitycatalog.policies.v1.CreatePolicyRequest
  */
 export type CreatePolicyRequest = Message<"unitycatalog.policies.v1.CreatePolicyRequest"> & {
   /**
-   * The type of the securable to create the policy on.
+   * The name of the policy. Unique within the securable it is defined on.
    *
-   * Supported values: catalogs, schemas, tables.
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The type of securable the policy is defined on.
    *
-   * @generated from field: string on_securable_type = 1;
+   * Supported values: CATALOG, SCHEMA, TABLE.
+   *
+   * @generated from field: string on_securable_type = 2;
    */
   onSecurableType: string;
 
   /**
-   * The fully qualified name of the securable to create the policy on.
+   * The fully qualified name of the securable the policy is defined on.
    *
-   * @generated from field: string on_securable_fullname = 2;
+   * @generated from field: string on_securable_fullname = 3;
    */
   onSecurableFullname: string;
 
   /**
-   * The policy to create.
+   * The kind of enforcement this policy applies.
    *
-   * @generated from field: unitycatalog.policies.v1.PolicyInfo policy_info = 3;
+   * @generated from field: unitycatalog.policies.v1.PolicyType policy_type = 4;
    */
-  policyInfo?: PolicyInfo | undefined;
+  policyType: PolicyType;
+
+  /**
+   * User-provided free-form text description of the policy.
+   *
+   * @generated from field: optional string comment = 5;
+   */
+  comment?: string | undefined;
+
+  /**
+   * The principals the policy applies to. Empty means "all principals".
+   *
+   * @generated from field: repeated string to_principals = 6;
+   */
+  toPrincipals: string[];
+
+  /**
+   * The principals explicitly excluded from the policy, even if matched by to_principals.
+   *
+   * @generated from field: repeated string except_principals = 7;
+   */
+  exceptPrincipals: string[];
+
+  /**
+   * The type of securables the policy takes effect on.
+   *
+   * @generated from field: optional string for_securable_type = 8;
+   */
+  forSecurableType?: string | undefined;
+
+  /**
+   * An opaque condition expression evaluated by the query engine at enforcement time.
+   *
+   * @generated from field: optional string when_condition = 9;
+   */
+  whenCondition?: string | undefined;
+
+  /**
+   * The columns referenced by the policy function, and the aliases they are bound to.
+   *
+   * @generated from field: repeated unitycatalog.policies.v1.MatchColumn match_columns = 10;
+   */
+  matchColumns: MatchColumn[];
+
+  /**
+   * The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+   *
+   * @generated from field: optional unitycatalog.policies.v1.FunctionRef row_filter = 11;
+   */
+  rowFilter?: FunctionRef | undefined;
+
+  /**
+   * The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+   *
+   * @generated from field: optional unitycatalog.policies.v1.FunctionRef column_mask = 12;
+   */
+  columnMask?: FunctionRef | undefined;
+
+  /**
+   * The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+   *
+   * @generated from field: optional unitycatalog.policies.v1.PrivilegeOptions deny = 13;
+   */
+  deny?: PrivilegeOptions | undefined;
+
+  /**
+   * The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+   *
+   * @generated from field: optional unitycatalog.policies.v1.PrivilegeOptions grant = 14;
+   */
+  grant?: PrivilegeOptions | undefined;
 };
 
 /**
@@ -148,7 +230,7 @@ export type GetPolicyRequest = Message<"unitycatalog.policies.v1.GetPolicyReques
   /**
    * The type of the securable the policy is defined on.
    *
-   * Supported values: catalogs, schemas, tables.
+   * Supported values: CATALOG, SCHEMA, TABLE.
    *
    * @generated from field: string on_securable_type = 1;
    */
@@ -179,13 +261,15 @@ export const GetPolicyRequestSchema: GenMessage<GetPolicyRequest> = /*@__PURE__*
 /**
  * Update a policy defined on a securable.
  *
+ * The policy is identified by the path; the body carries the fields to update.
+ *
  * @generated from message unitycatalog.policies.v1.UpdatePolicyRequest
  */
 export type UpdatePolicyRequest = Message<"unitycatalog.policies.v1.UpdatePolicyRequest"> & {
   /**
-   * The type of the securable the policy is defined on.
+   * The type of securable the policy is defined on.
    *
-   * Supported values: catalogs, schemas, tables.
+   * Supported values: CATALOG, SCHEMA, TABLE.
    *
    * @generated from field: string on_securable_type = 1;
    */
@@ -206,16 +290,89 @@ export type UpdatePolicyRequest = Message<"unitycatalog.policies.v1.UpdatePolicy
   name: string;
 
   /**
-   * The policy with the updated fields.
+   * The kind of enforcement this policy applies.
    *
-   * @generated from field: unitycatalog.policies.v1.PolicyInfo policy_info = 4;
+   * @generated from field: optional unitycatalog.policies.v1.PolicyType policy_type = 4;
    */
-  policyInfo?: PolicyInfo | undefined;
+  policyType?: PolicyType | undefined;
 
   /**
-   * The list of fields to update, as a comma-separated string.
+   * User-provided free-form text description of the policy.
    *
-   * @generated from field: optional string update_mask = 5;
+   * @generated from field: optional string comment = 5;
+   */
+  comment?: string | undefined;
+
+  /**
+   * The principals the policy applies to. Empty means "all principals".
+   *
+   * @generated from field: repeated string to_principals = 6;
+   */
+  toPrincipals: string[];
+
+  /**
+   * The principals explicitly excluded from the policy, even if matched by to_principals.
+   *
+   * @generated from field: repeated string except_principals = 7;
+   */
+  exceptPrincipals: string[];
+
+  /**
+   * The type of securables the policy takes effect on.
+   *
+   * @generated from field: optional string for_securable_type = 8;
+   */
+  forSecurableType?: string | undefined;
+
+  /**
+   * An opaque condition expression evaluated by the query engine at enforcement time.
+   *
+   * @generated from field: optional string when_condition = 9;
+   */
+  whenCondition?: string | undefined;
+
+  /**
+   * The columns referenced by the policy function, and the aliases they are bound to.
+   *
+   * @generated from field: repeated unitycatalog.policies.v1.MatchColumn match_columns = 10;
+   */
+  matchColumns: MatchColumn[];
+
+  /**
+   * The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+   *
+   * @generated from field: optional unitycatalog.policies.v1.FunctionRef row_filter = 11;
+   */
+  rowFilter?: FunctionRef | undefined;
+
+  /**
+   * The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+   *
+   * @generated from field: optional unitycatalog.policies.v1.FunctionRef column_mask = 12;
+   */
+  columnMask?: FunctionRef | undefined;
+
+  /**
+   * The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+   *
+   * @generated from field: optional unitycatalog.policies.v1.PrivilegeOptions deny = 13;
+   */
+  deny?: PrivilegeOptions | undefined;
+
+  /**
+   * The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+   *
+   * @generated from field: optional unitycatalog.policies.v1.PrivilegeOptions grant = 14;
+   */
+  grant?: PrivilegeOptions | undefined;
+
+  /**
+   * The fields to update, as a comma-separated list of field names.
+   *
+   * If empty or "*", every field set in the request is updated. Otherwise only the
+   * listed fields are updated, and a listed field that is unset in the request is cleared.
+   *
+   * @generated from field: optional string update_mask = 15;
    */
   updateMask?: string | undefined;
 };
@@ -236,7 +393,7 @@ export type DeletePolicyRequest = Message<"unitycatalog.policies.v1.DeletePolicy
   /**
    * The type of the securable the policy is defined on.
    *
-   * Supported values: catalogs, schemas, tables.
+   * Supported values: CATALOG, SCHEMA, TABLE.
    *
    * @generated from field: string on_securable_type = 1;
    */

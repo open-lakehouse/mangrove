@@ -34,8 +34,8 @@ impl TagPolicyClient {
     /// Update a tag policy
     ///
     /// Updates the governed tag definition that matches the supplied tag key.
-    pub fn update(&self, tag_policy: TagPolicy) -> UpdateTagPolicyBuilder {
-        UpdateTagPolicyBuilder::new(self.client.clone(), &self.tag_policy_name, tag_policy)
+    pub fn update(&self) -> UpdateTagPolicyBuilder {
+        UpdateTagPolicyBuilder::new(self.client.clone(), &self.tag_policy_name)
     }
     /// Delete a tag policy
     ///

@@ -153,6 +153,221 @@ impl ::buffa::Enumeration for AuthenticationType {
         ]
     }
 }
+/// An object with the properties of a securable as key-value pairs.
+#[derive(Clone, PartialEq, Default)]
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[serde(default)]
+pub struct SecurablePropertiesKvPairs {
+    /// A map of key-value properties attached to the securable.
+    ///
+    /// Field 1: `properties`
+    #[serde(
+        rename = "properties",
+        skip_serializing_if = "::buffa::__private::HashMap::is_empty",
+        deserialize_with = "::buffa::json_helpers::null_as_default"
+    )]
+    pub properties: ::buffa::__private::HashMap<
+        ::buffa::alloc::string::String,
+        ::buffa::alloc::string::String,
+    >,
+    #[serde(skip)]
+    #[doc(hidden)]
+    pub __buffa_unknown_fields: ::buffa::UnknownFields,
+}
+impl ::core::fmt::Debug for SecurablePropertiesKvPairs {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("SecurablePropertiesKvPairs")
+            .field("properties", &self.properties)
+            .finish()
+    }
+}
+impl SecurablePropertiesKvPairs {
+    /// Protobuf type URL for this message, for use with `Any::pack` and
+    /// `Any::unpack_if`.
+    ///
+    /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
+    pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.recipients.v1.SecurablePropertiesKvPairs";
+}
+impl ::buffa::DefaultInstance for SecurablePropertiesKvPairs {
+    fn default_instance() -> &'static Self {
+        static VALUE: ::buffa::__private::OnceBox<SecurablePropertiesKvPairs> = ::buffa::__private::OnceBox::new();
+        VALUE.get_or_init(|| ::buffa::alloc::boxed::Box::new(Self::default()))
+    }
+}
+impl ::buffa::MessageName for SecurablePropertiesKvPairs {
+    const PACKAGE: &'static str = "unitycatalog.recipients.v1";
+    const NAME: &'static str = "SecurablePropertiesKvPairs";
+    const FULL_NAME: &'static str = "unitycatalog.recipients.v1.SecurablePropertiesKvPairs";
+    const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.recipients.v1.SecurablePropertiesKvPairs";
+}
+impl ::buffa::Message for SecurablePropertiesKvPairs {
+    /// Returns the total encoded size in bytes.
+    ///
+    /// The result is a `u32`; the protobuf specification requires all
+    /// messages to fit within 2 GiB (2,147,483,647 bytes), so a
+    /// compliant message will never overflow this type.
+    #[allow(clippy::let_and_return)]
+    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u32;
+        #[allow(clippy::for_kv_map)]
+        for (k, v) in &self.properties {
+            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
+                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+            size
+                += 1u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
+                    + entry_size;
+        }
+        size += self.__buffa_unknown_fields.encoded_len() as u32;
+        size
+    }
+    fn write_to(
+        &self,
+        _cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::bytes::BufMut,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        for (k, v) in &self.properties {
+            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
+                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+            ::buffa::encoding::Tag::new(
+                    1u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::encoding::encode_varint(entry_size as u64, buf);
+            ::buffa::encoding::Tag::new(
+                    1u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(k, buf);
+            ::buffa::encoding::Tag::new(
+                    2u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        self.__buffa_unknown_fields.write_to(buf);
+    }
+    fn merge_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        buf: &mut impl ::buffa::bytes::Buf,
+        depth: u32,
+    ) -> ::core::result::Result<(), ::buffa::DecodeError> {
+        #[allow(unused_imports)]
+        use ::buffa::bytes::Buf as _;
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        match tag.field_number() {
+            1u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 1u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                let entry_len = ::buffa::encoding::decode_varint(buf)?;
+                let entry_len = usize::try_from(entry_len)
+                    .map_err(|_| ::buffa::DecodeError::MessageTooLarge)?;
+                if buf.remaining() < entry_len {
+                    return ::core::result::Result::Err(
+                        ::buffa::DecodeError::UnexpectedEof,
+                    );
+                }
+                let entry_limit = buf.remaining() - entry_len;
+                let mut key = ::core::default::Default::default();
+                let mut val = ::core::default::Default::default();
+                while buf.remaining() > entry_limit {
+                    let entry_tag = ::buffa::encoding::Tag::decode(buf)?;
+                    match entry_tag.field_number() {
+                        1 => {
+                            if entry_tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: entry_tag.field_number(),
+                                    expected: 2u8,
+                                    actual: entry_tag.wire_type() as u8,
+                                });
+                            }
+                            key = ::buffa::types::decode_string(buf)?;
+                        }
+                        2 => {
+                            if entry_tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: entry_tag.field_number(),
+                                    expected: 2u8,
+                                    actual: entry_tag.wire_type() as u8,
+                                });
+                            }
+                            val = ::buffa::types::decode_string(buf)?;
+                        }
+                        _ => {
+                            ::buffa::encoding::skip_field_depth(entry_tag, buf, depth)?;
+                        }
+                    }
+                }
+                if buf.remaining() != entry_limit {
+                    let remaining = buf.remaining();
+                    if remaining > entry_limit {
+                        buf.advance(remaining - entry_limit);
+                    } else {
+                        return ::core::result::Result::Err(
+                            ::buffa::DecodeError::UnexpectedEof,
+                        );
+                    }
+                }
+                self.properties.insert(key, val);
+            }
+            _ => {
+                self.__buffa_unknown_fields
+                    .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
+            }
+        }
+        ::core::result::Result::Ok(())
+    }
+    fn clear(&mut self) {
+        self.properties.clear();
+        self.__buffa_unknown_fields.clear();
+    }
+}
+impl ::buffa::ExtensionSet for SecurablePropertiesKvPairs {
+    const PROTO_FQN: &'static str = "unitycatalog.recipients.v1.SecurablePropertiesKvPairs";
+    fn unknown_fields(&self) -> &::buffa::UnknownFields {
+        &self.__buffa_unknown_fields
+    }
+    fn unknown_fields_mut(&mut self) -> &mut ::buffa::UnknownFields {
+        &mut self.__buffa_unknown_fields
+    }
+}
+impl ::buffa::json_helpers::ProtoElemJson for SecurablePropertiesKvPairs {
+    fn serialize_proto_json<S: ::serde::Serializer>(
+        v: &Self,
+        s: S,
+    ) -> ::core::result::Result<S::Ok, S::Error> {
+        ::serde::Serialize::serialize(v, s)
+    }
+    fn deserialize_proto_json<'de, D: ::serde::Deserializer<'de>>(
+        d: D,
+    ) -> ::core::result::Result<Self, D::Error> {
+        <Self as ::serde::Deserialize>::deserialize(d)
+    }
+}
+#[doc(hidden)]
+pub const __SECURABLE_PROPERTIES_KV_PAIRS_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = ::buffa::type_registry::JsonAnyEntry {
+    type_url: "type.googleapis.com/unitycatalog.recipients.v1.SecurablePropertiesKvPairs",
+    to_json: ::buffa::type_registry::any_to_json::<SecurablePropertiesKvPairs>,
+    from_json: ::buffa::type_registry::any_from_json::<SecurablePropertiesKvPairs>,
+    is_wkt: false,
+};
 #[derive(Clone, PartialEq, Default)]
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[serde(default)]
@@ -522,19 +737,16 @@ pub struct Recipient {
     /// Field 4: `comment`
     #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
     pub comment: ::core::option::Option<::buffa::alloc::string::String>,
-    /// A map of key-value properties attached to the securable.
+    /// Recipient properties as map of string key-value pairs.
     ///
-    /// Field 6: `properties`
+    /// Field 6: `properties_kvpairs`
     #[serde(
-        rename = "properties",
-        skip_serializing_if = "::buffa::__private::HashMap::is_empty",
-        deserialize_with = "::buffa::json_helpers::null_as_default"
+        rename = "properties_kvpairs",
+        alias = "propertiesKvpairs",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
-    pub properties: ::buffa::__private::HashMap<
-        ::buffa::alloc::string::String,
-        ::buffa::alloc::string::String,
-    >,
-    /// Time at which this share was created, in epoch milliseconds.
+    pub properties_kvpairs: ::buffa::MessageField<SecurablePropertiesKvPairs>,
+    /// Time at which this recipient was created, in epoch milliseconds.
     ///
     /// Field 7: `created_at`
     #[serde(
@@ -544,7 +756,7 @@ pub struct Recipient {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub created_at: ::core::option::Option<i64>,
-    /// Username of the creator of the share.
+    /// Username of recipient creator.
     ///
     /// Field 8: `created_by`
     #[serde(
@@ -562,7 +774,7 @@ pub struct Recipient {
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
     pub tokens: ::buffa::alloc::vec::Vec<RecipientToken>,
-    /// Time at which this share was updated, in epoch milliseconds.
+    /// Time at which this recipient was updated, in epoch milliseconds.
     ///
     /// Field 10: `updated_at`
     #[serde(
@@ -572,7 +784,7 @@ pub struct Recipient {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_at: ::core::option::Option<i64>,
-    /// Username of share updater.
+    /// Username of recipient updater.
     ///
     /// Field 11: `updated_by`
     #[serde(
@@ -593,7 +805,7 @@ impl ::core::fmt::Debug for Recipient {
             .field("authentication_type", &self.authentication_type)
             .field("owner", &self.owner)
             .field("comment", &self.comment)
-            .field("properties", &self.properties)
+            .field("properties_kvpairs", &self.properties_kvpairs)
             .field("created_at", &self.created_at)
             .field("created_by", &self.created_by)
             .field("tokens", &self.tokens)
@@ -710,13 +922,13 @@ impl ::buffa::Message for Recipient {
         if let Some(ref v) = self.comment {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
-        #[allow(clippy::for_kv_map)]
-        for (k, v) in &self.properties {
-            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
-                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if self.properties_kvpairs.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.properties_kvpairs.compute_size(__cache);
+            __cache.set(__slot, inner_size);
             size
-                += 1u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
-                    + entry_size;
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
         }
         if let Some(v) = self.created_at {
             size += 1u32 + ::buffa::types::int64_encoded_len(v) as u32;
@@ -783,27 +995,14 @@ impl ::buffa::Message for Recipient {
                 .encode(buf);
             ::buffa::types::encode_string(v, buf);
         }
-        for (k, v) in &self.properties {
-            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
-                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if self.properties_kvpairs.is_set() {
             ::buffa::encoding::Tag::new(
                     6u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
-            ::buffa::encoding::encode_varint(entry_size as u64, buf);
-            ::buffa::encoding::Tag::new(
-                    1u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(k, buf);
-            ::buffa::encoding::Tag::new(
-                    2u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(v, buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.properties_kvpairs.write_to(__cache, buf);
         }
         if let Some(v) = self.created_at {
             ::buffa::encoding::Tag::new(7u32, ::buffa::encoding::WireType::Varint)
@@ -917,60 +1116,11 @@ impl ::buffa::Message for Recipient {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                let entry_len = ::buffa::encoding::decode_varint(buf)?;
-                let entry_len = usize::try_from(entry_len)
-                    .map_err(|_| ::buffa::DecodeError::MessageTooLarge)?;
-                if buf.remaining() < entry_len {
-                    return ::core::result::Result::Err(
-                        ::buffa::DecodeError::UnexpectedEof,
-                    );
-                }
-                let entry_limit = buf.remaining() - entry_len;
-                let mut key = ::core::default::Default::default();
-                let mut val = ::core::default::Default::default();
-                while buf.remaining() > entry_limit {
-                    let entry_tag = ::buffa::encoding::Tag::decode(buf)?;
-                    match entry_tag.field_number() {
-                        1 => {
-                            if entry_tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: entry_tag.field_number(),
-                                    expected: 2u8,
-                                    actual: entry_tag.wire_type() as u8,
-                                });
-                            }
-                            key = ::buffa::types::decode_string(buf)?;
-                        }
-                        2 => {
-                            if entry_tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: entry_tag.field_number(),
-                                    expected: 2u8,
-                                    actual: entry_tag.wire_type() as u8,
-                                });
-                            }
-                            val = ::buffa::types::decode_string(buf)?;
-                        }
-                        _ => {
-                            ::buffa::encoding::skip_field_depth(entry_tag, buf, depth)?;
-                        }
-                    }
-                }
-                if buf.remaining() != entry_limit {
-                    let remaining = buf.remaining();
-                    if remaining > entry_limit {
-                        buf.advance(remaining - entry_limit);
-                    } else {
-                        return ::core::result::Result::Err(
-                            ::buffa::DecodeError::UnexpectedEof,
-                        );
-                    }
-                }
-                self.properties.insert(key, val);
+                ::buffa::Message::merge_length_delimited(
+                    self.properties_kvpairs.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
             }
             7u32 => {
                 if tag.wire_type() != ::buffa::encoding::WireType::Varint {
@@ -1063,7 +1213,7 @@ impl ::buffa::Message for Recipient {
         self.authentication_type = ::buffa::EnumValue::from(0);
         self.owner = ::core::option::Option::None;
         self.comment = ::core::option::Option::None;
-        self.properties.clear();
+        self.properties_kvpairs = ::buffa::MessageField::none();
         self.created_at = ::core::option::Option::None;
         self.created_by = ::core::option::Option::None;
         self.tokens.clear();
@@ -1108,6 +1258,8 @@ pub const __RECIPIENT_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = ::buffa::
 #[serde(default)]
 pub struct ListRecipientsRequest {
     /// The maximum number of results per page that should be returned.
+    ///
+    /// If unset or 0, the server's default page size is used. Negative values are rejected.
     ///
     /// Field 1: `max_results`
     #[serde(
@@ -1538,16 +1690,13 @@ pub struct CreateRecipientRequest {
     /// When provided in update request, the specified properties will override the existing properties.
     /// To add and remove properties, one would need to perform a read-modify-write.
     ///
-    /// Field 5: `properties`
+    /// Field 5: `properties_kvpairs`
     #[serde(
-        rename = "properties",
-        skip_serializing_if = "::buffa::__private::HashMap::is_empty",
-        deserialize_with = "::buffa::json_helpers::null_as_default"
+        rename = "properties_kvpairs",
+        alias = "propertiesKvpairs",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
-    pub properties: ::buffa::__private::HashMap<
-        ::buffa::alloc::string::String,
-        ::buffa::alloc::string::String,
-    >,
+    pub properties_kvpairs: ::buffa::MessageField<SecurablePropertiesKvPairs>,
     /// Expiration timestamp of the token, in epoch milliseconds.
     ///
     /// Field 6: `expiration_time`
@@ -1569,7 +1718,7 @@ impl ::core::fmt::Debug for CreateRecipientRequest {
             .field("authentication_type", &self.authentication_type)
             .field("owner", &self.owner)
             .field("comment", &self.comment)
-            .field("properties", &self.properties)
+            .field("properties_kvpairs", &self.properties_kvpairs)
             .field("expiration_time", &self.expiration_time)
             .finish()
     }
@@ -1619,7 +1768,7 @@ impl ::buffa::Message for CreateRecipientRequest {
     /// messages to fit within 2 GiB (2,147,483,647 bytes), so a
     /// compliant message will never overflow this type.
     #[allow(clippy::let_and_return)]
-    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
         let mut size = 0u32;
@@ -1638,13 +1787,13 @@ impl ::buffa::Message for CreateRecipientRequest {
         if let Some(ref v) = self.comment {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
-        #[allow(clippy::for_kv_map)]
-        for (k, v) in &self.properties {
-            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
-                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if self.properties_kvpairs.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.properties_kvpairs.compute_size(__cache);
+            __cache.set(__slot, inner_size);
             size
-                += 1u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
-                    + entry_size;
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
         }
         if let Some(v) = self.expiration_time {
             size += 1u32 + ::buffa::types::int64_encoded_len(v) as u32;
@@ -1654,7 +1803,7 @@ impl ::buffa::Message for CreateRecipientRequest {
     }
     fn write_to(
         &self,
-        _cache: &mut ::buffa::SizeCache,
+        __cache: &mut ::buffa::SizeCache,
         buf: &mut impl ::buffa::bytes::BufMut,
     ) {
         #[allow(unused_imports)]
@@ -1691,27 +1840,14 @@ impl ::buffa::Message for CreateRecipientRequest {
                 .encode(buf);
             ::buffa::types::encode_string(v, buf);
         }
-        for (k, v) in &self.properties {
-            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
-                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if self.properties_kvpairs.is_set() {
             ::buffa::encoding::Tag::new(
                     5u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
-            ::buffa::encoding::encode_varint(entry_size as u64, buf);
-            ::buffa::encoding::Tag::new(
-                    1u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(k, buf);
-            ::buffa::encoding::Tag::new(
-                    2u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(v, buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.properties_kvpairs.write_to(__cache, buf);
         }
         if let Some(v) = self.expiration_time {
             ::buffa::encoding::Tag::new(6u32, ::buffa::encoding::WireType::Varint)
@@ -1784,60 +1920,11 @@ impl ::buffa::Message for CreateRecipientRequest {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                let entry_len = ::buffa::encoding::decode_varint(buf)?;
-                let entry_len = usize::try_from(entry_len)
-                    .map_err(|_| ::buffa::DecodeError::MessageTooLarge)?;
-                if buf.remaining() < entry_len {
-                    return ::core::result::Result::Err(
-                        ::buffa::DecodeError::UnexpectedEof,
-                    );
-                }
-                let entry_limit = buf.remaining() - entry_len;
-                let mut key = ::core::default::Default::default();
-                let mut val = ::core::default::Default::default();
-                while buf.remaining() > entry_limit {
-                    let entry_tag = ::buffa::encoding::Tag::decode(buf)?;
-                    match entry_tag.field_number() {
-                        1 => {
-                            if entry_tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: entry_tag.field_number(),
-                                    expected: 2u8,
-                                    actual: entry_tag.wire_type() as u8,
-                                });
-                            }
-                            key = ::buffa::types::decode_string(buf)?;
-                        }
-                        2 => {
-                            if entry_tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: entry_tag.field_number(),
-                                    expected: 2u8,
-                                    actual: entry_tag.wire_type() as u8,
-                                });
-                            }
-                            val = ::buffa::types::decode_string(buf)?;
-                        }
-                        _ => {
-                            ::buffa::encoding::skip_field_depth(entry_tag, buf, depth)?;
-                        }
-                    }
-                }
-                if buf.remaining() != entry_limit {
-                    let remaining = buf.remaining();
-                    if remaining > entry_limit {
-                        buf.advance(remaining - entry_limit);
-                    } else {
-                        return ::core::result::Result::Err(
-                            ::buffa::DecodeError::UnexpectedEof,
-                        );
-                    }
-                }
-                self.properties.insert(key, val);
+                ::buffa::Message::merge_length_delimited(
+                    self.properties_kvpairs.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
             }
             6u32 => {
                 if tag.wire_type() != ::buffa::encoding::WireType::Varint {
@@ -1863,7 +1950,7 @@ impl ::buffa::Message for CreateRecipientRequest {
         self.authentication_type = ::buffa::EnumValue::from(0);
         self.owner.clear();
         self.comment = ::core::option::Option::None;
-        self.properties.clear();
+        self.properties_kvpairs = ::buffa::MessageField::none();
         self.expiration_time = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
@@ -2073,16 +2160,13 @@ pub struct UpdateRecipientRequest {
     /// When provided in update request, the specified properties will override the existing properties.
     /// To add and remove properties, one would need to perform a read-modify-write.
     ///
-    /// Field 5: `properties`
+    /// Field 5: `properties_kvpairs`
     #[serde(
-        rename = "properties",
-        skip_serializing_if = "::buffa::__private::HashMap::is_empty",
-        deserialize_with = "::buffa::json_helpers::null_as_default"
+        rename = "properties_kvpairs",
+        alias = "propertiesKvpairs",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
-    pub properties: ::buffa::__private::HashMap<
-        ::buffa::alloc::string::String,
-        ::buffa::alloc::string::String,
-    >,
+    pub properties_kvpairs: ::buffa::MessageField<SecurablePropertiesKvPairs>,
     /// Expiration timestamp of the token, in epoch milliseconds.
     ///
     /// Field 6: `expiration_time`
@@ -2104,7 +2188,7 @@ impl ::core::fmt::Debug for UpdateRecipientRequest {
             .field("new_name", &self.new_name)
             .field("owner", &self.owner)
             .field("comment", &self.comment)
-            .field("properties", &self.properties)
+            .field("properties_kvpairs", &self.properties_kvpairs)
             .field("expiration_time", &self.expiration_time)
             .finish()
     }
@@ -2174,7 +2258,7 @@ impl ::buffa::Message for UpdateRecipientRequest {
     /// messages to fit within 2 GiB (2,147,483,647 bytes), so a
     /// compliant message will never overflow this type.
     #[allow(clippy::let_and_return)]
-    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
         let mut size = 0u32;
@@ -2190,13 +2274,13 @@ impl ::buffa::Message for UpdateRecipientRequest {
         if let Some(ref v) = self.comment {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
-        #[allow(clippy::for_kv_map)]
-        for (k, v) in &self.properties {
-            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
-                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if self.properties_kvpairs.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.properties_kvpairs.compute_size(__cache);
+            __cache.set(__slot, inner_size);
             size
-                += 1u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
-                    + entry_size;
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
         }
         if let Some(v) = self.expiration_time {
             size += 1u32 + ::buffa::types::int64_encoded_len(v) as u32;
@@ -2206,7 +2290,7 @@ impl ::buffa::Message for UpdateRecipientRequest {
     }
     fn write_to(
         &self,
-        _cache: &mut ::buffa::SizeCache,
+        __cache: &mut ::buffa::SizeCache,
         buf: &mut impl ::buffa::bytes::BufMut,
     ) {
         #[allow(unused_imports)]
@@ -2243,27 +2327,14 @@ impl ::buffa::Message for UpdateRecipientRequest {
                 .encode(buf);
             ::buffa::types::encode_string(v, buf);
         }
-        for (k, v) in &self.properties {
-            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
-                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if self.properties_kvpairs.is_set() {
             ::buffa::encoding::Tag::new(
                     5u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
-            ::buffa::encoding::encode_varint(entry_size as u64, buf);
-            ::buffa::encoding::Tag::new(
-                    1u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(k, buf);
-            ::buffa::encoding::Tag::new(
-                    2u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(v, buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.properties_kvpairs.write_to(__cache, buf);
         }
         if let Some(v) = self.expiration_time {
             ::buffa::encoding::Tag::new(6u32, ::buffa::encoding::WireType::Varint)
@@ -2342,60 +2413,11 @@ impl ::buffa::Message for UpdateRecipientRequest {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                let entry_len = ::buffa::encoding::decode_varint(buf)?;
-                let entry_len = usize::try_from(entry_len)
-                    .map_err(|_| ::buffa::DecodeError::MessageTooLarge)?;
-                if buf.remaining() < entry_len {
-                    return ::core::result::Result::Err(
-                        ::buffa::DecodeError::UnexpectedEof,
-                    );
-                }
-                let entry_limit = buf.remaining() - entry_len;
-                let mut key = ::core::default::Default::default();
-                let mut val = ::core::default::Default::default();
-                while buf.remaining() > entry_limit {
-                    let entry_tag = ::buffa::encoding::Tag::decode(buf)?;
-                    match entry_tag.field_number() {
-                        1 => {
-                            if entry_tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: entry_tag.field_number(),
-                                    expected: 2u8,
-                                    actual: entry_tag.wire_type() as u8,
-                                });
-                            }
-                            key = ::buffa::types::decode_string(buf)?;
-                        }
-                        2 => {
-                            if entry_tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: entry_tag.field_number(),
-                                    expected: 2u8,
-                                    actual: entry_tag.wire_type() as u8,
-                                });
-                            }
-                            val = ::buffa::types::decode_string(buf)?;
-                        }
-                        _ => {
-                            ::buffa::encoding::skip_field_depth(entry_tag, buf, depth)?;
-                        }
-                    }
-                }
-                if buf.remaining() != entry_limit {
-                    let remaining = buf.remaining();
-                    if remaining > entry_limit {
-                        buf.advance(remaining - entry_limit);
-                    } else {
-                        return ::core::result::Result::Err(
-                            ::buffa::DecodeError::UnexpectedEof,
-                        );
-                    }
-                }
-                self.properties.insert(key, val);
+                ::buffa::Message::merge_length_delimited(
+                    self.properties_kvpairs.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
             }
             6u32 => {
                 if tag.wire_type() != ::buffa::encoding::WireType::Varint {
@@ -2421,7 +2443,7 @@ impl ::buffa::Message for UpdateRecipientRequest {
         self.new_name = ::core::option::Option::None;
         self.owner = ::core::option::Option::None;
         self.comment = ::core::option::Option::None;
-        self.properties.clear();
+        self.properties_kvpairs = ::buffa::MessageField::none();
         self.expiration_time = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
@@ -2610,6 +2632,400 @@ pub mod __buffa {
     pub mod view {
         #[allow(unused_imports)]
         use super::*;
+        /// An object with the properties of a securable as key-value pairs.
+        #[derive(Clone, Debug, Default)]
+        pub struct SecurablePropertiesKvPairsView<'a> {
+            /// A map of key-value properties attached to the securable.
+            ///
+            /// Field 1: `properties` (map)
+            pub properties: ::buffa::MapView<'a, &'a str, &'a str>,
+            pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
+        }
+        impl<'a> SecurablePropertiesKvPairsView<'a> {
+            /// Decode from `buf`, enforcing a recursion depth limit for nested messages.
+            ///
+            /// Called by [`::buffa::MessageView::decode_view`] with [`::buffa::RECURSION_LIMIT`]
+            /// and by generated sub-message decode arms with `depth - 1`.
+            ///
+            /// **Not part of the public API.** Named with a leading underscore to
+            /// signal that it is for generated-code use only.
+            #[doc(hidden)]
+            pub fn _decode_depth(
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                let mut view = Self::default();
+                view._merge_into_view(buf, depth)?;
+                ::core::result::Result::Ok(view)
+            }
+            /// Merge fields from `buf` into this view (proto merge semantics).
+            ///
+            /// Repeated fields append; singular fields last-wins; singular
+            /// MESSAGE fields merge recursively. Used by sub-message decode
+            /// arms when the same field appears multiple times on the wire.
+            ///
+            /// **Not part of the public API.**
+            #[doc(hidden)]
+            pub fn _merge_into_view(
+                &mut self,
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<(), ::buffa::DecodeError> {
+                let _ = depth;
+                #[allow(unused_variables)]
+                let view = self;
+                let mut cur: &'a [u8] = buf;
+                while !cur.is_empty() {
+                    let before_tag = cur;
+                    let tag = ::buffa::encoding::Tag::decode(&mut cur)?;
+                    match tag.field_number() {
+                        1u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 1u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            let entry_bytes = ::buffa::types::borrow_bytes(&mut cur)?;
+                            let mut entry_cur: &'a [u8] = entry_bytes;
+                            let mut key = "";
+                            let mut val = "";
+                            while !entry_cur.is_empty() {
+                                let entry_tag = ::buffa::encoding::Tag::decode(
+                                    &mut entry_cur,
+                                )?;
+                                match entry_tag.field_number() {
+                                    1 => {
+                                        if entry_tag.wire_type()
+                                            != ::buffa::encoding::WireType::LengthDelimited
+                                        {
+                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                                field_number: entry_tag.field_number(),
+                                                expected: 2u8,
+                                                actual: entry_tag.wire_type() as u8,
+                                            });
+                                        }
+                                        key = ::buffa::types::borrow_str(&mut entry_cur)?;
+                                    }
+                                    2 => {
+                                        if entry_tag.wire_type()
+                                            != ::buffa::encoding::WireType::LengthDelimited
+                                        {
+                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                                field_number: entry_tag.field_number(),
+                                                expected: 2u8,
+                                                actual: entry_tag.wire_type() as u8,
+                                            });
+                                        }
+                                        val = ::buffa::types::borrow_str(&mut entry_cur)?;
+                                    }
+                                    _ => {
+                                        ::buffa::encoding::skip_field_depth(
+                                            entry_tag,
+                                            &mut entry_cur,
+                                            depth,
+                                        )?;
+                                    }
+                                }
+                            }
+                            view.properties.push(key, val);
+                        }
+                        _ => {
+                            ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
+                            let span_len = before_tag.len() - cur.len();
+                            view.__buffa_unknown_fields
+                                .push_raw(&before_tag[..span_len]);
+                        }
+                    }
+                }
+                ::core::result::Result::Ok(())
+            }
+        }
+        impl<'a> ::buffa::MessageView<'a> for SecurablePropertiesKvPairsView<'a> {
+            type Owned = super::super::SecurablePropertiesKvPairs;
+            fn decode_view(
+                buf: &'a [u8],
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                Self::_decode_depth(buf, ::buffa::RECURSION_LIMIT)
+            }
+            fn decode_view_with_limit(
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                Self::_decode_depth(buf, depth)
+            }
+            fn to_owned_message(&self) -> super::super::SecurablePropertiesKvPairs {
+                self.to_owned_from_source(None)
+            }
+            #[allow(clippy::useless_conversion, clippy::needless_update)]
+            fn to_owned_from_source(
+                &self,
+                __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+            ) -> super::super::SecurablePropertiesKvPairs {
+                #[allow(unused_imports)]
+                use ::buffa::alloc::string::ToString as _;
+                let _ = __buffa_src;
+                super::super::SecurablePropertiesKvPairs {
+                    properties: self
+                        .properties
+                        .iter()
+                        .map(|(k, v)| (k.to_string(), v.to_string()))
+                        .collect(),
+                    __buffa_unknown_fields: self
+                        .__buffa_unknown_fields
+                        .to_owned()
+                        .unwrap_or_default()
+                        .into(),
+                    ..::core::default::Default::default()
+                }
+            }
+        }
+        impl<'a> ::buffa::ViewEncode<'a> for SecurablePropertiesKvPairsView<'a> {
+            #[allow(clippy::needless_borrow, clippy::let_and_return)]
+            fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+                #[allow(unused_imports)]
+                use ::buffa::Enumeration as _;
+                let mut size = 0u32;
+                #[allow(clippy::for_kv_map)]
+                for (k, v) in &self.properties {
+                    let entry_size: u32 = 1u32
+                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
+                        + ::buffa::types::string_encoded_len(v) as u32;
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
+                            + entry_size;
+                }
+                size += self.__buffa_unknown_fields.encoded_len() as u32;
+                size
+            }
+            #[allow(clippy::needless_borrow)]
+            fn write_to(
+                &self,
+                _cache: &mut ::buffa::SizeCache,
+                buf: &mut impl ::buffa::bytes::BufMut,
+            ) {
+                #[allow(unused_imports)]
+                use ::buffa::Enumeration as _;
+                for (k, v) in &self.properties {
+                    let entry_size: u32 = 1u32
+                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
+                        + ::buffa::types::string_encoded_len(v) as u32;
+                    ::buffa::encoding::Tag::new(
+                            1u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(entry_size as u64, buf);
+                    ::buffa::encoding::Tag::new(
+                            1u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(k, buf);
+                    ::buffa::encoding::Tag::new(
+                            2u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                self.__buffa_unknown_fields.write_to(buf);
+            }
+        }
+        /// Serializes this view as protobuf JSON.
+        ///
+        /// Implicit-presence fields with default values are omitted, `required`
+        /// fields are always emitted, explicit-presence (`optional`) fields are
+        /// emitted only when set, bytes fields are base64-encoded, and enum
+        /// values are their proto name strings.
+        ///
+        /// This impl uses `serialize_map(None)` because the number of emitted
+        /// fields depends on default-omission rules; serializers that require
+        /// known map lengths (e.g. `bincode`) will return a runtime error.
+        /// Use the owned message type for those formats.
+        impl<'__a> ::serde::Serialize for SecurablePropertiesKvPairsView<'__a> {
+            fn serialize<__S: ::serde::Serializer>(
+                &self,
+                __s: __S,
+            ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                use ::serde::ser::SerializeMap as _;
+                let mut __map = __s.serialize_map(::core::option::Option::None)?;
+                if !self.properties.is_empty() {
+                    struct _WM<'__a, '__x>(
+                        &'__x ::buffa::MapView<'__x, &'__a str, &'__a str>,
+                    );
+                    impl<'__a> ::serde::Serialize for _WM<'__a, '_> {
+                        fn serialize<__S: ::serde::Serializer>(
+                            &self,
+                            __s: __S,
+                        ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                            use ::serde::ser::SerializeMap as _;
+                            let mut __m = __s
+                                .serialize_map(::core::option::Option::Some(self.0.len()))?;
+                            for (k, v) in self.0.iter_unique() {
+                                __m.serialize_entry(k, v)?;
+                            }
+                            __m.end()
+                        }
+                    }
+                    __map.serialize_entry("properties", &_WM(&self.properties))?;
+                }
+                __map.end()
+            }
+        }
+        impl<'a> ::buffa::MessageName for SecurablePropertiesKvPairsView<'a> {
+            const PACKAGE: &'static str = "unitycatalog.recipients.v1";
+            const NAME: &'static str = "SecurablePropertiesKvPairs";
+            const FULL_NAME: &'static str = "unitycatalog.recipients.v1.SecurablePropertiesKvPairs";
+            const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.recipients.v1.SecurablePropertiesKvPairs";
+        }
+        impl<'v> ::buffa::DefaultViewInstance for SecurablePropertiesKvPairsView<'v> {
+            fn default_view_instance<'a>() -> &'a Self
+            where
+                Self: 'a,
+            {
+                static VALUE: ::buffa::__private::OnceBox<
+                    SecurablePropertiesKvPairsView<'static>,
+                > = ::buffa::__private::OnceBox::new();
+                VALUE
+                    .get_or_init(|| ::buffa::alloc::boxed::Box::new(
+                        <SecurablePropertiesKvPairsView<'static>>::default(),
+                    ))
+            }
+        }
+        impl ::buffa::ViewReborrow for SecurablePropertiesKvPairsView<'static> {
+            type Reborrowed<'b> = SecurablePropertiesKvPairsView<'b>;
+            fn reborrow<'b>(this: &'b Self) -> &'b Self::Reborrowed<'b> {
+                this
+            }
+        }
+        /** Self-contained, `'static` owned view of a `SecurablePropertiesKvPairs` message.
+
+ Wraps [`::buffa::OwnedView`]`<`[`SecurablePropertiesKvPairsView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`SecurablePropertiesKvPairsView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+        #[derive(Clone, Debug)]
+        pub struct SecurablePropertiesKvPairsOwnedView(
+            ::buffa::OwnedView<SecurablePropertiesKvPairsView<'static>>,
+        );
+        impl SecurablePropertiesKvPairsOwnedView {
+            /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
+            ///
+            /// The view borrows directly from the buffer's data; the buffer is
+            /// retained inside the returned handle.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the buffer contains invalid
+            /// protobuf data.
+            pub fn decode(
+                bytes: ::buffa::bytes::Bytes,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    SecurablePropertiesKvPairsOwnedView(
+                        ::buffa::OwnedView::decode(bytes)?,
+                    ),
+                )
+            }
+            /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
+            /// max message size).
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the buffer is invalid or
+            /// exceeds the configured limits.
+            pub fn decode_with_options(
+                bytes: ::buffa::bytes::Bytes,
+                opts: &::buffa::DecodeOptions,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    SecurablePropertiesKvPairsOwnedView(
+                        ::buffa::OwnedView::decode_with_options(bytes, opts)?,
+                    ),
+                )
+            }
+            /// Build from an owned message via an encode → decode round-trip.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the re-encoded bytes are
+            /// somehow invalid (should not happen for well-formed messages).
+            pub fn from_owned(
+                msg: &super::super::SecurablePropertiesKvPairs,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    SecurablePropertiesKvPairsOwnedView(
+                        ::buffa::OwnedView::from_owned(msg)?,
+                    ),
+                )
+            }
+            /// Borrow the full [`SecurablePropertiesKvPairsView`] with its lifetime tied to `&self`.
+            #[must_use]
+            pub fn view(&self) -> &SecurablePropertiesKvPairsView<'_> {
+                self.0.reborrow()
+            }
+            /// Convert to the owned message type.
+            #[must_use]
+            pub fn to_owned_message(&self) -> super::super::SecurablePropertiesKvPairs {
+                self.0.to_owned_message()
+            }
+            /// The underlying bytes buffer.
+            #[must_use]
+            pub fn bytes(&self) -> &::buffa::bytes::Bytes {
+                self.0.bytes()
+            }
+            /// Consume the handle, returning the underlying bytes buffer.
+            #[must_use]
+            pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
+                self.0.into_bytes()
+            }
+            /// A map of key-value properties attached to the securable.
+            ///
+            /// Field 1: `properties` (map)
+            #[must_use]
+            pub fn properties(&self) -> &::buffa::MapView<'_, &'_ str, &'_ str> {
+                &self.0.reborrow().properties
+            }
+        }
+        impl ::core::convert::From<
+            ::buffa::OwnedView<SecurablePropertiesKvPairsView<'static>>,
+        > for SecurablePropertiesKvPairsOwnedView {
+            fn from(
+                inner: ::buffa::OwnedView<SecurablePropertiesKvPairsView<'static>>,
+            ) -> Self {
+                SecurablePropertiesKvPairsOwnedView(inner)
+            }
+        }
+        impl ::core::convert::From<SecurablePropertiesKvPairsOwnedView>
+        for ::buffa::OwnedView<SecurablePropertiesKvPairsView<'static>> {
+            fn from(wrapper: SecurablePropertiesKvPairsOwnedView) -> Self {
+                wrapper.0
+            }
+        }
+        impl ::core::convert::AsRef<
+            ::buffa::OwnedView<SecurablePropertiesKvPairsView<'static>>,
+        > for SecurablePropertiesKvPairsOwnedView {
+            fn as_ref(
+                &self,
+            ) -> &::buffa::OwnedView<SecurablePropertiesKvPairsView<'static>> {
+                &self.0
+            }
+        }
+        impl ::buffa::HasMessageView for super::super::SecurablePropertiesKvPairs {
+            type View<'a> = SecurablePropertiesKvPairsView<'a>;
+            type ViewHandle = SecurablePropertiesKvPairsOwnedView;
+        }
+        impl ::serde::Serialize for SecurablePropertiesKvPairsOwnedView {
+            fn serialize<__S: ::serde::Serializer>(
+                &self,
+                __s: __S,
+            ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                ::serde::Serialize::serialize(&self.0, __s)
+            }
+        }
         #[derive(Clone, Debug, Default)]
         pub struct RecipientTokenView<'a> {
             /// Unique ID of the recipient token.
@@ -3198,15 +3614,17 @@ pub mod __buffa {
             ///
             /// Field 4: `comment`
             pub comment: ::core::option::Option<&'a str>,
-            /// A map of key-value properties attached to the securable.
+            /// Recipient properties as map of string key-value pairs.
             ///
-            /// Field 6: `properties` (map)
-            pub properties: ::buffa::MapView<'a, &'a str, &'a str>,
-            /// Time at which this share was created, in epoch milliseconds.
+            /// Field 6: `properties_kvpairs`
+            pub properties_kvpairs: ::buffa::MessageFieldView<
+                super::super::__buffa::view::SecurablePropertiesKvPairsView<'a>,
+            >,
+            /// Time at which this recipient was created, in epoch milliseconds.
             ///
             /// Field 7: `created_at`
             pub created_at: ::core::option::Option<i64>,
-            /// Username of the creator of the share.
+            /// Username of recipient creator.
             ///
             /// Field 8: `created_by`
             pub created_by: ::core::option::Option<&'a str>,
@@ -3217,11 +3635,11 @@ pub mod __buffa {
                 'a,
                 super::super::__buffa::view::RecipientTokenView<'a>,
             >,
-            /// Time at which this share was updated, in epoch milliseconds.
+            /// Time at which this recipient was updated, in epoch milliseconds.
             ///
             /// Field 10: `updated_at`
             pub updated_at: ::core::option::Option<i64>,
-            /// Username of share updater.
+            /// Username of recipient updater.
             ///
             /// Field 11: `updated_by`
             pub updated_by: ::core::option::Option<&'a str>,
@@ -3325,6 +3743,32 @@ pub mod __buffa {
                             }
                             view.comment = Some(::buffa::types::borrow_str(&mut cur)?);
                         }
+                        6u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 6u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.properties_kvpairs.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.properties_kvpairs = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::SecurablePropertiesKvPairsView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
+                        }
                         7u32 => {
                             if tag.wire_type() != ::buffa::encoding::WireType::Varint {
                                 return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
@@ -3399,60 +3843,6 @@ pub mod __buffa {
                                     )?,
                                 );
                         }
-                        6u32 => {
-                            if tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: 6u32,
-                                    expected: 2u8,
-                                    actual: tag.wire_type() as u8,
-                                });
-                            }
-                            let entry_bytes = ::buffa::types::borrow_bytes(&mut cur)?;
-                            let mut entry_cur: &'a [u8] = entry_bytes;
-                            let mut key = "";
-                            let mut val = "";
-                            while !entry_cur.is_empty() {
-                                let entry_tag = ::buffa::encoding::Tag::decode(
-                                    &mut entry_cur,
-                                )?;
-                                match entry_tag.field_number() {
-                                    1 => {
-                                        if entry_tag.wire_type()
-                                            != ::buffa::encoding::WireType::LengthDelimited
-                                        {
-                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                                field_number: entry_tag.field_number(),
-                                                expected: 2u8,
-                                                actual: entry_tag.wire_type() as u8,
-                                            });
-                                        }
-                                        key = ::buffa::types::borrow_str(&mut entry_cur)?;
-                                    }
-                                    2 => {
-                                        if entry_tag.wire_type()
-                                            != ::buffa::encoding::WireType::LengthDelimited
-                                        {
-                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                                field_number: entry_tag.field_number(),
-                                                expected: 2u8,
-                                                actual: entry_tag.wire_type() as u8,
-                                            });
-                                        }
-                                        val = ::buffa::types::borrow_str(&mut entry_cur)?;
-                                    }
-                                    _ => {
-                                        ::buffa::encoding::skip_field_depth(
-                                            entry_tag,
-                                            &mut entry_cur,
-                                            depth,
-                                        )?;
-                                    }
-                                }
-                            }
-                            view.properties.push(key, val);
-                        }
                         _ => {
                             ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
                             let span_len = before_tag.len() - cur.len();
@@ -3494,11 +3884,14 @@ pub mod __buffa {
                     authentication_type: self.authentication_type,
                     owner: self.owner.map(|s| s.to_string()),
                     comment: self.comment.map(|s| s.to_string()),
-                    properties: self
-                        .properties
-                        .iter()
-                        .map(|(k, v)| (k.to_string(), v.to_string()))
-                        .collect(),
+                    properties_kvpairs: match self.properties_kvpairs.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::SecurablePropertiesKvPairs,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
                     created_at: self.created_at,
                     created_by: self.created_by.map(|s| s.to_string()),
                     tokens: self
@@ -3538,14 +3931,13 @@ pub mod __buffa {
                 if let Some(ref v) = self.comment {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
-                #[allow(clippy::for_kv_map)]
-                for (k, v) in &self.properties {
-                    let entry_size: u32 = 1u32
-                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
-                        + ::buffa::types::string_encoded_len(v) as u32;
+                if self.properties_kvpairs.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.properties_kvpairs.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
                     size
-                        += 1u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
-                            + entry_size;
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
                 }
                 if let Some(v) = self.created_at {
                     size += 1u32 + ::buffa::types::int64_encoded_len(v) as u32;
@@ -3616,28 +4008,14 @@ pub mod __buffa {
                         .encode(buf);
                     ::buffa::types::encode_string(v, buf);
                 }
-                for (k, v) in &self.properties {
-                    let entry_size: u32 = 1u32
-                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
-                        + ::buffa::types::string_encoded_len(v) as u32;
+                if self.properties_kvpairs.is_set() {
                     ::buffa::encoding::Tag::new(
                             6u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
-                    ::buffa::encoding::encode_varint(entry_size as u64, buf);
-                    ::buffa::encoding::Tag::new(
-                            1u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(k, buf);
-                    ::buffa::encoding::Tag::new(
-                            2u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(v, buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.properties_kvpairs.write_to(__cache, buf);
                 }
                 if let Some(v) = self.created_at {
                     ::buffa::encoding::Tag::new(
@@ -3730,25 +4108,13 @@ pub mod __buffa {
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
                 }
-                if !self.properties.is_empty() {
-                    struct _WM<'__a, '__x>(
-                        &'__x ::buffa::MapView<'__x, &'__a str, &'__a str>,
-                    );
-                    impl<'__a> ::serde::Serialize for _WM<'__a, '_> {
-                        fn serialize<__S: ::serde::Serializer>(
-                            &self,
-                            __s: __S,
-                        ) -> ::core::result::Result<__S::Ok, __S::Error> {
-                            use ::serde::ser::SerializeMap as _;
-                            let mut __m = __s
-                                .serialize_map(::core::option::Option::Some(self.0.len()))?;
-                            for (k, v) in self.0.iter_unique() {
-                                __m.serialize_entry(k, v)?;
-                            }
-                            __m.end()
-                        }
+                {
+                    if let ::core::option::Option::Some(__v) = self
+                        .properties_kvpairs
+                        .as_option()
+                    {
+                        __map.serialize_entry("properties_kvpairs", __v)?;
                     }
-                    __map.serialize_entry("properties", &_WM(&self.properties))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.created_at {
                     struct _W(i64);
@@ -3921,21 +4287,25 @@ pub mod __buffa {
             pub fn comment(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().comment
             }
-            /// A map of key-value properties attached to the securable.
+            /// Recipient properties as map of string key-value pairs.
             ///
-            /// Field 6: `properties` (map)
+            /// Field 6: `properties_kvpairs`
             #[must_use]
-            pub fn properties(&self) -> &::buffa::MapView<'_, &'_ str, &'_ str> {
-                &self.0.reborrow().properties
+            pub fn properties_kvpairs(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::__buffa::view::SecurablePropertiesKvPairsView<'_>,
+            > {
+                &self.0.reborrow().properties_kvpairs
             }
-            /// Time at which this share was created, in epoch milliseconds.
+            /// Time at which this recipient was created, in epoch milliseconds.
             ///
             /// Field 7: `created_at`
             #[must_use]
             pub fn created_at(&self) -> ::core::option::Option<i64> {
                 self.0.reborrow().created_at
             }
-            /// Username of the creator of the share.
+            /// Username of recipient creator.
             ///
             /// Field 8: `created_by`
             #[must_use]
@@ -3954,14 +4324,14 @@ pub mod __buffa {
             > {
                 &self.0.reborrow().tokens
             }
-            /// Time at which this share was updated, in epoch milliseconds.
+            /// Time at which this recipient was updated, in epoch milliseconds.
             ///
             /// Field 10: `updated_at`
             #[must_use]
             pub fn updated_at(&self) -> ::core::option::Option<i64> {
                 self.0.reborrow().updated_at
             }
-            /// Username of share updater.
+            /// Username of recipient updater.
             ///
             /// Field 11: `updated_by`
             #[must_use]
@@ -4003,6 +4373,8 @@ pub mod __buffa {
         #[derive(Clone, Debug, Default)]
         pub struct ListRecipientsRequestView<'a> {
             /// The maximum number of results per page that should be returned.
+            ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
             ///
             /// Field 1: `max_results`
             pub max_results: ::core::option::Option<i32>,
@@ -4304,6 +4676,8 @@ pub mod __buffa {
                 self.0.into_bytes()
             }
             /// The maximum number of results per page that should be returned.
+            ///
+            /// If unset or 0, the server's default page size is used. Negative values are rejected.
             ///
             /// Field 1: `max_results`
             #[must_use]
@@ -4752,8 +5126,10 @@ pub mod __buffa {
             /// When provided in update request, the specified properties will override the existing properties.
             /// To add and remove properties, one would need to perform a read-modify-write.
             ///
-            /// Field 5: `properties` (map)
-            pub properties: ::buffa::MapView<'a, &'a str, &'a str>,
+            /// Field 5: `properties_kvpairs`
+            pub properties_kvpairs: ::buffa::MessageFieldView<
+                super::super::__buffa::view::SecurablePropertiesKvPairsView<'a>,
+            >,
             /// Expiration timestamp of the token, in epoch milliseconds.
             ///
             /// Field 6: `expiration_time`
@@ -4846,6 +5222,32 @@ pub mod __buffa {
                             }
                             view.comment = Some(::buffa::types::borrow_str(&mut cur)?);
                         }
+                        5u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 5u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.properties_kvpairs.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.properties_kvpairs = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::SecurablePropertiesKvPairsView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
+                        }
                         6u32 => {
                             if tag.wire_type() != ::buffa::encoding::WireType::Varint {
                                 return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
@@ -4857,60 +5259,6 @@ pub mod __buffa {
                             view.expiration_time = Some(
                                 ::buffa::types::decode_int64(&mut cur)?,
                             );
-                        }
-                        5u32 => {
-                            if tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: 5u32,
-                                    expected: 2u8,
-                                    actual: tag.wire_type() as u8,
-                                });
-                            }
-                            let entry_bytes = ::buffa::types::borrow_bytes(&mut cur)?;
-                            let mut entry_cur: &'a [u8] = entry_bytes;
-                            let mut key = "";
-                            let mut val = "";
-                            while !entry_cur.is_empty() {
-                                let entry_tag = ::buffa::encoding::Tag::decode(
-                                    &mut entry_cur,
-                                )?;
-                                match entry_tag.field_number() {
-                                    1 => {
-                                        if entry_tag.wire_type()
-                                            != ::buffa::encoding::WireType::LengthDelimited
-                                        {
-                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                                field_number: entry_tag.field_number(),
-                                                expected: 2u8,
-                                                actual: entry_tag.wire_type() as u8,
-                                            });
-                                        }
-                                        key = ::buffa::types::borrow_str(&mut entry_cur)?;
-                                    }
-                                    2 => {
-                                        if entry_tag.wire_type()
-                                            != ::buffa::encoding::WireType::LengthDelimited
-                                        {
-                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                                field_number: entry_tag.field_number(),
-                                                expected: 2u8,
-                                                actual: entry_tag.wire_type() as u8,
-                                            });
-                                        }
-                                        val = ::buffa::types::borrow_str(&mut entry_cur)?;
-                                    }
-                                    _ => {
-                                        ::buffa::encoding::skip_field_depth(
-                                            entry_tag,
-                                            &mut entry_cur,
-                                            depth,
-                                        )?;
-                                    }
-                                }
-                            }
-                            view.properties.push(key, val);
                         }
                         _ => {
                             ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
@@ -4952,11 +5300,14 @@ pub mod __buffa {
                     authentication_type: self.authentication_type,
                     owner: self.owner.to_string(),
                     comment: self.comment.map(|s| s.to_string()),
-                    properties: self
-                        .properties
-                        .iter()
-                        .map(|(k, v)| (k.to_string(), v.to_string()))
-                        .collect(),
+                    properties_kvpairs: match self.properties_kvpairs.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::SecurablePropertiesKvPairs,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
                     expiration_time: self.expiration_time,
                     __buffa_unknown_fields: self
                         .__buffa_unknown_fields
@@ -4969,7 +5320,7 @@ pub mod __buffa {
         }
         impl<'a> ::buffa::ViewEncode<'a> for CreateRecipientRequestView<'a> {
             #[allow(clippy::needless_borrow, clippy::let_and_return)]
-            fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+            fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
                 #[allow(unused_imports)]
                 use ::buffa::Enumeration as _;
                 let mut size = 0u32;
@@ -4989,14 +5340,13 @@ pub mod __buffa {
                 if let Some(ref v) = self.comment {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
-                #[allow(clippy::for_kv_map)]
-                for (k, v) in &self.properties {
-                    let entry_size: u32 = 1u32
-                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
-                        + ::buffa::types::string_encoded_len(v) as u32;
+                if self.properties_kvpairs.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.properties_kvpairs.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
                     size
-                        += 1u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
-                            + entry_size;
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
                 }
                 if let Some(v) = self.expiration_time {
                     size += 1u32 + ::buffa::types::int64_encoded_len(v) as u32;
@@ -5007,7 +5357,7 @@ pub mod __buffa {
             #[allow(clippy::needless_borrow)]
             fn write_to(
                 &self,
-                _cache: &mut ::buffa::SizeCache,
+                __cache: &mut ::buffa::SizeCache,
                 buf: &mut impl ::buffa::bytes::BufMut,
             ) {
                 #[allow(unused_imports)]
@@ -5047,28 +5397,14 @@ pub mod __buffa {
                         .encode(buf);
                     ::buffa::types::encode_string(v, buf);
                 }
-                for (k, v) in &self.properties {
-                    let entry_size: u32 = 1u32
-                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
-                        + ::buffa::types::string_encoded_len(v) as u32;
+                if self.properties_kvpairs.is_set() {
                     ::buffa::encoding::Tag::new(
                             5u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
-                    ::buffa::encoding::encode_varint(entry_size as u64, buf);
-                    ::buffa::encoding::Tag::new(
-                            1u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(k, buf);
-                    ::buffa::encoding::Tag::new(
-                            2u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(v, buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.properties_kvpairs.write_to(__cache, buf);
                 }
                 if let Some(v) = self.expiration_time {
                     ::buffa::encoding::Tag::new(
@@ -5117,25 +5453,13 @@ pub mod __buffa {
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
                 }
-                if !self.properties.is_empty() {
-                    struct _WM<'__a, '__x>(
-                        &'__x ::buffa::MapView<'__x, &'__a str, &'__a str>,
-                    );
-                    impl<'__a> ::serde::Serialize for _WM<'__a, '_> {
-                        fn serialize<__S: ::serde::Serializer>(
-                            &self,
-                            __s: __S,
-                        ) -> ::core::result::Result<__S::Ok, __S::Error> {
-                            use ::serde::ser::SerializeMap as _;
-                            let mut __m = __s
-                                .serialize_map(::core::option::Option::Some(self.0.len()))?;
-                            for (k, v) in self.0.iter_unique() {
-                                __m.serialize_entry(k, v)?;
-                            }
-                            __m.end()
-                        }
+                {
+                    if let ::core::option::Option::Some(__v) = self
+                        .properties_kvpairs
+                        .as_option()
+                    {
+                        __map.serialize_entry("properties_kvpairs", __v)?;
                     }
-                    __map.serialize_entry("properties", &_WM(&self.properties))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.expiration_time {
                     struct _W(i64);
@@ -5289,10 +5613,14 @@ pub mod __buffa {
             /// When provided in update request, the specified properties will override the existing properties.
             /// To add and remove properties, one would need to perform a read-modify-write.
             ///
-            /// Field 5: `properties` (map)
+            /// Field 5: `properties_kvpairs`
             #[must_use]
-            pub fn properties(&self) -> &::buffa::MapView<'_, &'_ str, &'_ str> {
-                &self.0.reborrow().properties
+            pub fn properties_kvpairs(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::__buffa::view::SecurablePropertiesKvPairsView<'_>,
+            > {
+                &self.0.reborrow().properties_kvpairs
             }
             /// Expiration timestamp of the token, in epoch milliseconds.
             ///
@@ -5664,8 +5992,10 @@ pub mod __buffa {
             /// When provided in update request, the specified properties will override the existing properties.
             /// To add and remove properties, one would need to perform a read-modify-write.
             ///
-            /// Field 5: `properties` (map)
-            pub properties: ::buffa::MapView<'a, &'a str, &'a str>,
+            /// Field 5: `properties_kvpairs`
+            pub properties_kvpairs: ::buffa::MessageFieldView<
+                super::super::__buffa::view::SecurablePropertiesKvPairsView<'a>,
+            >,
             /// Expiration timestamp of the token, in epoch milliseconds.
             ///
             /// Field 6: `expiration_time`
@@ -5758,6 +6088,32 @@ pub mod __buffa {
                             }
                             view.comment = Some(::buffa::types::borrow_str(&mut cur)?);
                         }
+                        5u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 5u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.properties_kvpairs.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.properties_kvpairs = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::SecurablePropertiesKvPairsView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
+                        }
                         6u32 => {
                             if tag.wire_type() != ::buffa::encoding::WireType::Varint {
                                 return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
@@ -5769,60 +6125,6 @@ pub mod __buffa {
                             view.expiration_time = Some(
                                 ::buffa::types::decode_int64(&mut cur)?,
                             );
-                        }
-                        5u32 => {
-                            if tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: 5u32,
-                                    expected: 2u8,
-                                    actual: tag.wire_type() as u8,
-                                });
-                            }
-                            let entry_bytes = ::buffa::types::borrow_bytes(&mut cur)?;
-                            let mut entry_cur: &'a [u8] = entry_bytes;
-                            let mut key = "";
-                            let mut val = "";
-                            while !entry_cur.is_empty() {
-                                let entry_tag = ::buffa::encoding::Tag::decode(
-                                    &mut entry_cur,
-                                )?;
-                                match entry_tag.field_number() {
-                                    1 => {
-                                        if entry_tag.wire_type()
-                                            != ::buffa::encoding::WireType::LengthDelimited
-                                        {
-                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                                field_number: entry_tag.field_number(),
-                                                expected: 2u8,
-                                                actual: entry_tag.wire_type() as u8,
-                                            });
-                                        }
-                                        key = ::buffa::types::borrow_str(&mut entry_cur)?;
-                                    }
-                                    2 => {
-                                        if entry_tag.wire_type()
-                                            != ::buffa::encoding::WireType::LengthDelimited
-                                        {
-                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                                field_number: entry_tag.field_number(),
-                                                expected: 2u8,
-                                                actual: entry_tag.wire_type() as u8,
-                                            });
-                                        }
-                                        val = ::buffa::types::borrow_str(&mut entry_cur)?;
-                                    }
-                                    _ => {
-                                        ::buffa::encoding::skip_field_depth(
-                                            entry_tag,
-                                            &mut entry_cur,
-                                            depth,
-                                        )?;
-                                    }
-                                }
-                            }
-                            view.properties.push(key, val);
                         }
                         _ => {
                             ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
@@ -5864,11 +6166,14 @@ pub mod __buffa {
                     new_name: self.new_name.map(|s| s.to_string()),
                     owner: self.owner.map(|s| s.to_string()),
                     comment: self.comment.map(|s| s.to_string()),
-                    properties: self
-                        .properties
-                        .iter()
-                        .map(|(k, v)| (k.to_string(), v.to_string()))
-                        .collect(),
+                    properties_kvpairs: match self.properties_kvpairs.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::SecurablePropertiesKvPairs,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
                     expiration_time: self.expiration_time,
                     __buffa_unknown_fields: self
                         .__buffa_unknown_fields
@@ -5881,7 +6186,7 @@ pub mod __buffa {
         }
         impl<'a> ::buffa::ViewEncode<'a> for UpdateRecipientRequestView<'a> {
             #[allow(clippy::needless_borrow, clippy::let_and_return)]
-            fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+            fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
                 #[allow(unused_imports)]
                 use ::buffa::Enumeration as _;
                 let mut size = 0u32;
@@ -5897,14 +6202,13 @@ pub mod __buffa {
                 if let Some(ref v) = self.comment {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
-                #[allow(clippy::for_kv_map)]
-                for (k, v) in &self.properties {
-                    let entry_size: u32 = 1u32
-                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
-                        + ::buffa::types::string_encoded_len(v) as u32;
+                if self.properties_kvpairs.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.properties_kvpairs.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
                     size
-                        += 1u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
-                            + entry_size;
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
                 }
                 if let Some(v) = self.expiration_time {
                     size += 1u32 + ::buffa::types::int64_encoded_len(v) as u32;
@@ -5915,7 +6219,7 @@ pub mod __buffa {
             #[allow(clippy::needless_borrow)]
             fn write_to(
                 &self,
-                _cache: &mut ::buffa::SizeCache,
+                __cache: &mut ::buffa::SizeCache,
                 buf: &mut impl ::buffa::bytes::BufMut,
             ) {
                 #[allow(unused_imports)]
@@ -5952,28 +6256,14 @@ pub mod __buffa {
                         .encode(buf);
                     ::buffa::types::encode_string(v, buf);
                 }
-                for (k, v) in &self.properties {
-                    let entry_size: u32 = 1u32
-                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
-                        + ::buffa::types::string_encoded_len(v) as u32;
+                if self.properties_kvpairs.is_set() {
                     ::buffa::encoding::Tag::new(
                             5u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
-                    ::buffa::encoding::encode_varint(entry_size as u64, buf);
-                    ::buffa::encoding::Tag::new(
-                            1u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(k, buf);
-                    ::buffa::encoding::Tag::new(
-                            2u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(v, buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.properties_kvpairs.write_to(__cache, buf);
                 }
                 if let Some(v) = self.expiration_time {
                     ::buffa::encoding::Tag::new(
@@ -6016,25 +6306,13 @@ pub mod __buffa {
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
                 }
-                if !self.properties.is_empty() {
-                    struct _WM<'__a, '__x>(
-                        &'__x ::buffa::MapView<'__x, &'__a str, &'__a str>,
-                    );
-                    impl<'__a> ::serde::Serialize for _WM<'__a, '_> {
-                        fn serialize<__S: ::serde::Serializer>(
-                            &self,
-                            __s: __S,
-                        ) -> ::core::result::Result<__S::Ok, __S::Error> {
-                            use ::serde::ser::SerializeMap as _;
-                            let mut __m = __s
-                                .serialize_map(::core::option::Option::Some(self.0.len()))?;
-                            for (k, v) in self.0.iter_unique() {
-                                __m.serialize_entry(k, v)?;
-                            }
-                            __m.end()
-                        }
+                {
+                    if let ::core::option::Option::Some(__v) = self
+                        .properties_kvpairs
+                        .as_option()
+                    {
+                        __map.serialize_entry("properties_kvpairs", __v)?;
                     }
-                    __map.serialize_entry("properties", &_WM(&self.properties))?;
                 }
                 if let ::core::option::Option::Some(__v) = self.expiration_time {
                     struct _W(i64);
@@ -6186,10 +6464,14 @@ pub mod __buffa {
             /// When provided in update request, the specified properties will override the existing properties.
             /// To add and remove properties, one would need to perform a read-modify-write.
             ///
-            /// Field 5: `properties` (map)
+            /// Field 5: `properties_kvpairs`
             #[must_use]
-            pub fn properties(&self) -> &::buffa::MapView<'_, &'_ str, &'_ str> {
-                &self.0.reborrow().properties
+            pub fn properties_kvpairs(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::__buffa::view::SecurablePropertiesKvPairsView<'_>,
+            > {
+                &self.0.reborrow().properties_kvpairs
             }
             /// Expiration timestamp of the token, in epoch milliseconds.
             ///
@@ -6544,6 +6826,7 @@ pub mod __buffa {
     }
     /// Register this package's `Any` type entries and extension entries.
     pub fn register_types(reg: &mut ::buffa::type_registry::TypeRegistry) {
+        reg.register_json_any(super::__SECURABLE_PROPERTIES_KV_PAIRS_JSON_ANY);
         reg.register_json_any(super::__RECIPIENT_TOKEN_JSON_ANY);
         reg.register_json_any(super::__RECIPIENT_JSON_ANY);
         reg.register_json_any(super::__LIST_RECIPIENTS_REQUEST_JSON_ANY);
@@ -6554,6 +6837,10 @@ pub mod __buffa {
         reg.register_json_any(super::__DELETE_RECIPIENT_REQUEST_JSON_ANY);
     }
 }
+#[doc(inline)]
+pub use self::__buffa::view::SecurablePropertiesKvPairsView;
+#[doc(inline)]
+pub use self::__buffa::view::SecurablePropertiesKvPairsOwnedView;
 #[doc(inline)]
 pub use self::__buffa::view::RecipientTokenView;
 #[doc(inline)]

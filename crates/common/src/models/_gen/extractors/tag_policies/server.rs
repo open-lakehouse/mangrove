@@ -74,10 +74,11 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateTagPolicyRequest {
             .extract()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        let (tag_policy, update_mask) = (body.tag_policy, body.update_mask);
+        let (description, values, update_mask) = (body.description, body.values, body.update_mask);
         Ok(UpdateTagPolicyRequest {
             tag_key,
-            tag_policy,
+            description,
+            values,
             update_mask,
             ..Default::default()
         })

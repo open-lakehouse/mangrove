@@ -29,7 +29,9 @@ impl ListProvidersBuilder {
         };
         Self { client, request }
     }
-    /// The maximum number of results per page that should be returned.
+    /** The maximum number of results per page that should be returned.
+
+    If unset or 0, the server's default page size is used. Negative values are rejected.*/
     pub fn with_max_results(mut self, max_results: impl Into<Option<i32>>) -> Self {
         self.request.max_results = max_results.into();
         self
@@ -107,7 +109,8 @@ impl CreateProviderBuilder {
         self
     }
     /** The recipient profile (credential file contents) used to connect to the
-    sharing server, required for TOKEN authentication.*/
+    sharing server. Required when authentication_type is TOKEN or
+    OAUTH_CLIENT_CREDENTIALS.*/
     pub fn with_recipient_profile_str(
         mut self,
         recipient_profile_str: impl Into<Option<String>>,
@@ -194,7 +197,8 @@ impl UpdateProviderBuilder {
         self
     }
     /** The recipient profile (credential file contents) used to connect to the
-    sharing server.*/
+    sharing server. Required when authentication_type is TOKEN or
+    OAUTH_CLIENT_CREDENTIALS.*/
     pub fn with_recipient_profile_str(
         mut self,
         recipient_profile_str: impl Into<Option<String>>,
