@@ -1,6 +1,6 @@
 # @generated — do not edit by hand.
 from __future__ import annotations
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Iterator
 import enum
 
 class Agent:
@@ -3326,7 +3326,7 @@ class UnityCatalogClient:
         schema_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[AgentSkill]:
+    ) -> Iterator[AgentSkill]:
         """
         Lists agent skills.
 
@@ -3349,7 +3349,7 @@ class UnityCatalogClient:
         schema_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[Agent]:
+    ) -> Iterator[Agent]:
         """
         Lists agents.
 
@@ -3366,7 +3366,7 @@ class UnityCatalogClient:
             List of The agents returned.
         """
         ...
-    def list_catalogs(self, max_results: Optional[int] = None) -> List[Catalog]:
+    def list_catalogs(self, max_results: Optional[int] = None) -> Iterator[Catalog]:
         """
         List catalogs
 
@@ -3386,7 +3386,7 @@ class UnityCatalogClient:
         ...
     def list_credentials(
         self, purpose: Optional[Purpose] = None, max_results: Optional[int] = None
-    ) -> List[Credential]:
+    ) -> Iterator[Credential]:
         """
         Args:
             purpose: Return only credentials for the specified purpose.
@@ -3421,7 +3421,7 @@ class UnityCatalogClient:
         ...
     def list_external_locations(
         self, max_results: Optional[int] = None, include_browse: Optional[bool] = None
-    ) -> List[ExternalLocation]:
+    ) -> Iterator[ExternalLocation]:
         """
         List external locations
 
@@ -3442,7 +3442,7 @@ class UnityCatalogClient:
         schema_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[Function]:
+    ) -> Iterator[Function]:
         """
         List functions
 
@@ -3469,7 +3469,7 @@ class UnityCatalogClient:
         full_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[ModelVersion]:
+    ) -> Iterator[ModelVersion]:
         """
         List model versions
 
@@ -3488,7 +3488,7 @@ class UnityCatalogClient:
             List of The model versions returned.
         """
         ...
-    def list_providers(self, max_results: Optional[int] = None) -> List[Provider]:
+    def list_providers(self, max_results: Optional[int] = None) -> Iterator[Provider]:
         """
         List providers.
 
@@ -3501,7 +3501,7 @@ class UnityCatalogClient:
             List of List of providers.
         """
         ...
-    def list_recipients(self, max_results: Optional[int] = None) -> List[Recipient]:
+    def list_recipients(self, max_results: Optional[int] = None) -> Iterator[Recipient]:
         """
         List recipients.
 
@@ -3520,7 +3520,7 @@ class UnityCatalogClient:
         schema_name: Optional[str] = None,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[RegisteredModel]:
+    ) -> Iterator[RegisteredModel]:
         """
         List registered models
 
@@ -3547,7 +3547,7 @@ class UnityCatalogClient:
         catalog_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[Schema]:
+    ) -> Iterator[Schema]:
         """
         Gets an array of schemas for a catalog in the metastore. If the caller is the metastore admin or the
         owner of the parent catalog, all schemas for the catalog will be retrieved. Otherwise, only schemas
@@ -3566,7 +3566,7 @@ class UnityCatalogClient:
             List of The schemas returned.
         """
         ...
-    def list_shares(self, max_results: Optional[int] = None) -> List[Share]:
+    def list_shares(self, max_results: Optional[int] = None) -> Iterator[Share]:
         """
         List shares.
 
@@ -3590,7 +3590,7 @@ class UnityCatalogClient:
         omit_username: Optional[bool] = None,
         include_browse: Optional[bool] = None,
         include_manifest_capabilities: Optional[bool] = None,
-    ) -> List[Table]:
+    ) -> Iterator[Table]:
         """
         Gets an array of all tables for the current metastore under the parent catalog and schema.
 
@@ -3619,7 +3619,7 @@ class UnityCatalogClient:
             List of The tables returned.
         """
         ...
-    def list_tag_policies(self, max_results: Optional[int] = None) -> List[TagPolicy]:
+    def list_tag_policies(self, max_results: Optional[int] = None) -> Iterator[TagPolicy]:
         """
         List tag policies
 
@@ -3641,7 +3641,7 @@ class UnityCatalogClient:
         schema_name: str,
         max_results: Optional[int] = None,
         include_browse: Optional[bool] = None,
-    ) -> List[Volume]:
+    ) -> Iterator[Volume]:
         """
         Lists volumes.
 

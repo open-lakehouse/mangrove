@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
-use crate::error::{PyUnityCatalogError, PyUnityCatalogResult};
-use crate::runtime::get_runtime;
+use crate::codegen::runtime::{ListIterator, block_on};
+use crate::error::PyUnityCatalogError;
+use futures::stream::StreamExt;
+use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::TagPolicyClient;
@@ -12,38 +14,27 @@ pub struct PyTagPolicyClient {
 }
 #[pymethods]
 impl PyTagPolicyClient {
-    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyTagPolicy> {
+    pub fn get(&self, py: Python<'_>) -> PyResult<PyTagPolicy> {
         let request = self.client.get();
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTagPolicy::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyTagPolicy::from(result))
     }
     #[pyo3(signature = (tag_policy, update_mask = None))]
     pub fn update(
         &self,
-        py: Python,
+        py: Python<'_>,
         tag_policy: PyTagPolicy,
         update_mask: Option<String>,
-    ) -> PyUnityCatalogResult<PyTagPolicy> {
+    ) -> PyResult<PyTagPolicy> {
         let mut request = self.client.update(tag_policy.into());
         request = request.with_update_mask(update_mask);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTagPolicy::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyTagPolicy::from(result))
     }
-    pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
+    pub fn delete(&self, py: Python<'_>) -> PyResult<()> {
         let request = self.client.delete();
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(())
-        })
+        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(())
     }
 }
 impl PyTagPolicyClient {

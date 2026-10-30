@@ -36,6 +36,8 @@ generate:
       error_type: PyUnityCatalogError
       result_type: PyUnityCatalogResult
       typings_package_filter: unitycatalog
+      # Blocking API only; the async flavor would add a pyo3-async-runtimes dependency.
+      api: sync
     node:
       napi:
         output: node/client/src

@@ -3868,10 +3868,19 @@ pub struct PyAzureServicePrincipal(pub super::credentials::v1::AzureServicePrinc
 #[::pyo3::pymethods]
 impl PyAzureServicePrincipal {
     #[new]
-    #[pyo3(signature = (directory_id = None, application_id = None))]
+    #[pyo3(
+        signature = (
+            directory_id = None,
+            application_id = None,
+            client_secret = None,
+            federated_token_file = None
+        )
+    )]
     fn new(
         directory_id: ::core::option::Option<::std::string::String>,
         application_id: ::core::option::Option<::std::string::String>,
+        client_secret: ::core::option::Option<::std::string::String>,
+        federated_token_file: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner =
             <super::credentials::v1::AzureServicePrincipal as ::core::default::Default>::default();
@@ -3880,6 +3889,18 @@ impl PyAzureServicePrincipal {
         }
         if let ::core::option::Option::Some(value) = application_id {
             inner.application_id = value;
+        }
+        if let ::core::option::Option::Some(value) = client_secret {
+            inner.credential = ::core::option::Option::Some(
+                super::credentials::v1::azure_service_principal::Credential::ClientSecret(value),
+            );
+        }
+        if let ::core::option::Option::Some(value) = federated_token_file {
+            inner.credential = ::core::option::Option::Some(
+                super::credentials::v1::azure_service_principal::Credential::FederatedTokenFile(
+                    value,
+                ),
+            );
         }
         Self(inner)
     }
@@ -3898,6 +3919,74 @@ impl PyAzureServicePrincipal {
     #[setter(application_id)]
     fn set_application_id(&mut self, value: ::std::string::String) {
         self.0.application_id = value;
+    }
+    ///The client secret generated for the above app ID in AAD.
+    #[getter]
+    fn client_secret(&self) -> ::core::option::Option<::std::string::String> {
+        match &self.0.credential {
+            ::core::option::Option::Some(
+                super::credentials::v1::azure_service_principal::Credential::ClientSecret(value),
+            ) => ::core::option::Option::Some(::core::clone::Clone::clone(value)),
+            _ => ::core::option::Option::None,
+        }
+    }
+    /**Location of the file containing a federated token.
+
+    Specifically useful for workload identity federation.*/
+    #[getter]
+    fn federated_token_file(&self) -> ::core::option::Option<::std::string::String> {
+        match &self.0.credential {
+            ::core::option::Option::Some(
+                super::credentials::v1::azure_service_principal::Credential::FederatedTokenFile(
+                    value,
+                ),
+            ) => ::core::option::Option::Some(::core::clone::Clone::clone(value)),
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[setter(client_secret)]
+    fn set_client_secret(&mut self, value: ::core::option::Option<::std::string::String>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credential = ::core::option::Option::Some(
+                    super::credentials::v1::azure_service_principal::Credential::ClientSecret(
+                        value,
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.credential,
+                    ::core::option::Option::Some(
+                        super::credentials::v1::azure_service_principal::Credential::ClientSecret(
+                            _
+                        )
+                    )
+                ) {
+                    self.0.credential = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(federated_token_file)]
+    fn set_federated_token_file(&mut self, value: ::core::option::Option<::std::string::String>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credential = ::core::option::Option::Some(
+                    super::credentials::v1::azure_service_principal::Credential::FederatedTokenFile(
+                        value,
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credential,
+                    ::core::option::Option::Some(super::credentials::v1::azure_service_principal::Credential::FederatedTokenFile(_))
+                ) {
+                    self.0.credential = ::core::option::Option::None;
+                }
+            }
+        }
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -8137,8 +8226,83 @@ pub struct PyFunctionArg(pub super::policies::v1::FunctionArg);
 #[::pyo3::pymethods]
 impl PyFunctionArg {
     #[new]
-    fn new() -> Self {
-        Self(::core::default::Default::default())
+    #[pyo3(signature = (alias = None, constant = None))]
+    fn new(
+        alias: ::core::option::Option<::std::string::String>,
+        constant: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner = <super::policies::v1::FunctionArg as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = alias {
+            inner.value = ::core::option::Option::Some(
+                super::policies::v1::function_arg::Value::Alias(value),
+            );
+        }
+        if let ::core::option::Option::Some(value) = constant {
+            inner.value = ::core::option::Option::Some(
+                super::policies::v1::function_arg::Value::Constant(value),
+            );
+        }
+        Self(inner)
+    }
+    ///References a column via its `MatchColumn.alias`.
+    #[getter]
+    fn alias(&self) -> ::core::option::Option<::std::string::String> {
+        match &self.0.value {
+            ::core::option::Option::Some(super::policies::v1::function_arg::Value::Alias(
+                value,
+            )) => ::core::option::Option::Some(::core::clone::Clone::clone(value)),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///A literal constant value, passed as-is to the function.
+    #[getter]
+    fn constant(&self) -> ::core::option::Option<::std::string::String> {
+        match &self.0.value {
+            ::core::option::Option::Some(super::policies::v1::function_arg::Value::Constant(
+                value,
+            )) => ::core::option::Option::Some(::core::clone::Clone::clone(value)),
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[setter(alias)]
+    fn set_alias(&mut self, value: ::core::option::Option<::std::string::String>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.value = ::core::option::Option::Some(
+                    super::policies::v1::function_arg::Value::Alias(value),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.value,
+                    ::core::option::Option::Some(super::policies::v1::function_arg::Value::Alias(
+                        _
+                    ))
+                ) {
+                    self.0.value = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(constant)]
+    fn set_constant(&mut self, value: ::core::option::Option<::std::string::String>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.value = ::core::option::Option::Some(
+                    super::policies::v1::function_arg::Value::Constant(value),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.value,
+                    ::core::option::Option::Some(
+                        super::policies::v1::function_arg::Value::Constant(_)
+                    )
+                ) {
+                    self.0.value = ::core::option::Option::None;
+                }
+            }
+        }
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -8522,7 +8686,9 @@ impl PyPolicyInfo {
             match_columns = None,
             comment = None,
             created_at = None,
-            updated_at = None
+            updated_at = None,
+            row_filter = None,
+            column_mask = None
         )
     )]
     fn new(
@@ -8538,6 +8704,8 @@ impl PyPolicyInfo {
         comment: ::core::option::Option<::std::string::String>,
         created_at: ::core::option::Option<i64>,
         updated_at: ::core::option::Option<i64>,
+        row_filter: ::core::option::Option<PyFunctionRef>,
+        column_mask: ::core::option::Option<PyFunctionRef>,
     ) -> Self {
         let mut inner = <super::policies::v1::PolicyInfo as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
@@ -8582,6 +8750,20 @@ impl PyPolicyInfo {
         {
             let value = updated_at;
             inner.updated_at = value;
+        }
+        if let ::core::option::Option::Some(value) = row_filter {
+            inner.function = ::core::option::Option::Some(
+                super::policies::v1::policy_info::Function::RowFilter(::std::boxed::Box::new(
+                    value.into(),
+                )),
+            );
+        }
+        if let ::core::option::Option::Some(value) = column_mask {
+            inner.function = ::core::option::Option::Some(
+                super::policies::v1::policy_info::Function::ColumnMask(::std::boxed::Box::new(
+                    value.into(),
+                )),
+            );
         }
         Self(inner)
     }
@@ -8688,6 +8870,70 @@ impl PyPolicyInfo {
     #[setter(updated_at)]
     fn set_updated_at(&mut self, value: ::core::option::Option<i64>) {
         self.0.updated_at = value;
+    }
+    ///The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+    #[getter]
+    fn row_filter(&self) -> ::core::option::Option<PyFunctionRef> {
+        match &self.0.function {
+            ::core::option::Option::Some(
+                super::policies::v1::policy_info::Function::RowFilter(value),
+            ) => ::core::option::Option::Some(<PyFunctionRef>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+    #[getter]
+    fn column_mask(&self) -> ::core::option::Option<PyFunctionRef> {
+        match &self.0.function {
+            ::core::option::Option::Some(
+                super::policies::v1::policy_info::Function::ColumnMask(value),
+            ) => ::core::option::Option::Some(<PyFunctionRef>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[setter(row_filter)]
+    fn set_row_filter(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.function = ::core::option::Option::Some(
+                    super::policies::v1::policy_info::Function::RowFilter(::std::boxed::Box::new(
+                        value.into(),
+                    )),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.function,
+                    ::core::option::Option::Some(
+                        super::policies::v1::policy_info::Function::RowFilter(_)
+                    )
+                ) {
+                    self.0.function = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(column_mask)]
+    fn set_column_mask(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.function = ::core::option::Option::Some(
+                    super::policies::v1::policy_info::Function::ColumnMask(::std::boxed::Box::new(
+                        value.into(),
+                    )),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.function,
+                    ::core::option::Option::Some(
+                        super::policies::v1::policy_info::Function::ColumnMask(_)
+                    )
+                ) {
+                    self.0.function = ::core::option::Option::None;
+                }
+            }
+        }
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -13513,8 +13759,86 @@ pub struct PyDependency(pub super::tables::v1::Dependency);
 #[::pyo3::pymethods]
 impl PyDependency {
     #[new]
-    fn new() -> Self {
-        Self(::core::default::Default::default())
+    #[pyo3(signature = (table = None, function = None))]
+    fn new(
+        table: ::core::option::Option<PyTableDependency>,
+        function: ::core::option::Option<PyFunctionDependency>,
+    ) -> Self {
+        let mut inner = <super::tables::v1::Dependency as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = table {
+            inner.dependency =
+                ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Table(
+                    ::std::boxed::Box::new(value.into()),
+                ));
+        }
+        if let ::core::option::Option::Some(value) = function {
+            inner.dependency =
+                ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Function(
+                    ::std::boxed::Box::new(value.into()),
+                ));
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn table(&self) -> ::core::option::Option<PyTableDependency> {
+        match &self.0.dependency {
+            ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Table(
+                value,
+            )) => ::core::option::Option::Some(<PyTableDependency>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[getter]
+    fn function(&self) -> ::core::option::Option<PyFunctionDependency> {
+        match &self.0.dependency {
+            ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Function(
+                value,
+            )) => ::core::option::Option::Some(<PyFunctionDependency>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[setter(table)]
+    fn set_table(&mut self, value: ::core::option::Option<PyTableDependency>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.dependency =
+                    ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Table(
+                        ::std::boxed::Box::new(value.into()),
+                    ));
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.dependency,
+                    ::core::option::Option::Some(super::tables::v1::dependency::Dependency::Table(
+                        _
+                    ))
+                ) {
+                    self.0.dependency = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(function)]
+    fn set_function(&mut self, value: ::core::option::Option<PyFunctionDependency>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.dependency = ::core::option::Option::Some(
+                    super::tables::v1::dependency::Dependency::Function(::std::boxed::Box::new(
+                        value.into(),
+                    )),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.dependency,
+                    ::core::option::Option::Some(
+                        super::tables::v1::dependency::Dependency::Function(_)
+                    )
+                ) {
+                    self.0.dependency = ::core::option::Option::None;
+                }
+            }
+        }
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -16328,10 +16652,25 @@ pub struct PyTemporaryCredential(pub super::temporary_credentials::v1::Temporary
 #[::pyo3::pymethods]
 impl PyTemporaryCredential {
     #[new]
-    #[pyo3(signature = (expiration_time = None, url = None))]
+    #[pyo3(
+        signature = (
+            expiration_time = None,
+            url = None,
+            azure_user_delegation_sas = None,
+            azure_aad = None,
+            aws_temp_credentials = None,
+            gcp_oauth_token = None,
+            r2_temp_credentials = None
+        )
+    )]
     fn new(
         expiration_time: ::core::option::Option<i64>,
         url: ::core::option::Option<::std::string::String>,
+        azure_user_delegation_sas: ::core::option::Option<PyAzureUserDelegationSas>,
+        azure_aad: ::core::option::Option<PyAzureAad>,
+        aws_temp_credentials: ::core::option::Option<PyAwsTemporaryCredentials>,
+        gcp_oauth_token: ::core::option::Option<PyGcpOauthToken>,
+        r2_temp_credentials: ::core::option::Option<PyR2TemporaryCredentials>,
     ) -> Self {
         let mut inner = <super::temporary_credentials::v1::TemporaryCredential as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = expiration_time {
@@ -16339,6 +16678,41 @@ impl PyTemporaryCredential {
         }
         if let ::core::option::Option::Some(value) = url {
             inner.url = value;
+        }
+        if let ::core::option::Option::Some(value) = azure_user_delegation_sas {
+            inner.credentials = ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AzureUserDelegationSas(
+                    ::std::boxed::Box::new(value.into()),
+                ),
+            );
+        }
+        if let ::core::option::Option::Some(value) = azure_aad {
+            inner.credentials = ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AzureAad(
+                    ::std::boxed::Box::new(value.into()),
+                ),
+            );
+        }
+        if let ::core::option::Option::Some(value) = aws_temp_credentials {
+            inner.credentials = ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AwsTempCredentials(
+                    ::std::boxed::Box::new(value.into()),
+                ),
+            );
+        }
+        if let ::core::option::Option::Some(value) = gcp_oauth_token {
+            inner.credentials = ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::GcpOauthToken(
+                    ::std::boxed::Box::new(value.into()),
+                ),
+            );
+        }
+        if let ::core::option::Option::Some(value) = r2_temp_credentials {
+            inner.credentials = ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::R2TempCredentials(
+                    ::std::boxed::Box::new(value.into()),
+                ),
+            );
         }
         Self(inner)
     }
@@ -16357,6 +16731,184 @@ impl PyTemporaryCredential {
     #[setter(url)]
     fn set_url(&mut self, value: ::std::string::String) {
         self.0.url = value;
+    }
+    ///Credentials for Azure Blob Storage.
+    #[getter]
+    fn azure_user_delegation_sas(&self) -> ::core::option::Option<PyAzureUserDelegationSas> {
+        match &self.0.credentials {
+            ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AzureUserDelegationSas(
+                    value,
+                ),
+            ) => {
+                ::core::option::Option::Some(
+                    <PyAzureUserDelegationSas>::from((**value).clone()),
+                )
+            }
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///Credentials for Azure Active Directory.
+    #[getter]
+    fn azure_aad(&self) -> ::core::option::Option<PyAzureAad> {
+        match &self.0.credentials {
+            ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AzureAad(
+                    value,
+                ),
+            ) => ::core::option::Option::Some(<PyAzureAad>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///Credentials for AWS S3.
+    #[getter]
+    fn aws_temp_credentials(&self) -> ::core::option::Option<PyAwsTemporaryCredentials> {
+        match &self.0.credentials {
+            ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::AwsTempCredentials(
+                    value,
+                ),
+            ) => {
+                ::core::option::Option::Some(
+                    <PyAwsTemporaryCredentials>::from((**value).clone()),
+                )
+            }
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///Credentials for Google Cloud Storage.
+    #[getter]
+    fn gcp_oauth_token(&self) -> ::core::option::Option<PyGcpOauthToken> {
+        match &self.0.credentials {
+            ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::GcpOauthToken(
+                    value,
+                ),
+            ) => ::core::option::Option::Some(<PyGcpOauthToken>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///Credentials for R2.
+    #[getter]
+    fn r2_temp_credentials(&self) -> ::core::option::Option<PyR2TemporaryCredentials> {
+        match &self.0.credentials {
+            ::core::option::Option::Some(
+                super::temporary_credentials::v1::temporary_credential::Credentials::R2TempCredentials(
+                    value,
+                ),
+            ) => {
+                ::core::option::Option::Some(
+                    <PyR2TemporaryCredentials>::from((**value).clone()),
+                )
+            }
+            _ => ::core::option::Option::None,
+        }
+    }
+    #[setter(azure_user_delegation_sas)]
+    fn set_azure_user_delegation_sas(
+        &mut self,
+        value: ::core::option::Option<PyAzureUserDelegationSas>,
+    ) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credentials = ::core::option::Option::Some(
+                    super::temporary_credentials::v1::temporary_credential::Credentials::AzureUserDelegationSas(
+                        ::std::boxed::Box::new(value.into()),
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credentials,
+                    ::core::option::Option::Some(super::temporary_credentials::v1::temporary_credential::Credentials::AzureUserDelegationSas(_))
+                ) {
+                    self.0.credentials = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(azure_aad)]
+    fn set_azure_aad(&mut self, value: ::core::option::Option<PyAzureAad>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credentials = ::core::option::Option::Some(
+                    super::temporary_credentials::v1::temporary_credential::Credentials::AzureAad(
+                        ::std::boxed::Box::new(value.into()),
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credentials,
+                    ::core::option::Option::Some(super::temporary_credentials::v1::temporary_credential::Credentials::AzureAad(_))
+                ) {
+                    self.0.credentials = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(aws_temp_credentials)]
+    fn set_aws_temp_credentials(
+        &mut self,
+        value: ::core::option::Option<PyAwsTemporaryCredentials>,
+    ) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credentials = ::core::option::Option::Some(
+                    super::temporary_credentials::v1::temporary_credential::Credentials::AwsTempCredentials(
+                        ::std::boxed::Box::new(value.into()),
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credentials,
+                    ::core::option::Option::Some(super::temporary_credentials::v1::temporary_credential::Credentials::AwsTempCredentials(_))
+                ) {
+                    self.0.credentials = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(gcp_oauth_token)]
+    fn set_gcp_oauth_token(&mut self, value: ::core::option::Option<PyGcpOauthToken>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credentials = ::core::option::Option::Some(
+                    super::temporary_credentials::v1::temporary_credential::Credentials::GcpOauthToken(
+                        ::std::boxed::Box::new(value.into()),
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credentials,
+                    ::core::option::Option::Some(super::temporary_credentials::v1::temporary_credential::Credentials::GcpOauthToken(_))
+                ) {
+                    self.0.credentials = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(r2_temp_credentials)]
+    fn set_r2_temp_credentials(&mut self, value: ::core::option::Option<PyR2TemporaryCredentials>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.credentials = ::core::option::Option::Some(
+                    super::temporary_credentials::v1::temporary_credential::Credentials::R2TempCredentials(
+                        ::std::boxed::Box::new(value.into()),
+                    ),
+                );
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0. credentials,
+                    ::core::option::Option::Some(super::temporary_credentials::v1::temporary_credential::Credentials::R2TempCredentials(_))
+                ) {
+                    self.0.credentials = ::core::option::Option::None;
+                }
+            }
+        }
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)

@@ -20,6 +20,7 @@ pub mod providers;
 pub mod recipients;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod registered_models;
+pub mod runtime;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod schemas;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
@@ -42,15 +43,16 @@ use crate::codegen::policies::PyPolicyClient;
 use crate::codegen::providers::PyProviderClient;
 use crate::codegen::recipients::PyRecipientClient;
 use crate::codegen::registered_models::PyRegisteredModelClient;
+use crate::codegen::runtime::{ListIterator, block_on};
 use crate::codegen::schemas::PySchemaClient;
 use crate::codegen::shares::PyShareClient;
 use crate::codegen::staging_tables::PyStagingTableClient;
 use crate::codegen::tables::PyTableClient;
 use crate::codegen::tag_policies::PyTagPolicyClient;
 use crate::codegen::volumes::PyVolumeClient;
-use crate::error::{PyUnityCatalogError, PyUnityCatalogResult};
-use crate::runtime::get_runtime;
-use futures::stream::TryStreamExt;
+use crate::error::PyUnityCatalogError;
+use futures::stream::StreamExt;
+use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::UnityCatalogClient;
@@ -103,21 +105,19 @@ impl PyUnityCatalogClient {
     )]
     pub fn list_agent_skills(
         &self,
-        py: Python,
         catalog_name: String,
         schema_name: String,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyAgentSkill>> {
+    ) -> PyResult<ListIterator> {
         let mut request = self.client.list_agent_skills(catalog_name, schema_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyAgentSkill::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyAgentSkill::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(
         signature = (
@@ -135,7 +135,7 @@ impl PyUnityCatalogClient {
     )]
     pub fn create_agent_skill(
         &self,
-        py: Python,
+        py: Python<'_>,
         catalog_name: String,
         schema_name: String,
         name: String,
@@ -146,7 +146,7 @@ impl PyUnityCatalogClient {
         allowed_tools: Option<Vec<String>>,
         metadata: Option<HashMap<String, String>>,
         comment: Option<String>,
-    ) -> PyUnityCatalogResult<PyAgentSkill> {
+    ) -> PyResult<PyAgentSkill> {
         let mut request = self.client.create_agent_skill(
             catalog_name,
             schema_name,
@@ -163,12 +163,8 @@ impl PyUnityCatalogClient {
             request = request.with_metadata(metadata);
         }
         request = request.with_comment(comment);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyAgentSkill::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyAgentSkill::from(result))
     }
     #[pyo3(
         signature = (
@@ -180,21 +176,19 @@ impl PyUnityCatalogClient {
     )]
     pub fn list_agents(
         &self,
-        py: Python,
         catalog_name: String,
         schema_name: String,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyAgent>> {
+    ) -> PyResult<ListIterator> {
         let mut request = self.client.list_agents(catalog_name, schema_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyAgent::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyAgent::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(
         signature = (
@@ -211,7 +205,7 @@ impl PyUnityCatalogClient {
     )]
     pub fn create_agent(
         &self,
-        py: Python,
+        py: Python<'_>,
         catalog_name: String,
         schema_name: String,
         name: String,
@@ -221,7 +215,7 @@ impl PyUnityCatalogClient {
         capabilities: Option<Vec<String>>,
         input_schema: Option<String>,
         comment: Option<String>,
-    ) -> PyUnityCatalogResult<PyAgent> {
+    ) -> PyResult<PyAgent> {
         let mut request = self.client.create_agent(
             catalog_name,
             schema_name,
@@ -235,27 +229,18 @@ impl PyUnityCatalogClient {
         }
         request = request.with_input_schema(input_schema);
         request = request.with_comment(comment);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyAgent::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyAgent::from(result))
     }
     #[pyo3(signature = (max_results = None))]
-    pub fn list_catalogs(
-        &self,
-        py: Python,
-        max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyCatalog>> {
+    pub fn list_catalogs(&self, max_results: Option<i32>) -> PyResult<ListIterator> {
         let mut request = self.client.list_catalogs();
         request = request.with_max_results(max_results);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyCatalog::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyCatalog::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(
         signature = (
@@ -269,14 +254,14 @@ impl PyUnityCatalogClient {
     )]
     pub fn create_catalog(
         &self,
-        py: Python,
+        py: Python<'_>,
         name: String,
         comment: Option<String>,
         properties: Option<HashMap<String, String>>,
         storage_root: Option<String>,
         provider_name: Option<String>,
         share_name: Option<String>,
-    ) -> PyUnityCatalogResult<PyCatalog> {
+    ) -> PyResult<PyCatalog> {
         let mut request = self.client.create_catalog(name);
         request = request.with_comment(comment);
         if let Some(properties) = properties {
@@ -285,29 +270,23 @@ impl PyUnityCatalogClient {
         request = request.with_storage_root(storage_root);
         request = request.with_provider_name(provider_name);
         request = request.with_share_name(share_name);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyCatalog::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyCatalog::from(result))
     }
     #[pyo3(signature = (purpose = None, max_results = None))]
     pub fn list_credentials(
         &self,
-        py: Python,
         purpose: ::core::option::Option<PyPurpose>,
         max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyCredential>> {
+    ) -> PyResult<ListIterator> {
         let mut request = self.client.list_credentials();
         request = request.with_purpose(purpose.map(::core::convert::Into::into));
         request = request.with_max_results(max_results);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyCredential::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyCredential::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(
         signature = (
@@ -325,7 +304,7 @@ impl PyUnityCatalogClient {
     )]
     pub fn create_credential(
         &self,
-        py: Python,
+        py: Python<'_>,
         name: String,
         purpose: PyPurpose,
         comment: Option<String>,
@@ -336,7 +315,7 @@ impl PyUnityCatalogClient {
         azure_storage_key: ::core::option::Option<PyAzureStorageKey>,
         aws_iam_role: ::core::option::Option<PyAwsIamRoleConfig>,
         databricks_gcp_service_account: ::core::option::Option<PyDatabricksGcpServiceAccount>,
-    ) -> PyUnityCatalogResult<PyCredential> {
+    ) -> PyResult<PyCredential> {
         let mut request = self.client.create_credential(name, purpose.into());
         request = request.with_comment(comment);
         request = request.with_read_only(read_only);
@@ -351,69 +330,53 @@ impl PyUnityCatalogClient {
         request = request.with_databricks_gcp_service_account(
             databricks_gcp_service_account.map(::core::convert::Into::into),
         );
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyCredential::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyCredential::from(result))
     }
     #[pyo3(
         signature = (entity_type, entity_name, max_results = None, page_token = None)
     )]
     pub fn list_entity_tag_assignments(
         &self,
-        py: Python,
+        py: Python<'_>,
         entity_type: String,
         entity_name: String,
         max_results: Option<i32>,
         page_token: Option<String>,
-    ) -> PyUnityCatalogResult<PyListEntityTagAssignmentsResponse> {
+    ) -> PyResult<PyListEntityTagAssignmentsResponse> {
         let mut request = self
             .client
             .list_entity_tag_assignments(entity_type, entity_name);
         request = request.with_max_results(max_results);
         request = request.with_page_token(page_token);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyListEntityTagAssignmentsResponse::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyListEntityTagAssignmentsResponse::from(result))
     }
     #[pyo3(signature = (tag_assignment))]
     pub fn create_entity_tag_assignment(
         &self,
-        py: Python,
+        py: Python<'_>,
         tag_assignment: PyEntityTagAssignment,
-    ) -> PyUnityCatalogResult<PyEntityTagAssignment> {
+    ) -> PyResult<PyEntityTagAssignment> {
         let request = self
             .client
             .create_entity_tag_assignment(tag_assignment.into());
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyEntityTagAssignment::from(result))
     }
     #[pyo3(signature = (entity_type, entity_name, tag_key))]
     pub fn get_entity_tag_assignment(
         &self,
-        py: Python,
+        py: Python<'_>,
         entity_type: String,
         entity_name: String,
         tag_key: String,
-    ) -> PyUnityCatalogResult<PyEntityTagAssignment> {
+    ) -> PyResult<PyEntityTagAssignment> {
         let request = self
             .client
             .get_entity_tag_assignment(entity_type, entity_name, tag_key);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyEntityTagAssignment::from(result))
     }
     #[pyo3(
         signature = (
@@ -426,13 +389,13 @@ impl PyUnityCatalogClient {
     )]
     pub fn update_entity_tag_assignment(
         &self,
-        py: Python,
+        py: Python<'_>,
         entity_type: String,
         entity_name: String,
         tag_key: String,
         tag_assignment: PyEntityTagAssignment,
         update_mask: Option<String>,
-    ) -> PyUnityCatalogResult<PyEntityTagAssignment> {
+    ) -> PyResult<PyEntityTagAssignment> {
         let mut request = self.client.update_entity_tag_assignment(
             entity_type,
             entity_name,
@@ -440,47 +403,37 @@ impl PyUnityCatalogClient {
             tag_assignment.into(),
         );
         request = request.with_update_mask(update_mask);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyEntityTagAssignment::from(result))
     }
     #[pyo3(signature = (entity_type, entity_name, tag_key))]
     pub fn delete_entity_tag_assignment(
         &self,
-        py: Python,
+        py: Python<'_>,
         entity_type: String,
         entity_name: String,
         tag_key: String,
-    ) -> PyUnityCatalogResult<()> {
+    ) -> PyResult<()> {
         let request = self
             .client
             .delete_entity_tag_assignment(entity_type, entity_name, tag_key);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(())
     }
     #[pyo3(signature = (max_results = None, include_browse = None))]
     pub fn list_external_locations(
         &self,
-        py: Python,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyExternalLocation>> {
+    ) -> PyResult<ListIterator> {
         let mut request = self.client.list_external_locations();
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyExternalLocation::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyExternalLocation::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(
         signature = (
@@ -494,26 +447,22 @@ impl PyUnityCatalogClient {
     )]
     pub fn create_external_location(
         &self,
-        py: Python,
+        py: Python<'_>,
         name: String,
         url: String,
         credential_name: String,
         read_only: Option<bool>,
         comment: Option<String>,
         skip_validation: Option<bool>,
-    ) -> PyUnityCatalogResult<PyExternalLocation> {
+    ) -> PyResult<PyExternalLocation> {
         let mut request = self
             .client
             .create_external_location(name, url, credential_name);
         request = request.with_read_only(read_only);
         request = request.with_comment(comment);
         request = request.with_skip_validation(skip_validation);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyExternalLocation::from(result))
     }
     #[pyo3(
         signature = (
@@ -525,53 +474,45 @@ impl PyUnityCatalogClient {
     )]
     pub fn list_functions(
         &self,
-        py: Python,
         catalog_name: String,
         schema_name: String,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyFunction>> {
+    ) -> PyResult<ListIterator> {
         let mut request = self.client.list_functions(catalog_name, schema_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyFunction::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyFunction::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(signature = (function_info))]
     pub fn create_function(
         &self,
-        py: Python,
+        py: Python<'_>,
         function_info: PyCreateFunction,
-    ) -> PyUnityCatalogResult<PyFunction> {
+    ) -> PyResult<PyFunction> {
         let request = self.client.create_function(function_info.into());
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyFunction::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyFunction::from(result))
     }
     #[pyo3(signature = (full_name, max_results = None, include_browse = None))]
     pub fn list_model_versions(
         &self,
-        py: Python,
         full_name: String,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyModelVersion>> {
+    ) -> PyResult<ListIterator> {
         let mut request = self.client.list_model_versions(full_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyModelVersion::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyModelVersion::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(
         signature = (
@@ -585,103 +526,79 @@ impl PyUnityCatalogClient {
     )]
     pub fn create_model_version(
         &self,
-        py: Python,
+        py: Python<'_>,
         model_name: String,
         catalog_name: String,
         schema_name: String,
         source: String,
         run_id: Option<String>,
         comment: Option<String>,
-    ) -> PyUnityCatalogResult<PyModelVersion> {
+    ) -> PyResult<PyModelVersion> {
         let mut request =
             self.client
                 .create_model_version(model_name, catalog_name, schema_name, source);
         request = request.with_run_id(run_id);
         request = request.with_comment(comment);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyModelVersion::from(result))
     }
     #[pyo3(signature = (full_name, version, include_browse = None))]
     pub fn get_model_version(
         &self,
-        py: Python,
+        py: Python<'_>,
         full_name: String,
         version: i64,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<PyModelVersion> {
+    ) -> PyResult<PyModelVersion> {
         let mut request = self.client.get_model_version(full_name, version);
         request = request.with_include_browse(include_browse);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyModelVersion::from(result))
     }
     #[pyo3(signature = (full_name, version, comment = None))]
     pub fn update_model_version(
         &self,
-        py: Python,
+        py: Python<'_>,
         full_name: String,
         version: i64,
         comment: Option<String>,
-    ) -> PyUnityCatalogResult<PyModelVersion> {
+    ) -> PyResult<PyModelVersion> {
         let mut request = self.client.update_model_version(full_name, version);
         request = request.with_comment(comment);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyModelVersion::from(result))
     }
     #[pyo3(signature = (full_name, version))]
     pub fn delete_model_version(
         &self,
-        py: Python,
+        py: Python<'_>,
         full_name: String,
         version: i64,
-    ) -> PyUnityCatalogResult<()> {
+    ) -> PyResult<()> {
         let request = self.client.delete_model_version(full_name, version);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(())
-        })
+        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(())
     }
     #[pyo3(signature = (full_name, version))]
     pub fn finalize_model_version(
         &self,
-        py: Python,
+        py: Python<'_>,
         full_name: String,
         version: i64,
-    ) -> PyUnityCatalogResult<PyModelVersion> {
+    ) -> PyResult<PyModelVersion> {
         let request = self.client.finalize_model_version(full_name, version);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyModelVersion::from(result))
     }
     #[pyo3(signature = (max_results = None))]
-    pub fn list_providers(
-        &self,
-        py: Python,
-        max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyProvider>> {
+    pub fn list_providers(&self, max_results: Option<i32>) -> PyResult<ListIterator> {
         let mut request = self.client.list_providers();
         request = request.with_max_results(max_results);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyProvider::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyProvider::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(
         signature = (
@@ -695,14 +612,14 @@ impl PyUnityCatalogClient {
     )]
     pub fn create_provider(
         &self,
-        py: Python,
+        py: Python<'_>,
         name: String,
         authentication_type: PyProviderAuthenticationType,
         owner: Option<String>,
         comment: Option<String>,
         recipient_profile_str: Option<String>,
         properties: Option<HashMap<String, String>>,
-    ) -> PyUnityCatalogResult<PyProvider> {
+    ) -> PyResult<PyProvider> {
         let mut request = self
             .client
             .create_provider(name, authentication_type.into());
@@ -712,27 +629,18 @@ impl PyUnityCatalogClient {
         if let Some(properties) = properties {
             request = request.with_properties(properties);
         }
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyProvider::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyProvider::from(result))
     }
     #[pyo3(signature = (max_results = None))]
-    pub fn list_recipients(
-        &self,
-        py: Python,
-        max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyRecipient>> {
+    pub fn list_recipients(&self, max_results: Option<i32>) -> PyResult<ListIterator> {
         let mut request = self.client.list_recipients();
         request = request.with_max_results(max_results);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyRecipient::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyRecipient::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(
         signature = (
@@ -746,14 +654,14 @@ impl PyUnityCatalogClient {
     )]
     pub fn create_recipient(
         &self,
-        py: Python,
+        py: Python<'_>,
         name: String,
         authentication_type: PyAuthenticationType,
         owner: String,
         comment: Option<String>,
         properties: Option<HashMap<String, String>>,
         expiration_time: Option<i64>,
-    ) -> PyUnityCatalogResult<PyRecipient> {
+    ) -> PyResult<PyRecipient> {
         let mut request = self
             .client
             .create_recipient(name, authentication_type.into(), owner);
@@ -762,12 +670,8 @@ impl PyUnityCatalogClient {
             request = request.with_properties(properties);
         }
         request = request.with_expiration_time(expiration_time);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyRecipient::from(result))
     }
     #[pyo3(
         signature = (
@@ -779,61 +683,53 @@ impl PyUnityCatalogClient {
     )]
     pub fn list_registered_models(
         &self,
-        py: Python,
         catalog_name: Option<String>,
         schema_name: Option<String>,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyRegisteredModel>> {
+    ) -> PyResult<ListIterator> {
         let mut request = self.client.list_registered_models();
         request = request.with_catalog_name(catalog_name);
         request = request.with_schema_name(schema_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyRegisteredModel::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyRegisteredModel::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(signature = (name, catalog_name, schema_name, comment = None))]
     pub fn create_registered_model(
         &self,
-        py: Python,
+        py: Python<'_>,
         name: String,
         catalog_name: String,
         schema_name: String,
         comment: Option<String>,
-    ) -> PyUnityCatalogResult<PyRegisteredModel> {
+    ) -> PyResult<PyRegisteredModel> {
         let mut request = self
             .client
             .create_registered_model(name, catalog_name, schema_name);
         request = request.with_comment(comment);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyRegisteredModel::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyRegisteredModel::from(result))
     }
     #[pyo3(signature = (catalog_name, max_results = None, include_browse = None))]
     pub fn list_schemas(
         &self,
-        py: Python,
         catalog_name: String,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PySchema>> {
+    ) -> PyResult<ListIterator> {
         let mut request = self.client.list_schemas(catalog_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PySchema::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PySchema::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(
         signature = (
@@ -846,74 +742,57 @@ impl PyUnityCatalogClient {
     )]
     pub fn create_schema(
         &self,
-        py: Python,
+        py: Python<'_>,
         name: String,
         catalog_name: String,
         comment: Option<String>,
         properties: Option<HashMap<String, String>>,
         storage_root: Option<String>,
-    ) -> PyUnityCatalogResult<PySchema> {
+    ) -> PyResult<PySchema> {
         let mut request = self.client.create_schema(name, catalog_name);
         request = request.with_comment(comment);
         if let Some(properties) = properties {
             request = request.with_properties(properties);
         }
         request = request.with_storage_root(storage_root);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PySchema::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PySchema::from(result))
     }
     #[pyo3(signature = (max_results = None))]
-    pub fn list_shares(
-        &self,
-        py: Python,
-        max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyShare>> {
+    pub fn list_shares(&self, max_results: Option<i32>) -> PyResult<ListIterator> {
         let mut request = self.client.list_shares();
         request = request.with_max_results(max_results);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyShare::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyShare::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(signature = (name, comment = None))]
     pub fn create_share(
         &self,
-        py: Python,
+        py: Python<'_>,
         name: String,
         comment: Option<String>,
-    ) -> PyUnityCatalogResult<PyShare> {
+    ) -> PyResult<PyShare> {
         let mut request = self.client.create_share(name);
         request = request.with_comment(comment);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyShare::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyShare::from(result))
     }
     #[pyo3(signature = (name, catalog_name, schema_name))]
     pub fn create_staging_table(
         &self,
-        py: Python,
+        py: Python<'_>,
         name: String,
         catalog_name: String,
         schema_name: String,
-    ) -> PyUnityCatalogResult<PyStagingTable> {
+    ) -> PyResult<PyStagingTable> {
         let request = self
             .client
             .create_staging_table(name, catalog_name, schema_name);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyStagingTable::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyStagingTable::from(result))
     }
     #[pyo3(
         signature = (
@@ -930,7 +809,6 @@ impl PyUnityCatalogClient {
     )]
     pub fn list_tables(
         &self,
-        py: Python,
         catalog_name: String,
         schema_name: String,
         max_results: Option<i32>,
@@ -940,7 +818,7 @@ impl PyUnityCatalogClient {
         omit_username: Option<bool>,
         include_browse: Option<bool>,
         include_manifest_capabilities: Option<bool>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyTable>> {
+    ) -> PyResult<ListIterator> {
         let mut request = self.client.list_tables(catalog_name, schema_name);
         request = request.with_max_results(max_results);
         request = request.with_include_delta_metadata(include_delta_metadata);
@@ -949,12 +827,11 @@ impl PyUnityCatalogClient {
         request = request.with_omit_username(omit_username);
         request = request.with_include_browse(include_browse);
         request = request.with_include_manifest_capabilities(include_manifest_capabilities);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyTable::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyTable::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(
         signature = (
@@ -973,7 +850,7 @@ impl PyUnityCatalogClient {
     )]
     pub fn create_table(
         &self,
-        py: Python,
+        py: Python<'_>,
         name: String,
         schema_name: String,
         catalog_name: String,
@@ -985,7 +862,7 @@ impl PyUnityCatalogClient {
         properties: Option<HashMap<String, String>>,
         view_definition: Option<String>,
         view_dependencies: ::core::option::Option<PyDependencyList>,
-    ) -> PyUnityCatalogResult<PyTable> {
+    ) -> PyResult<PyTable> {
         let mut request = self.client.create_table(
             name,
             schema_name,
@@ -1009,105 +886,80 @@ impl PyUnityCatalogClient {
         request = request.with_view_definition(view_definition);
         request =
             request.with_view_dependencies(view_dependencies.map(::core::convert::Into::into));
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTable::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyTable::from(result))
     }
     #[pyo3(signature = (max_results = None))]
-    pub fn list_tag_policies(
-        &self,
-        py: Python,
-        max_results: Option<i32>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyTagPolicy>> {
+    pub fn list_tag_policies(&self, max_results: Option<i32>) -> PyResult<ListIterator> {
         let mut request = self.client.list_tag_policies();
         request = request.with_max_results(max_results);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyTagPolicy::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyTagPolicy::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(signature = (tag_policy))]
     pub fn create_tag_policy(
         &self,
-        py: Python,
+        py: Python<'_>,
         tag_policy: PyTagPolicy,
-    ) -> PyUnityCatalogResult<PyTagPolicy> {
+    ) -> PyResult<PyTagPolicy> {
         let request = self.client.create_tag_policy(tag_policy.into());
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTagPolicy::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyTagPolicy::from(result))
     }
     #[pyo3(signature = (table_id, operation))]
     pub fn generate_temporary_table_credentials(
         &self,
-        py: Python,
+        py: Python<'_>,
         table_id: String,
         operation: PyGenerateTemporaryTableCredentialsRequestOperation,
-    ) -> PyUnityCatalogResult<PyTemporaryCredential> {
+    ) -> PyResult<PyTemporaryCredential> {
         let request = self
             .client
             .generate_temporary_table_credentials(table_id, operation.into());
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyTemporaryCredential::from(result))
     }
     #[pyo3(signature = (url, operation, dry_run = None))]
     pub fn generate_temporary_path_credentials(
         &self,
-        py: Python,
+        py: Python<'_>,
         url: String,
         operation: PyGenerateTemporaryPathCredentialsRequestOperation,
         dry_run: Option<bool>,
-    ) -> PyUnityCatalogResult<PyTemporaryCredential> {
+    ) -> PyResult<PyTemporaryCredential> {
         let mut request = self
             .client
             .generate_temporary_path_credentials(url, operation.into());
         request = request.with_dry_run(dry_run);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyTemporaryCredential::from(result))
     }
     #[pyo3(signature = (volume_id, operation))]
     pub fn generate_temporary_volume_credentials(
         &self,
-        py: Python,
+        py: Python<'_>,
         volume_id: String,
         operation: PyGenerateTemporaryVolumeCredentialsRequestOperation,
-    ) -> PyUnityCatalogResult<PyTemporaryCredential> {
+    ) -> PyResult<PyTemporaryCredential> {
         let request = self
             .client
             .generate_temporary_volume_credentials(volume_id, operation.into());
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyTemporaryCredential::from(result))
     }
     #[pyo3(signature = (catalog_name, schema_name, model_name, version, operation))]
     pub fn generate_temporary_model_version_credentials(
         &self,
-        py: Python,
+        py: Python<'_>,
         catalog_name: String,
         schema_name: String,
         model_name: String,
         version: i64,
         operation: PyGenerateTemporaryModelVersionCredentialsRequestOperation,
-    ) -> PyUnityCatalogResult<PyTemporaryCredential> {
+    ) -> PyResult<PyTemporaryCredential> {
         let request = self.client.generate_temporary_model_version_credentials(
             catalog_name,
             schema_name,
@@ -1115,12 +967,8 @@ impl PyUnityCatalogClient {
             version,
             operation.into(),
         );
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyTemporaryCredential::from(result))
     }
     #[pyo3(
         signature = (
@@ -1132,21 +980,19 @@ impl PyUnityCatalogClient {
     )]
     pub fn list_volumes(
         &self,
-        py: Python,
         catalog_name: String,
         schema_name: String,
         max_results: Option<i32>,
         include_browse: Option<bool>,
-    ) -> PyUnityCatalogResult<::std::vec::Vec<PyVolume>> {
+    ) -> PyResult<ListIterator> {
         let mut request = self.client.list_volumes(catalog_name, schema_name);
         request = request.with_max_results(max_results);
         request = request.with_include_browse(include_browse);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            let result: ::std::vec::Vec<_> =
-                runtime.block_on(async move { request.into_stream().try_collect().await })?;
-            Ok::<_, PyUnityCatalogError>(result.into_iter().map(PyVolume::from).collect())
-        })
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyVolume::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
     }
     #[pyo3(
         signature = (
@@ -1160,25 +1006,21 @@ impl PyUnityCatalogClient {
     )]
     pub fn create_volume(
         &self,
-        py: Python,
+        py: Python<'_>,
         catalog_name: String,
         schema_name: String,
         name: String,
         volume_type: PyVolumeType,
         storage_location: Option<String>,
         comment: Option<String>,
-    ) -> PyUnityCatalogResult<PyVolume> {
+    ) -> PyResult<PyVolume> {
         let mut request =
             self.client
                 .create_volume(catalog_name, schema_name, name, volume_type.into());
         request = request.with_storage_location(storage_location);
         request = request.with_comment(comment);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyVolume::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyVolume::from(result))
     }
     pub fn agent_skill(
         &self,
@@ -1297,4 +1139,29 @@ impl PyUnityCatalogClient {
             client: self.client.volume_from_full_name(full_name),
         }
     }
+}
+/// Add every generated client class (and the list pagers) to the extension module `m`.
+///
+/// Call this from the crate's `#[pymodule]` so newly generated clients are exposed
+/// without hand-maintaining an `add_class` list.
+pub fn register_clients(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyUnityCatalogClient>()?;
+    m.add_class::<PyAgentSkillClient>()?;
+    m.add_class::<PyAgentClient>()?;
+    m.add_class::<PyCatalogClient>()?;
+    m.add_class::<PyCredentialClient>()?;
+    m.add_class::<PyExternalLocationClient>()?;
+    m.add_class::<PyFunctionClient>()?;
+    m.add_class::<PyPolicyClient>()?;
+    m.add_class::<PyProviderClient>()?;
+    m.add_class::<PyRecipientClient>()?;
+    m.add_class::<PyRegisteredModelClient>()?;
+    m.add_class::<PySchemaClient>()?;
+    m.add_class::<PyShareClient>()?;
+    m.add_class::<PyStagingTableClient>()?;
+    m.add_class::<PyTableClient>()?;
+    m.add_class::<PyTagPolicyClient>()?;
+    m.add_class::<PyVolumeClient>()?;
+    m.add_class::<ListIterator>()?;
+    Ok(())
 }

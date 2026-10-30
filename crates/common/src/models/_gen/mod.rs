@@ -8,6 +8,7 @@ use std::collections::HashMap;
 pub mod labels;
 pub use labels::{ObjectLabel, Resource};
 #[cfg(feature = "python")]
+#[allow(clippy::clone_on_copy)]
 pub mod pyo3_impls;
 pub use agent_skills::v0alpha1::AgentSkill;
 pub use agents::v0alpha1::Agent;

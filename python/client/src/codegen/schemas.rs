@@ -1,6 +1,8 @@
 // @generated — do not edit by hand.
-use crate::error::{PyUnityCatalogError, PyUnityCatalogResult};
-use crate::runtime::get_runtime;
+use crate::codegen::runtime::{ListIterator, block_on};
+use crate::error::PyUnityCatalogError;
+use futures::stream::StreamExt;
+use pyo3::IntoPyObjectExt;
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::SchemaClient;
@@ -12,45 +14,34 @@ pub struct PySchemaClient {
 }
 #[pymethods]
 impl PySchemaClient {
-    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PySchema> {
+    pub fn get(&self, py: Python<'_>) -> PyResult<PySchema> {
         let request = self.client.get();
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PySchema::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PySchema::from(result))
     }
     #[pyo3(signature = (comment = None, properties = None, new_name = None))]
     pub fn update(
         &self,
-        py: Python,
+        py: Python<'_>,
         comment: Option<String>,
         properties: Option<HashMap<String, String>>,
         new_name: Option<String>,
-    ) -> PyUnityCatalogResult<PySchema> {
+    ) -> PyResult<PySchema> {
         let mut request = self.client.update();
         request = request.with_comment(comment);
         if let Some(properties) = properties {
             request = request.with_properties(properties);
         }
         request = request.with_new_name(new_name);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PySchema::from(result))
-        })
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PySchema::from(result))
     }
     #[pyo3(signature = (force = None))]
-    pub fn delete(&self, py: Python, force: Option<bool>) -> PyUnityCatalogResult<()> {
+    pub fn delete(&self, py: Python<'_>, force: Option<bool>) -> PyResult<()> {
         let mut request = self.client.delete();
         request = request.with_force(force);
-        let runtime = get_runtime(py)?;
-        py.detach(|| {
-            runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(())
-        })
+        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(())
     }
 }
 impl PySchemaClient {

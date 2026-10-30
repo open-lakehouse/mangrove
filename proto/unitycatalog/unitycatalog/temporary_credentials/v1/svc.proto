@@ -29,7 +29,9 @@ message GenerateTemporaryTableCredentialsRequest {
   // permissions, otherwise, it will be read only.
   Operation operation = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 }
 
@@ -54,7 +56,9 @@ message GenerateTemporaryVolumeCredentialsRequest {
   // have write permissions, otherwise, it will be read only.
   Operation operation = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 }
 
@@ -80,7 +84,9 @@ message GenerateTemporaryPathCredentialsRequest {
   // The operation being performed on the path.
   Operation operation = 2 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 
   // When set to true, the service will not validate that the generated
@@ -120,7 +126,9 @@ message GenerateTemporaryModelVersionCredentialsRequest {
   // otherwise, it will be read only.
   Operation operation = 5 [
     (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).enum = {not_in: [0]}
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
   ];
 }
 
