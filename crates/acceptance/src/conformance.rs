@@ -365,10 +365,6 @@ fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
         (Target::OssRust, "policy_lifecycle") => {
             Some("row-filter policy requires a backing function reference (follow-up: #63)")
         }
-        // Temporary volume credentials return 404 on our server today.
-        (Target::OssRust, "temporary_volume_credentials") => {
-            Some("temporary-volume-credentials returns 404 on our server (follow-up: #63)")
-        }
         // Tag policy create returns 405 (method not allowed) on our server.
         (Target::OssRust, "tag_policy_lifecycle") => {
             Some("tag-policies create returns 405 on our server (follow-up: #63)")

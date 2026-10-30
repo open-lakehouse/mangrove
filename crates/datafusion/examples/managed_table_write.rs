@@ -501,7 +501,7 @@ fn build_staging_store(
         .or_else(|| staging.storage_credentials.first())
         .ok_or("staging response carried no storage_credentials")?;
 
-    let cfg = &cred.config;
+    let cfg = |key: &str| cred.config.get(key).filter(|v| !v.is_empty()).cloned();
     let bucket = location
         .host_str()
         .ok_or("staging location has no bucket/host")?;
@@ -509,16 +509,12 @@ fn build_staging_store(
     let mut builder = AmazonS3Builder::new()
         .with_bucket_name(bucket)
         .with_access_key_id(
-            cfg.s3_access_key_id
-                .clone()
-                .ok_or("staging credential missing s3.access-key-id")?,
+            cfg("s3.access-key-id").ok_or("staging credential missing s3.access-key-id")?,
         )
         .with_secret_access_key(
-            cfg.s3_secret_access_key
-                .clone()
-                .ok_or("staging credential missing s3.secret-access-key")?,
+            cfg("s3.secret-access-key").ok_or("staging credential missing s3.secret-access-key")?,
         );
-    if let Some(token) = cfg.s3_session_token.clone() {
+    if let Some(token) = cfg("s3.session-token") {
         builder = builder.with_token(token);
     }
     // Honor an explicit endpoint/region for non-AWS S3 backends (SeaweedFS/MinIO).

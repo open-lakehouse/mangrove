@@ -1010,7 +1010,7 @@ version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "faf9468729b8cbcea668e36183cb69d317348c2e08e994829fb56ebfdfbaac34"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2329,7 +2329,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2455,7 +2455,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3177,7 +3177,7 @@ checksum = "3640c1c38b8e4e43584d8df18be5fc6b0aa314ce6ebf51b53313d4306cca8e46"
 dependencies = [
  "hermit-abi",
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3726,7 +3726,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3872,10 +3872,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "olai-http"
-version = "0.0.6"
+name = "olai-credential-vending"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bf398776b5250009536d524aa3f6339a7bd623893a8a0c958e42e96783bad38"
+checksum = "e0d58d6eb7db736dc304909fa4031fe667b01e107e1aeebb1197c9b01ec7eb40"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "olai-http",
+ "olai-storage-credentials",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "olai-http"
+version = "0.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43fc52fd03215dba64cd00246ed37411c3217d8e92d1027e7b654c62e9e565b2"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -3888,7 +3904,7 @@ dependencies = [
  "percent-encoding",
  "quick-xml 0.37.5",
  "rand 0.9.5",
- "reqwest 0.12.28",
+ "reqwest 0.13.4",
  "ring",
  "rust-ini",
  "rustls-pemfile",
@@ -3947,7 +3963,7 @@ dependencies = [
  "itertools 0.14.0",
  "olai-http",
  "olai-sharing-common",
- "reqwest 0.12.28",
+ "reqwest 0.13.4",
  "serde_json",
  "thiserror",
  "url",
@@ -3992,13 +4008,14 @@ dependencies = [
  "clap",
  "futures",
  "object_store",
+ "olai-credential-vending",
  "olai-sharing-api",
  "olai-sharing-common",
+ "olai-storage-credentials",
  "olai-store",
  "olai-uc-client",
  "olai-uc-common",
- "olai-uc-credentials",
- "olai-uc-object-store",
+ "olai-vended-store",
  "serde",
  "serde_json",
  "serde_yml",
@@ -4012,6 +4029,21 @@ dependencies = [
  "tracing-subscriber",
  "url",
  "uuid",
+]
+
+[[package]]
+name = "olai-storage-credentials"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "205aeac96dcaa8a5a2c35af1fb0629aa7d2ba1475a7da74c827e5dc7c6655895"
+dependencies = [
+ "chrono",
+ "object_store",
+ "percent-encoding",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "url",
 ]
 
 [[package]]
@@ -4078,6 +4110,7 @@ dependencies = [
  "olai-uc-delta-api",
  "percent-encoding",
  "reqwest 0.12.28",
+ "reqwest 0.13.4",
  "rstest",
  "serde",
  "serde_json",
@@ -4108,9 +4141,10 @@ dependencies = [
  "itertools 0.14.0",
  "mime",
  "napi-derive",
+ "olai-credential-vending",
  "olai-http",
+ "olai-storage-credentials",
  "olai-store",
- "olai-uc-credentials",
  "pbjson",
  "pbjson-types",
  "percent-encoding",
@@ -4133,23 +4167,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "olai-uc-credentials"
-version = "0.0.1"
-dependencies = [
- "async-trait",
- "chrono",
- "itertools 0.14.0",
- "object_store",
- "olai-http",
- "percent-encoding",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "url",
-]
-
-[[package]]
 name = "olai-uc-datafusion"
 version = "0.1.0"
 dependencies = [
@@ -4164,6 +4181,7 @@ dependencies = [
  "futures",
  "object_store",
  "olai-http",
+ "olai-storage-credentials",
  "olai-uc-client",
  "olai-uc-common",
  "olai-uc-delta-api",
@@ -4184,6 +4202,8 @@ version = "0.0.5"
 dependencies = [
  "async-trait",
  "axum",
+ "chrono",
+ "olai-storage-credentials",
  "serde",
  "serde_json",
  "thiserror",
@@ -4209,7 +4229,7 @@ dependencies = [
  "object_store",
  "olai-uc-files-proto",
  "olai-uc-object-store",
- "reqwest 0.12.28",
+ "reqwest 0.13.4",
  "serde",
  "serde_yml",
  "tempfile",
@@ -4245,12 +4265,12 @@ dependencies = [
  "object_store",
  "olai-http",
  "olai-http-wasm",
+ "olai-storage-credentials",
  "olai-uc-client",
  "olai-uc-common",
- "olai-uc-credentials",
- "percent-encoding",
+ "olai-vended-store",
  "reqwest 0.12.28",
- "send_wrapper",
+ "reqwest 0.13.4",
  "serde",
  "serde_json",
  "tempfile",
@@ -4258,7 +4278,6 @@ dependencies = [
  "tokio",
  "url",
  "uuid",
- "web-time",
 ]
 
 [[package]]
@@ -4298,19 +4317,21 @@ dependencies = [
  "http",
  "itertools 0.14.0",
  "object_store",
+ "olai-credential-vending",
  "olai-http",
+ "olai-storage-credentials",
  "olai-store",
  "olai-uc-client",
  "olai-uc-common",
- "olai-uc-credentials",
  "olai-uc-delta-api",
  "olai-uc-files-api",
  "olai-uc-object-store",
  "olai-uc-postgres",
  "olai-uc-sqlite",
  "olai-uc-storage-proxy",
+ "olai-vended-store",
  "percent-encoding",
- "reqwest 0.12.28",
+ "reqwest 0.13.4",
  "serde",
  "serde_json",
  "serde_yml",
@@ -4359,7 +4380,7 @@ dependencies = [
  "mockito",
  "object_store",
  "olai-uc-object-store",
- "reqwest 0.12.28",
+ "reqwest 0.13.4",
  "serde",
  "serde_yml",
  "thiserror",
@@ -4368,6 +4389,34 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "url",
+]
+
+[[package]]
+name = "olai-vended-store"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1716dd62fc04e585e2c2028927cd20fe54d69bd8468bdb097c9c3ececb1a7006"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "chrono",
+ "futures",
+ "getrandom 0.2.17",
+ "getrandom 0.4.3",
+ "http",
+ "object_store",
+ "olai-http",
+ "olai-storage-credentials",
+ "percent-encoding",
+ "reqwest 0.13.4",
+ "ring",
+ "send_wrapper",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
  "url",
 ]
 
@@ -4750,7 +4799,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
  "heck",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "log",
  "multimap",
  "once_cell",
@@ -4770,7 +4819,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03da047801ff44bb6a4d407d4860c05fd70bb81714e6b2f3812603d5b145b042"
 dependencies = [
  "heck",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "log",
  "multimap",
  "petgraph 0.8.3",
@@ -4789,7 +4838,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "proc-macro2",
  "quote",
  "syn 2.0.119",
@@ -4802,7 +4851,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b570b25f7617e43d59005d0990ccb79e950a423952cea19671b7a876da390adf"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "proc-macro2",
  "quote",
  "syn 2.0.119",
@@ -5033,7 +5082,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5255,7 +5304,6 @@ checksum = "eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147"
 dependencies = [
  "base64 0.22.1",
  "bytes",
- "futures-channel",
  "futures-core",
  "futures-util",
  "h2",
@@ -5286,7 +5334,7 @@ dependencies = [
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
- "wasm-streams",
+ "wasm-streams 0.4.2",
  "web-sys",
 ]
 
@@ -5299,7 +5347,9 @@ dependencies = [
  "base64 0.22.1",
  "bytes",
  "encoding_rs",
+ "futures-channel",
  "futures-core",
+ "futures-util",
  "h2",
  "http",
  "http-body",
@@ -5317,16 +5367,19 @@ dependencies = [
  "rustls-pki-types",
  "rustls-platform-verifier",
  "serde",
+ "serde_json",
  "serde_urlencoded",
  "sync_wrapper",
  "tokio",
  "tokio-rustls",
+ "tokio-util",
  "tower",
  "tower-http",
  "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm-streams 0.5.0",
  "web-sys",
 ]
 
@@ -5451,7 +5504,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5518,7 +5571,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6338,7 +6391,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6357,7 +6410,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "230a1b821ccbd75b185820a1f1ff7b14d21da1e442e22c0863ea5f08771a8874"
 dependencies = [
  "rustix 1.1.4",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7015,6 +7068,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm-streams"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d1ec4f6517c9e11ae630e200b2b65d193279042e28edd4a2cda233e46670bbb"
+dependencies = [
+ "futures-util",
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "web-sys"
 version = "0.3.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7093,7 +7159,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

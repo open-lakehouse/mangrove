@@ -1,24 +1,35 @@
 //! Conversions between the generated credential models and the
-//! catalog-independent types of `olai-uc-credentials`.
+//! catalog-independent credential vending types.
 //!
-//! Vending and the object-store primitives speak
-//! [`unitycatalog_credentials::model`]; the Unity Catalog REST surface speaks the
-//! generated [`Credential`] / [`TemporaryCredential`]. A UC host converts at its
-//! boundary with these impls.
+//! Vending and the object-store primitives speak [`olai_storage_credentials`] (vended
+//! credentials) and [`olai_credential_vending`] (registered credentials); the Unity
+//! Catalog REST surface speaks the generated [`Credential`] / [`TemporaryCredential`].
+//! A UC host converts at its boundary with these impls.
+//!
+//! The vended direction goes through the UC REST wire shape,
+//! [`wire::unity::TemporaryCredential`], which has the same fields as the generated
+//! model: `wire::unity::TemporaryCredential::from(&vended)` serializes a credential,
+//! and `to_vended` reads one for a request.
 
-use unitycatalog_credentials::model as native;
+#[cfg(feature = "credential-vending")]
+use olai_credential_vending::registered as native;
+use olai_storage_credentials::wire::{self, unity};
 
+use crate::Error;
+#[cfg(feature = "credential-vending")]
+use crate::Result;
+#[cfg(feature = "credential-vending")]
 use crate::models::credentials::v1::{
     AwsIamRoleConfig, AzureManagedIdentity, AzureServicePrincipal, AzureStorageKey, Credential,
-    azure_service_principal::Credential as AzureSpCredential,
+    DatabricksGcpServiceAccount, azure_service_principal::Credential as AzureSpCredential,
 };
 use crate::models::temporary_credentials::v1::{
     AwsTemporaryCredentials, AzureAad, AzureUserDelegationSas, GcpOauthToken,
     R2TemporaryCredentials, TemporaryCredential, temporary_credential::Credentials,
 };
-use crate::{Error, Result};
 
-impl TryFrom<&Credential> for native::StorageCredential {
+#[cfg(feature = "credential-vending")]
+impl TryFrom<&Credential> for native::RegisteredCredential {
     type Error = Error;
 
     fn try_from(credential: &Credential) -> Result<Self> {
@@ -44,12 +55,19 @@ impl TryFrom<&Credential> for native::StorageCredential {
                 access_key_id: role.access_key_id.clone(),
                 secret_access_key: role.secret_access_key.clone(),
                 session_token: role.session_token.clone(),
+                ..Default::default()
             }));
         }
-        if credential.databricks_gcp_service_account.is_set() {
-            return Err(Error::generic(
-                "GCP service account credential vending is not yet implemented.",
-            ));
+        if let Some(gcp) = credential.databricks_gcp_service_account.as_option() {
+            let email = gcp.email.clone().filter(|email| !email.is_empty());
+            let email = email.ok_or_else(|| {
+                Error::invalid_argument("GCP service account credential is missing its email.")
+            })?;
+            // The UC shape carries no key: the host impersonates the account.
+            return Ok(Self::GcpServiceAccount(native::GcpServiceAccount {
+                email,
+                key: None,
+            }));
         }
         Err(Error::invalid_argument(
             "No supported credential type found on this credential object.",
@@ -57,6 +75,7 @@ impl TryFrom<&Credential> for native::StorageCredential {
     }
 }
 
+#[cfg(feature = "credential-vending")]
 impl TryFrom<&AzureServicePrincipal> for native::AzureServicePrincipal {
     type Error = Error;
 
@@ -82,11 +101,23 @@ impl TryFrom<&AzureServicePrincipal> for native::AzureServicePrincipal {
     }
 }
 
-/// Fill the credential kind of a [`Credential`] from a native storage credential.
+/// Fill the credential kind of a [`Credential`] from a registered credential.
 /// Metadata (name, purpose, …) is left untouched.
-pub fn set_storage_credential(credential: &mut Credential, storage: native::StorageCredential) {
+///
+/// Fails for what the UC shape cannot carry: an AWS `ExternalId` or a GCP
+/// service-account key.
+#[cfg(feature = "credential-vending")]
+pub fn set_storage_credential(
+    credential: &mut Credential,
+    storage: native::RegisteredCredential,
+) -> Result<()> {
     match storage {
-        native::StorageCredential::AwsIamRole(role) => {
+        native::RegisteredCredential::AwsIamRole(role) => {
+            if role.external_id.is_some() {
+                return Err(Error::invalid_argument(
+                    "AWS IAM role credentials with an external id are not supported.",
+                ));
+            }
             credential.aws_iam_role = Some(AwsIamRoleConfig {
                 role_arn: role.role_arn,
                 region: role.region,
@@ -97,7 +128,7 @@ pub fn set_storage_credential(credential: &mut Credential, storage: native::Stor
             })
             .into();
         }
-        native::StorageCredential::AzureServicePrincipal(sp) => {
+        native::RegisteredCredential::AzureServicePrincipal(sp) => {
             credential.azure_service_principal = Some(AzureServicePrincipal {
                 directory_id: sp.directory_id,
                 application_id: sp.application_id,
@@ -113,7 +144,7 @@ pub fn set_storage_credential(credential: &mut Credential, storage: native::Stor
             })
             .into();
         }
-        native::StorageCredential::AzureManagedIdentity(msi) => {
+        native::RegisteredCredential::AzureManagedIdentity(msi) => {
             credential.azure_managed_identity = Some(AzureManagedIdentity {
                 access_connector_id: msi.access_connector_id,
                 managed_identity_id: msi.managed_identity_id,
@@ -121,7 +152,7 @@ pub fn set_storage_credential(credential: &mut Credential, storage: native::Stor
             })
             .into();
         }
-        native::StorageCredential::AzureStorageKey(key) => {
+        native::RegisteredCredential::AzureStorageKey(key) => {
             credential.azure_storage_key = Some(AzureStorageKey {
                 account_name: key.account_name,
                 account_key: key.account_key,
@@ -129,100 +160,150 @@ pub fn set_storage_credential(credential: &mut Credential, storage: native::Stor
             })
             .into();
         }
-    }
-}
-
-impl From<TemporaryCredential> for native::TemporaryCredential {
-    fn from(credential: TemporaryCredential) -> Self {
-        use native::VendedCredential as V;
-        Self {
-            expiration_time: credential.expiration_time,
-            url: credential.url,
-            credentials: credential.credentials.map(|c| match c {
-                Credentials::AzureUserDelegationSas(sas) => {
-                    V::AzureUserDelegationSas(native::AzureUserDelegationSas {
-                        sas_token: sas.sas_token,
-                    })
-                }
-                Credentials::AzureAad(aad) => V::AzureAad(native::AzureAad {
-                    aad_token: aad.aad_token,
-                }),
-                Credentials::AwsTempCredentials(aws) => {
-                    V::AwsTempCredentials(native::AwsTemporaryCredentials {
-                        access_key_id: aws.access_key_id,
-                        secret_access_key: aws.secret_access_key,
-                        session_token: aws.session_token,
-                        access_point: aws.access_point,
-                    })
-                }
-                Credentials::GcpOauthToken(gcp) => V::GcpOauthToken(native::GcpOauthToken {
-                    oauth_token: gcp.oauth_token,
-                }),
-                Credentials::R2TempCredentials(r2) => {
-                    V::R2TempCredentials(native::R2TemporaryCredentials {
-                        access_key_id: r2.access_key_id,
-                        secret_access_key: r2.secret_access_key,
-                        session_token: r2.session_token,
-                    })
-                }
-            }),
+        native::RegisteredCredential::GcpServiceAccount(gcp) => {
+            if gcp.key.is_some() {
+                return Err(Error::invalid_argument(
+                    "GCP service account credentials with a key are not supported.",
+                ));
+            }
+            credential.databricks_gcp_service_account = Some(DatabricksGcpServiceAccount {
+                email: Some(gcp.email),
+                ..Default::default()
+            })
+            .into();
+        }
+        other => {
+            return Err(Error::invalid_argument(format!(
+                "Unsupported credential kind `{}`.",
+                other.kind()
+            )));
         }
     }
+    Ok(())
 }
 
-impl From<native::TemporaryCredential> for TemporaryCredential {
-    fn from(credential: native::TemporaryCredential) -> Self {
-        use native::VendedCredential as V;
-        Self {
-            expiration_time: credential.expiration_time,
-            url: credential.url,
-            credentials: credential.credentials.map(|c| match c {
-                V::AzureUserDelegationSas(sas) => {
-                    Credentials::AzureUserDelegationSas(Box::new(AzureUserDelegationSas {
-                        sas_token: sas.sas_token,
-                        ..Default::default()
-                    }))
-                }
-                V::AzureAad(aad) => Credentials::AzureAad(Box::new(AzureAad {
+impl From<TemporaryCredential> for unity::TemporaryCredential {
+    fn from(credential: TemporaryCredential) -> Self {
+        let mut wire = Self {
+            // The generated model has no "unset": non-positive means "does not expire".
+            expiration_time: Some(credential.expiration_time).filter(|t| *t > 0),
+            url: Some(credential.url).filter(|url| !url.is_empty()),
+            ..Default::default()
+        };
+        match credential.credentials {
+            Some(Credentials::AzureUserDelegationSas(sas)) => {
+                wire.azure_user_delegation_sas = Some(wire::common::AzureUserDelegationSas {
+                    sas_token: sas.sas_token,
+                });
+            }
+            Some(Credentials::AzureAad(aad)) => {
+                wire.azure_aad = Some(wire::common::AzureAad {
                     aad_token: aad.aad_token,
-                    ..Default::default()
-                })),
-                V::AwsTempCredentials(aws) => {
-                    Credentials::AwsTempCredentials(Box::new(AwsTemporaryCredentials {
-                        access_key_id: aws.access_key_id,
-                        secret_access_key: aws.secret_access_key,
-                        session_token: aws.session_token,
-                        access_point: aws.access_point,
-                        ..Default::default()
-                    }))
-                }
-                V::GcpOauthToken(gcp) => Credentials::GcpOauthToken(Box::new(GcpOauthToken {
+                });
+            }
+            Some(Credentials::AwsTempCredentials(aws)) => {
+                wire.aws_temp_credentials = Some(wire::common::AwsTempCredentials {
+                    access_key_id: aws.access_key_id,
+                    secret_access_key: aws.secret_access_key,
+                    session_token: aws.session_token,
+                    access_point: aws.access_point,
+                });
+            }
+            Some(Credentials::GcpOauthToken(gcp)) => {
+                wire.gcp_oauth_token = Some(wire::common::GcpOauthToken {
                     oauth_token: gcp.oauth_token,
+                });
+            }
+            Some(Credentials::R2TempCredentials(r2)) => {
+                wire.r2_temp_credentials = Some(wire::common::R2TempCredentials {
+                    access_key_id: r2.access_key_id,
+                    secret_access_key: r2.secret_access_key,
+                    session_token: r2.session_token,
+                });
+            }
+            None => {}
+        }
+        wire
+    }
+}
+
+impl From<unity::TemporaryCredential> for TemporaryCredential {
+    fn from(wire: unity::TemporaryCredential) -> Self {
+        // The wire shape holds at most one credential when built from a vended one;
+        // take the first set, in the order the UC model declares them.
+        let credentials = if let Some(sas) = wire.azure_user_delegation_sas {
+            Some(Credentials::AzureUserDelegationSas(Box::new(
+                AzureUserDelegationSas {
+                    sas_token: sas.sas_token,
                     ..Default::default()
-                })),
-                V::R2TempCredentials(r2) => {
-                    Credentials::R2TempCredentials(Box::new(R2TemporaryCredentials {
-                        access_key_id: r2.access_key_id,
-                        secret_access_key: r2.secret_access_key,
-                        session_token: r2.session_token,
-                        ..Default::default()
-                    }))
-                }
-            }),
+                },
+            )))
+        } else if let Some(aad) = wire.azure_aad {
+            Some(Credentials::AzureAad(Box::new(AzureAad {
+                aad_token: aad.aad_token,
+                ..Default::default()
+            })))
+        } else if let Some(aws) = wire.aws_temp_credentials {
+            Some(Credentials::AwsTempCredentials(Box::new(
+                AwsTemporaryCredentials {
+                    access_key_id: aws.access_key_id,
+                    secret_access_key: aws.secret_access_key,
+                    session_token: aws.session_token,
+                    access_point: aws.access_point,
+                    ..Default::default()
+                },
+            )))
+        } else if let Some(gcp) = wire.gcp_oauth_token {
+            Some(Credentials::GcpOauthToken(Box::new(GcpOauthToken {
+                oauth_token: gcp.oauth_token,
+                ..Default::default()
+            })))
+        } else {
+            wire.r2_temp_credentials.map(|r2| {
+                Credentials::R2TempCredentials(Box::new(R2TemporaryCredentials {
+                    access_key_id: r2.access_key_id,
+                    secret_access_key: r2.secret_access_key,
+                    session_token: r2.session_token,
+                    ..Default::default()
+                }))
+            })
+        };
+        Self {
+            expiration_time: wire.expiration_time.unwrap_or_default(),
+            url: wire.url.unwrap_or_default(),
+            credentials,
             ..Default::default()
         }
     }
 }
 
-impl From<unitycatalog_credentials::Error> for Error {
-    fn from(e: unitycatalog_credentials::Error) -> Self {
-        use unitycatalog_credentials::Error as E;
+impl From<&olai_storage_credentials::VendedCredential> for TemporaryCredential {
+    fn from(vended: &olai_storage_credentials::VendedCredential) -> Self {
+        unity::TemporaryCredential::from(vended).into()
+    }
+}
+
+impl From<olai_storage_credentials::Error> for Error {
+    fn from(e: olai_storage_credentials::Error) -> Self {
+        use olai_storage_credentials::Error as E;
         match e {
-            E::NotFound => Error::NotFound,
-            E::InvalidArgument(msg) => Error::InvalidArgument(msg),
-            E::Generic(msg) => Error::Generic(msg),
-            E::Serde(source) => source.into(),
-            #[allow(unreachable_patterns)]
+            E::InvalidLocation { .. } | E::InvalidCredential(_) => {
+                Error::InvalidArgument(e.to_string())
+            }
+            E::Json(source) => source.into(),
+            other => Error::Generic(other.to_string()),
+        }
+    }
+}
+
+#[cfg(feature = "credential-vending")]
+impl From<olai_credential_vending::Error> for Error {
+    fn from(e: olai_credential_vending::Error) -> Self {
+        use olai_credential_vending::Error as E;
+        match e {
+            E::Credentials(source) => source.into(),
+            E::NotFound { .. } => Error::NotFound,
+            E::Overlapping { .. } | E::Unsupported { .. } => Error::InvalidArgument(e.to_string()),
             other => Error::Generic(other.to_string()),
         }
     }
@@ -230,12 +311,16 @@ impl From<unitycatalog_credentials::Error> for Error {
 
 #[cfg(test)]
 mod tests {
+    use olai_storage_credentials::wire::VendContext;
+    use olai_storage_credentials::{AccessLevel, StorageCredentials, StorageScope};
+
     use super::*;
 
+    #[cfg(feature = "credential-vending")]
     #[test]
     fn storage_credentials_convert_both_ways() {
         let storage =
-            native::StorageCredential::AzureServicePrincipal(native::AzureServicePrincipal {
+            native::RegisteredCredential::AzureServicePrincipal(native::AzureServicePrincipal {
                 directory_id: "tenant".into(),
                 application_id: "app".into(),
                 secret: native::AzureClientSecret::FederatedTokenFile("/token".into()),
@@ -244,41 +329,76 @@ mod tests {
             name: "cred".into(),
             ..Default::default()
         };
-        set_storage_credential(&mut credential, storage.clone());
+        set_storage_credential(&mut credential, storage.clone()).unwrap();
         assert_eq!(
-            native::StorageCredential::try_from(&credential).unwrap(),
+            native::RegisteredCredential::try_from(&credential).unwrap(),
             storage
         );
         // The JSON shapes agree, so values sealed in either form open as the other.
         let json = serde_json::to_value(&credential).unwrap();
         assert_eq!(
-            serde_json::from_value::<native::StorageCredential>(json).unwrap(),
+            serde_json::from_value::<native::RegisteredCredential>(json).unwrap(),
             storage
         );
-        assert!(native::StorageCredential::try_from(&Credential::default()).is_err());
+        assert!(native::RegisteredCredential::try_from(&Credential::default()).is_err());
+    }
+
+    #[cfg(feature = "credential-vending")]
+    #[test]
+    fn gcp_service_accounts_convert_both_ways() {
+        let storage = native::RegisteredCredential::GcpServiceAccount(native::GcpServiceAccount {
+            email: "sa@project.iam.gserviceaccount.com".into(),
+            key: None,
+        });
+        let mut credential = Credential::default();
+        set_storage_credential(&mut credential, storage.clone()).unwrap();
+        assert_eq!(
+            native::RegisteredCredential::try_from(&credential).unwrap(),
+            storage
+        );
+        let json = serde_json::to_value(&credential).unwrap();
+        assert_eq!(
+            serde_json::from_value::<native::RegisteredCredential>(json).unwrap(),
+            storage
+        );
     }
 
     #[test]
     fn temporary_credentials_convert_both_ways() {
-        let vended = native::TemporaryCredential {
-            expiration_time: 42,
-            url: "s3://bucket/prefix".into(),
-            credentials: Some(native::VendedCredential::AwsTempCredentials(
-                native::AwsTemporaryCredentials {
-                    access_key_id: "id".into(),
-                    secret_access_key: "secret".into(),
-                    session_token: "token".into(),
-                    access_point: String::new(),
-                },
-            )),
+        let wire = unity::TemporaryCredential {
+            expiration_time: Some(42),
+            url: Some("s3://bucket/prefix".into()),
+            aws_temp_credentials: Some(wire::common::AwsTempCredentials {
+                access_key_id: "id".into(),
+                secret_access_key: "secret".into(),
+                session_token: "token".into(),
+                access_point: String::new(),
+            }),
+            ..Default::default()
         };
-        let uc = TemporaryCredential::from(vended.clone());
-        // The native type reads the generated model's (proto) JSON.
+        let uc = TemporaryCredential::from(wire.clone());
+        // The wire type reads the generated model's (proto) JSON.
         let json = serde_json::to_value(&uc).unwrap();
         assert_eq!(
-            serde_json::from_value::<native::TemporaryCredential>(json).unwrap(),
-            vended
+            serde_json::from_value::<unity::TemporaryCredential>(json).unwrap(),
+            wire
         );
-        assert_eq!(native::TemporaryCredential::from(uc), vended);
+        assert_eq!(unity::TemporaryCredential::from(uc), wire);
+    }
+
+    #[test]
+    fn local_credentials_do_not_expire() {
+        let uc = TemporaryCredential {
+            url: "file:///tmp/table".into(),
+            ..Default::default()
+        };
+        let wire = unity::TemporaryCredential::from(uc);
+        assert_eq!(wire.expiration_time, None);
+        let scope: StorageScope = "file:///tmp/table".parse().unwrap();
+        let vended = wire
+            .to_vended(&VendContext::new(scope, AccessLevel::Read))
+            .unwrap();
+        assert!(matches!(vended.credentials, StorageCredentials::None));
+        assert_eq!(vended.expires_at, None);
     }
 }

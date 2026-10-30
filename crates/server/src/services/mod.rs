@@ -9,11 +9,10 @@ use unitycatalog_delta_api::coordinator::{
 };
 
 mod delta_backend;
-// Storage-location parsing moved to `olai-uc-credentials` (shared with the Open
-// Sharing server); re-exported so `services::location` stays a stable path.
-pub use unitycatalog_credentials::location;
+pub mod location;
 pub mod location_policy;
 pub(crate) mod object_store;
+pub(crate) mod vending;
 // The storage byte-proxy local arm impl. Gated on `bin`, where the
 // `unitycatalog-storage-proxy` dependency (and the serve stack that mounts it) is
 // available.

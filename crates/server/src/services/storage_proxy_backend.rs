@@ -5,25 +5,26 @@
 //! server's existing surfaces: name → resource resolution
 //! ([`TableHandler::get_table`] / [`VolumeHandler::get_volume`]),
 //! [`Policy::authorize_checked`], the credential-vending pipeline
-//! ([`find_external_location_for_url`] → `get_credential_internal` →
-//! [`vend_credential`]), and object-store construction from the vended credential
-//! ([`store_from_vended_credential`]).
+//! ([`find_external_location_for_url`] → `get_credential_internal` → a minter), and
+//! object-store construction from the minted credential ([`build_store`]).
 //!
 //! All the *proxy* semantics (streaming, `Range`/`If-Match`, the confused-deputy
 //! prefix confinement) live in [`unitycatalog_storage_proxy`]; this adapter only
-//! authorizes + vends + hands back a scoped store. The store is bound to the
-//! just-vended credential with a static provider (no auto-refresh): a single proxy
-//! request never outlives the credential.
+//! authorizes + vends + hands back a scoped store. The store re-mints through the
+//! same cached minter should a long request outlive its credential.
 
 use std::sync::Arc;
 
 use async_trait::async_trait;
 use object_store::DynObjectStore;
+use object_store::prefix::PrefixStore;
+use olai_credential_vending::{CredentialMinter, MintRequest};
+use olai_storage_credentials::{AccessLevel, StorageLocation, VendedCredential};
+use olai_vended_store::{CredentialSource, StoreOptions, build_store};
 
 use unitycatalog_common::models::credentials::v1::GetCredentialRequest;
 use unitycatalog_common::models::tables::v1::{GetTableRequest, Table};
 use unitycatalog_common::models::volumes::v1::{GetVolumeRequest, Volume};
-use unitycatalog_object_store::store_from_vended_credential;
 use unitycatalog_storage_proxy::backend::reject_key_traversal;
 use unitycatalog_storage_proxy::{
     ProxyCapabilities, ProxyError, ProxyReq, ProxyResult, Securable, StorageProxyBackend,
@@ -38,8 +39,7 @@ use crate::policy::{Permission, Policy};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::find_external_location_for_url;
-use unitycatalog_credentials::StorageCredential;
-use unitycatalog_credentials::vending::{VendOperation, vend_credential};
+use crate::services::vending::minter_for_location;
 
 /// Map a server [`Error`] onto a [`ProxyError`], preserving status semantics
 /// (not-found → 404, not-allowed → 403, …).
@@ -51,16 +51,11 @@ fn to_proxy_err(e: Error) -> ProxyError {
     }
 }
 
-/// Map a [`unitycatalog_credentials::Error`] onto a [`ProxyError`]. Used for the
-/// helpers that surface the credentials error type directly (e.g.
-/// [`StorageLocationUrl::parse`], whose failures are malformed-URL / bad-argument).
-fn to_proxy_err_location(e: unitycatalog_credentials::Error) -> ProxyError {
+/// Map a [`StorageLocationUrl::parse`] failure (a malformed URL) onto a [`ProxyError`].
+fn to_proxy_err_location(e: Error) -> ProxyError {
     match e {
-        unitycatalog_credentials::Error::NotFound => {
-            ProxyError::NotFound("resource not found".into())
-        }
-        unitycatalog_credentials::Error::InvalidArgument(m) => ProxyError::InvalidArgument(m),
-        other => ProxyError::Internal(other.to_string()),
+        Error::InvalidArgument(m) => ProxyError::InvalidArgument(m),
+        other => to_proxy_err(other),
     }
 }
 
@@ -74,12 +69,29 @@ fn required_permission(write: bool) -> Permission {
     }
 }
 
-/// The vend operation for a verb.
-fn vend_operation(write: bool) -> VendOperation {
+/// The access level for a verb.
+fn access_level(write: bool) -> AccessLevel {
     if write {
-        VendOperation::ReadWrite
+        AccessLevel::ReadWrite
     } else {
-        VendOperation::Read
+        AccessLevel::Read
+    }
+}
+
+/// Re-mints the credential a proxied store was built from.
+#[derive(Debug)]
+struct MintSource {
+    minter: Arc<dyn CredentialMinter>,
+    request: MintRequest,
+}
+
+#[async_trait]
+impl CredentialSource for MintSource {
+    async fn fetch(&self) -> olai_vended_store::Result<VendedCredential> {
+        self.minter
+            .mint(&self.request)
+            .await
+            .map_err(olai_vended_store::Error::vend)
     }
 }
 
@@ -194,27 +206,46 @@ async fn open_store(
     write: bool,
 ) -> ProxyResult<Arc<DynObjectStore>> {
     let storage_url = StorageLocationUrl::parse(location).map_err(to_proxy_err_location)?;
-    let ext_loc = find_external_location_for_url(&storage_url, handler)
+    let credential = if storage_url.is_local() {
+        None
+    } else {
+        let ext_loc = find_external_location_for_url(&storage_url, handler)
+            .await
+            .map_err(to_proxy_err)?;
+        let credential = handler
+            .get_credential_internal(GetCredentialRequest {
+                name: ext_loc.credential_name.clone(),
+                ..Default::default()
+            })
+            .await
+            .map_err(to_proxy_err)?;
+        Some(credential)
+    };
+    let minter = minter_for_location(credential.as_ref(), &storage_url).map_err(to_proxy_err)?;
+    let source = Arc::new(MintSource {
+        minter,
+        request: MintRequest::new(storage_url.scope(), access_level(write)),
+    });
+    let mut seed = source
+        .fetch()
         .await
-        .map_err(to_proxy_err)?;
-    let credential = handler
-        .get_credential_internal(GetCredentialRequest {
-            name: ext_loc.credential_name.clone(),
-            ..Default::default()
-        })
+        .map_err(|e| ProxyError::Internal(format!("vend: {e}")))?;
+    // What the location URL implies (an Azurite endpoint, a regional S3 host) fills
+    // what the minter left out.
+    let (_, hints) = StorageLocation::parse_with_hints(storage_url.raw())
+        .map_err(|e| ProxyError::InvalidArgument(e.to_string()))?;
+    seed.hints.fill_from(&hints);
+    // The server has no ambient region to forward here; region discovery and the
+    // `AWS_REGION` env fallback still apply.
+    let store = build_store(&seed, source, &StoreOptions::new())
         .await
-        .map_err(to_proxy_err)?;
-    let credential =
-        StorageCredential::try_from(&credential).map_err(|e| to_proxy_err(e.into()))?;
-    let vended = vend_credential(&credential, location, vend_operation(write))
-        .await
-        .map_err(|e| to_proxy_err(e.into()))?;
-    // No refresh client is threaded: the vended credential is valid for the
-    // request's lifetime, and the server has no ambient I/O runtime / region to
-    // forward here (the `AWS_REGION` env fallback still applies).
-    let store = store_from_vended_credential(&vended, None, None)
         .map_err(|e| ProxyError::Internal(format!("build store: {e}")))?;
-    Ok(store.as_dyn())
+    // Root the store at the location itself: the credential may cover more (the
+    // emulator grants whole containers).
+    Ok(Arc::new(PrefixStore::new(
+        store.root(),
+        storage_url.path().clone(),
+    )))
 }
 
 #[async_trait]

@@ -24,16 +24,15 @@ use unitycatalog_common::models::temporary_credentials::v1::{
     GenerateTemporaryPathCredentialsRequest, GenerateTemporaryTableCredentialsRequest,
     TemporaryCredential, generate_temporary_path_credentials_request::Operation as PathOp,
     generate_temporary_table_credentials_request::Operation as TableOp,
-    temporary_credential::Credentials,
 };
 use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 use unitycatalog_common::store::Precondition;
 
+use olai_storage_credentials::wire::{VendContext, unity};
 use unitycatalog_delta_api::authz::DeltaAction;
 use unitycatalog_delta_api::backend::{
     BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, DeltaCapabilities,
     ResolvedTable, SchemaRef, StagingReservation, TableRef, UpdateTableSpec, VendedCredential,
-    VendedCredentialKind,
 };
 use unitycatalog_delta_api::column::{
     Column as CrateColumn, ColumnTypeName as CrateColumnTypeName,
@@ -214,33 +213,19 @@ fn staging_to_reservation(st: StagingTable) -> StagingReservation {
     }
 }
 
-/// Map a vended [`TemporaryCredential`] onto the crate's [`VendedCredential`].
-fn to_vended_credential(creds: &TemporaryCredential, url: String) -> VendedCredential {
-    let kind = match &creds.credentials {
-        Some(Credentials::AwsTempCredentials(aws)) => VendedCredentialKind::S3 {
-            access_key_id: aws.access_key_id.clone(),
-            secret_access_key: aws.secret_access_key.clone(),
-            session_token: (!aws.session_token.is_empty()).then(|| aws.session_token.clone()),
-        },
-        Some(Credentials::AzureUserDelegationSas(az)) => VendedCredentialKind::AzureSas {
-            sas_token: az.sas_token.clone(),
-        },
-        Some(Credentials::GcpOauthToken(gcp)) => VendedCredentialKind::GcsOauth {
-            oauth_token: gcp.oauth_token.clone(),
-        },
-        // R2 reuses the S3-shaped fields.
-        Some(Credentials::R2TempCredentials(r2)) => VendedCredentialKind::S3 {
-            access_key_id: r2.access_key_id.clone(),
-            secret_access_key: r2.secret_access_key.clone(),
-            session_token: (!r2.session_token.is_empty()).then(|| r2.session_token.clone()),
-        },
-        _ => VendedCredentialKind::None,
-    };
-    VendedCredential {
-        url,
-        expiration_time_ms: creds.expiration_time,
-        kind,
-    }
+/// Read a UC REST [`TemporaryCredential`] vended at `access` as the crate's
+/// [`VendedCredential`].
+fn to_vended_credential(
+    creds: TemporaryCredential,
+    access: CredentialAccess,
+) -> BackendResult<VendedCredential> {
+    let url = creds.url.clone();
+    let location = StorageLocationUrl::parse(&url).map_err(to_backend_err)?;
+    let context = VendContext::new(location.scope(), access);
+    let credential = unity::TemporaryCredential::from(creds)
+        .to_vended(&context)
+        .map_err(|e| to_backend_err(unitycatalog_common::Error::from(e).into()))?;
+    Ok(VendedCredential { url, credential })
 }
 
 fn to_table_op(access: CredentialAccess) -> i32 {
@@ -397,9 +382,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         location: &str,
         _cx: &RequestContext,
     ) -> BackendResult<()> {
-        let parsed = StorageLocationUrl::parse(location)
-            .map_err(Error::from)
-            .map_err(to_backend_err)?;
+        let parsed = StorageLocationUrl::parse(location).map_err(to_backend_err)?;
         validate_external_storage_location(self, &parsed)
             .await
             .map_err(to_backend_err)
@@ -610,8 +593,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             )
             .await
             .map_err(to_backend_err)?;
-        let url = creds.url.clone();
-        Ok(to_vended_credential(&creds, url))
+        to_vended_credential(creds, access)
     }
 
     async fn vend_path_credential(
@@ -632,8 +614,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             )
             .await
             .map_err(to_backend_err)?;
-        let url = creds.url.clone();
-        Ok(to_vended_credential(&creds, url))
+        to_vended_credential(creds, access)
     }
 
     fn commit_coordinator(&self) -> &dyn CommitCoordinator {

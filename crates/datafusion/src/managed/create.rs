@@ -26,6 +26,7 @@ use delta_kernel_default_engine::DefaultEngineBuilder;
 use object_store::ObjectStore;
 use object_store::aws::AmazonS3Builder;
 use object_store::local::LocalFileSystem;
+use olai_storage_credentials::wire::delta_api;
 use unitycatalog_client::DeltaV1Client;
 use unitycatalog_delta_api::models::{
     DeltaCreateStagingTableRequest, DeltaCreateTableRequest, DeltaDataSourceFormat, DeltaDataType,
@@ -371,10 +372,10 @@ pub(crate) fn build_staging_store(
         .ok_or_else(|| {
             CreateManagedTableError::other("staging response carried no storage_credentials")
         })?;
-    let cfg = &cred.config;
+    let cfg = |key: &str| cred.config.get(key).filter(|v| !v.is_empty()).cloned();
 
     // Azure: the staging credential carries a SAS token.
-    if let Some(sas) = cfg.azure_sas_token.clone() {
+    if let Some(sas) = cfg(delta_api::AZURE_SAS_TOKEN) {
         return build_staging_store_azure(location, sas);
     }
 
@@ -384,13 +385,13 @@ pub(crate) fn build_staging_store(
 
     let mut builder = AmazonS3Builder::new()
         .with_bucket_name(bucket)
-        .with_access_key_id(cfg.s3_access_key_id.clone().ok_or_else(|| {
+        .with_access_key_id(cfg(delta_api::S3_ACCESS_KEY_ID).ok_or_else(|| {
             CreateManagedTableError::other("staging credential missing s3.access-key-id")
         })?)
-        .with_secret_access_key(cfg.s3_secret_access_key.clone().ok_or_else(|| {
+        .with_secret_access_key(cfg(delta_api::S3_SECRET_ACCESS_KEY).ok_or_else(|| {
             CreateManagedTableError::other("staging credential missing s3.secret-access-key")
         })?);
-    if let Some(token) = cfg.s3_session_token.clone() {
+    if let Some(token) = cfg(delta_api::S3_SESSION_TOKEN) {
         builder = builder.with_token(token);
     }
     if let Ok(endpoint) = std::env::var("AWS_ENDPOINT_URL") {

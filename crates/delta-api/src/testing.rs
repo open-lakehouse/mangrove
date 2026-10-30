@@ -21,7 +21,7 @@ use crate::authz::DeltaAction;
 use crate::backend::{
     BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, DeltaCapabilities,
     ResolvedTable, SchemaRef, StagingReservation, TableRef, UpdateTableSpec, VendedCredential,
-    VendedCredentialKind, etag_of,
+    etag_of,
 };
 use crate::coordinator::{CommitCoordinator, InMemoryCommitCoordinator};
 use crate::error::DeltaBackendError;
@@ -106,15 +106,19 @@ impl InMemoryDeltaBackend {
     }
 }
 
-fn fake_credential(url: &str) -> VendedCredential {
+fn fake_credential(url: &str, access: CredentialAccess) -> VendedCredential {
+    use olai_storage_credentials::StorageCredentials;
+
+    let scope = url.parse().expect("fake credential location parses");
+    let expires_at = chrono::DateTime::from_timestamp_millis(4_102_444_800_000); // 2100-01-01
     VendedCredential {
         url: url.to_string(),
-        expiration_time_ms: 4_102_444_800_000, // 2100-01-01
-        kind: VendedCredentialKind::S3 {
-            access_key_id: "AKIAEXAMPLE".to_string(),
-            secret_access_key: "secret".to_string(),
-            session_token: Some("token".to_string()),
-        },
+        credential: olai_storage_credentials::VendedCredential::new(
+            StorageCredentials::aws("AKIAEXAMPLE", "secret", Some("token".to_string())),
+            scope,
+            access,
+        )
+        .with_expiry(expires_at),
     }
 }
 
@@ -328,7 +332,7 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
     async fn vend_table_credential(
         &self,
         table_id: &str,
-        _access: CredentialAccess,
+        access: CredentialAccess,
         _cx: &Cx,
     ) -> BackendResult<VendedCredential> {
         let state = self.state.lock().unwrap();
@@ -340,16 +344,16 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             .ok_or_else(|| {
                 DeltaBackendError::NotFound(format!("table id '{table_id}' not found"))
             })?;
-        Ok(fake_credential(&location))
+        Ok(fake_credential(&location, access))
     }
 
     async fn vend_path_credential(
         &self,
         location: &str,
-        _access: CredentialAccess,
+        access: CredentialAccess,
         _cx: &Cx,
     ) -> BackendResult<VendedCredential> {
-        Ok(fake_credential(location))
+        Ok(fake_credential(location, access))
     }
 
     fn commit_coordinator(&self) -> &dyn CommitCoordinator {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verify Cargo.lock lists olai-http / olai-store from crates.io (not local path patches).
+# Verify Cargo.lock lists the trestle crates (olai-*) from crates.io, not local path patches.
 #
 # `just configure-trestle-deps` writes a gitignored [patch.crates-io] that resolves
 # these crates from ../trestle. If Cargo.lock is regenerated under that patch, the
@@ -25,12 +25,14 @@ fi
 extract_package_block() {
   local pkg=$1
   awk -v pkg="$pkg" '
-    /^\[\[package\]\]/ {
+    # Any `[[...]]` header ends a block; only `[[package]]` blocks are matched
+    # (so a `[[patch.unused]]` entry never counts as a registry package).
+    /^\[\[/ {
       if (block ~ ("name = \"" pkg "\"")) {
         print block
         exit
       }
-      block = $0 "\n"
+      block = ($0 == "[[package]]") ? $0 "\n" : ""
       next
     }
     { block = block $0 "\n" }
@@ -51,11 +53,24 @@ fail() {
   exit 1
 }
 
-for pkg in olai-http-wasm; do
+# Every crate `just configure-trestle-deps` patches. A lockfile need not contain all
+# of them (the `wasm/` workspace has no olai-store), so absent ones are skipped.
+TRESTLE_CRATES=(
+  olai-credential-vending
+  olai-http
+  olai-http-wasm
+  olai-storage-credentials
+  olai-store
+  olai-vended-store
+)
+
+found=0
+for pkg in "${TRESTLE_CRATES[@]}"; do
   block=$(extract_package_block "$pkg")
   if [[ -z "$block" ]]; then
-    fail "Cargo.lock is missing a [[package]] entry for $pkg"
+    continue
   fi
+  found=$((found + 1))
   if ! grep -q '^source = "registry+' <<<"$block"; then
     fail "$pkg is missing a crates.io source line (lockfile was likely generated with a local trestle patch)"
   fi
@@ -64,4 +79,8 @@ for pkg in olai-http-wasm; do
   fi
 done
 
-echo "Cargo.lock trestle crates (olai-http, olai-store) have crates.io registry entries."
+if [[ $found -eq 0 ]]; then
+  fail "$LOCK_PATH lists none of the trestle crates (${TRESTLE_CRATES[*]})"
+fi
+
+echo "$LOCK: all $found trestle crates have crates.io registry entries."

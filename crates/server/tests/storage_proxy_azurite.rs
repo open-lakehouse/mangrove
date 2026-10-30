@@ -4,7 +4,7 @@
 //! Drives the proxy router over HTTP (`tower::ServiceExt::oneshot`) exactly as the
 //! server mounts it, exercising the full local-arm path: authorize a `path:`
 //! securable against a registered external location → vend a scoped SAS →
-//! `store_from_vended_credential` → stream bytes. Proves ranged GET → 206, HEAD,
+//! `build_store` → stream bytes. Proves ranged GET → 206, HEAD,
 //! whole-object PUT round-trip, and the `If-Match` conditional-write relay, all
 //! through real blob I/O.
 //!

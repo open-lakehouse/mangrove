@@ -11,8 +11,8 @@
 //!   implemented by backends (feature `store`).
 //! - [`services`] — envelope encryption for sealing sensitive fields inline
 //!   (feature `store`).
-//! - [`credentials_ext`] — conversions to the `olai-uc-credentials` types
-//!   (feature `credentials`).
+//! - [`credentials_ext`] — conversions to the `olai-storage-credentials` /
+//!   `olai-credential-vending` types (features `credentials`, `credential-vending`).
 //! - [`metric_view`] — the single parser for Unity Catalog metric-view definitions
 //!   (feature `metric-view`).
 //!

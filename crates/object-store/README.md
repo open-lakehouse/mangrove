@@ -21,8 +21,8 @@ The `package` rename keeps the `unitycatalog_object_store` import path:
 
 ```toml
 [dependencies]
-unitycatalog-object-store = { package = "olai-uc-object-store", version = "0.0.1" }
-object_store = "0.12"
+unitycatalog-object-store = { package = "olai-uc-object-store", version = "0.0.5" }
+object_store = "0.13"
 ```
 
 ## The `uc://` URL scheme
@@ -120,10 +120,11 @@ for entry in obs.list(store).collect():
 
 ## Credential lifecycle
 
-The returned `UCStore` carries a credential provider bound to the
-originating `(securable, operation)` pair. When the cached credential
-approaches expiry, the provider transparently re-vends a fresh one
-using the same arguments — so refreshes can never silently widen
+The returned `UCStore` is built by
+[`olai-vended-store`](https://docs.rs/olai-vended-store), whose credential
+provider is bound to the originating `(securable, operation)` pair. When the
+cached credential approaches expiry, the provider transparently re-vends a
+fresh one using the same arguments — so refreshes can never silently widen
 privileges across renewals.
 
 In Python, `obstore` itself drives the refresh window from the
@@ -138,7 +139,7 @@ store and you'll always get a valid credential.
 | `UnityObjectStoreFactory::for_volume` | `UCStore` (volume credentials)                 |
 | `UnityObjectStoreFactory::for_table`  | `UCStore` (table credentials)                  |
 | `UnityObjectStoreFactory::for_path`   | `UCStore` (path credentials)                   |
-| `UnityObjectStoreFactory::dry_run_path` | `UCStore` (`dry_run=true` for permission probes) |
+| `UnityObjectStoreFactory::dry_run_path` | `()` (`dry_run=true` permission probe)        |
 | `UCStore::as_dyn`                     | `Arc<dyn ObjectStore>` (**prefixed** by default) |
 | `UCStore::root`                       | `Arc<dyn ObjectStore>` (bucket-rooted escape hatch) |
 | `UCStore::url`                        | The cloud URL of the scoped root               |

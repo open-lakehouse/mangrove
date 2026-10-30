@@ -14,9 +14,7 @@
 
 use std::path::{Component, Path, PathBuf};
 
-use object_store::ObjectStoreScheme;
-
-use super::location::{StorageLocationScheme, StorageLocationUrl};
+use super::location::StorageLocationUrl;
 use crate::{Error, Result};
 
 /// An allowlist of host filesystem roots that may back `file://` storage
@@ -77,10 +75,7 @@ impl LocalStoragePolicy {
     /// or beneath an allowed root. With no allowed roots, every `file://`
     /// location is rejected.
     pub fn check(&self, location: &StorageLocationUrl) -> Result<()> {
-        if !matches!(
-            location.scheme(),
-            StorageLocationScheme::ObjectStore(ObjectStoreScheme::Local)
-        ) {
+        if !location.is_local() {
             return Ok(());
         }
 

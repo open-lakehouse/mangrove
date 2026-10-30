@@ -34,9 +34,8 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
   "axum",
   "store",
   "metric-view",
-  "credentials",
+  "credential-vending",
 ] }
-unitycatalog-credentials = { package = "olai-uc-credentials", path = "../credentials", version = "0.0.1" }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.5" }
 unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.4", features = [
   "client-arm",
@@ -56,7 +55,11 @@ percent-encoding = "2.1"
 futures = { workspace = true }
 itertools = { workspace = true }
 object_store = { workspace = true }
+olai-credential-vending = { workspace = true }
 olai-http = { workspace = true }
+olai-storage-credentials = { workspace = true }
+# Stores for the storage byte-proxy local arm (feature `bin`).
+olai-vended-store = { workspace = true, features = ["aws", "azure", "gcp", "fs"], optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 strum = { workspace = true }
@@ -124,6 +127,7 @@ bin = [
   "dep:unitycatalog-storage-proxy",
   "dep:unitycatalog-object-store",
   "dep:unitycatalog-files-api",
+  "dep:olai-vended-store",
 ]
 
 # Gates the Azurite credential-vending integration test

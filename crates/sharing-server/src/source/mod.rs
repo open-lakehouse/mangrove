@@ -15,8 +15,8 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use olai_storage_credentials::VendedCredential;
 use open_sharing_api::catalog::DataFormat;
-use unitycatalog_credentials::TemporaryCredential;
 
 use crate::{Error, Result};
 
@@ -58,14 +58,14 @@ pub trait CatalogSource: Send + Sync + 'static {
     async fn get_volume(&self, full_name: &str) -> Result<SourceVolume>;
 
     /// A read-only temporary credential for a table, for delegated access.
-    async fn vend_table(&self, _table: &SourceTable) -> Result<TemporaryCredential> {
+    async fn vend_table(&self, _table: &SourceTable) -> Result<VendedCredential> {
         Err(Error::NotImplemented(
             "this catalog source does not vend credentials",
         ))
     }
 
     /// A read-only temporary credential for a volume, for delegated access.
-    async fn vend_volume(&self, _volume: &SourceVolume) -> Result<TemporaryCredential> {
+    async fn vend_volume(&self, _volume: &SourceVolume) -> Result<VendedCredential> {
         Err(Error::NotImplemented(
             "this catalog source does not vend credentials",
         ))

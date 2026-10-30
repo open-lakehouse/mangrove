@@ -22,6 +22,8 @@ use axum::http::header::AUTHORIZATION;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
+use olai_credential_vending::RegisteredCredential;
+use olai_storage_credentials::StorageLocation;
 use serde_json::json;
 use unitycatalog_common::models::credentials::v1::Credential;
 use unitycatalog_common::models::external_locations::v1::CreateExternalLocationRequest;
@@ -33,8 +35,6 @@ use unitycatalog_common::models::shares::v1::{
     ListSharesResponse, PrivilegeAssignment, Share, UpdatePermissionsRequest,
     UpdatePermissionsResponse, UpdateShareRequest,
 };
-use unitycatalog_credentials::StorageCredential;
-use unitycatalog_credentials::location::StorageLocationUrl;
 
 use crate::access::credential_aad;
 use crate::catalog::shared_as;
@@ -480,10 +480,10 @@ async fn create_credential(
 ) -> Result<Json<serde_json::Value>> {
     identifier(&credential.name)?;
     // Only the storage credential itself is kept; the catalog metadata is not.
-    let storage = StorageCredential::try_from(&credential).map_err(|_| {
+    let storage = RegisteredCredential::try_from(&credential).map_err(|_| {
         Error::invalid_argument(
             "a credential needs one of aws_iam_role, azure_service_principal, \
-             azure_managed_identity or azure_storage_key",
+             azure_managed_identity, azure_storage_key or databricks_gcp_service_account",
         )
     })?;
     let sealed = state
@@ -527,7 +527,9 @@ async fn create_external_location(
     Json(request): Json<CreateExternalLocationRequest>,
 ) -> Result<Json<serde_json::Value>> {
     identifier(&request.name)?;
-    StorageLocationUrl::parse(&request.url)
+    request
+        .url
+        .parse::<StorageLocation>()
         .map_err(|e| Error::invalid_argument(format!("invalid url: {e}")))?;
     state.store.get_credential(&request.credential_name).await?;
     let location = ExternalLocationRecord {

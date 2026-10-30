@@ -28,6 +28,10 @@ async-trait = { workspace = true }
 # IntoResponse). It is native-only; gate it behind the default-on `server`
 # feature so `models` (the wire DTOs) can be consumed on wasm without it.
 axum = { workspace = true, optional = true }
+# Expiries of the in-memory backend's credentials (feature `testing`).
+chrono = { workspace = true, optional = true }
+# The credential model and the Delta API `storage-credentials` wire shape.
+olai-storage-credentials = { workspace = true, features = ["delta-api"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -68,7 +72,7 @@ server = ["dep:axum"]
 # testing the Delta business logic without a real backend. Downstream servers
 # (e.g. lakekeeper) can enable it to test their own port wiring against
 # known-good Delta semantics.
-testing = ["server"]
+testing = ["server", "dep:chrono"]
 
 # docs.rs builds with default features only; enable all features there so the
 # `testing` module (and the crate-root example that uses `InMemoryDeltaBackend`)

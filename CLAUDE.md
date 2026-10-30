@@ -31,7 +31,7 @@ The project follows a multi-crate Rust workspace architecture with language bind
 We use [`just`](https://just.systems/) as the primary task runner. Key commands:
 
 **Code generation** (requires the `trestle` CLI and a local trestle source checkout — see [Code generation](#code-generation)):
-- `just configure-trestle-deps` - Patch `olai-http` / `olai-store` from local trestle (run once per clone behind a crates.io proxy)
+- `just configure-trestle-deps` - Patch the trestle crates (`olai-http`, `olai-store`, the credential-vending crates) from local trestle (run once per clone behind a crates.io proxy)
 - `just generate` - Run complete code generation pipeline
 - `just generate-code` - Run REST server/client code generation
 - `just generate-proto` - Run code generation pipeline for Protocol Buffers
@@ -88,8 +88,9 @@ generation tooling — you only need it when changing proto or regenerating.
 - **Trestle source checkout** — clone [`trestle`](https://github.com/open-lakehouse/trestle)
   adjacent to this repo as `../trestle` (or set `TRESTLE_ROOT` to another path).
   The checkout provides:
-  - `olai-http` / `olai-store` crates (patched into Cargo when crates.io or a
-    corporate proxy cannot resolve the published versions)
+  - the `olai-*` library crates (`olai-http`, `olai-store`, `olai-storage-credentials`,
+    `olai-vended-store`, `olai-credential-vending`), patched into Cargo when crates.io
+    or a corporate proxy cannot resolve the published versions
   - bundled SQL migrations referenced by `just build-sqlx`
   - proto fixtures under `crates/olai-codegen` and `crates/trestle-codegen`
 
@@ -142,7 +143,7 @@ Pre-commit hooks enforce formatting with Biome, Ruff, and typos checking.
 ## Tooling
 
 - **`trestle`** - Proto-driven codegen CLI (`brew install open-lakehouse/tap/trestle`);
-  required for `just generate*` and local `olai-http` / `olai-store` path patches
+  required for `just generate*` and local `olai-*` path patches
 - **`uv`** - Python package manager; manages the `python/*` UV workspace
 - **`bun`** - JavaScript/TypeScript package manager for the npm workspaces
 - **Maturin** - Builds Python wheels from PyO3 Rust crates

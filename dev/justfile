@@ -53,12 +53,12 @@ _stop_profile profile:
 # `[no-cd]` so their bare relative paths (dev/scripts, dev/config-*) resolve from
 # the repo root regardless of this module file living in dev/.
 
-# Patch olai-http / olai-store from the local trestle checkout (.cargo/config.toml,
+# Patch the trestle olai-* crates from the local trestle checkout (.cargo/config.toml,
 # gitignored). Run once per clone when crates.io or a corporate proxy cannot
 # resolve the published versions. Requires `trestle` on PATH and a source checkout
 # (../trestle or TRESTLE_ROOT).
 #
-# patch olai-http / olai-store from the local trestle checkout
+# patch the trestle olai-* crates from the local trestle checkout
 [group('dev')]
 [no-cd]
 configure-trestle-deps:

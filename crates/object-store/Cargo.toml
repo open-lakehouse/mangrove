@@ -22,9 +22,6 @@ unitycatalog-client = { package = "olai-uc-client", path = "../client", version 
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.5", default-features = false, features = [
   "credentials",
 ] }
-# The vended-credential model (`TemporaryCredential`) the primitives take. Only the
-# model: vending itself is the server's concern.
-unitycatalog-credentials = { package = "olai-uc-credentials", path = "../credentials", version = "0.0.1", default-features = false }
 
 # workspace dependencies in alphabetical order
 async-trait = { workspace = true }
@@ -36,8 +33,7 @@ futures = { workspace = true }
 # by the same-origin storage byte-proxy client (`proxy.rs`). It is `["cloud"]`
 # under the hood — already pulled in by azure/aws/gcp on native, so additive.
 object_store = { workspace = true, features = ["http"] }
-# Decodes vended Azure SAS tokens (see `credential::split_sas`).
-percent-encoding = "2.3"
+olai-storage-credentials = { workspace = true, features = ["unity"] }
 thiserror = { workspace = true }
 url = { workspace = true }
 uuid = { workspace = true }
@@ -45,6 +41,8 @@ uuid = { workspace = true }
 # Native transport
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 olai-http = { workspace = true }
+# Stores, their refreshing credential providers and the Unity Catalog vend client.
+olai-vended-store = { workspace = true, features = ["aws", "azure", "gcp", "fs", "unity"] }
 # Same `reqwest` as `olai-http` (workspace-pinned), so the `HttpService`
 # decorator's `reqwest::{Request, Response, Client}` types match the transport's.
 reqwest = { workspace = true }
@@ -53,8 +51,8 @@ tokio = { workspace = true, features = ["rt"] }
 # Browser transport
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 olai-http-wasm = { workspace = true }
-web-time = { workspace = true }
-send_wrapper = { workspace = true }
+# Stores and their refreshing credential providers; the browser build is Azure-first.
+olai-vended-store = { workspace = true, features = ["azure"] }
 reqwest = { version = "0.12", default-features = false, features = ["json"] }
 getrandom = { version = "0.2", features = ["js"] }
 # `/capabilities` posture discovery deserializes the server's JSON response.

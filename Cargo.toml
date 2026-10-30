@@ -96,9 +96,12 @@ buffa-types = { version = "0.7", features = ["json"] }
 connectrpc = { version = "0.7", default-features = false }
 http-body = { version = "1" }
 object_store = { version = "0.13.2", features = ["azure", "aws", "gcp"] }
-olai-http = { version = "0.0.6" }
+olai-credential-vending = { version = "0.0.2" }
+olai-http = { version = "0.0.9" }
 olai-http-wasm = { version = "0.0.5" }
+olai-storage-credentials = { version = "0.0.1" }
 olai-store = { version = "0.0.6" }
+olai-vended-store = { version = "0.0.1", default-features = false }
 pbjson = { version = "0.9" }
 pbjson-types = "0.9"
 prost = { version = "0.14.1" }
@@ -130,8 +133,8 @@ uuid = { version = "1", features = ["serde"] }
 # Non-panicking `Instant`/`SystemTime` on `wasm32-unknown-unknown` (std's panics).
 web-time = { version = "1" }
 zeroize = { version = "1.8", features = ["derive"] }
-reqwest = { version = "0.12", default-features = false, features = [
-  "rustls-tls-native-roots",
+reqwest = { version = "0.13", default-features = false, features = [
+  "rustls",
   "http2",
   "json",
   "stream",
