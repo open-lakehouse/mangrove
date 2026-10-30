@@ -6,7 +6,7 @@ use unitycatalog_common::models::{
     ObjectLabel, Resource, ResourceIdent, ResourceName, ResourceRef,
 };
 
-use super::{RequestContext, SecuredAction};
+use super::{RequestContext, SecuredAction, UpdateMask};
 use crate::Result;
 pub use crate::codegen::policies::PolicyHandler;
 use crate::policy::{Permission, Policy, process_resources};
@@ -143,41 +143,25 @@ fn apply_update(policy: &mut PolicyInfo, request: UpdatePolicyRequest) -> Result
         request.deny.into_option(),
         request.grant.into_option(),
     )?;
-    let mask: Vec<&str> = request
-        .update_mask
-        .as_deref()
-        .map(|m| {
-            m.split(',')
-                .map(str::trim)
-                .filter(|f| !f.is_empty())
-                .collect()
-        })
-        .unwrap_or_default();
-    let update_all = mask.is_empty() || mask == ["*"];
-    let masked = |field: &str| mask.contains(&field);
+    let mask = UpdateMask::parse(
+        request.update_mask.as_deref(),
+        &[
+            "comment",
+            "to_principals",
+            "except_principals",
+            "for_securable_type",
+            "when_condition",
+            "match_columns",
+            "policy_type",
+            "row_filter",
+            "column_mask",
+            "deny",
+            "grant",
+        ],
+    )?;
+    let masked = |field: &str| mask.names(field);
 
-    if let Some(unknown) = mask.iter().find(|f| {
-        !matches!(
-            **f,
-            "*" | "comment"
-                | "to_principals"
-                | "except_principals"
-                | "for_securable_type"
-                | "when_condition"
-                | "match_columns"
-                | "policy_type"
-                | "row_filter"
-                | "column_mask"
-                | "deny"
-                | "grant"
-        )
-    }) {
-        return Err(crate::Error::invalid_argument(format!(
-            "update_mask names a field that cannot be updated: '{unknown}'"
-        )));
-    }
-
-    if update_all {
+    if matches!(mask, UpdateMask::All) {
         if request.comment.is_some() {
             policy.comment = request.comment;
         }
