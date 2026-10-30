@@ -17,12 +17,10 @@ mod test 'just/test.just'
 mod meta 'just/meta.just'
 # docker-compose dev environment + UC server / UI dev flows
 mod dev 'dev/justfile'
-# postgres sharing migrations helpers
+# postgres migration and sqlx cache helpers
 mod postgres 'crates/postgres/justfile'
 # node client external-type generation
 mod node_client 'node/client/justfile'
-# the Open Sharing server as a Neon Function
-mod sharing-neon 'crates/sharing-neon/justfile'
 
 # show the available modules and recipes
 _default:

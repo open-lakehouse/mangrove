@@ -46,6 +46,5 @@ ignore:
   - "crates/**/src/codegen/**"
   - "crates/**/src/models/gen/**"
   - "crates/**/src/models/_gen/**"
-  - "crates/server/src/sharing/codegen/**"
   - "openapi/**"
-  - "node/client/unitycatalog/models/gen/**"
+  - "node/client/unitycatalog/codegen/models/gen/**"

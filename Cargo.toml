@@ -53,7 +53,7 @@ delta_kernel_default_engine = { package = "buoyant_kernel_engine", version = "0.
 # one commit making `to_delta_predicate` public. Switch to the crates.io release once
 # 2.0 ships with that export. Pinned by immutable `rev`. `version =` matches the
 # fork (release-plz#2595); 2.0.0 is not on crates.io yet, which is fine while
-# every dependent (datafusion, acceptance, sharing-api, py client) is
+# every dependent (datafusion, acceptance, py client) is
 # `release = false`.
 deltalake-core = { version = "2.0.0", git = "https://github.com/roeap/delta-rs", rev = "4b2af2d34409649ccf762312160405acdeaafea0", features = [
   "datafusion",
@@ -150,7 +150,6 @@ default.extend-ignore-re = [
 ]
 files.extend-exclude = [
   "crates/common/src/models/_gen/**/*",
-  "crates/sharing-common/src/models/_gen/**/*",
   # buffa + connect-rust output for the portal.files.v1 FilesService contract
   # (`@generated`, never hand-edited) — the connect dispatcher/view aliases carry
   # random-looking substrings the spellchecker flags.
@@ -168,14 +167,3 @@ files.extend-exclude = [
 # to avoid having to name fields r#type
 typ = "typ"
 AKS = "AKS"
-
-# The Neon Function bundle (crates/sharing-neon; `just sharing-neon build`).
-# Kept separate from `release` so Docker images are unaffected. Neon's limit is
-# 10 MiB zipped: with `opt-level = 3` the server is ~11 MiB zipped, with "z"
-# ~7 MiB (aarch64-unknown-linux-gnu, see crates/sharing-api/ARCHITECTURE.md).
-[profile.release-neon]
-inherits = "release"
-lto = "fat"
-codegen-units = 1
-strip = "symbols"
-opt-level = "z"

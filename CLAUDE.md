@@ -14,8 +14,9 @@ The project follows a multi-crate Rust workspace architecture with language bind
   - `postgres/` - PostgreSQL backend integration
   - `cli/` - Command-line interface
   - `object-store/` - Cloud object storage abstraction (AWS, Azure, GCP)
-  - `sharing-client/` - Delta Sharing protocol client
   - `acceptance/` - Acceptance testing utilities
+- Open Sharing / Delta Sharing (protocol, admin API, sharing server) lives in its own
+  repository, [`distributary`](https://github.com/open-lakehouse/distributary)
 - Cloud auth/HTTP and storage abstractions come from the external `olai-http` /
   `olai-store` crates (published from the [`trestle`](https://github.com/open-lakehouse/trestle)
   codegen repo). See [Code generation](#code-generation).

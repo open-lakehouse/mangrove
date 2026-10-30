@@ -5,6 +5,10 @@ document is the artifact; a later session picks it up to implement. All findings
 below were verified against the codebase and the pinned `object_store` fork on
 2026-07-23.
 
+> **Note (2026-10-30):** the `crates/sharing-*` crates referenced below moved to
+> [distributary](https://github.com/open-lakehouse/distributary); the `sharing-api`
+> paths and line numbers are from 2026-07-23.
+
 **One-line recommendation:** build a UC-server-agnostic **same-origin storage
 byte-proxy** (read + write) whose client side is the `object_store` fork's stock
 `HttpStore` + a custom `HttpConnector`, and whose server side is a new

@@ -5952,7 +5952,6 @@ components:
           type: string
           description: The next_page_token value to include in the next List request.
       additionalProperties: false
-      description: Response for ListTablesRequest.
       title: List Tables Response
     ListTagPoliciesResponse:
       type: object
@@ -6708,9 +6707,6 @@ components:
         name:
           type: string
           description: Name of the share.
-          minLength: 1
-          maxLength: 255
-          title: Name of the share.
         objects:
           type: array
           items:
@@ -6727,7 +6723,6 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
-          maxLength: 65536
         storage_location:
           readOnly: true
           type: string
@@ -6752,9 +6747,6 @@ components:
           type: string
           description: Username of share updater.
       additionalProperties: false
-      description: |-
-        A share is a logical grouping to share with recipients. A share can be shared with one or multiple recipients.
-         A recipient can access all resources in a share. A share may contain multiple schemas.
       title: Share
     StagingTable:
       required:
@@ -6842,7 +6834,6 @@ components:
           type: string
           description: Name of table, relative to parent schema.
           minLength: 3
-          maxLength: 255
           pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
         catalog_name:
           type: string
@@ -6961,7 +6952,6 @@ components:
           type: string
           description: Unique identifier for the table.
       additionalProperties: false
-      description: A table is a Delta Lake table or a view on top of a Delta Lake table.
       title: Table
     TableDependency:
       required:

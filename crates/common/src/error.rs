@@ -96,7 +96,7 @@ impl Error {
 impl Error {
     /// Maps this error to an HTTP status and a static client-facing message.
     ///
-    /// Shared by downstream `IntoResponse` impls (server, sharing-client) so the
+    /// Shared by downstream `IntoResponse` impls (e.g. the server) so the
     /// status/message table for common variants lives in one place. Callers
     /// remain responsible for composing the `error_code` and wrapping the result
     /// in their own `ErrorResponse` body.

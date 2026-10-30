@@ -2616,10 +2616,7 @@ export interface components {
             /** @description The next_page_token value to include in the next List request. */
             next_page_token?: string;
         };
-        /**
-         * List Tables Response
-         * @description Response for ListTablesRequest.
-         */
+        /** List Tables Response */
         ListTablesResponse: {
             /** @description The tables returned. */
             tables?: components["schemas"]["TableInfo"][];
@@ -3063,18 +3060,11 @@ export interface components {
                 [key: string]: string;
             };
         };
-        /**
-         * Share
-         * @description A share is a logical grouping to share with recipients. A share can be shared with one or multiple recipients.
-         *      A recipient can access all resources in a share. A share may contain multiple schemas.
-         */
+        /** Share */
         Share: {
             /** @description Unique ID of the share. */
             readonly id?: string;
-            /**
-             * Name of the share.
-             * @description Name of the share.
-             */
+            /** @description Name of the share. */
             name: string;
             /** @description A list of shared data objects within the share. */
             objects?: components["schemas"]["DataObject"][];
@@ -3144,10 +3134,7 @@ export interface components {
             /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
             details?: components["schemas"]["GoogleProtobufAny"][];
         };
-        /**
-         * Table
-         * @description A table is a Delta Lake table or a view on top of a Delta Lake table.
-         */
+        /** Table */
         TableInfo: {
             /** @description Name of table, relative to parent schema. */
             name: string;
