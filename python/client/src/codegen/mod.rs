@@ -590,6 +590,72 @@ impl PyUnityCatalogClient {
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PyModelVersion::from(result))
     }
+    #[pyo3(
+        signature = (
+            name,
+            on_securable_type,
+            on_securable_fullname,
+            policy_type,
+            comment = None,
+            to_principals = None,
+            except_principals = None,
+            for_securable_type = None,
+            when_condition = None,
+            match_columns = None,
+            row_filter = None,
+            column_mask = None,
+            deny = None,
+            grant = None
+        )
+    )]
+    pub fn create_policy(
+        &self,
+        py: Python<'_>,
+        name: String,
+        on_securable_type: String,
+        on_securable_fullname: String,
+        policy_type: PyPolicyType,
+        comment: Option<String>,
+        to_principals: Option<Vec<String>>,
+        except_principals: Option<Vec<String>>,
+        for_securable_type: Option<String>,
+        when_condition: Option<String>,
+        match_columns: ::core::option::Option<::std::vec::Vec<PyMatchColumn>>,
+        row_filter: ::core::option::Option<PyFunctionRef>,
+        column_mask: ::core::option::Option<PyFunctionRef>,
+        deny: ::core::option::Option<PyPrivilegeOptions>,
+        grant: ::core::option::Option<PyPrivilegeOptions>,
+    ) -> PyResult<PyPolicyInfo> {
+        let mut request = self.client.create_policy(
+            name,
+            on_securable_type,
+            on_securable_fullname,
+            policy_type.into(),
+        );
+        request = request.with_comment(comment);
+        if let Some(to_principals) = to_principals {
+            request = request.with_to_principals(to_principals);
+        }
+        if let Some(except_principals) = except_principals {
+            request = request.with_except_principals(except_principals);
+        }
+        request = request.with_for_securable_type(for_securable_type);
+        request = request.with_when_condition(when_condition);
+        if let Some(match_columns) = match_columns {
+            request = request.with_match_columns(
+                match_columns
+                    .into_iter()
+                    .map(::core::convert::Into::into)
+                    .collect::<::std::vec::Vec<_>>(),
+            );
+        }
+        request = request.with_row_filter(row_filter.map(::core::convert::Into::into));
+        request = request.with_column_mask(column_mask.map(::core::convert::Into::into));
+        request = request.with_deny(deny.map(::core::convert::Into::into));
+        request = request.with_grant(grant.map(::core::convert::Into::into));
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyPolicyInfo::from(result))
+    }
     #[pyo3(signature = (max_results = None))]
     pub fn list_providers(&self, max_results: Option<i32>) -> PyResult<ListIterator> {
         let mut request = self.client.list_providers();

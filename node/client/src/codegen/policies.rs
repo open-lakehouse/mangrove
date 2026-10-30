@@ -14,26 +14,6 @@ pub struct NapiPolicyClient {
 #[napi]
 impl NapiPolicyClient {
     #[napi(catch_unwind)]
-    pub async fn create_policy(
-        &self,
-        policy_info: napi::bindgen_prelude::Buffer,
-    ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_policy(
-            <PolicyInfo as buffa::Message>::decode_from_slice(policy_info.as_ref()).map_err(
-                |e| {
-                    napi::Error::new(
-                        napi::Status::GenericFailure,
-                        format!("invalid {} payload: {e}", stringify!(PolicyInfo)),
-                    )
-                },
-            )?,
-        );
-        request
-            .await
-            .map(|item| Buffer::from(item.encode_to_vec()))
-            .default_error()
-    }
-    #[napi(catch_unwind)]
     pub async fn get(&self) -> napi::Result<Buffer> {
         let mut request = self.client.get();
         request
@@ -44,19 +24,26 @@ impl NapiPolicyClient {
     #[napi(catch_unwind)]
     pub async fn update(
         &self,
-        policy_info: napi::bindgen_prelude::Buffer,
+        policy_type: Option<i32>,
+        comment: Option<String>,
+        to_principals: Option<Vec<String>>,
+        except_principals: Option<Vec<String>>,
+        for_securable_type: Option<String>,
+        when_condition: Option<String>,
         update_mask: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.update(
-            <PolicyInfo as buffa::Message>::decode_from_slice(policy_info.as_ref()).map_err(
-                |e| {
-                    napi::Error::new(
-                        napi::Status::GenericFailure,
-                        format!("invalid {} payload: {e}", stringify!(PolicyInfo)),
-                    )
-                },
-            )?,
-        );
+        let mut request = self.client.update();
+        request = request
+            .with_policy_type(policy_type.and_then(<PolicyType as buffa::Enumeration>::from_i32));
+        request = request.with_comment(comment);
+        if let Some(to_principals) = to_principals {
+            request = request.with_to_principals(to_principals);
+        }
+        if let Some(except_principals) = except_principals {
+            request = request.with_except_principals(except_principals);
+        }
+        request = request.with_for_securable_type(for_securable_type);
+        request = request.with_when_condition(when_condition);
         request = request.with_update_mask(update_mask);
         request
             .await

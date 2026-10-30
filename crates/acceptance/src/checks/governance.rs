@@ -5,7 +5,7 @@
 //! so they are expected to `Skipped`/quarantine on those targets. This session
 //! writes the checks to *attempt* coverage; whatever fails live is flagged.
 
-use unitycatalog_common::models::policies::v1::{PolicyInfo, PolicyType};
+use unitycatalog_common::models::policies::v1::{FunctionRef, PolicyType};
 use unitycatalog_common::models::tags::v1::{EntityTagAssignment, TagPolicy};
 
 use super::{unique, with_cleanup};
@@ -19,19 +19,19 @@ pub async fn policy_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()> {
         || async {
             ctx.create_catalog(&catalog).await?;
 
-            let info = PolicyInfo {
-                name: policy.clone(),
-                on_securable_type: "catalogs".to_string(),
-                on_securable_fullname: catalog.clone(),
-                policy_type: PolicyType::RowFilter.into(),
-                ..Default::default()
-            };
-            let created = ctx.client().policy(&policy).create_policy(info).await?;
+            let created = ctx
+                .client()
+                .create_policy(&policy, "CATALOG", &catalog, PolicyType::RowFilter)
+                .with_row_filter(FunctionRef {
+                    function_name: format!("{catalog}.default.conf_row_filter"),
+                    ..Default::default()
+                })
+                .await?;
             assert_eq!(created.name, policy);
 
             let listed = ctx
                 .client()
-                .list_policies("catalogs", &catalog)
+                .list_policies("CATALOG", &catalog)
                 .await?
                 .policies;
             assert!(

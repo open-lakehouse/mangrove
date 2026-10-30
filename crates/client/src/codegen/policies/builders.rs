@@ -59,7 +59,7 @@ impl IntoFuture for ListPoliciesBuilder {
         Box::pin(async move { client.list_policies(&request).await })
     }
 }
-/// Builder for policy
+/// Builder for creating a policy
 pub struct CreatePolicyBuilder {
     client: PolicyServiceClient,
     request: CreatePolicyRequest,
@@ -69,17 +69,93 @@ impl CreatePolicyBuilder {
     /// Obtain via the corresponding method on `PolicyServiceClient`.
     pub(crate) fn new(
         client: PolicyServiceClient,
+        name: impl Into<String>,
         on_securable_type: impl Into<String>,
         on_securable_fullname: impl Into<String>,
-        policy_info: PolicyInfo,
+        policy_type: PolicyType,
     ) -> Self {
         let request = CreatePolicyRequest {
+            name: name.into(),
             on_securable_type: on_securable_type.into(),
             on_securable_fullname: on_securable_fullname.into(),
-            policy_info: buffa::MessageField::some(policy_info),
+            policy_type: buffa::EnumValue::Known(policy_type),
             ..Default::default()
         };
         Self { client, request }
+    }
+    /// User-provided free-form text description of the policy.
+    pub fn with_comment(mut self, comment: impl Into<Option<String>>) -> Self {
+        self.request.comment = comment.into();
+        self
+    }
+    /// The principals the policy applies to. Empty means "all principals".
+    pub fn with_to_principals<I>(mut self, to_principals: I) -> Self
+    where
+        I: IntoIterator<Item = String>,
+    {
+        self.request.to_principals = to_principals.into_iter().collect();
+        self
+    }
+    /// The principals explicitly excluded from the policy, even if matched by to_principals.
+    pub fn with_except_principals<I>(mut self, except_principals: I) -> Self
+    where
+        I: IntoIterator<Item = String>,
+    {
+        self.request.except_principals = except_principals.into_iter().collect();
+        self
+    }
+    /// The type of securables the policy takes effect on.
+    pub fn with_for_securable_type(
+        mut self,
+        for_securable_type: impl Into<Option<String>>,
+    ) -> Self {
+        self.request.for_securable_type = for_securable_type.into();
+        self
+    }
+    /// An opaque condition expression evaluated by the query engine at enforcement time.
+    pub fn with_when_condition(mut self, when_condition: impl Into<Option<String>>) -> Self {
+        self.request.when_condition = when_condition.into();
+        self
+    }
+    /// The columns referenced by the policy function, and the aliases they are bound to.
+    pub fn with_match_columns<I>(mut self, match_columns: I) -> Self
+    where
+        I: IntoIterator<Item = MatchColumn>,
+    {
+        self.request.match_columns = match_columns.into_iter().collect();
+        self
+    }
+    /// The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+    pub fn with_row_filter(mut self, row_filter: impl Into<Option<FunctionRef>>) -> Self {
+        self.request.row_filter = {
+            let row_filter: ::core::option::Option<_> = row_filter.into();
+            buffa::MessageField::from(row_filter)
+        };
+        self
+    }
+    /// The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+    pub fn with_column_mask(mut self, column_mask: impl Into<Option<FunctionRef>>) -> Self {
+        self.request.column_mask = {
+            let column_mask: ::core::option::Option<_> = column_mask.into();
+            buffa::MessageField::from(column_mask)
+        };
+        self
+    }
+    /// The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+    pub fn with_deny(mut self, deny: impl Into<Option<PrivilegeOptions>>) -> Self {
+        self.request.deny = {
+            let deny: ::core::option::Option<_> = deny.into();
+            buffa::MessageField::from(deny)
+        };
+        self
+    }
+    /// The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+    pub fn with_grant(mut self, grant: impl Into<Option<PrivilegeOptions>>) -> Self {
+        self.request.grant = {
+            let grant: ::core::option::Option<_> = grant.into();
+            buffa::MessageField::from(grant)
+        };
+        self
     }
 }
 impl IntoFuture for CreatePolicyBuilder {
@@ -136,18 +212,98 @@ impl UpdatePolicyBuilder {
         on_securable_type: impl Into<String>,
         on_securable_fullname: impl Into<String>,
         name: impl Into<String>,
-        policy_info: PolicyInfo,
     ) -> Self {
         let request = UpdatePolicyRequest {
             on_securable_type: on_securable_type.into(),
             on_securable_fullname: on_securable_fullname.into(),
             name: name.into(),
-            policy_info: buffa::MessageField::some(policy_info),
             ..Default::default()
         };
         Self { client, request }
     }
-    /// The list of fields to update, as a comma-separated string.
+    /// The kind of enforcement this policy applies.
+    pub fn with_policy_type(mut self, policy_type: impl Into<Option<PolicyType>>) -> Self {
+        self.request.policy_type = policy_type.into().map(buffa::EnumValue::Known);
+        self
+    }
+    /// User-provided free-form text description of the policy.
+    pub fn with_comment(mut self, comment: impl Into<Option<String>>) -> Self {
+        self.request.comment = comment.into();
+        self
+    }
+    /// The principals the policy applies to. Empty means "all principals".
+    pub fn with_to_principals<I>(mut self, to_principals: I) -> Self
+    where
+        I: IntoIterator<Item = String>,
+    {
+        self.request.to_principals = to_principals.into_iter().collect();
+        self
+    }
+    /// The principals explicitly excluded from the policy, even if matched by to_principals.
+    pub fn with_except_principals<I>(mut self, except_principals: I) -> Self
+    where
+        I: IntoIterator<Item = String>,
+    {
+        self.request.except_principals = except_principals.into_iter().collect();
+        self
+    }
+    /// The type of securables the policy takes effect on.
+    pub fn with_for_securable_type(
+        mut self,
+        for_securable_type: impl Into<Option<String>>,
+    ) -> Self {
+        self.request.for_securable_type = for_securable_type.into();
+        self
+    }
+    /// An opaque condition expression evaluated by the query engine at enforcement time.
+    pub fn with_when_condition(mut self, when_condition: impl Into<Option<String>>) -> Self {
+        self.request.when_condition = when_condition.into();
+        self
+    }
+    /// The columns referenced by the policy function, and the aliases they are bound to.
+    pub fn with_match_columns<I>(mut self, match_columns: I) -> Self
+    where
+        I: IntoIterator<Item = MatchColumn>,
+    {
+        self.request.match_columns = match_columns.into_iter().collect();
+        self
+    }
+    /// The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+    pub fn with_row_filter(mut self, row_filter: impl Into<Option<FunctionRef>>) -> Self {
+        self.request.row_filter = {
+            let row_filter: ::core::option::Option<_> = row_filter.into();
+            buffa::MessageField::from(row_filter)
+        };
+        self
+    }
+    /// The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+    pub fn with_column_mask(mut self, column_mask: impl Into<Option<FunctionRef>>) -> Self {
+        self.request.column_mask = {
+            let column_mask: ::core::option::Option<_> = column_mask.into();
+            buffa::MessageField::from(column_mask)
+        };
+        self
+    }
+    /// The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+    pub fn with_deny(mut self, deny: impl Into<Option<PrivilegeOptions>>) -> Self {
+        self.request.deny = {
+            let deny: ::core::option::Option<_> = deny.into();
+            buffa::MessageField::from(deny)
+        };
+        self
+    }
+    /// The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+    pub fn with_grant(mut self, grant: impl Into<Option<PrivilegeOptions>>) -> Self {
+        self.request.grant = {
+            let grant: ::core::option::Option<_> = grant.into();
+            buffa::MessageField::from(grant)
+        };
+        self
+    }
+    /** The fields to update, as a comma-separated list of field names.
+
+    If empty or "*", every field set in the request is updated. Otherwise only the
+    listed fields are updated, and a listed field that is unset in the request is cleared.*/
     pub fn with_update_mask(mut self, update_mask: impl Into<Option<String>>) -> Self {
         self.request.update_mask = update_mask.into();
         self

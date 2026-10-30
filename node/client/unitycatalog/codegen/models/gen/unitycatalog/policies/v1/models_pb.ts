@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file unitycatalog/policies/v1/models.proto.
  */
 export const file_unitycatalog_policies_v1_models: GenFile = /*@__PURE__*/
-  fileDesc("CiV1bml0eWNhdGFsb2cvcG9saWNpZXMvdjEvbW9kZWxzLnByb3RvEhh1bml0eWNhdGFsb2cucG9saWNpZXMudjEiOQoLTWF0Y2hDb2x1bW4SEgoFYWxpYXMYASABKAlCA+BBAhIWCgljb25kaXRpb24YAiABKAlCA+BBAiJCCgtGdW5jdGlvbkFyZxIPCgVhbGlhcxgBIAEoCUgAEhIKCGNvbnN0YW50GAIgASgJSABCDgoFdmFsdWUSBbpIAggBImQKC0Z1bmN0aW9uUmVmEhoKDWZ1bmN0aW9uX25hbWUYASABKAlCA+BBAhI5CgV1c2luZxgCIAMoCzIlLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5GdW5jdGlvbkFyZ0ID4EEBItUGCgpQb2xpY3lJbmZvEhEKBG5hbWUYASABKAlCA+BBAhIXCgJpZBgCIAEoCUIG4EED4EEISAGIAQESQwoRb25fc2VjdXJhYmxlX3R5cGUYAyABKAlCKOBBArpIIsgBAXIdMhteKGNhdGFsb2dzfHNjaGVtYXN8dGFibGVzKSQSLAoVb25fc2VjdXJhYmxlX2Z1bGxuYW1lGAQgASgJQg3gQQK6SAfIAQFyAhABEj4KC3BvbGljeV90eXBlGAUgASgOMiQudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLlBvbGljeVR5cGVCA+BBAhIaCg10b19wcmluY2lwYWxzGAYgAygJQgPgQQESHgoRZXhjZXB0X3ByaW5jaXBhbHMYByADKAlCA+BBARIgCg53aGVuX2NvbmRpdGlvbhgIIAEoCUID4EEBSAKIAQESQQoNbWF0Y2hfY29sdW1ucxgJIAMoCzIlLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5NYXRjaENvbHVtbkID4EEBEjsKCnJvd19maWx0ZXIYCiABKAsyJS51bml0eWNhdGFsb2cucG9saWNpZXMudjEuRnVuY3Rpb25SZWZIABI8Cgtjb2x1bW5fbWFzaxgLIAEoCzIlLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5GdW5jdGlvblJlZkgAEhkKB2NvbW1lbnQYDCABKAlCA+BBAUgDiAEBEhwKCmNyZWF0ZWRfYXQYDSABKANCA+BBA0gEiAEBEhwKCnVwZGF0ZWRfYXQYDiABKANCA+BBA0gFiAEBEhwKCmNyZWF0ZWRfYnkYDyABKAlCA+BBA0gGiAEBEhwKCnVwZGF0ZWRfYnkYECABKAlCA+BBA0gHiAEBOkTqQUEKGnVuaXR5Y2F0YWxvZy5pby9Qb2xpY3lJbmZvEhFwb2xpY2llcy97cG9saWN5fSoIcG9saWNpZXMyBnBvbGljeUIRCghmdW5jdGlvbhIFukgCCAFCBQoDX2lkQhEKD193aGVuX2NvbmRpdGlvbkIKCghfY29tbWVudEINCgtfY3JlYXRlZF9hdEINCgtfdXBkYXRlZF9hdEINCgtfY3JlYXRlZF9ieUINCgtfdXBkYXRlZF9ieSpiCgpQb2xpY3lUeXBlEhsKF1BPTElDWV9UWVBFX1VOU1BFQ0lGSUVEEAASGgoWUE9MSUNZX1RZUEVfUk9XX0ZJTFRFUhABEhsKF1BPTElDWV9UWVBFX0NPTFVNTl9NQVNLEAJCgQIKHGNvbS51bml0eWNhdGFsb2cucG9saWNpZXMudjFCC01vZGVsc1Byb3RvUAFaUmdpdGh1Yi5jb20vZGVsdGEtaW5jdWJhdG9yL2RlbHRhLXNoYXJpbmctcnMvZ28vdW5pdHljYXRhbG9nL3BvbGljaWVzL3YxO3BvbGljaWVzdjGiAgNVUFiqAhhVbml0eWNhdGFsb2cuUG9saWNpZXMuVjHKAhhVbml0eWNhdGFsb2dcUG9saWNpZXNcVjHiAiRVbml0eWNhdGFsb2dcUG9saWNpZXNcVjFcR1BCTWV0YWRhdGHqAhpVbml0eWNhdGFsb2c6OlBvbGljaWVzOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_google_api_field_behavior, file_google_api_resource]);
+  fileDesc("CiV1bml0eWNhdGFsb2cvcG9saWNpZXMvdjEvbW9kZWxzLnByb3RvEhh1bml0eWNhdGFsb2cucG9saWNpZXMudjEiSAoLTWF0Y2hDb2x1bW4SFwoFYWxpYXMYASABKAlCA+BBAUgAiAEBEhYKCWNvbmRpdGlvbhgCIAEoCUID4EECQggKBl9hbGlhcyJCCgtGdW5jdGlvbkFyZxIPCgVhbGlhcxgBIAEoCUgAEhIKCGNvbnN0YW50GAIgASgJSABCDgoFdmFsdWUSBbpIAggBIo8BCgtGdW5jdGlvblJlZhIaCg1mdW5jdGlvbl9uYW1lGAEgASgJQgPgQQISOQoFdXNpbmcYAiADKAsyJS51bml0eWNhdGFsb2cucG9saWNpZXMudjEuRnVuY3Rpb25BcmdCA+BBARIbCglvbl9jb2x1bW4YAyABKAlCA+BBAUgAiAEBQgwKCl9vbl9jb2x1bW4iKwoQUHJpdmlsZWdlT3B0aW9ucxIXCgpwcml2aWxlZ2VzGAEgAygJQgPgQQIipggKClBvbGljeUluZm8SEQoEbmFtZRgBIAEoCUID4EECEhcKAmlkGAIgASgJQgbgQQPgQQhIAYgBARJAChFvbl9zZWN1cmFibGVfdHlwZRgDIAEoCUIl4EECukgfyAEBchoyGF4oQ0FUQUxPR3xTQ0hFTUF8VEFCTEUpJBIsChVvbl9zZWN1cmFibGVfZnVsbG5hbWUYBCABKAlCDeBBArpIB8gBAXICEAESPgoLcG9saWN5X3R5cGUYBSABKA4yJC51bml0eWNhdGFsb2cucG9saWNpZXMudjEuUG9saWN5VHlwZUID4EECEhoKDXRvX3ByaW5jaXBhbHMYBiADKAlCA+BBARIeChFleGNlcHRfcHJpbmNpcGFscxgHIAMoCUID4EEBEiAKDndoZW5fY29uZGl0aW9uGAggASgJQgPgQQFIAogBARJBCg1tYXRjaF9jb2x1bW5zGAkgAygLMiUudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLk1hdGNoQ29sdW1uQgPgQQESOwoKcm93X2ZpbHRlchgKIAEoCzIlLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5GdW5jdGlvblJlZkgAEjwKC2NvbHVtbl9tYXNrGAsgASgLMiUudW5pdHljYXRhbG9nLnBvbGljaWVzLnYxLkZ1bmN0aW9uUmVmSAASOgoEZGVueRgSIAEoCzIqLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MS5Qcml2aWxlZ2VPcHRpb25zSAASOwoFZ3JhbnQYEyABKAsyKi51bml0eWNhdGFsb2cucG9saWNpZXMudjEuUHJpdmlsZWdlT3B0aW9uc0gAEhkKB2NvbW1lbnQYDCABKAlCA+BBAUgDiAEBEhwKCmNyZWF0ZWRfYXQYDSABKANCA+BBA0gEiAEBEhwKCnVwZGF0ZWRfYXQYDiABKANCA+BBA0gFiAEBEhwKCmNyZWF0ZWRfYnkYDyABKAlCA+BBA0gGiAEBEhwKCnVwZGF0ZWRfYnkYECABKAlCA+BBA0gHiAEBEkMKEmZvcl9zZWN1cmFibGVfdHlwZRgRIAEoCUIi4EEBukgcchoyGF4oQ0FUQUxPR3xTQ0hFTUF8VEFCTEUpJEgIiAEBOkTqQUEKGnVuaXR5Y2F0YWxvZy5pby9Qb2xpY3lJbmZvEhFwb2xpY2llcy97cG9saWN5fSoIcG9saWNpZXMyBnBvbGljeUIQCgdvcHRpb25zEgW6SAIIAUIFCgNfaWRCEQoPX3doZW5fY29uZGl0aW9uQgoKCF9jb21tZW50Qg0KC19jcmVhdGVkX2F0Qg0KC191cGRhdGVkX2F0Qg0KC19jcmVhdGVkX2J5Qg0KC191cGRhdGVkX2J5QhUKE19mb3Jfc2VjdXJhYmxlX3R5cGUqjwEKClBvbGljeVR5cGUSGwoXUE9MSUNZX1RZUEVfVU5TUEVDSUZJRUQQABIaChZQT0xJQ1lfVFlQRV9ST1dfRklMVEVSEAESGwoXUE9MSUNZX1RZUEVfQ09MVU1OX01BU0sQAhIUChBQT0xJQ1lfVFlQRV9ERU5ZEAMSFQoRUE9MSUNZX1RZUEVfR1JBTlQQBEKBAgocY29tLnVuaXR5Y2F0YWxvZy5wb2xpY2llcy52MUILTW9kZWxzUHJvdG9QAVpSZ2l0aHViLmNvbS9kZWx0YS1pbmN1YmF0b3IvZGVsdGEtc2hhcmluZy1ycy9nby91bml0eWNhdGFsb2cvcG9saWNpZXMvdjE7cG9saWNpZXN2MaICA1VQWKoCGFVuaXR5Y2F0YWxvZy5Qb2xpY2llcy5WMcoCGFVuaXR5Y2F0YWxvZ1xQb2xpY2llc1xWMeICJFVuaXR5Y2F0YWxvZ1xQb2xpY2llc1xWMVxHUEJNZXRhZGF0YeoCGlVuaXR5Y2F0YWxvZzo6UG9saWNpZXM6OlYxYgZwcm90bzM", [file_buf_validate_validate, file_google_api_field_behavior, file_google_api_resource]);
 
 /**
  * A column referenced by a policy, together with the alias it is bound to in the
@@ -26,9 +26,9 @@ export type MatchColumn = Message<"unitycatalog.policies.v1.MatchColumn"> & {
    * The name of the alias the column is bound to when invoking the row-filter or
    * column-mask function.
    *
-   * @generated from field: string alias = 1;
+   * @generated from field: optional string alias = 1;
    */
-  alias: string;
+  alias?: string | undefined;
 
   /**
    * The condition on the column, e.g. its name, that must match for this binding to apply.
@@ -100,6 +100,16 @@ export type FunctionRef = Message<"unitycatalog.policies.v1.FunctionRef"> & {
    * @generated from field: repeated unitycatalog.policies.v1.FunctionArg using = 2;
    */
   using: FunctionArg[];
+
+  /**
+   * The alias of the column to be masked; it must refer to one of the policy's match_columns.
+   *
+   * Required for column masks: the column value is passed to the mask function as its
+   * first argument. Not used for row filters.
+   *
+   * @generated from field: optional string on_column = 3;
+   */
+  onColumn?: string | undefined;
 };
 
 /**
@@ -108,6 +118,27 @@ export type FunctionRef = Message<"unitycatalog.policies.v1.FunctionRef"> & {
  */
 export const FunctionRefSchema: GenMessage<FunctionRef> = /*@__PURE__*/
   messageDesc(file_unitycatalog_policies_v1_models, 2);
+
+/**
+ * The privileges a deny or grant policy applies to.
+ *
+ * @generated from message unitycatalog.policies.v1.PrivilegeOptions
+ */
+export type PrivilegeOptions = Message<"unitycatalog.policies.v1.PrivilegeOptions"> & {
+  /**
+   * The privileges to deny or grant when the principal and condition match.
+   *
+   * @generated from field: repeated string privileges = 1;
+   */
+  privileges: string[];
+};
+
+/**
+ * Describes the message unitycatalog.policies.v1.PrivilegeOptions.
+ * Use `create(PrivilegeOptionsSchema)` to create a new message.
+ */
+export const PrivilegeOptionsSchema: GenMessage<PrivilegeOptions> = /*@__PURE__*/
+  messageDesc(file_unitycatalog_policies_v1_models, 3);
 
 /**
  * A row-filter or column-mask policy bound to principals and scoped to a securable.
@@ -136,7 +167,7 @@ export type PolicyInfo = Message<"unitycatalog.policies.v1.PolicyInfo"> & {
   /**
    * The type of securable the policy is defined on.
    *
-   * Supported values: catalogs, schemas, tables.
+   * Supported values: CATALOG, SCHEMA, TABLE.
    *
    * @generated from field: string on_securable_type = 3;
    */
@@ -182,14 +213,19 @@ export type PolicyInfo = Message<"unitycatalog.policies.v1.PolicyInfo"> & {
    * The columns referenced by the row-filter or column-mask function, and the aliases
    * they are bound to.
    *
+   * Only valid when for_securable_type is TABLE; the policy then applies only to tables
+   * whose columns satisfy all match conditions.
+   *
    * @generated from field: repeated unitycatalog.policies.v1.MatchColumn match_columns = 9;
    */
   matchColumns: MatchColumn[];
 
   /**
-   * @generated from oneof unitycatalog.policies.v1.PolicyInfo.function
+   * The options for the kind of enforcement given by policy_type.
+   *
+   * @generated from oneof unitycatalog.policies.v1.PolicyInfo.options
    */
-  function: {
+  options: {
     /**
      * The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
      *
@@ -205,6 +241,22 @@ export type PolicyInfo = Message<"unitycatalog.policies.v1.PolicyInfo"> & {
      */
     value: FunctionRef;
     case: "columnMask";
+  } | {
+    /**
+     * The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+     *
+     * @generated from field: unitycatalog.policies.v1.PrivilegeOptions deny = 18;
+     */
+    value: PrivilegeOptions;
+    case: "deny";
+  } | {
+    /**
+     * The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+     *
+     * @generated from field: unitycatalog.policies.v1.PrivilegeOptions grant = 19;
+     */
+    value: PrivilegeOptions;
+    case: "grant";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -241,6 +293,14 @@ export type PolicyInfo = Message<"unitycatalog.policies.v1.PolicyInfo"> & {
    * @generated from field: optional string updated_by = 16;
    */
   updatedBy?: string | undefined;
+
+  /**
+   * The type of securables the policy takes effect on, e.g. TABLE for a policy defined
+   * on a schema that applies to the tables within it.
+   *
+   * @generated from field: optional string for_securable_type = 17;
+   */
+  forSecurableType?: string | undefined;
 };
 
 /**
@@ -248,7 +308,7 @@ export type PolicyInfo = Message<"unitycatalog.policies.v1.PolicyInfo"> & {
  * Use `create(PolicyInfoSchema)` to create a new message.
  */
 export const PolicyInfoSchema: GenMessage<PolicyInfo> = /*@__PURE__*/
-  messageDesc(file_unitycatalog_policies_v1_models, 3);
+  messageDesc(file_unitycatalog_policies_v1_models, 4);
 
 /**
  * The kind of enforcement a policy applies.
@@ -274,6 +334,20 @@ export enum PolicyType {
    * @generated from enum value: POLICY_TYPE_COLUMN_MASK = 2;
    */
   COLUMN_MASK = 2,
+
+  /**
+   * Denies the listed privileges to callers matched by the when_condition.
+   *
+   * @generated from enum value: POLICY_TYPE_DENY = 3;
+   */
+  DENY = 3,
+
+  /**
+   * Grants the listed privileges to callers matched by the when_condition.
+   *
+   * @generated from enum value: POLICY_TYPE_GRANT = 4;
+   */
+  GRANT = 4,
 }
 
 /**

@@ -507,6 +507,27 @@ export interface paths {
         patch: operations["FinalizeModelVersion"];
         trace?: never;
     };
+    "/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Create a new policy
+         *
+         *      Creates a new row-filter or column-mask policy on the specified securable.
+         */
+        post: operations["CreatePolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/policies/{on_securable_type}/{on_securable_fullname}": {
         parameters: {
             query?: never;
@@ -522,12 +543,7 @@ export interface paths {
          */
         get: operations["ListPolicies"];
         put?: never;
-        /**
-         * @description Create a new policy
-         *
-         *      Creates a new row-filter or column-mask policy on the specified securable.
-         */
-        post: operations["CreatePolicy"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1632,6 +1648,63 @@ export interface components {
             comment?: string;
         };
         /**
+         * Create a new policy on a securable.
+         * @description The body is the policy itself; the new policy applies to the securable and all its
+         *      descendants.
+         */
+        CreatePolicyRequest: {
+            /** @description The name of the policy. Unique within the securable it is defined on. */
+            name: string;
+            /**
+             * The type of securable the policy is defined on.
+             * @description Supported values: CATALOG, SCHEMA, TABLE.
+             */
+            on_securable_type: string;
+            /** @description The fully qualified name of the securable the policy is defined on. */
+            on_securable_fullname: string;
+            /**
+             * Policy Type
+             * Format: enum
+             * @description The kind of enforcement this policy applies.
+             * @enum {string}
+             */
+            policy_type: "POLICY_TYPE_ROW_FILTER" | "POLICY_TYPE_COLUMN_MASK" | "POLICY_TYPE_DENY" | "POLICY_TYPE_GRANT";
+            /** @description User-provided free-form text description of the policy. */
+            comment?: string;
+            /** @description The principals the policy applies to. Empty means "all principals". */
+            to_principals?: string[];
+            /** @description The principals explicitly excluded from the policy, even if matched by to_principals. */
+            except_principals?: string[];
+            /** @description The type of securables the policy takes effect on. */
+            for_securable_type?: string;
+            /** @description An opaque condition expression evaluated by the query engine at enforcement time. */
+            when_condition?: string;
+            /** @description The columns referenced by the policy function, and the aliases they are bound to. */
+            match_columns?: components["schemas"]["MatchColumn"][];
+            /**
+             * Function Ref
+             * @description A reference to the SQL function that implements a row-filter or column-mask policy,
+             *      together with the arguments it is invoked with.
+             */
+            row_filter?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /**
+             * Function Ref
+             * @description A reference to the SQL function that implements a row-filter or column-mask policy,
+             *      together with the arguments it is invoked with.
+             */
+            column_mask?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            deny?: components["schemas"]["PrivilegeOptions"];
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            grant?: components["schemas"]["PrivilegeOptions"];
+        };
+        /**
          * Create Provider Request
          * @description Creates a new provider
          */
@@ -2252,6 +2325,12 @@ export interface components {
             function_name: string;
             /** @description The arguments passed to the function, in declaration order. */
             using?: components["schemas"]["FunctionArg"][];
+            /**
+             * The alias of the column to be masked; it must refer to one of the policy's match_columns.
+             * @description Required for column masks: the column value is passed to the mask function as its
+             *      first argument. Not used for row filters.
+             */
+            on_column?: string;
         };
         /** Gcp Oauth Token */
         GcpOauthToken: {
@@ -2555,7 +2634,7 @@ export interface components {
              * @description The name of the alias the column is bound to when invoking the row-filter or
              *      column-mask function.
              */
-            alias: string;
+            alias?: string;
             /** @description The condition on the column, e.g. its name, that must match for this binding to apply. */
             condition: string;
         };
@@ -2637,7 +2716,7 @@ export interface components {
             readonly id?: string;
             /**
              * The type of securable the policy is defined on.
-             * @description Supported values: catalogs, schemas, tables.
+             * @description Supported values: CATALOG, SCHEMA, TABLE.
              */
             on_securable_type: string;
             /** @description The fully qualified name of the securable the policy is defined on. */
@@ -2648,7 +2727,7 @@ export interface components {
              * @description The kind of enforcement this policy applies.
              * @enum {string}
              */
-            policy_type: "POLICY_TYPE_UNSPECIFIED" | "POLICY_TYPE_ROW_FILTER" | "POLICY_TYPE_COLUMN_MASK";
+            policy_type: "POLICY_TYPE_UNSPECIFIED" | "POLICY_TYPE_ROW_FILTER" | "POLICY_TYPE_COLUMN_MASK" | "POLICY_TYPE_DENY" | "POLICY_TYPE_GRANT";
             /** @description The principals the policy applies to. Empty means "all principals". */
             to_principals?: string[];
             /** @description The principals explicitly excluded from the policy, even if matched by to_principals. */
@@ -2659,8 +2738,10 @@ export interface components {
              */
             when_condition?: string;
             /**
-             * @description The columns referenced by the row-filter or column-mask function, and the aliases
+             * The columns referenced by the row-filter or column-mask function, and the aliases
              *      they are bound to.
+             * @description Only valid when for_securable_type is TABLE; the policy then applies only to tables
+             *      whose columns satisfy all match conditions.
              */
             match_columns?: components["schemas"]["MatchColumn"][];
             /**
@@ -2675,6 +2756,16 @@ export interface components {
              *      together with the arguments it is invoked with.
              */
             column_mask?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            deny?: components["schemas"]["PrivilegeOptions"];
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            grant?: components["schemas"]["PrivilegeOptions"];
             /** @description User-provided free-form text description of the policy. */
             comment?: string;
             /** @description Time at which this policy was created, in epoch milliseconds. */
@@ -2685,6 +2776,11 @@ export interface components {
             readonly created_by?: string;
             /** @description Username of the user who last modified the policy. */
             readonly updated_by?: string;
+            /**
+             * @description The type of securables the policy takes effect on, e.g. TABLE for a policy defined
+             *      on a schema that applies to the tables within it.
+             */
+            for_securable_type?: string;
         };
         /** Privilege Assignment */
         PrivilegeAssignment: {
@@ -2695,6 +2791,14 @@ export interface components {
             principal: string;
             /** @description The privileges assigned to the principal. */
             privileges?: string[];
+        };
+        /**
+         * Privilege Options
+         * @description The privileges a deny or grant policy applies to.
+         */
+        PrivilegeOptions: {
+            /** @description The privileges to deny or grant when the principal and condition match. */
+            privileges: string[];
         };
         /**
          * A provider represents an organization sharing data with this metastore.
@@ -3287,18 +3391,56 @@ export interface components {
             privilege_assignments?: components["schemas"]["PrivilegeAssignment"][];
         };
         /**
-         * Update Policy Request
-         * @description Update a policy defined on a securable.
+         * Update a policy defined on a securable.
+         * @description The policy is identified by the path; the body carries the fields to update.
          */
         UpdatePolicyRequest: {
             /**
-             * A row-filter or column-mask policy bound to principals and scoped to a securable.
-             * @description Policies are read as whole documents; enforcement is performed by the query engine,
-             *      not by this service. `when_condition` is stored and returned opaque — this service does
-             *      not parse or evaluate it.
+             * Policy Type
+             * Format: enum
+             * @description The kind of enforcement this policy applies.
+             * @enum {string}
              */
-            policy_info: WithRequired<components["schemas"]["PolicyInfo"], "name" | "on_securable_type" | "on_securable_fullname" | "policy_type">;
-            /** @description The list of fields to update, as a comma-separated string. */
+            policy_type?: "POLICY_TYPE_UNSPECIFIED" | "POLICY_TYPE_ROW_FILTER" | "POLICY_TYPE_COLUMN_MASK" | "POLICY_TYPE_DENY" | "POLICY_TYPE_GRANT";
+            /** @description User-provided free-form text description of the policy. */
+            comment?: string;
+            /** @description The principals the policy applies to. Empty means "all principals". */
+            to_principals?: string[];
+            /** @description The principals explicitly excluded from the policy, even if matched by to_principals. */
+            except_principals?: string[];
+            /** @description The type of securables the policy takes effect on. */
+            for_securable_type?: string;
+            /** @description An opaque condition expression evaluated by the query engine at enforcement time. */
+            when_condition?: string;
+            /** @description The columns referenced by the policy function, and the aliases they are bound to. */
+            match_columns?: components["schemas"]["MatchColumn"][];
+            /**
+             * Function Ref
+             * @description A reference to the SQL function that implements a row-filter or column-mask policy,
+             *      together with the arguments it is invoked with.
+             */
+            row_filter?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /**
+             * Function Ref
+             * @description A reference to the SQL function that implements a row-filter or column-mask policy,
+             *      together with the arguments it is invoked with.
+             */
+            column_mask?: WithRequired<components["schemas"]["FunctionRef"], "function_name">;
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            deny?: components["schemas"]["PrivilegeOptions"];
+            /**
+             * Privilege Options
+             * @description The privileges a deny or grant policy applies to.
+             */
+            grant?: components["schemas"]["PrivilegeOptions"];
+            /**
+             * The fields to update, as a comma-separated list of field names.
+             * @description If empty or "*", every field set in the request is updated. Otherwise only the
+             *      listed fields are updated, and a listed field that is unset in the request is cleared.
+             */
             update_mask?: string;
         };
         /**
@@ -5163,6 +5305,39 @@ export interface operations {
             };
         };
     };
+    CreatePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
     ListPolicies: {
         parameters: {
             query?: {
@@ -5187,7 +5362,7 @@ export interface operations {
                 /**
                  * @description The type of the securable to list policies on.
                  *
-                 *      Supported values: catalogs, schemas, tables.
+                 *      Supported values: CATALOG, SCHEMA, TABLE.
                  */
                 on_securable_type: string;
                 /** @description The fully qualified name of the securable to list policies on. */
@@ -5217,48 +5392,6 @@ export interface operations {
             };
         };
     };
-    CreatePolicy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /**
-                 * @description The type of the securable to create the policy on.
-                 *
-                 *      Supported values: catalogs, schemas, tables.
-                 */
-                on_securable_type: string;
-                /** @description The fully qualified name of the securable to create the policy on. */
-                on_securable_fullname: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PolicyInfo"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PolicyInfo"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
-    };
     GetPolicy: {
         parameters: {
             query?: never;
@@ -5267,7 +5400,7 @@ export interface operations {
                 /**
                  * @description The type of the securable the policy is defined on.
                  *
-                 *      Supported values: catalogs, schemas, tables.
+                 *      Supported values: CATALOG, SCHEMA, TABLE.
                  */
                 on_securable_type: string;
                 /** @description The fully qualified name of the securable the policy is defined on. */
@@ -5307,7 +5440,7 @@ export interface operations {
                 /**
                  * @description The type of the securable the policy is defined on.
                  *
-                 *      Supported values: catalogs, schemas, tables.
+                 *      Supported values: CATALOG, SCHEMA, TABLE.
                  */
                 on_securable_type: string;
                 /** @description The fully qualified name of the securable the policy is defined on. */
@@ -5343,9 +5476,9 @@ export interface operations {
             header?: never;
             path: {
                 /**
-                 * @description The type of the securable the policy is defined on.
+                 * @description The type of securable the policy is defined on.
                  *
-                 *      Supported values: catalogs, schemas, tables.
+                 *      Supported values: CATALOG, SCHEMA, TABLE.
                  */
                 on_securable_type: string;
                 /** @description The fully qualified name of the securable the policy is defined on. */

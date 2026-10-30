@@ -57,11 +57,7 @@ impl PolicyServiceClient {
     ///
     /// Creates a new row-filter or column-mask policy on the specified securable.
     pub async fn create_policy(&self, request: &CreatePolicyRequest) -> Result<PolicyInfo> {
-        let formatted_path = format!(
-            "policies/{}/{}",
-            request.on_securable_type, request.on_securable_fullname
-        );
-        let url = self.base_url.join(&formatted_path)?;
+        let url = self.base_url.join("policies")?;
         let response = self.client.post(url).json(request).send().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);

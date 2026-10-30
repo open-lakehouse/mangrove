@@ -464,8 +464,36 @@ export interface ListPoliciesOptions {
   pageToken?: string;
 }
 
+export interface CreatePolicyOptions {
+  /** User-provided free-form text description of the policy. */
+  comment?: string;
+  /** The principals the policy applies to. Empty means "all principals". */
+  toPrincipals?: string[];
+  /** The principals explicitly excluded from the policy, even if matched by to_principals. */
+  exceptPrincipals?: string[];
+  /** The type of securables the policy takes effect on. */
+  forSecurableType?: string;
+  /** An opaque condition expression evaluated by the query engine at enforcement time. */
+  whenCondition?: string;
+}
+
 export interface UpdatePolicyOptions {
-  /** The list of fields to update, as a comma-separated string. */
+  /** The kind of enforcement this policy applies. */
+  policyType?: number;
+  /** User-provided free-form text description of the policy. */
+  comment?: string;
+  /** The principals the policy applies to. Empty means "all principals". */
+  toPrincipals?: string[];
+  /** The principals explicitly excluded from the policy, even if matched by to_principals. */
+  exceptPrincipals?: string[];
+  /** The type of securables the policy takes effect on. */
+  forSecurableType?: string;
+  /** An opaque condition expression evaluated by the query engine at enforcement time. */
+  whenCondition?: string;
+  /** The fields to update, as a comma-separated list of field names.
+   * 
+   *  If empty or "*", every field set in the request is updated. Otherwise only the
+   *  listed fields are updated, and a listed field that is unset in the request is cleared. */
   updateMask?: string;
 }
 
@@ -1032,10 +1060,10 @@ export class PolicyClient {
      * 
      * Updates the policy that matches the supplied name, defined on the specified securable.
      */
-  async update(policyInfo: PolicyInfo, options?: UpdatePolicyOptions): Promise<PolicyInfo> {
-    const { updateMask } = options || {};
+  async update(options?: UpdatePolicyOptions): Promise<PolicyInfo> {
+    const { policyType, comment, toPrincipals, exceptPrincipals, forSecurableType, whenCondition, updateMask } = options || {};
     try {
-      return fromBinary(PolicyInfoSchema, await this.inner.update(Buffer.from(toBinary(PolicyInfoSchema, policyInfo)), updateMask));
+      return fromBinary(PolicyInfoSchema, await this.inner.update(policyType, comment, toPrincipals, exceptPrincipals, forSecurableType, whenCondition, updateMask));
     } catch (e) { throw parseNativeError(e); }
   }
 
@@ -1763,6 +1791,18 @@ export class UnityCatalogClient {
   async finalizeModelVersion(fullName: string, version: number): Promise<ModelVersion> {
     try {
       return fromBinary(ModelVersionSchema, await this.inner.finalizeModelVersion(fullName, version));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Create a new policy
+     * 
+     * Creates a new row-filter or column-mask policy on the specified securable.
+     */
+  async createPolicy(name: string, onSecurableType: string, onSecurableFullname: string, policyType: number, options?: CreatePolicyOptions): Promise<PolicyInfo> {
+    const { comment, toPrincipals, exceptPrincipals, forSecurableType, whenCondition } = options || {};
+    try {
+      return fromBinary(PolicyInfoSchema, await this.inner.createPolicy(name, onSecurableType, onSecurableFullname, policyType, comment, toPrincipals, exceptPrincipals, forSecurableType, whenCondition));
     } catch (e) { throw parseNativeError(e); }
   }
 

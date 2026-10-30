@@ -9,6 +9,10 @@ pub enum PolicyType {
     POLICY_TYPE_ROW_FILTER = 1i32,
     /// Masks a column's values for callers matched by the when_condition.
     POLICY_TYPE_COLUMN_MASK = 2i32,
+    /// Denies the listed privileges to callers matched by the when_condition.
+    POLICY_TYPE_DENY = 3i32,
+    /// Grants the listed privileges to callers matched by the when_condition.
+    POLICY_TYPE_GRANT = 4i32,
 }
 impl PolicyType {
     ///Idiomatic alias for [`Self::POLICY_TYPE_UNSPECIFIED`]; `Debug` prints the variant name.
@@ -20,6 +24,12 @@ impl PolicyType {
     ///Idiomatic alias for [`Self::POLICY_TYPE_COLUMN_MASK`]; `Debug` prints the variant name.
     #[allow(non_upper_case_globals)]
     pub const ColumnMask: Self = Self::POLICY_TYPE_COLUMN_MASK;
+    ///Idiomatic alias for [`Self::POLICY_TYPE_DENY`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const Deny: Self = Self::POLICY_TYPE_DENY;
+    ///Idiomatic alias for [`Self::POLICY_TYPE_GRANT`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const Grant: Self = Self::POLICY_TYPE_GRANT;
 }
 impl ::core::default::Default for PolicyType {
     fn default() -> Self {
@@ -118,6 +128,8 @@ impl ::buffa::Enumeration for PolicyType {
             0i32 => ::core::option::Option::Some(Self::POLICY_TYPE_UNSPECIFIED),
             1i32 => ::core::option::Option::Some(Self::POLICY_TYPE_ROW_FILTER),
             2i32 => ::core::option::Option::Some(Self::POLICY_TYPE_COLUMN_MASK),
+            3i32 => ::core::option::Option::Some(Self::POLICY_TYPE_DENY),
+            4i32 => ::core::option::Option::Some(Self::POLICY_TYPE_GRANT),
             _ => ::core::option::Option::None,
         }
     }
@@ -129,6 +141,8 @@ impl ::buffa::Enumeration for PolicyType {
             Self::POLICY_TYPE_UNSPECIFIED => "POLICY_TYPE_UNSPECIFIED",
             Self::POLICY_TYPE_ROW_FILTER => "POLICY_TYPE_ROW_FILTER",
             Self::POLICY_TYPE_COLUMN_MASK => "POLICY_TYPE_COLUMN_MASK",
+            Self::POLICY_TYPE_DENY => "POLICY_TYPE_DENY",
+            Self::POLICY_TYPE_GRANT => "POLICY_TYPE_GRANT",
         }
     }
     fn from_proto_name(name: &str) -> ::core::option::Option<Self> {
@@ -142,6 +156,8 @@ impl ::buffa::Enumeration for PolicyType {
             "POLICY_TYPE_COLUMN_MASK" => {
                 ::core::option::Option::Some(Self::POLICY_TYPE_COLUMN_MASK)
             }
+            "POLICY_TYPE_DENY" => ::core::option::Option::Some(Self::POLICY_TYPE_DENY),
+            "POLICY_TYPE_GRANT" => ::core::option::Option::Some(Self::POLICY_TYPE_GRANT),
             _ => ::core::option::Option::None,
         }
     }
@@ -150,6 +166,8 @@ impl ::buffa::Enumeration for PolicyType {
             Self::POLICY_TYPE_UNSPECIFIED,
             Self::POLICY_TYPE_ROW_FILTER,
             Self::POLICY_TYPE_COLUMN_MASK,
+            Self::POLICY_TYPE_DENY,
+            Self::POLICY_TYPE_GRANT,
         ]
     }
 }
@@ -163,12 +181,8 @@ pub struct MatchColumn {
     /// column-mask function.
     ///
     /// Field 1: `alias`
-    #[serde(
-        rename = "alias",
-        with = "::buffa::json_helpers::proto_string",
-        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
-    )]
-    pub alias: ::buffa::alloc::string::String,
+    #[serde(rename = "alias", skip_serializing_if = "::core::option::Option::is_none")]
+    pub alias: ::core::option::Option<::buffa::alloc::string::String>,
     /// The condition on the column, e.g. its name, that must match for this binding to apply.
     ///
     /// Field 2: `condition`
@@ -197,6 +211,18 @@ impl MatchColumn {
     /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
     pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.policies.v1.MatchColumn";
 }
+impl MatchColumn {
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::alias`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_alias(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.alias = Some(value.into());
+        self
+    }
+}
 impl ::buffa::DefaultInstance for MatchColumn {
     fn default_instance() -> &'static Self {
         static VALUE: ::buffa::__private::OnceBox<MatchColumn> = ::buffa::__private::OnceBox::new();
@@ -220,8 +246,8 @@ impl ::buffa::Message for MatchColumn {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
         let mut size = 0u32;
-        if !self.alias.is_empty() {
-            size += 1u32 + ::buffa::types::string_encoded_len(&self.alias) as u32;
+        if let Some(ref v) = self.alias {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
         if !self.condition.is_empty() {
             size += 1u32 + ::buffa::types::string_encoded_len(&self.condition) as u32;
@@ -236,13 +262,13 @@ impl ::buffa::Message for MatchColumn {
     ) {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
-        if !self.alias.is_empty() {
+        if let Some(ref v) = self.alias {
             ::buffa::encoding::Tag::new(
                     1u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
-            ::buffa::types::encode_string(&self.alias, buf);
+            ::buffa::types::encode_string(v, buf);
         }
         if !self.condition.is_empty() {
             ::buffa::encoding::Tag::new(
@@ -273,7 +299,10 @@ impl ::buffa::Message for MatchColumn {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                ::buffa::types::merge_string(&mut self.alias, buf)?;
+                ::buffa::types::merge_string(
+                    self.alias.get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
             }
             2u32 => {
                 if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
@@ -293,7 +322,7 @@ impl ::buffa::Message for MatchColumn {
         ::core::result::Result::Ok(())
     }
     fn clear(&mut self) {
-        self.alias.clear();
+        self.alias = ::core::option::Option::None;
         self.condition.clear();
         self.__buffa_unknown_fields.clear();
     }
@@ -609,6 +638,18 @@ pub struct FunctionRef {
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
     pub using: ::buffa::alloc::vec::Vec<FunctionArg>,
+    /// The alias of the column to be masked; it must refer to one of the policy's match_columns.
+    ///
+    /// Required for column masks: the column value is passed to the mask function as its
+    /// first argument. Not used for row filters.
+    ///
+    /// Field 3: `on_column`
+    #[serde(
+        rename = "on_column",
+        alias = "onColumn",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub on_column: ::core::option::Option<::buffa::alloc::string::String>,
     #[serde(skip)]
     #[doc(hidden)]
     pub __buffa_unknown_fields: ::buffa::UnknownFields,
@@ -618,6 +659,7 @@ impl ::core::fmt::Debug for FunctionRef {
         f.debug_struct("FunctionRef")
             .field("function_name", &self.function_name)
             .field("using", &self.using)
+            .field("on_column", &self.on_column)
             .finish()
     }
 }
@@ -627,6 +669,18 @@ impl FunctionRef {
     ///
     /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
     pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.policies.v1.FunctionRef";
+}
+impl FunctionRef {
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::on_column`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_on_column(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.on_column = Some(value.into());
+        self
+    }
 }
 impl ::buffa::DefaultInstance for FunctionRef {
     fn default_instance() -> &'static Self {
@@ -663,6 +717,9 @@ impl ::buffa::Message for FunctionRef {
                 += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
                     + inner_size;
         }
+        if let Some(ref v) = self.on_column {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
         size += self.__buffa_unknown_fields.encoded_len() as u32;
         size
     }
@@ -689,6 +746,14 @@ impl ::buffa::Message for FunctionRef {
                 .encode(buf);
             ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
             v.write_to(__cache, buf);
+        }
+        if let Some(ref v) = self.on_column {
+            ::buffa::encoding::Tag::new(
+                    3u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
     }
@@ -725,6 +790,21 @@ impl ::buffa::Message for FunctionRef {
                 ::buffa::Message::merge_length_delimited(&mut elem, buf, depth)?;
                 self.using.push(elem);
             }
+            3u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 3u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self
+                        .on_column
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
             _ => {
                 self.__buffa_unknown_fields
                     .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
@@ -735,6 +815,7 @@ impl ::buffa::Message for FunctionRef {
     fn clear(&mut self) {
         self.function_name.clear();
         self.using.clear();
+        self.on_column = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
 }
@@ -767,6 +848,144 @@ pub const __FUNCTION_REF_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = ::buff
     from_json: ::buffa::type_registry::any_from_json::<FunctionRef>,
     is_wkt: false,
 };
+/// The privileges a deny or grant policy applies to.
+#[derive(Clone, PartialEq, Default)]
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[serde(default)]
+pub struct PrivilegeOptions {
+    /// The privileges to deny or grant when the principal and condition match.
+    ///
+    /// Field 1: `privileges`
+    #[serde(
+        rename = "privileges",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
+        deserialize_with = "::buffa::json_helpers::null_as_default"
+    )]
+    pub privileges: ::buffa::alloc::vec::Vec<::buffa::alloc::string::String>,
+    #[serde(skip)]
+    #[doc(hidden)]
+    pub __buffa_unknown_fields: ::buffa::UnknownFields,
+}
+impl ::core::fmt::Debug for PrivilegeOptions {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("PrivilegeOptions").field("privileges", &self.privileges).finish()
+    }
+}
+impl PrivilegeOptions {
+    /// Protobuf type URL for this message, for use with `Any::pack` and
+    /// `Any::unpack_if`.
+    ///
+    /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
+    pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.policies.v1.PrivilegeOptions";
+}
+impl ::buffa::DefaultInstance for PrivilegeOptions {
+    fn default_instance() -> &'static Self {
+        static VALUE: ::buffa::__private::OnceBox<PrivilegeOptions> = ::buffa::__private::OnceBox::new();
+        VALUE.get_or_init(|| ::buffa::alloc::boxed::Box::new(Self::default()))
+    }
+}
+impl ::buffa::MessageName for PrivilegeOptions {
+    const PACKAGE: &'static str = "unitycatalog.policies.v1";
+    const NAME: &'static str = "PrivilegeOptions";
+    const FULL_NAME: &'static str = "unitycatalog.policies.v1.PrivilegeOptions";
+    const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.policies.v1.PrivilegeOptions";
+}
+impl ::buffa::Message for PrivilegeOptions {
+    /// Returns the total encoded size in bytes.
+    ///
+    /// The result is a `u32`; the protobuf specification requires all
+    /// messages to fit within 2 GiB (2,147,483,647 bytes), so a
+    /// compliant message will never overflow this type.
+    #[allow(clippy::let_and_return)]
+    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u32;
+        for v in &self.privileges {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        size += self.__buffa_unknown_fields.encoded_len() as u32;
+        size
+    }
+    fn write_to(
+        &self,
+        _cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::bytes::BufMut,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        for v in &self.privileges {
+            ::buffa::encoding::Tag::new(
+                    1u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        self.__buffa_unknown_fields.write_to(buf);
+    }
+    fn merge_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        buf: &mut impl ::buffa::bytes::Buf,
+        depth: u32,
+    ) -> ::core::result::Result<(), ::buffa::DecodeError> {
+        #[allow(unused_imports)]
+        use ::buffa::bytes::Buf as _;
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        match tag.field_number() {
+            1u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 1u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.privileges.push(::buffa::types::decode_string(buf)?);
+            }
+            _ => {
+                self.__buffa_unknown_fields
+                    .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
+            }
+        }
+        ::core::result::Result::Ok(())
+    }
+    fn clear(&mut self) {
+        self.privileges.clear();
+        self.__buffa_unknown_fields.clear();
+    }
+}
+impl ::buffa::ExtensionSet for PrivilegeOptions {
+    const PROTO_FQN: &'static str = "unitycatalog.policies.v1.PrivilegeOptions";
+    fn unknown_fields(&self) -> &::buffa::UnknownFields {
+        &self.__buffa_unknown_fields
+    }
+    fn unknown_fields_mut(&mut self) -> &mut ::buffa::UnknownFields {
+        &mut self.__buffa_unknown_fields
+    }
+}
+impl ::buffa::json_helpers::ProtoElemJson for PrivilegeOptions {
+    fn serialize_proto_json<S: ::serde::Serializer>(
+        v: &Self,
+        s: S,
+    ) -> ::core::result::Result<S::Ok, S::Error> {
+        ::serde::Serialize::serialize(v, s)
+    }
+    fn deserialize_proto_json<'de, D: ::serde::Deserializer<'de>>(
+        d: D,
+    ) -> ::core::result::Result<Self, D::Error> {
+        <Self as ::serde::Deserialize>::deserialize(d)
+    }
+}
+#[doc(hidden)]
+pub const __PRIVILEGE_OPTIONS_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = ::buffa::type_registry::JsonAnyEntry {
+    type_url: "type.googleapis.com/unitycatalog.policies.v1.PrivilegeOptions",
+    to_json: ::buffa::type_registry::any_to_json::<PrivilegeOptions>,
+    from_json: ::buffa::type_registry::any_from_json::<PrivilegeOptions>,
+    is_wkt: false,
+};
 /// A row-filter or column-mask policy bound to principals and scoped to a securable.
 ///
 /// Policies are read as whole documents; enforcement is performed by the query engine,
@@ -792,7 +1011,7 @@ pub struct PolicyInfo {
     pub id: ::core::option::Option<::buffa::alloc::string::String>,
     /// The type of securable the policy is defined on.
     ///
-    /// Supported values: catalogs, schemas, tables.
+    /// Supported values: CATALOG, SCHEMA, TABLE.
     ///
     /// Field 3: `on_securable_type`
     #[serde(
@@ -855,6 +1074,9 @@ pub struct PolicyInfo {
     /// The columns referenced by the row-filter or column-mask function, and the aliases
     /// they are bound to.
     ///
+    /// Only valid when for_securable_type is TABLE; the policy then applies only to tables
+    /// whose columns satisfy all match conditions.
+    ///
     /// Field 9: `match_columns`
     #[serde(
         rename = "match_columns",
@@ -906,8 +1128,18 @@ pub struct PolicyInfo {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
+    /// The type of securables the policy takes effect on, e.g. TABLE for a policy defined
+    /// on a schema that applies to the tables within it.
+    ///
+    /// Field 17: `for_securable_type`
+    #[serde(
+        rename = "for_securable_type",
+        alias = "forSecurableType",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub for_securable_type: ::core::option::Option<::buffa::alloc::string::String>,
     #[serde(flatten)]
-    pub function: ::core::option::Option<__buffa::oneof::policy_info::Function>,
+    pub options: ::core::option::Option<__buffa::oneof::policy_info::Options>,
     #[serde(skip)]
     #[doc(hidden)]
     pub __buffa_unknown_fields: ::buffa::UnknownFields,
@@ -929,7 +1161,8 @@ impl ::core::fmt::Debug for PolicyInfo {
             .field("updated_at", &self.updated_at)
             .field("created_by", &self.created_by)
             .field("updated_by", &self.updated_by)
-            .field("function", &self.function)
+            .field("for_securable_type", &self.for_securable_type)
+            .field("options", &self.options)
             .finish()
     }
 }
@@ -1002,6 +1235,16 @@ impl PolicyInfo {
         self.updated_by = Some(value.into());
         self
     }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::for_securable_type`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_for_securable_type(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.for_securable_type = Some(value.into());
+        self
+    }
 }
 impl ::buffa::DefaultInstance for PolicyInfo {
     fn default_instance() -> &'static Self {
@@ -1066,9 +1309,9 @@ impl ::buffa::Message for PolicyInfo {
                 += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
                     + inner_size;
         }
-        if let ::core::option::Option::Some(ref v) = self.function {
+        if let ::core::option::Option::Some(ref v) = self.options {
             match v {
-                __buffa::oneof::policy_info::Function::RowFilter(x) => {
+                __buffa::oneof::policy_info::Options::RowFilter(x) => {
                     let __slot = __cache.reserve();
                     let inner = x.compute_size(__cache);
                     __cache.set(__slot, inner);
@@ -1076,12 +1319,28 @@ impl ::buffa::Message for PolicyInfo {
                         += 1u32 + ::buffa::encoding::varint_len(inner as u64) as u32
                             + inner;
                 }
-                __buffa::oneof::policy_info::Function::ColumnMask(x) => {
+                __buffa::oneof::policy_info::Options::ColumnMask(x) => {
                     let __slot = __cache.reserve();
                     let inner = x.compute_size(__cache);
                     __cache.set(__slot, inner);
                     size
                         += 1u32 + ::buffa::encoding::varint_len(inner as u64) as u32
+                            + inner;
+                }
+                __buffa::oneof::policy_info::Options::Deny(x) => {
+                    let __slot = __cache.reserve();
+                    let inner = x.compute_size(__cache);
+                    __cache.set(__slot, inner);
+                    size
+                        += 2u32 + ::buffa::encoding::varint_len(inner as u64) as u32
+                            + inner;
+                }
+                __buffa::oneof::policy_info::Options::Grant(x) => {
+                    let __slot = __cache.reserve();
+                    let inner = x.compute_size(__cache);
+                    __cache.set(__slot, inner);
+                    size
+                        += 2u32 + ::buffa::encoding::varint_len(inner as u64) as u32
                             + inner;
                 }
             }
@@ -1099,6 +1358,9 @@ impl ::buffa::Message for PolicyInfo {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
         if let Some(ref v) = self.updated_by {
+            size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        if let Some(ref v) = self.for_securable_type {
             size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
         size += self.__buffa_unknown_fields.encoded_len() as u32;
@@ -1184,9 +1446,9 @@ impl ::buffa::Message for PolicyInfo {
             ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
             v.write_to(__cache, buf);
         }
-        if let ::core::option::Option::Some(ref v) = self.function {
+        if let ::core::option::Option::Some(ref v) = self.options {
             match v {
-                __buffa::oneof::policy_info::Function::RowFilter(x) => {
+                __buffa::oneof::policy_info::Options::RowFilter(x) => {
                     ::buffa::encoding::Tag::new(
                             10u32,
                             ::buffa::encoding::WireType::LengthDelimited,
@@ -1195,9 +1457,27 @@ impl ::buffa::Message for PolicyInfo {
                     ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
                     x.write_to(__cache, buf);
                 }
-                __buffa::oneof::policy_info::Function::ColumnMask(x) => {
+                __buffa::oneof::policy_info::Options::ColumnMask(x) => {
                     ::buffa::encoding::Tag::new(
                             11u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    x.write_to(__cache, buf);
+                }
+                __buffa::oneof::policy_info::Options::Deny(x) => {
+                    ::buffa::encoding::Tag::new(
+                            18u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    x.write_to(__cache, buf);
+                }
+                __buffa::oneof::policy_info::Options::Grant(x) => {
+                    ::buffa::encoding::Tag::new(
+                            19u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
@@ -1235,6 +1515,14 @@ impl ::buffa::Message for PolicyInfo {
         if let Some(ref v) = self.updated_by {
             ::buffa::encoding::Tag::new(
                     16u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        if let Some(ref v) = self.for_securable_type {
+            ::buffa::encoding::Tag::new(
+                    17u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
@@ -1364,8 +1652,8 @@ impl ::buffa::Message for PolicyInfo {
                     });
                 }
                 if let ::core::option::Option::Some(
-                    __buffa::oneof::policy_info::Function::RowFilter(ref mut existing),
-                ) = self.function
+                    __buffa::oneof::policy_info::Options::RowFilter(ref mut existing),
+                ) = self.options
                 {
                     ::buffa::Message::merge_length_delimited(
                         &mut **existing,
@@ -1375,8 +1663,8 @@ impl ::buffa::Message for PolicyInfo {
                 } else {
                     let mut val = ::core::default::Default::default();
                     ::buffa::Message::merge_length_delimited(&mut val, buf, depth)?;
-                    self.function = ::core::option::Option::Some(
-                        __buffa::oneof::policy_info::Function::RowFilter(
+                    self.options = ::core::option::Option::Some(
+                        __buffa::oneof::policy_info::Options::RowFilter(
                             ::buffa::alloc::boxed::Box::new(val),
                         ),
                     );
@@ -1391,8 +1679,8 @@ impl ::buffa::Message for PolicyInfo {
                     });
                 }
                 if let ::core::option::Option::Some(
-                    __buffa::oneof::policy_info::Function::ColumnMask(ref mut existing),
-                ) = self.function
+                    __buffa::oneof::policy_info::Options::ColumnMask(ref mut existing),
+                ) = self.options
                 {
                     ::buffa::Message::merge_length_delimited(
                         &mut **existing,
@@ -1402,8 +1690,62 @@ impl ::buffa::Message for PolicyInfo {
                 } else {
                     let mut val = ::core::default::Default::default();
                     ::buffa::Message::merge_length_delimited(&mut val, buf, depth)?;
-                    self.function = ::core::option::Option::Some(
-                        __buffa::oneof::policy_info::Function::ColumnMask(
+                    self.options = ::core::option::Option::Some(
+                        __buffa::oneof::policy_info::Options::ColumnMask(
+                            ::buffa::alloc::boxed::Box::new(val),
+                        ),
+                    );
+                }
+            }
+            18u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 18u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                if let ::core::option::Option::Some(
+                    __buffa::oneof::policy_info::Options::Deny(ref mut existing),
+                ) = self.options
+                {
+                    ::buffa::Message::merge_length_delimited(
+                        &mut **existing,
+                        buf,
+                        depth,
+                    )?;
+                } else {
+                    let mut val = ::core::default::Default::default();
+                    ::buffa::Message::merge_length_delimited(&mut val, buf, depth)?;
+                    self.options = ::core::option::Option::Some(
+                        __buffa::oneof::policy_info::Options::Deny(
+                            ::buffa::alloc::boxed::Box::new(val),
+                        ),
+                    );
+                }
+            }
+            19u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 19u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                if let ::core::option::Option::Some(
+                    __buffa::oneof::policy_info::Options::Grant(ref mut existing),
+                ) = self.options
+                {
+                    ::buffa::Message::merge_length_delimited(
+                        &mut **existing,
+                        buf,
+                        depth,
+                    )?;
+                } else {
+                    let mut val = ::core::default::Default::default();
+                    ::buffa::Message::merge_length_delimited(&mut val, buf, depth)?;
+                    self.options = ::core::option::Option::Some(
+                        __buffa::oneof::policy_info::Options::Grant(
                             ::buffa::alloc::boxed::Box::new(val),
                         ),
                     );
@@ -1476,6 +1818,21 @@ impl ::buffa::Message for PolicyInfo {
                     buf,
                 )?;
             }
+            17u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 17u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self
+                        .for_securable_type
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
             _ => {
                 self.__buffa_unknown_fields
                     .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
@@ -1493,12 +1850,13 @@ impl ::buffa::Message for PolicyInfo {
         self.except_principals.clear();
         self.when_condition = ::core::option::Option::None;
         self.match_columns.clear();
-        self.function = ::core::option::Option::None;
+        self.options = ::core::option::Option::None;
         self.comment = ::core::option::Option::None;
         self.created_at = ::core::option::Option::None;
         self.updated_at = ::core::option::Option::None;
         self.created_by = ::core::option::Option::None;
         self.updated_by = ::core::option::Option::None;
+        self.for_securable_type = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
 }
@@ -1568,8 +1926,11 @@ impl<'de> serde::Deserialize<'de> for PolicyInfo {
                 let mut __f_updated_by: ::core::option::Option<
                     ::core::option::Option<::buffa::alloc::string::String>,
                 > = None;
-                let mut __oneof_function: ::core::option::Option<
-                    __buffa::oneof::policy_info::Function,
+                let mut __f_for_securable_type: ::core::option::Option<
+                    ::core::option::Option<::buffa::alloc::string::String>,
+                > = None;
+                let mut __oneof_options: ::core::option::Option<
+                    __buffa::oneof::policy_info::Options,
                 > = None;
                 while let Some(key) = map.next_key::<::buffa::alloc::string::String>()? {
                     match key.as_str() {
@@ -1779,6 +2140,14 @@ impl<'de> serde::Deserialize<'de> for PolicyInfo {
                                     >()?,
                             );
                         }
+                        "forSecurableType" | "for_securable_type" => {
+                            __f_for_securable_type = Some(
+                                map
+                                    .next_value::<
+                                        ::core::option::Option<::buffa::alloc::string::String>,
+                                    >()?,
+                            );
+                        }
                         "rowFilter" | "row_filter" => {
                             let v: ::core::option::Option<FunctionRef> = map
                                 .next_value_seed(
@@ -1789,15 +2158,15 @@ impl<'de> serde::Deserialize<'de> for PolicyInfo {
                                     ),
                                 )?;
                             if let Some(v) = v {
-                                if __oneof_function.is_some() {
+                                if __oneof_options.is_some() {
                                     return Err(
                                         serde::de::Error::custom(
-                                            "multiple oneof fields set for 'function'",
+                                            "multiple oneof fields set for 'options'",
                                         ),
                                     );
                                 }
-                                __oneof_function = Some(
-                                    __buffa::oneof::policy_info::Function::RowFilter(
+                                __oneof_options = Some(
+                                    __buffa::oneof::policy_info::Options::RowFilter(
                                         ::buffa::alloc::boxed::Box::new(v),
                                     ),
                                 );
@@ -1813,15 +2182,63 @@ impl<'de> serde::Deserialize<'de> for PolicyInfo {
                                     ),
                                 )?;
                             if let Some(v) = v {
-                                if __oneof_function.is_some() {
+                                if __oneof_options.is_some() {
                                     return Err(
                                         serde::de::Error::custom(
-                                            "multiple oneof fields set for 'function'",
+                                            "multiple oneof fields set for 'options'",
                                         ),
                                     );
                                 }
-                                __oneof_function = Some(
-                                    __buffa::oneof::policy_info::Function::ColumnMask(
+                                __oneof_options = Some(
+                                    __buffa::oneof::policy_info::Options::ColumnMask(
+                                        ::buffa::alloc::boxed::Box::new(v),
+                                    ),
+                                );
+                            }
+                        }
+                        "deny" => {
+                            let v: ::core::option::Option<PrivilegeOptions> = map
+                                .next_value_seed(
+                                    ::buffa::json_helpers::NullableDeserializeSeed(
+                                        ::buffa::json_helpers::DefaultDeserializeSeed::<
+                                            PrivilegeOptions,
+                                        >::new(),
+                                    ),
+                                )?;
+                            if let Some(v) = v {
+                                if __oneof_options.is_some() {
+                                    return Err(
+                                        serde::de::Error::custom(
+                                            "multiple oneof fields set for 'options'",
+                                        ),
+                                    );
+                                }
+                                __oneof_options = Some(
+                                    __buffa::oneof::policy_info::Options::Deny(
+                                        ::buffa::alloc::boxed::Box::new(v),
+                                    ),
+                                );
+                            }
+                        }
+                        "grant" => {
+                            let v: ::core::option::Option<PrivilegeOptions> = map
+                                .next_value_seed(
+                                    ::buffa::json_helpers::NullableDeserializeSeed(
+                                        ::buffa::json_helpers::DefaultDeserializeSeed::<
+                                            PrivilegeOptions,
+                                        >::new(),
+                                    ),
+                                )?;
+                            if let Some(v) = v {
+                                if __oneof_options.is_some() {
+                                    return Err(
+                                        serde::de::Error::custom(
+                                            "multiple oneof fields set for 'options'",
+                                        ),
+                                    );
+                                }
+                                __oneof_options = Some(
+                                    __buffa::oneof::policy_info::Options::Grant(
                                         ::buffa::alloc::boxed::Box::new(v),
                                     ),
                                 );
@@ -1875,7 +2292,10 @@ impl<'de> serde::Deserialize<'de> for PolicyInfo {
                 if let ::core::option::Option::Some(v) = __f_updated_by {
                     __r.updated_by = v;
                 }
-                __r.function = __oneof_function;
+                if let ::core::option::Option::Some(v) = __f_for_securable_type {
+                    __r.for_securable_type = v;
+                }
+                __r.options = __oneof_options;
                 Ok(__r)
             }
         }
@@ -1906,9 +2326,9 @@ pub mod policy_info {
     #[allow(unused_imports)]
     use super::*;
     #[doc(inline)]
-    pub use super::__buffa::oneof::policy_info::Function;
+    pub use super::__buffa::oneof::policy_info::Options;
     #[doc(inline)]
-    pub use super::__buffa::view::oneof::policy_info::Function as FunctionView;
+    pub use super::__buffa::view::oneof::policy_info::Options as OptionsView;
 }
 /// List policies defined on a securable.
 #[derive(Clone, PartialEq, Default)]
@@ -1917,7 +2337,7 @@ pub mod policy_info {
 pub struct ListPoliciesRequest {
     /// The type of the securable to list policies on.
     ///
-    /// Supported values: catalogs, schemas, tables.
+    /// Supported values: CATALOG, SCHEMA, TABLE.
     ///
     /// Field 1: `on_securable_type`
     #[serde(
@@ -2420,15 +2840,27 @@ pub const __LIST_POLICIES_RESPONSE_JSON_ANY: ::buffa::type_registry::JsonAnyEntr
     is_wkt: false,
 };
 /// Create a new policy on a securable.
+///
+/// The body is the policy itself; the new policy applies to the securable and all its
+/// descendants.
 #[derive(Clone, PartialEq, Default)]
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[serde(default)]
 pub struct CreatePolicyRequest {
-    /// The type of the securable to create the policy on.
+    /// The name of the policy. Unique within the securable it is defined on.
     ///
-    /// Supported values: catalogs, schemas, tables.
+    /// Field 1: `name`
+    #[serde(
+        rename = "name",
+        with = "::buffa::json_helpers::proto_string",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
+    )]
+    pub name: ::buffa::alloc::string::String,
+    /// The type of securable the policy is defined on.
     ///
-    /// Field 1: `on_securable_type`
+    /// Supported values: CATALOG, SCHEMA, TABLE.
+    ///
+    /// Field 2: `on_securable_type`
     #[serde(
         rename = "on_securable_type",
         alias = "onSecurableType",
@@ -2436,9 +2868,9 @@ pub struct CreatePolicyRequest {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
     pub on_securable_type: ::buffa::alloc::string::String,
-    /// The fully qualified name of the securable to create the policy on.
+    /// The fully qualified name of the securable the policy is defined on.
     ///
-    /// Field 2: `on_securable_fullname`
+    /// Field 3: `on_securable_fullname`
     #[serde(
         rename = "on_securable_fullname",
         alias = "onSecurableFullname",
@@ -2446,15 +2878,103 @@ pub struct CreatePolicyRequest {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
     pub on_securable_fullname: ::buffa::alloc::string::String,
-    /// The policy to create.
+    /// The kind of enforcement this policy applies.
     ///
-    /// Field 3: `policy_info`
+    /// Field 4: `policy_type`
     #[serde(
-        rename = "policy_info",
-        alias = "policyInfo",
+        rename = "policy_type",
+        alias = "policyType",
+        with = "::buffa::json_helpers::proto_enum",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
+    )]
+    pub policy_type: ::buffa::EnumValue<PolicyType>,
+    /// User-provided free-form text description of the policy.
+    ///
+    /// Field 5: `comment`
+    #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
+    pub comment: ::core::option::Option<::buffa::alloc::string::String>,
+    /// The principals the policy applies to. Empty means "all principals".
+    ///
+    /// Field 6: `to_principals`
+    #[serde(
+        rename = "to_principals",
+        alias = "toPrincipals",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
+        deserialize_with = "::buffa::json_helpers::null_as_default"
+    )]
+    pub to_principals: ::buffa::alloc::vec::Vec<::buffa::alloc::string::String>,
+    /// The principals explicitly excluded from the policy, even if matched by to_principals.
+    ///
+    /// Field 7: `except_principals`
+    #[serde(
+        rename = "except_principals",
+        alias = "exceptPrincipals",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
+        deserialize_with = "::buffa::json_helpers::null_as_default"
+    )]
+    pub except_principals: ::buffa::alloc::vec::Vec<::buffa::alloc::string::String>,
+    /// The type of securables the policy takes effect on.
+    ///
+    /// Field 8: `for_securable_type`
+    #[serde(
+        rename = "for_securable_type",
+        alias = "forSecurableType",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub for_securable_type: ::core::option::Option<::buffa::alloc::string::String>,
+    /// An opaque condition expression evaluated by the query engine at enforcement time.
+    ///
+    /// Field 9: `when_condition`
+    #[serde(
+        rename = "when_condition",
+        alias = "whenCondition",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub when_condition: ::core::option::Option<::buffa::alloc::string::String>,
+    /// The columns referenced by the policy function, and the aliases they are bound to.
+    ///
+    /// Field 10: `match_columns`
+    #[serde(
+        rename = "match_columns",
+        alias = "matchColumns",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
+        deserialize_with = "::buffa::json_helpers::null_as_default"
+    )]
+    pub match_columns: ::buffa::alloc::vec::Vec<MatchColumn>,
+    /// The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+    ///
+    /// Field 11: `row_filter`
+    #[serde(
+        rename = "row_filter",
+        alias = "rowFilter",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
-    pub policy_info: ::buffa::MessageField<PolicyInfo>,
+    pub row_filter: ::buffa::MessageField<FunctionRef>,
+    /// The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+    ///
+    /// Field 12: `column_mask`
+    #[serde(
+        rename = "column_mask",
+        alias = "columnMask",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
+    )]
+    pub column_mask: ::buffa::MessageField<FunctionRef>,
+    /// The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+    ///
+    /// Field 13: `deny`
+    #[serde(
+        rename = "deny",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
+    )]
+    pub deny: ::buffa::MessageField<PrivilegeOptions>,
+    /// The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+    ///
+    /// Field 14: `grant`
+    #[serde(
+        rename = "grant",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
+    )]
+    pub grant: ::buffa::MessageField<PrivilegeOptions>,
     #[serde(skip)]
     #[doc(hidden)]
     pub __buffa_unknown_fields: ::buffa::UnknownFields,
@@ -2462,9 +2982,20 @@ pub struct CreatePolicyRequest {
 impl ::core::fmt::Debug for CreatePolicyRequest {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
         f.debug_struct("CreatePolicyRequest")
+            .field("name", &self.name)
             .field("on_securable_type", &self.on_securable_type)
             .field("on_securable_fullname", &self.on_securable_fullname)
-            .field("policy_info", &self.policy_info)
+            .field("policy_type", &self.policy_type)
+            .field("comment", &self.comment)
+            .field("to_principals", &self.to_principals)
+            .field("except_principals", &self.except_principals)
+            .field("for_securable_type", &self.for_securable_type)
+            .field("when_condition", &self.when_condition)
+            .field("match_columns", &self.match_columns)
+            .field("row_filter", &self.row_filter)
+            .field("column_mask", &self.column_mask)
+            .field("deny", &self.deny)
+            .field("grant", &self.grant)
             .finish()
     }
 }
@@ -2474,6 +3005,38 @@ impl CreatePolicyRequest {
     ///
     /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
     pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.policies.v1.CreatePolicyRequest";
+}
+impl CreatePolicyRequest {
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::comment`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_comment(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.comment = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::for_securable_type`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_for_securable_type(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.for_securable_type = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::when_condition`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_when_condition(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.when_condition = Some(value.into());
+        self
+    }
 }
 impl ::buffa::DefaultInstance for CreatePolicyRequest {
     fn default_instance() -> &'static Self {
@@ -2498,6 +3061,9 @@ impl ::buffa::Message for CreatePolicyRequest {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
         let mut size = 0u32;
+        if !self.name.is_empty() {
+            size += 1u32 + ::buffa::types::string_encoded_len(&self.name) as u32;
+        }
         if !self.on_securable_type.is_empty() {
             size
                 += 1u32
@@ -2509,9 +3075,62 @@ impl ::buffa::Message for CreatePolicyRequest {
                     + ::buffa::types::string_encoded_len(&self.on_securable_fullname)
                         as u32;
         }
-        if self.policy_info.is_set() {
+        {
+            let val = self.policy_type.to_i32();
+            if val != 0 {
+                size += 1u32 + ::buffa::types::int32_encoded_len(val) as u32;
+            }
+        }
+        if let Some(ref v) = self.comment {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        for v in &self.to_principals {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        for v in &self.except_principals {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        if let Some(ref v) = self.for_securable_type {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        if let Some(ref v) = self.when_condition {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        for v in &self.match_columns {
             let __slot = __cache.reserve();
-            let inner_size = self.policy_info.compute_size(__cache);
+            let inner_size = v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
+        }
+        if self.row_filter.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.row_filter.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
+        }
+        if self.column_mask.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.column_mask.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
+        }
+        if self.deny.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.deny.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
+        }
+        if self.grant.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.grant.compute_size(__cache);
             __cache.set(__slot, inner_size);
             size
                 += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
@@ -2527,9 +3146,17 @@ impl ::buffa::Message for CreatePolicyRequest {
     ) {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
-        if !self.on_securable_type.is_empty() {
+        if !self.name.is_empty() {
             ::buffa::encoding::Tag::new(
                     1u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(&self.name, buf);
+        }
+        if !self.on_securable_type.is_empty() {
+            ::buffa::encoding::Tag::new(
+                    2u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
@@ -2537,20 +3164,104 @@ impl ::buffa::Message for CreatePolicyRequest {
         }
         if !self.on_securable_fullname.is_empty() {
             ::buffa::encoding::Tag::new(
-                    2u32,
+                    3u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
             ::buffa::types::encode_string(&self.on_securable_fullname, buf);
         }
-        if self.policy_info.is_set() {
+        {
+            let val = self.policy_type.to_i32();
+            if val != 0 {
+                ::buffa::encoding::Tag::new(4u32, ::buffa::encoding::WireType::Varint)
+                    .encode(buf);
+                ::buffa::types::encode_int32(val, buf);
+            }
+        }
+        if let Some(ref v) = self.comment {
             ::buffa::encoding::Tag::new(
-                    3u32,
+                    5u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        for v in &self.to_principals {
+            ::buffa::encoding::Tag::new(
+                    6u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        for v in &self.except_principals {
+            ::buffa::encoding::Tag::new(
+                    7u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        if let Some(ref v) = self.for_securable_type {
+            ::buffa::encoding::Tag::new(
+                    8u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        if let Some(ref v) = self.when_condition {
+            ::buffa::encoding::Tag::new(
+                    9u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        for v in &self.match_columns {
+            ::buffa::encoding::Tag::new(
+                    10u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
             ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
-            self.policy_info.write_to(__cache, buf);
+            v.write_to(__cache, buf);
+        }
+        if self.row_filter.is_set() {
+            ::buffa::encoding::Tag::new(
+                    11u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.row_filter.write_to(__cache, buf);
+        }
+        if self.column_mask.is_set() {
+            ::buffa::encoding::Tag::new(
+                    12u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.column_mask.write_to(__cache, buf);
+        }
+        if self.deny.is_set() {
+            ::buffa::encoding::Tag::new(
+                    13u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.deny.write_to(__cache, buf);
+        }
+        if self.grant.is_set() {
+            ::buffa::encoding::Tag::new(
+                    14u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.grant.write_to(__cache, buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
     }
@@ -2573,7 +3284,7 @@ impl ::buffa::Message for CreatePolicyRequest {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                ::buffa::types::merge_string(&mut self.on_securable_type, buf)?;
+                ::buffa::types::merge_string(&mut self.name, buf)?;
             }
             2u32 => {
                 if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
@@ -2583,7 +3294,7 @@ impl ::buffa::Message for CreatePolicyRequest {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                ::buffa::types::merge_string(&mut self.on_securable_fullname, buf)?;
+                ::buffa::types::merge_string(&mut self.on_securable_type, buf)?;
             }
             3u32 => {
                 if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
@@ -2593,8 +3304,147 @@ impl ::buffa::Message for CreatePolicyRequest {
                         actual: tag.wire_type() as u8,
                     });
                 }
+                ::buffa::types::merge_string(&mut self.on_securable_fullname, buf)?;
+            }
+            4u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 4u32,
+                        expected: 0u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.policy_type = ::buffa::EnumValue::from(
+                    ::buffa::types::decode_int32(buf)?,
+                );
+            }
+            5u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 5u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self.comment.get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
+            6u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 6u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.to_principals.push(::buffa::types::decode_string(buf)?);
+            }
+            7u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 7u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.except_principals.push(::buffa::types::decode_string(buf)?);
+            }
+            8u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 8u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self
+                        .for_securable_type
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
+            9u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 9u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self
+                        .when_condition
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
+            10u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 10u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                let mut elem = ::core::default::Default::default();
+                ::buffa::Message::merge_length_delimited(&mut elem, buf, depth)?;
+                self.match_columns.push(elem);
+            }
+            11u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 11u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
                 ::buffa::Message::merge_length_delimited(
-                    self.policy_info.get_or_insert_default(),
+                    self.row_filter.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
+            }
+            12u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 12u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::Message::merge_length_delimited(
+                    self.column_mask.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
+            }
+            13u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 13u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::Message::merge_length_delimited(
+                    self.deny.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
+            }
+            14u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 14u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::Message::merge_length_delimited(
+                    self.grant.get_or_insert_default(),
                     buf,
                     depth,
                 )?;
@@ -2607,9 +3457,20 @@ impl ::buffa::Message for CreatePolicyRequest {
         ::core::result::Result::Ok(())
     }
     fn clear(&mut self) {
+        self.name.clear();
         self.on_securable_type.clear();
         self.on_securable_fullname.clear();
-        self.policy_info = ::buffa::MessageField::none();
+        self.policy_type = ::buffa::EnumValue::from(0);
+        self.comment = ::core::option::Option::None;
+        self.to_principals.clear();
+        self.except_principals.clear();
+        self.for_securable_type = ::core::option::Option::None;
+        self.when_condition = ::core::option::Option::None;
+        self.match_columns.clear();
+        self.row_filter = ::buffa::MessageField::none();
+        self.column_mask = ::buffa::MessageField::none();
+        self.deny = ::buffa::MessageField::none();
+        self.grant = ::buffa::MessageField::none();
         self.__buffa_unknown_fields.clear();
     }
 }
@@ -2649,7 +3510,7 @@ pub const __CREATE_POLICY_REQUEST_JSON_ANY: ::buffa::type_registry::JsonAnyEntry
 pub struct GetPolicyRequest {
     /// The type of the securable the policy is defined on.
     ///
-    /// Supported values: catalogs, schemas, tables.
+    /// Supported values: CATALOG, SCHEMA, TABLE.
     ///
     /// Field 1: `on_securable_type`
     #[serde(
@@ -2856,13 +3717,15 @@ pub const __GET_POLICY_REQUEST_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = 
     is_wkt: false,
 };
 /// Update a policy defined on a securable.
+///
+/// The policy is identified by the path; the body carries the fields to update.
 #[derive(Clone, PartialEq, Default)]
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[serde(default)]
 pub struct UpdatePolicyRequest {
-    /// The type of the securable the policy is defined on.
+    /// The type of securable the policy is defined on.
     ///
-    /// Supported values: catalogs, schemas, tables.
+    /// Supported values: CATALOG, SCHEMA, TABLE.
     ///
     /// Field 1: `on_securable_type`
     #[serde(
@@ -2891,18 +3754,109 @@ pub struct UpdatePolicyRequest {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
     pub name: ::buffa::alloc::string::String,
-    /// The policy with the updated fields.
+    /// The kind of enforcement this policy applies.
     ///
-    /// Field 4: `policy_info`
+    /// Field 4: `policy_type`
     #[serde(
-        rename = "policy_info",
-        alias = "policyInfo",
+        rename = "policy_type",
+        alias = "policyType",
+        with = "::buffa::json_helpers::opt_enum",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub policy_type: ::core::option::Option<::buffa::EnumValue<PolicyType>>,
+    /// User-provided free-form text description of the policy.
+    ///
+    /// Field 5: `comment`
+    #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
+    pub comment: ::core::option::Option<::buffa::alloc::string::String>,
+    /// The principals the policy applies to. Empty means "all principals".
+    ///
+    /// Field 6: `to_principals`
+    #[serde(
+        rename = "to_principals",
+        alias = "toPrincipals",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
+        deserialize_with = "::buffa::json_helpers::null_as_default"
+    )]
+    pub to_principals: ::buffa::alloc::vec::Vec<::buffa::alloc::string::String>,
+    /// The principals explicitly excluded from the policy, even if matched by to_principals.
+    ///
+    /// Field 7: `except_principals`
+    #[serde(
+        rename = "except_principals",
+        alias = "exceptPrincipals",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
+        deserialize_with = "::buffa::json_helpers::null_as_default"
+    )]
+    pub except_principals: ::buffa::alloc::vec::Vec<::buffa::alloc::string::String>,
+    /// The type of securables the policy takes effect on.
+    ///
+    /// Field 8: `for_securable_type`
+    #[serde(
+        rename = "for_securable_type",
+        alias = "forSecurableType",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub for_securable_type: ::core::option::Option<::buffa::alloc::string::String>,
+    /// An opaque condition expression evaluated by the query engine at enforcement time.
+    ///
+    /// Field 9: `when_condition`
+    #[serde(
+        rename = "when_condition",
+        alias = "whenCondition",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub when_condition: ::core::option::Option<::buffa::alloc::string::String>,
+    /// The columns referenced by the policy function, and the aliases they are bound to.
+    ///
+    /// Field 10: `match_columns`
+    #[serde(
+        rename = "match_columns",
+        alias = "matchColumns",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
+        deserialize_with = "::buffa::json_helpers::null_as_default"
+    )]
+    pub match_columns: ::buffa::alloc::vec::Vec<MatchColumn>,
+    /// The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+    ///
+    /// Field 11: `row_filter`
+    #[serde(
+        rename = "row_filter",
+        alias = "rowFilter",
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
-    pub policy_info: ::buffa::MessageField<PolicyInfo>,
-    /// The list of fields to update, as a comma-separated string.
+    pub row_filter: ::buffa::MessageField<FunctionRef>,
+    /// The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
     ///
-    /// Field 5: `update_mask`
+    /// Field 12: `column_mask`
+    #[serde(
+        rename = "column_mask",
+        alias = "columnMask",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
+    )]
+    pub column_mask: ::buffa::MessageField<FunctionRef>,
+    /// The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+    ///
+    /// Field 13: `deny`
+    #[serde(
+        rename = "deny",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
+    )]
+    pub deny: ::buffa::MessageField<PrivilegeOptions>,
+    /// The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+    ///
+    /// Field 14: `grant`
+    #[serde(
+        rename = "grant",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
+    )]
+    pub grant: ::buffa::MessageField<PrivilegeOptions>,
+    /// The fields to update, as a comma-separated list of field names.
+    ///
+    /// If empty or "*", every field set in the request is updated. Otherwise only the
+    /// listed fields are updated, and a listed field that is unset in the request is cleared.
+    ///
+    /// Field 15: `update_mask`
     #[serde(
         rename = "update_mask",
         alias = "updateMask",
@@ -2919,7 +3873,17 @@ impl ::core::fmt::Debug for UpdatePolicyRequest {
             .field("on_securable_type", &self.on_securable_type)
             .field("on_securable_fullname", &self.on_securable_fullname)
             .field("name", &self.name)
-            .field("policy_info", &self.policy_info)
+            .field("policy_type", &self.policy_type)
+            .field("comment", &self.comment)
+            .field("to_principals", &self.to_principals)
+            .field("except_principals", &self.except_principals)
+            .field("for_securable_type", &self.for_securable_type)
+            .field("when_condition", &self.when_condition)
+            .field("match_columns", &self.match_columns)
+            .field("row_filter", &self.row_filter)
+            .field("column_mask", &self.column_mask)
+            .field("deny", &self.deny)
+            .field("grant", &self.grant)
             .field("update_mask", &self.update_mask)
             .finish()
     }
@@ -2932,6 +3896,46 @@ impl UpdatePolicyRequest {
     pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.policies.v1.UpdatePolicyRequest";
 }
 impl UpdatePolicyRequest {
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::policy_type`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_policy_type(
+        mut self,
+        value: impl Into<::buffa::EnumValue<PolicyType>>,
+    ) -> Self {
+        self.policy_type = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::comment`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_comment(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.comment = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::for_securable_type`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_for_securable_type(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.for_securable_type = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::when_condition`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_when_condition(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.when_condition = Some(value.into());
+        self
+    }
     #[must_use = "with_* setters return `self` by value; assign or chain the result"]
     #[inline]
     ///Sets [`Self::update_mask`] to `Some(value)`, consuming and returning `self`.
@@ -2980,9 +3984,59 @@ impl ::buffa::Message for UpdatePolicyRequest {
         if !self.name.is_empty() {
             size += 1u32 + ::buffa::types::string_encoded_len(&self.name) as u32;
         }
-        if self.policy_info.is_set() {
+        if let Some(ref v) = self.policy_type {
+            size += 1u32 + ::buffa::types::int32_encoded_len(v.to_i32()) as u32;
+        }
+        if let Some(ref v) = self.comment {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        for v in &self.to_principals {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        for v in &self.except_principals {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        if let Some(ref v) = self.for_securable_type {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        if let Some(ref v) = self.when_condition {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        for v in &self.match_columns {
             let __slot = __cache.reserve();
-            let inner_size = self.policy_info.compute_size(__cache);
+            let inner_size = v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
+        }
+        if self.row_filter.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.row_filter.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
+        }
+        if self.column_mask.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.column_mask.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
+        }
+        if self.deny.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.deny.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
+        }
+        if self.grant.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.grant.compute_size(__cache);
             __cache.set(__slot, inner_size);
             size
                 += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
@@ -3025,18 +4079,99 @@ impl ::buffa::Message for UpdatePolicyRequest {
                 .encode(buf);
             ::buffa::types::encode_string(&self.name, buf);
         }
-        if self.policy_info.is_set() {
+        if let Some(ref v) = self.policy_type {
+            ::buffa::encoding::Tag::new(4u32, ::buffa::encoding::WireType::Varint)
+                .encode(buf);
+            ::buffa::types::encode_int32(v.to_i32(), buf);
+        }
+        if let Some(ref v) = self.comment {
             ::buffa::encoding::Tag::new(
-                    4u32,
+                    5u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        for v in &self.to_principals {
+            ::buffa::encoding::Tag::new(
+                    6u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        for v in &self.except_principals {
+            ::buffa::encoding::Tag::new(
+                    7u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        if let Some(ref v) = self.for_securable_type {
+            ::buffa::encoding::Tag::new(
+                    8u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        if let Some(ref v) = self.when_condition {
+            ::buffa::encoding::Tag::new(
+                    9u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        for v in &self.match_columns {
+            ::buffa::encoding::Tag::new(
+                    10u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
             ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
-            self.policy_info.write_to(__cache, buf);
+            v.write_to(__cache, buf);
+        }
+        if self.row_filter.is_set() {
+            ::buffa::encoding::Tag::new(
+                    11u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.row_filter.write_to(__cache, buf);
+        }
+        if self.column_mask.is_set() {
+            ::buffa::encoding::Tag::new(
+                    12u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.column_mask.write_to(__cache, buf);
+        }
+        if self.deny.is_set() {
+            ::buffa::encoding::Tag::new(
+                    13u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.deny.write_to(__cache, buf);
+        }
+        if self.grant.is_set() {
+            ::buffa::encoding::Tag::new(
+                    14u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.grant.write_to(__cache, buf);
         }
         if let Some(ref v) = self.update_mask {
             ::buffa::encoding::Tag::new(
-                    5u32,
+                    15u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
@@ -3086,23 +4221,152 @@ impl ::buffa::Message for UpdatePolicyRequest {
                 ::buffa::types::merge_string(&mut self.name, buf)?;
             }
             4u32 => {
-                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                if tag.wire_type() != ::buffa::encoding::WireType::Varint {
                     return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
                         field_number: 4u32,
-                        expected: 2u8,
+                        expected: 0u8,
                         actual: tag.wire_type() as u8,
                     });
                 }
-                ::buffa::Message::merge_length_delimited(
-                    self.policy_info.get_or_insert_default(),
-                    buf,
-                    depth,
-                )?;
+                self.policy_type = ::core::option::Option::Some(
+                    ::buffa::EnumValue::from(::buffa::types::decode_int32(buf)?),
+                );
             }
             5u32 => {
                 if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
                     return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
                         field_number: 5u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self.comment.get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
+            6u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 6u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.to_principals.push(::buffa::types::decode_string(buf)?);
+            }
+            7u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 7u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.except_principals.push(::buffa::types::decode_string(buf)?);
+            }
+            8u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 8u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self
+                        .for_securable_type
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
+            9u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 9u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self
+                        .when_condition
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
+            10u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 10u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                let mut elem = ::core::default::Default::default();
+                ::buffa::Message::merge_length_delimited(&mut elem, buf, depth)?;
+                self.match_columns.push(elem);
+            }
+            11u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 11u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::Message::merge_length_delimited(
+                    self.row_filter.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
+            }
+            12u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 12u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::Message::merge_length_delimited(
+                    self.column_mask.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
+            }
+            13u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 13u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::Message::merge_length_delimited(
+                    self.deny.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
+            }
+            14u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 14u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::Message::merge_length_delimited(
+                    self.grant.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
+            }
+            15u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 15u32,
                         expected: 2u8,
                         actual: tag.wire_type() as u8,
                     });
@@ -3125,7 +4389,17 @@ impl ::buffa::Message for UpdatePolicyRequest {
         self.on_securable_type.clear();
         self.on_securable_fullname.clear();
         self.name.clear();
-        self.policy_info = ::buffa::MessageField::none();
+        self.policy_type = ::core::option::Option::None;
+        self.comment = ::core::option::Option::None;
+        self.to_principals.clear();
+        self.except_principals.clear();
+        self.for_securable_type = ::core::option::Option::None;
+        self.when_condition = ::core::option::Option::None;
+        self.match_columns.clear();
+        self.row_filter = ::buffa::MessageField::none();
+        self.column_mask = ::buffa::MessageField::none();
+        self.deny = ::buffa::MessageField::none();
+        self.grant = ::buffa::MessageField::none();
         self.update_mask = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
@@ -3166,7 +4440,7 @@ pub const __UPDATE_POLICY_REQUEST_JSON_ANY: ::buffa::type_registry::JsonAnyEntry
 pub struct DeletePolicyRequest {
     /// The type of the securable the policy is defined on.
     ///
-    /// Supported values: catalogs, schemas, tables.
+    /// Supported values: CATALOG, SCHEMA, TABLE.
     ///
     /// Field 1: `on_securable_type`
     #[serde(
@@ -3397,7 +4671,7 @@ pub mod __buffa {
             /// column-mask function.
             ///
             /// Field 1: `alias`
-            pub alias: &'a str,
+            pub alias: ::core::option::Option<&'a str>,
             /// The condition on the column, e.g. its name, that must match for this binding to apply.
             ///
             /// Field 2: `condition`
@@ -3452,7 +4726,7 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            view.alias = ::buffa::types::borrow_str(&mut cur)?;
+                            view.alias = Some(::buffa::types::borrow_str(&mut cur)?);
                         }
                         2u32 => {
                             if tag.wire_type()
@@ -3502,7 +4776,7 @@ pub mod __buffa {
                 use ::buffa::alloc::string::ToString as _;
                 let _ = __buffa_src;
                 super::super::MatchColumn {
-                    alias: self.alias.to_string(),
+                    alias: self.alias.map(|s| s.to_string()),
                     condition: self.condition.to_string(),
                     __buffa_unknown_fields: self
                         .__buffa_unknown_fields
@@ -3519,9 +4793,8 @@ pub mod __buffa {
                 #[allow(unused_imports)]
                 use ::buffa::Enumeration as _;
                 let mut size = 0u32;
-                if !self.alias.is_empty() {
-                    size
-                        += 1u32 + ::buffa::types::string_encoded_len(&self.alias) as u32;
+                if let Some(ref v) = self.alias {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
                 if !self.condition.is_empty() {
                     size
@@ -3539,13 +4812,13 @@ pub mod __buffa {
             ) {
                 #[allow(unused_imports)]
                 use ::buffa::Enumeration as _;
-                if !self.alias.is_empty() {
+                if let Some(ref v) = self.alias {
                     ::buffa::encoding::Tag::new(
                             1u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
-                    ::buffa::types::encode_string(&self.alias, buf);
+                    ::buffa::types::encode_string(v, buf);
                 }
                 if !self.condition.is_empty() {
                     ::buffa::encoding::Tag::new(
@@ -3576,8 +4849,8 @@ pub mod __buffa {
             ) -> ::core::result::Result<__S::Ok, __S::Error> {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
-                if !::buffa::json_helpers::skip_if::is_empty_str(self.alias) {
-                    __map.serialize_entry("alias", self.alias)?;
+                if let ::core::option::Option::Some(__v) = self.alias {
+                    __map.serialize_entry("alias", __v)?;
                 }
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.condition) {
                     __map.serialize_entry("condition", self.condition)?;
@@ -3688,7 +4961,7 @@ pub mod __buffa {
             ///
             /// Field 1: `alias`
             #[must_use]
-            pub fn alias(&self) -> &'_ str {
+            pub fn alias(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().alias
             }
             /// The condition on the column, e.g. its name, that must match for this binding to apply.
@@ -4117,6 +5390,13 @@ pub mod __buffa {
                 'a,
                 super::super::__buffa::view::FunctionArgView<'a>,
             >,
+            /// The alias of the column to be masked; it must refer to one of the policy's match_columns.
+            ///
+            /// Required for column masks: the column value is passed to the mask function as its
+            /// first argument. Not used for row filters.
+            ///
+            /// Field 3: `on_column`
+            pub on_column: ::core::option::Option<&'a str>,
             pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
         }
         impl<'a> FunctionRefView<'a> {
@@ -4168,6 +5448,18 @@ pub mod __buffa {
                                 });
                             }
                             view.function_name = ::buffa::types::borrow_str(&mut cur)?;
+                        }
+                        3u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 3u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.on_column = Some(::buffa::types::borrow_str(&mut cur)?);
                         }
                         2u32 => {
                             if tag.wire_type()
@@ -4233,6 +5525,7 @@ pub mod __buffa {
                         .iter()
                         .map(|v| v.to_owned_from_source(__buffa_src))
                         .collect(),
+                    on_column: self.on_column.map(|s| s.to_string()),
                     __buffa_unknown_fields: self
                         .__buffa_unknown_fields
                         .to_owned()
@@ -4262,6 +5555,9 @@ pub mod __buffa {
                         += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
                             + inner_size;
                 }
+                if let Some(ref v) = self.on_column {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
                 size += self.__buffa_unknown_fields.encoded_len() as u32;
                 size
             }
@@ -4290,6 +5586,14 @@ pub mod __buffa {
                     ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
                     v.write_to(__cache, buf);
                 }
+                if let Some(ref v) = self.on_column {
+                    ::buffa::encoding::Tag::new(
+                            3u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
                 self.__buffa_unknown_fields.write_to(buf);
             }
         }
@@ -4316,6 +5620,9 @@ pub mod __buffa {
                 }
                 if !self.using.is_empty() {
                     __map.serialize_entry("using", &*self.using)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.on_column {
+                    __map.serialize_entry("on_column", __v)?;
                 }
                 __map.end()
             }
@@ -4437,6 +5744,16 @@ pub mod __buffa {
             > {
                 &self.0.reborrow().using
             }
+            /// The alias of the column to be masked; it must refer to one of the policy's match_columns.
+            ///
+            /// Required for column masks: the column value is passed to the mask function as its
+            /// first argument. Not used for row filters.
+            ///
+            /// Field 3: `on_column`
+            #[must_use]
+            pub fn on_column(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().on_column
+            }
         }
         impl ::core::convert::From<::buffa::OwnedView<FunctionRefView<'static>>>
         for FunctionRefOwnedView {
@@ -4468,6 +5785,306 @@ pub mod __buffa {
                 ::serde::Serialize::serialize(&self.0, __s)
             }
         }
+        /// The privileges a deny or grant policy applies to.
+        #[derive(Clone, Debug, Default)]
+        pub struct PrivilegeOptionsView<'a> {
+            /// The privileges to deny or grant when the principal and condition match.
+            ///
+            /// Field 1: `privileges`
+            pub privileges: ::buffa::RepeatedView<'a, &'a str>,
+            pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
+        }
+        impl<'a> PrivilegeOptionsView<'a> {
+            /// Decode from `buf`, enforcing a recursion depth limit for nested messages.
+            ///
+            /// Called by [`::buffa::MessageView::decode_view`] with [`::buffa::RECURSION_LIMIT`]
+            /// and by generated sub-message decode arms with `depth - 1`.
+            ///
+            /// **Not part of the public API.** Named with a leading underscore to
+            /// signal that it is for generated-code use only.
+            #[doc(hidden)]
+            pub fn _decode_depth(
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                let mut view = Self::default();
+                view._merge_into_view(buf, depth)?;
+                ::core::result::Result::Ok(view)
+            }
+            /// Merge fields from `buf` into this view (proto merge semantics).
+            ///
+            /// Repeated fields append; singular fields last-wins; singular
+            /// MESSAGE fields merge recursively. Used by sub-message decode
+            /// arms when the same field appears multiple times on the wire.
+            ///
+            /// **Not part of the public API.**
+            #[doc(hidden)]
+            pub fn _merge_into_view(
+                &mut self,
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<(), ::buffa::DecodeError> {
+                let _ = depth;
+                #[allow(unused_variables)]
+                let view = self;
+                let mut cur: &'a [u8] = buf;
+                while !cur.is_empty() {
+                    let before_tag = cur;
+                    let tag = ::buffa::encoding::Tag::decode(&mut cur)?;
+                    match tag.field_number() {
+                        1u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 1u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.privileges.push(::buffa::types::borrow_str(&mut cur)?);
+                        }
+                        _ => {
+                            ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
+                            let span_len = before_tag.len() - cur.len();
+                            view.__buffa_unknown_fields
+                                .push_raw(&before_tag[..span_len]);
+                        }
+                    }
+                }
+                ::core::result::Result::Ok(())
+            }
+        }
+        impl<'a> ::buffa::MessageView<'a> for PrivilegeOptionsView<'a> {
+            type Owned = super::super::PrivilegeOptions;
+            fn decode_view(
+                buf: &'a [u8],
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                Self::_decode_depth(buf, ::buffa::RECURSION_LIMIT)
+            }
+            fn decode_view_with_limit(
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                Self::_decode_depth(buf, depth)
+            }
+            fn to_owned_message(&self) -> super::super::PrivilegeOptions {
+                self.to_owned_from_source(None)
+            }
+            #[allow(clippy::useless_conversion, clippy::needless_update)]
+            fn to_owned_from_source(
+                &self,
+                __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+            ) -> super::super::PrivilegeOptions {
+                #[allow(unused_imports)]
+                use ::buffa::alloc::string::ToString as _;
+                let _ = __buffa_src;
+                super::super::PrivilegeOptions {
+                    privileges: self.privileges.iter().map(|s| s.to_string()).collect(),
+                    __buffa_unknown_fields: self
+                        .__buffa_unknown_fields
+                        .to_owned()
+                        .unwrap_or_default()
+                        .into(),
+                    ..::core::default::Default::default()
+                }
+            }
+        }
+        impl<'a> ::buffa::ViewEncode<'a> for PrivilegeOptionsView<'a> {
+            #[allow(clippy::needless_borrow, clippy::let_and_return)]
+            fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+                #[allow(unused_imports)]
+                use ::buffa::Enumeration as _;
+                let mut size = 0u32;
+                for v in &self.privileges {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                size += self.__buffa_unknown_fields.encoded_len() as u32;
+                size
+            }
+            #[allow(clippy::needless_borrow)]
+            fn write_to(
+                &self,
+                _cache: &mut ::buffa::SizeCache,
+                buf: &mut impl ::buffa::bytes::BufMut,
+            ) {
+                #[allow(unused_imports)]
+                use ::buffa::Enumeration as _;
+                for v in &self.privileges {
+                    ::buffa::encoding::Tag::new(
+                            1u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                self.__buffa_unknown_fields.write_to(buf);
+            }
+        }
+        /// Serializes this view as protobuf JSON.
+        ///
+        /// Implicit-presence fields with default values are omitted, `required`
+        /// fields are always emitted, explicit-presence (`optional`) fields are
+        /// emitted only when set, bytes fields are base64-encoded, and enum
+        /// values are their proto name strings.
+        ///
+        /// This impl uses `serialize_map(None)` because the number of emitted
+        /// fields depends on default-omission rules; serializers that require
+        /// known map lengths (e.g. `bincode`) will return a runtime error.
+        /// Use the owned message type for those formats.
+        impl<'__a> ::serde::Serialize for PrivilegeOptionsView<'__a> {
+            fn serialize<__S: ::serde::Serializer>(
+                &self,
+                __s: __S,
+            ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                use ::serde::ser::SerializeMap as _;
+                let mut __map = __s.serialize_map(::core::option::Option::None)?;
+                if !self.privileges.is_empty() {
+                    __map.serialize_entry("privileges", &*self.privileges)?;
+                }
+                __map.end()
+            }
+        }
+        impl<'a> ::buffa::MessageName for PrivilegeOptionsView<'a> {
+            const PACKAGE: &'static str = "unitycatalog.policies.v1";
+            const NAME: &'static str = "PrivilegeOptions";
+            const FULL_NAME: &'static str = "unitycatalog.policies.v1.PrivilegeOptions";
+            const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.policies.v1.PrivilegeOptions";
+        }
+        impl<'v> ::buffa::DefaultViewInstance for PrivilegeOptionsView<'v> {
+            fn default_view_instance<'a>() -> &'a Self
+            where
+                Self: 'a,
+            {
+                static VALUE: ::buffa::__private::OnceBox<
+                    PrivilegeOptionsView<'static>,
+                > = ::buffa::__private::OnceBox::new();
+                VALUE
+                    .get_or_init(|| ::buffa::alloc::boxed::Box::new(
+                        <PrivilegeOptionsView<'static>>::default(),
+                    ))
+            }
+        }
+        impl ::buffa::ViewReborrow for PrivilegeOptionsView<'static> {
+            type Reborrowed<'b> = PrivilegeOptionsView<'b>;
+            fn reborrow<'b>(this: &'b Self) -> &'b Self::Reborrowed<'b> {
+                this
+            }
+        }
+        /** Self-contained, `'static` owned view of a `PrivilegeOptions` message.
+
+ Wraps [`::buffa::OwnedView`]`<`[`PrivilegeOptionsView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`PrivilegeOptionsView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+        #[derive(Clone, Debug)]
+        pub struct PrivilegeOptionsOwnedView(
+            ::buffa::OwnedView<PrivilegeOptionsView<'static>>,
+        );
+        impl PrivilegeOptionsOwnedView {
+            /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
+            ///
+            /// The view borrows directly from the buffer's data; the buffer is
+            /// retained inside the returned handle.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the buffer contains invalid
+            /// protobuf data.
+            pub fn decode(
+                bytes: ::buffa::bytes::Bytes,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    PrivilegeOptionsOwnedView(::buffa::OwnedView::decode(bytes)?),
+                )
+            }
+            /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
+            /// max message size).
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the buffer is invalid or
+            /// exceeds the configured limits.
+            pub fn decode_with_options(
+                bytes: ::buffa::bytes::Bytes,
+                opts: &::buffa::DecodeOptions,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    PrivilegeOptionsOwnedView(
+                        ::buffa::OwnedView::decode_with_options(bytes, opts)?,
+                    ),
+                )
+            }
+            /// Build from an owned message via an encode → decode round-trip.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the re-encoded bytes are
+            /// somehow invalid (should not happen for well-formed messages).
+            pub fn from_owned(
+                msg: &super::super::PrivilegeOptions,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    PrivilegeOptionsOwnedView(::buffa::OwnedView::from_owned(msg)?),
+                )
+            }
+            /// Borrow the full [`PrivilegeOptionsView`] with its lifetime tied to `&self`.
+            #[must_use]
+            pub fn view(&self) -> &PrivilegeOptionsView<'_> {
+                self.0.reborrow()
+            }
+            /// Convert to the owned message type.
+            #[must_use]
+            pub fn to_owned_message(&self) -> super::super::PrivilegeOptions {
+                self.0.to_owned_message()
+            }
+            /// The underlying bytes buffer.
+            #[must_use]
+            pub fn bytes(&self) -> &::buffa::bytes::Bytes {
+                self.0.bytes()
+            }
+            /// Consume the handle, returning the underlying bytes buffer.
+            #[must_use]
+            pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
+                self.0.into_bytes()
+            }
+            /// The privileges to deny or grant when the principal and condition match.
+            ///
+            /// Field 1: `privileges`
+            #[must_use]
+            pub fn privileges(&self) -> &::buffa::RepeatedView<'_, &'_ str> {
+                &self.0.reborrow().privileges
+            }
+        }
+        impl ::core::convert::From<::buffa::OwnedView<PrivilegeOptionsView<'static>>>
+        for PrivilegeOptionsOwnedView {
+            fn from(inner: ::buffa::OwnedView<PrivilegeOptionsView<'static>>) -> Self {
+                PrivilegeOptionsOwnedView(inner)
+            }
+        }
+        impl ::core::convert::From<PrivilegeOptionsOwnedView>
+        for ::buffa::OwnedView<PrivilegeOptionsView<'static>> {
+            fn from(wrapper: PrivilegeOptionsOwnedView) -> Self {
+                wrapper.0
+            }
+        }
+        impl ::core::convert::AsRef<::buffa::OwnedView<PrivilegeOptionsView<'static>>>
+        for PrivilegeOptionsOwnedView {
+            fn as_ref(&self) -> &::buffa::OwnedView<PrivilegeOptionsView<'static>> {
+                &self.0
+            }
+        }
+        impl ::buffa::HasMessageView for super::super::PrivilegeOptions {
+            type View<'a> = PrivilegeOptionsView<'a>;
+            type ViewHandle = PrivilegeOptionsOwnedView;
+        }
+        impl ::serde::Serialize for PrivilegeOptionsOwnedView {
+            fn serialize<__S: ::serde::Serializer>(
+                &self,
+                __s: __S,
+            ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                ::serde::Serialize::serialize(&self.0, __s)
+            }
+        }
         /// A row-filter or column-mask policy bound to principals and scoped to a securable.
         ///
         /// Policies are read as whole documents; enforcement is performed by the query engine,
@@ -4485,7 +6102,7 @@ pub mod __buffa {
             pub id: ::core::option::Option<&'a str>,
             /// The type of securable the policy is defined on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Supported values: CATALOG, SCHEMA, TABLE.
             ///
             /// Field 3: `on_securable_type`
             pub on_securable_type: &'a str,
@@ -4513,6 +6130,9 @@ pub mod __buffa {
             /// The columns referenced by the row-filter or column-mask function, and the aliases
             /// they are bound to.
             ///
+            /// Only valid when for_securable_type is TABLE; the policy then applies only to tables
+            /// whose columns satisfy all match conditions.
+            ///
             /// Field 9: `match_columns`
             pub match_columns: ::buffa::RepeatedView<
                 'a,
@@ -4538,8 +6158,13 @@ pub mod __buffa {
             ///
             /// Field 16: `updated_by`
             pub updated_by: ::core::option::Option<&'a str>,
-            pub function: ::core::option::Option<
-                super::super::__buffa::view::oneof::policy_info::Function<'a>,
+            /// The type of securables the policy takes effect on, e.g. TABLE for a policy defined
+            /// on a schema that applies to the tables within it.
+            ///
+            /// Field 17: `for_securable_type`
+            pub for_securable_type: ::core::option::Option<&'a str>,
+            pub options: ::core::option::Option<
+                super::super::__buffa::view::oneof::policy_info::Options<'a>,
             >,
             pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
         }
@@ -4723,6 +6348,20 @@ pub mod __buffa {
                                 ::buffa::types::borrow_str(&mut cur)?,
                             );
                         }
+                        17u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 17u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.for_securable_type = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
+                        }
                         6u32 => {
                             if tag.wire_type()
                                 != ::buffa::encoding::WireType::LengthDelimited
@@ -4786,15 +6425,15 @@ pub mod __buffa {
                             }
                             let sub = ::buffa::types::borrow_bytes(&mut cur)?;
                             if let Some(
-                                super::super::__buffa::view::oneof::policy_info::Function::RowFilter(
+                                super::super::__buffa::view::oneof::policy_info::Options::RowFilter(
                                     ref mut existing,
                                 ),
-                            ) = view.function
+                            ) = view.options
                             {
                                 existing._merge_into_view(sub, depth - 1)?;
                             } else {
-                                view.function = Some(
-                                    super::super::__buffa::view::oneof::policy_info::Function::RowFilter(
+                                view.options = Some(
+                                    super::super::__buffa::view::oneof::policy_info::Options::RowFilter(
                                         ::buffa::alloc::boxed::Box::new(
                                             super::super::__buffa::view::FunctionRefView::_decode_depth(
                                                 sub,
@@ -4820,17 +6459,85 @@ pub mod __buffa {
                             }
                             let sub = ::buffa::types::borrow_bytes(&mut cur)?;
                             if let Some(
-                                super::super::__buffa::view::oneof::policy_info::Function::ColumnMask(
+                                super::super::__buffa::view::oneof::policy_info::Options::ColumnMask(
                                     ref mut existing,
                                 ),
-                            ) = view.function
+                            ) = view.options
                             {
                                 existing._merge_into_view(sub, depth - 1)?;
                             } else {
-                                view.function = Some(
-                                    super::super::__buffa::view::oneof::policy_info::Function::ColumnMask(
+                                view.options = Some(
+                                    super::super::__buffa::view::oneof::policy_info::Options::ColumnMask(
                                         ::buffa::alloc::boxed::Box::new(
                                             super::super::__buffa::view::FunctionRefView::_decode_depth(
+                                                sub,
+                                                depth - 1,
+                                            )?,
+                                        ),
+                                    ),
+                                );
+                            }
+                        }
+                        18u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 18u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            if let Some(
+                                super::super::__buffa::view::oneof::policy_info::Options::Deny(
+                                    ref mut existing,
+                                ),
+                            ) = view.options
+                            {
+                                existing._merge_into_view(sub, depth - 1)?;
+                            } else {
+                                view.options = Some(
+                                    super::super::__buffa::view::oneof::policy_info::Options::Deny(
+                                        ::buffa::alloc::boxed::Box::new(
+                                            super::super::__buffa::view::PrivilegeOptionsView::_decode_depth(
+                                                sub,
+                                                depth - 1,
+                                            )?,
+                                        ),
+                                    ),
+                                );
+                            }
+                        }
+                        19u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 19u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            if let Some(
+                                super::super::__buffa::view::oneof::policy_info::Options::Grant(
+                                    ref mut existing,
+                                ),
+                            ) = view.options
+                            {
+                                existing._merge_into_view(sub, depth - 1)?;
+                            } else {
+                                view.options = Some(
+                                    super::super::__buffa::view::oneof::policy_info::Options::Grant(
+                                        ::buffa::alloc::boxed::Box::new(
+                                            super::super::__buffa::view::PrivilegeOptionsView::_decode_depth(
                                                 sub,
                                                 depth - 1,
                                             )?,
@@ -4901,23 +6608,42 @@ pub mod __buffa {
                     updated_at: self.updated_at,
                     created_by: self.created_by.map(|s| s.to_string()),
                     updated_by: self.updated_by.map(|s| s.to_string()),
-                    function: self
-                        .function
+                    for_securable_type: self.for_securable_type.map(|s| s.to_string()),
+                    options: self
+                        .options
                         .as_ref()
                         .map(|v| match v {
-                            super::super::__buffa::view::oneof::policy_info::Function::RowFilter(
+                            super::super::__buffa::view::oneof::policy_info::Options::RowFilter(
                                 v,
                             ) => {
-                                super::super::__buffa::oneof::policy_info::Function::RowFilter(
+                                super::super::__buffa::oneof::policy_info::Options::RowFilter(
                                     ::buffa::alloc::boxed::Box::new(
                                         v.to_owned_from_source(__buffa_src),
                                     ),
                                 )
                             }
-                            super::super::__buffa::view::oneof::policy_info::Function::ColumnMask(
+                            super::super::__buffa::view::oneof::policy_info::Options::ColumnMask(
                                 v,
                             ) => {
-                                super::super::__buffa::oneof::policy_info::Function::ColumnMask(
+                                super::super::__buffa::oneof::policy_info::Options::ColumnMask(
+                                    ::buffa::alloc::boxed::Box::new(
+                                        v.to_owned_from_source(__buffa_src),
+                                    ),
+                                )
+                            }
+                            super::super::__buffa::view::oneof::policy_info::Options::Deny(
+                                v,
+                            ) => {
+                                super::super::__buffa::oneof::policy_info::Options::Deny(
+                                    ::buffa::alloc::boxed::Box::new(
+                                        v.to_owned_from_source(__buffa_src),
+                                    ),
+                                )
+                            }
+                            super::super::__buffa::view::oneof::policy_info::Options::Grant(
+                                v,
+                            ) => {
+                                super::super::__buffa::oneof::policy_info::Options::Grant(
                                     ::buffa::alloc::boxed::Box::new(
                                         v.to_owned_from_source(__buffa_src),
                                     ),
@@ -4981,9 +6707,9 @@ pub mod __buffa {
                         += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
                             + inner_size;
                 }
-                if let ::core::option::Option::Some(ref v) = self.function {
+                if let ::core::option::Option::Some(ref v) = self.options {
                     match v {
-                        super::super::__buffa::view::oneof::policy_info::Function::RowFilter(
+                        super::super::__buffa::view::oneof::policy_info::Options::RowFilter(
                             x,
                         ) => {
                             let __slot = __cache.reserve();
@@ -4993,7 +6719,7 @@ pub mod __buffa {
                                 += 1u32 + ::buffa::encoding::varint_len(inner as u64) as u32
                                     + inner;
                         }
-                        super::super::__buffa::view::oneof::policy_info::Function::ColumnMask(
+                        super::super::__buffa::view::oneof::policy_info::Options::ColumnMask(
                             x,
                         ) => {
                             let __slot = __cache.reserve();
@@ -5001,6 +6727,26 @@ pub mod __buffa {
                             __cache.set(__slot, inner);
                             size
                                 += 1u32 + ::buffa::encoding::varint_len(inner as u64) as u32
+                                    + inner;
+                        }
+                        super::super::__buffa::view::oneof::policy_info::Options::Deny(
+                            x,
+                        ) => {
+                            let __slot = __cache.reserve();
+                            let inner = x.compute_size(__cache);
+                            __cache.set(__slot, inner);
+                            size
+                                += 2u32 + ::buffa::encoding::varint_len(inner as u64) as u32
+                                    + inner;
+                        }
+                        super::super::__buffa::view::oneof::policy_info::Options::Grant(
+                            x,
+                        ) => {
+                            let __slot = __cache.reserve();
+                            let inner = x.compute_size(__cache);
+                            __cache.set(__slot, inner);
+                            size
+                                += 2u32 + ::buffa::encoding::varint_len(inner as u64) as u32
                                     + inner;
                         }
                     }
@@ -5018,6 +6764,9 @@ pub mod __buffa {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
                 if let Some(ref v) = self.updated_by {
+                    size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if let Some(ref v) = self.for_securable_type {
                     size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
                 size += self.__buffa_unknown_fields.encoded_len() as u32;
@@ -5107,9 +6856,9 @@ pub mod __buffa {
                     ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
                     v.write_to(__cache, buf);
                 }
-                if let ::core::option::Option::Some(ref v) = self.function {
+                if let ::core::option::Option::Some(ref v) = self.options {
                     match v {
-                        super::super::__buffa::view::oneof::policy_info::Function::RowFilter(
+                        super::super::__buffa::view::oneof::policy_info::Options::RowFilter(
                             x,
                         ) => {
                             ::buffa::encoding::Tag::new(
@@ -5123,11 +6872,39 @@ pub mod __buffa {
                             );
                             x.write_to(__cache, buf);
                         }
-                        super::super::__buffa::view::oneof::policy_info::Function::ColumnMask(
+                        super::super::__buffa::view::oneof::policy_info::Options::ColumnMask(
                             x,
                         ) => {
                             ::buffa::encoding::Tag::new(
                                     11u32,
+                                    ::buffa::encoding::WireType::LengthDelimited,
+                                )
+                                .encode(buf);
+                            ::buffa::encoding::encode_varint(
+                                __cache.consume_next() as u64,
+                                buf,
+                            );
+                            x.write_to(__cache, buf);
+                        }
+                        super::super::__buffa::view::oneof::policy_info::Options::Deny(
+                            x,
+                        ) => {
+                            ::buffa::encoding::Tag::new(
+                                    18u32,
+                                    ::buffa::encoding::WireType::LengthDelimited,
+                                )
+                                .encode(buf);
+                            ::buffa::encoding::encode_varint(
+                                __cache.consume_next() as u64,
+                                buf,
+                            );
+                            x.write_to(__cache, buf);
+                        }
+                        super::super::__buffa::view::oneof::policy_info::Options::Grant(
+                            x,
+                        ) => {
+                            ::buffa::encoding::Tag::new(
+                                    19u32,
                                     ::buffa::encoding::WireType::LengthDelimited,
                                 )
                                 .encode(buf);
@@ -5174,6 +6951,14 @@ pub mod __buffa {
                 if let Some(ref v) = self.updated_by {
                     ::buffa::encoding::Tag::new(
                             16u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                if let Some(ref v) = self.for_securable_type {
+                    ::buffa::encoding::Tag::new(
+                            17u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
@@ -5270,17 +7055,30 @@ pub mod __buffa {
                 if let ::core::option::Option::Some(__v) = self.updated_by {
                     __map.serialize_entry("updated_by", __v)?;
                 }
-                if let ::core::option::Option::Some(ref __ov) = self.function {
+                if let ::core::option::Option::Some(__v) = self.for_securable_type {
+                    __map.serialize_entry("for_securable_type", __v)?;
+                }
+                if let ::core::option::Option::Some(ref __ov) = self.options {
                     match __ov {
-                        super::super::__buffa::view::oneof::policy_info::Function::RowFilter(
+                        super::super::__buffa::view::oneof::policy_info::Options::RowFilter(
                             v,
                         ) => {
                             __map.serialize_entry("row_filter", v)?;
                         }
-                        super::super::__buffa::view::oneof::policy_info::Function::ColumnMask(
+                        super::super::__buffa::view::oneof::policy_info::Options::ColumnMask(
                             v,
                         ) => {
                             __map.serialize_entry("column_mask", v)?;
+                        }
+                        super::super::__buffa::view::oneof::policy_info::Options::Deny(
+                            v,
+                        ) => {
+                            __map.serialize_entry("deny", v)?;
+                        }
+                        super::super::__buffa::view::oneof::policy_info::Options::Grant(
+                            v,
+                        ) => {
+                            __map.serialize_entry("grant", v)?;
                         }
                     }
                 }
@@ -5401,7 +7199,7 @@ pub mod __buffa {
             }
             /// The type of securable the policy is defined on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Supported values: CATALOG, SCHEMA, TABLE.
             ///
             /// Field 3: `on_securable_type`
             #[must_use]
@@ -5446,6 +7244,9 @@ pub mod __buffa {
             }
             /// The columns referenced by the row-filter or column-mask function, and the aliases
             /// they are bound to.
+            ///
+            /// Only valid when for_securable_type is TABLE; the policy then applies only to tables
+            /// whose columns satisfy all match conditions.
             ///
             /// Field 9: `match_columns`
             #[must_use]
@@ -5492,14 +7293,22 @@ pub mod __buffa {
             pub fn updated_by(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().updated_by
             }
-            /// Oneof `function`.
+            /// The type of securables the policy takes effect on, e.g. TABLE for a policy defined
+            /// on a schema that applies to the tables within it.
+            ///
+            /// Field 17: `for_securable_type`
             #[must_use]
-            pub fn function(
+            pub fn for_securable_type(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().for_securable_type
+            }
+            /// Oneof `options`.
+            #[must_use]
+            pub fn options(
                 &self,
             ) -> ::core::option::Option<
-                &super::super::__buffa::view::oneof::policy_info::Function<'_>,
+                &super::super::__buffa::view::oneof::policy_info::Options<'_>,
             > {
-                self.0.reborrow().function.as_ref()
+                self.0.reborrow().options.as_ref()
             }
         }
         impl ::core::convert::From<::buffa::OwnedView<PolicyInfoView<'static>>>
@@ -5537,7 +7346,7 @@ pub mod __buffa {
         pub struct ListPoliciesRequestView<'a> {
             /// The type of the securable to list policies on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Supported values: CATALOG, SCHEMA, TABLE.
             ///
             /// Field 1: `on_securable_type`
             pub on_securable_type: &'a str,
@@ -5957,7 +7766,7 @@ pub mod __buffa {
             }
             /// The type of the securable to list policies on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Supported values: CATALOG, SCHEMA, TABLE.
             ///
             /// Field 1: `on_securable_type`
             #[must_use]
@@ -6402,23 +8211,79 @@ pub mod __buffa {
             }
         }
         /// Create a new policy on a securable.
+        ///
+        /// The body is the policy itself; the new policy applies to the securable and all its
+        /// descendants.
         #[derive(Clone, Debug, Default)]
         pub struct CreatePolicyRequestView<'a> {
-            /// The type of the securable to create the policy on.
+            /// The name of the policy. Unique within the securable it is defined on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Field 1: `name`
+            pub name: &'a str,
+            /// The type of securable the policy is defined on.
             ///
-            /// Field 1: `on_securable_type`
+            /// Supported values: CATALOG, SCHEMA, TABLE.
+            ///
+            /// Field 2: `on_securable_type`
             pub on_securable_type: &'a str,
-            /// The fully qualified name of the securable to create the policy on.
+            /// The fully qualified name of the securable the policy is defined on.
             ///
-            /// Field 2: `on_securable_fullname`
+            /// Field 3: `on_securable_fullname`
             pub on_securable_fullname: &'a str,
-            /// The policy to create.
+            /// The kind of enforcement this policy applies.
             ///
-            /// Field 3: `policy_info`
-            pub policy_info: ::buffa::MessageFieldView<
-                super::super::__buffa::view::PolicyInfoView<'a>,
+            /// Field 4: `policy_type`
+            pub policy_type: ::buffa::EnumValue<super::super::PolicyType>,
+            /// User-provided free-form text description of the policy.
+            ///
+            /// Field 5: `comment`
+            pub comment: ::core::option::Option<&'a str>,
+            /// The principals the policy applies to. Empty means "all principals".
+            ///
+            /// Field 6: `to_principals`
+            pub to_principals: ::buffa::RepeatedView<'a, &'a str>,
+            /// The principals explicitly excluded from the policy, even if matched by to_principals.
+            ///
+            /// Field 7: `except_principals`
+            pub except_principals: ::buffa::RepeatedView<'a, &'a str>,
+            /// The type of securables the policy takes effect on.
+            ///
+            /// Field 8: `for_securable_type`
+            pub for_securable_type: ::core::option::Option<&'a str>,
+            /// An opaque condition expression evaluated by the query engine at enforcement time.
+            ///
+            /// Field 9: `when_condition`
+            pub when_condition: ::core::option::Option<&'a str>,
+            /// The columns referenced by the policy function, and the aliases they are bound to.
+            ///
+            /// Field 10: `match_columns`
+            pub match_columns: ::buffa::RepeatedView<
+                'a,
+                super::super::__buffa::view::MatchColumnView<'a>,
+            >,
+            /// The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+            ///
+            /// Field 11: `row_filter`
+            pub row_filter: ::buffa::MessageFieldView<
+                super::super::__buffa::view::FunctionRefView<'a>,
+            >,
+            /// The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+            ///
+            /// Field 12: `column_mask`
+            pub column_mask: ::buffa::MessageFieldView<
+                super::super::__buffa::view::FunctionRefView<'a>,
+            >,
+            /// The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+            ///
+            /// Field 13: `deny`
+            pub deny: ::buffa::MessageFieldView<
+                super::super::__buffa::view::PrivilegeOptionsView<'a>,
+            >,
+            /// The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+            ///
+            /// Field 14: `grant`
+            pub grant: ::buffa::MessageFieldView<
+                super::super::__buffa::view::PrivilegeOptionsView<'a>,
             >,
             pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
         }
@@ -6470,9 +8335,7 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            view.on_securable_type = ::buffa::types::borrow_str(
-                                &mut cur,
-                            )?;
+                            view.name = ::buffa::types::borrow_str(&mut cur)?;
                         }
                         2u32 => {
                             if tag.wire_type()
@@ -6484,7 +8347,7 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            view.on_securable_fullname = ::buffa::types::borrow_str(
+                            view.on_securable_type = ::buffa::types::borrow_str(
                                 &mut cur,
                             )?;
                         }
@@ -6498,21 +8361,213 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
+                            view.on_securable_fullname = ::buffa::types::borrow_str(
+                                &mut cur,
+                            )?;
+                        }
+                        4u32 => {
+                            if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 4u32,
+                                    expected: 0u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.policy_type = ::buffa::EnumValue::from(
+                                ::buffa::types::decode_int32(&mut cur)?,
+                            );
+                        }
+                        5u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 5u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.comment = Some(::buffa::types::borrow_str(&mut cur)?);
+                        }
+                        8u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 8u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.for_securable_type = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
+                        }
+                        9u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 9u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.when_condition = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
+                        }
+                        11u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 11u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
                             if depth == 0 {
                                 return Err(::buffa::DecodeError::RecursionLimitExceeded);
                             }
                             let sub = ::buffa::types::borrow_bytes(&mut cur)?;
-                            match view.policy_info.as_mut() {
+                            match view.row_filter.as_mut() {
                                 Some(existing) => existing._merge_into_view(sub, depth - 1)?,
                                 None => {
-                                    view.policy_info = ::buffa::MessageFieldView::set(
-                                        super::super::__buffa::view::PolicyInfoView::_decode_depth(
+                                    view.row_filter = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::FunctionRefView::_decode_depth(
                                             sub,
                                             depth - 1,
                                         )?,
                                     );
                                 }
                             }
+                        }
+                        12u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 12u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.column_mask.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.column_mask = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::FunctionRefView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
+                        }
+                        13u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 13u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.deny.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.deny = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::PrivilegeOptionsView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
+                        }
+                        14u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 14u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.grant.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.grant = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::PrivilegeOptionsView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
+                        }
+                        6u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 6u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.to_principals
+                                .push(::buffa::types::borrow_str(&mut cur)?);
+                        }
+                        7u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 7u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.except_principals
+                                .push(::buffa::types::borrow_str(&mut cur)?);
+                        }
+                        10u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 10u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            view.match_columns
+                                .push(
+                                    super::super::__buffa::view::MatchColumnView::_decode_depth(
+                                        sub,
+                                        depth - 1,
+                                    )?,
+                                );
                         }
                         _ => {
                             ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
@@ -6550,12 +8605,56 @@ pub mod __buffa {
                 use ::buffa::alloc::string::ToString as _;
                 let _ = __buffa_src;
                 super::super::CreatePolicyRequest {
+                    name: self.name.to_string(),
                     on_securable_type: self.on_securable_type.to_string(),
                     on_securable_fullname: self.on_securable_fullname.to_string(),
-                    policy_info: match self.policy_info.as_option() {
+                    policy_type: self.policy_type,
+                    comment: self.comment.map(|s| s.to_string()),
+                    to_principals: self
+                        .to_principals
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                    except_principals: self
+                        .except_principals
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                    for_securable_type: self.for_securable_type.map(|s| s.to_string()),
+                    when_condition: self.when_condition.map(|s| s.to_string()),
+                    match_columns: self
+                        .match_columns
+                        .iter()
+                        .map(|v| v.to_owned_from_source(__buffa_src))
+                        .collect(),
+                    row_filter: match self.row_filter.as_option() {
                         Some(v) => {
                             ::buffa::MessageField::<
-                                super::super::PolicyInfo,
+                                super::super::FunctionRef,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
+                    column_mask: match self.column_mask.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::FunctionRef,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
+                    deny: match self.deny.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::PrivilegeOptions,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
+                    grant: match self.grant.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::PrivilegeOptions,
                             >::some(v.to_owned_from_source(__buffa_src))
                         }
                         None => ::buffa::MessageField::none(),
@@ -6575,6 +8674,9 @@ pub mod __buffa {
                 #[allow(unused_imports)]
                 use ::buffa::Enumeration as _;
                 let mut size = 0u32;
+                if !self.name.is_empty() {
+                    size += 1u32 + ::buffa::types::string_encoded_len(&self.name) as u32;
+                }
                 if !self.on_securable_type.is_empty() {
                     size
                         += 1u32
@@ -6588,9 +8690,62 @@ pub mod __buffa {
                                 &self.on_securable_fullname,
                             ) as u32;
                 }
-                if self.policy_info.is_set() {
+                {
+                    let val = self.policy_type.to_i32();
+                    if val != 0 {
+                        size += 1u32 + ::buffa::types::int32_encoded_len(val) as u32;
+                    }
+                }
+                if let Some(ref v) = self.comment {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                for v in &self.to_principals {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                for v in &self.except_principals {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if let Some(ref v) = self.for_securable_type {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if let Some(ref v) = self.when_condition {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                for v in &self.match_columns {
                     let __slot = __cache.reserve();
-                    let inner_size = self.policy_info.compute_size(__cache);
+                    let inner_size = v.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
+                }
+                if self.row_filter.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.row_filter.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
+                }
+                if self.column_mask.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.column_mask.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
+                }
+                if self.deny.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.deny.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
+                }
+                if self.grant.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.grant.compute_size(__cache);
                     __cache.set(__slot, inner_size);
                     size
                         += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
@@ -6607,9 +8762,17 @@ pub mod __buffa {
             ) {
                 #[allow(unused_imports)]
                 use ::buffa::Enumeration as _;
-                if !self.on_securable_type.is_empty() {
+                if !self.name.is_empty() {
                     ::buffa::encoding::Tag::new(
                             1u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(&self.name, buf);
+                }
+                if !self.on_securable_type.is_empty() {
+                    ::buffa::encoding::Tag::new(
+                            2u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
@@ -6617,20 +8780,107 @@ pub mod __buffa {
                 }
                 if !self.on_securable_fullname.is_empty() {
                     ::buffa::encoding::Tag::new(
-                            2u32,
+                            3u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
                     ::buffa::types::encode_string(&self.on_securable_fullname, buf);
                 }
-                if self.policy_info.is_set() {
+                {
+                    let val = self.policy_type.to_i32();
+                    if val != 0 {
+                        ::buffa::encoding::Tag::new(
+                                4u32,
+                                ::buffa::encoding::WireType::Varint,
+                            )
+                            .encode(buf);
+                        ::buffa::types::encode_int32(val, buf);
+                    }
+                }
+                if let Some(ref v) = self.comment {
                     ::buffa::encoding::Tag::new(
-                            3u32,
+                            5u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                for v in &self.to_principals {
+                    ::buffa::encoding::Tag::new(
+                            6u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                for v in &self.except_principals {
+                    ::buffa::encoding::Tag::new(
+                            7u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                if let Some(ref v) = self.for_securable_type {
+                    ::buffa::encoding::Tag::new(
+                            8u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                if let Some(ref v) = self.when_condition {
+                    ::buffa::encoding::Tag::new(
+                            9u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                for v in &self.match_columns {
+                    ::buffa::encoding::Tag::new(
+                            10u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
                     ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
-                    self.policy_info.write_to(__cache, buf);
+                    v.write_to(__cache, buf);
+                }
+                if self.row_filter.is_set() {
+                    ::buffa::encoding::Tag::new(
+                            11u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.row_filter.write_to(__cache, buf);
+                }
+                if self.column_mask.is_set() {
+                    ::buffa::encoding::Tag::new(
+                            12u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.column_mask.write_to(__cache, buf);
+                }
+                if self.deny.is_set() {
+                    ::buffa::encoding::Tag::new(
+                            13u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.deny.write_to(__cache, buf);
+                }
+                if self.grant.is_set() {
+                    ::buffa::encoding::Tag::new(
+                            14u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.grant.write_to(__cache, buf);
                 }
                 self.__buffa_unknown_fields.write_to(buf);
             }
@@ -6653,6 +8903,9 @@ pub mod __buffa {
             ) -> ::core::result::Result<__S::Ok, __S::Error> {
                 use ::serde::ser::SerializeMap as _;
                 let mut __map = __s.serialize_map(::core::option::Option::None)?;
+                if !::buffa::json_helpers::skip_if::is_empty_str(self.name) {
+                    __map.serialize_entry("name", self.name)?;
+                }
                 if !::buffa::json_helpers::skip_if::is_empty_str(
                     self.on_securable_type,
                 ) {
@@ -6667,12 +8920,53 @@ pub mod __buffa {
                             self.on_securable_fullname,
                         )?;
                 }
+                if !::buffa::json_helpers::skip_if::is_default_enum_value(
+                    &self.policy_type,
+                ) {
+                    __map.serialize_entry("policy_type", &self.policy_type)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.comment {
+                    __map.serialize_entry("comment", __v)?;
+                }
+                if !self.to_principals.is_empty() {
+                    __map.serialize_entry("to_principals", &*self.to_principals)?;
+                }
+                if !self.except_principals.is_empty() {
+                    __map.serialize_entry("except_principals", &*self.except_principals)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.for_securable_type {
+                    __map.serialize_entry("for_securable_type", __v)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.when_condition {
+                    __map.serialize_entry("when_condition", __v)?;
+                }
+                if !self.match_columns.is_empty() {
+                    __map.serialize_entry("match_columns", &*self.match_columns)?;
+                }
                 {
                     if let ::core::option::Option::Some(__v) = self
-                        .policy_info
+                        .row_filter
                         .as_option()
                     {
-                        __map.serialize_entry("policy_info", __v)?;
+                        __map.serialize_entry("row_filter", __v)?;
+                    }
+                }
+                {
+                    if let ::core::option::Option::Some(__v) = self
+                        .column_mask
+                        .as_option()
+                    {
+                        __map.serialize_entry("column_mask", __v)?;
+                    }
+                }
+                {
+                    if let ::core::option::Option::Some(__v) = self.deny.as_option() {
+                        __map.serialize_entry("deny", __v)?;
+                    }
+                }
+                {
+                    if let ::core::option::Option::Some(__v) = self.grant.as_option() {
+                        __map.serialize_entry("grant", __v)?;
                     }
                 }
                 __map.end()
@@ -6780,32 +9074,126 @@ pub mod __buffa {
             pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
                 self.0.into_bytes()
             }
-            /// The type of the securable to create the policy on.
+            /// The name of the policy. Unique within the securable it is defined on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Field 1: `name`
+            #[must_use]
+            pub fn name(&self) -> &'_ str {
+                self.0.reborrow().name
+            }
+            /// The type of securable the policy is defined on.
             ///
-            /// Field 1: `on_securable_type`
+            /// Supported values: CATALOG, SCHEMA, TABLE.
+            ///
+            /// Field 2: `on_securable_type`
             #[must_use]
             pub fn on_securable_type(&self) -> &'_ str {
                 self.0.reborrow().on_securable_type
             }
-            /// The fully qualified name of the securable to create the policy on.
+            /// The fully qualified name of the securable the policy is defined on.
             ///
-            /// Field 2: `on_securable_fullname`
+            /// Field 3: `on_securable_fullname`
             #[must_use]
             pub fn on_securable_fullname(&self) -> &'_ str {
                 self.0.reborrow().on_securable_fullname
             }
-            /// The policy to create.
+            /// The kind of enforcement this policy applies.
             ///
-            /// Field 3: `policy_info`
+            /// Field 4: `policy_type`
             #[must_use]
-            pub fn policy_info(
+            pub fn policy_type(&self) -> ::buffa::EnumValue<super::super::PolicyType> {
+                self.0.reborrow().policy_type
+            }
+            /// User-provided free-form text description of the policy.
+            ///
+            /// Field 5: `comment`
+            #[must_use]
+            pub fn comment(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().comment
+            }
+            /// The principals the policy applies to. Empty means "all principals".
+            ///
+            /// Field 6: `to_principals`
+            #[must_use]
+            pub fn to_principals(&self) -> &::buffa::RepeatedView<'_, &'_ str> {
+                &self.0.reborrow().to_principals
+            }
+            /// The principals explicitly excluded from the policy, even if matched by to_principals.
+            ///
+            /// Field 7: `except_principals`
+            #[must_use]
+            pub fn except_principals(&self) -> &::buffa::RepeatedView<'_, &'_ str> {
+                &self.0.reborrow().except_principals
+            }
+            /// The type of securables the policy takes effect on.
+            ///
+            /// Field 8: `for_securable_type`
+            #[must_use]
+            pub fn for_securable_type(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().for_securable_type
+            }
+            /// An opaque condition expression evaluated by the query engine at enforcement time.
+            ///
+            /// Field 9: `when_condition`
+            #[must_use]
+            pub fn when_condition(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().when_condition
+            }
+            /// The columns referenced by the policy function, and the aliases they are bound to.
+            ///
+            /// Field 10: `match_columns`
+            #[must_use]
+            pub fn match_columns(
+                &self,
+            ) -> &::buffa::RepeatedView<
+                '_,
+                super::super::__buffa::view::MatchColumnView<'_>,
+            > {
+                &self.0.reborrow().match_columns
+            }
+            /// The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+            ///
+            /// Field 11: `row_filter`
+            #[must_use]
+            pub fn row_filter(
                 &self,
             ) -> &::buffa::MessageFieldView<
-                super::super::__buffa::view::PolicyInfoView<'_>,
+                super::super::__buffa::view::FunctionRefView<'_>,
             > {
-                &self.0.reborrow().policy_info
+                &self.0.reborrow().row_filter
+            }
+            /// The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+            ///
+            /// Field 12: `column_mask`
+            #[must_use]
+            pub fn column_mask(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::__buffa::view::FunctionRefView<'_>,
+            > {
+                &self.0.reborrow().column_mask
+            }
+            /// The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+            ///
+            /// Field 13: `deny`
+            #[must_use]
+            pub fn deny(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::__buffa::view::PrivilegeOptionsView<'_>,
+            > {
+                &self.0.reborrow().deny
+            }
+            /// The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+            ///
+            /// Field 14: `grant`
+            #[must_use]
+            pub fn grant(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::__buffa::view::PrivilegeOptionsView<'_>,
+            > {
+                &self.0.reborrow().grant
             }
         }
         impl ::core::convert::From<::buffa::OwnedView<CreatePolicyRequestView<'static>>>
@@ -6845,7 +9233,7 @@ pub mod __buffa {
         pub struct GetPolicyRequestView<'a> {
             /// The type of the securable the policy is defined on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Supported values: CATALOG, SCHEMA, TABLE.
             ///
             /// Field 1: `on_securable_type`
             pub on_securable_type: &'a str,
@@ -7187,7 +9575,7 @@ pub mod __buffa {
             }
             /// The type of the securable the policy is defined on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Supported values: CATALOG, SCHEMA, TABLE.
             ///
             /// Field 1: `on_securable_type`
             #[must_use]
@@ -7240,11 +9628,13 @@ pub mod __buffa {
             }
         }
         /// Update a policy defined on a securable.
+        ///
+        /// The policy is identified by the path; the body carries the fields to update.
         #[derive(Clone, Debug, Default)]
         pub struct UpdatePolicyRequestView<'a> {
-            /// The type of the securable the policy is defined on.
+            /// The type of securable the policy is defined on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Supported values: CATALOG, SCHEMA, TABLE.
             ///
             /// Field 1: `on_securable_type`
             pub on_securable_type: &'a str,
@@ -7256,15 +9646,69 @@ pub mod __buffa {
             ///
             /// Field 3: `name`
             pub name: &'a str,
-            /// The policy with the updated fields.
+            /// The kind of enforcement this policy applies.
             ///
-            /// Field 4: `policy_info`
-            pub policy_info: ::buffa::MessageFieldView<
-                super::super::__buffa::view::PolicyInfoView<'a>,
+            /// Field 4: `policy_type`
+            pub policy_type: ::core::option::Option<
+                ::buffa::EnumValue<super::super::PolicyType>,
             >,
-            /// The list of fields to update, as a comma-separated string.
+            /// User-provided free-form text description of the policy.
             ///
-            /// Field 5: `update_mask`
+            /// Field 5: `comment`
+            pub comment: ::core::option::Option<&'a str>,
+            /// The principals the policy applies to. Empty means "all principals".
+            ///
+            /// Field 6: `to_principals`
+            pub to_principals: ::buffa::RepeatedView<'a, &'a str>,
+            /// The principals explicitly excluded from the policy, even if matched by to_principals.
+            ///
+            /// Field 7: `except_principals`
+            pub except_principals: ::buffa::RepeatedView<'a, &'a str>,
+            /// The type of securables the policy takes effect on.
+            ///
+            /// Field 8: `for_securable_type`
+            pub for_securable_type: ::core::option::Option<&'a str>,
+            /// An opaque condition expression evaluated by the query engine at enforcement time.
+            ///
+            /// Field 9: `when_condition`
+            pub when_condition: ::core::option::Option<&'a str>,
+            /// The columns referenced by the policy function, and the aliases they are bound to.
+            ///
+            /// Field 10: `match_columns`
+            pub match_columns: ::buffa::RepeatedView<
+                'a,
+                super::super::__buffa::view::MatchColumnView<'a>,
+            >,
+            /// The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+            ///
+            /// Field 11: `row_filter`
+            pub row_filter: ::buffa::MessageFieldView<
+                super::super::__buffa::view::FunctionRefView<'a>,
+            >,
+            /// The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
+            ///
+            /// Field 12: `column_mask`
+            pub column_mask: ::buffa::MessageFieldView<
+                super::super::__buffa::view::FunctionRefView<'a>,
+            >,
+            /// The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+            ///
+            /// Field 13: `deny`
+            pub deny: ::buffa::MessageFieldView<
+                super::super::__buffa::view::PrivilegeOptionsView<'a>,
+            >,
+            /// The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+            ///
+            /// Field 14: `grant`
+            pub grant: ::buffa::MessageFieldView<
+                super::super::__buffa::view::PrivilegeOptionsView<'a>,
+            >,
+            /// The fields to update, as a comma-separated list of field names.
+            ///
+            /// If empty or "*", every field set in the request is updated. Otherwise only the
+            /// listed fields are updated, and a listed field that is unset in the request is cleared.
+            ///
+            /// Field 15: `update_mask`
             pub update_mask: ::core::option::Option<&'a str>,
             pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
         }
@@ -7347,30 +9791,18 @@ pub mod __buffa {
                             view.name = ::buffa::types::borrow_str(&mut cur)?;
                         }
                         4u32 => {
-                            if tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
+                            if tag.wire_type() != ::buffa::encoding::WireType::Varint {
                                 return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
                                     field_number: 4u32,
-                                    expected: 2u8,
+                                    expected: 0u8,
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            if depth == 0 {
-                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
-                            }
-                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
-                            match view.policy_info.as_mut() {
-                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
-                                None => {
-                                    view.policy_info = ::buffa::MessageFieldView::set(
-                                        super::super::__buffa::view::PolicyInfoView::_decode_depth(
-                                            sub,
-                                            depth - 1,
-                                        )?,
-                                    );
-                                }
-                            }
+                            view.policy_type = Some(
+                                ::buffa::EnumValue::from(
+                                    ::buffa::types::decode_int32(&mut cur)?,
+                                ),
+                            );
                         }
                         5u32 => {
                             if tag.wire_type()
@@ -7382,9 +9814,201 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
+                            view.comment = Some(::buffa::types::borrow_str(&mut cur)?);
+                        }
+                        8u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 8u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.for_securable_type = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
+                        }
+                        9u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 9u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.when_condition = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
+                        }
+                        11u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 11u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.row_filter.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.row_filter = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::FunctionRefView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
+                        }
+                        12u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 12u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.column_mask.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.column_mask = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::FunctionRefView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
+                        }
+                        13u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 13u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.deny.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.deny = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::PrivilegeOptionsView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
+                        }
+                        14u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 14u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.grant.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.grant = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::PrivilegeOptionsView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
+                        }
+                        15u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 15u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
                             view.update_mask = Some(
                                 ::buffa::types::borrow_str(&mut cur)?,
                             );
+                        }
+                        6u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 6u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.to_principals
+                                .push(::buffa::types::borrow_str(&mut cur)?);
+                        }
+                        7u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 7u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.except_principals
+                                .push(::buffa::types::borrow_str(&mut cur)?);
+                        }
+                        10u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 10u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            view.match_columns
+                                .push(
+                                    super::super::__buffa::view::MatchColumnView::_decode_depth(
+                                        sub,
+                                        depth - 1,
+                                    )?,
+                                );
                         }
                         _ => {
                             ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
@@ -7425,10 +10049,53 @@ pub mod __buffa {
                     on_securable_type: self.on_securable_type.to_string(),
                     on_securable_fullname: self.on_securable_fullname.to_string(),
                     name: self.name.to_string(),
-                    policy_info: match self.policy_info.as_option() {
+                    policy_type: self.policy_type,
+                    comment: self.comment.map(|s| s.to_string()),
+                    to_principals: self
+                        .to_principals
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                    except_principals: self
+                        .except_principals
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                    for_securable_type: self.for_securable_type.map(|s| s.to_string()),
+                    when_condition: self.when_condition.map(|s| s.to_string()),
+                    match_columns: self
+                        .match_columns
+                        .iter()
+                        .map(|v| v.to_owned_from_source(__buffa_src))
+                        .collect(),
+                    row_filter: match self.row_filter.as_option() {
                         Some(v) => {
                             ::buffa::MessageField::<
-                                super::super::PolicyInfo,
+                                super::super::FunctionRef,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
+                    column_mask: match self.column_mask.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::FunctionRef,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
+                    deny: match self.deny.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::PrivilegeOptions,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
+                    grant: match self.grant.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::PrivilegeOptions,
                             >::some(v.to_owned_from_source(__buffa_src))
                         }
                         None => ::buffa::MessageField::none(),
@@ -7465,9 +10132,59 @@ pub mod __buffa {
                 if !self.name.is_empty() {
                     size += 1u32 + ::buffa::types::string_encoded_len(&self.name) as u32;
                 }
-                if self.policy_info.is_set() {
+                if let Some(ref v) = self.policy_type {
+                    size += 1u32 + ::buffa::types::int32_encoded_len(v.to_i32()) as u32;
+                }
+                if let Some(ref v) = self.comment {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                for v in &self.to_principals {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                for v in &self.except_principals {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if let Some(ref v) = self.for_securable_type {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if let Some(ref v) = self.when_condition {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                for v in &self.match_columns {
                     let __slot = __cache.reserve();
-                    let inner_size = self.policy_info.compute_size(__cache);
+                    let inner_size = v.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
+                }
+                if self.row_filter.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.row_filter.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
+                }
+                if self.column_mask.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.column_mask.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
+                }
+                if self.deny.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.deny.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
+                }
+                if self.grant.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.grant.compute_size(__cache);
                     __cache.set(__slot, inner_size);
                     size
                         += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
@@ -7511,18 +10228,102 @@ pub mod __buffa {
                         .encode(buf);
                     ::buffa::types::encode_string(&self.name, buf);
                 }
-                if self.policy_info.is_set() {
+                if let Some(ref v) = self.policy_type {
                     ::buffa::encoding::Tag::new(
                             4u32,
+                            ::buffa::encoding::WireType::Varint,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_int32(v.to_i32(), buf);
+                }
+                if let Some(ref v) = self.comment {
+                    ::buffa::encoding::Tag::new(
+                            5u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                for v in &self.to_principals {
+                    ::buffa::encoding::Tag::new(
+                            6u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                for v in &self.except_principals {
+                    ::buffa::encoding::Tag::new(
+                            7u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                if let Some(ref v) = self.for_securable_type {
+                    ::buffa::encoding::Tag::new(
+                            8u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                if let Some(ref v) = self.when_condition {
+                    ::buffa::encoding::Tag::new(
+                            9u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                for v in &self.match_columns {
+                    ::buffa::encoding::Tag::new(
+                            10u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
                     ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
-                    self.policy_info.write_to(__cache, buf);
+                    v.write_to(__cache, buf);
+                }
+                if self.row_filter.is_set() {
+                    ::buffa::encoding::Tag::new(
+                            11u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.row_filter.write_to(__cache, buf);
+                }
+                if self.column_mask.is_set() {
+                    ::buffa::encoding::Tag::new(
+                            12u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.column_mask.write_to(__cache, buf);
+                }
+                if self.deny.is_set() {
+                    ::buffa::encoding::Tag::new(
+                            13u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.deny.write_to(__cache, buf);
+                }
+                if self.grant.is_set() {
+                    ::buffa::encoding::Tag::new(
+                            14u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.grant.write_to(__cache, buf);
                 }
                 if let Some(ref v) = self.update_mask {
                     ::buffa::encoding::Tag::new(
-                            5u32,
+                            15u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
@@ -7566,12 +10367,51 @@ pub mod __buffa {
                 if !::buffa::json_helpers::skip_if::is_empty_str(self.name) {
                     __map.serialize_entry("name", self.name)?;
                 }
+                if let ::core::option::Option::Some(ref __v) = self.policy_type {
+                    __map.serialize_entry("policy_type", __v)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.comment {
+                    __map.serialize_entry("comment", __v)?;
+                }
+                if !self.to_principals.is_empty() {
+                    __map.serialize_entry("to_principals", &*self.to_principals)?;
+                }
+                if !self.except_principals.is_empty() {
+                    __map.serialize_entry("except_principals", &*self.except_principals)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.for_securable_type {
+                    __map.serialize_entry("for_securable_type", __v)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.when_condition {
+                    __map.serialize_entry("when_condition", __v)?;
+                }
+                if !self.match_columns.is_empty() {
+                    __map.serialize_entry("match_columns", &*self.match_columns)?;
+                }
                 {
                     if let ::core::option::Option::Some(__v) = self
-                        .policy_info
+                        .row_filter
                         .as_option()
                     {
-                        __map.serialize_entry("policy_info", __v)?;
+                        __map.serialize_entry("row_filter", __v)?;
+                    }
+                }
+                {
+                    if let ::core::option::Option::Some(__v) = self
+                        .column_mask
+                        .as_option()
+                    {
+                        __map.serialize_entry("column_mask", __v)?;
+                    }
+                }
+                {
+                    if let ::core::option::Option::Some(__v) = self.deny.as_option() {
+                        __map.serialize_entry("deny", __v)?;
+                    }
+                }
+                {
+                    if let ::core::option::Option::Some(__v) = self.grant.as_option() {
+                        __map.serialize_entry("grant", __v)?;
                     }
                 }
                 if let ::core::option::Option::Some(__v) = self.update_mask {
@@ -7682,9 +10522,9 @@ pub mod __buffa {
             pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
                 self.0.into_bytes()
             }
-            /// The type of the securable the policy is defined on.
+            /// The type of securable the policy is defined on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Supported values: CATALOG, SCHEMA, TABLE.
             ///
             /// Field 1: `on_securable_type`
             #[must_use]
@@ -7705,20 +10545,112 @@ pub mod __buffa {
             pub fn name(&self) -> &'_ str {
                 self.0.reborrow().name
             }
-            /// The policy with the updated fields.
+            /// The kind of enforcement this policy applies.
             ///
-            /// Field 4: `policy_info`
+            /// Field 4: `policy_type`
             #[must_use]
-            pub fn policy_info(
+            pub fn policy_type(
+                &self,
+            ) -> ::core::option::Option<::buffa::EnumValue<super::super::PolicyType>> {
+                self.0.reborrow().policy_type
+            }
+            /// User-provided free-form text description of the policy.
+            ///
+            /// Field 5: `comment`
+            #[must_use]
+            pub fn comment(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().comment
+            }
+            /// The principals the policy applies to. Empty means "all principals".
+            ///
+            /// Field 6: `to_principals`
+            #[must_use]
+            pub fn to_principals(&self) -> &::buffa::RepeatedView<'_, &'_ str> {
+                &self.0.reborrow().to_principals
+            }
+            /// The principals explicitly excluded from the policy, even if matched by to_principals.
+            ///
+            /// Field 7: `except_principals`
+            #[must_use]
+            pub fn except_principals(&self) -> &::buffa::RepeatedView<'_, &'_ str> {
+                &self.0.reborrow().except_principals
+            }
+            /// The type of securables the policy takes effect on.
+            ///
+            /// Field 8: `for_securable_type`
+            #[must_use]
+            pub fn for_securable_type(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().for_securable_type
+            }
+            /// An opaque condition expression evaluated by the query engine at enforcement time.
+            ///
+            /// Field 9: `when_condition`
+            #[must_use]
+            pub fn when_condition(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().when_condition
+            }
+            /// The columns referenced by the policy function, and the aliases they are bound to.
+            ///
+            /// Field 10: `match_columns`
+            #[must_use]
+            pub fn match_columns(
+                &self,
+            ) -> &::buffa::RepeatedView<
+                '_,
+                super::super::__buffa::view::MatchColumnView<'_>,
+            > {
+                &self.0.reborrow().match_columns
+            }
+            /// The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
+            ///
+            /// Field 11: `row_filter`
+            #[must_use]
+            pub fn row_filter(
                 &self,
             ) -> &::buffa::MessageFieldView<
-                super::super::__buffa::view::PolicyInfoView<'_>,
+                super::super::__buffa::view::FunctionRefView<'_>,
             > {
-                &self.0.reborrow().policy_info
+                &self.0.reborrow().row_filter
             }
-            /// The list of fields to update, as a comma-separated string.
+            /// The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
             ///
-            /// Field 5: `update_mask`
+            /// Field 12: `column_mask`
+            #[must_use]
+            pub fn column_mask(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::__buffa::view::FunctionRefView<'_>,
+            > {
+                &self.0.reborrow().column_mask
+            }
+            /// The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+            ///
+            /// Field 13: `deny`
+            #[must_use]
+            pub fn deny(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::__buffa::view::PrivilegeOptionsView<'_>,
+            > {
+                &self.0.reborrow().deny
+            }
+            /// The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+            ///
+            /// Field 14: `grant`
+            #[must_use]
+            pub fn grant(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::__buffa::view::PrivilegeOptionsView<'_>,
+            > {
+                &self.0.reborrow().grant
+            }
+            /// The fields to update, as a comma-separated list of field names.
+            ///
+            /// If empty or "*", every field set in the request is updated. Otherwise only the
+            /// listed fields are updated, and a listed field that is unset in the request is cleared.
+            ///
+            /// Field 15: `update_mask`
             #[must_use]
             pub fn update_mask(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().update_mask
@@ -7761,7 +10693,7 @@ pub mod __buffa {
         pub struct DeletePolicyRequestView<'a> {
             /// The type of the securable the policy is defined on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Supported values: CATALOG, SCHEMA, TABLE.
             ///
             /// Field 1: `on_securable_type`
             pub on_securable_type: &'a str,
@@ -8103,7 +11035,7 @@ pub mod __buffa {
             }
             /// The type of the securable the policy is defined on.
             ///
-            /// Supported values: catalogs, schemas, tables.
+            /// Supported values: CATALOG, SCHEMA, TABLE.
             ///
             /// Field 1: `on_securable_type`
             #[must_use]
@@ -8173,7 +11105,7 @@ pub mod __buffa {
                 #[allow(unused_imports)]
                 use super::*;
                 #[derive(Clone, Debug)]
-                pub enum Function<'a> {
+                pub enum Options<'a> {
                     RowFilter(
                         ::buffa::alloc::boxed::Box<
                             super::super::super::super::__buffa::view::FunctionRefView<
@@ -8184,6 +11116,20 @@ pub mod __buffa {
                     ColumnMask(
                         ::buffa::alloc::boxed::Box<
                             super::super::super::super::__buffa::view::FunctionRefView<
+                                'a,
+                            >,
+                        >,
+                    ),
+                    Deny(
+                        ::buffa::alloc::boxed::Box<
+                            super::super::super::super::__buffa::view::PrivilegeOptionsView<
+                                'a,
+                            >,
+                        >,
+                    ),
+                    Grant(
+                        ::buffa::alloc::boxed::Box<
+                            super::super::super::super::__buffa::view::PrivilegeOptionsView<
                                 'a,
                             >,
                         >,
@@ -8226,13 +11172,16 @@ pub mod __buffa {
         pub mod policy_info {
             #[allow(unused_imports)]
             use super::*;
+            /// The options for the kind of enforcement given by policy_type.
             #[derive(Clone, PartialEq, Debug)]
-            pub enum Function {
+            pub enum Options {
                 RowFilter(::buffa::alloc::boxed::Box<super::super::super::FunctionRef>),
                 ColumnMask(::buffa::alloc::boxed::Box<super::super::super::FunctionRef>),
+                Deny(::buffa::alloc::boxed::Box<super::super::super::PrivilegeOptions>),
+                Grant(::buffa::alloc::boxed::Box<super::super::super::PrivilegeOptions>),
             }
-            impl ::buffa::Oneof for Function {}
-            impl serde::Serialize for Function {
+            impl ::buffa::Oneof for Options {}
+            impl serde::Serialize for Options {
                 fn serialize<S: serde::Serializer>(
                     &self,
                     s: S,
@@ -8246,6 +11195,12 @@ pub mod __buffa {
                         Self::ColumnMask(v) => {
                             map.serialize_entry("column_mask", v)?;
                         }
+                        Self::Deny(v) => {
+                            map.serialize_entry("deny", v)?;
+                        }
+                        Self::Grant(v) => {
+                            map.serialize_entry("grant", v)?;
+                        }
                     }
                     map.end()
                 }
@@ -8257,6 +11212,7 @@ pub mod __buffa {
         reg.register_json_any(super::__MATCH_COLUMN_JSON_ANY);
         reg.register_json_any(super::__FUNCTION_ARG_JSON_ANY);
         reg.register_json_any(super::__FUNCTION_REF_JSON_ANY);
+        reg.register_json_any(super::__PRIVILEGE_OPTIONS_JSON_ANY);
         reg.register_json_any(super::__POLICY_INFO_JSON_ANY);
         reg.register_json_any(super::__LIST_POLICIES_REQUEST_JSON_ANY);
         reg.register_json_any(super::__LIST_POLICIES_RESPONSE_JSON_ANY);
@@ -8278,6 +11234,10 @@ pub use self::__buffa::view::FunctionArgOwnedView;
 pub use self::__buffa::view::FunctionRefView;
 #[doc(inline)]
 pub use self::__buffa::view::FunctionRefOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::PrivilegeOptionsView;
+#[doc(inline)]
+pub use self::__buffa::view::PrivilegeOptionsOwnedView;
 #[doc(inline)]
 pub use self::__buffa::view::PolicyInfoView;
 #[doc(inline)]

@@ -42,26 +42,14 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListPoliciesRequest 
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreatePolicyRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
-        mut req: axum::extract::Request<axum::body::Body>,
+        req: axum::extract::Request<axum::body::Body>,
         _state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let (mut parts, body) = req.into_parts();
-        let axum::extract::Path((on_securable_type, on_securable_fullname)) = parts
-            .extract::<axum::extract::Path<(String, String)>>()
-            .await
-            .map_err(axum::response::IntoResponse::into_response)?;
-        let body_req = axum::extract::Request::from_parts(parts, body);
-        let axum::extract::Json::<CreatePolicyRequest>(body) = body_req
+        let axum::extract::Json(request) = req
             .extract()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        let policy_info = body.policy_info;
-        Ok(CreatePolicyRequest {
-            on_securable_type,
-            on_securable_fullname,
-            policy_info,
-            ..Default::default()
-        })
+        Ok(request)
     }
 }
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetPolicyRequest {
@@ -98,12 +86,48 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdatePolicyRequest {
             .extract()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        let (policy_info, update_mask) = (body.policy_info, body.update_mask);
+        let (
+            policy_type,
+            comment,
+            to_principals,
+            except_principals,
+            for_securable_type,
+            when_condition,
+            match_columns,
+            row_filter,
+            column_mask,
+            deny,
+            grant,
+            update_mask,
+        ) = (
+            body.policy_type,
+            body.comment,
+            body.to_principals,
+            body.except_principals,
+            body.for_securable_type,
+            body.when_condition,
+            body.match_columns,
+            body.row_filter,
+            body.column_mask,
+            body.deny,
+            body.grant,
+            body.update_mask,
+        );
         Ok(UpdatePolicyRequest {
             on_securable_type,
             on_securable_fullname,
             name,
-            policy_info,
+            policy_type,
+            comment,
+            to_principals,
+            except_principals,
+            for_securable_type,
+            when_condition,
+            match_columns,
+            row_filter,
+            column_mask,
+            deny,
+            grant,
             update_mask,
             ..Default::default()
         })

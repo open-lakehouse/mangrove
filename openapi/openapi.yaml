@@ -1682,6 +1682,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
+  /policies:
+    post:
+      tags:
+        - PoliciesService
+      description: |-
+        Create a new policy
+
+         Creates a new row-filter or column-mask policy on the specified securable.
+      operationId: CreatePolicy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePolicyRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyInfo"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
   /policies/{on_securable_type}/{on_securable_fullname}:
     get:
       tags:
@@ -1698,7 +1726,7 @@ paths:
           description: |-
             The type of the securable to list policies on.
 
-             Supported values: catalogs, schemas, tables.
+             Supported values: CATALOG, SCHEMA, TABLE.
           required: true
           schema:
             type: string
@@ -1744,49 +1772,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-    post:
-      tags:
-        - PoliciesService
-      description: |-
-        Create a new policy
-
-         Creates a new row-filter or column-mask policy on the specified securable.
-      operationId: CreatePolicy
-      parameters:
-        - name: on_securable_type
-          in: path
-          description: |-
-            The type of the securable to create the policy on.
-
-             Supported values: catalogs, schemas, tables.
-          required: true
-          schema:
-            type: string
-        - name: on_securable_fullname
-          in: path
-          description: The fully qualified name of the securable to create the policy on.
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PolicyInfo"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PolicyInfo"
-        default:
-          description: Default error response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Status"
   /policies/{on_securable_type}/{on_securable_fullname}/{name}:
     get:
       tags:
@@ -1802,7 +1787,7 @@ paths:
           description: |-
             The type of the securable the policy is defined on.
 
-             Supported values: catalogs, schemas, tables.
+             Supported values: CATALOG, SCHEMA, TABLE.
           required: true
           schema:
             type: string
@@ -1845,7 +1830,7 @@ paths:
           description: |-
             The type of the securable the policy is defined on.
 
-             Supported values: catalogs, schemas, tables.
+             Supported values: CATALOG, SCHEMA, TABLE.
           required: true
           schema:
             type: string
@@ -1883,9 +1868,9 @@ paths:
         - name: on_securable_type
           in: path
           description: |-
-            The type of the securable the policy is defined on.
+            The type of securable the policy is defined on.
 
-             Supported values: catalogs, schemas, tables.
+             Supported values: CATALOG, SCHEMA, TABLE.
           required: true
           schema:
             type: string
@@ -4254,6 +4239,107 @@ components:
       description: Create a new model version.
       additionalProperties: false
       title: Create Model Version Request
+    CreatePolicyRequest:
+      required:
+        - name
+        - on_securable_type
+        - on_securable_fullname
+        - policy_type
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the policy. Unique within the securable it is defined on.
+          minLength: 1
+        on_securable_type:
+          type: string
+          description: "Supported values: CATALOG, SCHEMA, TABLE."
+          minLength: 1
+          pattern: ^(CATALOG|SCHEMA|TABLE)$
+          title: The type of securable the policy is defined on.
+        on_securable_fullname:
+          type: string
+          description: The fully qualified name of the securable the policy is defined on.
+          minLength: 1
+        policy_type:
+          enum:
+            - POLICY_TYPE_ROW_FILTER
+            - POLICY_TYPE_COLUMN_MASK
+            - POLICY_TYPE_DENY
+            - POLICY_TYPE_GRANT
+          type: string
+          description: The kind of enforcement this policy applies.
+          format: enum
+          title: Policy Type
+        comment:
+          type: string
+          description: User-provided free-form text description of the policy.
+        to_principals:
+          type: array
+          items:
+            type: string
+          description: The principals the policy applies to. Empty means "all principals".
+        except_principals:
+          type: array
+          items:
+            type: string
+          description: The principals explicitly excluded from the policy, even if matched by to_principals.
+        for_securable_type:
+          type: string
+          description: The type of securables the policy takes effect on.
+          pattern: ^(CATALOG|SCHEMA|TABLE)$
+        when_condition:
+          type: string
+          description: An opaque condition expression evaluated by the query engine at enforcement time.
+        match_columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchColumn"
+            additionalProperties: false
+            required:
+              - condition
+            description: |-
+              A column referenced by a policy, together with the alias it is bound to in the
+               row-filter or column-mask function invocation.
+            title: Match Column
+          description: The columns referenced by the policy function, and the aliases they are bound to.
+        row_filter:
+          allOf:
+            - $ref: "#/components/schemas/FunctionRef"
+          description: |-
+            A reference to the SQL function that implements a row-filter or column-mask policy,
+             together with the arguments it is invoked with.
+          additionalProperties: false
+          required:
+            - function_name
+          title: Function Ref
+        column_mask:
+          allOf:
+            - $ref: "#/components/schemas/FunctionRef"
+          description: |-
+            A reference to the SQL function that implements a row-filter or column-mask policy,
+             together with the arguments it is invoked with.
+          additionalProperties: false
+          required:
+            - function_name
+          title: Function Ref
+        deny:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
+        grant:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
+      description: |-
+        The body is the policy itself; the new policy applies to the securable and all its
+         descendants.
+      additionalProperties: false
+      title: Create a new policy on a securable.
     CreateProviderRequest:
       required:
         - name
@@ -5254,6 +5340,12 @@ components:
             description: An argument passed to a row-filter or column-mask function.
             title: Function Arg
           description: The arguments passed to the function, in declaration order.
+        on_column:
+          type: string
+          description: |-
+            Required for column masks: the column value is passed to the mask function as its
+             first argument. Not used for row filters.
+          title: The alias of the column to be masked; it must refer to one of the policy's match_columns.
       description: |-
         A reference to the SQL function that implements a row-filter or column-mask policy,
          together with the arguments it is invoked with.
@@ -5840,7 +5932,6 @@ components:
       title: List Volumes Response
     MatchColumn:
       required:
-        - alias
         - condition
       type: object
       properties:
@@ -5993,9 +6084,9 @@ components:
           description: Server-assigned unique identifier for the policy.
         on_securable_type:
           type: string
-          description: "Supported values: catalogs, schemas, tables."
+          description: "Supported values: CATALOG, SCHEMA, TABLE."
           minLength: 1
-          pattern: ^(catalogs|schemas|tables)$
+          pattern: ^(CATALOG|SCHEMA|TABLE)$
           title: The type of securable the policy is defined on.
         on_securable_fullname:
           type: string
@@ -6006,6 +6097,8 @@ components:
             - POLICY_TYPE_UNSPECIFIED
             - POLICY_TYPE_ROW_FILTER
             - POLICY_TYPE_COLUMN_MASK
+            - POLICY_TYPE_DENY
+            - POLICY_TYPE_GRANT
           type: string
           description: The kind of enforcement this policy applies.
           format: enum
@@ -6031,13 +6124,15 @@ components:
             $ref: "#/components/schemas/MatchColumn"
             additionalProperties: false
             required:
-              - alias
               - condition
             description: |-
               A column referenced by a policy, together with the alias it is bound to in the
                row-filter or column-mask function invocation.
             title: Match Column
           description: |-
+            Only valid when for_securable_type is TABLE; the policy then applies only to tables
+             whose columns satisfy all match conditions.
+          title: |-
             The columns referenced by the row-filter or column-mask function, and the aliases
              they are bound to.
         row_filter:
@@ -6060,6 +6155,18 @@ components:
           required:
             - function_name
           title: Function Ref
+        deny:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
+        grant:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
         comment:
           type: string
           description: User-provided free-form text description of the policy.
@@ -6079,6 +6186,12 @@ components:
           readOnly: true
           type: string
           description: Username of the user who last modified the policy.
+        for_securable_type:
+          type: string
+          description: |-
+            The type of securables the policy takes effect on, e.g. TABLE for a policy defined
+             on a schema that applies to the tables within it.
+          pattern: ^(CATALOG|SCHEMA|TABLE)$
       description: |-
         Policies are read as whole documents; enforcement is performed by the query engine,
          not by this service. `when_condition` is stored and returned opaque — this service does
@@ -6101,6 +6214,19 @@ components:
       required:
         - principal
       title: Privilege Assignment
+    PrivilegeOptions:
+      required:
+        - privileges
+      type: object
+      properties:
+        privileges:
+          type: array
+          items:
+            type: string
+          description: The privileges to deny or grant when the principal and condition match.
+      description: The privileges a deny or grant policy applies to.
+      additionalProperties: false
+      title: Privilege Options
     Provider:
       required:
         - name
@@ -7138,30 +7264,93 @@ components:
       additionalProperties: false
       title: Update Permissions Response
     UpdatePolicyRequest:
-      required:
-        - policy_info
+      required: []
       type: object
       properties:
-        policy_info:
+        policy_type:
+          enum:
+            - POLICY_TYPE_UNSPECIFIED
+            - POLICY_TYPE_ROW_FILTER
+            - POLICY_TYPE_COLUMN_MASK
+            - POLICY_TYPE_DENY
+            - POLICY_TYPE_GRANT
+          type: string
+          description: The kind of enforcement this policy applies.
+          format: enum
+          title: Policy Type
+        comment:
+          type: string
+          description: User-provided free-form text description of the policy.
+        to_principals:
+          type: array
+          items:
+            type: string
+          description: The principals the policy applies to. Empty means "all principals".
+        except_principals:
+          type: array
+          items:
+            type: string
+          description: The principals explicitly excluded from the policy, even if matched by to_principals.
+        for_securable_type:
+          type: string
+          description: The type of securables the policy takes effect on.
+          pattern: ^(CATALOG|SCHEMA|TABLE)$
+        when_condition:
+          type: string
+          description: An opaque condition expression evaluated by the query engine at enforcement time.
+        match_columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchColumn"
+            additionalProperties: false
+            required:
+              - condition
+            description: |-
+              A column referenced by a policy, together with the alias it is bound to in the
+               row-filter or column-mask function invocation.
+            title: Match Column
+          description: The columns referenced by the policy function, and the aliases they are bound to.
+        row_filter:
           allOf:
-            - $ref: "#/components/schemas/PolicyInfo"
+            - $ref: "#/components/schemas/FunctionRef"
           description: |-
-            Policies are read as whole documents; enforcement is performed by the query engine,
-             not by this service. `when_condition` is stored and returned opaque — this service does
-             not parse or evaluate it.
+            A reference to the SQL function that implements a row-filter or column-mask policy,
+             together with the arguments it is invoked with.
           additionalProperties: false
           required:
-            - name
-            - on_securable_type
-            - on_securable_fullname
-            - policy_type
-          title: A row-filter or column-mask policy bound to principals and scoped to a securable.
+            - function_name
+          title: Function Ref
+        column_mask:
+          allOf:
+            - $ref: "#/components/schemas/FunctionRef"
+          description: |-
+            A reference to the SQL function that implements a row-filter or column-mask policy,
+             together with the arguments it is invoked with.
+          additionalProperties: false
+          required:
+            - function_name
+          title: Function Ref
+        deny:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
+        grant:
+          allOf:
+            - $ref: "#/components/schemas/PrivilegeOptions"
+          description: The privileges a deny or grant policy applies to.
+          additionalProperties: false
+          title: Privilege Options
         update_mask:
           type: string
-          description: The list of fields to update, as a comma-separated string.
-      description: Update a policy defined on a securable.
+          description: |-
+            If empty or "*", every field set in the request is updated. Otherwise only the
+             listed fields are updated, and a listed field that is unset in the request is cleared.
+          title: The fields to update, as a comma-separated list of field names.
+      description: The policy is identified by the path; the body carries the fields to update.
       additionalProperties: false
-      title: Update Policy Request
+      title: Update a policy defined on a securable.
     UpdateProviderRequest:
       required: []
       type: object

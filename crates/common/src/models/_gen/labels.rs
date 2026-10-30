@@ -2114,7 +2114,11 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
                 role: ::olai_store::FieldRole::Managed,
             },
             ::olai_store::ResourceFieldDescriptor {
-                name: "function",
+                name: "for_securable_type",
+                role: ::olai_store::FieldRole::Data,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "options",
                 role: ::olai_store::FieldRole::Data,
             },
         ],

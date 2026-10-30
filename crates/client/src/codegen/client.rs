@@ -815,7 +815,7 @@ impl UnityCatalogClient {
     ///
     /// * `on_securable_type` - The type of the securable to list policies on.
     ///
-    /// Supported values: catalogs, schemas, tables.
+    /// Supported values: CATALOG, SCHEMA, TABLE.
     /// * `on_securable_fullname` - The fully qualified name of the securable to list policies on.
     pub fn list_policies(
         &self,
@@ -829,6 +829,36 @@ impl UnityCatalogClient {
             ),
             on_securable_type,
             on_securable_fullname,
+        )
+    }
+    /// Create a new policy
+    ///
+    /// Creates a new row-filter or column-mask policy on the specified securable.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the policy. Unique within the securable it is defined on.
+    /// * `on_securable_type` - The type of securable the policy is defined on.
+    ///
+    /// Supported values: CATALOG, SCHEMA, TABLE.
+    /// * `on_securable_fullname` - The fully qualified name of the securable the policy is defined on.
+    /// * `policy_type` - The kind of enforcement this policy applies.
+    pub fn create_policy(
+        &self,
+        name: impl Into<String>,
+        on_securable_type: impl Into<String>,
+        on_securable_fullname: impl Into<String>,
+        policy_type: PolicyType,
+    ) -> CreatePolicyBuilder {
+        CreatePolicyBuilder::new(
+            crate::codegen::policies::PolicyServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            name,
+            on_securable_type,
+            on_securable_fullname,
+            policy_type,
         )
     }
     /// Access the `policy` resource scoped to the given name.

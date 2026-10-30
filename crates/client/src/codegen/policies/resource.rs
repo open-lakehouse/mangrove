@@ -25,17 +25,6 @@ impl PolicyClient {
     pub fn full_name(&self) -> String {
         self.policy_name.clone()
     }
-    /// Create a new policy
-    ///
-    /// Creates a new row-filter or column-mask policy on the specified securable.
-    pub fn create_policy(&self, policy_info: PolicyInfo) -> CreatePolicyBuilder {
-        CreatePolicyBuilder::new(
-            self.client.clone(),
-            &self.policy_name,
-            &self.policy_name,
-            policy_info,
-        )
-    }
     /// Get a policy
     ///
     /// Gets the policy that matches the supplied name, defined on the specified securable.
@@ -50,13 +39,12 @@ impl PolicyClient {
     /// Update a policy
     ///
     /// Updates the policy that matches the supplied name, defined on the specified securable.
-    pub fn update(&self, policy_info: PolicyInfo) -> UpdatePolicyBuilder {
+    pub fn update(&self) -> UpdatePolicyBuilder {
         UpdatePolicyBuilder::new(
             self.client.clone(),
             &self.policy_name,
             &self.policy_name,
             &self.policy_name,
-            policy_info,
         )
     }
     /// Delete a policy

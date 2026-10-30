@@ -862,11 +862,20 @@ class FunctionRef:
 
     function_name: str
     """Fully qualified name of the function (catalog.schema.function) to invoke."""
+    on_column: Optional[str]
+    """
+    The alias of the column to be masked; it must refer to one of the policy's match_columns.
+    Required for column masks: the column value is passed to the mask function as its first
+    argument. Not used for row filters.
+    """
     using: List[FunctionArg]
     """The arguments passed to the function, in declaration order."""
 
     def __init__(
-        self, function_name: Optional[str] = None, using: Optional[List[FunctionArg]] = None
+        self,
+        function_name: Optional[str] = None,
+        on_column: Optional[str] = None,
+        using: Optional[List[FunctionArg]] = None,
     ) -> None: ...
 
 class GcpOauthToken:
@@ -935,7 +944,7 @@ class MatchColumn:
     """A column referenced by a policy, together with the alias it is bound to in the row-filter or column-
     mask function invocation."""
 
-    alias: str
+    alias: Optional[str]
     """
     The name of the alias the column is bound to when invoking the row-filter or column-mask
     function.
@@ -1041,22 +1050,25 @@ class PolicyInfo:
     """Username of the user who created the policy."""
     except_principals: List[str]
     """The principals explicitly excluded from the policy, even if matched by to_principals."""
+    for_securable_type: Optional[str]
+    """
+    The type of securables the policy takes effect on, e.g. TABLE for a policy defined on a
+    schema that applies to the tables within it.
+    """
     id: Optional[str]
     """Server-assigned unique identifier for the policy."""
     match_columns: List[MatchColumn]
     """
-    The columns referenced by the row-filter or column-mask function, and the aliases they are
-    bound to.
+    The columns referenced by the row-filter or column-mask function, and the aliases they
+    are bound to. Only valid when for_securable_type is TABLE; the policy then applies only to
+    tables whose columns satisfy all match conditions.
     """
     name: str
     """The name of the policy. Unique within the securable it is defined on."""
     on_securable_fullname: str
     """The fully qualified name of the securable the policy is defined on."""
     on_securable_type: str
-    """
-    The type of securable the policy is defined on. Supported values: catalogs, schemas,
-    tables.
-    """
+    """The type of securable the policy is defined on. Supported values: CATALOG, SCHEMA, TABLE."""
     policy_type: PolicyType
     """The kind of enforcement this policy applies."""
     to_principals: List[str]
@@ -1072,6 +1084,10 @@ class PolicyInfo:
     """
     column_mask: Optional[FunctionRef]
     """The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK."""
+    deny: Optional[PrivilegeOptions]
+    """The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY."""
+    grant: Optional[PrivilegeOptions]
+    """The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT."""
     row_filter: Optional[FunctionRef]
     """The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER."""
 
@@ -1081,6 +1097,7 @@ class PolicyInfo:
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
         except_principals: Optional[List[str]] = None,
+        for_securable_type: Optional[str] = None,
         id: Optional[str] = None,
         match_columns: Optional[List[MatchColumn]] = None,
         name: Optional[str] = None,
@@ -1092,6 +1109,8 @@ class PolicyInfo:
         updated_by: Optional[str] = None,
         when_condition: Optional[str] = None,
         column_mask: Optional[FunctionRef] = None,
+        deny: Optional[PrivilegeOptions] = None,
+        grant: Optional[PrivilegeOptions] = None,
         row_filter: Optional[FunctionRef] = None,
     ) -> None: ...
 
@@ -1107,6 +1126,14 @@ class PrivilegeAssignment:
     def __init__(
         self, principal: Optional[str] = None, privileges: Optional[List[str]] = None
     ) -> None: ...
+
+class PrivilegeOptions:
+    """The privileges a deny or grant policy applies to."""
+
+    privileges: List[str]
+    """The privileges to deny or grant when the principal and condition match."""
+
+    def __init__(self, privileges: Optional[List[str]] = None) -> None: ...
 
 class Provider:
     """A provider represents an organization sharing data with this metastore.
@@ -1860,6 +1887,10 @@ class PolicyType(enum.Enum):
 
     POLICY_TYPE_COLUMN_MASK = "POLICY_TYPE_COLUMN_MASK"
     """Masks a column's values for callers matched by the when_condition."""
+    POLICY_TYPE_DENY = "POLICY_TYPE_DENY"
+    """Denies the listed privileges to callers matched by the when_condition."""
+    POLICY_TYPE_GRANT = "POLICY_TYPE_GRANT"
+    """Grants the listed privileges to callers matched by the when_condition."""
     POLICY_TYPE_ROW_FILTER = "POLICY_TYPE_ROW_FILTER"
     """Filters rows returned from the securable based on the when_condition and match_columns."""
     POLICY_TYPE_UNSPECIFIED = "POLICY_TYPE_UNSPECIFIED"
@@ -2240,24 +2271,6 @@ class FunctionClient:
         ...
 
 class PolicyClient:
-    def create_policy(self, policy_info: PolicyInfo) -> PolicyInfo:
-        """
-        Create a new policy
-
-        Creates a new row-filter or column-mask policy on the specified securable.
-
-
-        Args:
-            policy_info: The policy to create.
-
-
-        Returns:
-            A row-filter or column-mask policy bound to principals and scoped to a securable. Policies
-            are
-            read as whole documents; enforcement is performed by the query engine, not by this service.
-            `when_condition` is stored and returned opaque — this service does not parse or evaluate it.
-        """
-        ...
     def delete(self) -> None:
         """
         Delete a policy
@@ -2283,7 +2296,21 @@ class PolicyClient:
             `when_condition` is stored and returned opaque — this service does not parse or evaluate it.
         """
         ...
-    def update(self, policy_info: PolicyInfo, update_mask: Optional[str] = None) -> PolicyInfo:
+    def update(
+        self,
+        policy_type: Optional[PolicyType] = None,
+        comment: Optional[str] = None,
+        to_principals: Optional[List[str]] = None,
+        except_principals: Optional[List[str]] = None,
+        for_securable_type: Optional[str] = None,
+        when_condition: Optional[str] = None,
+        match_columns: Optional[List[MatchColumn]] = None,
+        row_filter: Optional[FunctionRef] = None,
+        column_mask: Optional[FunctionRef] = None,
+        deny: Optional[PrivilegeOptions] = None,
+        grant: Optional[PrivilegeOptions] = None,
+        update_mask: Optional[str] = None,
+    ) -> PolicyInfo:
         """
         Update a policy
 
@@ -2291,8 +2318,24 @@ class PolicyClient:
 
 
         Args:
-            policy_info: The policy with the updated fields.
-            update_mask: The list of fields to update, as a comma-separated string.
+            policy_type: The kind of enforcement this policy applies.
+            comment: User-provided free-form text description of the policy.
+            to_principals: The principals the policy applies to. Empty means "all principals".
+            except_principals: The principals explicitly excluded from the policy, even if matched by
+                               to_principals.
+            for_securable_type: The type of securables the policy takes effect on.
+            when_condition: An opaque condition expression evaluated by the query engine at enforcement
+                            time.
+            match_columns: The columns referenced by the policy function, and the aliases they are bound to.
+            row_filter: The row-filter function to invoke. Set only when policy_type is
+                        POLICY_TYPE_ROW_FILTER.
+            column_mask: The column-mask function to invoke. Set only when policy_type is
+                         POLICY_TYPE_COLUMN_MASK.
+            deny: The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+            grant: The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+            update_mask: The fields to update, as a comma-separated list of field names. If empty or "*",
+                         every field set in the request is updated. Otherwise only the listed fields are
+                         updated, and a listed field that is unset in the request is cleared.
 
 
         Returns:
@@ -2941,6 +2984,58 @@ class UnityCatalogClient:
             storage location and moves through the PENDING_REGISTRATION -> READY lifecycle via the
             finalize
             operation.
+        """
+        ...
+    def create_policy(
+        self,
+        name: str,
+        on_securable_type: str,
+        on_securable_fullname: str,
+        policy_type: PolicyType,
+        comment: Optional[str] = None,
+        to_principals: Optional[List[str]] = None,
+        except_principals: Optional[List[str]] = None,
+        for_securable_type: Optional[str] = None,
+        when_condition: Optional[str] = None,
+        match_columns: Optional[List[MatchColumn]] = None,
+        row_filter: Optional[FunctionRef] = None,
+        column_mask: Optional[FunctionRef] = None,
+        deny: Optional[PrivilegeOptions] = None,
+        grant: Optional[PrivilegeOptions] = None,
+    ) -> PolicyInfo:
+        """
+        Create a new policy
+
+        Creates a new row-filter or column-mask policy on the specified securable.
+
+
+        Args:
+            name: The name of the policy. Unique within the securable it is defined on.
+            on_securable_type: The type of securable the policy is defined on. Supported values: CATALOG,
+                               SCHEMA, TABLE.
+            on_securable_fullname: The fully qualified name of the securable the policy is defined on.
+            policy_type: The kind of enforcement this policy applies.
+            comment: User-provided free-form text description of the policy.
+            to_principals: The principals the policy applies to. Empty means "all principals".
+            except_principals: The principals explicitly excluded from the policy, even if matched by
+                               to_principals.
+            for_securable_type: The type of securables the policy takes effect on.
+            when_condition: An opaque condition expression evaluated by the query engine at enforcement
+                            time.
+            match_columns: The columns referenced by the policy function, and the aliases they are bound to.
+            row_filter: The row-filter function to invoke. Set only when policy_type is
+                        POLICY_TYPE_ROW_FILTER.
+            column_mask: The column-mask function to invoke. Set only when policy_type is
+                         POLICY_TYPE_COLUMN_MASK.
+            deny: The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+            grant: The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+
+
+        Returns:
+            A row-filter or column-mask policy bound to principals and scoped to a securable. Policies
+            are
+            read as whole documents; enforcement is performed by the query engine, not by this service.
+            `when_condition` is stored and returned opaque — this service does not parse or evaluate it.
         """
         ...
     def create_provider(

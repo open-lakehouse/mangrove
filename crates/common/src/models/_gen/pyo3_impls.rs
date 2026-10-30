@@ -445,6 +445,8 @@ pub enum PyPolicyType {
     POLICY_TYPE_UNSPECIFIED = 0isize,
     POLICY_TYPE_ROW_FILTER = 1isize,
     POLICY_TYPE_COLUMN_MASK = 2isize,
+    POLICY_TYPE_DENY = 3isize,
+    POLICY_TYPE_GRANT = 4isize,
 }
 impl PyPolicyType {
     fn __to_proto_i32(self) -> i32 {
@@ -452,6 +454,8 @@ impl PyPolicyType {
             PyPolicyType::POLICY_TYPE_UNSPECIFIED => 0i32,
             PyPolicyType::POLICY_TYPE_ROW_FILTER => 1i32,
             PyPolicyType::POLICY_TYPE_COLUMN_MASK => 2i32,
+            PyPolicyType::POLICY_TYPE_DENY => 3i32,
+            PyPolicyType::POLICY_TYPE_GRANT => 4i32,
         }
     }
     fn __from_proto_i32(value: i32) -> Self {
@@ -459,6 +463,8 @@ impl PyPolicyType {
             0i32 => PyPolicyType::POLICY_TYPE_UNSPECIFIED,
             1i32 => PyPolicyType::POLICY_TYPE_ROW_FILTER,
             2i32 => PyPolicyType::POLICY_TYPE_COLUMN_MASK,
+            3i32 => PyPolicyType::POLICY_TYPE_DENY,
+            4i32 => PyPolicyType::POLICY_TYPE_GRANT,
             _ => PyPolicyType::POLICY_TYPE_UNSPECIFIED,
         }
     }
@@ -8160,31 +8166,104 @@ impl PyCreatePolicyRequest {
     #[new]
     #[pyo3(
         signature = (
+            name = None,
             on_securable_type = None,
             on_securable_fullname = None,
-            policy_info = None
+            policy_type = None,
+            comment = None,
+            to_principals = None,
+            except_principals = None,
+            for_securable_type = None,
+            when_condition = None,
+            match_columns = None,
+            row_filter = None,
+            column_mask = None,
+            deny = None,
+            grant = None
         )
     )]
     fn new(
+        name: ::core::option::Option<::std::string::String>,
         on_securable_type: ::core::option::Option<::std::string::String>,
         on_securable_fullname: ::core::option::Option<::std::string::String>,
-        policy_info: ::core::option::Option<PyPolicyInfo>,
+        policy_type: ::core::option::Option<PyPolicyType>,
+        comment: ::core::option::Option<::std::string::String>,
+        to_principals: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        except_principals: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        for_securable_type: ::core::option::Option<::std::string::String>,
+        when_condition: ::core::option::Option<::std::string::String>,
+        match_columns: ::core::option::Option<::std::vec::Vec<PyMatchColumn>>,
+        row_filter: ::core::option::Option<PyFunctionRef>,
+        column_mask: ::core::option::Option<PyFunctionRef>,
+        deny: ::core::option::Option<PyPrivilegeOptions>,
+        grant: ::core::option::Option<PyPrivilegeOptions>,
     ) -> Self {
         let mut inner =
             <super::policies::v1::CreatePolicyRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
         if let ::core::option::Option::Some(value) = on_securable_type {
             inner.on_securable_type = value;
         }
         if let ::core::option::Option::Some(value) = on_securable_fullname {
             inner.on_securable_fullname = value;
         }
+        if let ::core::option::Option::Some(value) = policy_type {
+            inner.policy_type = ::buffa::EnumValue::Known(
+                <super::policies::v1::PolicyType as ::core::convert::From<_>>::from(value),
+            );
+        }
         {
-            let value = policy_info;
-            inner.policy_info = value
+            let value = comment;
+            inner.comment = value;
+        }
+        if let ::core::option::Option::Some(value) = to_principals {
+            inner.to_principals = value;
+        }
+        if let ::core::option::Option::Some(value) = except_principals {
+            inner.except_principals = value;
+        }
+        {
+            let value = for_securable_type;
+            inner.for_securable_type = value;
+        }
+        {
+            let value = when_condition;
+            inner.when_condition = value;
+        }
+        if let ::core::option::Option::Some(value) = match_columns {
+            inner.match_columns = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = row_filter;
+            inner.row_filter = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = column_mask;
+            inner.column_mask = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = deny;
+            inner.deny = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = grant;
+            inner.grant = value
                 .map(|w| ::buffa::MessageField::some(w.into()))
                 .unwrap_or_default();
         }
         Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
     }
     #[getter]
     fn on_securable_type(&self) -> ::std::string::String {
@@ -8195,12 +8274,73 @@ impl PyCreatePolicyRequest {
         self.0.on_securable_fullname.clone()
     }
     #[getter]
-    fn policy_info(&self) -> ::core::option::Option<PyPolicyInfo> {
+    fn policy_type(&self) -> PyPolicyType {
+        PyPolicyType::from(self.0.policy_type.as_known().unwrap_or_default())
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn to_principals(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.to_principals.clone()
+    }
+    #[getter]
+    fn except_principals(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.except_principals.clone()
+    }
+    #[getter]
+    fn for_securable_type(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.for_securable_type.clone()
+    }
+    #[getter]
+    fn when_condition(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.when_condition.clone()
+    }
+    #[getter]
+    fn match_columns(&self) -> ::std::vec::Vec<PyMatchColumn> {
         self.0
-            .policy_info
+            .match_columns
+            .iter()
+            .cloned()
+            .map(PyMatchColumn::from)
+            .collect()
+    }
+    #[getter]
+    fn row_filter(&self) -> ::core::option::Option<PyFunctionRef> {
+        self.0
+            .row_filter
             .clone()
             .into_option()
-            .map(PyPolicyInfo::from)
+            .map(PyFunctionRef::from)
+    }
+    #[getter]
+    fn column_mask(&self) -> ::core::option::Option<PyFunctionRef> {
+        self.0
+            .column_mask
+            .clone()
+            .into_option()
+            .map(PyFunctionRef::from)
+    }
+    #[getter]
+    fn deny(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        self.0
+            .deny
+            .clone()
+            .into_option()
+            .map(PyPrivilegeOptions::from)
+    }
+    #[getter]
+    fn grant(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        self.0
+            .grant
+            .clone()
+            .into_option()
+            .map(PyPrivilegeOptions::from)
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
     }
     #[setter(on_securable_type)]
     fn set_on_securable_type(&mut self, value: ::std::string::String) {
@@ -8210,9 +8350,58 @@ impl PyCreatePolicyRequest {
     fn set_on_securable_fullname(&mut self, value: ::std::string::String) {
         self.0.on_securable_fullname = value;
     }
-    #[setter(policy_info)]
-    fn set_policy_info(&mut self, value: ::core::option::Option<PyPolicyInfo>) {
-        self.0.policy_info = value
+    #[setter(policy_type)]
+    fn set_policy_type(&mut self, value: PyPolicyType) {
+        self.0.policy_type =
+            ::buffa::EnumValue::Known(<super::policies::v1::PolicyType as ::core::convert::From<
+                _,
+            >>::from(value));
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(to_principals)]
+    fn set_to_principals(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.to_principals = value;
+    }
+    #[setter(except_principals)]
+    fn set_except_principals(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.except_principals = value;
+    }
+    #[setter(for_securable_type)]
+    fn set_for_securable_type(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.for_securable_type = value;
+    }
+    #[setter(when_condition)]
+    fn set_when_condition(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.when_condition = value;
+    }
+    #[setter(match_columns)]
+    fn set_match_columns(&mut self, value: ::std::vec::Vec<PyMatchColumn>) {
+        self.0.match_columns = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(row_filter)]
+    fn set_row_filter(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        self.0.row_filter = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(column_mask)]
+    fn set_column_mask(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        self.0.column_mask = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(deny)]
+    fn set_deny(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        self.0.deny = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(grant)]
+    fn set_grant(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        self.0.grant = value
             .map(|w| ::buffa::MessageField::some(w.into()))
             .unwrap_or_default();
     }
@@ -8411,10 +8600,11 @@ pub struct PyFunctionRef(pub super::policies::v1::FunctionRef);
 #[::pyo3::pymethods]
 impl PyFunctionRef {
     #[new]
-    #[pyo3(signature = (function_name = None, using = None))]
+    #[pyo3(signature = (function_name = None, using = None, on_column = None))]
     fn new(
         function_name: ::core::option::Option<::std::string::String>,
         using: ::core::option::Option<::std::vec::Vec<PyFunctionArg>>,
+        on_column: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner = <super::policies::v1::FunctionRef as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = function_name {
@@ -8422,6 +8612,10 @@ impl PyFunctionRef {
         }
         if let ::core::option::Option::Some(value) = using {
             inner.using = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = on_column;
+            inner.on_column = value;
         }
         Self(inner)
     }
@@ -8438,6 +8632,10 @@ impl PyFunctionRef {
             .map(PyFunctionArg::from)
             .collect()
     }
+    #[getter]
+    fn on_column(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.on_column.clone()
+    }
     #[setter(function_name)]
     fn set_function_name(&mut self, value: ::std::string::String) {
         self.0.function_name = value;
@@ -8445,6 +8643,10 @@ impl PyFunctionRef {
     #[setter(using)]
     fn set_using(&mut self, value: ::std::vec::Vec<PyFunctionArg>) {
         self.0.using = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(on_column)]
+    fn set_on_column(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.on_column = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -8708,7 +8910,8 @@ impl PyMatchColumn {
         condition: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner = <super::policies::v1::MatchColumn as ::core::default::Default>::default();
-        if let ::core::option::Option::Some(value) = alias {
+        {
+            let value = alias;
             inner.alias = value;
         }
         if let ::core::option::Option::Some(value) = condition {
@@ -8717,7 +8920,7 @@ impl PyMatchColumn {
         Self(inner)
     }
     #[getter]
-    fn alias(&self) -> ::std::string::String {
+    fn alias(&self) -> ::core::option::Option<::std::string::String> {
         self.0.alias.clone()
     }
     #[getter]
@@ -8725,7 +8928,7 @@ impl PyMatchColumn {
         self.0.condition.clone()
     }
     #[setter(alias)]
-    fn set_alias(&mut self, value: ::std::string::String) {
+    fn set_alias(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.alias = value;
     }
     #[setter(condition)]
@@ -8772,8 +8975,11 @@ impl PyPolicyInfo {
             updated_at = None,
             created_by = None,
             updated_by = None,
+            for_securable_type = None,
             row_filter = None,
-            column_mask = None
+            column_mask = None,
+            deny = None,
+            grant = None
         )
     )]
     fn new(
@@ -8791,8 +8997,11 @@ impl PyPolicyInfo {
         updated_at: ::core::option::Option<i64>,
         created_by: ::core::option::Option<::std::string::String>,
         updated_by: ::core::option::Option<::std::string::String>,
+        for_securable_type: ::core::option::Option<::std::string::String>,
         row_filter: ::core::option::Option<PyFunctionRef>,
         column_mask: ::core::option::Option<PyFunctionRef>,
+        deny: ::core::option::Option<PyPrivilegeOptions>,
+        grant: ::core::option::Option<PyPrivilegeOptions>,
     ) -> Self {
         let mut inner = <super::policies::v1::PolicyInfo as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
@@ -8846,19 +9055,34 @@ impl PyPolicyInfo {
             let value = updated_by;
             inner.updated_by = value;
         }
+        {
+            let value = for_securable_type;
+            inner.for_securable_type = value;
+        }
         if let ::core::option::Option::Some(value) = row_filter {
-            inner.function = ::core::option::Option::Some(
-                super::policies::v1::policy_info::Function::RowFilter(::std::boxed::Box::new(
+            inner.options =
+                ::core::option::Option::Some(super::policies::v1::policy_info::Options::RowFilter(
+                    ::std::boxed::Box::new(value.into()),
+                ));
+        }
+        if let ::core::option::Option::Some(value) = column_mask {
+            inner.options = ::core::option::Option::Some(
+                super::policies::v1::policy_info::Options::ColumnMask(::std::boxed::Box::new(
                     value.into(),
                 )),
             );
         }
-        if let ::core::option::Option::Some(value) = column_mask {
-            inner.function = ::core::option::Option::Some(
-                super::policies::v1::policy_info::Function::ColumnMask(::std::boxed::Box::new(
-                    value.into(),
-                )),
-            );
+        if let ::core::option::Option::Some(value) = deny {
+            inner.options =
+                ::core::option::Option::Some(super::policies::v1::policy_info::Options::Deny(
+                    ::std::boxed::Box::new(value.into()),
+                ));
+        }
+        if let ::core::option::Option::Some(value) = grant {
+            inner.options =
+                ::core::option::Option::Some(super::policies::v1::policy_info::Options::Grant(
+                    ::std::boxed::Box::new(value.into()),
+                ));
         }
         Self(inner)
     }
@@ -8923,6 +9147,10 @@ impl PyPolicyInfo {
     fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
         self.0.updated_by.clone()
     }
+    #[getter]
+    fn for_securable_type(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.for_securable_type.clone()
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
@@ -8982,23 +9210,47 @@ impl PyPolicyInfo {
     fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.updated_by = value;
     }
+    #[setter(for_securable_type)]
+    fn set_for_securable_type(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.for_securable_type = value;
+    }
     ///The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
     #[getter]
     fn row_filter(&self) -> ::core::option::Option<PyFunctionRef> {
-        match &self.0.function {
-            ::core::option::Option::Some(
-                super::policies::v1::policy_info::Function::RowFilter(value),
-            ) => ::core::option::Option::Some(<PyFunctionRef>::from((**value).clone())),
+        match &self.0.options {
+            ::core::option::Option::Some(super::policies::v1::policy_info::Options::RowFilter(
+                value,
+            )) => ::core::option::Option::Some(<PyFunctionRef>::from((**value).clone())),
             _ => ::core::option::Option::None,
         }
     }
     ///The column-mask function to invoke. Set only when policy_type is POLICY_TYPE_COLUMN_MASK.
     #[getter]
     fn column_mask(&self) -> ::core::option::Option<PyFunctionRef> {
-        match &self.0.function {
+        match &self.0.options {
             ::core::option::Option::Some(
-                super::policies::v1::policy_info::Function::ColumnMask(value),
+                super::policies::v1::policy_info::Options::ColumnMask(value),
             ) => ::core::option::Option::Some(<PyFunctionRef>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///The privileges to deny. Set only when policy_type is POLICY_TYPE_DENY.
+    #[getter]
+    fn deny(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        match &self.0.options {
+            ::core::option::Option::Some(super::policies::v1::policy_info::Options::Deny(
+                value,
+            )) => ::core::option::Option::Some(<PyPrivilegeOptions>::from((**value).clone())),
+            _ => ::core::option::Option::None,
+        }
+    }
+    ///The privileges to grant. Set only when policy_type is POLICY_TYPE_GRANT.
+    #[getter]
+    fn grant(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        match &self.0.options {
+            ::core::option::Option::Some(super::policies::v1::policy_info::Options::Grant(
+                value,
+            )) => ::core::option::Option::Some(<PyPrivilegeOptions>::from((**value).clone())),
             _ => ::core::option::Option::None,
         }
     }
@@ -9006,20 +9258,20 @@ impl PyPolicyInfo {
     fn set_row_filter(&mut self, value: ::core::option::Option<PyFunctionRef>) {
         match value {
             ::core::option::Option::Some(value) => {
-                self.0.function = ::core::option::Option::Some(
-                    super::policies::v1::policy_info::Function::RowFilter(::std::boxed::Box::new(
+                self.0.options = ::core::option::Option::Some(
+                    super::policies::v1::policy_info::Options::RowFilter(::std::boxed::Box::new(
                         value.into(),
                     )),
                 );
             }
             ::core::option::Option::None => {
                 if ::core::matches!(
-                    self.0.function,
+                    self.0.options,
                     ::core::option::Option::Some(
-                        super::policies::v1::policy_info::Function::RowFilter(_)
+                        super::policies::v1::policy_info::Options::RowFilter(_)
                     )
                 ) {
-                    self.0.function = ::core::option::Option::None;
+                    self.0.options = ::core::option::Option::None;
                 }
             }
         }
@@ -9028,20 +9280,62 @@ impl PyPolicyInfo {
     fn set_column_mask(&mut self, value: ::core::option::Option<PyFunctionRef>) {
         match value {
             ::core::option::Option::Some(value) => {
-                self.0.function = ::core::option::Option::Some(
-                    super::policies::v1::policy_info::Function::ColumnMask(::std::boxed::Box::new(
+                self.0.options = ::core::option::Option::Some(
+                    super::policies::v1::policy_info::Options::ColumnMask(::std::boxed::Box::new(
                         value.into(),
                     )),
                 );
             }
             ::core::option::Option::None => {
                 if ::core::matches!(
-                    self.0.function,
+                    self.0.options,
                     ::core::option::Option::Some(
-                        super::policies::v1::policy_info::Function::ColumnMask(_)
+                        super::policies::v1::policy_info::Options::ColumnMask(_)
                     )
                 ) {
-                    self.0.function = ::core::option::Option::None;
+                    self.0.options = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(deny)]
+    fn set_deny(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.options =
+                    ::core::option::Option::Some(super::policies::v1::policy_info::Options::Deny(
+                        ::std::boxed::Box::new(value.into()),
+                    ));
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.options,
+                    ::core::option::Option::Some(super::policies::v1::policy_info::Options::Deny(
+                        _
+                    ))
+                ) {
+                    self.0.options = ::core::option::Option::None;
+                }
+            }
+        }
+    }
+    #[setter(grant)]
+    fn set_grant(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        match value {
+            ::core::option::Option::Some(value) => {
+                self.0.options =
+                    ::core::option::Option::Some(super::policies::v1::policy_info::Options::Grant(
+                        ::std::boxed::Box::new(value.into()),
+                    ));
+            }
+            ::core::option::Option::None => {
+                if ::core::matches!(
+                    self.0.options,
+                    ::core::option::Option::Some(super::policies::v1::policy_info::Options::Grant(
+                        _
+                    ))
+                ) {
+                    self.0.options = ::core::option::Option::None;
                 }
             }
         }
@@ -9063,6 +9357,47 @@ impl ::core::convert::From<PyPolicyInfo> for super::policies::v1::PolicyInfo {
         value.0
     }
 }
+#[::pyo3::pyclass(name = "PrivilegeOptions", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyPrivilegeOptions(pub super::policies::v1::PrivilegeOptions);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyPrivilegeOptions {
+    #[new]
+    #[pyo3(signature = (privileges = None))]
+    fn new(privileges: ::core::option::Option<::std::vec::Vec<::std::string::String>>) -> Self {
+        let mut inner =
+            <super::policies::v1::PrivilegeOptions as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = privileges {
+            inner.privileges = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn privileges(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.privileges.clone()
+    }
+    #[setter(privileges)]
+    fn set_privileges(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.privileges = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::policies::v1::PrivilegeOptions> for PyPrivilegeOptions {
+    fn from(value: super::policies::v1::PrivilegeOptions) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyPrivilegeOptions> for super::policies::v1::PrivilegeOptions {
+    fn from(value: PyPrivilegeOptions) -> Self {
+        value.0
+    }
+}
 #[::pyo3::pyclass(name = "UpdatePolicyRequest", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyUpdatePolicyRequest(pub super::policies::v1::UpdatePolicyRequest);
@@ -9075,7 +9410,17 @@ impl PyUpdatePolicyRequest {
             on_securable_type = None,
             on_securable_fullname = None,
             name = None,
-            policy_info = None,
+            policy_type = None,
+            comment = None,
+            to_principals = None,
+            except_principals = None,
+            for_securable_type = None,
+            when_condition = None,
+            match_columns = None,
+            row_filter = None,
+            column_mask = None,
+            deny = None,
+            grant = None,
             update_mask = None
         )
     )]
@@ -9083,7 +9428,17 @@ impl PyUpdatePolicyRequest {
         on_securable_type: ::core::option::Option<::std::string::String>,
         on_securable_fullname: ::core::option::Option<::std::string::String>,
         name: ::core::option::Option<::std::string::String>,
-        policy_info: ::core::option::Option<PyPolicyInfo>,
+        policy_type: ::core::option::Option<PyPolicyType>,
+        comment: ::core::option::Option<::std::string::String>,
+        to_principals: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        except_principals: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        for_securable_type: ::core::option::Option<::std::string::String>,
+        when_condition: ::core::option::Option<::std::string::String>,
+        match_columns: ::core::option::Option<::std::vec::Vec<PyMatchColumn>>,
+        row_filter: ::core::option::Option<PyFunctionRef>,
+        column_mask: ::core::option::Option<PyFunctionRef>,
+        deny: ::core::option::Option<PyPrivilegeOptions>,
+        grant: ::core::option::Option<PyPrivilegeOptions>,
         update_mask: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner =
@@ -9098,8 +9453,55 @@ impl PyUpdatePolicyRequest {
             inner.name = value;
         }
         {
-            let value = policy_info;
-            inner.policy_info = value
+            let value = policy_type;
+            inner.policy_type = value.map(|e| {
+                ::buffa::EnumValue::Known(
+                    <super::policies::v1::PolicyType as ::core::convert::From<_>>::from(e),
+                )
+            });
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        if let ::core::option::Option::Some(value) = to_principals {
+            inner.to_principals = value;
+        }
+        if let ::core::option::Option::Some(value) = except_principals {
+            inner.except_principals = value;
+        }
+        {
+            let value = for_securable_type;
+            inner.for_securable_type = value;
+        }
+        {
+            let value = when_condition;
+            inner.when_condition = value;
+        }
+        if let ::core::option::Option::Some(value) = match_columns {
+            inner.match_columns = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = row_filter;
+            inner.row_filter = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = column_mask;
+            inner.column_mask = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = deny;
+            inner.deny = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = grant;
+            inner.grant = value
                 .map(|w| ::buffa::MessageField::some(w.into()))
                 .unwrap_or_default();
         }
@@ -9122,12 +9524,73 @@ impl PyUpdatePolicyRequest {
         self.0.name.clone()
     }
     #[getter]
-    fn policy_info(&self) -> ::core::option::Option<PyPolicyInfo> {
+    fn policy_type(&self) -> ::core::option::Option<PyPolicyType> {
         self.0
-            .policy_info
+            .policy_type
+            .as_ref()
+            .and_then(|e| e.as_known())
+            .map(PyPolicyType::from)
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn to_principals(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.to_principals.clone()
+    }
+    #[getter]
+    fn except_principals(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.except_principals.clone()
+    }
+    #[getter]
+    fn for_securable_type(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.for_securable_type.clone()
+    }
+    #[getter]
+    fn when_condition(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.when_condition.clone()
+    }
+    #[getter]
+    fn match_columns(&self) -> ::std::vec::Vec<PyMatchColumn> {
+        self.0
+            .match_columns
+            .iter()
+            .cloned()
+            .map(PyMatchColumn::from)
+            .collect()
+    }
+    #[getter]
+    fn row_filter(&self) -> ::core::option::Option<PyFunctionRef> {
+        self.0
+            .row_filter
             .clone()
             .into_option()
-            .map(PyPolicyInfo::from)
+            .map(PyFunctionRef::from)
+    }
+    #[getter]
+    fn column_mask(&self) -> ::core::option::Option<PyFunctionRef> {
+        self.0
+            .column_mask
+            .clone()
+            .into_option()
+            .map(PyFunctionRef::from)
+    }
+    #[getter]
+    fn deny(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        self.0
+            .deny
+            .clone()
+            .into_option()
+            .map(PyPrivilegeOptions::from)
+    }
+    #[getter]
+    fn grant(&self) -> ::core::option::Option<PyPrivilegeOptions> {
+        self.0
+            .grant
+            .clone()
+            .into_option()
+            .map(PyPrivilegeOptions::from)
     }
     #[getter]
     fn update_mask(&self) -> ::core::option::Option<::std::string::String> {
@@ -9145,9 +9608,59 @@ impl PyUpdatePolicyRequest {
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
     }
-    #[setter(policy_info)]
-    fn set_policy_info(&mut self, value: ::core::option::Option<PyPolicyInfo>) {
-        self.0.policy_info = value
+    #[setter(policy_type)]
+    fn set_policy_type(&mut self, value: ::core::option::Option<PyPolicyType>) {
+        self.0.policy_type = value.map(|e| {
+            ::buffa::EnumValue::Known(<super::policies::v1::PolicyType as ::core::convert::From<
+                _,
+            >>::from(e))
+        });
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(to_principals)]
+    fn set_to_principals(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.to_principals = value;
+    }
+    #[setter(except_principals)]
+    fn set_except_principals(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.except_principals = value;
+    }
+    #[setter(for_securable_type)]
+    fn set_for_securable_type(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.for_securable_type = value;
+    }
+    #[setter(when_condition)]
+    fn set_when_condition(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.when_condition = value;
+    }
+    #[setter(match_columns)]
+    fn set_match_columns(&mut self, value: ::std::vec::Vec<PyMatchColumn>) {
+        self.0.match_columns = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(row_filter)]
+    fn set_row_filter(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        self.0.row_filter = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(column_mask)]
+    fn set_column_mask(&mut self, value: ::core::option::Option<PyFunctionRef>) {
+        self.0.column_mask = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(deny)]
+    fn set_deny(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        self.0.deny = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(grant)]
+    fn set_grant(&mut self, value: ::core::option::Option<PyPrivilegeOptions>) {
+        self.0.grant = value
             .map(|w| ::buffa::MessageField::some(w.into()))
             .unwrap_or_default();
     }

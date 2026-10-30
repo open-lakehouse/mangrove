@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use unitycatalog_common::models::policies::v1::policy_info::Function;
+use unitycatalog_common::models::policies::v1::policy_info::Options;
 use unitycatalog_common::models::policies::v1::*;
 use unitycatalog_common::models::{
     ObjectLabel, Resource, ResourceIdent, ResourceName, ResourceRef,
@@ -12,19 +12,36 @@ pub use crate::codegen::policies::PolicyHandler;
 use crate::policy::{Permission, Policy, process_resources};
 use crate::store::ResourceStore;
 
+/// The securable types a policy can be defined on, in their canonical (upper-case) form.
+const SECURABLE_TYPES: [&str; 3] = ["CATALOG", "SCHEMA", "TABLE"];
+
+/// Normalize a securable type from a path or body to its canonical upper-case form.
+///
+/// Matching is case-insensitive so `table` and `TABLE` address the same securable.
+fn securable_type(raw: &str) -> Result<&'static str> {
+    SECURABLE_TYPES
+        .into_iter()
+        .find(|t| t.eq_ignore_ascii_case(raw))
+        .ok_or_else(|| {
+            crate::Error::invalid_argument(format!(
+                "unsupported securable type '{raw}': expected CATALOG, SCHEMA or TABLE"
+            ))
+        })
+}
+
 /// A securable a policy can be defined on, together with its ancestors.
 ///
 /// Ordered from the securable itself outward: a table's chain is
-/// `[(tables, catalog.schema.table), (schemas, catalog.schema), (catalogs, catalog)]`.
+/// `[(TABLE, catalog.schema.table), (SCHEMA, catalog.schema), (CATALOG, catalog)]`.
 fn securable_chain(
     on_securable_type: &str,
     on_securable_fullname: &str,
 ) -> Vec<(&'static str, String)> {
     let segments: Vec<&str> = on_securable_fullname.split('.').collect();
     let levels: &[&str] = match on_securable_type {
-        "tables" => &["tables", "schemas", "catalogs"],
-        "schemas" => &["schemas", "catalogs"],
-        "catalogs" => &["catalogs"],
+        "TABLE" => &["TABLE", "SCHEMA", "CATALOG"],
+        "SCHEMA" => &["SCHEMA", "CATALOG"],
+        "CATALOG" => &["CATALOG"],
         _ => &[],
     };
     levels
@@ -42,7 +59,9 @@ fn matches_securable(
     on_securable_type: &str,
     on_securable_fullname: &str,
 ) -> bool {
-    policy.on_securable_type == on_securable_type
+    policy
+        .on_securable_type
+        .eq_ignore_ascii_case(on_securable_type)
         && policy.on_securable_fullname == on_securable_fullname
 }
 
@@ -51,31 +70,169 @@ fn validate_policy_shape(policy: &PolicyInfo) -> Result<()> {
         .policy_type
         .as_known()
         .ok_or_else(|| crate::Error::invalid_argument("unrecognized policy_type"))?;
-    match policy_type {
-        PolicyType::POLICY_TYPE_COLUMN_MASK if policy.match_columns.is_empty() => {
-            Err(crate::Error::invalid_argument(
-                "column mask policies require at least one match_columns entry",
-            ))
-        }
-        PolicyType::POLICY_TYPE_ROW_FILTER
-            if policy
-                .function
-                .as_ref()
-                .and_then(|f| match f {
-                    Function::RowFilter(r) => Some(r),
-                    _ => None,
-                })
-                .is_none_or(|r| r.function_name.is_empty()) =>
+    let invalid = |msg: &str| Err(crate::Error::invalid_argument(msg));
+    match (policy_type, &policy.options) {
+        (PolicyType::POLICY_TYPE_UNSPECIFIED, _) => invalid(
+            "policy_type must be one of POLICY_TYPE_ROW_FILTER, POLICY_TYPE_COLUMN_MASK, \
+             POLICY_TYPE_DENY or POLICY_TYPE_GRANT",
+        ),
+        (PolicyType::POLICY_TYPE_ROW_FILTER, Some(Options::RowFilter(r)))
+            if !r.function_name.is_empty() =>
         {
-            Err(crate::Error::invalid_argument(
-                "row filter policies require row_filter.function_name",
-            ))
+            Ok(())
         }
-        PolicyType::POLICY_TYPE_UNSPECIFIED => Err(crate::Error::invalid_argument(
-            "policy_type must be POLICY_TYPE_ROW_FILTER or POLICY_TYPE_COLUMN_MASK",
-        )),
-        _ => Ok(()),
+        (PolicyType::POLICY_TYPE_ROW_FILTER, _) => {
+            invalid("row filter policies require row_filter.function_name")
+        }
+        (PolicyType::POLICY_TYPE_COLUMN_MASK, _) if policy.match_columns.is_empty() => {
+            invalid("column mask policies require at least one match_columns entry")
+        }
+        (PolicyType::POLICY_TYPE_COLUMN_MASK, Some(Options::ColumnMask(m)))
+            if !m.function_name.is_empty() =>
+        {
+            Ok(())
+        }
+        (PolicyType::POLICY_TYPE_COLUMN_MASK, _) => {
+            invalid("column mask policies require column_mask.function_name")
+        }
+        (PolicyType::POLICY_TYPE_DENY, Some(Options::Deny(_)))
+        | (PolicyType::POLICY_TYPE_GRANT, Some(Options::Grant(_))) => Ok(()),
+        (PolicyType::POLICY_TYPE_DENY, _) => invalid("deny policies require deny options"),
+        (PolicyType::POLICY_TYPE_GRANT, _) => invalid("grant policies require grant options"),
     }
+}
+
+/// Collapse the per-kind option fields of a create/update request into the stored oneof.
+///
+/// Requests carry `row_filter`, `column_mask`, `deny` and `grant` as separate fields (the
+/// same JSON as the oneof on [`PolicyInfo`]); at most one may be set.
+fn request_options(
+    row_filter: Option<FunctionRef>,
+    column_mask: Option<FunctionRef>,
+    deny: Option<PrivilegeOptions>,
+    grant: Option<PrivilegeOptions>,
+) -> Result<Option<Options>> {
+    let options: Vec<Options> = [
+        row_filter.map(|f| Options::RowFilter(Box::new(f))),
+        column_mask.map(|f| Options::ColumnMask(Box::new(f))),
+        deny.map(|p| Options::Deny(Box::new(p))),
+        grant.map(|p| Options::Grant(Box::new(p))),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+    match <[Options; 1]>::try_from(options) {
+        Ok([options]) => Ok(Some(options)),
+        Err(options) if options.is_empty() => Ok(None),
+        Err(_) => Err(crate::Error::invalid_argument(
+            "at most one of row_filter, column_mask, deny and grant may be set",
+        )),
+    }
+}
+
+/// Apply an update request onto the stored policy.
+///
+/// With an empty or `*` update mask every field set in the request is applied. With an
+/// explicit mask only the listed fields are applied, and a listed field that is unset in
+/// the request is cleared. The enforcement options (`row_filter`, `column_mask`, `deny`,
+/// `grant`) are a single oneof, so naming any of them replaces the options as a whole.
+fn apply_update(policy: &mut PolicyInfo, request: UpdatePolicyRequest) -> Result<()> {
+    let options = request_options(
+        request.row_filter.into_option(),
+        request.column_mask.into_option(),
+        request.deny.into_option(),
+        request.grant.into_option(),
+    )?;
+    let mask: Vec<&str> = request
+        .update_mask
+        .as_deref()
+        .map(|m| {
+            m.split(',')
+                .map(str::trim)
+                .filter(|f| !f.is_empty())
+                .collect()
+        })
+        .unwrap_or_default();
+    let update_all = mask.is_empty() || mask == ["*"];
+    let masked = |field: &str| mask.contains(&field);
+
+    if let Some(unknown) = mask.iter().find(|f| {
+        !matches!(
+            **f,
+            "*" | "comment"
+                | "to_principals"
+                | "except_principals"
+                | "for_securable_type"
+                | "when_condition"
+                | "match_columns"
+                | "policy_type"
+                | "row_filter"
+                | "column_mask"
+                | "deny"
+                | "grant"
+        )
+    }) {
+        return Err(crate::Error::invalid_argument(format!(
+            "update_mask names a field that cannot be updated: '{unknown}'"
+        )));
+    }
+
+    if update_all {
+        if request.comment.is_some() {
+            policy.comment = request.comment;
+        }
+        if !request.to_principals.is_empty() {
+            policy.to_principals = request.to_principals;
+        }
+        if !request.except_principals.is_empty() {
+            policy.except_principals = request.except_principals;
+        }
+        if request.for_securable_type.is_some() {
+            policy.for_securable_type = request.for_securable_type;
+        }
+        if request.when_condition.is_some() {
+            policy.when_condition = request.when_condition;
+        }
+        if !request.match_columns.is_empty() {
+            policy.match_columns = request.match_columns;
+        }
+        if let Some(policy_type) = request.policy_type {
+            policy.policy_type = policy_type;
+        }
+        if options.is_some() {
+            policy.options = options;
+        }
+        return Ok(());
+    }
+
+    if masked("comment") {
+        policy.comment = request.comment;
+    }
+    if masked("to_principals") {
+        policy.to_principals = request.to_principals;
+    }
+    if masked("except_principals") {
+        policy.except_principals = request.except_principals;
+    }
+    if masked("for_securable_type") {
+        policy.for_securable_type = request.for_securable_type;
+    }
+    if masked("when_condition") {
+        policy.when_condition = request.when_condition;
+    }
+    if masked("match_columns") {
+        policy.match_columns = request.match_columns;
+    }
+    if masked("policy_type") {
+        policy.policy_type = request.policy_type.unwrap_or_default();
+    }
+    if ["row_filter", "column_mask", "deny", "grant"]
+        .iter()
+        .any(|f| masked(f))
+    {
+        policy.options = options;
+    }
+    Ok(())
 }
 
 #[async_trait::async_trait]
@@ -87,11 +244,31 @@ impl<T: ResourceStore + Policy<RequestContext>> PolicyHandler<RequestContext> fo
         context: RequestContext,
     ) -> Result<PolicyInfo> {
         self.check_required(&request, &context).await?;
-        let mut policy = request
-            .policy_info
-            .ok_or_else(|| crate::Error::invalid_argument("policy_info must be provided"))?;
-        policy.on_securable_type = request.on_securable_type;
-        policy.on_securable_fullname = request.on_securable_fullname;
+        let for_securable_type = request
+            .for_securable_type
+            .as_deref()
+            .map(securable_type)
+            .transpose()?
+            .map(str::to_string);
+        let policy = PolicyInfo {
+            name: request.name,
+            on_securable_type: securable_type(&request.on_securable_type)?.to_string(),
+            on_securable_fullname: request.on_securable_fullname,
+            policy_type: request.policy_type,
+            comment: request.comment,
+            to_principals: request.to_principals,
+            except_principals: request.except_principals,
+            for_securable_type,
+            when_condition: request.when_condition,
+            match_columns: request.match_columns,
+            options: request_options(
+                request.row_filter.into_option(),
+                request.column_mask.into_option(),
+                request.deny.into_option(),
+                request.grant.into_option(),
+            )?,
+            ..Default::default()
+        };
         validate_policy_shape(&policy)?;
         tracing::Span::current().record("resource_name", &policy.name);
 
@@ -127,7 +304,7 @@ impl<T: ResourceStore + Policy<RequestContext>> PolicyHandler<RequestContext> fo
         self.check_required(&request, &context).await?;
         let ident = find_policy_ident(
             self,
-            &request.on_securable_type,
+            securable_type(&request.on_securable_type)?,
             &request.on_securable_fullname,
             &request.name,
         )
@@ -145,7 +322,7 @@ impl<T: ResourceStore + Policy<RequestContext>> PolicyHandler<RequestContext> fo
         self.check_required(&request, &context).await?;
         let ident = find_policy_ident(
             self,
-            &request.on_securable_type,
+            securable_type(&request.on_securable_type)?,
             &request.on_securable_fullname,
             &request.name,
         )
@@ -160,6 +337,7 @@ impl<T: ResourceStore + Policy<RequestContext>> PolicyHandler<RequestContext> fo
         context: RequestContext,
     ) -> Result<ListPoliciesResponse> {
         self.check_required(&request, &context).await?;
+        let on_securable_type = securable_type(&request.on_securable_type)?;
 
         let (all, _) = self
             .list(&ObjectLabel::PolicyInfo, None, None, None)
@@ -167,15 +345,11 @@ impl<T: ResourceStore + Policy<RequestContext>> PolicyHandler<RequestContext> fo
         let mut policies: Vec<PolicyInfo> = all.into_iter().map(|r| r.try_into()).try_collect()?;
 
         if request.include_inherited.unwrap_or(false) {
-            let chain = securable_chain(&request.on_securable_type, &request.on_securable_fullname);
+            let chain = securable_chain(on_securable_type, &request.on_securable_fullname);
             policies.retain(|p| chain.iter().any(|(t, name)| matches_securable(p, t, name)));
         } else {
             policies.retain(|p| {
-                matches_securable(
-                    p,
-                    &request.on_securable_type,
-                    &request.on_securable_fullname,
-                )
+                matches_securable(p, on_securable_type, &request.on_securable_fullname)
             });
         }
 
@@ -207,25 +381,23 @@ impl<T: ResourceStore + Policy<RequestContext>> PolicyHandler<RequestContext> fo
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn update_policy(
         &self,
-        request: UpdatePolicyRequest,
+        mut request: UpdatePolicyRequest,
         context: RequestContext,
     ) -> Result<PolicyInfo> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
         let ident = find_policy_ident(
             self,
-            &request.on_securable_type,
+            securable_type(&request.on_securable_type)?,
             &request.on_securable_fullname,
             &request.name,
         )
         .await?;
-        let mut policy = request
-            .policy_info
-            .ok_or_else(|| crate::Error::invalid_argument("policy_info must be provided"))?;
-        // The name and securable are the resource identity and are taken from the path, not the body.
-        policy.name = request.name;
-        policy.on_securable_type = request.on_securable_type;
-        policy.on_securable_fullname = request.on_securable_fullname;
+        if let Some(t) = request.for_securable_type.as_deref() {
+            request.for_securable_type = Some(securable_type(t)?.to_string());
+        }
+        let mut policy: PolicyInfo = self.get(&ident).await?.0.try_into()?;
+        apply_update(&mut policy, request)?;
         validate_policy_shape(&policy)?;
         Ok(self.update(&ident, policy.into()).await?.0.try_into()?)
     }
@@ -308,10 +480,10 @@ impl SecuredAction for DeletePolicyRequest {
 /// securable, not over the policy object itself.
 fn securable_ident(on_securable_type: &str, on_securable_fullname: &str) -> ResourceIdent {
     let name = ResourceName::from_naive_str_split(on_securable_fullname);
-    match on_securable_type {
-        "catalogs" => ResourceIdent::catalog(name),
-        "schemas" => ResourceIdent::schema(name),
-        "tables" => ResourceIdent::table(name),
+    match securable_type(on_securable_type) {
+        Ok("CATALOG") => ResourceIdent::catalog(name),
+        Ok("SCHEMA") => ResourceIdent::schema(name),
+        Ok("TABLE") => ResourceIdent::table(name),
         _ => ResourceIdent::catalog(ResourceRef::Undefined),
     }
 }
@@ -380,22 +552,31 @@ mod tests {
         }
     }
 
-    fn row_filter_policy(
+    fn row_filter_request(
         name: &str,
         on_securable_type: &str,
         on_securable_fullname: &str,
-    ) -> PolicyInfo {
-        PolicyInfo {
+    ) -> CreatePolicyRequest {
+        CreatePolicyRequest {
             name: name.to_string(),
             on_securable_type: on_securable_type.to_string(),
             on_securable_fullname: on_securable_fullname.to_string(),
             policy_type: PolicyType::RowFilter.into(),
             to_principals: vec!["group:analysts".to_string()],
-            function: Some(Function::RowFilter(Box::new(FunctionRef {
+            row_filter: Some(FunctionRef {
                 function_name: "cat.sch.my_filter".to_string(),
-                using: vec![],
                 ..Default::default()
-            }))),
+            })
+            .into(),
+            ..Default::default()
+        }
+    }
+
+    fn update_request(name: &str) -> UpdatePolicyRequest {
+        UpdatePolicyRequest {
+            on_securable_type: "TABLE".to_string(),
+            on_securable_fullname: "cat.sch.tbl".to_string(),
+            name: name.to_string(),
             ..Default::default()
         }
     }
@@ -405,15 +586,7 @@ mod tests {
         let h = handler().await;
 
         let created = h
-            .create_policy(
-                CreatePolicyRequest {
-                    on_securable_type: "tables".to_string(),
-                    on_securable_fullname: "cat.sch.tbl".to_string(),
-                    policy_info: Some(row_filter_policy("p1", "", "")).into(),
-                    ..Default::default()
-                },
-                ctx(),
-            )
+            .create_policy(row_filter_request("p1", "TABLE", "cat.sch.tbl"), ctx())
             .await
             .unwrap();
         assert_eq!(created.name, "p1");
@@ -422,7 +595,7 @@ mod tests {
         let fetched = h
             .get_policy(
                 GetPolicyRequest {
-                    on_securable_type: "tables".to_string(),
+                    on_securable_type: "table".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
                     name: "p1".to_string(),
                     ..Default::default()
@@ -436,7 +609,7 @@ mod tests {
         let listed = h
             .list_policies(
                 ListPoliciesRequest {
-                    on_securable_type: "tables".to_string(),
+                    on_securable_type: "table".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
                     include_inherited: None,
                     max_results: None,
@@ -449,17 +622,11 @@ mod tests {
             .unwrap();
         assert_eq!(listed.policies.len(), 1);
 
-        let mut updated_policy = row_filter_policy("p1", "", "");
-        updated_policy.comment = Some("updated".to_string());
         let updated = h
             .update_policy(
                 UpdatePolicyRequest {
-                    on_securable_type: "tables".to_string(),
-                    on_securable_fullname: "cat.sch.tbl".to_string(),
-                    name: "p1".to_string(),
-                    policy_info: Some(updated_policy).into(),
-                    update_mask: None,
-                    ..Default::default()
+                    comment: Some("updated".to_string()),
+                    ..update_request("p1")
                 },
                 ctx(),
             )
@@ -469,7 +636,7 @@ mod tests {
 
         h.delete_policy(
             DeletePolicyRequest {
-                on_securable_type: "tables".to_string(),
+                on_securable_type: "table".to_string(),
                 on_securable_fullname: "cat.sch.tbl".to_string(),
                 name: "p1".to_string(),
                 ..Default::default()
@@ -482,7 +649,7 @@ mod tests {
         let missing = h
             .get_policy(
                 GetPolicyRequest {
-                    on_securable_type: "tables".to_string(),
+                    on_securable_type: "table".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
                     name: "p1".to_string(),
                     ..Default::default()
@@ -498,34 +665,19 @@ mod tests {
         let h = handler().await;
 
         h.create_policy(
-            CreatePolicyRequest {
-                on_securable_type: "catalogs".to_string(),
-                on_securable_fullname: "cat".to_string(),
-                policy_info: Some(row_filter_policy("catalog_policy", "", "")).into(),
-                ..Default::default()
-            },
+            row_filter_request("catalog_policy", "CATALOG", "cat"),
             ctx(),
         )
         .await
         .unwrap();
         h.create_policy(
-            CreatePolicyRequest {
-                on_securable_type: "schemas".to_string(),
-                on_securable_fullname: "cat.sch".to_string(),
-                policy_info: Some(row_filter_policy("schema_policy", "", "")).into(),
-                ..Default::default()
-            },
+            row_filter_request("schema_policy", "SCHEMA", "cat.sch"),
             ctx(),
         )
         .await
         .unwrap();
         h.create_policy(
-            CreatePolicyRequest {
-                on_securable_type: "tables".to_string(),
-                on_securable_fullname: "cat.sch.tbl".to_string(),
-                policy_info: Some(row_filter_policy("table_policy", "", "")).into(),
-                ..Default::default()
-            },
+            row_filter_request("table_policy", "TABLE", "cat.sch.tbl"),
             ctx(),
         )
         .await
@@ -534,7 +686,7 @@ mod tests {
         let without_inheritance = h
             .list_policies(
                 ListPoliciesRequest {
-                    on_securable_type: "tables".to_string(),
+                    on_securable_type: "table".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
                     include_inherited: None,
                     max_results: None,
@@ -551,7 +703,7 @@ mod tests {
         let with_inheritance = h
             .list_policies(
                 ListPoliciesRequest {
-                    on_securable_type: "tables".to_string(),
+                    on_securable_type: "table".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
                     include_inherited: Some(true),
                     max_results: None,
@@ -588,28 +740,12 @@ mod tests {
     #[tokio::test]
     async fn create_rejects_duplicate_name_on_same_securable() {
         let h = handler().await;
-        h.create_policy(
-            CreatePolicyRequest {
-                on_securable_type: "tables".to_string(),
-                on_securable_fullname: "cat.sch.tbl".to_string(),
-                policy_info: Some(row_filter_policy("p1", "", "")).into(),
-                ..Default::default()
-            },
-            ctx(),
-        )
-        .await
-        .unwrap();
+        h.create_policy(row_filter_request("p1", "TABLE", "cat.sch.tbl"), ctx())
+            .await
+            .unwrap();
 
         let result = h
-            .create_policy(
-                CreatePolicyRequest {
-                    on_securable_type: "tables".to_string(),
-                    on_securable_fullname: "cat.sch.tbl".to_string(),
-                    policy_info: Some(row_filter_policy("p1", "", "")).into(),
-                    ..Default::default()
-                },
-                ctx(),
-            )
+            .create_policy(row_filter_request("p1", "TABLE", "cat.sch.tbl"), ctx())
             .await;
         assert!(
             result.is_err(),
@@ -620,24 +756,18 @@ mod tests {
     #[tokio::test]
     async fn create_rejects_column_mask_without_match_columns() {
         let h = handler().await;
-        let mut policy = row_filter_policy("bad_mask", "", "");
-        policy.policy_type = PolicyType::ColumnMask.into();
-        policy.function = Some(Function::ColumnMask(Box::new(FunctionRef {
-            function_name: "cat.sch.my_mask".to_string(),
-            using: vec![],
-            ..Default::default()
-        })));
-        let result = h
-            .create_policy(
-                CreatePolicyRequest {
-                    on_securable_type: "tables".to_string(),
-                    on_securable_fullname: "cat.sch.tbl".to_string(),
-                    policy_info: Some(policy).into(),
-                    ..Default::default()
-                },
-                ctx(),
-            )
-            .await;
+        let request = CreatePolicyRequest {
+            policy_type: PolicyType::ColumnMask.into(),
+            row_filter: None.into(),
+            column_mask: Some(FunctionRef {
+                function_name: "cat.sch.my_mask".to_string(),
+                on_column: Some("ssn".to_string()),
+                ..Default::default()
+            })
+            .into(),
+            ..row_filter_request("bad_mask", "TABLE", "cat.sch.tbl")
+        };
+        let result = h.create_policy(request, ctx()).await;
         assert!(
             result.is_err(),
             "column mask without match_columns must be rejected"
@@ -650,7 +780,7 @@ mod tests {
         let result = h
             .get_policy(
                 GetPolicyRequest {
-                    on_securable_type: "tables".to_string(),
+                    on_securable_type: "table".to_string(),
                     on_securable_fullname: "cat.sch.tbl".to_string(),
                     name: "does-not-exist".to_string(),
                     ..Default::default()
@@ -659,5 +789,87 @@ mod tests {
             )
             .await;
         assert!(result.is_err(), "unknown policy must be NotFound");
+    }
+
+    #[tokio::test]
+    async fn update_mask_clears_listed_fields_and_keeps_others() {
+        let h = handler().await;
+        let mut request = row_filter_request("p1", "TABLE", "cat.sch.tbl");
+        request.comment = Some("original".to_string());
+        request.when_condition = Some("hasTag('pii')".to_string());
+        h.create_policy(request, ctx()).await.unwrap();
+
+        // Without a mask only the fields set in the request change.
+        let updated = h
+            .update_policy(
+                UpdatePolicyRequest {
+                    comment: Some("changed".to_string()),
+                    ..update_request("p1")
+                },
+                ctx(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(updated.comment.as_deref(), Some("changed"));
+        assert_eq!(updated.when_condition.as_deref(), Some("hasTag('pii')"));
+        assert_eq!(updated.to_principals, vec!["group:analysts".to_string()]);
+
+        // A field named in the mask but unset in the request is cleared.
+        let cleared = h
+            .update_policy(
+                UpdatePolicyRequest {
+                    update_mask: Some("when_condition".to_string()),
+                    ..update_request("p1")
+                },
+                ctx(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(cleared.when_condition, None);
+        assert_eq!(cleared.comment.as_deref(), Some("changed"));
+
+        let unknown = h
+            .update_policy(
+                UpdatePolicyRequest {
+                    update_mask: Some("name".to_string()),
+                    ..update_request("p1")
+                },
+                ctx(),
+            )
+            .await;
+        assert!(
+            unknown.is_err(),
+            "masking a non-updatable field must be rejected"
+        );
+    }
+
+    #[tokio::test]
+    async fn deny_policy_requires_deny_options() {
+        let h = handler().await;
+        let missing = CreatePolicyRequest {
+            policy_type: PolicyType::Deny.into(),
+            row_filter: None.into(),
+            ..row_filter_request("deny_missing", "CATALOG", "cat")
+        };
+        assert!(h.create_policy(missing, ctx()).await.is_err());
+
+        let created = h
+            .create_policy(
+                CreatePolicyRequest {
+                    policy_type: PolicyType::Deny.into(),
+                    row_filter: None.into(),
+                    deny: Some(PrivilegeOptions {
+                        privileges: vec!["SELECT".to_string()],
+                        ..Default::default()
+                    })
+                    .into(),
+                    ..row_filter_request("deny_select", "catalog", "cat")
+                },
+                ctx(),
+            )
+            .await
+            .unwrap();
+        // The securable type is stored in its canonical upper-case form.
+        assert_eq!(created.on_securable_type, "CATALOG");
     }
 }

@@ -639,6 +639,41 @@ impl NapiUnityCatalogClient {
             .default_error()
     }
     #[napi(catch_unwind)]
+    pub async fn create_policy(
+        &self,
+        name: String,
+        on_securable_type: String,
+        on_securable_fullname: String,
+        policy_type: i32,
+        comment: Option<String>,
+        to_principals: Option<Vec<String>>,
+        except_principals: Option<Vec<String>>,
+        for_securable_type: Option<String>,
+        when_condition: Option<String>,
+    ) -> napi::Result<Buffer> {
+        let mut request = self.client.create_policy(
+            name,
+            on_securable_type,
+            on_securable_fullname,
+            <PolicyType as buffa::Enumeration>::from_i32(policy_type).ok_or_else(|| {
+                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
+            })?,
+        );
+        request = request.with_comment(comment);
+        if let Some(to_principals) = to_principals {
+            request = request.with_to_principals(to_principals);
+        }
+        if let Some(except_principals) = except_principals {
+            request = request.with_except_principals(except_principals);
+        }
+        request = request.with_for_securable_type(for_securable_type);
+        request = request.with_when_condition(when_condition);
+        request
+            .await
+            .map(|item| Buffer::from(item.encode_to_vec()))
+            .default_error()
+    }
+    #[napi(catch_unwind)]
     pub async fn list_providers(&self, max_results: Option<i32>) -> napi::Result<Vec<Buffer>> {
         let mut request = self.client.list_providers();
         request = request.with_max_results(max_results);
