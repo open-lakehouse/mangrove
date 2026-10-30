@@ -391,6 +391,8 @@ class CreateFunction:
     """User-provided free-form text description."""
     data_type: str
     """Full data type specification of the return type of the function."""
+    external_language: Optional[str]
+    """External language of the function. Set when routine_body is EXTERNAL."""
     full_data_type: str
     """Full data type specification as SQL/catalogString text."""
     input_params: Optional[FunctionParameterInfos]
@@ -403,18 +405,22 @@ class CreateFunction:
     """Name of function, relative to parent schema."""
     parameter_style: ParameterStyle
     """The parameter-passing style."""
-    properties: Dict[str, str]
-    """A map of key-value properties attached to the securable."""
+    properties: Optional[str]
+    """JSON-serialized key-value pair map, encoded (escaped) as a string."""
+    return_params: Optional[FunctionParameterInfos]
+    """The return parameters of a table-valued function."""
     routine_body: RoutineBody
     """The routine body."""
-    routine_body_language: Optional[str]
-    """The language of the function routine body."""
     routine_definition: Optional[str]
     """Function body."""
+    routine_dependencies: Optional[DependencyList]
+    """The tables and functions the function depends on."""
     schema_name: str
     """Name of parent schema."""
     security_type: SecurityType
     """The security type of the function."""
+    specific_name: Optional[str]
+    """Specific name of the function; reserved for future use."""
     sql_data_access: SqlDataAccess
     """SQL data access information."""
 
@@ -423,18 +429,21 @@ class CreateFunction:
         catalog_name: Optional[str] = None,
         comment: Optional[str] = None,
         data_type: Optional[str] = None,
+        external_language: Optional[str] = None,
         full_data_type: Optional[str] = None,
         input_params: Optional[FunctionParameterInfos] = None,
         is_deterministic: Optional[bool] = None,
         is_null_call: Optional[bool] = None,
         name: Optional[str] = None,
         parameter_style: Optional[ParameterStyle] = None,
-        properties: Optional[Dict[str, str]] = None,
+        properties: Optional[str] = None,
+        return_params: Optional[FunctionParameterInfos] = None,
         routine_body: Optional[RoutineBody] = None,
-        routine_body_language: Optional[str] = None,
         routine_definition: Optional[str] = None,
+        routine_dependencies: Optional[DependencyList] = None,
         schema_name: Optional[str] = None,
         security_type: Optional[SecurityType] = None,
+        specific_name: Optional[str] = None,
         sql_data_access: Optional[SqlDataAccess] = None,
     ) -> None: ...
 
@@ -699,6 +708,8 @@ class Function:
     """Username of function creator."""
     data_type: str
     """Full data type specification of the return type of the function."""
+    external_language: Optional[str]
+    """External language of the function. Set when routine_body is EXTERNAL."""
     full_data_type: str
     """Full data type specification as SQL/catalogString text."""
     full_name: str
@@ -720,18 +731,16 @@ class Function:
     """Username of current owner of the function."""
     parameter_style: ParameterStyle
     """The parameter-passing style."""
-    properties: Dict[str, str]
-    """A map of key-value properties attached to the securable."""
-    return_params: Optional[str]
-    """The return type of the function in JSON format."""
+    properties: Optional[str]
+    """JSON-serialized key-value pair map, encoded (escaped) as a string."""
+    return_params: Optional[FunctionParameterInfos]
+    """The return parameters of a table-valued function."""
     routine_body: RoutineBody
     """The routine body."""
-    routine_body_language: Optional[str]
-    """The language of the function routine body."""
     routine_definition: Optional[str]
     """Function body."""
-    routine_dependencies: Optional[str]
-    """Function dependencies (in JSON form)."""
+    routine_dependencies: Optional[DependencyList]
+    """The tables and functions the function depends on."""
     schema_name: str
     """Name of parent schema."""
     security_type: SecurityType
@@ -752,6 +761,7 @@ class Function:
         created_at: Optional[int] = None,
         created_by: Optional[str] = None,
         data_type: Optional[str] = None,
+        external_language: Optional[str] = None,
         full_data_type: Optional[str] = None,
         full_name: Optional[str] = None,
         function_id: Optional[str] = None,
@@ -761,12 +771,11 @@ class Function:
         name: Optional[str] = None,
         owner: Optional[str] = None,
         parameter_style: Optional[ParameterStyle] = None,
-        properties: Optional[Dict[str, str]] = None,
-        return_params: Optional[str] = None,
+        properties: Optional[str] = None,
+        return_params: Optional[FunctionParameterInfos] = None,
         routine_body: Optional[RoutineBody] = None,
-        routine_body_language: Optional[str] = None,
         routine_definition: Optional[str] = None,
-        routine_dependencies: Optional[str] = None,
+        routine_dependencies: Optional[DependencyList] = None,
         schema_name: Optional[str] = None,
         security_type: Optional[SecurityType] = None,
         specific_name: Optional[str] = None,

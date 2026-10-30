@@ -1908,7 +1908,7 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
                 role: ::olai_store::FieldRole::Data,
             },
             ::olai_store::ResourceFieldDescriptor {
-                name: "routine_body_language",
+                name: "external_language",
                 role: ::olai_store::FieldRole::Data,
             },
             ::olai_store::ResourceFieldDescriptor {

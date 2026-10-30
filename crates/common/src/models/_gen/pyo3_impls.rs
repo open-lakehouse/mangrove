@@ -5979,9 +5979,12 @@ impl PyCreateFunction {
             security_type = None,
             routine_body = None,
             routine_definition = None,
-            routine_body_language = None,
+            external_language = None,
             comment = None,
-            properties = None
+            properties = None,
+            return_params = None,
+            routine_dependencies = None,
+            specific_name = None
         )
     )]
     fn new(
@@ -5998,11 +6001,12 @@ impl PyCreateFunction {
         security_type: ::core::option::Option<PySecurityType>,
         routine_body: ::core::option::Option<PyRoutineBody>,
         routine_definition: ::core::option::Option<::std::string::String>,
-        routine_body_language: ::core::option::Option<::std::string::String>,
+        external_language: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
-        properties: ::core::option::Option<
-            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-        >,
+        properties: ::core::option::Option<::std::string::String>,
+        return_params: ::core::option::Option<PyFunctionParameterInfos>,
+        routine_dependencies: ::core::option::Option<PyDependencyList>,
+        specific_name: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner =
             <super::functions::v1::CreateFunction as ::core::default::Default>::default();
@@ -6058,15 +6062,32 @@ impl PyCreateFunction {
             inner.routine_definition = value;
         }
         {
-            let value = routine_body_language;
-            inner.routine_body_language = value;
+            let value = external_language;
+            inner.external_language = value;
         }
         {
             let value = comment;
             inner.comment = value;
         }
-        if let ::core::option::Option::Some(value) = properties {
+        {
+            let value = properties;
             inner.properties = value;
+        }
+        {
+            let value = return_params;
+            inner.return_params = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = routine_dependencies;
+            inner.routine_dependencies = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = specific_name;
+            inner.specific_name = value;
         }
         Self(inner)
     }
@@ -6127,18 +6148,36 @@ impl PyCreateFunction {
         self.0.routine_definition.clone()
     }
     #[getter]
-    fn routine_body_language(&self) -> ::core::option::Option<::std::string::String> {
-        self.0.routine_body_language.clone()
+    fn external_language(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.external_language.clone()
     }
     #[getter]
     fn comment(&self) -> ::core::option::Option<::std::string::String> {
         self.0.comment.clone()
     }
     #[getter]
-    fn properties(
-        &self,
-    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
+    fn properties(&self) -> ::core::option::Option<::std::string::String> {
         self.0.properties.clone()
+    }
+    #[getter]
+    fn return_params(&self) -> ::core::option::Option<PyFunctionParameterInfos> {
+        self.0
+            .return_params
+            .clone()
+            .into_option()
+            .map(PyFunctionParameterInfos::from)
+    }
+    #[getter]
+    fn routine_dependencies(&self) -> ::core::option::Option<PyDependencyList> {
+        self.0
+            .routine_dependencies
+            .clone()
+            .into_option()
+            .map(PyDependencyList::from)
+    }
+    #[getter]
+    fn specific_name(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.specific_name.clone()
     }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
@@ -6202,20 +6241,33 @@ impl PyCreateFunction {
     fn set_routine_definition(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.routine_definition = value;
     }
-    #[setter(routine_body_language)]
-    fn set_routine_body_language(&mut self, value: ::core::option::Option<::std::string::String>) {
-        self.0.routine_body_language = value;
+    #[setter(external_language)]
+    fn set_external_language(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.external_language = value;
     }
     #[setter(comment)]
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
     }
     #[setter(properties)]
-    fn set_properties(
-        &mut self,
-        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-    ) {
+    fn set_properties(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.properties = value;
+    }
+    #[setter(return_params)]
+    fn set_return_params(&mut self, value: ::core::option::Option<PyFunctionParameterInfos>) {
+        self.0.return_params = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(routine_dependencies)]
+    fn set_routine_dependencies(&mut self, value: ::core::option::Option<PyDependencyList>) {
+        self.0.routine_dependencies = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(specific_name)]
+    fn set_specific_name(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.specific_name = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -6365,7 +6417,7 @@ impl PyFunction {
             full_data_type = None,
             input_params = None,
             return_params = None,
-            routine_body_language = None,
+            external_language = None,
             routine_definition = None,
             routine_dependencies = None,
             parameter_style = None,
@@ -6393,10 +6445,10 @@ impl PyFunction {
         data_type: ::core::option::Option<::std::string::String>,
         full_data_type: ::core::option::Option<::std::string::String>,
         input_params: ::core::option::Option<PyFunctionParameterInfos>,
-        return_params: ::core::option::Option<::std::string::String>,
-        routine_body_language: ::core::option::Option<::std::string::String>,
+        return_params: ::core::option::Option<PyFunctionParameterInfos>,
+        external_language: ::core::option::Option<::std::string::String>,
         routine_definition: ::core::option::Option<::std::string::String>,
-        routine_dependencies: ::core::option::Option<::std::string::String>,
+        routine_dependencies: ::core::option::Option<PyDependencyList>,
         parameter_style: ::core::option::Option<PyParameterStyle>,
         is_deterministic: ::core::option::Option<bool>,
         sql_data_access: ::core::option::Option<PySqlDataAccess>,
@@ -6405,9 +6457,7 @@ impl PyFunction {
         specific_name: ::core::option::Option<::std::string::String>,
         routine_body: ::core::option::Option<PyRoutineBody>,
         comment: ::core::option::Option<::std::string::String>,
-        properties: ::core::option::Option<
-            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-        >,
+        properties: ::core::option::Option<::std::string::String>,
         owner: ::core::option::Option<::std::string::String>,
         function_id: ::core::option::Option<::std::string::String>,
         created_at: ::core::option::Option<i64>,
@@ -6442,11 +6492,13 @@ impl PyFunction {
         }
         {
             let value = return_params;
-            inner.return_params = value;
+            inner.return_params = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         {
-            let value = routine_body_language;
-            inner.routine_body_language = value;
+            let value = external_language;
+            inner.external_language = value;
         }
         {
             let value = routine_definition;
@@ -6454,7 +6506,9 @@ impl PyFunction {
         }
         {
             let value = routine_dependencies;
-            inner.routine_dependencies = value;
+            inner.routine_dependencies = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
         }
         if let ::core::option::Option::Some(value) = parameter_style {
             inner.parameter_style = ::buffa::EnumValue::Known(
@@ -6490,7 +6544,8 @@ impl PyFunction {
             let value = comment;
             inner.comment = value;
         }
-        if let ::core::option::Option::Some(value) = properties {
+        {
+            let value = properties;
             inner.properties = value;
         }
         {
@@ -6552,20 +6607,28 @@ impl PyFunction {
             .map(PyFunctionParameterInfos::from)
     }
     #[getter]
-    fn return_params(&self) -> ::core::option::Option<::std::string::String> {
-        self.0.return_params.clone()
+    fn return_params(&self) -> ::core::option::Option<PyFunctionParameterInfos> {
+        self.0
+            .return_params
+            .clone()
+            .into_option()
+            .map(PyFunctionParameterInfos::from)
     }
     #[getter]
-    fn routine_body_language(&self) -> ::core::option::Option<::std::string::String> {
-        self.0.routine_body_language.clone()
+    fn external_language(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.external_language.clone()
     }
     #[getter]
     fn routine_definition(&self) -> ::core::option::Option<::std::string::String> {
         self.0.routine_definition.clone()
     }
     #[getter]
-    fn routine_dependencies(&self) -> ::core::option::Option<::std::string::String> {
-        self.0.routine_dependencies.clone()
+    fn routine_dependencies(&self) -> ::core::option::Option<PyDependencyList> {
+        self.0
+            .routine_dependencies
+            .clone()
+            .into_option()
+            .map(PyDependencyList::from)
     }
     #[getter]
     fn parameter_style(&self) -> PyParameterStyle {
@@ -6600,9 +6663,7 @@ impl PyFunction {
         self.0.comment.clone()
     }
     #[getter]
-    fn properties(
-        &self,
-    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
+    fn properties(&self) -> ::core::option::Option<::std::string::String> {
         self.0.properties.clone()
     }
     #[getter]
@@ -6660,20 +6721,24 @@ impl PyFunction {
             .unwrap_or_default();
     }
     #[setter(return_params)]
-    fn set_return_params(&mut self, value: ::core::option::Option<::std::string::String>) {
-        self.0.return_params = value;
+    fn set_return_params(&mut self, value: ::core::option::Option<PyFunctionParameterInfos>) {
+        self.0.return_params = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
-    #[setter(routine_body_language)]
-    fn set_routine_body_language(&mut self, value: ::core::option::Option<::std::string::String>) {
-        self.0.routine_body_language = value;
+    #[setter(external_language)]
+    fn set_external_language(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.external_language = value;
     }
     #[setter(routine_definition)]
     fn set_routine_definition(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.routine_definition = value;
     }
     #[setter(routine_dependencies)]
-    fn set_routine_dependencies(&mut self, value: ::core::option::Option<::std::string::String>) {
-        self.0.routine_dependencies = value;
+    fn set_routine_dependencies(&mut self, value: ::core::option::Option<PyDependencyList>) {
+        self.0.routine_dependencies = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
     }
     #[setter(parameter_style)]
     fn set_parameter_style(&mut self, value: PyParameterStyle) {
@@ -6716,10 +6781,7 @@ impl PyFunction {
         self.0.comment = value;
     }
     #[setter(properties)]
-    fn set_properties(
-        &mut self,
-        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
-    ) {
+    fn set_properties(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.properties = value;
     }
     #[setter(owner)]

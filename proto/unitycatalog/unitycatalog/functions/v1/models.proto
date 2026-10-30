@@ -177,14 +177,25 @@ message CreateFunction {
   // Function body.
   optional string routine_definition = 13 [(google.api.field_behavior) = OPTIONAL];
 
-  // The language of the function routine body.
-  optional string routine_body_language = 14 [(google.api.field_behavior) = OPTIONAL];
+  // External language of the function.
+  //
+  // Set when routine_body is EXTERNAL.
+  optional string external_language = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // User-provided free-form text description.
   optional string comment = 15 [(google.api.field_behavior) = OPTIONAL];
 
-  // A map of key-value properties attached to the securable.
-  map<string, string> properties = 16 [(google.api.field_behavior) = OPTIONAL];
+  // JSON-serialized key-value pair map, encoded (escaped) as a string.
+  optional string properties = 16 [(google.api.field_behavior) = OPTIONAL];
+
+  // The return parameters of a table-valued function.
+  optional FunctionParameterInfos return_params = 17 [(google.api.field_behavior) = OPTIONAL];
+
+  // The tables and functions the function depends on.
+  optional unitycatalog.tables.v1.DependencyList routine_dependencies = 18 [(google.api.field_behavior) = OPTIONAL];
+
+  // Specific name of the function; reserved for future use.
+  optional string specific_name = 19 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // A User-Defined Function (UDF) registered under a catalog + schema hierarchy.
@@ -235,17 +246,19 @@ message Function {
   // The array of function parameter infos.
   optional FunctionParameterInfos input_params = 7 [(google.api.field_behavior) = OPTIONAL];
 
-  // The return type of the function in JSON format.
-  optional string return_params = 8 [(google.api.field_behavior) = OPTIONAL];
+  // The return parameters of a table-valued function.
+  optional FunctionParameterInfos return_params = 8 [(google.api.field_behavior) = OPTIONAL];
 
-  // The language of the function routine body.
-  optional string routine_body_language = 9 [(google.api.field_behavior) = OPTIONAL];
+  // External language of the function.
+  //
+  // Set when routine_body is EXTERNAL.
+  optional string external_language = 9 [(google.api.field_behavior) = OPTIONAL];
 
   // Function body.
   optional string routine_definition = 10 [(google.api.field_behavior) = OPTIONAL];
 
-  // Function dependencies (in JSON form).
-  optional string routine_dependencies = 11 [(google.api.field_behavior) = OPTIONAL];
+  // The tables and functions the function depends on.
+  optional unitycatalog.tables.v1.DependencyList routine_dependencies = 11 [(google.api.field_behavior) = OPTIONAL];
 
   // The parameter-passing style.
   ParameterStyle parameter_style = 12 [(google.api.field_behavior) = REQUIRED];
@@ -271,8 +284,8 @@ message Function {
   // User-provided free-form text description.
   optional string comment = 19 [(google.api.field_behavior) = OPTIONAL];
 
-  // A map of key-value properties attached to the securable.
-  map<string, string> properties = 20;
+  // JSON-serialized key-value pair map, encoded (escaped) as a string.
+  optional string properties = 20 [(google.api.field_behavior) = OPTIONAL];
 
   // Username of current owner of the function.
   optional string owner = 21 [(google.api.field_behavior) = OPTIONAL];

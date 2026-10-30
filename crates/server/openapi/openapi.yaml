@@ -4185,17 +4185,31 @@ components:
         routine_definition:
           type: string
           description: Function body.
-        routine_body_language:
+        external_language:
           type: string
-          description: The language of the function routine body.
+          description: Set when routine_body is EXTERNAL.
+          title: External language of the function.
         comment:
           type: string
           description: User-provided free-form text description.
         properties:
-          type: object
-          additionalProperties:
-            type: string
-          description: A map of key-value properties attached to the securable.
+          type: string
+          description: JSON-serialized key-value pair map, encoded (escaped) as a string.
+        return_params:
+          allOf:
+            - $ref: "#/components/schemas/FunctionParameterInfos"
+          description: A collection of function parameters.
+          additionalProperties: false
+          title: Function Parameter Infos
+        routine_dependencies:
+          allOf:
+            - $ref: "#/components/schemas/DependencyList"
+          description: A list of dependencies referenced by a view-like table.
+          additionalProperties: false
+          title: Dependency List
+        specific_name:
+          type: string
+          description: Specific name of the function; reserved for future use.
       description: |-
         Wrapped in the `function_info` envelope of a `CreateFunctionRequest`, matching
          the Unity Catalog `POST /functions` wire contract.
@@ -4987,17 +5001,24 @@ components:
           additionalProperties: false
           title: Function Parameter Infos
         return_params:
+          allOf:
+            - $ref: "#/components/schemas/FunctionParameterInfos"
+          description: A collection of function parameters.
+          additionalProperties: false
+          title: Function Parameter Infos
+        external_language:
           type: string
-          description: The return type of the function in JSON format.
-        routine_body_language:
-          type: string
-          description: The language of the function routine body.
+          description: Set when routine_body is EXTERNAL.
+          title: External language of the function.
         routine_definition:
           type: string
           description: Function body.
         routine_dependencies:
-          type: string
-          description: Function dependencies (in JSON form).
+          allOf:
+            - $ref: "#/components/schemas/DependencyList"
+          description: A list of dependencies referenced by a view-like table.
+          additionalProperties: false
+          title: Dependency List
         parameter_style:
           enum:
             - PARAMETER_STYLE_UNSPECIFIED
@@ -5046,10 +5067,8 @@ components:
           type: string
           description: User-provided free-form text description.
         properties:
-          type: object
-          additionalProperties:
-            type: string
-          description: A map of key-value properties attached to the securable.
+          type: string
+          description: JSON-serialized key-value pair map, encoded (escaped) as a string.
         owner:
           type: string
           description: Username of current owner of the function.

@@ -1735,32 +1735,59 @@ pub struct CreateFunction {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub routine_definition: ::core::option::Option<::buffa::alloc::string::String>,
-    /// The language of the function routine body.
+    /// External language of the function.
     ///
-    /// Field 14: `routine_body_language`
+    /// Set when routine_body is EXTERNAL.
+    ///
+    /// Field 14: `external_language`
     #[serde(
-        rename = "routine_body_language",
-        alias = "routineBodyLanguage",
+        rename = "external_language",
+        alias = "externalLanguage",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
-    pub routine_body_language: ::core::option::Option<::buffa::alloc::string::String>,
+    pub external_language: ::core::option::Option<::buffa::alloc::string::String>,
     /// User-provided free-form text description.
     ///
     /// Field 15: `comment`
     #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
     pub comment: ::core::option::Option<::buffa::alloc::string::String>,
-    /// A map of key-value properties attached to the securable.
+    /// JSON-serialized key-value pair map, encoded (escaped) as a string.
     ///
     /// Field 16: `properties`
     #[serde(
         rename = "properties",
-        skip_serializing_if = "::buffa::__private::HashMap::is_empty",
-        deserialize_with = "::buffa::json_helpers::null_as_default"
+        skip_serializing_if = "::core::option::Option::is_none"
     )]
-    pub properties: ::buffa::__private::HashMap<
-        ::buffa::alloc::string::String,
-        ::buffa::alloc::string::String,
+    pub properties: ::core::option::Option<::buffa::alloc::string::String>,
+    /// The return parameters of a table-valued function.
+    ///
+    /// Field 17: `return_params`
+    #[serde(
+        rename = "return_params",
+        alias = "returnParams",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
+    )]
+    pub return_params: ::buffa::MessageField<FunctionParameterInfos>,
+    /// The tables and functions the function depends on.
+    ///
+    /// Field 18: `routine_dependencies`
+    #[serde(
+        rename = "routine_dependencies",
+        alias = "routineDependencies",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
+    )]
+    pub routine_dependencies: ::buffa::MessageField<
+        super::super::tables::v1::DependencyList,
     >,
+    /// Specific name of the function; reserved for future use.
+    ///
+    /// Field 19: `specific_name`
+    #[serde(
+        rename = "specific_name",
+        alias = "specificName",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub specific_name: ::core::option::Option<::buffa::alloc::string::String>,
     #[serde(skip)]
     #[doc(hidden)]
     pub __buffa_unknown_fields: ::buffa::UnknownFields,
@@ -1781,9 +1808,12 @@ impl ::core::fmt::Debug for CreateFunction {
             .field("security_type", &self.security_type)
             .field("routine_body", &self.routine_body)
             .field("routine_definition", &self.routine_definition)
-            .field("routine_body_language", &self.routine_body_language)
+            .field("external_language", &self.external_language)
             .field("comment", &self.comment)
             .field("properties", &self.properties)
+            .field("return_params", &self.return_params)
+            .field("routine_dependencies", &self.routine_dependencies)
+            .field("specific_name", &self.specific_name)
             .finish()
     }
 }
@@ -1807,12 +1837,12 @@ impl CreateFunction {
     }
     #[must_use = "with_* setters return `self` by value; assign or chain the result"]
     #[inline]
-    ///Sets [`Self::routine_body_language`] to `Some(value)`, consuming and returning `self`.
-    pub fn with_routine_body_language(
+    ///Sets [`Self::external_language`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_external_language(
         mut self,
         value: impl Into<::buffa::alloc::string::String>,
     ) -> Self {
-        self.routine_body_language = Some(value.into());
+        self.external_language = Some(value.into());
         self
     }
     #[must_use = "with_* setters return `self` by value; assign or chain the result"]
@@ -1823,6 +1853,26 @@ impl CreateFunction {
         value: impl Into<::buffa::alloc::string::String>,
     ) -> Self {
         self.comment = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::properties`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_properties(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.properties = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::specific_name`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_specific_name(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.specific_name = Some(value.into());
         self
     }
 }
@@ -1907,19 +1957,33 @@ impl ::buffa::Message for CreateFunction {
         if let Some(ref v) = self.routine_definition {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
-        if let Some(ref v) = self.routine_body_language {
+        if let Some(ref v) = self.external_language {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
         if let Some(ref v) = self.comment {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
-        #[allow(clippy::for_kv_map)]
-        for (k, v) in &self.properties {
-            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
-                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if let Some(ref v) = self.properties {
+            size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        if self.return_params.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.return_params.compute_size(__cache);
+            __cache.set(__slot, inner_size);
             size
-                += 2u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
-                    + entry_size;
+                += 2u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
+        }
+        if self.routine_dependencies.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.routine_dependencies.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 2u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
+        }
+        if let Some(ref v) = self.specific_name {
+            size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
         size += self.__buffa_unknown_fields.encoded_len() as u32;
         size
@@ -2030,7 +2094,7 @@ impl ::buffa::Message for CreateFunction {
                 .encode(buf);
             ::buffa::types::encode_string(v, buf);
         }
-        if let Some(ref v) = self.routine_body_language {
+        if let Some(ref v) = self.external_language {
             ::buffa::encoding::Tag::new(
                     14u32,
                     ::buffa::encoding::WireType::LengthDelimited,
@@ -2046,23 +2110,35 @@ impl ::buffa::Message for CreateFunction {
                 .encode(buf);
             ::buffa::types::encode_string(v, buf);
         }
-        for (k, v) in &self.properties {
-            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
-                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if let Some(ref v) = self.properties {
             ::buffa::encoding::Tag::new(
                     16u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
-            ::buffa::encoding::encode_varint(entry_size as u64, buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        if self.return_params.is_set() {
             ::buffa::encoding::Tag::new(
-                    1u32,
+                    17u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
-            ::buffa::types::encode_string(k, buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.return_params.write_to(__cache, buf);
+        }
+        if self.routine_dependencies.is_set() {
             ::buffa::encoding::Tag::new(
-                    2u32,
+                    18u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.routine_dependencies.write_to(__cache, buf);
+        }
+        if let Some(ref v) = self.specific_name {
+            ::buffa::encoding::Tag::new(
+                    19u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
@@ -2238,7 +2314,7 @@ impl ::buffa::Message for CreateFunction {
                 }
                 ::buffa::types::merge_string(
                     self
-                        .routine_body_language
+                        .external_language
                         .get_or_insert_with(::buffa::alloc::string::String::new),
                     buf,
                 )?;
@@ -2264,60 +2340,55 @@ impl ::buffa::Message for CreateFunction {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                let entry_len = ::buffa::encoding::decode_varint(buf)?;
-                let entry_len = usize::try_from(entry_len)
-                    .map_err(|_| ::buffa::DecodeError::MessageTooLarge)?;
-                if buf.remaining() < entry_len {
-                    return ::core::result::Result::Err(
-                        ::buffa::DecodeError::UnexpectedEof,
-                    );
+                ::buffa::types::merge_string(
+                    self
+                        .properties
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
+            17u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 17u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
                 }
-                let entry_limit = buf.remaining() - entry_len;
-                let mut key = ::core::default::Default::default();
-                let mut val = ::core::default::Default::default();
-                while buf.remaining() > entry_limit {
-                    let entry_tag = ::buffa::encoding::Tag::decode(buf)?;
-                    match entry_tag.field_number() {
-                        1 => {
-                            if entry_tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: entry_tag.field_number(),
-                                    expected: 2u8,
-                                    actual: entry_tag.wire_type() as u8,
-                                });
-                            }
-                            key = ::buffa::types::decode_string(buf)?;
-                        }
-                        2 => {
-                            if entry_tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: entry_tag.field_number(),
-                                    expected: 2u8,
-                                    actual: entry_tag.wire_type() as u8,
-                                });
-                            }
-                            val = ::buffa::types::decode_string(buf)?;
-                        }
-                        _ => {
-                            ::buffa::encoding::skip_field_depth(entry_tag, buf, depth)?;
-                        }
-                    }
+                ::buffa::Message::merge_length_delimited(
+                    self.return_params.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
+            }
+            18u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 18u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
                 }
-                if buf.remaining() != entry_limit {
-                    let remaining = buf.remaining();
-                    if remaining > entry_limit {
-                        buf.advance(remaining - entry_limit);
-                    } else {
-                        return ::core::result::Result::Err(
-                            ::buffa::DecodeError::UnexpectedEof,
-                        );
-                    }
+                ::buffa::Message::merge_length_delimited(
+                    self.routine_dependencies.get_or_insert_default(),
+                    buf,
+                    depth,
+                )?;
+            }
+            19u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 19u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
                 }
-                self.properties.insert(key, val);
+                ::buffa::types::merge_string(
+                    self
+                        .specific_name
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
             }
             _ => {
                 self.__buffa_unknown_fields
@@ -2340,9 +2411,12 @@ impl ::buffa::Message for CreateFunction {
         self.security_type = ::buffa::EnumValue::from(0);
         self.routine_body = ::buffa::EnumValue::from(0);
         self.routine_definition = ::core::option::Option::None;
-        self.routine_body_language = ::core::option::Option::None;
+        self.external_language = ::core::option::Option::None;
         self.comment = ::core::option::Option::None;
-        self.properties.clear();
+        self.properties = ::core::option::Option::None;
+        self.return_params = ::buffa::MessageField::none();
+        self.routine_dependencies = ::buffa::MessageField::none();
+        self.specific_name = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
 }
@@ -2450,24 +2524,26 @@ pub struct Function {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
     pub input_params: ::buffa::MessageField<FunctionParameterInfos>,
-    /// The return type of the function in JSON format.
+    /// The return parameters of a table-valued function.
     ///
     /// Field 8: `return_params`
     #[serde(
         rename = "return_params",
         alias = "returnParams",
-        skip_serializing_if = "::core::option::Option::is_none"
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
-    pub return_params: ::core::option::Option<::buffa::alloc::string::String>,
-    /// The language of the function routine body.
+    pub return_params: ::buffa::MessageField<FunctionParameterInfos>,
+    /// External language of the function.
     ///
-    /// Field 9: `routine_body_language`
+    /// Set when routine_body is EXTERNAL.
+    ///
+    /// Field 9: `external_language`
     #[serde(
-        rename = "routine_body_language",
-        alias = "routineBodyLanguage",
+        rename = "external_language",
+        alias = "externalLanguage",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
-    pub routine_body_language: ::core::option::Option<::buffa::alloc::string::String>,
+    pub external_language: ::core::option::Option<::buffa::alloc::string::String>,
     /// Function body.
     ///
     /// Field 10: `routine_definition`
@@ -2477,15 +2553,17 @@ pub struct Function {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub routine_definition: ::core::option::Option<::buffa::alloc::string::String>,
-    /// Function dependencies (in JSON form).
+    /// The tables and functions the function depends on.
     ///
     /// Field 11: `routine_dependencies`
     #[serde(
         rename = "routine_dependencies",
         alias = "routineDependencies",
-        skip_serializing_if = "::core::option::Option::is_none"
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_unset_message_field"
     )]
-    pub routine_dependencies: ::core::option::Option<::buffa::alloc::string::String>,
+    pub routine_dependencies: ::buffa::MessageField<
+        super::super::tables::v1::DependencyList,
+    >,
     /// The parameter-passing style.
     ///
     /// Field 12: `parameter_style`
@@ -2560,18 +2638,14 @@ pub struct Function {
     /// Field 19: `comment`
     #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
     pub comment: ::core::option::Option<::buffa::alloc::string::String>,
-    /// A map of key-value properties attached to the securable.
+    /// JSON-serialized key-value pair map, encoded (escaped) as a string.
     ///
     /// Field 20: `properties`
     #[serde(
         rename = "properties",
-        skip_serializing_if = "::buffa::__private::HashMap::is_empty",
-        deserialize_with = "::buffa::json_helpers::null_as_default"
+        skip_serializing_if = "::core::option::Option::is_none"
     )]
-    pub properties: ::buffa::__private::HashMap<
-        ::buffa::alloc::string::String,
-        ::buffa::alloc::string::String,
-    >,
+    pub properties: ::core::option::Option<::buffa::alloc::string::String>,
     /// Username of current owner of the function.
     ///
     /// Field 21: `owner`
@@ -2639,7 +2713,7 @@ impl ::core::fmt::Debug for Function {
             .field("full_data_type", &self.full_data_type)
             .field("input_params", &self.input_params)
             .field("return_params", &self.return_params)
-            .field("routine_body_language", &self.routine_body_language)
+            .field("external_language", &self.external_language)
             .field("routine_definition", &self.routine_definition)
             .field("routine_dependencies", &self.routine_dependencies)
             .field("parameter_style", &self.parameter_style)
@@ -2670,22 +2744,12 @@ impl Function {
 impl Function {
     #[must_use = "with_* setters return `self` by value; assign or chain the result"]
     #[inline]
-    ///Sets [`Self::return_params`] to `Some(value)`, consuming and returning `self`.
-    pub fn with_return_params(
+    ///Sets [`Self::external_language`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_external_language(
         mut self,
         value: impl Into<::buffa::alloc::string::String>,
     ) -> Self {
-        self.return_params = Some(value.into());
-        self
-    }
-    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
-    #[inline]
-    ///Sets [`Self::routine_body_language`] to `Some(value)`, consuming and returning `self`.
-    pub fn with_routine_body_language(
-        mut self,
-        value: impl Into<::buffa::alloc::string::String>,
-    ) -> Self {
-        self.routine_body_language = Some(value.into());
+        self.external_language = Some(value.into());
         self
     }
     #[must_use = "with_* setters return `self` by value; assign or chain the result"]
@@ -2696,16 +2760,6 @@ impl Function {
         value: impl Into<::buffa::alloc::string::String>,
     ) -> Self {
         self.routine_definition = Some(value.into());
-        self
-    }
-    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
-    #[inline]
-    ///Sets [`Self::routine_dependencies`] to `Some(value)`, consuming and returning `self`.
-    pub fn with_routine_dependencies(
-        mut self,
-        value: impl Into<::buffa::alloc::string::String>,
-    ) -> Self {
-        self.routine_dependencies = Some(value.into());
         self
     }
     #[must_use = "with_* setters return `self` by value; assign or chain the result"]
@@ -2726,6 +2780,16 @@ impl Function {
         value: impl Into<::buffa::alloc::string::String>,
     ) -> Self {
         self.comment = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::properties`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_properties(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.properties = Some(value.into());
         self
     }
     #[must_use = "with_* setters return `self` by value; assign or chain the result"]
@@ -2834,17 +2898,27 @@ impl ::buffa::Message for Function {
                 += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
                     + inner_size;
         }
-        if let Some(ref v) = self.return_params {
-            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if self.return_params.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.return_params.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
         }
-        if let Some(ref v) = self.routine_body_language {
+        if let Some(ref v) = self.external_language {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
         if let Some(ref v) = self.routine_definition {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
-        if let Some(ref v) = self.routine_dependencies {
-            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if self.routine_dependencies.is_set() {
+            let __slot = __cache.reserve();
+            let inner_size = self.routine_dependencies.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
         }
         {
             let val = self.parameter_style.to_i32();
@@ -2882,13 +2956,8 @@ impl ::buffa::Message for Function {
         if let Some(ref v) = self.comment {
             size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
-        #[allow(clippy::for_kv_map)]
-        for (k, v) in &self.properties {
-            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
-                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
-            size
-                += 2u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
-                    + entry_size;
+        if let Some(ref v) = self.properties {
+            size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
         if let Some(ref v) = self.owner {
             size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
@@ -2975,15 +3044,16 @@ impl ::buffa::Message for Function {
             ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
             self.input_params.write_to(__cache, buf);
         }
-        if let Some(ref v) = self.return_params {
+        if self.return_params.is_set() {
             ::buffa::encoding::Tag::new(
                     8u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
-            ::buffa::types::encode_string(v, buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.return_params.write_to(__cache, buf);
         }
-        if let Some(ref v) = self.routine_body_language {
+        if let Some(ref v) = self.external_language {
             ::buffa::encoding::Tag::new(
                     9u32,
                     ::buffa::encoding::WireType::LengthDelimited,
@@ -2999,13 +3069,14 @@ impl ::buffa::Message for Function {
                 .encode(buf);
             ::buffa::types::encode_string(v, buf);
         }
-        if let Some(ref v) = self.routine_dependencies {
+        if self.routine_dependencies.is_set() {
             ::buffa::encoding::Tag::new(
                     11u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
-            ::buffa::types::encode_string(v, buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            self.routine_dependencies.write_to(__cache, buf);
         }
         {
             let val = self.parameter_style.to_i32();
@@ -3065,23 +3136,9 @@ impl ::buffa::Message for Function {
                 .encode(buf);
             ::buffa::types::encode_string(v, buf);
         }
-        for (k, v) in &self.properties {
-            let entry_size: u32 = 1u32 + ::buffa::types::string_encoded_len(k) as u32
-                + 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        if let Some(ref v) = self.properties {
             ::buffa::encoding::Tag::new(
                     20u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::encoding::encode_varint(entry_size as u64, buf);
-            ::buffa::encoding::Tag::new(
-                    1u32,
-                    ::buffa::encoding::WireType::LengthDelimited,
-                )
-                .encode(buf);
-            ::buffa::types::encode_string(k, buf);
-            ::buffa::encoding::Tag::new(
-                    2u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
@@ -3224,11 +3281,10 @@ impl ::buffa::Message for Function {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                ::buffa::types::merge_string(
-                    self
-                        .return_params
-                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                ::buffa::Message::merge_length_delimited(
+                    self.return_params.get_or_insert_default(),
                     buf,
+                    depth,
                 )?;
             }
             9u32 => {
@@ -3241,7 +3297,7 @@ impl ::buffa::Message for Function {
                 }
                 ::buffa::types::merge_string(
                     self
-                        .routine_body_language
+                        .external_language
                         .get_or_insert_with(::buffa::alloc::string::String::new),
                     buf,
                 )?;
@@ -3269,11 +3325,10 @@ impl ::buffa::Message for Function {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                ::buffa::types::merge_string(
-                    self
-                        .routine_dependencies
-                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                ::buffa::Message::merge_length_delimited(
+                    self.routine_dependencies.get_or_insert_default(),
                     buf,
+                    depth,
                 )?;
             }
             12u32 => {
@@ -3380,60 +3435,12 @@ impl ::buffa::Message for Function {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                let entry_len = ::buffa::encoding::decode_varint(buf)?;
-                let entry_len = usize::try_from(entry_len)
-                    .map_err(|_| ::buffa::DecodeError::MessageTooLarge)?;
-                if buf.remaining() < entry_len {
-                    return ::core::result::Result::Err(
-                        ::buffa::DecodeError::UnexpectedEof,
-                    );
-                }
-                let entry_limit = buf.remaining() - entry_len;
-                let mut key = ::core::default::Default::default();
-                let mut val = ::core::default::Default::default();
-                while buf.remaining() > entry_limit {
-                    let entry_tag = ::buffa::encoding::Tag::decode(buf)?;
-                    match entry_tag.field_number() {
-                        1 => {
-                            if entry_tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: entry_tag.field_number(),
-                                    expected: 2u8,
-                                    actual: entry_tag.wire_type() as u8,
-                                });
-                            }
-                            key = ::buffa::types::decode_string(buf)?;
-                        }
-                        2 => {
-                            if entry_tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: entry_tag.field_number(),
-                                    expected: 2u8,
-                                    actual: entry_tag.wire_type() as u8,
-                                });
-                            }
-                            val = ::buffa::types::decode_string(buf)?;
-                        }
-                        _ => {
-                            ::buffa::encoding::skip_field_depth(entry_tag, buf, depth)?;
-                        }
-                    }
-                }
-                if buf.remaining() != entry_limit {
-                    let remaining = buf.remaining();
-                    if remaining > entry_limit {
-                        buf.advance(remaining - entry_limit);
-                    } else {
-                        return ::core::result::Result::Err(
-                            ::buffa::DecodeError::UnexpectedEof,
-                        );
-                    }
-                }
-                self.properties.insert(key, val);
+                ::buffa::types::merge_string(
+                    self
+                        .properties
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
             }
             21u32 => {
                 if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
@@ -3532,10 +3539,10 @@ impl ::buffa::Message for Function {
         self.data_type.clear();
         self.full_data_type.clear();
         self.input_params = ::buffa::MessageField::none();
-        self.return_params = ::core::option::Option::None;
-        self.routine_body_language = ::core::option::Option::None;
+        self.return_params = ::buffa::MessageField::none();
+        self.external_language = ::core::option::Option::None;
         self.routine_definition = ::core::option::Option::None;
-        self.routine_dependencies = ::core::option::Option::None;
+        self.routine_dependencies = ::buffa::MessageField::none();
         self.parameter_style = ::buffa::EnumValue::from(0);
         self.is_deterministic = false;
         self.sql_data_access = ::buffa::EnumValue::from(0);
@@ -3544,7 +3551,7 @@ impl ::buffa::Message for Function {
         self.specific_name = ::core::option::Option::None;
         self.routine_body = ::buffa::EnumValue::from(0);
         self.comment = ::core::option::Option::None;
-        self.properties.clear();
+        self.properties = ::core::option::Option::None;
         self.owner = ::core::option::Option::None;
         self.function_id = ::core::option::Option::None;
         self.created_at = ::core::option::Option::None;
@@ -5929,18 +5936,38 @@ pub mod __buffa {
             ///
             /// Field 13: `routine_definition`
             pub routine_definition: ::core::option::Option<&'a str>,
-            /// The language of the function routine body.
+            /// External language of the function.
             ///
-            /// Field 14: `routine_body_language`
-            pub routine_body_language: ::core::option::Option<&'a str>,
+            /// Set when routine_body is EXTERNAL.
+            ///
+            /// Field 14: `external_language`
+            pub external_language: ::core::option::Option<&'a str>,
             /// User-provided free-form text description.
             ///
             /// Field 15: `comment`
             pub comment: ::core::option::Option<&'a str>,
-            /// A map of key-value properties attached to the securable.
+            /// JSON-serialized key-value pair map, encoded (escaped) as a string.
             ///
-            /// Field 16: `properties` (map)
-            pub properties: ::buffa::MapView<'a, &'a str, &'a str>,
+            /// Field 16: `properties`
+            pub properties: ::core::option::Option<&'a str>,
+            /// The return parameters of a table-valued function.
+            ///
+            /// Field 17: `return_params`
+            pub return_params: ::buffa::MessageFieldView<
+                super::super::__buffa::view::FunctionParameterInfosView<'a>,
+            >,
+            /// The tables and functions the function depends on.
+            ///
+            /// Field 18: `routine_dependencies`
+            pub routine_dependencies: ::buffa::MessageFieldView<
+                super::super::super::super::tables::v1::__buffa::view::DependencyListView<
+                    'a,
+                >,
+            >,
+            /// Specific name of the function; reserved for future use.
+            ///
+            /// Field 19: `specific_name`
+            pub specific_name: ::core::option::Option<&'a str>,
             pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
         }
         impl<'a> CreateFunctionView<'a> {
@@ -6161,7 +6188,7 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            view.routine_body_language = Some(
+                            view.external_language = Some(
                                 ::buffa::types::borrow_str(&mut cur)?,
                             );
                         }
@@ -6187,49 +6214,75 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            let entry_bytes = ::buffa::types::borrow_bytes(&mut cur)?;
-                            let mut entry_cur: &'a [u8] = entry_bytes;
-                            let mut key = "";
-                            let mut val = "";
-                            while !entry_cur.is_empty() {
-                                let entry_tag = ::buffa::encoding::Tag::decode(
-                                    &mut entry_cur,
-                                )?;
-                                match entry_tag.field_number() {
-                                    1 => {
-                                        if entry_tag.wire_type()
-                                            != ::buffa::encoding::WireType::LengthDelimited
-                                        {
-                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                                field_number: entry_tag.field_number(),
-                                                expected: 2u8,
-                                                actual: entry_tag.wire_type() as u8,
-                                            });
-                                        }
-                                        key = ::buffa::types::borrow_str(&mut entry_cur)?;
-                                    }
-                                    2 => {
-                                        if entry_tag.wire_type()
-                                            != ::buffa::encoding::WireType::LengthDelimited
-                                        {
-                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                                field_number: entry_tag.field_number(),
-                                                expected: 2u8,
-                                                actual: entry_tag.wire_type() as u8,
-                                            });
-                                        }
-                                        val = ::buffa::types::borrow_str(&mut entry_cur)?;
-                                    }
-                                    _ => {
-                                        ::buffa::encoding::skip_field_depth(
-                                            entry_tag,
-                                            &mut entry_cur,
-                                            depth,
-                                        )?;
-                                    }
+                            view.properties = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
+                        }
+                        17u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 17u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.return_params.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.return_params = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::FunctionParameterInfosView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
                                 }
                             }
-                            view.properties.push(key, val);
+                        }
+                        18u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 18u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.routine_dependencies.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.routine_dependencies = ::buffa::MessageFieldView::set(
+                                        super::super::super::super::tables::v1::__buffa::view::DependencyListView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
+                        }
+                        19u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 19u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.specific_name = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
                         }
                         _ => {
                             ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
@@ -6287,15 +6340,26 @@ pub mod __buffa {
                     security_type: self.security_type,
                     routine_body: self.routine_body,
                     routine_definition: self.routine_definition.map(|s| s.to_string()),
-                    routine_body_language: self
-                        .routine_body_language
-                        .map(|s| s.to_string()),
+                    external_language: self.external_language.map(|s| s.to_string()),
                     comment: self.comment.map(|s| s.to_string()),
-                    properties: self
-                        .properties
-                        .iter()
-                        .map(|(k, v)| (k.to_string(), v.to_string()))
-                        .collect(),
+                    properties: self.properties.map(|s| s.to_string()),
+                    return_params: match self.return_params.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::FunctionParameterInfos,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
+                    routine_dependencies: match self.routine_dependencies.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::super::super::tables::v1::DependencyList,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
+                    specific_name: self.specific_name.map(|s| s.to_string()),
                     __buffa_unknown_fields: self
                         .__buffa_unknown_fields
                         .to_owned()
@@ -6378,20 +6442,33 @@ pub mod __buffa {
                 if let Some(ref v) = self.routine_definition {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
-                if let Some(ref v) = self.routine_body_language {
+                if let Some(ref v) = self.external_language {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
                 if let Some(ref v) = self.comment {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
-                #[allow(clippy::for_kv_map)]
-                for (k, v) in &self.properties {
-                    let entry_size: u32 = 1u32
-                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
-                        + ::buffa::types::string_encoded_len(v) as u32;
+                if let Some(ref v) = self.properties {
+                    size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if self.return_params.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.return_params.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
                     size
-                        += 2u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
-                            + entry_size;
+                        += 2u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
+                }
+                if self.routine_dependencies.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.routine_dependencies.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 2u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
+                }
+                if let Some(ref v) = self.specific_name {
+                    size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
                 size += self.__buffa_unknown_fields.encoded_len() as u32;
                 size
@@ -6521,7 +6598,7 @@ pub mod __buffa {
                         .encode(buf);
                     ::buffa::types::encode_string(v, buf);
                 }
-                if let Some(ref v) = self.routine_body_language {
+                if let Some(ref v) = self.external_language {
                     ::buffa::encoding::Tag::new(
                             14u32,
                             ::buffa::encoding::WireType::LengthDelimited,
@@ -6537,24 +6614,35 @@ pub mod __buffa {
                         .encode(buf);
                     ::buffa::types::encode_string(v, buf);
                 }
-                for (k, v) in &self.properties {
-                    let entry_size: u32 = 1u32
-                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
-                        + ::buffa::types::string_encoded_len(v) as u32;
+                if let Some(ref v) = self.properties {
                     ::buffa::encoding::Tag::new(
                             16u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
-                    ::buffa::encoding::encode_varint(entry_size as u64, buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                if self.return_params.is_set() {
                     ::buffa::encoding::Tag::new(
-                            1u32,
+                            17u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
-                    ::buffa::types::encode_string(k, buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.return_params.write_to(__cache, buf);
+                }
+                if self.routine_dependencies.is_set() {
                     ::buffa::encoding::Tag::new(
-                            2u32,
+                            18u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.routine_dependencies.write_to(__cache, buf);
+                }
+                if let Some(ref v) = self.specific_name {
+                    ::buffa::encoding::Tag::new(
+                            19u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
@@ -6633,31 +6721,33 @@ pub mod __buffa {
                 if let ::core::option::Option::Some(__v) = self.routine_definition {
                     __map.serialize_entry("routine_definition", __v)?;
                 }
-                if let ::core::option::Option::Some(__v) = self.routine_body_language {
-                    __map.serialize_entry("routine_body_language", __v)?;
+                if let ::core::option::Option::Some(__v) = self.external_language {
+                    __map.serialize_entry("external_language", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
                 }
-                if !self.properties.is_empty() {
-                    struct _WM<'__a, '__x>(
-                        &'__x ::buffa::MapView<'__x, &'__a str, &'__a str>,
-                    );
-                    impl<'__a> ::serde::Serialize for _WM<'__a, '_> {
-                        fn serialize<__S: ::serde::Serializer>(
-                            &self,
-                            __s: __S,
-                        ) -> ::core::result::Result<__S::Ok, __S::Error> {
-                            use ::serde::ser::SerializeMap as _;
-                            let mut __m = __s
-                                .serialize_map(::core::option::Option::Some(self.0.len()))?;
-                            for (k, v) in self.0.iter_unique() {
-                                __m.serialize_entry(k, v)?;
-                            }
-                            __m.end()
-                        }
+                if let ::core::option::Option::Some(__v) = self.properties {
+                    __map.serialize_entry("properties", __v)?;
+                }
+                {
+                    if let ::core::option::Option::Some(__v) = self
+                        .return_params
+                        .as_option()
+                    {
+                        __map.serialize_entry("return_params", __v)?;
                     }
-                    __map.serialize_entry("properties", &_WM(&self.properties))?;
+                }
+                {
+                    if let ::core::option::Option::Some(__v) = self
+                        .routine_dependencies
+                        .as_option()
+                    {
+                        __map.serialize_entry("routine_dependencies", __v)?;
+                    }
+                }
+                if let ::core::option::Option::Some(__v) = self.specific_name {
+                    __map.serialize_entry("specific_name", __v)?;
                 }
                 __map.end()
             }
@@ -6863,12 +6953,14 @@ pub mod __buffa {
             pub fn routine_definition(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().routine_definition
             }
-            /// The language of the function routine body.
+            /// External language of the function.
             ///
-            /// Field 14: `routine_body_language`
+            /// Set when routine_body is EXTERNAL.
+            ///
+            /// Field 14: `external_language`
             #[must_use]
-            pub fn routine_body_language(&self) -> ::core::option::Option<&'_ str> {
-                self.0.reborrow().routine_body_language
+            pub fn external_language(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().external_language
             }
             /// User-provided free-form text description.
             ///
@@ -6877,12 +6969,43 @@ pub mod __buffa {
             pub fn comment(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().comment
             }
-            /// A map of key-value properties attached to the securable.
+            /// JSON-serialized key-value pair map, encoded (escaped) as a string.
             ///
-            /// Field 16: `properties` (map)
+            /// Field 16: `properties`
             #[must_use]
-            pub fn properties(&self) -> &::buffa::MapView<'_, &'_ str, &'_ str> {
-                &self.0.reborrow().properties
+            pub fn properties(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().properties
+            }
+            /// The return parameters of a table-valued function.
+            ///
+            /// Field 17: `return_params`
+            #[must_use]
+            pub fn return_params(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::__buffa::view::FunctionParameterInfosView<'_>,
+            > {
+                &self.0.reborrow().return_params
+            }
+            /// The tables and functions the function depends on.
+            ///
+            /// Field 18: `routine_dependencies`
+            #[must_use]
+            pub fn routine_dependencies(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::super::super::tables::v1::__buffa::view::DependencyListView<
+                    '_,
+                >,
+            > {
+                &self.0.reborrow().routine_dependencies
+            }
+            /// Specific name of the function; reserved for future use.
+            ///
+            /// Field 19: `specific_name`
+            #[must_use]
+            pub fn specific_name(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().specific_name
             }
         }
         impl ::core::convert::From<::buffa::OwnedView<CreateFunctionView<'static>>>
@@ -6950,22 +7073,30 @@ pub mod __buffa {
             pub input_params: ::buffa::MessageFieldView<
                 super::super::__buffa::view::FunctionParameterInfosView<'a>,
             >,
-            /// The return type of the function in JSON format.
+            /// The return parameters of a table-valued function.
             ///
             /// Field 8: `return_params`
-            pub return_params: ::core::option::Option<&'a str>,
-            /// The language of the function routine body.
+            pub return_params: ::buffa::MessageFieldView<
+                super::super::__buffa::view::FunctionParameterInfosView<'a>,
+            >,
+            /// External language of the function.
             ///
-            /// Field 9: `routine_body_language`
-            pub routine_body_language: ::core::option::Option<&'a str>,
+            /// Set when routine_body is EXTERNAL.
+            ///
+            /// Field 9: `external_language`
+            pub external_language: ::core::option::Option<&'a str>,
             /// Function body.
             ///
             /// Field 10: `routine_definition`
             pub routine_definition: ::core::option::Option<&'a str>,
-            /// Function dependencies (in JSON form).
+            /// The tables and functions the function depends on.
             ///
             /// Field 11: `routine_dependencies`
-            pub routine_dependencies: ::core::option::Option<&'a str>,
+            pub routine_dependencies: ::buffa::MessageFieldView<
+                super::super::super::super::tables::v1::__buffa::view::DependencyListView<
+                    'a,
+                >,
+            >,
             /// The parameter-passing style.
             ///
             /// Field 12: `parameter_style`
@@ -6998,10 +7129,10 @@ pub mod __buffa {
             ///
             /// Field 19: `comment`
             pub comment: ::core::option::Option<&'a str>,
-            /// A map of key-value properties attached to the securable.
+            /// JSON-serialized key-value pair map, encoded (escaped) as a string.
             ///
-            /// Field 20: `properties` (map)
-            pub properties: ::buffa::MapView<'a, &'a str, &'a str>,
+            /// Field 20: `properties`
+            pub properties: ::core::option::Option<&'a str>,
             /// Username of current owner of the function.
             ///
             /// Field 21: `owner`
@@ -7174,9 +7305,21 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            view.return_params = Some(
-                                ::buffa::types::borrow_str(&mut cur)?,
-                            );
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.return_params.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.return_params = ::buffa::MessageFieldView::set(
+                                        super::super::__buffa::view::FunctionParameterInfosView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
                         }
                         9u32 => {
                             if tag.wire_type()
@@ -7188,7 +7331,7 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            view.routine_body_language = Some(
+                            view.external_language = Some(
                                 ::buffa::types::borrow_str(&mut cur)?,
                             );
                         }
@@ -7216,9 +7359,21 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            view.routine_dependencies = Some(
-                                ::buffa::types::borrow_str(&mut cur)?,
-                            );
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            match view.routine_dependencies.as_mut() {
+                                Some(existing) => existing._merge_into_view(sub, depth - 1)?,
+                                None => {
+                                    view.routine_dependencies = ::buffa::MessageFieldView::set(
+                                        super::super::super::super::tables::v1::__buffa::view::DependencyListView::_decode_depth(
+                                            sub,
+                                            depth - 1,
+                                        )?,
+                                    );
+                                }
+                            }
                         }
                         12u32 => {
                             if tag.wire_type() != ::buffa::encoding::WireType::Varint {
@@ -7316,6 +7471,20 @@ pub mod __buffa {
                             }
                             view.comment = Some(::buffa::types::borrow_str(&mut cur)?);
                         }
+                        20u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 20u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.properties = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
+                        }
                         21u32 => {
                             if tag.wire_type()
                                 != ::buffa::encoding::WireType::LengthDelimited
@@ -7394,60 +7563,6 @@ pub mod __buffa {
                                 ::buffa::types::borrow_str(&mut cur)?,
                             );
                         }
-                        20u32 => {
-                            if tag.wire_type()
-                                != ::buffa::encoding::WireType::LengthDelimited
-                            {
-                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                    field_number: 20u32,
-                                    expected: 2u8,
-                                    actual: tag.wire_type() as u8,
-                                });
-                            }
-                            let entry_bytes = ::buffa::types::borrow_bytes(&mut cur)?;
-                            let mut entry_cur: &'a [u8] = entry_bytes;
-                            let mut key = "";
-                            let mut val = "";
-                            while !entry_cur.is_empty() {
-                                let entry_tag = ::buffa::encoding::Tag::decode(
-                                    &mut entry_cur,
-                                )?;
-                                match entry_tag.field_number() {
-                                    1 => {
-                                        if entry_tag.wire_type()
-                                            != ::buffa::encoding::WireType::LengthDelimited
-                                        {
-                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                                field_number: entry_tag.field_number(),
-                                                expected: 2u8,
-                                                actual: entry_tag.wire_type() as u8,
-                                            });
-                                        }
-                                        key = ::buffa::types::borrow_str(&mut entry_cur)?;
-                                    }
-                                    2 => {
-                                        if entry_tag.wire_type()
-                                            != ::buffa::encoding::WireType::LengthDelimited
-                                        {
-                                            return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
-                                                field_number: entry_tag.field_number(),
-                                                expected: 2u8,
-                                                actual: entry_tag.wire_type() as u8,
-                                            });
-                                        }
-                                        val = ::buffa::types::borrow_str(&mut entry_cur)?;
-                                    }
-                                    _ => {
-                                        ::buffa::encoding::skip_field_depth(
-                                            entry_tag,
-                                            &mut entry_cur,
-                                            depth,
-                                        )?;
-                                    }
-                                }
-                            }
-                            view.properties.push(key, val);
-                        }
                         _ => {
                             ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
                             let span_len = before_tag.len() - cur.len();
@@ -7498,14 +7613,24 @@ pub mod __buffa {
                         }
                         None => ::buffa::MessageField::none(),
                     },
-                    return_params: self.return_params.map(|s| s.to_string()),
-                    routine_body_language: self
-                        .routine_body_language
-                        .map(|s| s.to_string()),
+                    return_params: match self.return_params.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::FunctionParameterInfos,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
+                    external_language: self.external_language.map(|s| s.to_string()),
                     routine_definition: self.routine_definition.map(|s| s.to_string()),
-                    routine_dependencies: self
-                        .routine_dependencies
-                        .map(|s| s.to_string()),
+                    routine_dependencies: match self.routine_dependencies.as_option() {
+                        Some(v) => {
+                            ::buffa::MessageField::<
+                                super::super::super::super::tables::v1::DependencyList,
+                            >::some(v.to_owned_from_source(__buffa_src))
+                        }
+                        None => ::buffa::MessageField::none(),
+                    },
                     parameter_style: self.parameter_style,
                     is_deterministic: self.is_deterministic,
                     sql_data_access: self.sql_data_access,
@@ -7514,11 +7639,7 @@ pub mod __buffa {
                     specific_name: self.specific_name.map(|s| s.to_string()),
                     routine_body: self.routine_body,
                     comment: self.comment.map(|s| s.to_string()),
-                    properties: self
-                        .properties
-                        .iter()
-                        .map(|(k, v)| (k.to_string(), v.to_string()))
-                        .collect(),
+                    properties: self.properties.map(|s| s.to_string()),
                     owner: self.owner.map(|s| s.to_string()),
                     function_id: self.function_id.map(|s| s.to_string()),
                     created_at: self.created_at,
@@ -7579,17 +7700,27 @@ pub mod __buffa {
                         += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
                             + inner_size;
                 }
-                if let Some(ref v) = self.return_params {
-                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                if self.return_params.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.return_params.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
                 }
-                if let Some(ref v) = self.routine_body_language {
+                if let Some(ref v) = self.external_language {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
                 if let Some(ref v) = self.routine_definition {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
-                if let Some(ref v) = self.routine_dependencies {
-                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                if self.routine_dependencies.is_set() {
+                    let __slot = __cache.reserve();
+                    let inner_size = self.routine_dependencies.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
                 }
                 {
                     let val = self.parameter_style.to_i32();
@@ -7627,14 +7758,8 @@ pub mod __buffa {
                 if let Some(ref v) = self.comment {
                     size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
-                #[allow(clippy::for_kv_map)]
-                for (k, v) in &self.properties {
-                    let entry_size: u32 = 1u32
-                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
-                        + ::buffa::types::string_encoded_len(v) as u32;
-                    size
-                        += 2u32 + ::buffa::encoding::varint_len(entry_size as u64) as u32
-                            + entry_size;
+                if let Some(ref v) = self.properties {
+                    size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
                 if let Some(ref v) = self.owner {
                     size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
@@ -7722,15 +7847,16 @@ pub mod __buffa {
                     ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
                     self.input_params.write_to(__cache, buf);
                 }
-                if let Some(ref v) = self.return_params {
+                if self.return_params.is_set() {
                     ::buffa::encoding::Tag::new(
                             8u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
-                    ::buffa::types::encode_string(v, buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.return_params.write_to(__cache, buf);
                 }
-                if let Some(ref v) = self.routine_body_language {
+                if let Some(ref v) = self.external_language {
                     ::buffa::encoding::Tag::new(
                             9u32,
                             ::buffa::encoding::WireType::LengthDelimited,
@@ -7746,13 +7872,14 @@ pub mod __buffa {
                         .encode(buf);
                     ::buffa::types::encode_string(v, buf);
                 }
-                if let Some(ref v) = self.routine_dependencies {
+                if self.routine_dependencies.is_set() {
                     ::buffa::encoding::Tag::new(
                             11u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
-                    ::buffa::types::encode_string(v, buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    self.routine_dependencies.write_to(__cache, buf);
                 }
                 {
                     let val = self.parameter_style.to_i32();
@@ -7830,24 +7957,9 @@ pub mod __buffa {
                         .encode(buf);
                     ::buffa::types::encode_string(v, buf);
                 }
-                for (k, v) in &self.properties {
-                    let entry_size: u32 = 1u32
-                        + ::buffa::types::string_encoded_len(k) as u32 + 1u32
-                        + ::buffa::types::string_encoded_len(v) as u32;
+                if let Some(ref v) = self.properties {
                     ::buffa::encoding::Tag::new(
                             20u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::encoding::encode_varint(entry_size as u64, buf);
-                    ::buffa::encoding::Tag::new(
-                            1u32,
-                            ::buffa::encoding::WireType::LengthDelimited,
-                        )
-                        .encode(buf);
-                    ::buffa::types::encode_string(k, buf);
-                    ::buffa::encoding::Tag::new(
-                            2u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
@@ -7948,17 +8060,27 @@ pub mod __buffa {
                         __map.serialize_entry("input_params", __v)?;
                     }
                 }
-                if let ::core::option::Option::Some(__v) = self.return_params {
-                    __map.serialize_entry("return_params", __v)?;
+                {
+                    if let ::core::option::Option::Some(__v) = self
+                        .return_params
+                        .as_option()
+                    {
+                        __map.serialize_entry("return_params", __v)?;
+                    }
                 }
-                if let ::core::option::Option::Some(__v) = self.routine_body_language {
-                    __map.serialize_entry("routine_body_language", __v)?;
+                if let ::core::option::Option::Some(__v) = self.external_language {
+                    __map.serialize_entry("external_language", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.routine_definition {
                     __map.serialize_entry("routine_definition", __v)?;
                 }
-                if let ::core::option::Option::Some(__v) = self.routine_dependencies {
-                    __map.serialize_entry("routine_dependencies", __v)?;
+                {
+                    if let ::core::option::Option::Some(__v) = self
+                        .routine_dependencies
+                        .as_option()
+                    {
+                        __map.serialize_entry("routine_dependencies", __v)?;
+                    }
                 }
                 if !::buffa::json_helpers::skip_if::is_default_enum_value(
                     &self.parameter_style,
@@ -7992,25 +8114,8 @@ pub mod __buffa {
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
                 }
-                if !self.properties.is_empty() {
-                    struct _WM<'__a, '__x>(
-                        &'__x ::buffa::MapView<'__x, &'__a str, &'__a str>,
-                    );
-                    impl<'__a> ::serde::Serialize for _WM<'__a, '_> {
-                        fn serialize<__S: ::serde::Serializer>(
-                            &self,
-                            __s: __S,
-                        ) -> ::core::result::Result<__S::Ok, __S::Error> {
-                            use ::serde::ser::SerializeMap as _;
-                            let mut __m = __s
-                                .serialize_map(::core::option::Option::Some(self.0.len()))?;
-                            for (k, v) in self.0.iter_unique() {
-                                __m.serialize_entry(k, v)?;
-                            }
-                            __m.end()
-                        }
-                    }
-                    __map.serialize_entry("properties", &_WM(&self.properties))?;
+                if let ::core::option::Option::Some(__v) = self.properties {
+                    __map.serialize_entry("properties", __v)?;
                 }
                 if let ::core::option::Option::Some(__v) = self.owner {
                     __map.serialize_entry("owner", __v)?;
@@ -8204,19 +8309,25 @@ pub mod __buffa {
             > {
                 &self.0.reborrow().input_params
             }
-            /// The return type of the function in JSON format.
+            /// The return parameters of a table-valued function.
             ///
             /// Field 8: `return_params`
             #[must_use]
-            pub fn return_params(&self) -> ::core::option::Option<&'_ str> {
-                self.0.reborrow().return_params
+            pub fn return_params(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::__buffa::view::FunctionParameterInfosView<'_>,
+            > {
+                &self.0.reborrow().return_params
             }
-            /// The language of the function routine body.
+            /// External language of the function.
             ///
-            /// Field 9: `routine_body_language`
+            /// Set when routine_body is EXTERNAL.
+            ///
+            /// Field 9: `external_language`
             #[must_use]
-            pub fn routine_body_language(&self) -> ::core::option::Option<&'_ str> {
-                self.0.reborrow().routine_body_language
+            pub fn external_language(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().external_language
             }
             /// Function body.
             ///
@@ -8225,12 +8336,18 @@ pub mod __buffa {
             pub fn routine_definition(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().routine_definition
             }
-            /// Function dependencies (in JSON form).
+            /// The tables and functions the function depends on.
             ///
             /// Field 11: `routine_dependencies`
             #[must_use]
-            pub fn routine_dependencies(&self) -> ::core::option::Option<&'_ str> {
-                self.0.reborrow().routine_dependencies
+            pub fn routine_dependencies(
+                &self,
+            ) -> &::buffa::MessageFieldView<
+                super::super::super::super::tables::v1::__buffa::view::DependencyListView<
+                    '_,
+                >,
+            > {
+                &self.0.reborrow().routine_dependencies
             }
             /// The parameter-passing style.
             ///
@@ -8294,12 +8411,12 @@ pub mod __buffa {
             pub fn comment(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().comment
             }
-            /// A map of key-value properties attached to the securable.
+            /// JSON-serialized key-value pair map, encoded (escaped) as a string.
             ///
-            /// Field 20: `properties` (map)
+            /// Field 20: `properties`
             #[must_use]
-            pub fn properties(&self) -> &::buffa::MapView<'_, &'_ str, &'_ str> {
-                &self.0.reborrow().properties
+            pub fn properties(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().properties
             }
             /// Username of current owner of the function.
             ///

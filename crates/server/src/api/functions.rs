@@ -67,9 +67,12 @@ impl<T: ResourceStore + Policy<RequestContext>> FunctionHandler<RequestContext> 
             security_type: function_info.security_type,
             routine_body: function_info.routine_body,
             routine_definition: function_info.routine_definition,
-            routine_body_language: function_info.routine_body_language,
+            external_language: function_info.external_language,
             comment: function_info.comment,
             properties: function_info.properties,
+            return_params: function_info.return_params,
+            routine_dependencies: function_info.routine_dependencies,
+            specific_name: function_info.specific_name,
             ..Default::default()
         };
         Ok(self.create(resource.into()).await?.0.try_into()?)

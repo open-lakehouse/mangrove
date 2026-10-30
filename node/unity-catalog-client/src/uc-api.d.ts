@@ -1588,14 +1588,27 @@ export interface components {
             routine_body: "ROUTINE_BODY_UNSPECIFIED" | "SQL" | "EXTERNAL";
             /** @description Function body. */
             routine_definition?: string;
-            /** @description The language of the function routine body. */
-            routine_body_language?: string;
+            /**
+             * External language of the function.
+             * @description Set when routine_body is EXTERNAL.
+             */
+            external_language?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-            /** @description A map of key-value properties attached to the securable. */
-            properties?: {
-                [key: string]: string;
-            };
+            /** @description JSON-serialized key-value pair map, encoded (escaped) as a string. */
+            properties?: string;
+            /**
+             * Function Parameter Infos
+             * @description A collection of function parameters.
+             */
+            return_params?: components["schemas"]["FunctionParameterInfos"];
+            /**
+             * Dependency List
+             * @description A list of dependencies referenced by a view-like table.
+             */
+            routine_dependencies?: components["schemas"]["DependencyList"];
+            /** @description Specific name of the function; reserved for future use. */
+            specific_name?: string;
         };
         /**
          * Create Model Version Request
@@ -2078,14 +2091,23 @@ export interface components {
              * @description A collection of function parameters.
              */
             input_params?: components["schemas"]["FunctionParameterInfos"];
-            /** @description The return type of the function in JSON format. */
-            return_params?: string;
-            /** @description The language of the function routine body. */
-            routine_body_language?: string;
+            /**
+             * Function Parameter Infos
+             * @description A collection of function parameters.
+             */
+            return_params?: components["schemas"]["FunctionParameterInfos"];
+            /**
+             * External language of the function.
+             * @description Set when routine_body is EXTERNAL.
+             */
+            external_language?: string;
             /** @description Function body. */
             routine_definition?: string;
-            /** @description Function dependencies (in JSON form). */
-            routine_dependencies?: string;
+            /**
+             * Dependency List
+             * @description A list of dependencies referenced by a view-like table.
+             */
+            routine_dependencies?: components["schemas"]["DependencyList"];
             /**
              * Parameter Style
              * Format: enum
@@ -2122,10 +2144,8 @@ export interface components {
             routine_body: "ROUTINE_BODY_UNSPECIFIED" | "SQL" | "EXTERNAL";
             /** @description User-provided free-form text description. */
             comment?: string;
-            /** @description A map of key-value properties attached to the securable. */
-            properties?: {
-                [key: string]: string;
-            };
+            /** @description JSON-serialized key-value pair map, encoded (escaped) as a string. */
+            properties?: string;
             /** @description Username of current owner of the function. */
             owner?: string;
             /** @description Unique identifier for the function. */
