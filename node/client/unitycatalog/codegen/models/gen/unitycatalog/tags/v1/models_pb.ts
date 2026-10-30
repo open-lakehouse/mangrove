@@ -2,8 +2,8 @@
 // @generated from file unitycatalog/tags/v1/models.proto (package unitycatalog.tags.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import { file_buf_validate_validate } from "../../../buf/validate/validate_pb";
 import { file_google_api_field_behavior } from "../../../google/api/field_behavior_pb";
 import { file_google_api_resource } from "../../../google/api/resource_pb";
@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file unitycatalog/tags/v1/models.proto.
  */
 export const file_unitycatalog_tags_v1_models: GenFile = /*@__PURE__*/
-  fileDesc("CiF1bml0eWNhdGFsb2cvdGFncy92MS9tb2RlbHMucHJvdG8SFHVuaXR5Y2F0YWxvZy50YWdzLnYxItwBChNFbnRpdHlUYWdBc3NpZ25tZW50ElAKC2VudGl0eV90eXBlGAEgASgJQjvgQQLgQQW6SDLIAQFyLTIrXihjYXRhbG9nc3xzY2hlbWFzfHRhYmxlc3xjb2x1bW5zfHZvbHVtZXMpJBIlCgtlbnRpdHlfbmFtZRgCIAEoCUIQ4EEC4EEFukgHyAEBcgIQARIhCgd0YWdfa2V5GAMgASgJQhDgQQLgQQW6SAfIAQFyAhABEhsKCXRhZ192YWx1ZRgEIAEoCUID4EEBSACIAQFCDAoKX3RhZ192YWx1ZSInCgVWYWx1ZRIeCgRuYW1lGAEgASgJQhDgQQK6SArIAQFyBRABGIACIoQDCglUYWdQb2xpY3kSJAoHdGFnX2tleRgBIAEoCUIT4EEC4EEFukgKyAEBcgUQARiAAhIlCgtkZXNjcmlwdGlvbhgCIAEoCUIL4EEBukgFcgMYgCBIAIgBARI5CgZ2YWx1ZXMYAyADKAsyGy51bml0eWNhdGFsb2cudGFncy52MS5WYWx1ZUIM4EEBukgGkgEDEPQDEhcKAmlkGAQgASgJQgbgQQPgQQhIAYgBARIkCgpjcmVhdGVkX2F0GOgHIAEoA0IK4EEDukgEIgIgAEgCiAEBEh0KCnVwZGF0ZWRfYXQY6gcgASgDQgPgQQNIA4gBATpc6kFZChl1bml0eWNhdGFsb2cuaW8vVGFnUG9saWN5Ehl0YWdfcG9saWNpZXMve3RhZ19wb2xpY3l9Ggd0YWdfa2V5Kgx0YWdfcG9saWNpZXMyCnRhZ19wb2xpY3lCDgoMX2Rlc2NyaXB0aW9uQgUKA19pZEINCgtfY3JlYXRlZF9hdEINCgtfdXBkYXRlZF9hdELlAQoYY29tLnVuaXR5Y2F0YWxvZy50YWdzLnYxQgtNb2RlbHNQcm90b1ABWkpnaXRodWIuY29tL2RlbHRhLWluY3ViYXRvci9kZWx0YS1zaGFyaW5nLXJzL2dvL3VuaXR5Y2F0YWxvZy90YWdzL3YxO3RhZ3N2MaICA1VUWKoCFFVuaXR5Y2F0YWxvZy5UYWdzLlYxygIUVW5pdHljYXRhbG9nXFRhZ3NcVjHiAiBVbml0eWNhdGFsb2dcVGFnc1xWMVxHUEJNZXRhZGF0YeoCFlVuaXR5Y2F0YWxvZzo6VGFnczo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_field_behavior, file_google_api_resource]);
+  fileDesc("CiF1bml0eWNhdGFsb2cvdGFncy92MS9tb2RlbHMucHJvdG8SFHVuaXR5Y2F0YWxvZy50YWdzLnYxIucCChNFbnRpdHlUYWdBc3NpZ25tZW50ElAKC2VudGl0eV90eXBlGAEgASgJQjvgQQLgQQW6SDLIAQFyLTIrXihjYXRhbG9nc3xzY2hlbWFzfHRhYmxlc3xjb2x1bW5zfHZvbHVtZXMpJBIlCgtlbnRpdHlfbmFtZRgCIAEoCUIQ4EEC4EEFukgHyAEBcgIQARIhCgd0YWdfa2V5GAMgASgJQhDgQQLgQQW6SAfIAQFyAhABEhsKCXRhZ192YWx1ZRgEIAEoCUID4EEBSACIAQESHAoKdXBkYXRlZF9ieRgFIAEoCUID4EEDSAGIAQESTAoLc291cmNlX3R5cGUYBiABKA4yLS51bml0eWNhdGFsb2cudGFncy52MS5UYWdBc3NpZ25tZW50U291cmNlVHlwZUID4EEDSAKIAQFCDAoKX3RhZ192YWx1ZUINCgtfdXBkYXRlZF9ieUIOCgxfc291cmNlX3R5cGUiJwoFVmFsdWUSHgoEbmFtZRgBIAEoCUIQ4EECukgKyAEBcgUQARiAAiKEAwoJVGFnUG9saWN5EiQKB3RhZ19rZXkYASABKAlCE+BBAuBBBbpICsgBAXIFEAEYgAISJQoLZGVzY3JpcHRpb24YAiABKAlCC+BBAbpIBXIDGIAgSACIAQESOQoGdmFsdWVzGAMgAygLMhsudW5pdHljYXRhbG9nLnRhZ3MudjEuVmFsdWVCDOBBAbpIBpIBAxD0AxIXCgJpZBgEIAEoCUIG4EED4EEISAGIAQESJAoKY3JlYXRlZF9hdBjoByABKANCCuBBA7pIBCICIABIAogBARIdCgp1cGRhdGVkX2F0GOoHIAEoA0ID4EEDSAOIAQE6XOpBWQoZdW5pdHljYXRhbG9nLmlvL1RhZ1BvbGljeRIZdGFnX3BvbGljaWVzL3t0YWdfcG9saWN5fRoHdGFnX2tleSoMdGFnX3BvbGljaWVzMgp0YWdfcG9saWN5Qg4KDF9kZXNjcmlwdGlvbkIFCgNfaWRCDQoLX2NyZWF0ZWRfYXRCDQoLX3VwZGF0ZWRfYXQqgAEKF1RhZ0Fzc2lnbm1lbnRTb3VyY2VUeXBlEioKJlRBR19BU1NJR05NRU5UX1NPVVJDRV9UWVBFX1VOU1BFQ0lGSUVEEAASOQo1VEFHX0FTU0lHTk1FTlRfU09VUkNFX1RZUEVfU1lTVEVNX0RBVEFfQ0xBU1NJRklDQVRJT04QAULlAQoYY29tLnVuaXR5Y2F0YWxvZy50YWdzLnYxQgtNb2RlbHNQcm90b1ABWkpnaXRodWIuY29tL2RlbHRhLWluY3ViYXRvci9kZWx0YS1zaGFyaW5nLXJzL2dvL3VuaXR5Y2F0YWxvZy90YWdzL3YxO3RhZ3N2MaICA1VUWKoCFFVuaXR5Y2F0YWxvZy5UYWdzLlYxygIUVW5pdHljYXRhbG9nXFRhZ3NcVjHiAiBVbml0eWNhdGFsb2dcVGFnc1xWMVxHUEJNZXRhZGF0YeoCFlVuaXR5Y2F0YWxvZzo6VGFnczo6VjFiBnByb3RvMw", [file_buf_validate_validate, file_google_api_field_behavior, file_google_api_resource]);
 
 /**
  * The assignment of a tag to a Unity Catalog entity.
@@ -56,6 +56,20 @@ export type EntityTagAssignment = Message<"unitycatalog.tags.v1.EntityTagAssignm
    * @generated from field: optional string tag_value = 4;
    */
   tagValue?: string | undefined;
+
+  /**
+   * The user or principal who last updated the tag assignment.
+   *
+   * @generated from field: optional string updated_by = 5;
+   */
+  updatedBy?: string | undefined;
+
+  /**
+   * The source of the tag assignment, e.g. user-assigned or system-assigned.
+   *
+   * @generated from field: optional unitycatalog.tags.v1.TagAssignmentSourceType source_type = 6;
+   */
+  sourceType?: TagAssignmentSourceType | undefined;
 };
 
 /**
@@ -148,4 +162,31 @@ export type TagPolicy = Message<"unitycatalog.tags.v1.TagPolicy"> & {
  */
 export const TagPolicySchema: GenMessage<TagPolicy> = /*@__PURE__*/
   messageDesc(file_unitycatalog_tags_v1_models, 2);
+
+/**
+ * The source of an entity tag assignment.
+ *
+ * @generated from enum unitycatalog.tags.v1.TagAssignmentSourceType
+ */
+export enum TagAssignmentSourceType {
+  /**
+   * Assigned by a user (or unspecified).
+   *
+   * @generated from enum value: TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Assigned by system data classification.
+   *
+   * @generated from enum value: TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION = 1;
+   */
+  SYSTEM_DATA_CLASSIFICATION = 1,
+}
+
+/**
+ * Describes the enum unitycatalog.tags.v1.TagAssignmentSourceType.
+ */
+export const TagAssignmentSourceTypeSchema: GenEnum<TagAssignmentSourceType> = /*@__PURE__*/
+  enumDesc(file_unitycatalog_tags_v1_models, 0);
 

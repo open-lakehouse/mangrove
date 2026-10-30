@@ -29,9 +29,10 @@ impl ListTagPoliciesBuilder {
         };
         Self { client, request }
     }
-    /** The maximum number of results per page that should be returned.
+    /** The maximum number of results to return in this request.
 
-    If unset or 0, the server's default page size is used. Negative values are rejected.*/
+    Fewer results may be returned than requested. If unset or 0, this defaults to 1000;
+    larger values are coerced down to 1000. Negative values are rejected.*/
     pub fn with_max_results(mut self, max_results: impl Into<Option<i32>>) -> Self {
         self.request.max_results = max_results.into();
         self
@@ -86,12 +87,25 @@ pub struct CreateTagPolicyBuilder {
 impl CreateTagPolicyBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `TagPolicyServiceClient`.
-    pub(crate) fn new(client: TagPolicyServiceClient, tag_policy: TagPolicy) -> Self {
+    pub(crate) fn new(client: TagPolicyServiceClient, tag_key: impl Into<String>) -> Self {
         let request = CreateTagPolicyRequest {
-            tag_policy: buffa::MessageField::some(tag_policy),
+            tag_key: tag_key.into(),
             ..Default::default()
         };
         Self { client, request }
+    }
+    /// User-provided free-form text description of the tag policy.
+    pub fn with_description(mut self, description: impl Into<Option<String>>) -> Self {
+        self.request.description = description.into();
+        self
+    }
+    /// The set of allowed values for the governed tag. The list is unordered.
+    pub fn with_values<I>(mut self, values: I) -> Self
+    where
+        I: IntoIterator<Item = Value>,
+    {
+        self.request.values = values.into_iter().collect();
+        self
     }
 }
 impl IntoFuture for CreateTagPolicyBuilder {
@@ -136,19 +150,30 @@ pub struct UpdateTagPolicyBuilder {
 impl UpdateTagPolicyBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `TagPolicyServiceClient`.
-    pub(crate) fn new(
-        client: TagPolicyServiceClient,
-        tag_key: impl Into<String>,
-        tag_policy: TagPolicy,
-    ) -> Self {
+    pub(crate) fn new(client: TagPolicyServiceClient, tag_key: impl Into<String>) -> Self {
         let request = UpdateTagPolicyRequest {
             tag_key: tag_key.into(),
-            tag_policy: buffa::MessageField::some(tag_policy),
             ..Default::default()
         };
         Self { client, request }
     }
-    /// The list of fields to update, as a comma-separated string.
+    /// User-provided free-form text description of the tag policy.
+    pub fn with_description(mut self, description: impl Into<Option<String>>) -> Self {
+        self.request.description = description.into();
+        self
+    }
+    /// The set of allowed values for the governed tag. The list is unordered.
+    pub fn with_values<I>(mut self, values: I) -> Self
+    where
+        I: IntoIterator<Item = Value>,
+    {
+        self.request.values = values.into_iter().collect();
+        self
+    }
+    /** The fields to update, as a comma-separated list of field names.
+
+    If empty or "*", every field set in the request is updated. Otherwise only the
+    listed fields are updated, and a listed field that is unset in the request is cleared.*/
     pub fn with_update_mask(mut self, update_mask: impl Into<Option<String>>) -> Self {
         self.request.update_mask = update_mask.into();
         self

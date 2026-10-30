@@ -2861,9 +2861,10 @@ paths:
         - name: max_results
           in: query
           description: |-
-            The maximum number of results per page that should be returned.
+            The maximum number of results to return in this request.
 
-             If unset or 0, the server's default page size is used. Negative values are rejected.
+             Fewer results may be returned than requested. If unset or 0, this defaults to 1000;
+             larger values are coerced down to 1000. Negative values are rejected.
           schema:
             type: integer
             format: int32
@@ -4030,24 +4031,28 @@ components:
       title: Create Credential Request
     CreateEntityTagAssignmentRequest:
       required:
-        - tag_assignment
+        - entity_type
+        - entity_name
+        - tag_key
       type: object
       properties:
-        tag_assignment:
-          allOf:
-            - $ref: "#/components/schemas/EntityTagAssignment"
-          description: |-
-            Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
-             of a tag to a specific securable. It has no identifier of its own — its identity is
-             the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
-             `google.api.resource`: assignments are stored as associations between the entity and
-             its tag, not as standalone objects.
-          additionalProperties: false
-          required:
-            - entity_type
-            - entity_name
-            - tag_key
-          title: The assignment of a tag to a Unity Catalog entity.
+        entity_type:
+          type: string
+          description: "Supported values: catalogs, schemas, tables, columns, volumes."
+          minLength: 1
+          pattern: ^(catalogs|schemas|tables|columns|volumes)$
+          title: The type of the entity to which the tag is assigned.
+        entity_name:
+          type: string
+          description: The fully qualified name of the entity to which the tag is assigned.
+          minLength: 1
+        tag_key:
+          type: string
+          description: The key of the tag.
+          minLength: 1
+        tag_value:
+          type: string
+          description: The value of the tag.
       description: Create an entity tag assignment
       additionalProperties: false
       title: Create Entity Tag Assignment Request
@@ -4622,20 +4627,29 @@ components:
       title: Create a table
     CreateTagPolicyRequest:
       required:
-        - tag_policy
+        - tag_key
       type: object
       properties:
-        tag_policy:
-          allOf:
-            - $ref: "#/components/schemas/TagPolicy"
-          description: |-
-            A tag policy defines a tag key together with the rules that govern how it can
-             be used, including the optional set of allowed values. Assigning a governed
-             tag to an entity is done through the Entity Tag Assignments API.
-          additionalProperties: false
-          required:
-            - tag_key
-          title: A governed tag definition (tag policy).
+        tag_key:
+          type: string
+          description: The key of the governed tag.
+          minLength: 1
+          maxLength: 256
+        description:
+          type: string
+          description: User-provided free-form text description of the tag policy.
+          maxLength: 4096
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/Value"
+            additionalProperties: false
+            required:
+              - name
+            description: An allowed value for a governed tag.
+            title: Value
+          description: The set of allowed values for the governed tag. The list is unordered.
+          maxItems: 500
       description: Create a new tag policy
       additionalProperties: false
       title: Create Tag Policy Request
@@ -4962,6 +4976,19 @@ components:
         tag_value:
           type: string
           description: The value of the tag.
+        updated_by:
+          readOnly: true
+          type: string
+          description: The user or principal who last updated the tag assignment.
+        source_type:
+          readOnly: true
+          enum:
+            - TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED
+            - TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION
+          type: string
+          description: The source of the tag assignment, e.g. user-assigned or system-assigned.
+          format: enum
+          title: Tag Assignment Source Type
       description: |-
         Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
          of a tag to a specific securable. It has no identifier of its own — its identity is
@@ -7150,28 +7177,18 @@ components:
       additionalProperties: false
       title: Update Credential Request
     UpdateEntityTagAssignmentRequest:
-      required:
-        - tag_assignment
+      required: []
       type: object
       properties:
-        tag_assignment:
-          allOf:
-            - $ref: "#/components/schemas/EntityTagAssignment"
-          description: |-
-            Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
-             of a tag to a specific securable. It has no identifier of its own — its identity is
-             the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
-             `google.api.resource`: assignments are stored as associations between the entity and
-             its tag, not as standalone objects.
-          additionalProperties: false
-          required:
-            - entity_type
-            - entity_name
-            - tag_key
-          title: The assignment of a tag to a Unity Catalog entity.
+        tag_value:
+          type: string
+          description: The value of the tag.
         update_mask:
           type: string
-          description: The list of fields to update, as a comma-separated string.
+          description: |-
+            If empty or "*", every field set in the request is updated. Otherwise only the
+             listed fields are updated, and a listed field that is unset in the request is cleared.
+          title: The fields to update, as a comma-separated list of field names.
       description: Update an entity tag assignment
       additionalProperties: false
       title: Update Entity Tag Assignment Request
@@ -7484,24 +7501,30 @@ components:
       additionalProperties: false
       title: Update a share.
     UpdateTagPolicyRequest:
-      required:
-        - tag_policy
+      required: []
       type: object
       properties:
-        tag_policy:
-          allOf:
-            - $ref: "#/components/schemas/TagPolicy"
-          description: |-
-            A tag policy defines a tag key together with the rules that govern how it can
-             be used, including the optional set of allowed values. Assigning a governed
-             tag to an entity is done through the Entity Tag Assignments API.
-          additionalProperties: false
-          required:
-            - tag_key
-          title: A governed tag definition (tag policy).
+        description:
+          type: string
+          description: User-provided free-form text description of the tag policy.
+          maxLength: 4096
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/Value"
+            additionalProperties: false
+            required:
+              - name
+            description: An allowed value for a governed tag.
+            title: Value
+          description: The set of allowed values for the governed tag. The list is unordered.
+          maxItems: 500
         update_mask:
           type: string
-          description: The list of fields to update, as a comma-separated string.
+          description: |-
+            If empty or "*", every field set in the request is updated. Otherwise only the
+             listed fields are updated, and a listed field that is unset in the request is cleared.
+          title: The fields to update, as a comma-separated list of field names.
       description: Update a tag policy
       additionalProperties: false
       title: Update Tag Policy Request

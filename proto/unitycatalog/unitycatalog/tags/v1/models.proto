@@ -42,6 +42,21 @@ message EntityTagAssignment {
 
   // The value of the tag.
   optional string tag_value = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // The user or principal who last updated the tag assignment.
+  optional string updated_by = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The source of the tag assignment, e.g. user-assigned or system-assigned.
+  optional TagAssignmentSourceType source_type = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// The source of an entity tag assignment.
+enum TagAssignmentSourceType {
+  // Assigned by a user (or unspecified).
+  TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED = 0;
+
+  // Assigned by system data classification.
+  TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION = 1;
 }
 
 // An allowed value for a governed tag.

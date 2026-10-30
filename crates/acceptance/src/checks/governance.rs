@@ -6,7 +6,6 @@
 //! writes the checks to *attempt* coverage; whatever fails live is flagged.
 
 use unitycatalog_common::models::policies::v1::{FunctionRef, PolicyType};
-use unitycatalog_common::models::tags::v1::{EntityTagAssignment, TagPolicy};
 
 use super::{unique, with_cleanup};
 use crate::{AcceptanceResult, JourneyContext};
@@ -53,12 +52,11 @@ pub async fn tag_policy_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()> 
     let tag_key = unique("conf_tag");
     with_cleanup(
         || async {
-            let policy = TagPolicy {
-                tag_key: tag_key.clone(),
-                description: Some("conformance tag policy".to_string()),
-                ..Default::default()
-            };
-            let created = ctx.client().create_tag_policy(policy).await?;
+            let created = ctx
+                .client()
+                .create_tag_policy(&tag_key)
+                .with_description("conformance tag policy".to_string())
+                .await?;
             assert_eq!(created.tag_key, tag_key);
 
             let fetched = ctx.client().tag_policy(&tag_key).get().await?;
@@ -86,15 +84,9 @@ pub async fn entity_tag_assignment_lifecycle(ctx: &JourneyContext) -> Acceptance
         || async {
             ctx.create_catalog(&catalog).await?;
 
-            let assignment = EntityTagAssignment {
-                entity_type: "catalogs".to_string(),
-                entity_name: catalog.clone(),
-                tag_key: tag_key.clone(),
-                tag_value: Some("conformance".to_string()),
-                ..Default::default()
-            };
             ctx.client()
-                .create_entity_tag_assignment(assignment)
+                .create_entity_tag_assignment("catalogs", &catalog, &tag_key)
+                .with_tag_value("conformance".to_string())
                 .await?;
 
             let fetched = ctx

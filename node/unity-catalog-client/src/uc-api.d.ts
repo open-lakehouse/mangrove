@@ -1522,14 +1522,16 @@ export interface components {
          */
         CreateEntityTagAssignmentRequest: {
             /**
-             * The assignment of a tag to a Unity Catalog entity.
-             * @description Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
-             *      of a tag to a specific securable. It has no identifier of its own — its identity is
-             *      the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
-             *      `google.api.resource`: assignments are stored as associations between the entity and
-             *      its tag, not as standalone objects.
+             * The type of the entity to which the tag is assigned.
+             * @description Supported values: catalogs, schemas, tables, columns, volumes.
              */
-            tag_assignment: WithRequired<components["schemas"]["EntityTagAssignment"], "entity_type" | "entity_name" | "tag_key">;
+            entity_type: string;
+            /** @description The fully qualified name of the entity to which the tag is assigned. */
+            entity_name: string;
+            /** @description The key of the tag. */
+            tag_key: string;
+            /** @description The value of the tag. */
+            tag_value?: string;
         };
         /**
          * Create External Location Request
@@ -1873,13 +1875,12 @@ export interface components {
          * @description Create a new tag policy
          */
         CreateTagPolicyRequest: {
-            /**
-             * A governed tag definition (tag policy).
-             * @description A tag policy defines a tag key together with the rules that govern how it can
-             *      be used, including the optional set of allowed values. Assigning a governed
-             *      tag to an entity is done through the Entity Tag Assignments API.
-             */
-            tag_policy: WithRequired<components["schemas"]["TagPolicy"], "tag_key">;
+            /** @description The key of the governed tag. */
+            tag_key: string;
+            /** @description User-provided free-form text description of the tag policy. */
+            description?: string;
+            /** @description The set of allowed values for the governed tag. The list is unordered. */
+            values?: components["schemas"]["Value"][];
         };
         /**
          * Create Volume Request
@@ -2101,6 +2102,15 @@ export interface components {
             tag_key: string;
             /** @description The value of the tag. */
             tag_value?: string;
+            /** @description The user or principal who last updated the tag assignment. */
+            readonly updated_by?: string;
+            /**
+             * Tag Assignment Source Type
+             * Format: enum
+             * @description The source of the tag assignment, e.g. user-assigned or system-assigned.
+             * @enum {string}
+             */
+            readonly source_type?: "TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED" | "TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION";
         };
         /** External Location */
         ExternalLocationInfo: {
@@ -3328,16 +3338,13 @@ export interface components {
          * @description Update an entity tag assignment
          */
         UpdateEntityTagAssignmentRequest: {
+            /** @description The value of the tag. */
+            tag_value?: string;
             /**
-             * The assignment of a tag to a Unity Catalog entity.
-             * @description Unlike a TagPolicy (a governed-tag *definition*), an assignment is the application
-             *      of a tag to a specific securable. It has no identifier of its own — its identity is
-             *      the composite of (entity_type, entity_name, tag_key). It is intentionally NOT a
-             *      `google.api.resource`: assignments are stored as associations between the entity and
-             *      its tag, not as standalone objects.
+             * The fields to update, as a comma-separated list of field names.
+             * @description If empty or "*", every field set in the request is updated. Otherwise only the
+             *      listed fields are updated, and a listed field that is unset in the request is cleared.
              */
-            tag_assignment: WithRequired<components["schemas"]["EntityTagAssignment"], "entity_type" | "entity_name" | "tag_key">;
-            /** @description The list of fields to update, as a comma-separated string. */
             update_mask?: string;
         };
         /**
@@ -3543,14 +3550,15 @@ export interface components {
          * @description Update a tag policy
          */
         UpdateTagPolicyRequest: {
+            /** @description User-provided free-form text description of the tag policy. */
+            description?: string;
+            /** @description The set of allowed values for the governed tag. The list is unordered. */
+            values?: components["schemas"]["Value"][];
             /**
-             * A governed tag definition (tag policy).
-             * @description A tag policy defines a tag key together with the rules that govern how it can
-             *      be used, including the optional set of allowed values. Assigning a governed
-             *      tag to an entity is done through the Entity Tag Assignments API.
+             * The fields to update, as a comma-separated list of field names.
+             * @description If empty or "*", every field set in the request is updated. Otherwise only the
+             *      listed fields are updated, and a listed field that is unset in the request is cleared.
              */
-            tag_policy: WithRequired<components["schemas"]["TagPolicy"], "tag_key">;
-            /** @description The list of fields to update, as a comma-separated string. */
             update_mask?: string;
         };
         /** Update Volume Request */
@@ -6556,9 +6564,10 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description The maximum number of results per page that should be returned.
+                 * @description The maximum number of results to return in this request.
                  *
-                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 *      Fewer results may be returned than requested. If unset or 0, this defaults to 1000;
+                 *      larger values are coerced down to 1000. Negative values are rejected.
                  */
                 max_results?: number;
                 /** @description Opaque pagination token to go to next page based on previous query. */

@@ -82,12 +82,12 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateEntityTagAssignment
             .extract()
             .await
             .map_err(axum::response::IntoResponse::into_response)?;
-        let (tag_assignment, update_mask) = (body.tag_assignment, body.update_mask);
+        let (tag_value, update_mask) = (body.tag_value, body.update_mask);
         Ok(UpdateEntityTagAssignmentRequest {
             entity_type,
             entity_name,
             tag_key,
-            tag_assignment,
+            tag_value,
             update_mask,
             ..Default::default()
         })

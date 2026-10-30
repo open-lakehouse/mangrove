@@ -68,6 +68,41 @@ pub(crate) fn page_size(max_results: Option<i32>) -> crate::Result<Option<usize>
     }
 }
 
+/// The fields an update request's `update_mask` selects.
+///
+/// An empty mask or `*` selects every field set in the request ([`UpdateMask::All`]);
+/// otherwise only the listed fields are selected, and a listed field that is unset in the
+/// request is cleared. Names outside `updatable` are rejected.
+pub(crate) enum UpdateMask<'a> {
+    All,
+    Fields(Vec<&'a str>),
+}
+
+impl<'a> UpdateMask<'a> {
+    pub(crate) fn parse(mask: Option<&'a str>, updatable: &[&str]) -> crate::Result<Self> {
+        let fields: Vec<&str> = mask
+            .unwrap_or_default()
+            .split(',')
+            .map(str::trim)
+            .filter(|f| !f.is_empty())
+            .collect();
+        if fields.is_empty() || fields == ["*"] {
+            return Ok(Self::All);
+        }
+        if let Some(unknown) = fields.iter().find(|f| !updatable.contains(f)) {
+            return Err(crate::Error::invalid_argument(format!(
+                "update_mask names a field that cannot be updated: '{unknown}'"
+            )));
+        }
+        Ok(Self::Fields(fields))
+    }
+
+    /// Whether `field` is explicitly listed in the mask.
+    pub(crate) fn names(&self, field: &str) -> bool {
+        matches!(self, Self::Fields(fields) if fields.contains(&field))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct RequestContext {
     pub recipient: Principal,

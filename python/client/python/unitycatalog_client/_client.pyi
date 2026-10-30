@@ -635,17 +635,23 @@ class EntityTagAssignment:
     The type of the entity to which the tag is assigned. Supported values: catalogs, schemas,
     tables, columns, volumes.
     """
+    source_type: Optional[TagAssignmentSourceType]
+    """The source of the tag assignment, e.g. user-assigned or system-assigned."""
     tag_key: str
     """The key of the tag."""
     tag_value: Optional[str]
     """The value of the tag."""
+    updated_by: Optional[str]
+    """The user or principal who last updated the tag assignment."""
 
     def __init__(
         self,
         entity_name: Optional[str] = None,
         entity_type: Optional[str] = None,
+        source_type: Optional[TagAssignmentSourceType] = None,
         tag_key: Optional[str] = None,
         tag_value: Optional[str] = None,
+        updated_by: Optional[str] = None,
     ) -> None: ...
 
 class ExternalLocation:
@@ -1954,6 +1960,16 @@ class TableType(enum.Enum):
     TABLE_TYPE_UNSPECIFIED = "TABLE_TYPE_UNSPECIFIED"
     VIEW = "VIEW"
 
+class TagAssignmentSourceType(enum.Enum):
+    """The source of an entity tag assignment."""
+
+    TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION = (
+        "TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION"
+    )
+    """Assigned by system data classification."""
+    TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED = "TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED"
+    """Assigned by a user (or unspecified)."""
+
 class VolumeType(enum.Enum):
     EXTERNAL = "EXTERNAL"
     MANAGED = "MANAGED"
@@ -2700,7 +2716,12 @@ class TagPolicyClient:
             governed tag to an entity is done through the Entity Tag Assignments API.
         """
         ...
-    def update(self, tag_policy: TagPolicy, update_mask: Optional[str] = None) -> TagPolicy:
+    def update(
+        self,
+        description: Optional[str] = None,
+        values: Optional[List[Value]] = None,
+        update_mask: Optional[str] = None,
+    ) -> TagPolicy:
         """
         Update a tag policy
 
@@ -2708,8 +2729,11 @@ class TagPolicyClient:
 
 
         Args:
-            tag_policy: The tag policy with the updated fields.
-            update_mask: The list of fields to update, as a comma-separated string.
+            description: User-provided free-form text description of the tag policy.
+            values: The set of allowed values for the governed tag. The list is unordered.
+            update_mask: The fields to update, as a comma-separated list of field names. If empty or "*",
+                         every field set in the request is updated. Otherwise only the listed fields are
+                         updated, and a listed field that is unset in the request is cleared.
 
 
         Returns:
@@ -2884,7 +2908,7 @@ class UnityCatalogClient:
         """
         ...
     def create_entity_tag_assignment(
-        self, tag_assignment: EntityTagAssignment
+        self, entity_type: str, entity_name: str, tag_key: str, tag_value: Optional[str] = None
     ) -> EntityTagAssignment:
         """
         Create an entity tag assignment
@@ -2893,7 +2917,11 @@ class UnityCatalogClient:
 
 
         Args:
-            tag_assignment: The tag assignment to create.
+            entity_type: The type of the entity to which the tag is assigned. Supported values: catalogs,
+                         schemas, tables, columns, volumes.
+            entity_name: The fully qualified name of the entity to which the tag is assigned.
+            tag_key: The key of the tag.
+            tag_value: The value of the tag.
 
 
         Returns:
@@ -3228,7 +3256,9 @@ class UnityCatalogClient:
             The requested resource
         """
         ...
-    def create_tag_policy(self, tag_policy: TagPolicy) -> TagPolicy:
+    def create_tag_policy(
+        self, tag_key: str, description: Optional[str] = None, values: Optional[List[Value]] = None
+    ) -> TagPolicy:
         """
         Create a new tag policy
 
@@ -3236,7 +3266,9 @@ class UnityCatalogClient:
 
 
         Args:
-            tag_policy: The tag policy to create.
+            tag_key: The key of the governed tag.
+            description: User-provided free-form text description of the tag policy.
+            values: The set of allowed values for the governed tag. The list is unordered.
 
 
         Returns:
@@ -3774,8 +3806,9 @@ class UnityCatalogClient:
 
 
         Args:
-            max_results: The maximum number of results per page that should be returned. If unset or 0, the
-                         server's default page size is used. Negative values are rejected.
+            max_results: The maximum number of results to return in this request. Fewer results may be
+                         returned than requested. If unset or 0, this defaults to 1000; larger values are
+                         coerced down to 1000. Negative values are rejected.
 
 
         Returns:
@@ -3811,7 +3844,7 @@ class UnityCatalogClient:
         entity_type: str,
         entity_name: str,
         tag_key: str,
-        tag_assignment: EntityTagAssignment,
+        tag_value: Optional[str] = None,
         update_mask: Optional[str] = None,
     ) -> EntityTagAssignment:
         """
@@ -3821,8 +3854,10 @@ class UnityCatalogClient:
 
 
         Args:
-            tag_assignment: The tag assignment with the updated fields.
-            update_mask: The list of fields to update, as a comma-separated string.
+            tag_value: The value of the tag.
+            update_mask: The fields to update, as a comma-separated list of field names. If empty or "*",
+                         every field set in the request is updated. Otherwise only the listed fields are
+                         updated, and a listed field that is unset in the request is cleared.
 
 
         Returns:

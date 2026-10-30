@@ -456,17 +456,25 @@ impl UnityCatalogClient {
     ///
     /// # Arguments
     ///
-    /// * `tag_assignment` - The tag assignment to create.
+    /// * `entity_type` - The type of the entity to which the tag is assigned.
+    ///
+    /// Supported values: catalogs, schemas, tables, columns, volumes.
+    /// * `entity_name` - The fully qualified name of the entity to which the tag is assigned.
+    /// * `tag_key` - The key of the tag.
     pub fn create_entity_tag_assignment(
         &self,
-        tag_assignment: EntityTagAssignment,
+        entity_type: impl Into<String>,
+        entity_name: impl Into<String>,
+        tag_key: impl Into<String>,
     ) -> CreateEntityTagAssignmentBuilder {
         CreateEntityTagAssignmentBuilder::new(
             crate::codegen::entity_tag_assignments::EntityTagAssignmentClient::new(
                 self.client.clone(),
                 self.base_url.clone(),
             ),
-            tag_assignment,
+            entity_type,
+            entity_name,
+            tag_key,
         )
     }
     /// Get an entity tag assignment
@@ -503,13 +511,11 @@ impl UnityCatalogClient {
     /// * `entity_type` - The type of the entity to which the tag is assigned.
     /// * `entity_name` - The fully qualified name of the entity to which the tag is assigned.
     /// * `tag_key` - The key of the tag to update.
-    /// * `tag_assignment` - The tag assignment with the updated fields.
     pub fn update_entity_tag_assignment(
         &self,
         entity_type: impl Into<String>,
         entity_name: impl Into<String>,
         tag_key: impl Into<String>,
-        tag_assignment: EntityTagAssignment,
     ) -> UpdateEntityTagAssignmentBuilder {
         UpdateEntityTagAssignmentBuilder::new(
             crate::codegen::entity_tag_assignments::EntityTagAssignmentClient::new(
@@ -519,7 +525,6 @@ impl UnityCatalogClient {
             entity_type,
             entity_name,
             tag_key,
-            tag_assignment,
         )
     }
     /// Delete an entity tag assignment
@@ -1266,14 +1271,14 @@ impl UnityCatalogClient {
     ///
     /// # Arguments
     ///
-    /// * `tag_policy` - The tag policy to create.
-    pub fn create_tag_policy(&self, tag_policy: TagPolicy) -> CreateTagPolicyBuilder {
+    /// * `tag_key` - The key of the governed tag.
+    pub fn create_tag_policy(&self, tag_key: impl Into<String>) -> CreateTagPolicyBuilder {
         CreateTagPolicyBuilder::new(
             crate::codegen::tag_policies::TagPolicyServiceClient::new(
                 self.client.clone(),
                 self.base_url.clone(),
             ),
-            tag_policy,
+            tag_key,
         )
     }
     /// Access the `tag_policy` resource scoped to the given name.

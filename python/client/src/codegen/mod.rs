@@ -352,15 +352,19 @@ impl PyUnityCatalogClient {
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PyListEntityTagAssignmentsResponse::from(result))
     }
-    #[pyo3(signature = (tag_assignment))]
+    #[pyo3(signature = (entity_type, entity_name, tag_key, tag_value = None))]
     pub fn create_entity_tag_assignment(
         &self,
         py: Python<'_>,
-        tag_assignment: PyEntityTagAssignment,
+        entity_type: String,
+        entity_name: String,
+        tag_key: String,
+        tag_value: Option<String>,
     ) -> PyResult<PyEntityTagAssignment> {
-        let request = self
-            .client
-            .create_entity_tag_assignment(tag_assignment.into());
+        let mut request =
+            self.client
+                .create_entity_tag_assignment(entity_type, entity_name, tag_key);
+        request = request.with_tag_value(tag_value);
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PyEntityTagAssignment::from(result))
     }
@@ -383,7 +387,7 @@ impl PyUnityCatalogClient {
             entity_type,
             entity_name,
             tag_key,
-            tag_assignment,
+            tag_value = None,
             update_mask = None
         )
     )]
@@ -393,15 +397,13 @@ impl PyUnityCatalogClient {
         entity_type: String,
         entity_name: String,
         tag_key: String,
-        tag_assignment: PyEntityTagAssignment,
+        tag_value: Option<String>,
         update_mask: Option<String>,
     ) -> PyResult<PyEntityTagAssignment> {
-        let mut request = self.client.update_entity_tag_assignment(
-            entity_type,
-            entity_name,
-            tag_key,
-            tag_assignment.into(),
-        );
+        let mut request =
+            self.client
+                .update_entity_tag_assignment(entity_type, entity_name, tag_key);
+        request = request.with_tag_value(tag_value);
         request = request.with_update_mask(update_mask);
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PyEntityTagAssignment::from(result))
@@ -967,13 +969,24 @@ impl PyUnityCatalogClient {
         });
         Ok(ListIterator::new(items))
     }
-    #[pyo3(signature = (tag_policy))]
+    #[pyo3(signature = (tag_key, description = None, values = None))]
     pub fn create_tag_policy(
         &self,
         py: Python<'_>,
-        tag_policy: PyTagPolicy,
+        tag_key: String,
+        description: Option<String>,
+        values: ::core::option::Option<::std::vec::Vec<PyValue>>,
     ) -> PyResult<PyTagPolicy> {
-        let request = self.client.create_tag_policy(tag_policy.into());
+        let mut request = self.client.create_tag_policy(tag_key);
+        request = request.with_description(description);
+        if let Some(values) = values {
+            request = request.with_values(
+                values
+                    .into_iter()
+                    .map(::core::convert::Into::into)
+                    .collect::<::std::vec::Vec<_>>(),
+            );
+        }
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PyTagPolicy::from(result))
     }

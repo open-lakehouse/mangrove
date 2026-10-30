@@ -350,8 +350,18 @@ export interface ListEntityTagAssignmentsOptions {
   pageToken?: string;
 }
 
+export interface CreateEntityTagAssignmentOptions {
+  /** The value of the tag. */
+  tagValue?: string;
+}
+
 export interface UpdateEntityTagAssignmentOptions {
-  /** The list of fields to update, as a comma-separated string. */
+  /** The value of the tag. */
+  tagValue?: string;
+  /** The fields to update, as a comma-separated list of field names.
+   * 
+   *  If empty or "*", every field set in the request is updated. Otherwise only the
+   *  listed fields are updated, and a listed field that is unset in the request is cleared. */
   updateMask?: string;
 }
 
@@ -758,16 +768,27 @@ export interface GetTableOptions {
 }
 
 export interface ListTagPoliciesOptions {
-  /** The maximum number of results per page that should be returned.
+  /** The maximum number of results to return in this request.
    * 
-   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
+   *  Fewer results may be returned than requested. If unset or 0, this defaults to 1000;
+   *  larger values are coerced down to 1000. Negative values are rejected. */
   maxResults?: number;
   /** Opaque pagination token to go to next page based on previous query. */
   pageToken?: string;
 }
 
+export interface CreateTagPolicyOptions {
+  /** User-provided free-form text description of the tag policy. */
+  description?: string;
+}
+
 export interface UpdateTagPolicyOptions {
-  /** The list of fields to update, as a comma-separated string. */
+  /** User-provided free-form text description of the tag policy. */
+  description?: string;
+  /** The fields to update, as a comma-separated list of field names.
+   * 
+   *  If empty or "*", every field set in the request is updated. Otherwise only the
+   *  listed fields are updated, and a listed field that is unset in the request is cleared. */
   updateMask?: string;
 }
 
@@ -1347,10 +1368,10 @@ export class TagPolicyClient {
      * 
      * Updates the governed tag definition that matches the supplied tag key.
      */
-  async update(tagPolicy: TagPolicy, options?: UpdateTagPolicyOptions): Promise<TagPolicy> {
-    const { updateMask } = options || {};
+  async update(options?: UpdateTagPolicyOptions): Promise<TagPolicy> {
+    const { description, updateMask } = options || {};
     try {
-      return fromBinary(TagPolicySchema, await this.inner.update(Buffer.from(toBinary(TagPolicySchema, tagPolicy)), updateMask));
+      return fromBinary(TagPolicySchema, await this.inner.update(description, updateMask));
     } catch (e) { throw parseNativeError(e); }
   }
 
@@ -1571,9 +1592,10 @@ export class UnityCatalogClient {
      * 
      * Assigns a tag to a Unity Catalog entity.
      */
-  async createEntityTagAssignment(tagAssignment: EntityTagAssignment): Promise<EntityTagAssignment> {
+  async createEntityTagAssignment(entityType: string, entityName: string, tagKey: string, options?: CreateEntityTagAssignmentOptions): Promise<EntityTagAssignment> {
+    const { tagValue } = options || {};
     try {
-      return fromBinary(EntityTagAssignmentSchema, await this.inner.createEntityTagAssignment(Buffer.from(toBinary(EntityTagAssignmentSchema, tagAssignment))));
+      return fromBinary(EntityTagAssignmentSchema, await this.inner.createEntityTagAssignment(entityType, entityName, tagKey, tagValue));
     } catch (e) { throw parseNativeError(e); }
   }
 
@@ -1593,10 +1615,10 @@ export class UnityCatalogClient {
      * 
      * Updates the tag assignment for the specified entity and tag key.
      */
-  async updateEntityTagAssignment(entityType: string, entityName: string, tagKey: string, tagAssignment: EntityTagAssignment, options?: UpdateEntityTagAssignmentOptions): Promise<EntityTagAssignment> {
-    const { updateMask } = options || {};
+  async updateEntityTagAssignment(entityType: string, entityName: string, tagKey: string, options?: UpdateEntityTagAssignmentOptions): Promise<EntityTagAssignment> {
+    const { tagValue, updateMask } = options || {};
     try {
-      return fromBinary(EntityTagAssignmentSchema, await this.inner.updateEntityTagAssignment(entityType, entityName, tagKey, Buffer.from(toBinary(EntityTagAssignmentSchema, tagAssignment)), updateMask));
+      return fromBinary(EntityTagAssignmentSchema, await this.inner.updateEntityTagAssignment(entityType, entityName, tagKey, tagValue, updateMask));
     } catch (e) { throw parseNativeError(e); }
   }
 
@@ -2120,9 +2142,10 @@ export class UnityCatalogClient {
      * 
      * Creates a new governed tag definition.
      */
-  async createTagPolicy(tagPolicy: TagPolicy): Promise<TagPolicy> {
+  async createTagPolicy(tagKey: string, options?: CreateTagPolicyOptions): Promise<TagPolicy> {
+    const { description } = options || {};
     try {
-      return fromBinary(TagPolicySchema, await this.inner.createTagPolicy(Buffer.from(toBinary(TagPolicySchema, tagPolicy))));
+      return fromBinary(TagPolicySchema, await this.inner.createTagPolicy(tagKey, description));
     } catch (e) { throw parseNativeError(e); }
   }
 

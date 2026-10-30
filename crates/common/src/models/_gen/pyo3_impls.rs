@@ -922,6 +922,46 @@ impl ::core::convert::From<PyTableType> for super::tables::v1::TableType {
     }
 }
 #[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "TagAssignmentSourceType", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyTagAssignmentSourceType {
+    TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED = 0isize,
+    TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION = 1isize,
+}
+impl PyTagAssignmentSourceType {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyTagAssignmentSourceType::TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED => 0i32,
+            PyTagAssignmentSourceType::TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION => {
+                1i32
+            }
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyTagAssignmentSourceType::TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED,
+            1i32 => {
+                PyTagAssignmentSourceType::TAG_ASSIGNMENT_SOURCE_TYPE_SYSTEM_DATA_CLASSIFICATION
+            }
+            _ => PyTagAssignmentSourceType::TAG_ASSIGNMENT_SOURCE_TYPE_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::tags::v1::TagAssignmentSourceType> for PyTagAssignmentSourceType {
+    fn from(value: super::tags::v1::TagAssignmentSourceType) -> Self {
+        PyTagAssignmentSourceType::__from_proto_i32(
+            <super::tags::v1::TagAssignmentSourceType as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyTagAssignmentSourceType> for super::tags::v1::TagAssignmentSourceType {
+    fn from(value: PyTagAssignmentSourceType) -> Self {
+        let n = value.__to_proto_i32();
+        <super::tags::v1::TagAssignmentSourceType as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
 #[::pyo3::pyclass(
     eq,
     eq_int,
@@ -15602,30 +15642,67 @@ pub struct PyCreateEntityTagAssignmentRequest(
 #[::pyo3::pymethods]
 impl PyCreateEntityTagAssignmentRequest {
     #[new]
-    #[pyo3(signature = (tag_assignment = None))]
-    fn new(tag_assignment: ::core::option::Option<PyEntityTagAssignment>) -> Self {
+    #[pyo3(
+        signature = (
+            entity_type = None,
+            entity_name = None,
+            tag_key = None,
+            tag_value = None
+        )
+    )]
+    fn new(
+        entity_type: ::core::option::Option<::std::string::String>,
+        entity_name: ::core::option::Option<::std::string::String>,
+        tag_key: ::core::option::Option<::std::string::String>,
+        tag_value: ::core::option::Option<::std::string::String>,
+    ) -> Self {
         let mut inner = <super::tags::v1::CreateEntityTagAssignmentRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = entity_type {
+            inner.entity_type = value;
+        }
+        if let ::core::option::Option::Some(value) = entity_name {
+            inner.entity_name = value;
+        }
+        if let ::core::option::Option::Some(value) = tag_key {
+            inner.tag_key = value;
+        }
         {
-            let value = tag_assignment;
-            inner.tag_assignment = value
-                .map(|w| ::buffa::MessageField::some(w.into()))
-                .unwrap_or_default();
+            let value = tag_value;
+            inner.tag_value = value;
         }
         Self(inner)
     }
     #[getter]
-    fn tag_assignment(&self) -> ::core::option::Option<PyEntityTagAssignment> {
-        self.0
-            .tag_assignment
-            .clone()
-            .into_option()
-            .map(PyEntityTagAssignment::from)
+    fn entity_type(&self) -> ::std::string::String {
+        self.0.entity_type.clone()
     }
-    #[setter(tag_assignment)]
-    fn set_tag_assignment(&mut self, value: ::core::option::Option<PyEntityTagAssignment>) {
-        self.0.tag_assignment = value
-            .map(|w| ::buffa::MessageField::some(w.into()))
-            .unwrap_or_default();
+    #[getter]
+    fn entity_name(&self) -> ::std::string::String {
+        self.0.entity_name.clone()
+    }
+    #[getter]
+    fn tag_key(&self) -> ::std::string::String {
+        self.0.tag_key.clone()
+    }
+    #[getter]
+    fn tag_value(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.tag_value.clone()
+    }
+    #[setter(entity_type)]
+    fn set_entity_type(&mut self, value: ::std::string::String) {
+        self.0.entity_type = value;
+    }
+    #[setter(entity_name)]
+    fn set_entity_name(&mut self, value: ::std::string::String) {
+        self.0.entity_name = value;
+    }
+    #[setter(tag_key)]
+    fn set_tag_key(&mut self, value: ::std::string::String) {
+        self.0.tag_key = value;
+    }
+    #[setter(tag_value)]
+    fn set_tag_value(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.tag_value = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -15655,31 +15732,49 @@ pub struct PyCreateTagPolicyRequest(pub super::tags::v1::CreateTagPolicyRequest)
 #[::pyo3::pymethods]
 impl PyCreateTagPolicyRequest {
     #[new]
-    #[pyo3(signature = (tag_policy = None))]
-    fn new(tag_policy: ::core::option::Option<PyTagPolicy>) -> Self {
+    #[pyo3(signature = (tag_key = None, description = None, values = None))]
+    fn new(
+        tag_key: ::core::option::Option<::std::string::String>,
+        description: ::core::option::Option<::std::string::String>,
+        values: ::core::option::Option<::std::vec::Vec<PyValue>>,
+    ) -> Self {
         let mut inner =
             <super::tags::v1::CreateTagPolicyRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = tag_key {
+            inner.tag_key = value;
+        }
         {
-            let value = tag_policy;
-            inner.tag_policy = value
-                .map(|w| ::buffa::MessageField::some(w.into()))
-                .unwrap_or_default();
+            let value = description;
+            inner.description = value;
+        }
+        if let ::core::option::Option::Some(value) = values {
+            inner.values = value.into_iter().map(::core::convert::Into::into).collect();
         }
         Self(inner)
     }
     #[getter]
-    fn tag_policy(&self) -> ::core::option::Option<PyTagPolicy> {
-        self.0
-            .tag_policy
-            .clone()
-            .into_option()
-            .map(PyTagPolicy::from)
+    fn tag_key(&self) -> ::std::string::String {
+        self.0.tag_key.clone()
     }
-    #[setter(tag_policy)]
-    fn set_tag_policy(&mut self, value: ::core::option::Option<PyTagPolicy>) {
-        self.0.tag_policy = value
-            .map(|w| ::buffa::MessageField::some(w.into()))
-            .unwrap_or_default();
+    #[getter]
+    fn description(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.description.clone()
+    }
+    #[getter]
+    fn values(&self) -> ::std::vec::Vec<PyValue> {
+        self.0.values.iter().cloned().map(PyValue::from).collect()
+    }
+    #[setter(tag_key)]
+    fn set_tag_key(&mut self, value: ::std::string::String) {
+        self.0.tag_key = value;
+    }
+    #[setter(description)]
+    fn set_description(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.description = value;
+    }
+    #[setter(values)]
+    fn set_values(&mut self, value: ::std::vec::Vec<PyValue>) {
+        self.0.values = value.into_iter().map(::core::convert::Into::into).collect();
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -15823,7 +15918,9 @@ impl PyEntityTagAssignment {
             entity_type = None,
             entity_name = None,
             tag_key = None,
-            tag_value = None
+            tag_value = None,
+            updated_by = None,
+            source_type = None
         )
     )]
     fn new(
@@ -15831,6 +15928,8 @@ impl PyEntityTagAssignment {
         entity_name: ::core::option::Option<::std::string::String>,
         tag_key: ::core::option::Option<::std::string::String>,
         tag_value: ::core::option::Option<::std::string::String>,
+        updated_by: ::core::option::Option<::std::string::String>,
+        source_type: ::core::option::Option<PyTagAssignmentSourceType>,
     ) -> Self {
         let mut inner =
             <super::tags::v1::EntityTagAssignment as ::core::default::Default>::default();
@@ -15846,6 +15945,18 @@ impl PyEntityTagAssignment {
         {
             let value = tag_value;
             inner.tag_value = value;
+        }
+        {
+            let value = updated_by;
+            inner.updated_by = value;
+        }
+        {
+            let value = source_type;
+            inner.source_type = value.map(|e| {
+                ::buffa::EnumValue::Known(
+                    <super::tags::v1::TagAssignmentSourceType as ::core::convert::From<_>>::from(e),
+                )
+            });
         }
         Self(inner)
     }
@@ -15865,6 +15976,18 @@ impl PyEntityTagAssignment {
     fn tag_value(&self) -> ::core::option::Option<::std::string::String> {
         self.0.tag_value.clone()
     }
+    #[getter]
+    fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.updated_by.clone()
+    }
+    #[getter]
+    fn source_type(&self) -> ::core::option::Option<PyTagAssignmentSourceType> {
+        self.0
+            .source_type
+            .as_ref()
+            .and_then(|e| e.as_known())
+            .map(PyTagAssignmentSourceType::from)
+    }
     #[setter(entity_type)]
     fn set_entity_type(&mut self, value: ::std::string::String) {
         self.0.entity_type = value;
@@ -15880,6 +16003,18 @@ impl PyEntityTagAssignment {
     #[setter(tag_value)]
     fn set_tag_value(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.tag_value = value;
+    }
+    #[setter(updated_by)]
+    fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.updated_by = value;
+    }
+    #[setter(source_type)]
+    fn set_source_type(&mut self, value: ::core::option::Option<PyTagAssignmentSourceType>) {
+        self.0.source_type = value.map(|e| {
+            ::buffa::EnumValue::Known(
+                <super::tags::v1::TagAssignmentSourceType as ::core::convert::From<_>>::from(e),
+            )
+        });
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -16416,7 +16551,7 @@ impl PyUpdateEntityTagAssignmentRequest {
             entity_type = None,
             entity_name = None,
             tag_key = None,
-            tag_assignment = None,
+            tag_value = None,
             update_mask = None
         )
     )]
@@ -16424,7 +16559,7 @@ impl PyUpdateEntityTagAssignmentRequest {
         entity_type: ::core::option::Option<::std::string::String>,
         entity_name: ::core::option::Option<::std::string::String>,
         tag_key: ::core::option::Option<::std::string::String>,
-        tag_assignment: ::core::option::Option<PyEntityTagAssignment>,
+        tag_value: ::core::option::Option<::std::string::String>,
         update_mask: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner = <super::tags::v1::UpdateEntityTagAssignmentRequest as ::core::default::Default>::default();
@@ -16438,10 +16573,8 @@ impl PyUpdateEntityTagAssignmentRequest {
             inner.tag_key = value;
         }
         {
-            let value = tag_assignment;
-            inner.tag_assignment = value
-                .map(|w| ::buffa::MessageField::some(w.into()))
-                .unwrap_or_default();
+            let value = tag_value;
+            inner.tag_value = value;
         }
         {
             let value = update_mask;
@@ -16462,12 +16595,8 @@ impl PyUpdateEntityTagAssignmentRequest {
         self.0.tag_key.clone()
     }
     #[getter]
-    fn tag_assignment(&self) -> ::core::option::Option<PyEntityTagAssignment> {
-        self.0
-            .tag_assignment
-            .clone()
-            .into_option()
-            .map(PyEntityTagAssignment::from)
+    fn tag_value(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.tag_value.clone()
     }
     #[getter]
     fn update_mask(&self) -> ::core::option::Option<::std::string::String> {
@@ -16485,11 +16614,9 @@ impl PyUpdateEntityTagAssignmentRequest {
     fn set_tag_key(&mut self, value: ::std::string::String) {
         self.0.tag_key = value;
     }
-    #[setter(tag_assignment)]
-    fn set_tag_assignment(&mut self, value: ::core::option::Option<PyEntityTagAssignment>) {
-        self.0.tag_assignment = value
-            .map(|w| ::buffa::MessageField::some(w.into()))
-            .unwrap_or_default();
+    #[setter(tag_value)]
+    fn set_tag_value(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.tag_value = value;
     }
     #[setter(update_mask)]
     fn set_update_mask(&mut self, value: ::core::option::Option<::std::string::String>) {
@@ -16523,10 +16650,18 @@ pub struct PyUpdateTagPolicyRequest(pub super::tags::v1::UpdateTagPolicyRequest)
 #[::pyo3::pymethods]
 impl PyUpdateTagPolicyRequest {
     #[new]
-    #[pyo3(signature = (tag_key = None, tag_policy = None, update_mask = None))]
+    #[pyo3(
+        signature = (
+            tag_key = None,
+            description = None,
+            values = None,
+            update_mask = None
+        )
+    )]
     fn new(
         tag_key: ::core::option::Option<::std::string::String>,
-        tag_policy: ::core::option::Option<PyTagPolicy>,
+        description: ::core::option::Option<::std::string::String>,
+        values: ::core::option::Option<::std::vec::Vec<PyValue>>,
         update_mask: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner =
@@ -16535,10 +16670,11 @@ impl PyUpdateTagPolicyRequest {
             inner.tag_key = value;
         }
         {
-            let value = tag_policy;
-            inner.tag_policy = value
-                .map(|w| ::buffa::MessageField::some(w.into()))
-                .unwrap_or_default();
+            let value = description;
+            inner.description = value;
+        }
+        if let ::core::option::Option::Some(value) = values {
+            inner.values = value.into_iter().map(::core::convert::Into::into).collect();
         }
         {
             let value = update_mask;
@@ -16551,12 +16687,12 @@ impl PyUpdateTagPolicyRequest {
         self.0.tag_key.clone()
     }
     #[getter]
-    fn tag_policy(&self) -> ::core::option::Option<PyTagPolicy> {
-        self.0
-            .tag_policy
-            .clone()
-            .into_option()
-            .map(PyTagPolicy::from)
+    fn description(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.description.clone()
+    }
+    #[getter]
+    fn values(&self) -> ::std::vec::Vec<PyValue> {
+        self.0.values.iter().cloned().map(PyValue::from).collect()
     }
     #[getter]
     fn update_mask(&self) -> ::core::option::Option<::std::string::String> {
@@ -16566,11 +16702,13 @@ impl PyUpdateTagPolicyRequest {
     fn set_tag_key(&mut self, value: ::std::string::String) {
         self.0.tag_key = value;
     }
-    #[setter(tag_policy)]
-    fn set_tag_policy(&mut self, value: ::core::option::Option<PyTagPolicy>) {
-        self.0.tag_policy = value
-            .map(|w| ::buffa::MessageField::some(w.into()))
-            .unwrap_or_default();
+    #[setter(description)]
+    fn set_description(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.description = value;
+    }
+    #[setter(values)]
+    fn set_values(&mut self, value: ::std::vec::Vec<PyValue>) {
+        self.0.values = value.into_iter().map(::core::convert::Into::into).collect();
     }
     #[setter(update_mask)]
     fn set_update_mask(&mut self, value: ::core::option::Option<::std::string::String>) {

@@ -354,17 +354,15 @@ impl NapiUnityCatalogClient {
     #[napi(catch_unwind)]
     pub async fn create_entity_tag_assignment(
         &self,
-        tag_assignment: napi::bindgen_prelude::Buffer,
+        entity_type: String,
+        entity_name: String,
+        tag_key: String,
+        tag_value: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_entity_tag_assignment(
-            <EntityTagAssignment as buffa::Message>::decode_from_slice(tag_assignment.as_ref())
-                .map_err(|e| {
-                    napi::Error::new(
-                        napi::Status::GenericFailure,
-                        format!("invalid {} payload: {e}", stringify!(EntityTagAssignment)),
-                    )
-                })?,
-        );
+        let mut request =
+            self.client
+                .create_entity_tag_assignment(entity_type, entity_name, tag_key);
+        request = request.with_tag_value(tag_value);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
@@ -391,21 +389,13 @@ impl NapiUnityCatalogClient {
         entity_type: String,
         entity_name: String,
         tag_key: String,
-        tag_assignment: napi::bindgen_prelude::Buffer,
+        tag_value: Option<String>,
         update_mask: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.update_entity_tag_assignment(
-            entity_type,
-            entity_name,
-            tag_key,
-            <EntityTagAssignment as buffa::Message>::decode_from_slice(tag_assignment.as_ref())
-                .map_err(|e| {
-                    napi::Error::new(
-                        napi::Status::GenericFailure,
-                        format!("invalid {} payload: {e}", stringify!(EntityTagAssignment)),
-                    )
-                })?,
-        );
+        let mut request =
+            self.client
+                .update_entity_tag_assignment(entity_type, entity_name, tag_key);
+        request = request.with_tag_value(tag_value);
         request = request.with_update_mask(update_mask);
         request
             .await
@@ -1077,16 +1067,11 @@ impl NapiUnityCatalogClient {
     #[napi(catch_unwind)]
     pub async fn create_tag_policy(
         &self,
-        tag_policy: napi::bindgen_prelude::Buffer,
+        tag_key: String,
+        description: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_tag_policy(
-            <TagPolicy as buffa::Message>::decode_from_slice(tag_policy.as_ref()).map_err(|e| {
-                napi::Error::new(
-                    napi::Status::GenericFailure,
-                    format!("invalid {} payload: {e}", stringify!(TagPolicy)),
-                )
-            })?,
-        );
+        let mut request = self.client.create_tag_policy(tag_key);
+        request = request.with_description(description);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))

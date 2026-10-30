@@ -19,14 +19,24 @@ impl PyTagPolicyClient {
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PyTagPolicy::from(result))
     }
-    #[pyo3(signature = (tag_policy, update_mask = None))]
+    #[pyo3(signature = (description = None, values = None, update_mask = None))]
     pub fn update(
         &self,
         py: Python<'_>,
-        tag_policy: PyTagPolicy,
+        description: Option<String>,
+        values: ::core::option::Option<::std::vec::Vec<PyValue>>,
         update_mask: Option<String>,
     ) -> PyResult<PyTagPolicy> {
-        let mut request = self.client.update(tag_policy.into());
+        let mut request = self.client.update();
+        request = request.with_description(description);
+        if let Some(values) = values {
+            request = request.with_values(
+                values
+                    .into_iter()
+                    .map(::core::convert::Into::into)
+                    .collect::<::std::vec::Vec<_>>(),
+            );
+        }
         request = request.with_update_mask(update_mask);
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PyTagPolicy::from(result))

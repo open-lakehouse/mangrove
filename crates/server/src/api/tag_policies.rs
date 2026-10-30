@@ -3,11 +3,14 @@ use itertools::Itertools;
 use unitycatalog_common::models::tags::v1::*;
 use unitycatalog_common::models::{ObjectLabel, ResourceIdent, ResourceName, ResourceRef};
 
-use super::{RequestContext, SecuredAction};
+use super::{RequestContext, SecuredAction, UpdateMask};
 use crate::Result;
 pub use crate::codegen::tag_policies::TagPolicyHandler;
 use crate::policy::{Permission, Policy, process_resources};
 use crate::store::ResourceStore;
+
+/// The largest page ListTagPolicies returns.
+const MAX_PAGE_SIZE: usize = 1000;
 
 #[async_trait::async_trait]
 impl<T: ResourceStore + Policy<RequestContext>> TagPolicyHandler<RequestContext> for T {
@@ -18,10 +21,16 @@ impl<T: ResourceStore + Policy<RequestContext>> TagPolicyHandler<RequestContext>
         context: RequestContext,
     ) -> Result<TagPolicy> {
         self.check_required(&request, &context).await?;
-        let resource = request
-            .tag_policy
-            .ok_or_else(|| crate::Error::invalid_argument("tag_policy must be provided"))?;
-        tracing::Span::current().record("resource_name", &resource.tag_key);
+        tracing::Span::current().record("resource_name", &request.tag_key);
+        if request.tag_key.is_empty() {
+            return Err(crate::Error::invalid_argument("tag_key must be provided"));
+        }
+        let resource = TagPolicy {
+            tag_key: request.tag_key,
+            description: request.description,
+            values: request.values,
+            ..Default::default()
+        };
         Ok(self.create(resource.into()).await?.0.try_into()?)
     }
 
@@ -58,7 +67,11 @@ impl<T: ResourceStore + Policy<RequestContext>> TagPolicyHandler<RequestContext>
             .list(
                 &ObjectLabel::TagPolicy,
                 None,
-                super::page_size(request.max_results)?,
+                // Unset or 0 means the 1000 default; larger values are coerced down.
+                Some(
+                    super::page_size(request.max_results)?
+                        .map_or(MAX_PAGE_SIZE, |n| n.min(MAX_PAGE_SIZE)),
+                ),
                 request.page_token,
             )
             .await?;
@@ -79,22 +92,33 @@ impl<T: ResourceStore + Policy<RequestContext>> TagPolicyHandler<RequestContext>
         tracing::Span::current().record("resource_name", &request.tag_key);
         self.check_required(&request, &context).await?;
         let ident = request.resource();
-        let mut resource = request
-            .tag_policy
-            .ok_or_else(|| crate::Error::invalid_argument("tag_policy must be provided"))?;
-        // The tag key is the resource identity and is taken from the path, not the body.
-        resource.tag_key = request.tag_key;
+        let mask = UpdateMask::parse(request.update_mask.as_deref(), &["description", "values"])?;
+        let mut resource: TagPolicy = self.get(&ident).await?.0.try_into()?;
+        match mask {
+            UpdateMask::All => {
+                if request.description.is_some() {
+                    resource.description = request.description;
+                }
+                if !request.values.is_empty() {
+                    resource.values = request.values;
+                }
+            }
+            UpdateMask::Fields(_) => {
+                if mask.names("description") {
+                    resource.description = request.description;
+                }
+                if mask.names("values") {
+                    resource.values = request.values;
+                }
+            }
+        }
         Ok(self.update(&ident, resource.into()).await?.0.try_into()?)
     }
 }
 
 impl SecuredAction for CreateTagPolicyRequest {
     fn resource(&self) -> ResourceIdent {
-        let tag_key = self.tag_policy.as_option().map(|p| p.tag_key.as_str());
-        match tag_key {
-            Some(key) => ResourceIdent::tag_policy(ResourceName::new([key])),
-            None => ResourceIdent::tag_policy(ResourceRef::Undefined),
-        }
+        ResourceIdent::tag_policy(ResourceName::new([self.tag_key.as_str()]))
     }
 
     fn permission(&self) -> &'static Permission {
@@ -185,19 +209,22 @@ mod tests {
         }
     }
 
+    fn create_request(policy: TagPolicy) -> CreateTagPolicyRequest {
+        CreateTagPolicyRequest {
+            tag_key: policy.tag_key,
+            description: policy.description,
+            values: policy.values,
+            ..Default::default()
+        }
+    }
+
     #[tokio::test]
     async fn tag_policy_crud_round_trip() {
         let h = handler();
 
         // create
         let created = h
-            .create_tag_policy(
-                CreateTagPolicyRequest {
-                    tag_policy: Some(policy("classification")).into(),
-                    ..Default::default()
-                },
-                ctx(),
-            )
+            .create_tag_policy(create_request(policy("classification")), ctx())
             .await
             .unwrap();
         assert_eq!(created.tag_key, "classification");
@@ -226,17 +253,15 @@ mod tests {
         assert_eq!(listed.tag_policies[0].tag_key, "classification");
 
         // update — change description and allowed values
-        let mut updated_policy = policy("classification");
-        updated_policy.description = Some("updated".to_string());
-        updated_policy.values = vec![Value {
-            name: "public".to_string(),
-            ..Default::default()
-        }];
         let updated = h
             .update_tag_policy(
                 UpdateTagPolicyRequest {
                     tag_key: "classification".to_string(),
-                    tag_policy: Some(updated_policy).into(),
+                    description: Some("updated".to_string()),
+                    values: vec![Value {
+                        name: "public".to_string(),
+                        ..Default::default()
+                    }],
                     update_mask: None,
                     ..Default::default()
                 },
@@ -272,17 +297,32 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn create_without_body_is_invalid() {
+    async fn create_without_tag_key_is_invalid() {
         let h = handler();
         let result = h
-            .create_tag_policy(
-                CreateTagPolicyRequest {
-                    tag_policy: None.into(),
+            .create_tag_policy(CreateTagPolicyRequest::default(), ctx())
+            .await;
+        assert!(result.is_err(), "missing tag_key must be rejected");
+    }
+
+    #[tokio::test]
+    async fn update_mask_clears_listed_fields_only() {
+        let h = handler();
+        h.create_tag_policy(create_request(policy("classification")), ctx())
+            .await
+            .unwrap();
+        let updated = h
+            .update_tag_policy(
+                UpdateTagPolicyRequest {
+                    tag_key: "classification".to_string(),
+                    update_mask: Some("description".to_string()),
                     ..Default::default()
                 },
                 ctx(),
             )
-            .await;
-        assert!(result.is_err(), "missing tag_policy must be rejected");
+            .await
+            .unwrap();
+        assert_eq!(updated.description, None);
+        assert_eq!(updated.values.len(), 2, "values are not in the mask");
     }
 }
