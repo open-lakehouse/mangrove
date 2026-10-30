@@ -21,10 +21,6 @@ rust-version.workspace = true
 name = "unitycatalog_common"
 
 [dependencies]
-# local dependencies in alphabetical order
-# Conversions to the catalog-independent credential types (feature `credentials`).
-unitycatalog-credentials = { package = "olai-uc-credentials", path = "../credentials", version = "0.0.1", default-features = false, optional = true }
-
 # workspace dependencies in alphabetical order
 aes-gcm = { workspace = true }
 async-trait = { workspace = true }
@@ -34,7 +30,11 @@ buffa-types = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
 itertools = { workspace = true }
+# Conversions of registered credentials (feature `credential-vending`).
+olai-credential-vending = { workspace = true, optional = true }
 olai-http = { workspace = true, optional = true }
+# Conversions of vended credentials (feature `credentials`).
+olai-storage-credentials = { workspace = true, features = ["unity"], optional = true }
 pbjson = { workspace = true }
 percent-encoding = "2"
 pbjson-types = { workspace = true }
@@ -107,8 +107,12 @@ axum = ["dep:axum", "dep:axum-extra", "http"]
 
 sqlx = ["dep:sqlx", "store", "olai-store/sqlx"]
 
-# conversions between the generated credential models and `olai-uc-credentials`
-credentials = ["dep:unitycatalog-credentials"]
+# conversions between the generated temporary credentials and the vended
+# `olai-storage-credentials` model (builds on wasm32)
+credentials = ["dep:olai-storage-credentials"]
+# conversions between the generated credentials and the registered
+# `olai-credential-vending` model (native only)
+credential-vending = ["credentials", "dep:olai-credential-vending"]
 
 # storage abstraction trait (ResourceStore) implemented by backends
 store = ["dep:futures", "dep:olai-store"]
