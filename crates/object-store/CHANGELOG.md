@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/open-lakehouse/mangrove/compare/olai-uc-object-store-v0.0.5...olai-uc-object-store-v0.0.6) - 2026-10-30
+
+### Added
+
+- *(sharing-api)* presigned access, both protocol prefixes, recipient auth (#228) (#240)
+
+### Changed
+
+- [**breaking**] adopt trestle credential-vending crates (#247) (#255)
+- *(sharing)* [**breaking**] decouple Open Sharing from the Unity Catalog crates (#246)
+
+### Fixed
+
+- credential refresh, Azure SAS, R2 and Databricks auth (#225)
+
 ## [0.0.4](https://github.com/open-lakehouse/mangrove/compare/olai-uc-object-store-v0.0.3...olai-uc-object-store-v0.0.4) - 2026-07-26
 
 ### Added

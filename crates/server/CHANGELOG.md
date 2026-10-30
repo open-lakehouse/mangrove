@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.7...olai-uc-server-v0.0.8) - 2026-10-30
+
+### Added
+
+- [**breaking**] align Unity Catalog protos with the Databricks API reference (#251)
+- *(node)* publish-ready builds and DESIGN.md contracts for the UI packages (#209) (#216)
+- *(node)* [**breaking**] publish the UC Node and TS clients to GitHub Packages (#208) (#214)
+
+### Changed
+
+- [**breaking**] move Open Sharing and the shares/recipients/providers APIs to distributary (#257)
+- [**breaking**] adopt trestle credential-vending crates (#247) (#255)
+- *(sharing)* [**breaking**] decouple Open Sharing from the Unity Catalog crates (#246)
+- *(credentials)* extract storage credential vending into olai-uc-credentials (#228) (#238)
+
+### Documentation
+
+- *(node)* add UI architecture for state, seams and composition (#222)
+
 ## [0.0.7](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.6...olai-uc-server-v0.0.7) - 2026-07-26
 
 ### Fixed
