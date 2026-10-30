@@ -117,7 +117,8 @@ export type CreateCredentialRequest = Message<"unitycatalog.credentials.v1.Creat
   readOnly?: boolean | undefined;
 
   /**
-   * Optional. Supplying true to this argument skips validation of the created set of credentials.
+   * Supplying true to this argument skips validation of the created set of credentials.
+   * Defaults to false.
    *
    * @generated from field: optional bool skip_validation = 5;
    */
@@ -230,6 +231,7 @@ export type UpdateCredentialRequest = Message<"unitycatalog.credentials.v1.Updat
 
   /**
    * Supply true to this argument to skip validation of the updated credential.
+   * Defaults to false.
    *
    * @generated from field: optional bool skip_validation = 6;
    */

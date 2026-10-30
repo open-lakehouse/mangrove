@@ -345,7 +345,7 @@ class Column:
     name: str
     """Name of the column"""
     nullable: Optional[bool]
-    """Whether field may be Null."""
+    """Whether field may be Null (default: true)."""
     partition_index: Optional[int]
     """Partition index for column."""
     position: Optional[int]
@@ -1544,7 +1544,7 @@ class TagPolicy:
     values: List[Value]
     """
     The set of allowed values for the governed tag. When empty, the governed tag does not
-    restrict the values that may be assigned.
+    restrict the values that may be assigned. The list is unordered.
     """
 
     def __init__(
@@ -2113,6 +2113,7 @@ class CredentialClient:
                        purpose is STORAGE.
             owner: Username of current owner of credential.
             skip_validation: Supply true to this argument to skip validation of the updated credential.
+                             Defaults to false.
             force: Force an update even if there are dependent services (when purpose is SERVICE) or
                    dependent external locations and external tables (when purpose is STORAGE).
             azure_service_principal: The Azure service principal configuration.
@@ -2571,7 +2572,8 @@ class ShareClient:
 
 
         Args:
-            updates: Array of shared data object updates.
+            updates: Array of shared data object updates. At most 100 data objects may be updated per
+                     request.
             new_name: A new name for the share.
             owner: Owner of the share.
             comment: User-provided free-form text description.
@@ -2813,8 +2815,8 @@ class UnityCatalogClient:
             comment: Comment associated with the credential.
             read_only: Whether the credential is usable only for read operations. Only applicable when
                        purpose is STORAGE.
-            skip_validation: Optional. Supplying true to this argument skips validation of the created set
-                             of credentials.
+            skip_validation: Supplying true to this argument skips validation of the created set of
+                             credentials. Defaults to false.
             azure_service_principal: The Azure service principal configuration.
             azure_managed_identity: The Azure managed identity configuration.
             azure_storage_key: The Azure storage key configuration.

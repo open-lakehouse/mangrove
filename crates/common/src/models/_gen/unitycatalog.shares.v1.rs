@@ -2941,6 +2941,8 @@ pub struct UpdateShareRequest {
     pub name: ::buffa::alloc::string::String,
     /// Array of shared data object updates.
     ///
+    /// At most 100 data objects may be updated per request.
+    ///
     /// Field 2: `updates`
     #[serde(
         rename = "updates",
@@ -8166,6 +8168,8 @@ pub mod __buffa {
             pub name: &'a str,
             /// Array of shared data object updates.
             ///
+            /// At most 100 data objects may be updated per request.
+            ///
             /// Field 2: `updates`
             pub updates: ::buffa::RepeatedView<
                 'a,
@@ -8574,6 +8578,8 @@ pub mod __buffa {
                 self.0.reborrow().name
             }
             /// Array of shared data object updates.
+            ///
+            /// At most 100 data objects may be updated per request.
             ///
             /// Field 2: `updates`
             #[must_use]

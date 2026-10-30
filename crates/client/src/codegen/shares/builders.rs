@@ -161,7 +161,9 @@ impl UpdateShareBuilder {
         };
         Self { client, request }
     }
-    /// Array of shared data object updates.
+    /** Array of shared data object updates.
+
+    At most 100 data objects may be updated per request.*/
     pub fn with_updates<I>(mut self, updates: I) -> Self
     where
         I: IntoIterator<Item = DataObjectUpdate>,

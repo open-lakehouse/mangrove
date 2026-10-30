@@ -48,6 +48,10 @@ message EntityTagAssignment {
 message Value {
   // The name of the allowed value.
   string name = 1 [
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 256
+    },
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
@@ -69,19 +73,29 @@ message TagPolicy {
 
   // The key of the governed tag.
   string tag_key = 1 [
-    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 256
+    },
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED,
     (google.api.field_behavior) = IMMUTABLE
   ];
 
   // User-provided free-form text description of the tag policy.
-  optional string description = 2 [(google.api.field_behavior) = OPTIONAL];
+  optional string description = 2 [
+    (buf.validate.field).string.max_len = 4096,
+    (google.api.field_behavior) = OPTIONAL
+  ];
 
   // The set of allowed values for the governed tag.
   //
   // When empty, the governed tag does not restrict the values that may be assigned.
-  repeated Value values = 3 [(google.api.field_behavior) = OPTIONAL];
+  // The list is unordered.
+  repeated Value values = 3 [
+    (buf.validate.field).repeated.max_items = 500,
+    (google.api.field_behavior) = OPTIONAL
+  ];
 
   // Unique identifier for the tag policy.
   optional string id = 4 [

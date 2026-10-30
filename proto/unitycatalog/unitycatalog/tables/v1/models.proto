@@ -118,7 +118,7 @@ message Column {
   // User-provided free-form text description.
   optional string comment = 9 [(google.api.field_behavior) = OPTIONAL];
 
-  // Whether field may be Null.
+  // Whether field may be Null (default: true).
   optional bool nullable = 10 [(google.api.field_behavior) = OPTIONAL];
 
   // Partition index for column.

@@ -3785,7 +3785,7 @@ components:
           description: User-provided free-form text description.
         nullable:
           type: boolean
-          description: Whether field may be Null.
+          description: "Whether field may be Null (default: true)."
         partition_index:
           type: integer
           description: Partition index for column.
@@ -3981,7 +3981,9 @@ components:
           description: Whether the credential is usable only for read operations. Only applicable when purpose is STORAGE.
         skip_validation:
           type: boolean
-          description: Optional. Supplying true to this argument skips validation of the created set of credentials.
+          description: |-
+            Supplying true to this argument skips validation of the created set of credentials.
+             Defaults to false.
         azure_service_principal:
           allOf:
             - $ref: "#/components/schemas/AzureServicePrincipal"
@@ -4220,6 +4222,8 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
       description: Create a new model version.
       additionalProperties: false
       title: Create Model Version Request
@@ -4324,6 +4328,8 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
       description: Create a new registered model.
       additionalProperties: false
       title: Create Registered Model Request
@@ -5873,6 +5879,8 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
         id:
           readOnly: true
           type: string
@@ -6283,6 +6291,8 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
         id:
           readOnly: true
           type: string
@@ -6698,9 +6708,11 @@ components:
           type: string
           description: The key of the governed tag.
           minLength: 1
+          maxLength: 256
         description:
           type: string
           description: User-provided free-form text description of the tag policy.
+          maxLength: 4096
         values:
           type: array
           items:
@@ -6710,7 +6722,10 @@ components:
               - name
             description: An allowed value for a governed tag.
             title: Value
-          description: When empty, the governed tag does not restrict the values that may be assigned.
+          description: |-
+            When empty, the governed tag does not restrict the values that may be assigned.
+             The list is unordered.
+          maxItems: 500
           title: The set of allowed values for the governed tag.
         id:
           readOnly: true
@@ -6919,7 +6934,9 @@ components:
           description: Username of current owner of credential.
         skip_validation:
           type: boolean
-          description: Supply true to this argument to skip validation of the updated credential.
+          description: |-
+            Supply true to this argument to skip validation of the updated credential.
+             Defaults to false.
         force:
           type: boolean
           description: |-
@@ -7048,6 +7065,8 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
       description: Update a model version.
       additionalProperties: false
       title: Update Model Version Request
@@ -7178,6 +7197,8 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+          minLength: 1
+          maxLength: 65536
         owner:
           type: string
           description: Username of new owner of the registered model.
@@ -7220,7 +7241,9 @@ components:
               - action
             description: Data object update.
             title: Data Object Update
-          description: Array of shared data object updates.
+          description: At most 100 data objects may be updated per request.
+          maxItems: 100
+          title: Array of shared data object updates.
         new_name:
           type: string
           description: A new name for the share.
@@ -7283,6 +7306,8 @@ components:
         name:
           type: string
           description: The name of the allowed value.
+          minLength: 1
+          maxLength: 256
       description: An allowed value for a governed tag.
       additionalProperties: false
       title: Value

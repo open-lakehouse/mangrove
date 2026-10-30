@@ -432,6 +432,7 @@ pub struct TagPolicy {
     /// The set of allowed values for the governed tag.
     ///
     /// When empty, the governed tag does not restrict the values that may be assigned.
+    /// The list is unordered.
     ///
     /// Field 3: `values`
     #[serde(
@@ -3896,6 +3897,7 @@ pub mod __buffa {
             /// The set of allowed values for the governed tag.
             ///
             /// When empty, the governed tag does not restrict the values that may be assigned.
+            /// The list is unordered.
             ///
             /// Field 3: `values`
             pub values: ::buffa::RepeatedView<
@@ -4359,6 +4361,7 @@ pub mod __buffa {
             /// The set of allowed values for the governed tag.
             ///
             /// When empty, the governed tag does not restrict the values that may be assigned.
+            /// The list is unordered.
             ///
             /// Field 3: `values`
             #[must_use]

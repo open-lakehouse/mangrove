@@ -86,7 +86,11 @@ message CreateModelVersionRequest {
   optional string run_id = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // User-provided free-form text description.
-  optional string comment = 6 [(google.api.field_behavior) = OPTIONAL];
+  optional string comment = 6 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 65536,
+    (google.api.field_behavior) = OPTIONAL
+  ];
 }
 
 // Get a model version.
@@ -131,7 +135,11 @@ message UpdateModelVersionRequest {
   ];
 
   // User-provided free-form text description.
-  optional string comment = 3 [(google.api.field_behavior) = OPTIONAL];
+  optional string comment = 3 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 65536,
+    (google.api.field_behavior) = OPTIONAL
+  ];
 }
 
 // Delete a model version.

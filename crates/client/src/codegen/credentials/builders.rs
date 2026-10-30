@@ -113,7 +113,8 @@ impl CreateCredentialBuilder {
         self.request.read_only = read_only.into();
         self
     }
-    /// Optional. Supplying true to this argument skips validation of the created set of credentials.
+    /** Supplying true to this argument skips validation of the created set of credentials.
+    Defaults to false.*/
     pub fn with_skip_validation(mut self, skip_validation: impl Into<Option<bool>>) -> Self {
         self.request.skip_validation = skip_validation.into();
         self
@@ -241,7 +242,8 @@ impl UpdateCredentialBuilder {
         self.request.owner = owner.into();
         self
     }
-    /// Supply true to this argument to skip validation of the updated credential.
+    /** Supply true to this argument to skip validation of the updated credential.
+    Defaults to false.*/
     pub fn with_skip_validation(mut self, skip_validation: impl Into<Option<bool>>) -> Self {
         self.request.skip_validation = skip_validation.into();
         self

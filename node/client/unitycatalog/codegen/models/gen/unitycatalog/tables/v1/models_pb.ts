@@ -108,7 +108,7 @@ export type Column = Message<"unitycatalog.tables.v1.Column"> & {
   comment?: string | undefined;
 
   /**
-   * Whether field may be Null.
+   * Whether field may be Null (default: true).
    *
    * @generated from field: optional bool nullable = 10;
    */

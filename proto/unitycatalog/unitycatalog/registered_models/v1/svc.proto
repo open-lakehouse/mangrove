@@ -83,7 +83,11 @@ message CreateRegisteredModelRequest {
   ];
 
   // User-provided free-form text description.
-  optional string comment = 4 [(google.api.field_behavior) = OPTIONAL];
+  optional string comment = 4 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 65536,
+    (google.api.field_behavior) = OPTIONAL
+  ];
 }
 
 // Get a registered model.
@@ -121,7 +125,11 @@ message UpdateRegisteredModelRequest {
   ];
 
   // User-provided free-form text description.
-  optional string comment = 3 [(google.api.field_behavior) = OPTIONAL];
+  optional string comment = 3 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 65536,
+    (google.api.field_behavior) = OPTIONAL
+  ];
 
   // Username of new owner of the registered model.
   optional string owner = 4 [(google.api.field_behavior) = OPTIONAL];

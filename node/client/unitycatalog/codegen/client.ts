@@ -319,7 +319,8 @@ export interface CreateCredentialOptions {
   comment?: string;
   /** Whether the credential is usable only for read operations. Only applicable when purpose is STORAGE. */
   readOnly?: boolean;
-  /** Optional. Supplying true to this argument skips validation of the created set of credentials. */
+  /** Supplying true to this argument skips validation of the created set of credentials.
+   *  Defaults to false. */
   skipValidation?: boolean;
 }
 
@@ -332,7 +333,8 @@ export interface UpdateCredentialOptions {
   readOnly?: boolean;
   /** Username of current owner of credential. */
   owner?: string;
-  /** Supply true to this argument to skip validation of the updated credential. */
+  /** Supply true to this argument to skip validation of the updated credential.
+   *  Defaults to false. */
   skipValidation?: boolean;
   /** Force an update even if there are dependent services (when purpose is SERVICE)
    *  or dependent external locations and external tables (when purpose is STORAGE). */

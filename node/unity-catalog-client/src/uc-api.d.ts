@@ -1336,7 +1336,7 @@ export interface components {
             type_interval_type?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
-            /** @description Whether field may be Null. */
+            /** @description Whether field may be Null (default: true). */
             nullable?: boolean;
             /**
              * Format: int32
@@ -1452,7 +1452,10 @@ export interface components {
             comment?: string;
             /** @description Whether the credential is usable only for read operations. Only applicable when purpose is STORAGE. */
             read_only?: boolean;
-            /** @description Optional. Supplying true to this argument skips validation of the created set of credentials. */
+            /**
+             * @description Supplying true to this argument skips validation of the created set of credentials.
+             *      Defaults to false.
+             */
             skip_validation?: boolean;
             /**
              * Azure Service Principal
@@ -3022,6 +3025,7 @@ export interface components {
             /**
              * The set of allowed values for the governed tag.
              * @description When empty, the governed tag does not restrict the values that may be assigned.
+             *      The list is unordered.
              */
             values?: components["schemas"]["Value"][];
             /** @description Unique identifier for the tag policy. */
@@ -3139,7 +3143,10 @@ export interface components {
             read_only?: boolean;
             /** @description Username of current owner of credential. */
             owner?: string;
-            /** @description Supply true to this argument to skip validation of the updated credential. */
+            /**
+             * @description Supply true to this argument to skip validation of the updated credential.
+             *      Defaults to false.
+             */
             skip_validation?: boolean;
             /**
              * @description Force an update even if there are dependent services (when purpose is SERVICE)
@@ -3338,7 +3345,10 @@ export interface components {
          * @description The caller must be a metastore admin or have the UPDATE_SHARE privilege on the metastore.
          */
         UpdateShareRequest: {
-            /** @description Array of shared data object updates. */
+            /**
+             * Array of shared data object updates.
+             * @description At most 100 data objects may be updated per request.
+             */
             updates?: components["schemas"]["DataObjectUpdate"][];
             /** @description A new name for the share. */
             new_name?: string;

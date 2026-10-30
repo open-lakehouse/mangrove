@@ -1034,7 +1034,7 @@ pub struct Column {
     /// Field 9: `comment`
     #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
     pub comment: ::core::option::Option<::buffa::alloc::string::String>,
-    /// Whether field may be Null.
+    /// Whether field may be Null (default: true).
     ///
     /// Field 10: `nullable`
     #[serde(
@@ -6170,7 +6170,7 @@ pub mod __buffa {
             ///
             /// Field 9: `comment`
             pub comment: ::core::option::Option<&'a str>,
-            /// Whether field may be Null.
+            /// Whether field may be Null (default: true).
             ///
             /// Field 10: `nullable`
             pub nullable: ::core::option::Option<bool>,
@@ -6841,7 +6841,7 @@ pub mod __buffa {
             pub fn comment(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().comment
             }
-            /// Whether field may be Null.
+            /// Whether field may be Null (default: true).
             ///
             /// Field 10: `nullable`
             #[must_use]
