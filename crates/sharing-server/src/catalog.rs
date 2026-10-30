@@ -10,8 +10,11 @@
 //! |-------------------|-------------------|----------------------------|
 //! | `TABLE`           | `cat.schema.tbl`  | `schema.tbl` (or `shared_as`) |
 //! | `SCHEMA`          | `cat.schema`      | every table of the schema, under `schema` (or `shared_as`) |
-//! | `VOLUME`          | `cat.schema.vol`  | `schema.vol` (or `shared_as`) |
-//! | `AGENT_SKILL`     | `cat.schema.sk`   | `schema.sk` (or `shared_as`), resolved as a volume |
+//! | `VOLUME`          | `cat.schema.vol`  | `schema.vol` (or `string_shared_as`) |
+//! | `AGENT_SKILL`     | `cat.schema.sk`   | `schema.sk` (or `string_shared_as`), resolved as a volume |
+//!
+//! Like the Databricks API, non-table objects take their alias from
+//! `string_shared_as`; `shared_as` is still honoured for them as a fallback.
 //!
 //! A recipient sees only the shares granted to it; any other share is reported
 //! as not found.
@@ -94,7 +97,15 @@ impl StoreCatalog {
 
 /// The `(schema, name)` a table / volume / skill object is exposed under.
 pub fn shared_as(object: &ShareObject) -> Result<(String, String)> {
-    let shared = match object.shared_as.as_deref() {
+    let alias = match object.kind {
+        ShareObjectKind::Volume | ShareObjectKind::AgentSkill => object
+            .extra
+            .get("string_shared_as")
+            .and_then(|v| v.as_str())
+            .or(object.shared_as.as_deref()),
+        ShareObjectKind::Table | ShareObjectKind::Schema => object.shared_as.as_deref(),
+    };
+    let shared = match alias {
         Some(shared) => shared.to_string(),
         None => {
             let [_, schema, name] = split_name::<3>(&object.name)?;
@@ -196,5 +207,52 @@ impl ShareCatalog<Recipient> for StoreCatalog {
                 }
             }
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn object(kind: ShareObjectKind, extra: serde_json::Value) -> ShareObject {
+        let mut object = ShareObject::new(kind, "cat.sales.orders");
+        if let serde_json::Value::Object(extra) = extra {
+            object.extra = extra;
+        }
+        object
+    }
+
+    #[test]
+    fn test_shared_as_defaults_to_source_name_without_catalog() {
+        let table = object(ShareObjectKind::Table, serde_json::json!({}));
+        assert_eq!(
+            shared_as(&table).unwrap(),
+            ("sales".into(), "orders".into())
+        );
+    }
+
+    #[test]
+    fn test_shared_as_reads_string_shared_as_for_volumes_only() {
+        let alias = serde_json::json!({ "string_shared_as": "shared.files" });
+        let volume = object(ShareObjectKind::Volume, alias.clone());
+        assert_eq!(
+            shared_as(&volume).unwrap(),
+            ("shared".into(), "files".into())
+        );
+
+        // Table-like objects keep using `shared_as`.
+        let table = object(ShareObjectKind::Table, alias);
+        assert_eq!(
+            shared_as(&table).unwrap(),
+            ("sales".into(), "orders".into())
+        );
+
+        // `shared_as` remains a fallback for non-table objects.
+        let mut legacy = object(ShareObjectKind::Volume, serde_json::json!({}));
+        legacy.shared_as = Some("legacy.files".into());
+        assert_eq!(
+            shared_as(&legacy).unwrap(),
+            ("legacy".into(), "files".into())
+        );
     }
 }

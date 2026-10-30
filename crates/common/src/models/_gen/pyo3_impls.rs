@@ -608,12 +608,56 @@ impl ::core::convert::From<PyAction> for super::shares::v1::Action {
     }
 }
 #[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "DataObjectStatus", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyDataObjectStatus {
+    DATA_OBJECT_STATUS_UNSPECIFIED = 0isize,
+    ACTIVE = 1isize,
+    PERMISSION_DENIED = 2isize,
+}
+impl PyDataObjectStatus {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyDataObjectStatus::DATA_OBJECT_STATUS_UNSPECIFIED => 0i32,
+            PyDataObjectStatus::ACTIVE => 1i32,
+            PyDataObjectStatus::PERMISSION_DENIED => 2i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyDataObjectStatus::DATA_OBJECT_STATUS_UNSPECIFIED,
+            1i32 => PyDataObjectStatus::ACTIVE,
+            2i32 => PyDataObjectStatus::PERMISSION_DENIED,
+            _ => PyDataObjectStatus::DATA_OBJECT_STATUS_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::shares::v1::DataObjectStatus> for PyDataObjectStatus {
+    fn from(value: super::shares::v1::DataObjectStatus) -> Self {
+        PyDataObjectStatus::__from_proto_i32(
+            <super::shares::v1::DataObjectStatus as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyDataObjectStatus> for super::shares::v1::DataObjectStatus {
+    fn from(value: PyDataObjectStatus) -> Self {
+        let n = value.__to_proto_i32();
+        <super::shares::v1::DataObjectStatus as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
 #[::pyo3::pyclass(eq, eq_int, name = "DataObjectType", from_py_object)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum PyDataObjectType {
     DATA_OBJECT_TYPE_UNSPECIFIED = 0isize,
     TABLE = 1isize,
     SCHEMA = 2isize,
+    VIEW = 3isize,
+    MATERIALIZED_VIEW = 4isize,
+    STREAMING_TABLE = 5isize,
+    MODEL = 6isize,
+    FUNCTION = 8isize,
     VOLUME = 10isize,
     AGENT_SKILL = 11isize,
 }
@@ -623,6 +667,11 @@ impl PyDataObjectType {
             PyDataObjectType::DATA_OBJECT_TYPE_UNSPECIFIED => 0i32,
             PyDataObjectType::TABLE => 1i32,
             PyDataObjectType::SCHEMA => 2i32,
+            PyDataObjectType::VIEW => 3i32,
+            PyDataObjectType::MATERIALIZED_VIEW => 4i32,
+            PyDataObjectType::STREAMING_TABLE => 5i32,
+            PyDataObjectType::MODEL => 6i32,
+            PyDataObjectType::FUNCTION => 8i32,
             PyDataObjectType::VOLUME => 10i32,
             PyDataObjectType::AGENT_SKILL => 11i32,
         }
@@ -632,6 +681,11 @@ impl PyDataObjectType {
             0i32 => PyDataObjectType::DATA_OBJECT_TYPE_UNSPECIFIED,
             1i32 => PyDataObjectType::TABLE,
             2i32 => PyDataObjectType::SCHEMA,
+            3i32 => PyDataObjectType::VIEW,
+            4i32 => PyDataObjectType::MATERIALIZED_VIEW,
+            5i32 => PyDataObjectType::STREAMING_TABLE,
+            6i32 => PyDataObjectType::MODEL,
+            8i32 => PyDataObjectType::FUNCTION,
             10i32 => PyDataObjectType::VOLUME,
             11i32 => PyDataObjectType::AGENT_SKILL,
             _ => PyDataObjectType::DATA_OBJECT_TYPE_UNSPECIFIED,
@@ -684,6 +738,45 @@ impl ::core::convert::From<PyHistoryStatus> for super::shares::v1::HistoryStatus
     fn from(value: PyHistoryStatus) -> Self {
         let n = value.__to_proto_i32();
         <super::shares::v1::HistoryStatus as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "PartitionValueOp", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyPartitionValueOp {
+    PARTITION_VALUE_OP_UNSPECIFIED = 0isize,
+    EQUAL = 1isize,
+    LIKE = 2isize,
+}
+impl PyPartitionValueOp {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyPartitionValueOp::PARTITION_VALUE_OP_UNSPECIFIED => 0i32,
+            PyPartitionValueOp::EQUAL => 1i32,
+            PyPartitionValueOp::LIKE => 2i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyPartitionValueOp::PARTITION_VALUE_OP_UNSPECIFIED,
+            1i32 => PyPartitionValueOp::EQUAL,
+            2i32 => PyPartitionValueOp::LIKE,
+            _ => PyPartitionValueOp::PARTITION_VALUE_OP_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::shares::v1::PartitionValueOp> for PyPartitionValueOp {
+    fn from(value: super::shares::v1::PartitionValueOp) -> Self {
+        PyPartitionValueOp::__from_proto_i32(
+            <super::shares::v1::PartitionValueOp as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyPartitionValueOp> for super::shares::v1::PartitionValueOp {
+    fn from(value: PyPartitionValueOp) -> Self {
+        let n = value.__to_proto_i32();
+        <super::shares::v1::PartitionValueOp as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
     }
 }
 #[allow(non_camel_case_types)]
@@ -12645,9 +12738,11 @@ impl PyDataObject {
             comment = None,
             shared_as = None,
             partitions = None,
-            enable_cdf = None,
+            cdf_enabled = None,
             history_data_sharing_status = None,
-            start_version = None
+            start_version = None,
+            string_shared_as = None,
+            status = None
         )
     )]
     fn new(
@@ -12657,10 +12752,12 @@ impl PyDataObject {
         added_by: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
         shared_as: ::core::option::Option<::std::string::String>,
-        partitions: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
-        enable_cdf: ::core::option::Option<bool>,
+        partitions: ::core::option::Option<::std::vec::Vec<PyPartition>>,
+        cdf_enabled: ::core::option::Option<bool>,
         history_data_sharing_status: ::core::option::Option<PyHistoryStatus>,
         start_version: ::core::option::Option<i64>,
+        string_shared_as: ::core::option::Option<::std::string::String>,
+        status: ::core::option::Option<PyDataObjectStatus>,
     ) -> Self {
         let mut inner = <super::shares::v1::DataObject as ::core::default::Default>::default();
         if let ::core::option::Option::Some(value) = name {
@@ -12688,11 +12785,11 @@ impl PyDataObject {
             inner.shared_as = value;
         }
         if let ::core::option::Option::Some(value) = partitions {
-            inner.partitions = value;
+            inner.partitions = value.into_iter().map(::core::convert::Into::into).collect();
         }
         {
-            let value = enable_cdf;
-            inner.enable_cdf = value;
+            let value = cdf_enabled;
+            inner.cdf_enabled = value;
         }
         {
             let value = history_data_sharing_status;
@@ -12705,6 +12802,18 @@ impl PyDataObject {
         {
             let value = start_version;
             inner.start_version = value;
+        }
+        {
+            let value = string_shared_as;
+            inner.string_shared_as = value;
+        }
+        {
+            let value = status;
+            inner.status = value.map(|e| {
+                ::buffa::EnumValue::Known(
+                    <super::shares::v1::DataObjectStatus as ::core::convert::From<_>>::from(e),
+                )
+            });
         }
         Self(inner)
     }
@@ -12733,12 +12842,17 @@ impl PyDataObject {
         self.0.shared_as.clone()
     }
     #[getter]
-    fn partitions(&self) -> ::std::vec::Vec<::std::string::String> {
-        self.0.partitions.clone()
+    fn partitions(&self) -> ::std::vec::Vec<PyPartition> {
+        self.0
+            .partitions
+            .iter()
+            .cloned()
+            .map(PyPartition::from)
+            .collect()
     }
     #[getter]
-    fn enable_cdf(&self) -> ::core::option::Option<bool> {
-        self.0.enable_cdf
+    fn cdf_enabled(&self) -> ::core::option::Option<bool> {
+        self.0.cdf_enabled
     }
     #[getter]
     fn history_data_sharing_status(&self) -> ::core::option::Option<PyHistoryStatus> {
@@ -12751,6 +12865,18 @@ impl PyDataObject {
     #[getter]
     fn start_version(&self) -> ::core::option::Option<i64> {
         self.0.start_version
+    }
+    #[getter]
+    fn string_shared_as(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.string_shared_as.clone()
+    }
+    #[getter]
+    fn status(&self) -> ::core::option::Option<PyDataObjectStatus> {
+        self.0
+            .status
+            .as_ref()
+            .and_then(|e| e.as_known())
+            .map(PyDataObjectStatus::from)
     }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
@@ -12779,12 +12905,12 @@ impl PyDataObject {
         self.0.shared_as = value;
     }
     #[setter(partitions)]
-    fn set_partitions(&mut self, value: ::std::vec::Vec<::std::string::String>) {
-        self.0.partitions = value;
+    fn set_partitions(&mut self, value: ::std::vec::Vec<PyPartition>) {
+        self.0.partitions = value.into_iter().map(::core::convert::Into::into).collect();
     }
-    #[setter(enable_cdf)]
-    fn set_enable_cdf(&mut self, value: ::core::option::Option<bool>) {
-        self.0.enable_cdf = value;
+    #[setter(cdf_enabled)]
+    fn set_cdf_enabled(&mut self, value: ::core::option::Option<bool>) {
+        self.0.cdf_enabled = value;
     }
     #[setter(history_data_sharing_status)]
     fn set_history_data_sharing_status(&mut self, value: ::core::option::Option<PyHistoryStatus>) {
@@ -12797,6 +12923,18 @@ impl PyDataObject {
     #[setter(start_version)]
     fn set_start_version(&mut self, value: ::core::option::Option<i64>) {
         self.0.start_version = value;
+    }
+    #[setter(string_shared_as)]
+    fn set_string_shared_as(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.string_shared_as = value;
+    }
+    #[setter(status)]
+    fn set_status(&mut self, value: ::core::option::Option<PyDataObjectStatus>) {
+        self.0.status = value.map(|e| {
+            ::buffa::EnumValue::Known(
+                <super::shares::v1::DataObjectStatus as ::core::convert::From<_>>::from(e),
+            )
+        });
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)
@@ -13221,6 +13359,137 @@ impl ::core::convert::From<super::shares::v1::ListSharesResponse> for PyListShar
 }
 impl ::core::convert::From<PyListSharesResponse> for super::shares::v1::ListSharesResponse {
     fn from(value: PyListSharesResponse) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "Partition", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyPartition(pub super::shares::v1::Partition);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyPartition {
+    #[new]
+    #[pyo3(signature = (values = None))]
+    fn new(values: ::core::option::Option<::std::vec::Vec<PyPartitionValue>>) -> Self {
+        let mut inner = <super::shares::v1::Partition as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = values {
+            inner.values = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn values(&self) -> ::std::vec::Vec<PyPartitionValue> {
+        self.0
+            .values
+            .iter()
+            .cloned()
+            .map(PyPartitionValue::from)
+            .collect()
+    }
+    #[setter(values)]
+    fn set_values(&mut self, value: ::std::vec::Vec<PyPartitionValue>) {
+        self.0.values = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::Partition> for PyPartition {
+    fn from(value: super::shares::v1::Partition) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyPartition> for super::shares::v1::Partition {
+    fn from(value: PyPartition) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "PartitionValue", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyPartitionValue(pub super::shares::v1::PartitionValue);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyPartitionValue {
+    #[new]
+    #[pyo3(
+        signature = (name = None, value = None, recipient_property_key = None, op = None)
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        value: ::core::option::Option<::std::string::String>,
+        recipient_property_key: ::core::option::Option<::std::string::String>,
+        op: ::core::option::Option<PyPartitionValueOp>,
+    ) -> Self {
+        let mut inner = <super::shares::v1::PartitionValue as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        {
+            let value = value;
+            inner.value = value;
+        }
+        {
+            let value = recipient_property_key;
+            inner.recipient_property_key = value;
+        }
+        if let ::core::option::Option::Some(value) = op {
+            inner.op = ::buffa::EnumValue::Known(
+                <super::shares::v1::PartitionValueOp as ::core::convert::From<_>>::from(value),
+            );
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn value(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.value.clone()
+    }
+    #[getter]
+    fn recipient_property_key(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.recipient_property_key.clone()
+    }
+    #[getter]
+    fn op(&self) -> PyPartitionValueOp {
+        PyPartitionValueOp::from(self.0.op.as_known().unwrap_or_default())
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(value)]
+    fn set_value(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.value = value;
+    }
+    #[setter(recipient_property_key)]
+    fn set_recipient_property_key(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.recipient_property_key = value;
+    }
+    #[setter(op)]
+    fn set_op(&mut self, value: PyPartitionValueOp) {
+        self.0.op = ::buffa::EnumValue::Known(
+            <super::shares::v1::PartitionValueOp as ::core::convert::From<_>>::from(value),
+        );
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::PartitionValue> for PyPartitionValue {
+    fn from(value: super::shares::v1::PartitionValue) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyPartitionValue> for super::shares::v1::PartitionValue {
+    fn from(value: PyPartitionValue) -> Self {
         value.0
     }
 }

@@ -7,18 +7,12 @@ pub enum DataObjectType {
     DATA_OBJECT_TYPE_UNSPECIFIED = 0i32,
     TABLE = 1i32,
     SCHEMA = 2i32,
-    /// VIEW = 3;
-    ///
-    /// MATERIALIZED_VIEW = 4;
-    ///
-    /// STREAMING_TABLE = 5;
-    ///
-    /// MODEL = 6;
-    ///
+    VIEW = 3i32,
+    MATERIALIZED_VIEW = 4i32,
+    STREAMING_TABLE = 5i32,
+    MODEL = 6i32,
     /// NOTEBOOK_FILE = 7;
-    ///
-    /// FUNCTION = 8;
-    ///
+    FUNCTION = 8i32,
     /// FEATURE_SPEC = 9;
     ///
     /// A Unity Catalog volume shared as a storage-backed asset (Open Sharing).
@@ -37,6 +31,21 @@ impl DataObjectType {
     ///Idiomatic alias for [`Self::SCHEMA`]; `Debug` prints the variant name.
     #[allow(non_upper_case_globals)]
     pub const Schema: Self = Self::SCHEMA;
+    ///Idiomatic alias for [`Self::VIEW`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const View: Self = Self::VIEW;
+    ///Idiomatic alias for [`Self::MATERIALIZED_VIEW`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const MaterializedView: Self = Self::MATERIALIZED_VIEW;
+    ///Idiomatic alias for [`Self::STREAMING_TABLE`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const StreamingTable: Self = Self::STREAMING_TABLE;
+    ///Idiomatic alias for [`Self::MODEL`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const Model: Self = Self::MODEL;
+    ///Idiomatic alias for [`Self::FUNCTION`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const Function: Self = Self::FUNCTION;
     ///Idiomatic alias for [`Self::VOLUME`]; `Debug` prints the variant name.
     #[allow(non_upper_case_globals)]
     pub const Volume: Self = Self::VOLUME;
@@ -143,6 +152,11 @@ impl ::buffa::Enumeration for DataObjectType {
             0i32 => ::core::option::Option::Some(Self::DATA_OBJECT_TYPE_UNSPECIFIED),
             1i32 => ::core::option::Option::Some(Self::TABLE),
             2i32 => ::core::option::Option::Some(Self::SCHEMA),
+            3i32 => ::core::option::Option::Some(Self::VIEW),
+            4i32 => ::core::option::Option::Some(Self::MATERIALIZED_VIEW),
+            5i32 => ::core::option::Option::Some(Self::STREAMING_TABLE),
+            6i32 => ::core::option::Option::Some(Self::MODEL),
+            8i32 => ::core::option::Option::Some(Self::FUNCTION),
             10i32 => ::core::option::Option::Some(Self::VOLUME),
             11i32 => ::core::option::Option::Some(Self::AGENT_SKILL),
             _ => ::core::option::Option::None,
@@ -156,6 +170,11 @@ impl ::buffa::Enumeration for DataObjectType {
             Self::DATA_OBJECT_TYPE_UNSPECIFIED => "DATA_OBJECT_TYPE_UNSPECIFIED",
             Self::TABLE => "TABLE",
             Self::SCHEMA => "SCHEMA",
+            Self::VIEW => "VIEW",
+            Self::MATERIALIZED_VIEW => "MATERIALIZED_VIEW",
+            Self::STREAMING_TABLE => "STREAMING_TABLE",
+            Self::MODEL => "MODEL",
+            Self::FUNCTION => "FUNCTION",
             Self::VOLUME => "VOLUME",
             Self::AGENT_SKILL => "AGENT_SKILL",
         }
@@ -167,6 +186,11 @@ impl ::buffa::Enumeration for DataObjectType {
             }
             "TABLE" => ::core::option::Option::Some(Self::TABLE),
             "SCHEMA" => ::core::option::Option::Some(Self::SCHEMA),
+            "VIEW" => ::core::option::Option::Some(Self::VIEW),
+            "MATERIALIZED_VIEW" => ::core::option::Option::Some(Self::MATERIALIZED_VIEW),
+            "STREAMING_TABLE" => ::core::option::Option::Some(Self::STREAMING_TABLE),
+            "MODEL" => ::core::option::Option::Some(Self::MODEL),
+            "FUNCTION" => ::core::option::Option::Some(Self::FUNCTION),
             "VOLUME" => ::core::option::Option::Some(Self::VOLUME),
             "AGENT_SKILL" => ::core::option::Option::Some(Self::AGENT_SKILL),
             _ => ::core::option::Option::None,
@@ -177,9 +201,308 @@ impl ::buffa::Enumeration for DataObjectType {
             Self::DATA_OBJECT_TYPE_UNSPECIFIED,
             Self::TABLE,
             Self::SCHEMA,
+            Self::VIEW,
+            Self::MATERIALIZED_VIEW,
+            Self::STREAMING_TABLE,
+            Self::MODEL,
+            Self::FUNCTION,
             Self::VOLUME,
             Self::AGENT_SKILL,
         ]
+    }
+}
+/// Whether a shared data object is still accessible to the share.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[repr(i32)]
+pub enum DataObjectStatus {
+    DATA_OBJECT_STATUS_UNSPECIFIED = 0i32,
+    /// The data object is accessible.
+    ACTIVE = 1i32,
+    /// The share owner lost access to the data object.
+    PERMISSION_DENIED = 2i32,
+}
+impl DataObjectStatus {
+    ///Idiomatic alias for [`Self::DATA_OBJECT_STATUS_UNSPECIFIED`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const DataObjectStatusUnspecified: Self = Self::DATA_OBJECT_STATUS_UNSPECIFIED;
+    ///Idiomatic alias for [`Self::ACTIVE`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const Active: Self = Self::ACTIVE;
+    ///Idiomatic alias for [`Self::PERMISSION_DENIED`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const PermissionDenied: Self = Self::PERMISSION_DENIED;
+}
+impl ::core::default::Default for DataObjectStatus {
+    fn default() -> Self {
+        Self::DATA_OBJECT_STATUS_UNSPECIFIED
+    }
+}
+impl ::serde::Serialize for DataObjectStatus {
+    fn serialize<S: ::serde::Serializer>(
+        &self,
+        s: S,
+    ) -> ::core::result::Result<S::Ok, S::Error> {
+        s.serialize_str(::buffa::Enumeration::proto_name(self))
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for DataObjectStatus {
+    fn deserialize<D: ::serde::Deserializer<'de>>(
+        d: D,
+    ) -> ::core::result::Result<Self, D::Error> {
+        struct _V;
+        impl ::serde::de::Visitor<'_> for _V {
+            type Value = DataObjectStatus;
+            fn expecting(
+                &self,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
+                f.write_str(
+                    concat!(
+                        "a string, integer, or null for ", stringify!(DataObjectStatus)
+                    ),
+                )
+            }
+            fn visit_str<E: ::serde::de::Error>(
+                self,
+                v: &str,
+            ) -> ::core::result::Result<DataObjectStatus, E> {
+                <DataObjectStatus as ::buffa::Enumeration>::from_proto_name(v)
+                    .ok_or_else(|| { ::serde::de::Error::unknown_variant(v, &[]) })
+            }
+            fn visit_i64<E: ::serde::de::Error>(
+                self,
+                v: i64,
+            ) -> ::core::result::Result<DataObjectStatus, E> {
+                let v32 = i32::try_from(v)
+                    .map_err(|_| {
+                        ::serde::de::Error::custom(
+                            ::buffa::alloc::format!("enum value {v} out of i32 range"),
+                        )
+                    })?;
+                <DataObjectStatus as ::buffa::Enumeration>::from_i32(v32)
+                    .ok_or_else(|| {
+                        ::serde::de::Error::custom(
+                            ::buffa::alloc::format!("unknown enum value {v32}"),
+                        )
+                    })
+            }
+            fn visit_u64<E: ::serde::de::Error>(
+                self,
+                v: u64,
+            ) -> ::core::result::Result<DataObjectStatus, E> {
+                let v32 = i32::try_from(v)
+                    .map_err(|_| {
+                        ::serde::de::Error::custom(
+                            ::buffa::alloc::format!("enum value {v} out of i32 range"),
+                        )
+                    })?;
+                <DataObjectStatus as ::buffa::Enumeration>::from_i32(v32)
+                    .ok_or_else(|| {
+                        ::serde::de::Error::custom(
+                            ::buffa::alloc::format!("unknown enum value {v32}"),
+                        )
+                    })
+            }
+            fn visit_unit<E: ::serde::de::Error>(
+                self,
+            ) -> ::core::result::Result<DataObjectStatus, E> {
+                ::core::result::Result::Ok(::core::default::Default::default())
+            }
+        }
+        d.deserialize_any(_V)
+    }
+}
+impl ::buffa::json_helpers::ProtoElemJson for DataObjectStatus {
+    fn serialize_proto_json<S: ::serde::Serializer>(
+        v: &Self,
+        s: S,
+    ) -> ::core::result::Result<S::Ok, S::Error> {
+        ::serde::Serialize::serialize(v, s)
+    }
+    fn deserialize_proto_json<'de, D: ::serde::Deserializer<'de>>(
+        d: D,
+    ) -> ::core::result::Result<Self, D::Error> {
+        <Self as ::serde::Deserialize>::deserialize(d)
+    }
+}
+impl ::buffa::Enumeration for DataObjectStatus {
+    fn from_i32(value: i32) -> ::core::option::Option<Self> {
+        match value {
+            0i32 => ::core::option::Option::Some(Self::DATA_OBJECT_STATUS_UNSPECIFIED),
+            1i32 => ::core::option::Option::Some(Self::ACTIVE),
+            2i32 => ::core::option::Option::Some(Self::PERMISSION_DENIED),
+            _ => ::core::option::Option::None,
+        }
+    }
+    fn to_i32(&self) -> i32 {
+        *self as i32
+    }
+    fn proto_name(&self) -> &'static str {
+        match self {
+            Self::DATA_OBJECT_STATUS_UNSPECIFIED => "DATA_OBJECT_STATUS_UNSPECIFIED",
+            Self::ACTIVE => "ACTIVE",
+            Self::PERMISSION_DENIED => "PERMISSION_DENIED",
+        }
+    }
+    fn from_proto_name(name: &str) -> ::core::option::Option<Self> {
+        match name {
+            "DATA_OBJECT_STATUS_UNSPECIFIED" => {
+                ::core::option::Option::Some(Self::DATA_OBJECT_STATUS_UNSPECIFIED)
+            }
+            "ACTIVE" => ::core::option::Option::Some(Self::ACTIVE),
+            "PERMISSION_DENIED" => ::core::option::Option::Some(Self::PERMISSION_DENIED),
+            _ => ::core::option::Option::None,
+        }
+    }
+    fn values() -> &'static [Self] {
+        &[Self::DATA_OBJECT_STATUS_UNSPECIFIED, Self::ACTIVE, Self::PERMISSION_DENIED]
+    }
+}
+/// The operator a partition value is matched with.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[repr(i32)]
+pub enum PartitionValueOp {
+    PARTITION_VALUE_OP_UNSPECIFIED = 0i32,
+    /// The partition column equals the value.
+    EQUAL = 1i32,
+    /// The partition column matches the value as a SQL LIKE pattern.
+    LIKE = 2i32,
+}
+impl PartitionValueOp {
+    ///Idiomatic alias for [`Self::PARTITION_VALUE_OP_UNSPECIFIED`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const PartitionValueOpUnspecified: Self = Self::PARTITION_VALUE_OP_UNSPECIFIED;
+    ///Idiomatic alias for [`Self::EQUAL`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const Equal: Self = Self::EQUAL;
+    ///Idiomatic alias for [`Self::LIKE`]; `Debug` prints the variant name.
+    #[allow(non_upper_case_globals)]
+    pub const Like: Self = Self::LIKE;
+}
+impl ::core::default::Default for PartitionValueOp {
+    fn default() -> Self {
+        Self::PARTITION_VALUE_OP_UNSPECIFIED
+    }
+}
+impl ::serde::Serialize for PartitionValueOp {
+    fn serialize<S: ::serde::Serializer>(
+        &self,
+        s: S,
+    ) -> ::core::result::Result<S::Ok, S::Error> {
+        s.serialize_str(::buffa::Enumeration::proto_name(self))
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for PartitionValueOp {
+    fn deserialize<D: ::serde::Deserializer<'de>>(
+        d: D,
+    ) -> ::core::result::Result<Self, D::Error> {
+        struct _V;
+        impl ::serde::de::Visitor<'_> for _V {
+            type Value = PartitionValueOp;
+            fn expecting(
+                &self,
+                f: &mut ::core::fmt::Formatter<'_>,
+            ) -> ::core::fmt::Result {
+                f.write_str(
+                    concat!(
+                        "a string, integer, or null for ", stringify!(PartitionValueOp)
+                    ),
+                )
+            }
+            fn visit_str<E: ::serde::de::Error>(
+                self,
+                v: &str,
+            ) -> ::core::result::Result<PartitionValueOp, E> {
+                <PartitionValueOp as ::buffa::Enumeration>::from_proto_name(v)
+                    .ok_or_else(|| { ::serde::de::Error::unknown_variant(v, &[]) })
+            }
+            fn visit_i64<E: ::serde::de::Error>(
+                self,
+                v: i64,
+            ) -> ::core::result::Result<PartitionValueOp, E> {
+                let v32 = i32::try_from(v)
+                    .map_err(|_| {
+                        ::serde::de::Error::custom(
+                            ::buffa::alloc::format!("enum value {v} out of i32 range"),
+                        )
+                    })?;
+                <PartitionValueOp as ::buffa::Enumeration>::from_i32(v32)
+                    .ok_or_else(|| {
+                        ::serde::de::Error::custom(
+                            ::buffa::alloc::format!("unknown enum value {v32}"),
+                        )
+                    })
+            }
+            fn visit_u64<E: ::serde::de::Error>(
+                self,
+                v: u64,
+            ) -> ::core::result::Result<PartitionValueOp, E> {
+                let v32 = i32::try_from(v)
+                    .map_err(|_| {
+                        ::serde::de::Error::custom(
+                            ::buffa::alloc::format!("enum value {v} out of i32 range"),
+                        )
+                    })?;
+                <PartitionValueOp as ::buffa::Enumeration>::from_i32(v32)
+                    .ok_or_else(|| {
+                        ::serde::de::Error::custom(
+                            ::buffa::alloc::format!("unknown enum value {v32}"),
+                        )
+                    })
+            }
+            fn visit_unit<E: ::serde::de::Error>(
+                self,
+            ) -> ::core::result::Result<PartitionValueOp, E> {
+                ::core::result::Result::Ok(::core::default::Default::default())
+            }
+        }
+        d.deserialize_any(_V)
+    }
+}
+impl ::buffa::json_helpers::ProtoElemJson for PartitionValueOp {
+    fn serialize_proto_json<S: ::serde::Serializer>(
+        v: &Self,
+        s: S,
+    ) -> ::core::result::Result<S::Ok, S::Error> {
+        ::serde::Serialize::serialize(v, s)
+    }
+    fn deserialize_proto_json<'de, D: ::serde::Deserializer<'de>>(
+        d: D,
+    ) -> ::core::result::Result<Self, D::Error> {
+        <Self as ::serde::Deserialize>::deserialize(d)
+    }
+}
+impl ::buffa::Enumeration for PartitionValueOp {
+    fn from_i32(value: i32) -> ::core::option::Option<Self> {
+        match value {
+            0i32 => ::core::option::Option::Some(Self::PARTITION_VALUE_OP_UNSPECIFIED),
+            1i32 => ::core::option::Option::Some(Self::EQUAL),
+            2i32 => ::core::option::Option::Some(Self::LIKE),
+            _ => ::core::option::Option::None,
+        }
+    }
+    fn to_i32(&self) -> i32 {
+        *self as i32
+    }
+    fn proto_name(&self) -> &'static str {
+        match self {
+            Self::PARTITION_VALUE_OP_UNSPECIFIED => "PARTITION_VALUE_OP_UNSPECIFIED",
+            Self::EQUAL => "EQUAL",
+            Self::LIKE => "LIKE",
+        }
+    }
+    fn from_proto_name(name: &str) -> ::core::option::Option<Self> {
+        match name {
+            "PARTITION_VALUE_OP_UNSPECIFIED" => {
+                ::core::option::Option::Some(Self::PARTITION_VALUE_OP_UNSPECIFIED)
+            }
+            "EQUAL" => ::core::option::Option::Some(Self::EQUAL),
+            "LIKE" => ::core::option::Option::Some(Self::LIKE),
+            _ => ::core::option::Option::None,
+        }
+    }
+    fn values() -> &'static [Self] {
+        &[Self::PARTITION_VALUE_OP_UNSPECIFIED, Self::EQUAL, Self::LIKE]
     }
 }
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -317,6 +640,422 @@ impl ::buffa::Enumeration for HistoryStatus {
         &[Self::DISABLED, Self::ENABLED]
     }
 }
+/// A partition column value a shared table is restricted to.
+#[derive(Clone, PartialEq, Default)]
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[serde(default)]
+pub struct PartitionValue {
+    /// The name of the partition column.
+    ///
+    /// Field 1: `name`
+    #[serde(
+        rename = "name",
+        with = "::buffa::json_helpers::proto_string",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
+    )]
+    pub name: ::buffa::alloc::string::String,
+    /// The value of the partition column; unset means a `null` value.
+    ///
+    /// Mutually exclusive with recipient_property_key.
+    ///
+    /// Field 2: `value`
+    #[serde(rename = "value", skip_serializing_if = "::core::option::Option::is_none")]
+    pub value: ::core::option::Option<::buffa::alloc::string::String>,
+    /// The key of a Delta Sharing recipient property whose value the partition column is
+    /// matched against, e.g. "databricks-account-id".
+    ///
+    /// Mutually exclusive with value.
+    ///
+    /// Field 3: `recipient_property_key`
+    #[serde(
+        rename = "recipient_property_key",
+        alias = "recipientPropertyKey",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub recipient_property_key: ::core::option::Option<::buffa::alloc::string::String>,
+    /// The operator to apply for the value.
+    ///
+    /// Field 4: `op`
+    #[serde(
+        rename = "op",
+        with = "::buffa::json_helpers::proto_enum",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
+    )]
+    pub op: ::buffa::EnumValue<PartitionValueOp>,
+    #[serde(skip)]
+    #[doc(hidden)]
+    pub __buffa_unknown_fields: ::buffa::UnknownFields,
+}
+impl ::core::fmt::Debug for PartitionValue {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("PartitionValue")
+            .field("name", &self.name)
+            .field("value", &self.value)
+            .field("recipient_property_key", &self.recipient_property_key)
+            .field("op", &self.op)
+            .finish()
+    }
+}
+impl PartitionValue {
+    /// Protobuf type URL for this message, for use with `Any::pack` and
+    /// `Any::unpack_if`.
+    ///
+    /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
+    pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.shares.v1.PartitionValue";
+}
+impl PartitionValue {
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::value`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_value(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.value = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::recipient_property_key`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_recipient_property_key(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.recipient_property_key = Some(value.into());
+        self
+    }
+}
+impl ::buffa::DefaultInstance for PartitionValue {
+    fn default_instance() -> &'static Self {
+        static VALUE: ::buffa::__private::OnceBox<PartitionValue> = ::buffa::__private::OnceBox::new();
+        VALUE.get_or_init(|| ::buffa::alloc::boxed::Box::new(Self::default()))
+    }
+}
+impl ::buffa::MessageName for PartitionValue {
+    const PACKAGE: &'static str = "unitycatalog.shares.v1";
+    const NAME: &'static str = "PartitionValue";
+    const FULL_NAME: &'static str = "unitycatalog.shares.v1.PartitionValue";
+    const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.shares.v1.PartitionValue";
+}
+impl ::buffa::Message for PartitionValue {
+    /// Returns the total encoded size in bytes.
+    ///
+    /// The result is a `u32`; the protobuf specification requires all
+    /// messages to fit within 2 GiB (2,147,483,647 bytes), so a
+    /// compliant message will never overflow this type.
+    #[allow(clippy::let_and_return)]
+    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u32;
+        if !self.name.is_empty() {
+            size += 1u32 + ::buffa::types::string_encoded_len(&self.name) as u32;
+        }
+        if let Some(ref v) = self.value {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        if let Some(ref v) = self.recipient_property_key {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        {
+            let val = self.op.to_i32();
+            if val != 0 {
+                size += 1u32 + ::buffa::types::int32_encoded_len(val) as u32;
+            }
+        }
+        size += self.__buffa_unknown_fields.encoded_len() as u32;
+        size
+    }
+    fn write_to(
+        &self,
+        _cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::bytes::BufMut,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        if !self.name.is_empty() {
+            ::buffa::encoding::Tag::new(
+                    1u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(&self.name, buf);
+        }
+        if let Some(ref v) = self.value {
+            ::buffa::encoding::Tag::new(
+                    2u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        if let Some(ref v) = self.recipient_property_key {
+            ::buffa::encoding::Tag::new(
+                    3u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        {
+            let val = self.op.to_i32();
+            if val != 0 {
+                ::buffa::encoding::Tag::new(4u32, ::buffa::encoding::WireType::Varint)
+                    .encode(buf);
+                ::buffa::types::encode_int32(val, buf);
+            }
+        }
+        self.__buffa_unknown_fields.write_to(buf);
+    }
+    fn merge_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        buf: &mut impl ::buffa::bytes::Buf,
+        depth: u32,
+    ) -> ::core::result::Result<(), ::buffa::DecodeError> {
+        #[allow(unused_imports)]
+        use ::buffa::bytes::Buf as _;
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        match tag.field_number() {
+            1u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 1u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(&mut self.name, buf)?;
+            }
+            2u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 2u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self.value.get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
+            3u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 3u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self
+                        .recipient_property_key
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
+            4u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 4u32,
+                        expected: 0u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.op = ::buffa::EnumValue::from(::buffa::types::decode_int32(buf)?);
+            }
+            _ => {
+                self.__buffa_unknown_fields
+                    .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
+            }
+        }
+        ::core::result::Result::Ok(())
+    }
+    fn clear(&mut self) {
+        self.name.clear();
+        self.value = ::core::option::Option::None;
+        self.recipient_property_key = ::core::option::Option::None;
+        self.op = ::buffa::EnumValue::from(0);
+        self.__buffa_unknown_fields.clear();
+    }
+}
+impl ::buffa::ExtensionSet for PartitionValue {
+    const PROTO_FQN: &'static str = "unitycatalog.shares.v1.PartitionValue";
+    fn unknown_fields(&self) -> &::buffa::UnknownFields {
+        &self.__buffa_unknown_fields
+    }
+    fn unknown_fields_mut(&mut self) -> &mut ::buffa::UnknownFields {
+        &mut self.__buffa_unknown_fields
+    }
+}
+impl ::buffa::json_helpers::ProtoElemJson for PartitionValue {
+    fn serialize_proto_json<S: ::serde::Serializer>(
+        v: &Self,
+        s: S,
+    ) -> ::core::result::Result<S::Ok, S::Error> {
+        ::serde::Serialize::serialize(v, s)
+    }
+    fn deserialize_proto_json<'de, D: ::serde::Deserializer<'de>>(
+        d: D,
+    ) -> ::core::result::Result<Self, D::Error> {
+        <Self as ::serde::Deserialize>::deserialize(d)
+    }
+}
+#[doc(hidden)]
+pub const __PARTITION_VALUE_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = ::buffa::type_registry::JsonAnyEntry {
+    type_url: "type.googleapis.com/unitycatalog.shares.v1.PartitionValue",
+    to_json: ::buffa::type_registry::any_to_json::<PartitionValue>,
+    from_json: ::buffa::type_registry::any_from_json::<PartitionValue>,
+    is_wkt: false,
+};
+/// A partition specification: the conjunction of its partition values.
+#[derive(Clone, PartialEq, Default)]
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[serde(default)]
+pub struct Partition {
+    /// An array of partition values.
+    ///
+    /// Field 1: `values`
+    #[serde(
+        rename = "values",
+        skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
+        deserialize_with = "::buffa::json_helpers::null_as_default"
+    )]
+    pub values: ::buffa::alloc::vec::Vec<PartitionValue>,
+    #[serde(skip)]
+    #[doc(hidden)]
+    pub __buffa_unknown_fields: ::buffa::UnknownFields,
+}
+impl ::core::fmt::Debug for Partition {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("Partition").field("values", &self.values).finish()
+    }
+}
+impl Partition {
+    /// Protobuf type URL for this message, for use with `Any::pack` and
+    /// `Any::unpack_if`.
+    ///
+    /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
+    pub const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.shares.v1.Partition";
+}
+impl ::buffa::DefaultInstance for Partition {
+    fn default_instance() -> &'static Self {
+        static VALUE: ::buffa::__private::OnceBox<Partition> = ::buffa::__private::OnceBox::new();
+        VALUE.get_or_init(|| ::buffa::alloc::boxed::Box::new(Self::default()))
+    }
+}
+impl ::buffa::MessageName for Partition {
+    const PACKAGE: &'static str = "unitycatalog.shares.v1";
+    const NAME: &'static str = "Partition";
+    const FULL_NAME: &'static str = "unitycatalog.shares.v1.Partition";
+    const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.shares.v1.Partition";
+}
+impl ::buffa::Message for Partition {
+    /// Returns the total encoded size in bytes.
+    ///
+    /// The result is a `u32`; the protobuf specification requires all
+    /// messages to fit within 2 GiB (2,147,483,647 bytes), so a
+    /// compliant message will never overflow this type.
+    #[allow(clippy::let_and_return)]
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        let mut size = 0u32;
+        for v in &self.values {
+            let __slot = __cache.reserve();
+            let inner_size = v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
+        }
+        size += self.__buffa_unknown_fields.encoded_len() as u32;
+        size
+    }
+    fn write_to(
+        &self,
+        __cache: &mut ::buffa::SizeCache,
+        buf: &mut impl ::buffa::bytes::BufMut,
+    ) {
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        for v in &self.values {
+            ::buffa::encoding::Tag::new(
+                    1u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            v.write_to(__cache, buf);
+        }
+        self.__buffa_unknown_fields.write_to(buf);
+    }
+    fn merge_field(
+        &mut self,
+        tag: ::buffa::encoding::Tag,
+        buf: &mut impl ::buffa::bytes::Buf,
+        depth: u32,
+    ) -> ::core::result::Result<(), ::buffa::DecodeError> {
+        #[allow(unused_imports)]
+        use ::buffa::bytes::Buf as _;
+        #[allow(unused_imports)]
+        use ::buffa::Enumeration as _;
+        match tag.field_number() {
+            1u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 1u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                let mut elem = ::core::default::Default::default();
+                ::buffa::Message::merge_length_delimited(&mut elem, buf, depth)?;
+                self.values.push(elem);
+            }
+            _ => {
+                self.__buffa_unknown_fields
+                    .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
+            }
+        }
+        ::core::result::Result::Ok(())
+    }
+    fn clear(&mut self) {
+        self.values.clear();
+        self.__buffa_unknown_fields.clear();
+    }
+}
+impl ::buffa::ExtensionSet for Partition {
+    const PROTO_FQN: &'static str = "unitycatalog.shares.v1.Partition";
+    fn unknown_fields(&self) -> &::buffa::UnknownFields {
+        &self.__buffa_unknown_fields
+    }
+    fn unknown_fields_mut(&mut self) -> &mut ::buffa::UnknownFields {
+        &mut self.__buffa_unknown_fields
+    }
+}
+impl ::buffa::json_helpers::ProtoElemJson for Partition {
+    fn serialize_proto_json<S: ::serde::Serializer>(
+        v: &Self,
+        s: S,
+    ) -> ::core::result::Result<S::Ok, S::Error> {
+        ::serde::Serialize::serialize(v, s)
+    }
+    fn deserialize_proto_json<'de, D: ::serde::Deserializer<'de>>(
+        d: D,
+    ) -> ::core::result::Result<Self, D::Error> {
+        <Self as ::serde::Deserialize>::deserialize(d)
+    }
+}
+#[doc(hidden)]
+pub const __PARTITION_JSON_ANY: ::buffa::type_registry::JsonAnyEntry = ::buffa::type_registry::JsonAnyEntry {
+    type_url: "type.googleapis.com/unitycatalog.shares.v1.Partition",
+    to_json: ::buffa::type_registry::any_to_json::<Partition>,
+    from_json: ::buffa::type_registry::any_from_json::<Partition>,
+    is_wkt: false,
+};
 #[derive(Clone, PartialEq, Default)]
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[serde(default)]
@@ -372,7 +1111,7 @@ pub struct DataObject {
     /// The shared_as name must be unique within a share.
     /// For tables, the new name must follow the format of \<schema\>.\<table\>: two parts, each
     /// consisting only of alphanumeric characters and underscores, without the catalog part.
-    /// Do not set it for non-table data objects.
+    /// Do not set it for non-table data objects; use string_shared_as instead.
     ///
     /// Field 6: `shared_as`
     #[serde(
@@ -389,16 +1128,16 @@ pub struct DataObject {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_vec",
         deserialize_with = "::buffa::json_helpers::null_as_default"
     )]
-    pub partitions: ::buffa::alloc::vec::Vec<::buffa::alloc::string::String>,
+    pub partitions: ::buffa::alloc::vec::Vec<Partition>,
     /// Whether to enable cdf or indicate if cdf is enabled on the shared object.
     ///
-    /// Field 8: `enable_cdf`
+    /// Field 8: `cdf_enabled`
     #[serde(
-        rename = "enable_cdf",
-        alias = "enableCdf",
+        rename = "cdf_enabled",
+        alias = "cdfEnabled",
         skip_serializing_if = "::core::option::Option::is_none"
     )]
-    pub enable_cdf: ::core::option::Option<bool>,
+    pub cdf_enabled: ::core::option::Option<bool>,
     /// Whether to enable or disable sharing of data history. If not specified, the default is DISABLED.
     ///
     /// Field 9: `history_data_sharing_status`
@@ -427,6 +1166,30 @@ pub struct DataObject {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub start_version: ::core::option::Option<i64>,
+    /// A user-provided alias for a non-table data object (e.g. a volume) within the share.
+    ///
+    /// For volumes, functions and models it is a two-part name \<schema\>.\<name\>, each part
+    /// consisting only of alphanumeric characters and underscores. If not provided, the
+    /// object's original name minus its catalog is used. It must be unique among objects of
+    /// the same type within the share. Do not set it for table-like data objects; use
+    /// shared_as instead.
+    ///
+    /// Field 11: `string_shared_as`
+    #[serde(
+        rename = "string_shared_as",
+        alias = "stringSharedAs",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub string_shared_as: ::core::option::Option<::buffa::alloc::string::String>,
+    /// Whether the data object is still accessible to the share.
+    ///
+    /// Field 12: `status`
+    #[serde(
+        rename = "status",
+        with = "::buffa::json_helpers::opt_enum",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub status: ::core::option::Option<::buffa::EnumValue<DataObjectStatus>>,
     #[serde(skip)]
     #[doc(hidden)]
     pub __buffa_unknown_fields: ::buffa::UnknownFields,
@@ -441,9 +1204,11 @@ impl ::core::fmt::Debug for DataObject {
             .field("comment", &self.comment)
             .field("shared_as", &self.shared_as)
             .field("partitions", &self.partitions)
-            .field("enable_cdf", &self.enable_cdf)
+            .field("cdf_enabled", &self.cdf_enabled)
             .field("history_data_sharing_status", &self.history_data_sharing_status)
             .field("start_version", &self.start_version)
+            .field("string_shared_as", &self.string_shared_as)
+            .field("status", &self.status)
             .finish()
     }
 }
@@ -494,9 +1259,9 @@ impl DataObject {
     }
     #[must_use = "with_* setters return `self` by value; assign or chain the result"]
     #[inline]
-    ///Sets [`Self::enable_cdf`] to `Some(value)`, consuming and returning `self`.
-    pub fn with_enable_cdf(mut self, value: bool) -> Self {
-        self.enable_cdf = Some(value);
+    ///Sets [`Self::cdf_enabled`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_cdf_enabled(mut self, value: bool) -> Self {
+        self.cdf_enabled = Some(value);
         self
     }
     #[must_use = "with_* setters return `self` by value; assign or chain the result"]
@@ -514,6 +1279,26 @@ impl DataObject {
     ///Sets [`Self::start_version`] to `Some(value)`, consuming and returning `self`.
     pub fn with_start_version(mut self, value: i64) -> Self {
         self.start_version = Some(value);
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::string_shared_as`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_string_shared_as(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.string_shared_as = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::status`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_status(
+        mut self,
+        value: impl Into<::buffa::EnumValue<DataObjectStatus>>,
+    ) -> Self {
+        self.status = Some(value.into());
         self
     }
 }
@@ -536,7 +1321,7 @@ impl ::buffa::Message for DataObject {
     /// messages to fit within 2 GiB (2,147,483,647 bytes), so a
     /// compliant message will never overflow this type.
     #[allow(clippy::let_and_return)]
-    fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+    fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
         let mut size = 0u32;
@@ -562,9 +1347,14 @@ impl ::buffa::Message for DataObject {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
         for v in &self.partitions {
-            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+            let __slot = __cache.reserve();
+            let inner_size = v.compute_size(__cache);
+            __cache.set(__slot, inner_size);
+            size
+                += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                    + inner_size;
         }
-        if self.enable_cdf.is_some() {
+        if self.cdf_enabled.is_some() {
             size += 1u32 + ::buffa::types::BOOL_ENCODED_LEN as u32;
         }
         if let Some(ref v) = self.history_data_sharing_status {
@@ -573,12 +1363,18 @@ impl ::buffa::Message for DataObject {
         if let Some(v) = self.start_version {
             size += 1u32 + ::buffa::types::int64_encoded_len(v) as u32;
         }
+        if let Some(ref v) = self.string_shared_as {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        if let Some(ref v) = self.status {
+            size += 1u32 + ::buffa::types::int32_encoded_len(v.to_i32()) as u32;
+        }
         size += self.__buffa_unknown_fields.encoded_len() as u32;
         size
     }
     fn write_to(
         &self,
-        _cache: &mut ::buffa::SizeCache,
+        __cache: &mut ::buffa::SizeCache,
         buf: &mut impl ::buffa::bytes::BufMut,
     ) {
         #[allow(unused_imports)]
@@ -634,9 +1430,10 @@ impl ::buffa::Message for DataObject {
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
-            ::buffa::types::encode_string(v, buf);
+            ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+            v.write_to(__cache, buf);
         }
-        if let Some(v) = self.enable_cdf {
+        if let Some(v) = self.cdf_enabled {
             ::buffa::encoding::Tag::new(8u32, ::buffa::encoding::WireType::Varint)
                 .encode(buf);
             ::buffa::types::encode_bool(v, buf);
@@ -650,6 +1447,19 @@ impl ::buffa::Message for DataObject {
             ::buffa::encoding::Tag::new(10u32, ::buffa::encoding::WireType::Varint)
                 .encode(buf);
             ::buffa::types::encode_int64(v, buf);
+        }
+        if let Some(ref v) = self.string_shared_as {
+            ::buffa::encoding::Tag::new(
+                    11u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        if let Some(ref v) = self.status {
+            ::buffa::encoding::Tag::new(12u32, ::buffa::encoding::WireType::Varint)
+                .encode(buf);
+            ::buffa::types::encode_int32(v.to_i32(), buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
     }
@@ -749,7 +1559,9 @@ impl ::buffa::Message for DataObject {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                self.partitions.push(::buffa::types::decode_string(buf)?);
+                let mut elem = ::core::default::Default::default();
+                ::buffa::Message::merge_length_delimited(&mut elem, buf, depth)?;
+                self.partitions.push(elem);
             }
             8u32 => {
                 if tag.wire_type() != ::buffa::encoding::WireType::Varint {
@@ -759,7 +1571,7 @@ impl ::buffa::Message for DataObject {
                         actual: tag.wire_type() as u8,
                     });
                 }
-                self.enable_cdf = ::core::option::Option::Some(
+                self.cdf_enabled = ::core::option::Option::Some(
                     ::buffa::types::decode_bool(buf)?,
                 );
             }
@@ -787,6 +1599,33 @@ impl ::buffa::Message for DataObject {
                     ::buffa::types::decode_int64(buf)?,
                 );
             }
+            11u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 11u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self
+                        .string_shared_as
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
+            12u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 12u32,
+                        expected: 0u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                self.status = ::core::option::Option::Some(
+                    ::buffa::EnumValue::from(::buffa::types::decode_int32(buf)?),
+                );
+            }
             _ => {
                 self.__buffa_unknown_fields
                     .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
@@ -802,9 +1641,11 @@ impl ::buffa::Message for DataObject {
         self.comment = ::core::option::Option::None;
         self.shared_as = ::core::option::Option::None;
         self.partitions.clear();
-        self.enable_cdf = ::core::option::Option::None;
+        self.cdf_enabled = ::core::option::Option::None;
         self.history_data_sharing_status = ::core::option::Option::None;
         self.start_version = ::core::option::Option::None;
+        self.string_shared_as = ::core::option::Option::None;
+        self.status = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
 }
@@ -4192,6 +5033,762 @@ pub mod __buffa {
     pub mod view {
         #[allow(unused_imports)]
         use super::*;
+        /// A partition column value a shared table is restricted to.
+        #[derive(Clone, Debug, Default)]
+        pub struct PartitionValueView<'a> {
+            /// The name of the partition column.
+            ///
+            /// Field 1: `name`
+            pub name: &'a str,
+            /// The value of the partition column; unset means a `null` value.
+            ///
+            /// Mutually exclusive with recipient_property_key.
+            ///
+            /// Field 2: `value`
+            pub value: ::core::option::Option<&'a str>,
+            /// The key of a Delta Sharing recipient property whose value the partition column is
+            /// matched against, e.g. "databricks-account-id".
+            ///
+            /// Mutually exclusive with value.
+            ///
+            /// Field 3: `recipient_property_key`
+            pub recipient_property_key: ::core::option::Option<&'a str>,
+            /// The operator to apply for the value.
+            ///
+            /// Field 4: `op`
+            pub op: ::buffa::EnumValue<super::super::PartitionValueOp>,
+            pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
+        }
+        impl<'a> PartitionValueView<'a> {
+            /// Decode from `buf`, enforcing a recursion depth limit for nested messages.
+            ///
+            /// Called by [`::buffa::MessageView::decode_view`] with [`::buffa::RECURSION_LIMIT`]
+            /// and by generated sub-message decode arms with `depth - 1`.
+            ///
+            /// **Not part of the public API.** Named with a leading underscore to
+            /// signal that it is for generated-code use only.
+            #[doc(hidden)]
+            pub fn _decode_depth(
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                let mut view = Self::default();
+                view._merge_into_view(buf, depth)?;
+                ::core::result::Result::Ok(view)
+            }
+            /// Merge fields from `buf` into this view (proto merge semantics).
+            ///
+            /// Repeated fields append; singular fields last-wins; singular
+            /// MESSAGE fields merge recursively. Used by sub-message decode
+            /// arms when the same field appears multiple times on the wire.
+            ///
+            /// **Not part of the public API.**
+            #[doc(hidden)]
+            pub fn _merge_into_view(
+                &mut self,
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<(), ::buffa::DecodeError> {
+                let _ = depth;
+                #[allow(unused_variables)]
+                let view = self;
+                let mut cur: &'a [u8] = buf;
+                while !cur.is_empty() {
+                    let before_tag = cur;
+                    let tag = ::buffa::encoding::Tag::decode(&mut cur)?;
+                    match tag.field_number() {
+                        1u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 1u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.name = ::buffa::types::borrow_str(&mut cur)?;
+                        }
+                        2u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 2u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.value = Some(::buffa::types::borrow_str(&mut cur)?);
+                        }
+                        3u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 3u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.recipient_property_key = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
+                        }
+                        4u32 => {
+                            if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 4u32,
+                                    expected: 0u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.op = ::buffa::EnumValue::from(
+                                ::buffa::types::decode_int32(&mut cur)?,
+                            );
+                        }
+                        _ => {
+                            ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
+                            let span_len = before_tag.len() - cur.len();
+                            view.__buffa_unknown_fields
+                                .push_raw(&before_tag[..span_len]);
+                        }
+                    }
+                }
+                ::core::result::Result::Ok(())
+            }
+        }
+        impl<'a> ::buffa::MessageView<'a> for PartitionValueView<'a> {
+            type Owned = super::super::PartitionValue;
+            fn decode_view(
+                buf: &'a [u8],
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                Self::_decode_depth(buf, ::buffa::RECURSION_LIMIT)
+            }
+            fn decode_view_with_limit(
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                Self::_decode_depth(buf, depth)
+            }
+            fn to_owned_message(&self) -> super::super::PartitionValue {
+                self.to_owned_from_source(None)
+            }
+            #[allow(clippy::useless_conversion, clippy::needless_update)]
+            fn to_owned_from_source(
+                &self,
+                __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+            ) -> super::super::PartitionValue {
+                #[allow(unused_imports)]
+                use ::buffa::alloc::string::ToString as _;
+                let _ = __buffa_src;
+                super::super::PartitionValue {
+                    name: self.name.to_string(),
+                    value: self.value.map(|s| s.to_string()),
+                    recipient_property_key: self
+                        .recipient_property_key
+                        .map(|s| s.to_string()),
+                    op: self.op,
+                    __buffa_unknown_fields: self
+                        .__buffa_unknown_fields
+                        .to_owned()
+                        .unwrap_or_default()
+                        .into(),
+                    ..::core::default::Default::default()
+                }
+            }
+        }
+        impl<'a> ::buffa::ViewEncode<'a> for PartitionValueView<'a> {
+            #[allow(clippy::needless_borrow, clippy::let_and_return)]
+            fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+                #[allow(unused_imports)]
+                use ::buffa::Enumeration as _;
+                let mut size = 0u32;
+                if !self.name.is_empty() {
+                    size += 1u32 + ::buffa::types::string_encoded_len(&self.name) as u32;
+                }
+                if let Some(ref v) = self.value {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if let Some(ref v) = self.recipient_property_key {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                {
+                    let val = self.op.to_i32();
+                    if val != 0 {
+                        size += 1u32 + ::buffa::types::int32_encoded_len(val) as u32;
+                    }
+                }
+                size += self.__buffa_unknown_fields.encoded_len() as u32;
+                size
+            }
+            #[allow(clippy::needless_borrow)]
+            fn write_to(
+                &self,
+                _cache: &mut ::buffa::SizeCache,
+                buf: &mut impl ::buffa::bytes::BufMut,
+            ) {
+                #[allow(unused_imports)]
+                use ::buffa::Enumeration as _;
+                if !self.name.is_empty() {
+                    ::buffa::encoding::Tag::new(
+                            1u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(&self.name, buf);
+                }
+                if let Some(ref v) = self.value {
+                    ::buffa::encoding::Tag::new(
+                            2u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                if let Some(ref v) = self.recipient_property_key {
+                    ::buffa::encoding::Tag::new(
+                            3u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                {
+                    let val = self.op.to_i32();
+                    if val != 0 {
+                        ::buffa::encoding::Tag::new(
+                                4u32,
+                                ::buffa::encoding::WireType::Varint,
+                            )
+                            .encode(buf);
+                        ::buffa::types::encode_int32(val, buf);
+                    }
+                }
+                self.__buffa_unknown_fields.write_to(buf);
+            }
+        }
+        /// Serializes this view as protobuf JSON.
+        ///
+        /// Implicit-presence fields with default values are omitted, `required`
+        /// fields are always emitted, explicit-presence (`optional`) fields are
+        /// emitted only when set, bytes fields are base64-encoded, and enum
+        /// values are their proto name strings.
+        ///
+        /// This impl uses `serialize_map(None)` because the number of emitted
+        /// fields depends on default-omission rules; serializers that require
+        /// known map lengths (e.g. `bincode`) will return a runtime error.
+        /// Use the owned message type for those formats.
+        impl<'__a> ::serde::Serialize for PartitionValueView<'__a> {
+            fn serialize<__S: ::serde::Serializer>(
+                &self,
+                __s: __S,
+            ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                use ::serde::ser::SerializeMap as _;
+                let mut __map = __s.serialize_map(::core::option::Option::None)?;
+                if !::buffa::json_helpers::skip_if::is_empty_str(self.name) {
+                    __map.serialize_entry("name", self.name)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.value {
+                    __map.serialize_entry("value", __v)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.recipient_property_key {
+                    __map.serialize_entry("recipient_property_key", __v)?;
+                }
+                if !::buffa::json_helpers::skip_if::is_default_enum_value(&self.op) {
+                    __map.serialize_entry("op", &self.op)?;
+                }
+                __map.end()
+            }
+        }
+        impl<'a> ::buffa::MessageName for PartitionValueView<'a> {
+            const PACKAGE: &'static str = "unitycatalog.shares.v1";
+            const NAME: &'static str = "PartitionValue";
+            const FULL_NAME: &'static str = "unitycatalog.shares.v1.PartitionValue";
+            const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.shares.v1.PartitionValue";
+        }
+        impl<'v> ::buffa::DefaultViewInstance for PartitionValueView<'v> {
+            fn default_view_instance<'a>() -> &'a Self
+            where
+                Self: 'a,
+            {
+                static VALUE: ::buffa::__private::OnceBox<PartitionValueView<'static>> = ::buffa::__private::OnceBox::new();
+                VALUE
+                    .get_or_init(|| ::buffa::alloc::boxed::Box::new(
+                        <PartitionValueView<'static>>::default(),
+                    ))
+            }
+        }
+        impl ::buffa::ViewReborrow for PartitionValueView<'static> {
+            type Reborrowed<'b> = PartitionValueView<'b>;
+            fn reborrow<'b>(this: &'b Self) -> &'b Self::Reborrowed<'b> {
+                this
+            }
+        }
+        /** Self-contained, `'static` owned view of a `PartitionValue` message.
+
+ Wraps [`::buffa::OwnedView`]`<`[`PartitionValueView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`PartitionValueView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+        #[derive(Clone, Debug)]
+        pub struct PartitionValueOwnedView(
+            ::buffa::OwnedView<PartitionValueView<'static>>,
+        );
+        impl PartitionValueOwnedView {
+            /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
+            ///
+            /// The view borrows directly from the buffer's data; the buffer is
+            /// retained inside the returned handle.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the buffer contains invalid
+            /// protobuf data.
+            pub fn decode(
+                bytes: ::buffa::bytes::Bytes,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    PartitionValueOwnedView(::buffa::OwnedView::decode(bytes)?),
+                )
+            }
+            /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
+            /// max message size).
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the buffer is invalid or
+            /// exceeds the configured limits.
+            pub fn decode_with_options(
+                bytes: ::buffa::bytes::Bytes,
+                opts: &::buffa::DecodeOptions,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    PartitionValueOwnedView(
+                        ::buffa::OwnedView::decode_with_options(bytes, opts)?,
+                    ),
+                )
+            }
+            /// Build from an owned message via an encode → decode round-trip.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the re-encoded bytes are
+            /// somehow invalid (should not happen for well-formed messages).
+            pub fn from_owned(
+                msg: &super::super::PartitionValue,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    PartitionValueOwnedView(::buffa::OwnedView::from_owned(msg)?),
+                )
+            }
+            /// Borrow the full [`PartitionValueView`] with its lifetime tied to `&self`.
+            #[must_use]
+            pub fn view(&self) -> &PartitionValueView<'_> {
+                self.0.reborrow()
+            }
+            /// Convert to the owned message type.
+            #[must_use]
+            pub fn to_owned_message(&self) -> super::super::PartitionValue {
+                self.0.to_owned_message()
+            }
+            /// The underlying bytes buffer.
+            #[must_use]
+            pub fn bytes(&self) -> &::buffa::bytes::Bytes {
+                self.0.bytes()
+            }
+            /// Consume the handle, returning the underlying bytes buffer.
+            #[must_use]
+            pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
+                self.0.into_bytes()
+            }
+            /// The name of the partition column.
+            ///
+            /// Field 1: `name`
+            #[must_use]
+            pub fn name(&self) -> &'_ str {
+                self.0.reborrow().name
+            }
+            /// The value of the partition column; unset means a `null` value.
+            ///
+            /// Mutually exclusive with recipient_property_key.
+            ///
+            /// Field 2: `value`
+            #[must_use]
+            pub fn value(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().value
+            }
+            /// The key of a Delta Sharing recipient property whose value the partition column is
+            /// matched against, e.g. "databricks-account-id".
+            ///
+            /// Mutually exclusive with value.
+            ///
+            /// Field 3: `recipient_property_key`
+            #[must_use]
+            pub fn recipient_property_key(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().recipient_property_key
+            }
+            /// The operator to apply for the value.
+            ///
+            /// Field 4: `op`
+            #[must_use]
+            pub fn op(&self) -> ::buffa::EnumValue<super::super::PartitionValueOp> {
+                self.0.reborrow().op
+            }
+        }
+        impl ::core::convert::From<::buffa::OwnedView<PartitionValueView<'static>>>
+        for PartitionValueOwnedView {
+            fn from(inner: ::buffa::OwnedView<PartitionValueView<'static>>) -> Self {
+                PartitionValueOwnedView(inner)
+            }
+        }
+        impl ::core::convert::From<PartitionValueOwnedView>
+        for ::buffa::OwnedView<PartitionValueView<'static>> {
+            fn from(wrapper: PartitionValueOwnedView) -> Self {
+                wrapper.0
+            }
+        }
+        impl ::core::convert::AsRef<::buffa::OwnedView<PartitionValueView<'static>>>
+        for PartitionValueOwnedView {
+            fn as_ref(&self) -> &::buffa::OwnedView<PartitionValueView<'static>> {
+                &self.0
+            }
+        }
+        impl ::buffa::HasMessageView for super::super::PartitionValue {
+            type View<'a> = PartitionValueView<'a>;
+            type ViewHandle = PartitionValueOwnedView;
+        }
+        impl ::serde::Serialize for PartitionValueOwnedView {
+            fn serialize<__S: ::serde::Serializer>(
+                &self,
+                __s: __S,
+            ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                ::serde::Serialize::serialize(&self.0, __s)
+            }
+        }
+        /// A partition specification: the conjunction of its partition values.
+        #[derive(Clone, Debug, Default)]
+        pub struct PartitionView<'a> {
+            /// An array of partition values.
+            ///
+            /// Field 1: `values`
+            pub values: ::buffa::RepeatedView<
+                'a,
+                super::super::__buffa::view::PartitionValueView<'a>,
+            >,
+            pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
+        }
+        impl<'a> PartitionView<'a> {
+            /// Decode from `buf`, enforcing a recursion depth limit for nested messages.
+            ///
+            /// Called by [`::buffa::MessageView::decode_view`] with [`::buffa::RECURSION_LIMIT`]
+            /// and by generated sub-message decode arms with `depth - 1`.
+            ///
+            /// **Not part of the public API.** Named with a leading underscore to
+            /// signal that it is for generated-code use only.
+            #[doc(hidden)]
+            pub fn _decode_depth(
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                let mut view = Self::default();
+                view._merge_into_view(buf, depth)?;
+                ::core::result::Result::Ok(view)
+            }
+            /// Merge fields from `buf` into this view (proto merge semantics).
+            ///
+            /// Repeated fields append; singular fields last-wins; singular
+            /// MESSAGE fields merge recursively. Used by sub-message decode
+            /// arms when the same field appears multiple times on the wire.
+            ///
+            /// **Not part of the public API.**
+            #[doc(hidden)]
+            pub fn _merge_into_view(
+                &mut self,
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<(), ::buffa::DecodeError> {
+                let _ = depth;
+                #[allow(unused_variables)]
+                let view = self;
+                let mut cur: &'a [u8] = buf;
+                while !cur.is_empty() {
+                    let before_tag = cur;
+                    let tag = ::buffa::encoding::Tag::decode(&mut cur)?;
+                    match tag.field_number() {
+                        1u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 1u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            view.values
+                                .push(
+                                    super::super::__buffa::view::PartitionValueView::_decode_depth(
+                                        sub,
+                                        depth - 1,
+                                    )?,
+                                );
+                        }
+                        _ => {
+                            ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
+                            let span_len = before_tag.len() - cur.len();
+                            view.__buffa_unknown_fields
+                                .push_raw(&before_tag[..span_len]);
+                        }
+                    }
+                }
+                ::core::result::Result::Ok(())
+            }
+        }
+        impl<'a> ::buffa::MessageView<'a> for PartitionView<'a> {
+            type Owned = super::super::Partition;
+            fn decode_view(
+                buf: &'a [u8],
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                Self::_decode_depth(buf, ::buffa::RECURSION_LIMIT)
+            }
+            fn decode_view_with_limit(
+                buf: &'a [u8],
+                depth: u32,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                Self::_decode_depth(buf, depth)
+            }
+            fn to_owned_message(&self) -> super::super::Partition {
+                self.to_owned_from_source(None)
+            }
+            #[allow(clippy::useless_conversion, clippy::needless_update)]
+            fn to_owned_from_source(
+                &self,
+                __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
+            ) -> super::super::Partition {
+                #[allow(unused_imports)]
+                use ::buffa::alloc::string::ToString as _;
+                let _ = __buffa_src;
+                super::super::Partition {
+                    values: self
+                        .values
+                        .iter()
+                        .map(|v| v.to_owned_from_source(__buffa_src))
+                        .collect(),
+                    __buffa_unknown_fields: self
+                        .__buffa_unknown_fields
+                        .to_owned()
+                        .unwrap_or_default()
+                        .into(),
+                    ..::core::default::Default::default()
+                }
+            }
+        }
+        impl<'a> ::buffa::ViewEncode<'a> for PartitionView<'a> {
+            #[allow(clippy::needless_borrow, clippy::let_and_return)]
+            fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
+                #[allow(unused_imports)]
+                use ::buffa::Enumeration as _;
+                let mut size = 0u32;
+                for v in &self.values {
+                    let __slot = __cache.reserve();
+                    let inner_size = v.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
+                }
+                size += self.__buffa_unknown_fields.encoded_len() as u32;
+                size
+            }
+            #[allow(clippy::needless_borrow)]
+            fn write_to(
+                &self,
+                __cache: &mut ::buffa::SizeCache,
+                buf: &mut impl ::buffa::bytes::BufMut,
+            ) {
+                #[allow(unused_imports)]
+                use ::buffa::Enumeration as _;
+                for v in &self.values {
+                    ::buffa::encoding::Tag::new(
+                            1u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    v.write_to(__cache, buf);
+                }
+                self.__buffa_unknown_fields.write_to(buf);
+            }
+        }
+        /// Serializes this view as protobuf JSON.
+        ///
+        /// Implicit-presence fields with default values are omitted, `required`
+        /// fields are always emitted, explicit-presence (`optional`) fields are
+        /// emitted only when set, bytes fields are base64-encoded, and enum
+        /// values are their proto name strings.
+        ///
+        /// This impl uses `serialize_map(None)` because the number of emitted
+        /// fields depends on default-omission rules; serializers that require
+        /// known map lengths (e.g. `bincode`) will return a runtime error.
+        /// Use the owned message type for those formats.
+        impl<'__a> ::serde::Serialize for PartitionView<'__a> {
+            fn serialize<__S: ::serde::Serializer>(
+                &self,
+                __s: __S,
+            ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                use ::serde::ser::SerializeMap as _;
+                let mut __map = __s.serialize_map(::core::option::Option::None)?;
+                if !self.values.is_empty() {
+                    __map.serialize_entry("values", &*self.values)?;
+                }
+                __map.end()
+            }
+        }
+        impl<'a> ::buffa::MessageName for PartitionView<'a> {
+            const PACKAGE: &'static str = "unitycatalog.shares.v1";
+            const NAME: &'static str = "Partition";
+            const FULL_NAME: &'static str = "unitycatalog.shares.v1.Partition";
+            const TYPE_URL: &'static str = "type.googleapis.com/unitycatalog.shares.v1.Partition";
+        }
+        impl<'v> ::buffa::DefaultViewInstance for PartitionView<'v> {
+            fn default_view_instance<'a>() -> &'a Self
+            where
+                Self: 'a,
+            {
+                static VALUE: ::buffa::__private::OnceBox<PartitionView<'static>> = ::buffa::__private::OnceBox::new();
+                VALUE
+                    .get_or_init(|| ::buffa::alloc::boxed::Box::new(
+                        <PartitionView<'static>>::default(),
+                    ))
+            }
+        }
+        impl ::buffa::ViewReborrow for PartitionView<'static> {
+            type Reborrowed<'b> = PartitionView<'b>;
+            fn reborrow<'b>(this: &'b Self) -> &'b Self::Reborrowed<'b> {
+                this
+            }
+        }
+        /** Self-contained, `'static` owned view of a `Partition` message.
+
+ Wraps [`::buffa::OwnedView`]`<`[`PartitionView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`PartitionView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+        #[derive(Clone, Debug)]
+        pub struct PartitionOwnedView(::buffa::OwnedView<PartitionView<'static>>);
+        impl PartitionOwnedView {
+            /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
+            ///
+            /// The view borrows directly from the buffer's data; the buffer is
+            /// retained inside the returned handle.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the buffer contains invalid
+            /// protobuf data.
+            pub fn decode(
+                bytes: ::buffa::bytes::Bytes,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    PartitionOwnedView(::buffa::OwnedView::decode(bytes)?),
+                )
+            }
+            /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
+            /// max message size).
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the buffer is invalid or
+            /// exceeds the configured limits.
+            pub fn decode_with_options(
+                bytes: ::buffa::bytes::Bytes,
+                opts: &::buffa::DecodeOptions,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    PartitionOwnedView(
+                        ::buffa::OwnedView::decode_with_options(bytes, opts)?,
+                    ),
+                )
+            }
+            /// Build from an owned message via an encode → decode round-trip.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`::buffa::DecodeError`] if the re-encoded bytes are
+            /// somehow invalid (should not happen for well-formed messages).
+            pub fn from_owned(
+                msg: &super::super::Partition,
+            ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
+                ::core::result::Result::Ok(
+                    PartitionOwnedView(::buffa::OwnedView::from_owned(msg)?),
+                )
+            }
+            /// Borrow the full [`PartitionView`] with its lifetime tied to `&self`.
+            #[must_use]
+            pub fn view(&self) -> &PartitionView<'_> {
+                self.0.reborrow()
+            }
+            /// Convert to the owned message type.
+            #[must_use]
+            pub fn to_owned_message(&self) -> super::super::Partition {
+                self.0.to_owned_message()
+            }
+            /// The underlying bytes buffer.
+            #[must_use]
+            pub fn bytes(&self) -> &::buffa::bytes::Bytes {
+                self.0.bytes()
+            }
+            /// Consume the handle, returning the underlying bytes buffer.
+            #[must_use]
+            pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
+                self.0.into_bytes()
+            }
+            /// An array of partition values.
+            ///
+            /// Field 1: `values`
+            #[must_use]
+            pub fn values(
+                &self,
+            ) -> &::buffa::RepeatedView<
+                '_,
+                super::super::__buffa::view::PartitionValueView<'_>,
+            > {
+                &self.0.reborrow().values
+            }
+        }
+        impl ::core::convert::From<::buffa::OwnedView<PartitionView<'static>>>
+        for PartitionOwnedView {
+            fn from(inner: ::buffa::OwnedView<PartitionView<'static>>) -> Self {
+                PartitionOwnedView(inner)
+            }
+        }
+        impl ::core::convert::From<PartitionOwnedView>
+        for ::buffa::OwnedView<PartitionView<'static>> {
+            fn from(wrapper: PartitionOwnedView) -> Self {
+                wrapper.0
+            }
+        }
+        impl ::core::convert::AsRef<::buffa::OwnedView<PartitionView<'static>>>
+        for PartitionOwnedView {
+            fn as_ref(&self) -> &::buffa::OwnedView<PartitionView<'static>> {
+                &self.0
+            }
+        }
+        impl ::buffa::HasMessageView for super::super::Partition {
+            type View<'a> = PartitionView<'a>;
+            type ViewHandle = PartitionOwnedView;
+        }
+        impl ::serde::Serialize for PartitionOwnedView {
+            fn serialize<__S: ::serde::Serializer>(
+                &self,
+                __s: __S,
+            ) -> ::core::result::Result<__S::Ok, __S::Error> {
+                ::serde::Serialize::serialize(&self.0, __s)
+            }
+        }
         #[derive(Clone, Debug, Default)]
         pub struct DataObjectView<'a> {
             /// A fully qualified name that uniquely identifies a data object.
@@ -4222,18 +5819,21 @@ pub mod __buffa {
             /// The shared_as name must be unique within a share.
             /// For tables, the new name must follow the format of \<schema\>.\<table\>: two parts, each
             /// consisting only of alphanumeric characters and underscores, without the catalog part.
-            /// Do not set it for non-table data objects.
+            /// Do not set it for non-table data objects; use string_shared_as instead.
             ///
             /// Field 6: `shared_as`
             pub shared_as: ::core::option::Option<&'a str>,
             /// Array of partitions for the shared data.
             ///
             /// Field 7: `partitions`
-            pub partitions: ::buffa::RepeatedView<'a, &'a str>,
+            pub partitions: ::buffa::RepeatedView<
+                'a,
+                super::super::__buffa::view::PartitionView<'a>,
+            >,
             /// Whether to enable cdf or indicate if cdf is enabled on the shared object.
             ///
-            /// Field 8: `enable_cdf`
-            pub enable_cdf: ::core::option::Option<bool>,
+            /// Field 8: `cdf_enabled`
+            pub cdf_enabled: ::core::option::Option<bool>,
             /// Whether to enable or disable sharing of data history. If not specified, the default is DISABLED.
             ///
             /// Field 9: `history_data_sharing_status`
@@ -4250,6 +5850,22 @@ pub mod __buffa {
             ///
             /// Field 10: `start_version`
             pub start_version: ::core::option::Option<i64>,
+            /// A user-provided alias for a non-table data object (e.g. a volume) within the share.
+            ///
+            /// For volumes, functions and models it is a two-part name \<schema\>.\<name\>, each part
+            /// consisting only of alphanumeric characters and underscores. If not provided, the
+            /// object's original name minus its catalog is used. It must be unique among objects of
+            /// the same type within the share. Do not set it for table-like data objects; use
+            /// shared_as instead.
+            ///
+            /// Field 11: `string_shared_as`
+            pub string_shared_as: ::core::option::Option<&'a str>,
+            /// Whether the data object is still accessible to the share.
+            ///
+            /// Field 12: `status`
+            pub status: ::core::option::Option<
+                ::buffa::EnumValue<super::super::DataObjectStatus>,
+            >,
             pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
         }
         impl<'a> DataObjectView<'a> {
@@ -4370,7 +5986,7 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            view.enable_cdf = Some(
+                            view.cdf_enabled = Some(
                                 ::buffa::types::decode_bool(&mut cur)?,
                             );
                         }
@@ -4400,6 +6016,34 @@ pub mod __buffa {
                                 ::buffa::types::decode_int64(&mut cur)?,
                             );
                         }
+                        11u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 11u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.string_shared_as = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
+                        }
+                        12u32 => {
+                            if tag.wire_type() != ::buffa::encoding::WireType::Varint {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 12u32,
+                                    expected: 0u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.status = Some(
+                                ::buffa::EnumValue::from(
+                                    ::buffa::types::decode_int32(&mut cur)?,
+                                ),
+                            );
+                        }
                         7u32 => {
                             if tag.wire_type()
                                 != ::buffa::encoding::WireType::LengthDelimited
@@ -4410,7 +6054,17 @@ pub mod __buffa {
                                     actual: tag.wire_type() as u8,
                                 });
                             }
-                            view.partitions.push(::buffa::types::borrow_str(&mut cur)?);
+                            if depth == 0 {
+                                return Err(::buffa::DecodeError::RecursionLimitExceeded);
+                            }
+                            let sub = ::buffa::types::borrow_bytes(&mut cur)?;
+                            view.partitions
+                                .push(
+                                    super::super::__buffa::view::PartitionView::_decode_depth(
+                                        sub,
+                                        depth - 1,
+                                    )?,
+                                );
                         }
                         _ => {
                             ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
@@ -4454,10 +6108,16 @@ pub mod __buffa {
                     added_by: self.added_by.map(|s| s.to_string()),
                     comment: self.comment.map(|s| s.to_string()),
                     shared_as: self.shared_as.map(|s| s.to_string()),
-                    partitions: self.partitions.iter().map(|s| s.to_string()).collect(),
-                    enable_cdf: self.enable_cdf,
+                    partitions: self
+                        .partitions
+                        .iter()
+                        .map(|v| v.to_owned_from_source(__buffa_src))
+                        .collect(),
+                    cdf_enabled: self.cdf_enabled,
                     history_data_sharing_status: self.history_data_sharing_status,
                     start_version: self.start_version,
+                    string_shared_as: self.string_shared_as.map(|s| s.to_string()),
+                    status: self.status,
                     __buffa_unknown_fields: self
                         .__buffa_unknown_fields
                         .to_owned()
@@ -4469,7 +6129,7 @@ pub mod __buffa {
         }
         impl<'a> ::buffa::ViewEncode<'a> for DataObjectView<'a> {
             #[allow(clippy::needless_borrow, clippy::let_and_return)]
-            fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
+            fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
                 #[allow(unused_imports)]
                 use ::buffa::Enumeration as _;
                 let mut size = 0u32;
@@ -4495,9 +6155,14 @@ pub mod __buffa {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
                 for v in &self.partitions {
-                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                    let __slot = __cache.reserve();
+                    let inner_size = v.compute_size(__cache);
+                    __cache.set(__slot, inner_size);
+                    size
+                        += 1u32 + ::buffa::encoding::varint_len(inner_size as u64) as u32
+                            + inner_size;
                 }
-                if self.enable_cdf.is_some() {
+                if self.cdf_enabled.is_some() {
                     size += 1u32 + ::buffa::types::BOOL_ENCODED_LEN as u32;
                 }
                 if let Some(ref v) = self.history_data_sharing_status {
@@ -4506,13 +6171,19 @@ pub mod __buffa {
                 if let Some(v) = self.start_version {
                     size += 1u32 + ::buffa::types::int64_encoded_len(v) as u32;
                 }
+                if let Some(ref v) = self.string_shared_as {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if let Some(ref v) = self.status {
+                    size += 1u32 + ::buffa::types::int32_encoded_len(v.to_i32()) as u32;
+                }
                 size += self.__buffa_unknown_fields.encoded_len() as u32;
                 size
             }
             #[allow(clippy::needless_borrow)]
             fn write_to(
                 &self,
-                _cache: &mut ::buffa::SizeCache,
+                __cache: &mut ::buffa::SizeCache,
                 buf: &mut impl ::buffa::bytes::BufMut,
             ) {
                 #[allow(unused_imports)]
@@ -4574,9 +6245,10 @@ pub mod __buffa {
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
-                    ::buffa::types::encode_string(v, buf);
+                    ::buffa::encoding::encode_varint(__cache.consume_next() as u64, buf);
+                    v.write_to(__cache, buf);
                 }
-                if let Some(v) = self.enable_cdf {
+                if let Some(v) = self.cdf_enabled {
                     ::buffa::encoding::Tag::new(
                             8u32,
                             ::buffa::encoding::WireType::Varint,
@@ -4599,6 +6271,22 @@ pub mod __buffa {
                         )
                         .encode(buf);
                     ::buffa::types::encode_int64(v, buf);
+                }
+                if let Some(ref v) = self.string_shared_as {
+                    ::buffa::encoding::Tag::new(
+                            11u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                if let Some(ref v) = self.status {
+                    ::buffa::encoding::Tag::new(
+                            12u32,
+                            ::buffa::encoding::WireType::Varint,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_int32(v.to_i32(), buf);
                 }
                 self.__buffa_unknown_fields.write_to(buf);
             }
@@ -4653,8 +6341,8 @@ pub mod __buffa {
                 if !self.partitions.is_empty() {
                     __map.serialize_entry("partitions", &*self.partitions)?;
                 }
-                if let ::core::option::Option::Some(__v) = self.enable_cdf {
-                    __map.serialize_entry("enable_cdf", &__v)?;
+                if let ::core::option::Option::Some(__v) = self.cdf_enabled {
+                    __map.serialize_entry("cdf_enabled", &__v)?;
                 }
                 if let ::core::option::Option::Some(ref __v) = self
                     .history_data_sharing_status
@@ -4672,6 +6360,12 @@ pub mod __buffa {
                         }
                     }
                     __map.serialize_entry("start_version", &_W(__v))?;
+                }
+                if let ::core::option::Option::Some(__v) = self.string_shared_as {
+                    __map.serialize_entry("string_shared_as", __v)?;
+                }
+                if let ::core::option::Option::Some(ref __v) = self.status {
+                    __map.serialize_entry("status", __v)?;
                 }
                 __map.end()
             }
@@ -4819,7 +6513,7 @@ pub mod __buffa {
             /// The shared_as name must be unique within a share.
             /// For tables, the new name must follow the format of \<schema\>.\<table\>: two parts, each
             /// consisting only of alphanumeric characters and underscores, without the catalog part.
-            /// Do not set it for non-table data objects.
+            /// Do not set it for non-table data objects; use string_shared_as instead.
             ///
             /// Field 6: `shared_as`
             #[must_use]
@@ -4830,15 +6524,20 @@ pub mod __buffa {
             ///
             /// Field 7: `partitions`
             #[must_use]
-            pub fn partitions(&self) -> &::buffa::RepeatedView<'_, &'_ str> {
+            pub fn partitions(
+                &self,
+            ) -> &::buffa::RepeatedView<
+                '_,
+                super::super::__buffa::view::PartitionView<'_>,
+            > {
                 &self.0.reborrow().partitions
             }
             /// Whether to enable cdf or indicate if cdf is enabled on the shared object.
             ///
-            /// Field 8: `enable_cdf`
+            /// Field 8: `cdf_enabled`
             #[must_use]
-            pub fn enable_cdf(&self) -> ::core::option::Option<bool> {
-                self.0.reborrow().enable_cdf
+            pub fn cdf_enabled(&self) -> ::core::option::Option<bool> {
+                self.0.reborrow().cdf_enabled
             }
             /// Whether to enable or disable sharing of data history. If not specified, the default is DISABLED.
             ///
@@ -4863,6 +6562,30 @@ pub mod __buffa {
             #[must_use]
             pub fn start_version(&self) -> ::core::option::Option<i64> {
                 self.0.reborrow().start_version
+            }
+            /// A user-provided alias for a non-table data object (e.g. a volume) within the share.
+            ///
+            /// For volumes, functions and models it is a two-part name \<schema\>.\<name\>, each part
+            /// consisting only of alphanumeric characters and underscores. If not provided, the
+            /// object's original name minus its catalog is used. It must be unique among objects of
+            /// the same type within the share. Do not set it for table-like data objects; use
+            /// shared_as instead.
+            ///
+            /// Field 11: `string_shared_as`
+            #[must_use]
+            pub fn string_shared_as(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().string_shared_as
+            }
+            /// Whether the data object is still accessible to the share.
+            ///
+            /// Field 12: `status`
+            #[must_use]
+            pub fn status(
+                &self,
+            ) -> ::core::option::Option<
+                ::buffa::EnumValue<super::super::DataObjectStatus>,
+            > {
+                self.0.reborrow().status
             }
         }
         impl ::core::convert::From<::buffa::OwnedView<DataObjectView<'static>>>
@@ -10479,6 +12202,8 @@ pub mod __buffa {
     }
     /// Register this package's `Any` type entries and extension entries.
     pub fn register_types(reg: &mut ::buffa::type_registry::TypeRegistry) {
+        reg.register_json_any(super::__PARTITION_VALUE_JSON_ANY);
+        reg.register_json_any(super::__PARTITION_JSON_ANY);
         reg.register_json_any(super::__DATA_OBJECT_JSON_ANY);
         reg.register_json_any(super::__SHARE_JSON_ANY);
         reg.register_json_any(super::__PRIVILEGE_ASSIGNMENT_JSON_ANY);
@@ -10496,6 +12221,14 @@ pub mod __buffa {
         reg.register_json_any(super::__UPDATE_PERMISSIONS_RESPONSE_JSON_ANY);
     }
 }
+#[doc(inline)]
+pub use self::__buffa::view::PartitionValueView;
+#[doc(inline)]
+pub use self::__buffa::view::PartitionValueOwnedView;
+#[doc(inline)]
+pub use self::__buffa::view::PartitionView;
+#[doc(inline)]
+pub use self::__buffa::view::PartitionOwnedView;
 #[doc(inline)]
 pub use self::__buffa::view::DataObjectView;
 #[doc(inline)]

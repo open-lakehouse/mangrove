@@ -1991,7 +1991,7 @@ export interface components {
              * @description Type of the data object.
              * @enum {string}
              */
-            data_object_type: "DATA_OBJECT_TYPE_UNSPECIFIED" | "TABLE" | "SCHEMA" | "VOLUME" | "AGENT_SKILL";
+            data_object_type: "DATA_OBJECT_TYPE_UNSPECIFIED" | "TABLE" | "SCHEMA" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "MODEL" | "FUNCTION" | "VOLUME" | "AGENT_SKILL";
             /** @description The time when this data object is added to the share, in epoch milliseconds. */
             readonly added_at?: string;
             /** @description Username of the sharer. */
@@ -2004,13 +2004,13 @@ export interface components {
              *      The shared_as name must be unique within a share.
              *      For tables, the new name must follow the format of <schema>.<table>: two parts, each
              *      consisting only of alphanumeric characters and underscores, without the catalog part.
-             *      Do not set it for non-table data objects.
+             *      Do not set it for non-table data objects; use string_shared_as instead.
              */
             shared_as?: string;
             /** @description Array of partitions for the shared data. */
-            partitions?: string[];
+            partitions?: components["schemas"]["Partition"][];
             /** @description Whether to enable cdf or indicate if cdf is enabled on the shared object. */
-            enable_cdf?: boolean;
+            cdf_enabled?: boolean;
             /**
              * History Status
              * Format: enum
@@ -2027,6 +2027,22 @@ export interface components {
              *      NOTE: The start_version should be <= the current version of the object.
              */
             start_version?: string;
+            /**
+             * A user-provided alias for a non-table data object (e.g. a volume) within the share.
+             * @description For volumes, functions and models it is a two-part name <schema>.<name>, each part
+             *      consisting only of alphanumeric characters and underscores. If not provided, the
+             *      object's original name minus its catalog is used. It must be unique among objects of
+             *      the same type within the share. Do not set it for table-like data objects; use
+             *      shared_as instead.
+             */
+            string_shared_as?: string;
+            /**
+             * Data Object Status
+             * Format: enum
+             * @description Whether the data object is still accessible to the share.
+             * @enum {string}
+             */
+            readonly status?: "DATA_OBJECT_STATUS_UNSPECIFIED" | "ACTIVE" | "PERMISSION_DENIED";
         };
         /**
          * Data Object Update
@@ -2703,6 +2719,40 @@ export interface components {
              *      enabled in the request.
              */
             readonly browse_only?: boolean;
+        };
+        /**
+         * Partition
+         * @description A partition specification: the conjunction of its partition values.
+         */
+        Partition: {
+            /** @description An array of partition values. */
+            values?: components["schemas"]["PartitionValue"][];
+        };
+        /**
+         * Partition Value
+         * @description A partition column value a shared table is restricted to.
+         */
+        PartitionValue: {
+            /** @description The name of the partition column. */
+            name: string;
+            /**
+             * The value of the partition column; unset means a `null` value.
+             * @description Mutually exclusive with recipient_property_key.
+             */
+            value?: string;
+            /**
+             * The key of a Delta Sharing recipient property whose value the partition column is
+             *      matched against, e.g. "databricks-account-id".
+             * @description Mutually exclusive with value.
+             */
+            recipient_property_key?: string;
+            /**
+             * Partition Value Op
+             * Format: enum
+             * @description The operator to apply for the value.
+             * @enum {string}
+             */
+            op: "PARTITION_VALUE_OP_UNSPECIFIED" | "EQUAL" | "LIKE";
         };
         /** Permissions Change */
         PermissionsChange: {

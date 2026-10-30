@@ -524,12 +524,12 @@ class DataObject:
     """The time when this data object is added to the share, in epoch milliseconds."""
     added_by: Optional[str]
     """Username of the sharer."""
+    cdf_enabled: Optional[bool]
+    """Whether to enable cdf or indicate if cdf is enabled on the shared object."""
     comment: Optional[str]
     """A user-provided comment when adding the data object to the share."""
     data_object_type: DataObjectType
     """Type of the data object."""
-    enable_cdf: Optional[bool]
-    """Whether to enable cdf or indicate if cdf is enabled on the shared object."""
     history_data_sharing_status: Optional[HistoryStatus]
     """
     Whether to enable or disable sharing of data history. If not specified, the default is
@@ -540,7 +540,7 @@ class DataObject:
     A fully qualified name that uniquely identifies a data object. For example, a table's
     fully qualified name is in the format of <catalog>.<schema>.<table>,
     """
-    partitions: List[str]
+    partitions: List[Partition]
     """Array of partitions for the shared data."""
     shared_as: Optional[str]
     """
@@ -548,7 +548,8 @@ class DataObject:
     provided, the object's original name will be used as the shared_as name. The shared_as
     name must be unique within a share. For tables, the new name must follow the format
     of <schema>.<table>: two parts, each consisting only of alphanumeric characters and
-    underscores, without the catalog part. Do not set it for non-table data objects.
+    underscores, without the catalog part. Do not set it for non-table data objects; use
+    string_shared_as instead.
     """
     start_version: Optional[int]
     """
@@ -558,19 +559,31 @@ class DataObject:
     query starting from the version of the object at the time it was added to the share. NOTE:
     The start_version should be <= the current version of the object.
     """
+    status: Optional[DataObjectStatus]
+    """Whether the data object is still accessible to the share."""
+    string_shared_as: Optional[str]
+    """
+    A user-provided alias for a non-table data object (e.g. a volume) within the share. For
+    volumes, functions and models it is a two-part name <schema>.<name>, each part consisting
+    only of alphanumeric characters and underscores. If not provided, the object's original
+    name minus its catalog is used. It must be unique among objects of the same type within
+    the share. Do not set it for table-like data objects; use shared_as instead.
+    """
 
     def __init__(
         self,
         added_at: Optional[int] = None,
         added_by: Optional[str] = None,
+        cdf_enabled: Optional[bool] = None,
         comment: Optional[str] = None,
         data_object_type: Optional[DataObjectType] = None,
-        enable_cdf: Optional[bool] = None,
         history_data_sharing_status: Optional[HistoryStatus] = None,
         name: Optional[str] = None,
-        partitions: Optional[List[str]] = None,
+        partitions: Optional[List[Partition]] = None,
         shared_as: Optional[str] = None,
         start_version: Optional[int] = None,
+        status: Optional[DataObjectStatus] = None,
+        string_shared_as: Optional[str] = None,
     ) -> None: ...
 
 class DataObjectUpdate:
@@ -1024,6 +1037,40 @@ class ModelVersion:
         updated_at: Optional[int] = None,
         updated_by: Optional[str] = None,
         version: Optional[int] = None,
+    ) -> None: ...
+
+class Partition:
+    """A partition specification: the conjunction of its partition values."""
+
+    values: List[PartitionValue]
+    """An array of partition values."""
+
+    def __init__(self, values: Optional[List[PartitionValue]] = None) -> None: ...
+
+class PartitionValue:
+    """A partition column value a shared table is restricted to."""
+
+    name: str
+    """The name of the partition column."""
+    op: PartitionValueOp
+    """The operator to apply for the value."""
+    recipient_property_key: Optional[str]
+    """
+    The key of a Delta Sharing recipient property whose value the partition column is matched
+    against, e.g. "databricks-account-id". Mutually exclusive with value.
+    """
+    value: Optional[str]
+    """
+    The value of the partition column; unset means a `null` value. Mutually exclusive with
+    recipient_property_key.
+    """
+
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        op: Optional[PartitionValueOp] = None,
+        recipient_property_key: Optional[str] = None,
+        value: Optional[str] = None,
     ) -> None: ...
 
 class PermissionsChange:
@@ -1768,14 +1815,28 @@ class ColumnTypeName(enum.Enum):
     USER_DEFINED_TYPE = "USER_DEFINED_TYPE"
     VARIANT = "VARIANT"
 
+class DataObjectStatus(enum.Enum):
+    """Whether a shared data object is still accessible to the share."""
+
+    ACTIVE = "ACTIVE"
+    """The data object is accessible."""
+    DATA_OBJECT_STATUS_UNSPECIFIED = "DATA_OBJECT_STATUS_UNSPECIFIED"
+    PERMISSION_DENIED = "PERMISSION_DENIED"
+    """The share owner lost access to the data object."""
+
 class DataObjectType(enum.Enum):
     AGENT_SKILL = "AGENT_SKILL"
     """An agent skill (a directory of SKILL.md + scripts/assets) shared as a storage-backed asset on top of
     a volume (Open Sharing)."""
     DATA_OBJECT_TYPE_UNSPECIFIED = "DATA_OBJECT_TYPE_UNSPECIFIED"
     """Unknown data object type."""
+    FUNCTION = "FUNCTION"
+    MATERIALIZED_VIEW = "MATERIALIZED_VIEW"
+    MODEL = "MODEL"
     SCHEMA = "SCHEMA"
+    STREAMING_TABLE = "STREAMING_TABLE"
     TABLE = "TABLE"
+    VIEW = "VIEW"
     VOLUME = "VOLUME"
     """A Unity Catalog volume shared as a storage-backed asset (Open Sharing)."""
 
@@ -1887,6 +1948,15 @@ class ParameterStyle(enum.Enum):
     PARAMETER_STYLE_UNSPECIFIED = "PARAMETER_STYLE_UNSPECIFIED"
     S = "S"
     """The parameters are passed positionally (S = SQL)."""
+
+class PartitionValueOp(enum.Enum):
+    """The operator a partition value is matched with."""
+
+    EQUAL = "EQUAL"
+    """The partition column equals the value."""
+    LIKE = "LIKE"
+    """The partition column matches the value as a SQL LIKE pattern."""
+    PARTITION_VALUE_OP_UNSPECIFIED = "PARTITION_VALUE_OP_UNSPECIFIED"
 
 class PolicyType(enum.Enum):
     """The kind of enforcement a policy applies."""

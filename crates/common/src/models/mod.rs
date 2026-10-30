@@ -1,3 +1,6 @@
+// The generated PyO3 constructors rebind each argument as `value`, which clippy flags
+// for a proto field that is itself named `value` (`shares.v1.PartitionValue`).
+#[allow(clippy::redundant_locals)]
 mod _gen;
 mod association;
 mod error;

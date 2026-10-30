@@ -4820,6 +4820,11 @@ components:
             - DATA_OBJECT_TYPE_UNSPECIFIED
             - TABLE
             - SCHEMA
+            - VIEW
+            - MATERIALIZED_VIEW
+            - STREAMING_TABLE
+            - MODEL
+            - FUNCTION
             - VOLUME
             - AGENT_SKILL
           type: string
@@ -4844,14 +4849,17 @@ components:
              The shared_as name must be unique within a share.
              For tables, the new name must follow the format of <schema>.<table>: two parts, each
              consisting only of alphanumeric characters and underscores, without the catalog part.
-             Do not set it for non-table data objects.
+             Do not set it for non-table data objects; use string_shared_as instead.
           title: A user-provided new name for the data object within the share.
         partitions:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/Partition"
+            additionalProperties: false
+            description: "A partition specification: the conjunction of its partition values."
+            title: Partition
           description: Array of partitions for the shared data.
-        enable_cdf:
+        cdf_enabled:
           type: boolean
           description: Whether to enable cdf or indicate if cdf is enabled on the shared object.
         history_data_sharing_status:
@@ -4871,6 +4879,25 @@ components:
 
              NOTE: The start_version should be <= the current version of the object.
           title: The start version associated with the object.
+        string_shared_as:
+          type: string
+          description: |-
+            For volumes, functions and models it is a two-part name <schema>.<name>, each part
+             consisting only of alphanumeric characters and underscores. If not provided, the
+             object's original name minus its catalog is used. It must be unique among objects of
+             the same type within the share. Do not set it for table-like data objects; use
+             shared_as instead.
+          title: A user-provided alias for a non-table data object (e.g. a volume) within the share.
+        status:
+          readOnly: true
+          enum:
+            - DATA_OBJECT_STATUS_UNSPECIFIED
+            - ACTIVE
+            - PERMISSION_DENIED
+          type: string
+          description: Whether the data object is still accessible to the share.
+          format: enum
+          title: Data Object Status
       additionalProperties: false
       title: Data Object
     DataObjectUpdate:
@@ -6074,6 +6101,54 @@ components:
          via the finalize operation.
       additionalProperties: false
       title: A model version under a registered model.
+    Partition:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartitionValue"
+            additionalProperties: false
+            required:
+              - name
+              - op
+            description: A partition column value a shared table is restricted to.
+            title: Partition Value
+          description: An array of partition values.
+      description: "A partition specification: the conjunction of its partition values."
+      additionalProperties: false
+      title: Partition
+    PartitionValue:
+      required:
+        - name
+        - op
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the partition column.
+        value:
+          type: string
+          description: Mutually exclusive with recipient_property_key.
+          title: The value of the partition column; unset means a `null` value.
+        recipient_property_key:
+          type: string
+          description: Mutually exclusive with value.
+          title: |-
+            The key of a Delta Sharing recipient property whose value the partition column is
+             matched against, e.g. "databricks-account-id".
+        op:
+          enum:
+            - PARTITION_VALUE_OP_UNSPECIFIED
+            - EQUAL
+            - LIKE
+          type: string
+          description: The operator to apply for the value.
+          format: enum
+          title: Partition Value Op
+      description: A partition column value a shared table is restricted to.
+      additionalProperties: false
+      title: Partition Value
     PermissionsChange:
       type: object
       properties:
