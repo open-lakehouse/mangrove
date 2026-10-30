@@ -2,11 +2,24 @@
 
 use unitycatalog_client::{PathOperation, TableOperation, VolumeOperation};
 use unitycatalog_common::tables::v1::{DataSourceFormat, TableType};
+use unitycatalog_common::temporary_credentials::v1::TemporaryCredential;
 use unitycatalog_common::volumes::v1::VolumeType;
 
 use super::{unique, with_cleanup};
 use crate::conformance::skip;
-use crate::{AcceptanceResult, JourneyContext};
+use crate::{AcceptanceError, AcceptanceResult, JourneyContext};
+
+/// A vended credential must carry cloud credential material, except for local
+/// (`file://`) storage, which needs none: the client reads it by path.
+fn check_vended(cred: &TemporaryCredential, what: &str) -> AcceptanceResult<()> {
+    if cred.credentials.is_some() || cred.url.starts_with("file:") {
+        return Ok(());
+    }
+    Err(AcceptanceError::JourneyValidation(format!(
+        "no temporary {what} credentials returned for '{}'",
+        cred.url
+    )))
+}
 
 /// Managed table → generate read and read-write temporary table credentials.
 pub async fn table_credentials(ctx: &JourneyContext) -> AcceptanceResult<()> {
@@ -34,10 +47,7 @@ pub async fn table_credentials(ctx: &JourneyContext) -> AcceptanceResult<()> {
                     .temporary_credentials()
                     .temporary_table_credential(full_name.clone(), op)
                     .await?;
-                assert!(
-                    cred.credentials.is_some(),
-                    "no temporary table credentials returned"
-                );
+                check_vended(&cred, "table")?;
             }
             Ok(())
         },
@@ -95,10 +105,7 @@ pub async fn volume_credentials(ctx: &JourneyContext) -> AcceptanceResult<()> {
                     .temporary_credentials()
                     .temporary_volume_credential(full_name.clone(), op)
                     .await?;
-                assert!(
-                    cred.credentials.is_some(),
-                    "no temporary volume credentials returned"
-                );
+                check_vended(&cred, "volume")?;
             }
             Ok(())
         },

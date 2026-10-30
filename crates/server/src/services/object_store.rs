@@ -5,11 +5,9 @@ use unitycatalog_common::models::volumes::v1::Volume;
 
 use super::ProvidesLocalStoragePolicy;
 use crate::api::staging_tables::MANAGED_STORAGE_PREFIX;
+use crate::services::location::StorageLocationUrl;
 use crate::store::ResourceStore;
 use crate::{Error, Result};
-use unitycatalog_credentials::location::{
-    StorageLocationUrl, is_path_prefix, longest_prefix_match,
-};
 
 /// Find the most specific external location whose URL is a prefix of `location`.
 ///
@@ -20,15 +18,24 @@ pub(crate) async fn find_external_location_for_url(
     handler: &(impl ResourceStore + ?Sized),
 ) -> Result<ExternalLocation> {
     let locations = list_external_locations(handler).await?;
-    longest_prefix_match(location, locations, |l| l.url.as_str()).ok_or(Error::NotFound)
+    // The deepest covering location governs; unparsable registrations are skipped.
+    locations
+        .into_iter()
+        .filter_map(|l| {
+            let url = StorageLocationUrl::parse(&l.url).ok()?;
+            location
+                .starts_with(&url)
+                .then(|| (url.path().parts().count(), l))
+        })
+        .max_by_key(|(depth, _)| *depth)
+        .map(|(_, l)| l)
+        .ok_or(Error::NotFound)
 }
 
 /// All registered external locations paired with their parsed URLs.
 ///
-/// Mirrors the listing/tolerance behaviour of [`find_external_location_for_url`]:
-/// entries whose `url` fails to parse are silently skipped. Returned alongside
-/// each location's name so callers can exclude a specific record (e.g. the one
-/// being updated).
+/// Returned with each location's name so callers can exclude a specific record
+/// (e.g. the one being updated).
 ///
 /// TODO(roeap): just listing all external locations could be very inefficient.
 /// introduce an endpoint that allows us to query for specific resource properties instead
@@ -196,55 +203,55 @@ pub(crate) async fn validate_managed_storage_root(
 ///
 /// Segment-aware (not a substring match): a directory literally named
 /// `__unitystorage` triggers it, but a name that merely contains the text — e.g.
-/// `my__unitystorage_data` — does not. Both the raw and normalized URL forms are
-/// checked so alternate spellings of the same cloud location are caught.
+/// `my__unitystorage_data` — does not. The canonical path is checked, so every
+/// spelling of a cloud location is caught.
 pub(crate) fn path_contains_managed_segment(location: &StorageLocationUrl) -> bool {
-    let has_segment = |url: &str| {
-        object_store::path::Path::from(url)
-            .parts()
-            .any(|part| part.as_ref() == MANAGED_STORAGE_PREFIX)
-    };
-    has_segment(location.raw().as_str()) || has_segment(location.location().as_str())
+    location
+        .path()
+        .parts()
+        .any(|part| part.as_ref() == MANAGED_STORAGE_PREFIX)
 }
 
 /// Whether two storage locations overlap: one is equal to, or nested within,
 /// the other. Unity Catalog forbids overlapping governed storage regions
 /// (external locations, tables, volumes), so this is the core guard used when
-/// registering them. The check is symmetric and respects path-segment
-/// boundaries (see [`is_path_prefix`]), comparing on both the raw and
-/// normalized URL forms so that, e.g., `abfss://` and `https://` spellings of
-/// the same Azure location are caught.
+/// registering them. The check is symmetric, respects path-segment boundaries
+/// and compares canonical locations, so that, e.g., `abfss://` and `https://`
+/// spellings of the same Azure location are caught.
 pub(crate) fn locations_overlap(a: &StorageLocationUrl, b: &StorageLocationUrl) -> bool {
-    paths_overlap(a.raw().as_str(), b.raw().as_str())
-        || paths_overlap(a.location().as_str(), b.location().as_str())
-}
-
-/// Whether either path is a path-segment prefix of the other (symmetric).
-pub(crate) fn paths_overlap(a: &str, b: &str) -> bool {
-    is_path_prefix(a, b) || is_path_prefix(b, a)
+    a.overlaps(b)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{StorageLocationUrl, locations_overlap, paths_overlap};
+    use super::{StorageLocationUrl, locations_overlap};
 
     #[test]
-    fn paths_overlap_is_symmetric_on_nesting() {
+    fn locations_overlap_is_symmetric_on_nesting() {
+        let parse = |s| StorageLocationUrl::parse(s).unwrap();
         // Descendant overlaps ancestor, in both argument orders.
-        assert!(paths_overlap("s3://b/data", "s3://b/data/sub"));
-        assert!(paths_overlap("s3://b/data/sub", "s3://b/data"));
+        assert!(locations_overlap(
+            &parse("s3://b/data"),
+            &parse("s3://b/data/sub")
+        ));
+        assert!(locations_overlap(
+            &parse("s3://b/data/sub"),
+            &parse("s3://b/data")
+        ));
         // Exact-equal paths overlap.
-        assert!(paths_overlap("s3://b/data", "s3://b/data"));
-    }
-
-    #[test]
-    fn paths_overlap_rejects_non_nested() {
-        // Sibling that merely shares a textual prefix does not overlap.
-        assert!(!paths_overlap("s3://b/data", "s3://b/data-secret"));
-        // Disjoint paths do not overlap.
-        assert!(!paths_overlap("s3://b/data", "s3://b/other"));
-        // Different buckets never overlap.
-        assert!(!paths_overlap("s3://b/data", "s3://c/data"));
+        assert!(locations_overlap(
+            &parse("s3://b/data"),
+            &parse("s3://b/data")
+        ));
+        // Disjoint paths and different buckets do not overlap.
+        assert!(!locations_overlap(
+            &parse("s3://b/data"),
+            &parse("s3://b/other")
+        ));
+        assert!(!locations_overlap(
+            &parse("s3://b/data"),
+            &parse("s3://c/data")
+        ));
     }
 
     #[test]

@@ -10,39 +10,58 @@ use crate::api::CredentialHandler;
 use crate::api::credentials::CredentialHandlerExt;
 pub use crate::codegen::temporary_credentials::TemporaryCredentialHandler;
 use crate::policy::{Permission, Policy};
-use crate::services::location::{StorageLocationScheme, StorageLocationUrl};
+use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::find_external_location_for_url;
+use crate::services::vending::{mint, to_temporary_credential};
 use crate::store::ResourceStore;
 use crate::{Error, Result};
-use unitycatalog_credentials::StorageCredential;
-use unitycatalog_credentials::vending::{VendOperation, local_path_credential, vend_credential};
 
 use buffa::Enumeration;
-use object_store::ObjectStoreScheme;
+use olai_storage_credentials::AccessLevel;
 
-/// Vend a temporary credential for `url` from a registered catalog credential,
-/// converting to and from the catalog-independent types the vending crate speaks.
-pub(crate) async fn vend_uc_credential(
-    credential: &unitycatalog_common::models::credentials::v1::Credential,
-    url: &str,
-    operation: VendOperation,
-) -> Result<TemporaryCredential> {
-    let storage = StorageCredential::try_from(credential)?;
-    Ok(vend_credential(&storage, url, operation).await?.into())
+/// Vend a temporary credential for a securable stored at `location`.
+///
+/// Local (`file://`) storage needs neither an external location nor a cloud
+/// credential: the client builds a `LocalFileSystem` addressed by full path. Any
+/// other location is minted from the credential of the external location governing
+/// it.
+pub(crate) async fn vend_for_location<T>(
+    handler: &T,
+    location: &StorageLocationUrl,
+    access: AccessLevel,
+) -> Result<TemporaryCredential>
+where
+    T: ResourceStore + CredentialHandlerExt + ?Sized,
+{
+    let credential = if location.is_local() {
+        None
+    } else {
+        let ext_loc = find_external_location_for_url(location, handler).await?;
+        Some(
+            handler
+                .get_credential_internal(GetCredentialRequest {
+                    name: ext_loc.credential_name.clone(),
+                    ..Default::default()
+                })
+                .await?,
+        )
+    };
+    let vended = mint(credential.as_ref(), location, access).await?;
+    Ok(to_temporary_credential(&vended, location))
 }
 
 /// The permission a vend operation requires from the policy.
 ///
 /// Read-only vending requires [`Permission::Read`]; read-write vending requires
 /// [`Permission::Write`] so the policy can deny write access independently.
-fn required_permission(operation: VendOperation) -> Permission {
-    match operation {
-        VendOperation::Read => Permission::Read,
-        VendOperation::ReadWrite => Permission::Write,
+fn required_permission(access: AccessLevel) -> Permission {
+    match access {
+        AccessLevel::ReadWrite => Permission::Write,
+        _ => Permission::Read,
     }
 }
 
-/// Map the proto `operation` integer to a `VendOperation`.
+/// Map the proto `operation` integer to an [`AccessLevel`].
 ///
 /// The path, table, and volume request enums all encode the same semantics with
 /// the same numeric values (read = 1, write/read-write = 2; path adds
@@ -50,7 +69,7 @@ fn required_permission(operation: VendOperation) -> Permission {
 ///
 /// - `PATH_CREATE_TABLE`, `READ_WRITE`, and `WRITE_VOLUME` are treated as `ReadWrite`.
 /// - `READ`, `READ_VOLUME`, and `Unspecified` default to `Read` (least privilege).
-fn to_vend_operation(operation: i32) -> VendOperation {
+fn to_access_level(operation: i32) -> AccessLevel {
     use generate_temporary_path_credentials_request::Operation as PathOp;
     use generate_temporary_table_credentials_request::Operation as TableOp;
     use generate_temporary_volume_credentials_request::Operation as VolumeOp;
@@ -59,7 +78,7 @@ fn to_vend_operation(operation: i32) -> VendOperation {
     // but semantically we just need to distinguish read from read-write).
     match PathOp::from_i32(operation) {
         Some(PathOp::PATH_READ_WRITE | PathOp::PATH_CREATE_TABLE) => {
-            return VendOperation::ReadWrite;
+            return AccessLevel::ReadWrite;
         }
         Some(PathOp::PATH_READ | PathOp::UNSPECIFIED) | None => {}
     }
@@ -68,9 +87,9 @@ fn to_vend_operation(operation: i32) -> VendOperation {
     // value, so any of these enums resolves write access identically.
     match (TableOp::from_i32(operation), VolumeOp::from_i32(operation)) {
         (Some(TableOp::READ_WRITE), _) | (_, Some(VolumeOp::WRITE_VOLUME)) => {
-            VendOperation::ReadWrite
+            AccessLevel::ReadWrite
         }
-        _ => VendOperation::Read,
+        _ => AccessLevel::Read,
     }
 }
 
@@ -88,20 +107,14 @@ impl<
         request: GenerateTemporaryPathCredentialsRequest,
         context: RequestContext,
     ) -> Result<TemporaryCredential> {
-        let operation = to_vend_operation(request.operation.to_i32());
+        let operation = to_access_level(request.operation.to_i32());
         let storage_url = StorageLocationUrl::parse(&request.url)?;
 
-        // Local (`file://`) storage needs neither an external location nor a vended
-        // cloud credential: the client builds a `LocalFileSystem` addressed by full
-        // path, exactly as the server's own `get_object_store` short-circuits local
-        // storage. Without this, vending for a local managed root 404s
-        // (`find_external_location_for_url` finds no covering external location),
-        // which breaks managed-table creation on a purely-local dev server.
-        if matches!(
-            storage_url.scheme(),
-            StorageLocationScheme::ObjectStore(ObjectStoreScheme::Local)
-        ) {
-            return Ok(local_path_credential(&request.url).into());
+        // Local (`file://`) storage is governed by no external location, so there is
+        // nothing to authorize against; vending it is what lets managed tables be
+        // created on a purely-local dev server.
+        if storage_url.is_local() {
+            return vend_for_location(self, &storage_url, operation).await;
         }
 
         let ext_loc = find_external_location_for_url(&storage_url, self).await?;
@@ -113,13 +126,7 @@ impl<
             &context,
         )
         .await?;
-        let credential = self
-            .get_credential_internal(GetCredentialRequest {
-                name: ext_loc.credential_name.clone(),
-                ..Default::default()
-            })
-            .await?;
-        vend_uc_credential(&credential, &request.url, operation).await
+        vend_for_location(self, &storage_url, operation).await
     }
 
     /// Generate temporary credentials for a volume.
@@ -136,7 +143,7 @@ impl<
         request: GenerateTemporaryVolumeCredentialsRequest,
         context: RequestContext,
     ) -> Result<TemporaryCredential> {
-        let operation = to_vend_operation(request.operation.to_i32());
+        let operation = to_access_level(request.operation.to_i32());
         let volume_id = uuid::Uuid::parse_str(&request.volume_id)
             .map_err(|_| Error::invalid_argument("volume_id is not a valid UUID"))?;
         // Authorize against the concrete volume and the operation actually
@@ -148,14 +155,7 @@ impl<
         let volume: Volume = resource.try_into()?;
         let location = volume.storage_location;
         let storage_url = StorageLocationUrl::parse(&location)?;
-        let ext_loc = find_external_location_for_url(&storage_url, self).await?;
-        let credential = self
-            .get_credential_internal(GetCredentialRequest {
-                name: ext_loc.credential_name.clone(),
-                ..Default::default()
-            })
-            .await?;
-        vend_uc_credential(&credential, &location, operation).await
+        vend_for_location(self, &storage_url, operation).await
     }
 
     /// Generate temporary credentials for a model version.
@@ -172,7 +172,7 @@ impl<
         request: GenerateTemporaryModelVersionCredentialsRequest,
         context: RequestContext,
     ) -> Result<TemporaryCredential> {
-        let operation = to_vend_operation(request.operation.to_i32());
+        let operation = to_access_level(request.operation.to_i32());
         // The model version is keyed by the composite name that
         // `ModelVersion::resource_name` produces.
         let ident = ResourceIdent::model_version(ResourceName::new([
@@ -191,14 +191,7 @@ impl<
             Error::invalid_argument("model version does not have a storage location")
         })?;
         let storage_url = StorageLocationUrl::parse(&location)?;
-        let ext_loc = find_external_location_for_url(&storage_url, self).await?;
-        let credential = self
-            .get_credential_internal(GetCredentialRequest {
-                name: ext_loc.credential_name.clone(),
-                ..Default::default()
-            })
-            .await?;
-        vend_uc_credential(&credential, &location, operation).await
+        vend_for_location(self, &storage_url, operation).await
     }
 
     #[tracing::instrument(skip(self, context))]
@@ -207,7 +200,7 @@ impl<
         request: GenerateTemporaryTableCredentialsRequest,
         context: RequestContext,
     ) -> Result<TemporaryCredential> {
-        let operation = to_vend_operation(request.operation.to_i32());
+        let operation = to_access_level(request.operation.to_i32());
         let table_id = uuid::Uuid::parse_str(&request.table_id)
             .map_err(|_| Error::invalid_argument("table_id is not a valid UUID"))?;
         // Authorize against the concrete table and the operation actually
@@ -221,14 +214,7 @@ impl<
             .storage_location
             .ok_or_else(|| Error::invalid_argument("table does not have a storage location"))?;
         let storage_url = StorageLocationUrl::parse(&location)?;
-        let ext_loc = find_external_location_for_url(&storage_url, self).await?;
-        let credential = self
-            .get_credential_internal(GetCredentialRequest {
-                name: ext_loc.credential_name.clone(),
-                ..Default::default()
-            })
-            .await?;
-        vend_uc_credential(&credential, &location, operation).await
+        vend_for_location(self, &storage_url, operation).await
     }
 }
 // NOTE: These request types intentionally do not implement `SecuredAction`.
@@ -247,39 +233,75 @@ mod tests {
     #[test]
     fn vend_operation_volume_read_is_read() {
         assert_eq!(
-            to_vend_operation(VolumeOp::ReadVolume as i32),
-            VendOperation::Read
+            to_access_level(VolumeOp::ReadVolume as i32),
+            AccessLevel::Read
         );
     }
 
     #[test]
     fn vend_operation_volume_write_is_read_write() {
         assert_eq!(
-            to_vend_operation(VolumeOp::WriteVolume as i32),
-            VendOperation::ReadWrite
+            to_access_level(VolumeOp::WriteVolume as i32),
+            AccessLevel::ReadWrite
         );
     }
 
     #[test]
     fn vend_operation_unspecified_defaults_to_read() {
         assert_eq!(
-            to_vend_operation(VolumeOp::Unspecified as i32),
-            VendOperation::Read
+            to_access_level(VolumeOp::Unspecified as i32),
+            AccessLevel::Read
         );
         // Out-of-range values are treated as least-privilege read, not an error.
-        assert_eq!(to_vend_operation(99), VendOperation::Read);
+        assert_eq!(to_access_level(99), AccessLevel::Read);
     }
 
     #[test]
     fn vend_operation_table_and_path_unchanged() {
-        assert_eq!(to_vend_operation(TableOp::Read as i32), VendOperation::Read);
+        assert_eq!(to_access_level(TableOp::Read as i32), AccessLevel::Read);
         assert_eq!(
-            to_vend_operation(TableOp::ReadWrite as i32),
-            VendOperation::ReadWrite
+            to_access_level(TableOp::ReadWrite as i32),
+            AccessLevel::ReadWrite
         );
         assert_eq!(
-            to_vend_operation(PathOp::PathCreateTable as i32),
-            VendOperation::ReadWrite
+            to_access_level(PathOp::PathCreateTable as i32),
+            AccessLevel::ReadWrite
         );
+    }
+
+    /// Local storage is vended without an external location or a credential, the
+    /// same way for every securable kind, and the response names the location as
+    /// given.
+    #[cfg(feature = "memory")]
+    #[tokio::test]
+    async fn local_locations_vend_without_a_credential() {
+        use std::sync::Arc;
+
+        use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
+
+        use crate::memory::InMemoryResourceStore;
+        use crate::policy::ConstantPolicy;
+        use crate::services::ServerHandler;
+
+        let encryptor =
+            EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap());
+        let store = Arc::new(InMemoryResourceStore::new(encryptor));
+        let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
+        let handler = ServerHandler::try_new_tokio(policy, store).unwrap();
+
+        let location = StorageLocationUrl::parse("file:///tmp/uc/tables/t1").unwrap();
+        let credential = vend_for_location(&handler, &location, AccessLevel::ReadWrite)
+            .await
+            .unwrap();
+        assert!(credential.credentials.is_none());
+        assert_eq!(credential.url, "file:///tmp/uc/tables/t1");
+        assert_eq!(credential.expiration_time, 0);
+
+        // Cloud storage still needs a governing external location.
+        let location = StorageLocationUrl::parse("s3://bucket/tables/t1").unwrap();
+        assert!(matches!(
+            vend_for_location(&handler, &location, AccessLevel::Read).await,
+            Err(Error::NotFound)
+        ));
     }
 }
