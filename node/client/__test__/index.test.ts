@@ -2,9 +2,7 @@ import {
   CatalogClient,
   CredentialClient,
   ExternalLocationClient,
-  RecipientClient,
   SchemaClient,
-  ShareClient,
   TableClient,
   UnityCatalogClient,
   VolumeClient,
@@ -53,28 +51,12 @@ describe("UnityCatalogClient", () => {
       expect(client.createTable).toBeDefined();
     });
 
-    it("has listShares", () => {
-      expect(client.listShares).toBeDefined();
-    });
-
-    it("has createShare", () => {
-      expect(client.createShare).toBeDefined();
-    });
-
     it("has listCredentials", () => {
       expect(client.listCredentials).toBeDefined();
     });
 
     it("has createCredential", () => {
       expect(client.createCredential).toBeDefined();
-    });
-
-    it("has listRecipients", () => {
-      expect(client.listRecipients).toBeDefined();
-    });
-
-    it("has createRecipient", () => {
-      expect(client.createRecipient).toBeDefined();
     });
 
     it("has listExternalLocations", () => {
@@ -105,19 +87,9 @@ describe("UnityCatalogClient", () => {
       expect(schema).toBeInstanceOf(SchemaClient);
     });
 
-    it("returns a ShareClient", () => {
-      const share = client.share("my-share");
-      expect(share).toBeInstanceOf(ShareClient);
-    });
-
     it("returns a CredentialClient", () => {
       const cred = client.credential("my-cred");
       expect(cred).toBeInstanceOf(CredentialClient);
-    });
-
-    it("returns a RecipientClient", () => {
-      const recipient = client.recipient("my-recipient");
-      expect(recipient).toBeInstanceOf(RecipientClient);
     });
 
     it("returns an ExternalLocationClient", () => {
@@ -149,13 +121,6 @@ describe("UnityCatalogClient", () => {
       expect(schema.get).toBeDefined();
       expect(schema.update).toBeDefined();
       expect(schema.delete).toBeDefined();
-    });
-
-    it("ShareClient has get, update, delete", () => {
-      const share = client.share("my-share");
-      expect(share.get).toBeDefined();
-      expect(share.update).toBeDefined();
-      expect(share.delete).toBeDefined();
     });
 
     it("VolumeClient has get, update, delete", () => {

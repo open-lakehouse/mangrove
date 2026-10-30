@@ -247,44 +247,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_provider_round_trip() -> Result<()> {
-        use unitycatalog_common::models::providers::v1::{Provider, ProviderAuthenticationType};
-
-        let store = test_store();
-        let resource: unitycatalog_common::models::Resource = Provider {
-            name: "acme".into(),
-            authentication_type: ProviderAuthenticationType::Token.into(),
-            comment: Some("inbound share from acme".into()),
-            ..Default::default()
-        }
-        .into();
-
-        // Create exercises the Resource::Provider -> Object conversion.
-        let (created, reference) = store.create(resource.clone()).await?;
-        assert_eq!(created.resource_name(), resource.resource_name());
-
-        // Get exercises the Object -> Resource::Provider conversion and the
-        // hand-written ObjectLabel::Provider -> ResourceIdent mapping.
-        let ident = ObjectLabel::Provider.to_ident(reference);
-        let (retrieved, _) = store.get(&ident).await?;
-        assert_eq!(retrieved, created);
-        let provider: Provider = retrieved.try_into()?;
-        assert_eq!(provider.name, "acme");
-        assert_eq!(provider.comment.as_deref(), Some("inbound share from acme"));
-
-        // List by the Provider label.
-        let (resources, _) = store.list(&ObjectLabel::Provider, None, None, None).await?;
-        assert_eq!(resources.len(), 1);
-
-        store.delete(&ident).await?;
-        assert!(matches!(
-            store.get(&ident).await.unwrap_err(),
-            Error::NotFound
-        ));
-        Ok(())
-    }
-
-    #[tokio::test]
     async fn update_checked_cas_succeeds_on_match_conflicts_on_stale() -> Result<()> {
         use unitycatalog_common::store::Precondition;
 

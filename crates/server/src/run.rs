@@ -42,8 +42,7 @@ use crate::rest::{
     create_agent_skills_router, create_agents_router, create_catalogs_router,
     create_credentials_router, create_delta_router, create_entity_tag_assignments_router,
     create_external_locations_router, create_functions_router, create_model_versions_router,
-    create_policies_router, create_providers_router, create_recipients_router,
-    create_registered_models_router, create_schemas_router, create_shares_router,
+    create_policies_router, create_registered_models_router, create_schemas_router,
     create_staging_tables_router, create_tables_router, create_tag_policies_router,
     create_temporary_credentials_router, create_volumes_router,
 };
@@ -375,9 +374,6 @@ pub(crate) fn build_rest_router(handler: ServerHandler<RequestContext>) -> Route
         .merge(create_functions_router(handler.clone()))
         .merge(create_registered_models_router(handler.clone()))
         .merge(create_model_versions_router(handler.clone()))
-        .merge(create_recipients_router(handler.clone()))
-        .merge(create_providers_router(handler.clone()))
-        .merge(create_shares_router(handler.clone()))
         .merge(create_delta_router(handler.clone()))
         .merge(create_entity_tag_assignments_router(handler.clone()))
         .merge(create_policies_router(handler.clone()));

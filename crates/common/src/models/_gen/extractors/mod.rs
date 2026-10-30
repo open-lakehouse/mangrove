@@ -18,15 +18,9 @@ pub mod model_versions;
 #[cfg(feature = "axum")]
 pub mod policies;
 #[cfg(feature = "axum")]
-pub mod providers;
-#[cfg(feature = "axum")]
-pub mod recipients;
-#[cfg(feature = "axum")]
 pub mod registered_models;
 #[cfg(feature = "axum")]
 pub mod schemas;
-#[cfg(feature = "axum")]
-pub mod shares;
 #[cfg(feature = "axum")]
 pub mod staging_tables;
 #[cfg(feature = "axum")]

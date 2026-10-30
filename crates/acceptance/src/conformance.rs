@@ -312,9 +312,6 @@ pub fn extended_checks() -> Vec<Check> {
             "temporary_volume_credentials",
             checks::temp_creds::volume_credentials
         ),
-        check!("share_lifecycle", checks::sharing::share_lifecycle),
-        check!("recipient_lifecycle", checks::sharing::recipient_lifecycle),
-        check!("provider_lifecycle", checks::sharing::provider_lifecycle),
         check!("policy_lifecycle", checks::governance::policy_lifecycle),
         check!(
             "tag_policy_lifecycle",
@@ -349,9 +346,6 @@ fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
         // `checks::managed_delta`, so it is no longer quarantined. The checks
         // below still create managed tables the *old* way (bare create_table) and
         // remain quarantined until they adopt the same staging helper (#62).
-        (Target::OssRust, "share_lifecycle") => Some(
-            "creates a managed table via bare create_table; adopt the staging helper (follow-up: #62)",
-        ),
         (Target::OssRust, "lakehouse_hierarchy") => Some(
             "creates managed tables via bare create_table; adopt the staging helper (follow-up: #62)",
         ),

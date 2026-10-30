@@ -218,23 +218,6 @@ def _(share_client):
 
 @app.cell
 def _():
-    from unitycatalog_client import SharingClient
-
-    client_1 = SharingClient("http://localhost:8080")
-    shares = client_1.list_shares()
-    tables = client_1.list_share_tables(share=shares[0].name)
-    client_1.get_table_metadata(share=tables[0].share, schema=tables[0].schema, name=tables[0].name)
-    return client_1, tables
-
-
-@app.cell
-def _(client_1, tables):
-    client_1.get_table_version(share=tables[0].share, schema=tables[0].schema, name=tables[0].name)
-    return
-
-
-@app.cell
-def _():
     import marimo as mo
 
     return (mo,)

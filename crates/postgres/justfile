@@ -1,12 +1,12 @@
 _default:
     @just --list
 
-# run the sharing sqlx migrations against a local Postgres
+# run the sqlx migrations against a local Postgres
 run-migrations:
     DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres \
         sqlx migrate run --source {{ source_directory() }}/migrations
 
-# start a throwaway Postgres container for sharing migrations
+# start a throwaway Postgres container for the migrations
 docker:
   docker run \
     --name postgres-sharing \

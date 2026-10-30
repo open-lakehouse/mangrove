@@ -3931,107 +3931,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "olai-sharing-api"
-version = "0.0.1"
-dependencies = [
- "async-trait",
- "axum",
- "axum-extra",
- "buoyant_kernel",
- "buoyant_kernel_engine",
- "bytes",
- "chrono",
- "object_store",
- "olai-sharing-common",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tokio",
- "tower",
- "tracing",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "olai-sharing-client"
-version = "0.0.1"
-dependencies = [
- "chrono",
- "futures",
- "itertools 0.14.0",
- "olai-http",
- "olai-sharing-common",
- "reqwest 0.13.4",
- "serde_json",
- "thiserror",
- "url",
-]
-
-[[package]]
-name = "olai-sharing-common"
-version = "0.0.1"
-dependencies = [
- "axum",
- "axum-extra",
- "buffa",
- "buoyant_kernel",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "olai-sharing-neon"
-version = "0.0.0"
-dependencies = [
- "axum",
- "http-body-util",
- "napi",
- "napi-build",
- "napi-derive",
- "olai-sharing-server",
- "tower",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "olai-sharing-server"
-version = "0.0.1"
-dependencies = [
- "async-trait",
- "axum",
- "base64 0.22.1",
- "chrono",
- "clap",
- "futures",
- "object_store",
- "olai-credential-vending",
- "olai-sharing-api",
- "olai-sharing-common",
- "olai-storage-credentials",
- "olai-store",
- "olai-uc-client",
- "olai-uc-common",
- "olai-vended-store",
- "serde",
- "serde_json",
- "serde_yml",
- "sha2 0.10.9",
- "sqlx",
- "tempfile",
- "thiserror",
- "tokio",
- "tower",
- "tracing",
- "tracing-subscriber",
- "url",
- "uuid",
-]
-
-[[package]]
 name = "olai-storage-credentials"
 version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5779,12 +5678,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sha1_smol"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbfa15b3dddfee50a0fff136974b3e1bde555604ba463834a7eb7deb6417705d"
-
-[[package]]
 name = "sha2"
 version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6909,7 +6802,6 @@ dependencies = [
  "js-sys",
  "rand 0.10.2",
  "serde_core",
- "sha1_smol",
  "wasm-bindgen",
 ]
 

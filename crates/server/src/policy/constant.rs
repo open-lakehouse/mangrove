@@ -49,7 +49,7 @@ mod test {
     async fn allow_by_default() {
         let policy = ConstantPolicy::default();
 
-        let resource = ResourceIdent::share(resource_name!("test_share"));
+        let resource = ResourceIdent::catalog(resource_name!("test_catalog"));
         let permission = Permission::Read;
 
         let decision = policy.authorize(&resource, &permission, &()).await.unwrap();
@@ -60,7 +60,7 @@ mod test {
     async fn allow() {
         let policy = ConstantPolicy::new(Decision::Allow);
 
-        let resource = ResourceIdent::share(resource_name!("test_share"));
+        let resource = ResourceIdent::catalog(resource_name!("test_catalog"));
         let permission = Permission::Read;
 
         let decision = policy.authorize(&resource, &permission, &()).await.unwrap();
@@ -71,7 +71,7 @@ mod test {
     async fn deny() {
         let policy = ConstantPolicy::new(Decision::Deny);
 
-        let resource = ResourceIdent::share(resource_name!("test_share"));
+        let resource = ResourceIdent::catalog(resource_name!("test_catalog"));
         let permission = Permission::Read;
 
         let decision = policy.authorize(&resource, &permission, &()).await.unwrap();

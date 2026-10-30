@@ -120,55 +120,6 @@ jobs:
           SQLX_OFFLINE: "true"
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-  # The sharing crates are headed for their own repository and must stay
-  # mountable without Unity Catalog. Guard the boundaries:
-  # - olai-sharing-api (protocol) depends on no olai-uc-* crate at all;
-  # - olai-sharing-server without `unity` depends on no olai-uc-* crate either:
-  #   its storage access comes from the catalog-independent trestle vending
-  #   crates (olai-storage-credentials, olai-vended-store, olai-credential-vending).
-  catalog-independence:
-    name: catalog-independence
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-
-      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
-        with:
-          toolchain: "1.97"
-
-      - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
-        with:
-          env-vars: ImageOS
-          shared-key: ci
-          save-if: false
-
-      - name: Dependency boundaries
-        run: |
-          set -euo pipefail
-          deny() { # <description> <pattern> <cargo tree args...>
-            local what="$1" pattern="$2"; shift 2
-            if cargo tree --locked -e normal --prefix none "$@" | grep -E "$pattern"; then
-              echo "::error::$what"
-              exit 1
-            fi
-          }
-          deny "olai-sharing-api must not depend on olai-uc-* crates" \
-            '^olai-uc-' -p olai-sharing-api --all-features
-          deny "olai-sharing-server (no unity) must not depend on olai-uc-* crates" \
-            '^olai-uc-' -p olai-sharing-server --no-default-features --features postgres
-
-      - name: Build without Unity Catalog
-        env:
-          SQLX_OFFLINE: "true"
-        run: |
-          cargo check --locked --all-targets -p olai-sharing-api --no-default-features
-          cargo check --locked --all-targets -p olai-sharing-server --no-default-features --features postgres
-
   test:
     name: test
     runs-on: ubuntu-latest

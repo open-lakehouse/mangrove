@@ -32,9 +32,6 @@ securable. Each check drives one securable's lifecycle against a live server; se
 | `temporary_table_credentials` | TemporaryCredentials | extended | |
 | `temporary_path_credentials` | TemporaryCredentials | extended | self-skips without cloud storage |
 | `temporary_volume_credentials` | TemporaryCredentials | extended | |
-| `share_lifecycle` | Shares | extended | our-server / DBX only |
-| `recipient_lifecycle` | Recipients | extended | our-server / DBX only |
-| `provider_lifecycle` | Providers | extended | our-server / DBX only |
 | `policy_lifecycle` | Policies (ABAC) | extended | mangrove-only |
 | `tag_policy_lifecycle` | TagPolicies | extended | mangrove-only |
 | `entity_tag_assignment_lifecycle` | EntityTagAssignments | extended | mangrove-only |
@@ -53,7 +50,6 @@ surface passes (the run flags it as an unexpected pass if left behind).
 | Check | Symptom | Root cause | Tracking |
 |---|---|---|---|
 | `managed_table_lifecycle` | 400 "managed tables require storage_location to be the staging location" | Managed tables must go through the `/delta/v1` staging flow, not a bare `create_table`. | #62 |
-| `share_lifecycle` | same as above | Creates a managed table as its fixture. | #62 |
 | `lakehouse_hierarchy` | same as above | Creates managed tables. | #62 |
 | `temporary_table_credentials` | same as above | Needs a managed table fixture. | #62 |
 | `temporary_volume_credentials` | 404 | `temporary-volume-credentials` not served. | #63 |
