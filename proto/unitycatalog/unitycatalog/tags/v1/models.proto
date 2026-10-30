@@ -20,21 +20,24 @@ message EntityTagAssignment {
   string entity_type = 1 [
     (buf.validate.field).string.pattern = "^(catalogs|schemas|tables|columns|volumes)$",
     (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
   ];
 
   // The fully qualified name of the entity to which the tag is assigned.
   string entity_name = 2 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
   ];
 
   // The key of the tag.
   string tag_key = 3 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
   ];
 
   // The value of the tag.
@@ -68,7 +71,8 @@ message TagPolicy {
   string tag_key = 1 [
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).required = true,
-    (google.api.field_behavior) = REQUIRED
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
   ];
 
   // User-provided free-form text description of the tag policy.

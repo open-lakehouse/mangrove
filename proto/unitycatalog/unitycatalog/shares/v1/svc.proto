@@ -50,8 +50,8 @@ message CreateShareRequest {
   // User-provided free-form text description.
   optional string comment = 2 [(google.api.field_behavior) = OPTIONAL];
 
-  // A map of key-value properties attached to the securable.
-  // optional string storage_root = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Storage root URL for the share.
+  optional string storage_root = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Get a share by name.

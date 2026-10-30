@@ -888,6 +888,24 @@ pub struct PolicyInfo {
         skip_serializing_if = "::core::option::Option::is_none"
     )]
     pub updated_at: ::core::option::Option<i64>,
+    /// Username of the user who created the policy.
+    ///
+    /// Field 15: `created_by`
+    #[serde(
+        rename = "created_by",
+        alias = "createdBy",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub created_by: ::core::option::Option<::buffa::alloc::string::String>,
+    /// Username of the user who last modified the policy.
+    ///
+    /// Field 16: `updated_by`
+    #[serde(
+        rename = "updated_by",
+        alias = "updatedBy",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub updated_by: ::core::option::Option<::buffa::alloc::string::String>,
     #[serde(flatten)]
     pub function: ::core::option::Option<__buffa::oneof::policy_info::Function>,
     #[serde(skip)]
@@ -909,6 +927,8 @@ impl ::core::fmt::Debug for PolicyInfo {
             .field("comment", &self.comment)
             .field("created_at", &self.created_at)
             .field("updated_at", &self.updated_at)
+            .field("created_by", &self.created_by)
+            .field("updated_by", &self.updated_by)
             .field("function", &self.function)
             .finish()
     }
@@ -960,6 +980,26 @@ impl PolicyInfo {
     ///Sets [`Self::updated_at`] to `Some(value)`, consuming and returning `self`.
     pub fn with_updated_at(mut self, value: i64) -> Self {
         self.updated_at = Some(value);
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::created_by`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_created_by(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.created_by = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::updated_by`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_updated_by(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.updated_by = Some(value.into());
         self
     }
 }
@@ -1054,6 +1094,12 @@ impl ::buffa::Message for PolicyInfo {
         }
         if let Some(v) = self.updated_at {
             size += 1u32 + ::buffa::types::int64_encoded_len(v) as u32;
+        }
+        if let Some(ref v) = self.created_by {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
+        if let Some(ref v) = self.updated_by {
+            size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
         size += self.__buffa_unknown_fields.encoded_len() as u32;
         size
@@ -1177,6 +1223,22 @@ impl ::buffa::Message for PolicyInfo {
             ::buffa::encoding::Tag::new(14u32, ::buffa::encoding::WireType::Varint)
                 .encode(buf);
             ::buffa::types::encode_int64(v, buf);
+        }
+        if let Some(ref v) = self.created_by {
+            ::buffa::encoding::Tag::new(
+                    15u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        if let Some(ref v) = self.updated_by {
+            ::buffa::encoding::Tag::new(
+                    16u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
     }
@@ -1384,6 +1446,36 @@ impl ::buffa::Message for PolicyInfo {
                     ::buffa::types::decode_int64(buf)?,
                 );
             }
+            15u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 15u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self
+                        .created_by
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
+            16u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 16u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self
+                        .updated_by
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
             _ => {
                 self.__buffa_unknown_fields
                     .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
@@ -1405,6 +1497,8 @@ impl ::buffa::Message for PolicyInfo {
         self.comment = ::core::option::Option::None;
         self.created_at = ::core::option::Option::None;
         self.updated_at = ::core::option::Option::None;
+        self.created_by = ::core::option::Option::None;
+        self.updated_by = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
 }
@@ -1467,6 +1561,12 @@ impl<'de> serde::Deserialize<'de> for PolicyInfo {
                 > = None;
                 let mut __f_updated_at: ::core::option::Option<
                     ::core::option::Option<i64>,
+                > = None;
+                let mut __f_created_by: ::core::option::Option<
+                    ::core::option::Option<::buffa::alloc::string::String>,
+                > = None;
+                let mut __f_updated_by: ::core::option::Option<
+                    ::core::option::Option<::buffa::alloc::string::String>,
                 > = None;
                 let mut __oneof_function: ::core::option::Option<
                     __buffa::oneof::policy_info::Function,
@@ -1663,6 +1763,22 @@ impl<'de> serde::Deserialize<'de> for PolicyInfo {
                                 map.next_value_seed(_S)?
                             });
                         }
+                        "createdBy" | "created_by" => {
+                            __f_created_by = Some(
+                                map
+                                    .next_value::<
+                                        ::core::option::Option<::buffa::alloc::string::String>,
+                                    >()?,
+                            );
+                        }
+                        "updatedBy" | "updated_by" => {
+                            __f_updated_by = Some(
+                                map
+                                    .next_value::<
+                                        ::core::option::Option<::buffa::alloc::string::String>,
+                                    >()?,
+                            );
+                        }
                         "rowFilter" | "row_filter" => {
                             let v: ::core::option::Option<FunctionRef> = map
                                 .next_value_seed(
@@ -1752,6 +1868,12 @@ impl<'de> serde::Deserialize<'de> for PolicyInfo {
                 }
                 if let ::core::option::Option::Some(v) = __f_updated_at {
                     __r.updated_at = v;
+                }
+                if let ::core::option::Option::Some(v) = __f_created_by {
+                    __r.created_by = v;
+                }
+                if let ::core::option::Option::Some(v) = __f_updated_by {
+                    __r.updated_by = v;
                 }
                 __r.function = __oneof_function;
                 Ok(__r)
@@ -4408,6 +4530,14 @@ pub mod __buffa {
             ///
             /// Field 14: `updated_at`
             pub updated_at: ::core::option::Option<i64>,
+            /// Username of the user who created the policy.
+            ///
+            /// Field 15: `created_by`
+            pub created_by: ::core::option::Option<&'a str>,
+            /// Username of the user who last modified the policy.
+            ///
+            /// Field 16: `updated_by`
+            pub updated_by: ::core::option::Option<&'a str>,
             pub function: ::core::option::Option<
                 super::super::__buffa::view::oneof::policy_info::Function<'a>,
             >,
@@ -4563,6 +4693,34 @@ pub mod __buffa {
                             }
                             view.updated_at = Some(
                                 ::buffa::types::decode_int64(&mut cur)?,
+                            );
+                        }
+                        15u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 15u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.created_by = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
+                        }
+                        16u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 16u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.updated_by = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
                             );
                         }
                         6u32 => {
@@ -4741,6 +4899,8 @@ pub mod __buffa {
                     comment: self.comment.map(|s| s.to_string()),
                     created_at: self.created_at,
                     updated_at: self.updated_at,
+                    created_by: self.created_by.map(|s| s.to_string()),
+                    updated_by: self.updated_by.map(|s| s.to_string()),
                     function: self
                         .function
                         .as_ref()
@@ -4853,6 +5013,12 @@ pub mod __buffa {
                 }
                 if let Some(v) = self.updated_at {
                     size += 1u32 + ::buffa::types::int64_encoded_len(v) as u32;
+                }
+                if let Some(ref v) = self.created_by {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if let Some(ref v) = self.updated_by {
+                    size += 2u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
                 size += self.__buffa_unknown_fields.encoded_len() as u32;
                 size
@@ -4997,6 +5163,22 @@ pub mod __buffa {
                         .encode(buf);
                     ::buffa::types::encode_int64(v, buf);
                 }
+                if let Some(ref v) = self.created_by {
+                    ::buffa::encoding::Tag::new(
+                            15u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                if let Some(ref v) = self.updated_by {
+                    ::buffa::encoding::Tag::new(
+                            16u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
                 self.__buffa_unknown_fields.write_to(buf);
             }
         }
@@ -5081,6 +5263,12 @@ pub mod __buffa {
                         }
                     }
                     __map.serialize_entry("updated_at", &_W(__v))?;
+                }
+                if let ::core::option::Option::Some(__v) = self.created_by {
+                    __map.serialize_entry("created_by", __v)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.updated_by {
+                    __map.serialize_entry("updated_by", __v)?;
                 }
                 if let ::core::option::Option::Some(ref __ov) = self.function {
                     match __ov {
@@ -5289,6 +5477,20 @@ pub mod __buffa {
             #[must_use]
             pub fn updated_at(&self) -> ::core::option::Option<i64> {
                 self.0.reborrow().updated_at
+            }
+            /// Username of the user who created the policy.
+            ///
+            /// Field 15: `created_by`
+            #[must_use]
+            pub fn created_by(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().created_by
+            }
+            /// Username of the user who last modified the policy.
+            ///
+            /// Field 16: `updated_by`
+            #[must_use]
+            pub fn updated_by(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().updated_by
             }
             /// Oneof `function`.
             #[must_use]

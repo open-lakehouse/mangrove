@@ -635,6 +635,8 @@ export interface ListSharesOptions {
 export interface CreateShareOptions {
   /** User-provided free-form text description. */
   comment?: string;
+  /** Storage root URL for the share. */
+  storageRoot?: string;
 }
 
 export interface GetShareOptions {
@@ -1966,9 +1968,9 @@ export class UnityCatalogClient {
      * Create a new share.
      */
   async createShare(name: string, options?: CreateShareOptions): Promise<Share> {
-    const { comment } = options || {};
+    const { comment, storageRoot } = options || {};
     try {
-      return fromBinary(ShareSchema, await this.inner.createShare(name, comment));
+      return fromBinary(ShareSchema, await this.inner.createShare(name, comment, storageRoot));
     } catch (e) { throw parseNativeError(e); }
   }
 

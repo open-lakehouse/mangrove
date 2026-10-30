@@ -31,7 +31,7 @@ message RecipientToken {
   string activation_url = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Expiration timestamp of the token in epoch milliseconds.
-  int64 expiration_time = 5 [(google.api.field_behavior) = REQUIRED];
+  int64 expiration_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Time at which this recipient token was updated, in epoch milliseconds.
   int64 updated_at = 6 [(google.api.field_behavior) = OUTPUT_ONLY];

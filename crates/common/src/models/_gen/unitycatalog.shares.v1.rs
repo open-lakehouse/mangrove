@@ -2345,6 +2345,15 @@ pub struct CreateShareRequest {
     /// Field 2: `comment`
     #[serde(rename = "comment", skip_serializing_if = "::core::option::Option::is_none")]
     pub comment: ::core::option::Option<::buffa::alloc::string::String>,
+    /// Storage root URL for the share.
+    ///
+    /// Field 3: `storage_root`
+    #[serde(
+        rename = "storage_root",
+        alias = "storageRoot",
+        skip_serializing_if = "::core::option::Option::is_none"
+    )]
+    pub storage_root: ::core::option::Option<::buffa::alloc::string::String>,
     #[serde(skip)]
     #[doc(hidden)]
     pub __buffa_unknown_fields: ::buffa::UnknownFields,
@@ -2354,6 +2363,7 @@ impl ::core::fmt::Debug for CreateShareRequest {
         f.debug_struct("CreateShareRequest")
             .field("name", &self.name)
             .field("comment", &self.comment)
+            .field("storage_root", &self.storage_root)
             .finish()
     }
 }
@@ -2373,6 +2383,16 @@ impl CreateShareRequest {
         value: impl Into<::buffa::alloc::string::String>,
     ) -> Self {
         self.comment = Some(value.into());
+        self
+    }
+    #[must_use = "with_* setters return `self` by value; assign or chain the result"]
+    #[inline]
+    ///Sets [`Self::storage_root`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_storage_root(
+        mut self,
+        value: impl Into<::buffa::alloc::string::String>,
+    ) -> Self {
+        self.storage_root = Some(value.into());
         self
     }
 }
@@ -2405,6 +2425,9 @@ impl ::buffa::Message for CreateShareRequest {
         if let Some(ref v) = self.comment {
             size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
         }
+        if let Some(ref v) = self.storage_root {
+            size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+        }
         size += self.__buffa_unknown_fields.encoded_len() as u32;
         size
     }
@@ -2426,6 +2449,14 @@ impl ::buffa::Message for CreateShareRequest {
         if let Some(ref v) = self.comment {
             ::buffa::encoding::Tag::new(
                     2u32,
+                    ::buffa::encoding::WireType::LengthDelimited,
+                )
+                .encode(buf);
+            ::buffa::types::encode_string(v, buf);
+        }
+        if let Some(ref v) = self.storage_root {
+            ::buffa::encoding::Tag::new(
+                    3u32,
                     ::buffa::encoding::WireType::LengthDelimited,
                 )
                 .encode(buf);
@@ -2467,6 +2498,21 @@ impl ::buffa::Message for CreateShareRequest {
                     buf,
                 )?;
             }
+            3u32 => {
+                if tag.wire_type() != ::buffa::encoding::WireType::LengthDelimited {
+                    return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                        field_number: 3u32,
+                        expected: 2u8,
+                        actual: tag.wire_type() as u8,
+                    });
+                }
+                ::buffa::types::merge_string(
+                    self
+                        .storage_root
+                        .get_or_insert_with(::buffa::alloc::string::String::new),
+                    buf,
+                )?;
+            }
             _ => {
                 self.__buffa_unknown_fields
                     .push(::buffa::encoding::decode_unknown_field(tag, buf, depth)?);
@@ -2477,6 +2523,7 @@ impl ::buffa::Message for CreateShareRequest {
     fn clear(&mut self) {
         self.name.clear();
         self.comment = ::core::option::Option::None;
+        self.storage_root = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
 }
@@ -7021,6 +7068,10 @@ pub mod __buffa {
             ///
             /// Field 2: `comment`
             pub comment: ::core::option::Option<&'a str>,
+            /// Storage root URL for the share.
+            ///
+            /// Field 3: `storage_root`
+            pub storage_root: ::core::option::Option<&'a str>,
             pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
         }
         impl<'a> CreateShareRequestView<'a> {
@@ -7085,6 +7136,20 @@ pub mod __buffa {
                             }
                             view.comment = Some(::buffa::types::borrow_str(&mut cur)?);
                         }
+                        3u32 => {
+                            if tag.wire_type()
+                                != ::buffa::encoding::WireType::LengthDelimited
+                            {
+                                return ::core::result::Result::Err(::buffa::DecodeError::WireTypeMismatch {
+                                    field_number: 3u32,
+                                    expected: 2u8,
+                                    actual: tag.wire_type() as u8,
+                                });
+                            }
+                            view.storage_root = Some(
+                                ::buffa::types::borrow_str(&mut cur)?,
+                            );
+                        }
                         _ => {
                             ::buffa::encoding::skip_field_depth(tag, &mut cur, depth)?;
                             let span_len = before_tag.len() - cur.len();
@@ -7123,6 +7188,7 @@ pub mod __buffa {
                 super::super::CreateShareRequest {
                     name: self.name.to_string(),
                     comment: self.comment.map(|s| s.to_string()),
+                    storage_root: self.storage_root.map(|s| s.to_string()),
                     __buffa_unknown_fields: self
                         .__buffa_unknown_fields
                         .to_owned()
@@ -7142,6 +7208,9 @@ pub mod __buffa {
                     size += 1u32 + ::buffa::types::string_encoded_len(&self.name) as u32;
                 }
                 if let Some(ref v) = self.comment {
+                    size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
+                }
+                if let Some(ref v) = self.storage_root {
                     size += 1u32 + ::buffa::types::string_encoded_len(v) as u32;
                 }
                 size += self.__buffa_unknown_fields.encoded_len() as u32;
@@ -7166,6 +7235,14 @@ pub mod __buffa {
                 if let Some(ref v) = self.comment {
                     ::buffa::encoding::Tag::new(
                             2u32,
+                            ::buffa::encoding::WireType::LengthDelimited,
+                        )
+                        .encode(buf);
+                    ::buffa::types::encode_string(v, buf);
+                }
+                if let Some(ref v) = self.storage_root {
+                    ::buffa::encoding::Tag::new(
+                            3u32,
                             ::buffa::encoding::WireType::LengthDelimited,
                         )
                         .encode(buf);
@@ -7197,6 +7274,9 @@ pub mod __buffa {
                 }
                 if let ::core::option::Option::Some(__v) = self.comment {
                     __map.serialize_entry("comment", __v)?;
+                }
+                if let ::core::option::Option::Some(__v) = self.storage_root {
+                    __map.serialize_entry("storage_root", __v)?;
                 }
                 __map.end()
             }
@@ -7316,6 +7396,13 @@ pub mod __buffa {
             #[must_use]
             pub fn comment(&self) -> ::core::option::Option<&'_ str> {
                 self.0.reborrow().comment
+            }
+            /// Storage root URL for the share.
+            ///
+            /// Field 3: `storage_root`
+            #[must_use]
+            pub fn storage_root(&self) -> ::core::option::Option<&'_ str> {
+                self.0.reborrow().storage_root
             }
         }
         impl ::core::convert::From<::buffa::OwnedView<CreateShareRequestView<'static>>>

@@ -24,6 +24,7 @@ impl<T: ResourceStore + Policy<RequestContext>> ShareHandler<RequestContext> for
         let resource = Share {
             name: request.name,
             comment: request.comment,
+            storage_root: request.storage_root,
             ..Default::default()
         };
         // TODO:

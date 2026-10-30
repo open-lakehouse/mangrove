@@ -53,7 +53,7 @@ message RegisteredModel {
   optional string storage_location = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Username of current owner of the registered model.
-  optional string owner = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  optional string owner = 6 [(google.api.field_behavior) = OPTIONAL];
 
   // User-provided free-form text description.
   optional string comment = 7 [(google.api.field_behavior) = OPTIONAL];

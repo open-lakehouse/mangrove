@@ -1202,7 +1202,7 @@ export interface components {
              */
             access_connector_id: string;
             /** @description The Databricks internal ID that represents this managed identity. */
-            credential_id?: string;
+            readonly credential_id?: string;
             /**
              * @description The Azure resource ID of the managed identity.
              *      Use the format /subscriptions/{guid}/resourceGroups/{rg-name}/providers/
@@ -1703,6 +1703,8 @@ export interface components {
             name: string;
             /** @description User-provided free-form text description. */
             comment?: string;
+            /** @description Storage root URL for the share. */
+            storage_root?: string;
         };
         /**
          * Create Staging Table Request
@@ -1942,11 +1944,11 @@ export interface components {
          */
         DatabricksGcpServiceAccount: {
             /** @description The Databricks internal ID that represents this managed identity. */
-            credential_id?: string;
+            readonly credential_id?: string;
             /** @description The email of the service account. */
-            email?: string;
+            readonly email?: string;
             /** @description The ID that represents the private key for this Service Account. */
-            private_key_id?: string;
+            readonly private_key_id?: string;
         };
         /**
          * Dependency
@@ -2638,6 +2640,10 @@ export interface components {
             readonly created_at?: string;
             /** @description Time at which this policy was last updated, in epoch milliseconds. */
             readonly updated_at?: string;
+            /** @description Username of the user who created the policy. */
+            readonly created_by?: string;
+            /** @description Username of the user who last modified the policy. */
+            readonly updated_by?: string;
         };
         /** Privilege Assignment */
         PrivilegeAssignment: {
@@ -2741,7 +2747,7 @@ export interface components {
             /** @description Full activation URL to retrieve the access token. It will be empty if the token is already retrieved. */
             readonly activation_url: string;
             /** @description Expiration timestamp of the token in epoch milliseconds. */
-            expiration_time: string;
+            readonly expiration_time: string;
             /** @description Time at which this recipient token was updated, in epoch milliseconds. */
             readonly updated_at: string;
             /** @description Username of recipient token updater. */
@@ -2768,7 +2774,7 @@ export interface components {
             /** @description The storage location under which model version data files are stored. */
             readonly storage_location?: string;
             /** @description Username of current owner of the registered model. */
-            readonly owner?: string;
+            owner?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
             /** @description Unique identifier for the registered model. */
@@ -2857,7 +2863,7 @@ export interface components {
             /** @description Storage Location URL (full path) for the share. */
             readonly storage_location?: string;
             /** @description Storage root URL for the share. */
-            readonly storage_root?: string;
+            storage_root?: string;
             /** @description Time at which this share was created, in epoch milliseconds. */
             readonly created_at?: string;
             /** @description Username of the creator of the share. */
@@ -3396,8 +3402,8 @@ export interface components {
              * @enum {string}
              */
             volume_type: "VOLUME_TYPE_UNSPECIFIED" | "EXTERNAL" | "MANAGED";
-            /** @description Username of current owner of table. */
-            readonly owner?: string;
+            /** @description Username of current owner of volume. */
+            owner?: string;
             /** @description User-provided free-form text description. */
             comment?: string;
             /** @description Time at which this catalog was created, in epoch milliseconds. */

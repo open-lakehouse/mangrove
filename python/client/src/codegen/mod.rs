@@ -768,15 +768,17 @@ impl PyUnityCatalogClient {
         });
         Ok(ListIterator::new(items))
     }
-    #[pyo3(signature = (name, comment = None))]
+    #[pyo3(signature = (name, comment = None, storage_root = None))]
     pub fn create_share(
         &self,
         py: Python<'_>,
         name: String,
         comment: Option<String>,
+        storage_root: Option<String>,
     ) -> PyResult<PyShare> {
         let mut request = self.client.create_share(name);
         request = request.with_comment(comment);
+        request = request.with_storage_root(storage_root);
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PyShare::from(result))
     }

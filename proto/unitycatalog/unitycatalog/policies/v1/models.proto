@@ -124,4 +124,10 @@ message PolicyInfo {
 
   // Time at which this policy was last updated, in epoch milliseconds.
   optional int64 updated_at = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Username of the user who created the policy.
+  optional string created_by = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Username of the user who last modified the policy.
+  optional string updated_by = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

@@ -117,7 +117,7 @@ message Share {
   optional string storage_location = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Storage root URL for the share.
-  optional string storage_root = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  optional string storage_root = 5 [(google.api.field_behavior) = OPTIONAL];
 
   // Time at which this share was created, in epoch milliseconds.
   optional int64 created_at = 7 [(google.api.field_behavior) = OUTPUT_ONLY];

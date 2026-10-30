@@ -8687,6 +8687,8 @@ impl PyPolicyInfo {
             comment = None,
             created_at = None,
             updated_at = None,
+            created_by = None,
+            updated_by = None,
             row_filter = None,
             column_mask = None
         )
@@ -8704,6 +8706,8 @@ impl PyPolicyInfo {
         comment: ::core::option::Option<::std::string::String>,
         created_at: ::core::option::Option<i64>,
         updated_at: ::core::option::Option<i64>,
+        created_by: ::core::option::Option<::std::string::String>,
+        updated_by: ::core::option::Option<::std::string::String>,
         row_filter: ::core::option::Option<PyFunctionRef>,
         column_mask: ::core::option::Option<PyFunctionRef>,
     ) -> Self {
@@ -8750,6 +8754,14 @@ impl PyPolicyInfo {
         {
             let value = updated_at;
             inner.updated_at = value;
+        }
+        {
+            let value = created_by;
+            inner.created_by = value;
+        }
+        {
+            let value = updated_by;
+            inner.updated_by = value;
         }
         if let ::core::option::Option::Some(value) = row_filter {
             inner.function = ::core::option::Option::Some(
@@ -8820,6 +8832,14 @@ impl PyPolicyInfo {
     fn updated_at(&self) -> ::core::option::Option<i64> {
         self.0.updated_at
     }
+    #[getter]
+    fn created_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.created_by.clone()
+    }
+    #[getter]
+    fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.updated_by.clone()
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
@@ -8870,6 +8890,14 @@ impl PyPolicyInfo {
     #[setter(updated_at)]
     fn set_updated_at(&mut self, value: ::core::option::Option<i64>) {
         self.0.updated_at = value;
+    }
+    #[setter(created_by)]
+    fn set_created_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.created_by = value;
+    }
+    #[setter(updated_by)]
+    fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.updated_by = value;
     }
     ///The row-filter function to invoke. Set only when policy_type is POLICY_TYPE_ROW_FILTER.
     #[getter]
@@ -11903,10 +11931,11 @@ pub struct PyCreateShareRequest(pub super::shares::v1::CreateShareRequest);
 #[::pyo3::pymethods]
 impl PyCreateShareRequest {
     #[new]
-    #[pyo3(signature = (name = None, comment = None))]
+    #[pyo3(signature = (name = None, comment = None, storage_root = None))]
     fn new(
         name: ::core::option::Option<::std::string::String>,
         comment: ::core::option::Option<::std::string::String>,
+        storage_root: ::core::option::Option<::std::string::String>,
     ) -> Self {
         let mut inner =
             <super::shares::v1::CreateShareRequest as ::core::default::Default>::default();
@@ -11916,6 +11945,10 @@ impl PyCreateShareRequest {
         {
             let value = comment;
             inner.comment = value;
+        }
+        {
+            let value = storage_root;
+            inner.storage_root = value;
         }
         Self(inner)
     }
@@ -11927,6 +11960,10 @@ impl PyCreateShareRequest {
     fn comment(&self) -> ::core::option::Option<::std::string::String> {
         self.0.comment.clone()
     }
+    #[getter]
+    fn storage_root(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.storage_root.clone()
+    }
     #[setter(name)]
     fn set_name(&mut self, value: ::std::string::String) {
         self.0.name = value;
@@ -11934,6 +11971,10 @@ impl PyCreateShareRequest {
     #[setter(comment)]
     fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
         self.0.comment = value;
+    }
+    #[setter(storage_root)]
+    fn set_storage_root(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.storage_root = value;
     }
     fn __repr__(&self) -> ::std::string::String {
         ::std::format!("{:?}", self.0)

@@ -2106,6 +2106,14 @@ pub static RESOURCE_DESCRIPTORS: &[::olai_store::ResourceTypeDescriptor<ObjectLa
                 role: ::olai_store::FieldRole::Managed,
             },
             ::olai_store::ResourceFieldDescriptor {
+                name: "created_by",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
+                name: "updated_by",
+                role: ::olai_store::FieldRole::Managed,
+            },
+            ::olai_store::ResourceFieldDescriptor {
                 name: "function",
                 role: ::olai_store::FieldRole::Data,
             },

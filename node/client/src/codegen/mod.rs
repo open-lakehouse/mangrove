@@ -894,9 +894,11 @@ impl NapiUnityCatalogClient {
         &self,
         name: String,
         comment: Option<String>,
+        storage_root: Option<String>,
     ) -> napi::Result<Buffer> {
         let mut request = self.client.create_share(name);
         request = request.with_comment(comment);
+        request = request.with_storage_root(storage_root);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))

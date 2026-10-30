@@ -219,7 +219,7 @@ pub struct Volume {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_default_enum_value"
     )]
     pub volume_type: ::buffa::EnumValue<VolumeType>,
-    /// Username of current owner of table.
+    /// Username of current owner of volume.
     ///
     /// Field 8: `owner`
     #[serde(rename = "owner", skip_serializing_if = "::core::option::Option::is_none")]
@@ -2310,7 +2310,7 @@ pub mod __buffa {
             ///
             /// Field 7: `volume_type`
             pub volume_type: ::buffa::EnumValue<super::super::VolumeType>,
-            /// Username of current owner of table.
+            /// Username of current owner of volume.
             ///
             /// Field 8: `owner`
             pub owner: ::core::option::Option<&'a str>,
@@ -3073,7 +3073,7 @@ pub mod __buffa {
             pub fn volume_type(&self) -> ::buffa::EnumValue<super::super::VolumeType> {
                 self.0.reborrow().volume_type
             }
-            /// Username of current owner of table.
+            /// Username of current owner of volume.
             ///
             /// Field 8: `owner`
             #[must_use]

@@ -98,6 +98,11 @@ impl CreateShareBuilder {
         self.request.comment = comment.into();
         self
     }
+    /// Storage root URL for the share.
+    pub fn with_storage_root(mut self, storage_root: impl Into<Option<String>>) -> Self {
+        self.request.storage_root = storage_root.into();
+        self
+    }
 }
 impl IntoFuture for CreateShareBuilder {
     type Output = Result<Share>;

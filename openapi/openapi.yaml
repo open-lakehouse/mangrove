@@ -3568,6 +3568,7 @@ components:
              Use the format /subscriptions/{guid}/resourceGroups/{rg-name}/providers/
              Microsoft.Databricks/accessConnectors/{connector-name}.
         credential_id:
+          readOnly: true
           type: string
           description: The Databricks internal ID that represents this managed identity.
         managed_identity_id:
@@ -4370,6 +4371,9 @@ components:
         comment:
           type: string
           description: User-provided free-form text description.
+        storage_root:
+          type: string
+          description: Storage root URL for the share.
       description: |-
         Data objects can be added after creation with update.
          The caller must be a metastore admin or have the CREATE_SHARE privilege on the metastore.
@@ -4757,12 +4761,15 @@ components:
       type: object
       properties:
         credential_id:
+          readOnly: true
           type: string
           description: The Databricks internal ID that represents this managed identity.
         email:
+          readOnly: true
           type: string
           description: The email of the service account.
         private_key_id:
+          readOnly: true
           type: string
           description: The ID that represents the private key for this Service Account.
       description: The Databricks managed GCP service account configuration.
@@ -6012,6 +6019,14 @@ components:
           readOnly: true
           type: string
           description: Time at which this policy was last updated, in epoch milliseconds.
+        created_by:
+          readOnly: true
+          type: string
+          description: Username of the user who created the policy.
+        updated_by:
+          readOnly: true
+          type: string
+          description: Username of the user who last modified the policy.
       description: |-
         Policies are read as whole documents; enforcement is performed by the query engine,
          not by this service. `when_condition` is stored and returned opaque — this service does
@@ -6180,14 +6195,6 @@ components:
       additionalProperties: false
       title: Recipient
     RecipientToken:
-      required:
-        - id
-        - created_at
-        - created_by
-        - activation_url
-        - expiration_time
-        - updated_at
-        - updated_by
       type: object
       properties:
         id:
@@ -6207,6 +6214,7 @@ components:
           type: string
           description: Full activation URL to retrieve the access token. It will be empty if the token is already retrieved.
         expiration_time:
+          readOnly: true
           type: string
           description: Expiration timestamp of the token in epoch milliseconds.
         updated_at:
@@ -6218,6 +6226,14 @@ components:
           type: string
           description: Username of recipient token updater.
       additionalProperties: false
+      required:
+        - id
+        - created_at
+        - created_by
+        - activation_url
+        - expiration_time
+        - updated_at
+        - updated_by
       title: Recipient Token
     RegisteredModelInfo:
       required:
@@ -6253,7 +6269,6 @@ components:
           type: string
           description: The storage location under which model version data files are stored.
         owner:
-          readOnly: true
           type: string
           description: Username of current owner of the registered model.
         comment:
@@ -6397,7 +6412,6 @@ components:
           type: string
           description: Storage Location URL (full path) for the share.
         storage_root:
-          readOnly: true
           type: string
           description: Storage root URL for the share.
         created_at:
@@ -7308,9 +7322,8 @@ components:
           format: enum
           title: Volume Type
         owner:
-          readOnly: true
           type: string
-          description: Username of current owner of table.
+          description: Username of current owner of volume.
         comment:
           type: string
           description: User-provided free-form text description.

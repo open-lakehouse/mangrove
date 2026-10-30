@@ -1027,6 +1027,8 @@ class PolicyInfo:
     """User-provided free-form text description of the policy."""
     created_at: Optional[int]
     """Time at which this policy was created, in epoch milliseconds."""
+    created_by: Optional[str]
+    """Username of the user who created the policy."""
     except_principals: List[str]
     """The principals explicitly excluded from the policy, even if matched by to_principals."""
     id: Optional[str]
@@ -1051,6 +1053,8 @@ class PolicyInfo:
     """The principals the policy applies to. Empty means "all principals"."""
     updated_at: Optional[int]
     """Time at which this policy was last updated, in epoch milliseconds."""
+    updated_by: Optional[str]
+    """Username of the user who last modified the policy."""
     when_condition: Optional[str]
     """
     An opaque condition expression, e.g. "hasTagValue('env','prod')", evaluated by the query
@@ -1065,6 +1069,7 @@ class PolicyInfo:
         self,
         comment: Optional[str] = None,
         created_at: Optional[int] = None,
+        created_by: Optional[str] = None,
         except_principals: Optional[List[str]] = None,
         id: Optional[str] = None,
         match_columns: Optional[List[MatchColumn]] = None,
@@ -1074,6 +1079,7 @@ class PolicyInfo:
         policy_type: Optional[PolicyType] = None,
         to_principals: Optional[List[str]] = None,
         updated_at: Optional[int] = None,
+        updated_by: Optional[str] = None,
         when_condition: Optional[str] = None,
         column_mask: Optional[FunctionRef] = None,
         row_filter: Optional[FunctionRef] = None,
@@ -1620,7 +1626,7 @@ class Volume:
     name: str
     """Name of volume, relative to parent schema."""
     owner: Optional[str]
-    """Username of current owner of table."""
+    """Username of current owner of volume."""
     schema_name: str
     """Name of parent schema."""
     storage_location: str
@@ -3025,7 +3031,9 @@ class UnityCatalogClient:
             A schema is a namespace within a catalog that contains tables.
         """
         ...
-    def create_share(self, name: str, comment: Optional[str] = None) -> Share:
+    def create_share(
+        self, name: str, comment: Optional[str] = None, storage_root: Optional[str] = None
+    ) -> Share:
         """
         Create a new share.
 
@@ -3033,6 +3041,7 @@ class UnityCatalogClient:
         Args:
             name: Name of the share.
             comment: User-provided free-form text description.
+            storage_root: Storage root URL for the share.
 
 
         Returns:

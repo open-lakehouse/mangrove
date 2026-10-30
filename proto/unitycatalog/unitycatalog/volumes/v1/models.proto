@@ -67,8 +67,8 @@ message Volume {
   // by the parent schema, or the parent catalog, or the Metastore.
   VolumeType volume_type = 7 [(google.api.field_behavior) = REQUIRED];
 
-  // Username of current owner of table.
-  optional string owner = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Username of current owner of volume.
+  optional string owner = 8 [(google.api.field_behavior) = OPTIONAL];
 
   // User-provided free-form text description.
   optional string comment = 9 [(google.api.field_behavior) = OPTIONAL];
