@@ -3,6 +3,7 @@
 use super::builders::*;
 use super::client::CatalogServiceClient;
 use unitycatalog_common::models::catalogs::v1::*;
+#[cfg(feature = "schemas")]
 use unitycatalog_common::models::schemas::v1::*;
 /// A client scoped to a single `catalog`.
 #[derive(Clone)]
@@ -47,6 +48,7 @@ impl CatalogClient {
     pub fn delete(&self) -> DeleteCatalogBuilder {
         DeleteCatalogBuilder::new(self.client.clone(), &self.catalog_name)
     }
+    #[cfg(feature = "schemas")]
     /// Access a `schema` within this resource.
     pub fn schema(&self, schema_name: impl Into<String>) -> crate::codegen::schemas::SchemaClient {
         crate::codegen::schemas::SchemaClient::new(
@@ -58,6 +60,7 @@ impl CatalogClient {
             ),
         )
     }
+    #[cfg(feature = "schemas")]
     /// Create a `schema` within this resource.
     pub fn create_schema(
         &self,
@@ -72,6 +75,7 @@ impl CatalogClient {
             &self.catalog_name,
         )
     }
+    #[cfg(feature = "schemas")]
     /// List `schema` resources within this resource.
     pub fn list_schemas(&self) -> crate::codegen::schemas::ListSchemasBuilder {
         crate::codegen::schemas::ListSchemasBuilder::new(

@@ -72,6 +72,7 @@ impl Error {
     /// Map a failed UC API request into a typed [`Error`], mirroring
     /// [`from_delta_send`](Self::from_delta_send) but parsing the UC API error
     /// body (`{ error_code, message }`) via [`parse_error`].
+    #[cfg(feature = "temporary_credentials")]
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn from_api_send(err: olai_http::SendRawError) -> Self {
         match err {
@@ -97,6 +98,7 @@ impl Error {
     }
 
     /// wasm counterpart of [`from_api_send`](Self::from_api_send).
+    #[cfg(feature = "temporary_credentials")]
     #[cfg(target_arch = "wasm32")]
     pub(crate) fn from_api_send(err: reqwest::Error) -> Self {
         Error::RequestError(err)
@@ -137,11 +139,13 @@ pub(crate) async fn check_delta_response(response: reqwest::Response) -> Result<
 }
 
 /// wasm/native twin of [`check_delta_response`] parsing the UC API error body.
+#[cfg(feature = "temporary_credentials")]
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) async fn check_api_response(response: reqwest::Response) -> Result<reqwest::Response> {
     Ok(response)
 }
 
+#[cfg(feature = "temporary_credentials")]
 #[cfg(target_arch = "wasm32")]
 pub(crate) async fn check_api_response(response: reqwest::Response) -> Result<reqwest::Response> {
     let status = response.status();

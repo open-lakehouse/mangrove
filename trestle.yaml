@@ -31,6 +31,9 @@ generate:
       # crate builds for both native and wasm32, without the #[wasm_bindgen] JS
       # binding layer (which is gated on a node.wasm output).
       dual_transport: true
+      # Gate each service behind a cargo feature named after its model package,
+      # matching the per-resource features of olai-uc-common / olai-uc-handlers.
+      resource_features: true
     python:
       output: python/client/src
       error_type: PyUnityCatalogError

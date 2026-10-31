@@ -18,7 +18,11 @@ name = "unitycatalog_object_store"
 
 [dependencies]
 # local dependencies in alphabetical order
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.6", default-features = false }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.6", default-features = false, features = [
+  "tables",
+  "temporary_credentials",
+  "volumes",
+] }
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.6", default-features = false, features = [
   "storage-credentials",
   "tables",

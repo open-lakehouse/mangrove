@@ -2,12 +2,18 @@
 #![allow(unused_imports)]
 use super::builders::*;
 use super::client::SchemaServiceClient;
+#[cfg(feature = "agent_skills")]
 use unitycatalog_common::models::agent_skills::v0alpha1::*;
+#[cfg(feature = "agents")]
 use unitycatalog_common::models::agents::v0alpha1::*;
+#[cfg(feature = "functions")]
 use unitycatalog_common::models::functions::v1::*;
+#[cfg(feature = "registered_models")]
 use unitycatalog_common::models::registered_models::v1::*;
 use unitycatalog_common::models::schemas::v1::*;
+#[cfg(feature = "tables")]
 use unitycatalog_common::models::tables::v1::*;
+#[cfg(feature = "volumes")]
 use unitycatalog_common::models::volumes::v1::*;
 /// A client scoped to a single `schema`.
 #[derive(Clone)]
@@ -76,6 +82,7 @@ impl SchemaClient {
             format!("{}.{}", self.catalog_name, self.schema_name),
         )
     }
+    #[cfg(feature = "agents")]
     /// Access a `agent` within this resource.
     pub fn agent(&self, agent_name: impl Into<String>) -> crate::codegen::agents::AgentClient {
         crate::codegen::agents::AgentClient::new(
@@ -88,6 +95,7 @@ impl SchemaClient {
             ),
         )
     }
+    #[cfg(feature = "agents")]
     /// Create a `agent` within this resource.
     pub fn create_agent(
         &self,
@@ -107,6 +115,7 @@ impl SchemaClient {
             endpoint,
         )
     }
+    #[cfg(feature = "agents")]
     /// List `agent` resources within this resource.
     pub fn list_agents(&self) -> crate::codegen::agents::ListAgentsBuilder {
         crate::codegen::agents::ListAgentsBuilder::new(
@@ -118,6 +127,7 @@ impl SchemaClient {
             &self.schema_name,
         )
     }
+    #[cfg(feature = "agent_skills")]
     /// Access a `agent_skill` within this resource.
     pub fn agent_skill(
         &self,
@@ -133,6 +143,7 @@ impl SchemaClient {
             ),
         )
     }
+    #[cfg(feature = "agent_skills")]
     /// Create a `agent_skill` within this resource.
     pub fn create_agent_skill(
         &self,
@@ -150,6 +161,7 @@ impl SchemaClient {
             agent_skill_type,
         )
     }
+    #[cfg(feature = "agent_skills")]
     /// List `agent_skill` resources within this resource.
     pub fn list_agent_skills(&self) -> crate::codegen::agent_skills::ListAgentSkillsBuilder {
         crate::codegen::agent_skills::ListAgentSkillsBuilder::new(
@@ -161,6 +173,7 @@ impl SchemaClient {
             &self.schema_name,
         )
     }
+    #[cfg(feature = "functions")]
     /// Access a `function` within this resource.
     pub fn function(
         &self,
@@ -176,6 +189,7 @@ impl SchemaClient {
             ),
         )
     }
+    #[cfg(feature = "functions")]
     /// Create a `function` within this resource.
     pub fn create_function(
         &self,
@@ -189,6 +203,7 @@ impl SchemaClient {
             function_info,
         )
     }
+    #[cfg(feature = "functions")]
     /// List `function` resources within this resource.
     pub fn list_functions(&self) -> crate::codegen::functions::ListFunctionsBuilder {
         crate::codegen::functions::ListFunctionsBuilder::new(
@@ -200,6 +215,7 @@ impl SchemaClient {
             &self.schema_name,
         )
     }
+    #[cfg(feature = "registered_models")]
     /// Access a `registered_model` within this resource.
     pub fn registered_model(
         &self,
@@ -215,6 +231,7 @@ impl SchemaClient {
             ),
         )
     }
+    #[cfg(feature = "registered_models")]
     /// Create a `registered_model` within this resource.
     pub fn create_registered_model(
         &self,
@@ -230,6 +247,7 @@ impl SchemaClient {
             &self.schema_name,
         )
     }
+    #[cfg(feature = "registered_models")]
     /// List `registered_model` resources within this resource.
     pub fn list_registered_models(
         &self,
@@ -241,6 +259,7 @@ impl SchemaClient {
             ),
         )
     }
+    #[cfg(feature = "tables")]
     /// Access a `table` within this resource.
     pub fn table(&self, table_name: impl Into<String>) -> crate::codegen::tables::TableClient {
         crate::codegen::tables::TableClient::new(
@@ -253,6 +272,7 @@ impl SchemaClient {
             ),
         )
     }
+    #[cfg(feature = "tables")]
     /// Create a `table` within this resource.
     pub fn create_table(
         &self,
@@ -272,6 +292,7 @@ impl SchemaClient {
             data_source_format,
         )
     }
+    #[cfg(feature = "tables")]
     /// List `table` resources within this resource.
     pub fn list_tables(&self) -> crate::codegen::tables::ListTablesBuilder {
         crate::codegen::tables::ListTablesBuilder::new(
@@ -283,6 +304,7 @@ impl SchemaClient {
             &self.schema_name,
         )
     }
+    #[cfg(feature = "volumes")]
     /// Access a `volume` within this resource.
     pub fn volume(&self, volume_name: impl Into<String>) -> crate::codegen::volumes::VolumeClient {
         crate::codegen::volumes::VolumeClient::new(
@@ -295,6 +317,7 @@ impl SchemaClient {
             ),
         )
     }
+    #[cfg(feature = "volumes")]
     /// Create a `volume` within this resource.
     pub fn create_volume(
         &self,
@@ -312,6 +335,7 @@ impl SchemaClient {
             volume_type,
         )
     }
+    #[cfg(feature = "volumes")]
     /// List `volume` resources within this resource.
     pub fn list_volumes(&self) -> crate::codegen::volumes::ListVolumesBuilder {
         crate::codegen::volumes::ListVolumesBuilder::new(
