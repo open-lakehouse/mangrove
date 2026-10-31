@@ -93,13 +93,50 @@ mime = "0.3"
 tokio = { version = "1", features = ["full"] }
 
 [features]
-default = ["rest-client"]
+default = ["rest-client", "all-resources"]
+
+# One feature per generated model package (named after its module), so consumers
+# can pull in only the resources they use. All are on by default.
+all-resources = [
+  "agent_skills",
+  "agents",
+  "catalogs",
+  "credentials",
+  "external_locations",
+  "functions",
+  "model_versions",
+  "policies",
+  "registered_models",
+  "schemas",
+  "staging_tables",
+  "tables",
+  "tags",
+  "temporary_credentials",
+  "volumes",
+]
+agent_skills = []
+agents = []
+catalogs = []
+credentials = []
+external_locations = []
+# function parameter and return types reference `tables.v1` column types
+functions = ["tables"]
+model_versions = []
+policies = []
+registered_models = []
+schemas = []
+staging_tables = []
+tables = []
+tags = []
+temporary_credentials = []
+volumes = []
+
 grpc = ["tonic", "tonic-prost"]
 
 # metric-view definition parsing: YAML model + sqlparser-based dependency extraction.
 # Single source of truth shared by the server (derives view_dependencies on create)
 # and the datafusion crate (re-exports for query-time lowering).
-metric-view = ["dep:serde_yml", "dep:sqlparser"]
+metric-view = ["tables", "dep:serde_yml", "dep:sqlparser"]
 
 # enable support for the axum framework. This will implement `FromRequest`
 # and `FromRequestParts` for request types.
@@ -109,13 +146,14 @@ sqlx = ["dep:sqlx", "store", "olai-store/sqlx"]
 
 # conversions between the generated temporary credentials and the vended
 # `olai-storage-credentials` model (builds on wasm32)
-credentials = ["dep:olai-storage-credentials"]
+storage-credentials = ["temporary_credentials", "dep:olai-storage-credentials"]
 # conversions between the generated credentials and the registered
 # `olai-credential-vending` model (native only)
-credential-vending = ["credentials", "dep:olai-credential-vending"]
+credential-vending = ["credentials", "storage-credentials", "dep:olai-credential-vending"]
 
-# storage abstraction trait (ResourceStore) implemented by backends
-store = ["dep:futures", "dep:olai-store"]
+# storage abstraction trait (ResourceStore) implemented by backends; the
+# `Resource` enum it stores spans every resource.
+store = ["all-resources", "dep:futures", "dep:olai-store"]
 
 # enable client implementation to interact with Unity REST APIs
 rest-client = ["dep:futures", "olai-http"]
@@ -126,7 +164,7 @@ integration = ["http-body-util", "mime", "axum"]
 # PyO3 wrapper layer for generated messages (Py* types). Conversion is emitted by the trestle
 # codegen directly now; the old `pythonize` bridge is no longer used (zero references), so it is
 # not part of this feature.
-python = ["pyo3"]
+python = ["all-resources", "pyo3"]
 
 # derives #[napi] for generated enums (used by node/client)
 node = ["napi-derive"]

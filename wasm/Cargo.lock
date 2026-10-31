@@ -2781,7 +2781,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-client"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "buffa",
  "futures",
@@ -2803,7 +2803,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-common"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -2829,7 +2829,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-delta-api"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "async-trait",
  "olai-storage-credentials",
@@ -2853,7 +2853,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-object-store"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "async-trait",
  "chrono",

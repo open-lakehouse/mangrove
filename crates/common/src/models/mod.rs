@@ -1,9 +1,13 @@
 // The generated PyO3 constructors rebind each argument as `value`, which clippy flags
 // for a proto field that is itself named `value` (`shares.v1.PartitionValue`).
+// `generated.rs` replaces the trestle-emitted `_gen/mod.rs` so each model package
+// can sit behind its own resource feature.
 #[allow(clippy::redundant_locals)]
+#[path = "generated.rs"]
 mod _gen;
 mod association;
 mod error;
+#[cfg(feature = "functions")]
 mod functions_ext;
 // The `Object` / `ResourceName` layer is backed by the resource-store crate
 // (`olai-store`), which is native-only; gate it behind the `store` feature so the

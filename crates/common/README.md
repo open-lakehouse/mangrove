@@ -31,19 +31,44 @@ unitycatalog-common = { package = "olai-uc-common", version = "0.0.1" }
 
 ## Feature flags
 
-`rest-client` is on by default. The rest gate optional integrations:
+`rest-client` and `all-resources` are on by default. The rest gate optional integrations:
 
-| Feature       | Default | What it enables                                                              |
-| ------------- | :-----: | ---------------------------------------------------------------------------- |
-| `rest-client` |   yes   | Client implementation for the Unity Catalog REST APIs.                       |
-| `grpc`        |         | Generated tonic gRPC service code (`tonic` + `tonic-prost`).                 |
-| `metric-view` |         | Metric-view YAML parsing and SQL dependency extraction.                      |
-| `axum`        |         | `FromRequest` / `FromRequestParts` impls for request types.                  |
-| `store`       |         | Storage-abstraction trait (`ResourceStore`) and services.                    |
-| `sqlx`        |         | `sqlx` trait derives on selected types for backends.                         |
-| `python`      |         | `pyclass` derives on generated messages (used by the Python bindings).       |
-| `node`        |         | `#[napi]` derives on generated enums (used by the Node bindings).            |
-| `integration` |         | Test helpers for custom handler / router implementations.                    |
+| Feature               | Default | What it enables                                                                                 |
+| --------------------- | :-----: | ----------------------------------------------------------------------------------------------- |
+| `all-resources`       |   yes   | Every generated model package (see [Resource features](#resource-features)).                    |
+| `rest-client`         |   yes   | Client implementation for the Unity Catalog REST APIs.                                          |
+| `grpc`                |         | Generated tonic gRPC service code (`tonic` + `tonic-prost`).                                    |
+| `metric-view`         |         | Metric-view YAML parsing and SQL dependency extraction.                                         |
+| `axum`                |         | `FromRequest` / `FromRequestParts` impls for request types.                                     |
+| `store`               |         | Storage-abstraction trait (`ResourceStore`) and services. Implies `all-resources`.              |
+| `sqlx`                |         | `sqlx` trait derives on selected types for backends.                                            |
+| `python`              |         | `pyclass` derives on generated messages (used by the Python bindings). Implies `all-resources`. |
+| `node`                |         | `#[napi]` derives on generated enums (used by the Node bindings).                               |
+| `storage-credentials` |         | Conversions to the vended `olai-storage-credentials` model (wasm-compatible).                   |
+| `credential-vending`  |         | Conversions to the registered `olai-credential-vending` model (native only).                    |
+| `integration`         |         | Test helpers for custom handler / router implementations.                                       |
+
+### Resource features
+
+Each generated model package (`unitycatalog.<resource>.<version>`) sits behind a
+feature named after its module, so a consumer that needs only a few resources can
+skip compiling the rest (about 60% less `common` build time for a five-resource
+subset):
+
+`agent_skills`, `agents`, `catalogs`, `credentials`, `external_locations`,
+`functions` (implies `tables`), `model_versions`, `policies`, `registered_models`,
+`schemas`, `staging_tables`, `tables`, `tags`, `temporary_credentials`, `volumes`.
+
+```toml
+unitycatalog-common = { package = "olai-uc-common", version = "…", default-features = false, features = [
+  "rest-client", "tables", "volumes",
+] }
+```
+
+Resource features unify across the dependency graph: any crate in your build that
+depends on `olai-uc-common` with default features turns every resource back on.
+The `Resource` enum and the `ObjectLabel` vocabulary span every resource and
+need `all-resources`. The axum extractors follow the resource features.
 
 ## Status
 
