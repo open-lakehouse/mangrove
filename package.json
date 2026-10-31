@@ -19,6 +19,7 @@
   "scripts": {
     "openapi": "prettier --write openapi/openapi.yaml",
     "lint-fix": "biome check --write && biome format --write .",
+    "postinstall": "[ ! -f scripts/strip-bun-lock-proxy.ts ] || bun run scripts/strip-bun-lock-proxy.ts",
     "setup-hooks": "git config core.hooksPath .githooks",
     "strip-lock-proxy": "bun run scripts/strip-bun-lock-proxy.ts",
     "strip-lock-proxy:check": "bun run scripts/strip-bun-lock-proxy.ts --check",
