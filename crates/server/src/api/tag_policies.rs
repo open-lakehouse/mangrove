@@ -5,15 +5,16 @@ use unitycatalog_common::models::{ObjectLabel, ResourceIdent, ResourceName, Reso
 
 use super::{RequestContext, SecuredAction, UpdateMask};
 use crate::Result;
-pub use crate::codegen::tag_policies::TagPolicyHandler;
 use crate::policy::{Permission, Policy, process_resources};
-use crate::store::ResourceStore;
+use crate::services::ServerHandler;
+use crate::store::{ResourceStore, ResourceStoreReader};
+pub use unitycatalog_handlers::tag_policies::TagPolicyHandler;
 
 /// The largest page ListTagPolicies returns.
 const MAX_PAGE_SIZE: usize = 1000;
 
 #[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext>> TagPolicyHandler<RequestContext> for T {
+impl TagPolicyHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn create_tag_policy(
         &self,

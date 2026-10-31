@@ -76,7 +76,7 @@ where
     T: CatalogHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::catalogs::server::*;
+    use unitycatalog_handlers::catalogs::server::*;
 
     axum::Router::new()
         .route("/catalogs", get(list_catalogs::<T, Cx>))
@@ -92,7 +92,7 @@ where
     T: CredentialHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::credentials::server::*;
+    use unitycatalog_handlers::credentials::server::*;
 
     axum::Router::new()
         .route("/credentials", get(list_credentials::<T, Cx>))
@@ -108,7 +108,7 @@ where
     T: ExternalLocationHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::external_locations::server::*;
+    use unitycatalog_handlers::external_locations::server::*;
 
     axum::Router::new()
         .route("/external-locations", get(list_external_locations::<T, Cx>))
@@ -136,7 +136,7 @@ where
     T: SchemaHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::schemas::server::*;
+    use unitycatalog_handlers::schemas::server::*;
 
     axum::Router::new()
         .route("/schemas", get(list_schemas::<T, Cx>))
@@ -152,7 +152,7 @@ where
     T: StagingTableHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::staging_tables::server::*;
+    use unitycatalog_handlers::staging_tables::server::*;
 
     axum::Router::new()
         .route("/staging-tables", post(create_staging_table::<T, Cx>))
@@ -164,7 +164,7 @@ where
     T: TableHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::tables::server::*;
+    use unitycatalog_handlers::tables::server::*;
 
     axum::Router::new()
         .route("/table-summaries", get(list_table_summaries::<T, Cx>))
@@ -181,7 +181,7 @@ where
     T: TemporaryCredentialHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::temporary_credentials::server::*;
+    use unitycatalog_handlers::temporary_credentials::server::*;
 
     axum::Router::new()
         .route(
@@ -208,7 +208,7 @@ where
     T: RegisteredModelHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::registered_models::server::*;
+    use unitycatalog_handlers::registered_models::server::*;
 
     axum::Router::new()
         .route("/models", get(list_registered_models::<T, Cx>))
@@ -230,7 +230,7 @@ where
     T: ModelVersionHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::model_versions::server::*;
+    use unitycatalog_handlers::model_versions::server::*;
 
     axum::Router::new()
         .route("/models/versions", post(create_model_version::<T, Cx>))
@@ -262,7 +262,7 @@ where
     T: VolumeHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::volumes::server::*;
+    use unitycatalog_handlers::volumes::server::*;
 
     axum::Router::new()
         .route("/volumes", get(list_volumes::<T, Cx>))
@@ -278,7 +278,7 @@ where
     T: AgentSkillHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::agent_skills::server::*;
+    use unitycatalog_handlers::agent_skills::server::*;
 
     axum::Router::new()
         .route("/agent-skills", get(list_agent_skills::<T, Cx>))
@@ -294,7 +294,7 @@ where
     T: AgentHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::agents::server::*;
+    use unitycatalog_handlers::agents::server::*;
 
     axum::Router::new()
         .route("/agents", get(list_agents::<T, Cx>))
@@ -310,7 +310,7 @@ where
     T: FunctionHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::functions::server::*;
+    use unitycatalog_handlers::functions::server::*;
 
     axum::Router::new()
         .route("/functions", get(list_functions::<T, Cx>))
@@ -328,7 +328,7 @@ where
     T: PolicyHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::policies::server::*;
+    use unitycatalog_handlers::policies::server::*;
 
     axum::Router::new()
         .route(
@@ -361,7 +361,7 @@ where
     T: TagPolicyHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::tag_policies::server::*;
+    use unitycatalog_handlers::tag_policies::server::*;
 
     axum::Router::new()
         .route("/tag-policies", get(list_tag_policies::<T, Cx>))
@@ -385,7 +385,7 @@ where
     T: EntityTagAssignmentHandler<Cx> + Clone,
     Cx: axum::extract::FromRequestParts<T> + Send + 'static,
 {
-    use crate::codegen::entity_tag_assignments::server::*;
+    use unitycatalog_handlers::entity_tag_assignments::server::*;
 
     axum::Router::new()
         .route(

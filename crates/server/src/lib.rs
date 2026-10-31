@@ -12,15 +12,15 @@
 //! [`ServerHandler`](services::ServerHandler) composes those dependencies. It is
 //! generic over an authorization context `Cx` (the identity or request state a
 //! [`Policy`](policy::Policy) evaluates against), cheap to clone, and satisfies
-//! the store and policy traits by delegation — so the generated handler traits in
-//! [`api`] can be blanket-implemented over it. To swap a backend, construct the
-//! handler with a different trait object; no handler code changes.
+//! the store and policy traits by delegation; the generated handler traits in
+//! [`api`] are implemented on `ServerHandler<RequestContext>`. To swap a backend,
+//! construct the handler with a different trait object; no handler code changes.
 //!
 //! # Layout
 //!
-//! - [`api`] — per-resource handler traits (generated) plus their hand-written
-//!   business logic, and the [`SecuredAction`](api::SecuredAction) permission
-//!   mapping.
+//! - [`api`] — the per-resource handler traits (generated into
+//!   `unitycatalog-handlers`) re-exported with their hand-written business logic,
+//!   and the [`SecuredAction`](api::SecuredAction) permission mapping.
 //! - [`policy`] — the [`Policy`](policy::Policy) authorization trait,
 //!   [`Permission`](policy::Permission)/[`Decision`](policy::Decision), and the
 //!   allow-all [`ConstantPolicy`](policy::ConstantPolicy).
@@ -39,12 +39,6 @@
 //! binary. See the crate README for the full table.
 
 pub mod api;
-// The shares / recipients / providers models are generated here so they are
-// published with the rest of the Unity Catalog models, but this server does not
-// serve those APIs (distributary does), so their generated handler traits and
-// axum handlers (and their re-exports) have no users.
-#[allow(dead_code, unused_imports)]
-mod codegen;
 pub mod error;
 pub mod handlers;
 #[cfg(feature = "memory")]

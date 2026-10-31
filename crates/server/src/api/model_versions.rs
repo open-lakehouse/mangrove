@@ -6,11 +6,12 @@ use unitycatalog_common::models::registered_models::v1::RegisteredModel;
 use unitycatalog_common::models::{ResourceIdent, ResourceName};
 
 use super::{RegisteredModelHandler, RequestContext, SecuredAction};
-pub use crate::codegen::model_versions::ModelVersionHandler;
 use crate::policy::{Permission, Policy, process_resources};
-use crate::store::ResourceStore;
+use crate::services::ServerHandler;
+use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
 use unitycatalog_common::models::registered_models::v1::GetRegisteredModelRequest;
+pub use unitycatalog_handlers::model_versions::ModelVersionHandler;
 
 /// Split a registered model's three-level `full_name` into its components.
 fn split_model_full_name(full_name: &str) -> Result<(String, String, String)> {
@@ -35,9 +36,7 @@ fn model_version_ident(catalog: &str, schema: &str, model: &str, version: i64) -
 }
 
 #[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext> + RegisteredModelHandler<RequestContext>>
-    ModelVersionHandler<RequestContext> for T
-{
+impl ModelVersionHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn list_model_versions(
         &self,

@@ -23,8 +23,8 @@ pub use location_policy::LocalStoragePolicy;
 
 /// Access to the server's [`LocalStoragePolicy`].
 ///
-/// Implemented by the server handler so request handlers (defined as blanket
-/// impls over a generic `T`) can reach the server-wide allowlist that governs
+/// Implemented by the server handler so request handlers (and helpers generic
+/// over `T`) can reach the server-wide allowlist that governs
 /// which host paths may back a `file://` storage location. Mirrors
 /// [`ProvidesCommitCoordinator`].
 pub trait ProvidesLocalStoragePolicy {

@@ -44,14 +44,14 @@ use unitycatalog_delta_api::models::DeltaTableType;
 use crate::api::RequestContext;
 use crate::api::staging_tables::find_staging_table_by_location;
 use crate::api::tables::TableHandler;
-use crate::codegen::staging_tables::StagingTableHandler;
-use crate::codegen::temporary_credentials::TemporaryCredentialHandler;
 use crate::policy::{Permission, Policy, Principal};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::validate_external_storage_location;
 use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
+use unitycatalog_handlers::staging_tables::StagingTableHandler;
+use unitycatalog_handlers::temporary_credentials::TemporaryCredentialHandler;
 
 // ===================================================================
 // Error mapping

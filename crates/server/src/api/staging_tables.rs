@@ -6,12 +6,13 @@ use unitycatalog_common::models::staging_tables::v1::*;
 use unitycatalog_common::models::{ObjectLabel, ResourceIdent};
 
 use super::{RequestContext, SecuredAction};
-pub use crate::codegen::staging_tables::StagingTableHandler;
 use crate::policy::{Permission, Policy, Principal};
+use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::{ProvidesLocalStoragePolicy, ProvidesManagedStorageRoot};
-use crate::store::ResourceStore;
+use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
+pub use unitycatalog_handlers::staging_tables::StagingTableHandler;
 
 /// Managed-storage prefix appended to a catalog/schema storage root. Mirrors the
 /// Unity Catalog reference implementation's `__unitystorage` segment. A
@@ -37,13 +38,7 @@ impl SecuredAction for CreateStagingTableRequest {
 }
 
 #[async_trait::async_trait]
-impl<
-    T: ResourceStore
-        + Policy<RequestContext>
-        + ProvidesLocalStoragePolicy
-        + ProvidesManagedStorageRoot,
-> StagingTableHandler<RequestContext> for T
-{
+impl StagingTableHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn create_staging_table(
         &self,

@@ -27,6 +27,8 @@ required-features = ["bin"]
 [dependencies]
 # local dependencies
 unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.6", optional = true }
+# `ForwardedUser` for the handlers' `RequestContext` (feature `handlers`).
+unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", version = "0.0.1", default-features = false, optional = true }
 
 # workspace dependecies in alphabetical order
 async-trait = { workspace = true }
@@ -91,6 +93,9 @@ server = ["dep:axum"]
 client-arm = ["server", "dep:unitycatalog-object-store"]
 # Exposes `InMemoryStorageProxyBackend`, an in-memory `StorageProxyBackend`
 testing = ["server"]
+# Implements `ForwardedUser` for `unitycatalog-handlers`' `RequestContext`, so a
+# server using that context (mangrove's) can drive the client arm.
+handlers = ["server", "dep:unitycatalog-handlers"]
 # The deployable `storage-proxy` binary: the CLI (`serve` / `healthcheck`), its
 # YAML config, the self-contained request-auth layer, and the client arm that
 # resolves + vends through an upstream Unity Catalog. Off by default so a plain

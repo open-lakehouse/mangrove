@@ -6,20 +6,14 @@ use unitycatalog_common::models::{ResourceIdent, ResourceName};
 
 use super::staging_tables::{child_location, resolve_managed_parent_location};
 use super::{RequestContext, SecuredAction};
-pub use crate::codegen::registered_models::RegisteredModelHandler;
 use crate::policy::{Permission, Policy, process_resources};
-use crate::services::{ProvidesLocalStoragePolicy, ProvidesManagedStorageRoot};
-use crate::store::ResourceStore;
+use crate::services::ServerHandler;
+use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
+pub use unitycatalog_handlers::registered_models::RegisteredModelHandler;
 
 #[async_trait::async_trait]
-impl<
-    T: ResourceStore
-        + Policy<RequestContext>
-        + ProvidesLocalStoragePolicy
-        + ProvidesManagedStorageRoot,
-> RegisteredModelHandler<RequestContext> for T
-{
+impl RegisteredModelHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn list_registered_models(
         &self,

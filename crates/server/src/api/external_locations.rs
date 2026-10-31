@@ -6,18 +6,17 @@ use unitycatalog_common::models::{
 };
 
 use super::{RequestContext, SecuredAction};
-pub use crate::codegen::external_locations::ExternalLocationHandler;
 use crate::policy::{Permission, Policy, process_resources};
 use crate::services::ProvidesLocalStoragePolicy;
+use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::{list_external_locations, locations_overlap};
-use crate::store::ResourceStore;
+use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
+pub use unitycatalog_handlers::external_locations::ExternalLocationHandler;
 
 #[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext> + ProvidesLocalStoragePolicy>
-    ExternalLocationHandler<RequestContext> for T
-{
+impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn create_external_location(
         &self,

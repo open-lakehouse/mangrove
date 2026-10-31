@@ -23,6 +23,10 @@ name: Bootstrap publish (one-shot, DELETE AFTER USE)
 # `bin`-featured build, since that (the `uc-server` binary) is what ships.
 #
 #   Tier 0 (ACTIVE): olai-uc-files-api
+#   Tier 0 (ACTIVE): olai-uc-handlers — the handler traits extracted from the
+#     server (#262); its only workspace dep (olai-uc-common) is on crates.io.
+#     olai-uc-server and olai-uc-storage-proxy depend on it, so it must exist on
+#     crates.io before their next release.
 #
 # olai-uc-credentials was queued here too, but was retired before it was
 # published: credential vending now comes from the published trestle crates
@@ -90,4 +94,11 @@ jobs:
             ${{ inputs.dry_run && '--dry-run' || '' }}
         env:
           SQLX_OFFLINE: "true"
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      # ----- Tier 0: olai-uc-handlers (deps all on crates.io) -----
+      - name: Publish olai-uc-handlers
+        run: |
+          cargo publish -p olai-uc-handlers --locked \
+            ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

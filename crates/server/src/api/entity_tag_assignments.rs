@@ -5,9 +5,10 @@ use unitycatalog_common::models::{
 
 use super::{RequestContext, SecuredAction, UpdateMask};
 use crate::Result;
-pub use crate::codegen::entity_tag_assignments::EntityTagAssignmentHandler;
 use crate::policy::{Permission, Policy};
+use crate::services::ServerHandler;
 use crate::store::ResourceStore;
+pub use unitycatalog_handlers::entity_tag_assignments::EntityTagAssignmentHandler;
 
 /// Property-map key under which a tag assignment's value is stored on the association edge.
 const TAG_VALUE_KEY: &str = "tag_value";
@@ -62,7 +63,7 @@ fn props_for_value(tag_value: &Option<String>) -> Option<PropertyMap> {
 }
 
 #[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext>> EntityTagAssignmentHandler<RequestContext> for T {
+impl EntityTagAssignmentHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn create_entity_tag_assignment(
         &self,

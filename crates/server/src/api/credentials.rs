@@ -7,10 +7,11 @@ use unitycatalog_common::models::credentials::v1::{
 use unitycatalog_common::models::{ObjectLabel, ResourceIdent, ResourceName, ResourceRef};
 
 use super::{RequestContext, SecuredAction};
-pub use crate::codegen::credentials::CredentialHandler;
 use crate::policy::{Permission, Policy, process_resources};
-use crate::store::ResourceStore;
+use crate::services::ServerHandler;
+use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
+pub use unitycatalog_handlers::credentials::CredentialHandler;
 
 #[async_trait::async_trait]
 pub trait CredentialHandlerExt: Send + Sync + 'static {
@@ -37,7 +38,7 @@ fn has_secret(cred: &Credential) -> bool {
 }
 
 #[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext>> CredentialHandler<RequestContext> for T {
+impl CredentialHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context))]
     async fn list_credentials(
         &self,

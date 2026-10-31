@@ -5,12 +5,13 @@ use unitycatalog_common::models::{ObjectLabel, ResourceIdent, ResourceName};
 
 use super::{RequestContext, SecuredAction};
 use crate::Result;
-pub use crate::codegen::functions::FunctionHandler;
 use crate::policy::{Permission, Policy, process_resources};
-use crate::store::ResourceStore;
+use crate::services::ServerHandler;
+use crate::store::{ResourceStore, ResourceStoreReader};
+pub use unitycatalog_handlers::functions::FunctionHandler;
 
 #[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext>> FunctionHandler<RequestContext> for T {
+impl FunctionHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn list_functions(
         &self,

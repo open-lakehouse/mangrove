@@ -10,6 +10,7 @@ The project follows a multi-crate Rust workspace architecture with language bind
 - `crates/` - Core Rust implementation organized by functionality:
   - `common/` - Shared types and utilities (most of its size is generated proto code under `models/gen/`)
   - `client/` - Unity Catalog client library
+  - `handlers/` - Generated per-resource handler traits + axum route fns, with the error/request-context types they need (feature-gated per resource like `common/`)
   - `server/` - REST API server implementation
   - `postgres/` - PostgreSQL backend integration
   - `cli/` - Command-line interface

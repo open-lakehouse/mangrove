@@ -8,9 +8,10 @@ use unitycatalog_common::models::{
 
 use super::{RequestContext, SecuredAction, UpdateMask};
 use crate::Result;
-pub use crate::codegen::policies::PolicyHandler;
 use crate::policy::{Permission, Policy, process_resources};
-use crate::store::ResourceStore;
+use crate::services::ServerHandler;
+use crate::store::{ResourceStore, ResourceStoreReader};
+pub use unitycatalog_handlers::policies::PolicyHandler;
 
 /// The securable types a policy can be defined on, in their canonical (upper-case) form.
 const SECURABLE_TYPES: [&str; 3] = ["CATALOG", "SCHEMA", "TABLE"];
@@ -220,7 +221,7 @@ fn apply_update(policy: &mut PolicyInfo, request: UpdatePolicyRequest) -> Result
 }
 
 #[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext>> PolicyHandler<RequestContext> for T {
+impl PolicyHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn create_policy(
         &self,

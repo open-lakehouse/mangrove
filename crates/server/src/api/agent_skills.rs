@@ -6,22 +6,16 @@ use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 
 use super::staging_tables::{child_location, resolve_managed_parent_location};
 use super::{RequestContext, SecuredAction};
-pub use crate::codegen::agent_skills::AgentSkillHandler;
 use crate::policy::{Permission, Policy, process_resources};
+use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::validate_external_storage_location;
-use crate::services::{ProvidesLocalStoragePolicy, ProvidesManagedStorageRoot};
-use crate::store::ResourceStore;
+use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
+pub use unitycatalog_handlers::agent_skills::AgentSkillHandler;
 
 #[async_trait::async_trait]
-impl<
-    T: ResourceStore
-        + Policy<RequestContext>
-        + ProvidesLocalStoragePolicy
-        + ProvidesManagedStorageRoot,
-> AgentSkillHandler<RequestContext> for T
-{
+impl AgentSkillHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn create_agent_skill(
         &self,

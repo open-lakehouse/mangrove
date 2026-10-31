@@ -57,31 +57,7 @@ use crate::{Error, Result};
 
 mod constant;
 
-/// The identity a request is made on behalf of.
-///
-/// This is one possible authorization context (`Cx`) for a [`Policy`]; a server
-/// that extracts a username from a reverse-proxy header would authorize against
-/// a `Principal`.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Principal {
-    /// No authenticated identity — used when no credentials are present, e.g.
-    /// behind a proxy that does not forward an identity header.
-    Anonymous,
-    /// A named user identity, typically the value of a forwarded-user header.
-    User(String),
-}
-
-impl Principal {
-    /// Returns an [`Anonymous`](Principal::Anonymous) principal.
-    pub fn anonymous() -> Self {
-        Self::Anonymous
-    }
-
-    /// Returns a [`User`](Principal::User) principal with the given name.
-    pub fn user(name: impl Into<String>) -> Self {
-        Self::User(name.into())
-    }
-}
+pub use unitycatalog_handlers::Principal;
 
 /// The access level an operation requires on a resource.
 ///
