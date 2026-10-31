@@ -5,13 +5,14 @@ use unitycatalog_common::models::agents::v0alpha1::*;
 use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 
 use super::{RequestContext, SecuredAction};
-pub use crate::codegen::agents::AgentHandler;
 use crate::policy::{Permission, Policy, process_resources};
-use crate::store::ResourceStore;
+use crate::services::ServerHandler;
+use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
+pub use unitycatalog_handlers::agents::AgentHandler;
 
 #[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext>> AgentHandler<RequestContext> for T {
+impl AgentHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn create_agent(
         &self,

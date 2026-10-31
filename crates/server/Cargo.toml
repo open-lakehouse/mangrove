@@ -36,6 +36,14 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
   "metric-view",
   "credential-vending",
 ] }
+# The generated handler traits + axum route fns, the `Error` and the request
+# context, with every error source this server raises.
+unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", version = "0.0.1", features = [
+  "all-resources",
+  "object-store",
+  "store",
+  "cloud",
+] }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.6" }
 unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.6", features = [
   "client-arm",
@@ -100,7 +108,7 @@ tokio = { version = "1", features = ["full"] }
 [features]
 default = ["axum", "memory"]
 
-axum = ["dep:axum", "dep:axum-extra", "http", "tower"]
+axum = ["dep:axum", "dep:axum-extra", "http", "tower", "unitycatalog-handlers/axum"]
 
 # in-memory handler features
 memory = ["uuid"]
@@ -125,6 +133,7 @@ bin = [
   "dep:swagger-ui-dist",
   "dep:tower-http",
   "dep:unitycatalog-storage-proxy",
+  "unitycatalog-storage-proxy/handlers",
   "dep:unitycatalog-object-store",
   "dep:unitycatalog-files-api",
   "dep:olai-vended-store",

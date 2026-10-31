@@ -6,15 +6,15 @@ use unitycatalog_common::models::volumes::v1::Volume;
 use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 
 use super::RequestContext;
-use crate::api::CredentialHandler;
 use crate::api::credentials::CredentialHandlerExt;
-pub use crate::codegen::temporary_credentials::TemporaryCredentialHandler;
 use crate::policy::{Permission, Policy};
+use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::find_external_location_for_url;
 use crate::services::vending::{mint, to_temporary_credential};
-use crate::store::ResourceStore;
+use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
+pub use unitycatalog_handlers::temporary_credentials::TemporaryCredentialHandler;
 
 use buffa::Enumeration;
 use olai_storage_credentials::AccessLevel;
@@ -94,13 +94,7 @@ fn to_access_level(operation: i32) -> AccessLevel {
 }
 
 #[async_trait::async_trait]
-impl<
-    T: ResourceStore
-        + Policy<RequestContext>
-        + CredentialHandler<RequestContext>
-        + CredentialHandlerExt,
-> TemporaryCredentialHandler<RequestContext> for T
-{
+impl TemporaryCredentialHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context))]
     async fn generate_temporary_path_credentials(
         &self,

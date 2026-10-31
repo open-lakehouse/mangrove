@@ -7,13 +7,13 @@ use unitycatalog_common::models::ResourceName;
 use unitycatalog_common::models::tables::v1::*;
 
 use super::{RequestContext, SecuredAction};
-pub use crate::codegen::tables::TableHandler;
 use crate::policy::{Permission, Policy, process_resources};
-use crate::services::ProvidesLocalStoragePolicy;
+use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::validate_external_storage_location;
-use crate::store::ResourceStore;
+use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
+pub use unitycatalog_handlers::tables::TableHandler;
 
 const MAX_RESULTS_TABLES: usize = 50;
 
@@ -85,9 +85,7 @@ impl SecuredAction for DeleteTableRequest {
 }
 
 #[async_trait::async_trait]
-impl<T: ResourceStore + Policy<RequestContext> + ProvidesLocalStoragePolicy>
-    TableHandler<RequestContext> for T
-{
+impl TableHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context))]
     async fn list_table_summaries(
         &self,

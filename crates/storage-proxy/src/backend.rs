@@ -152,6 +152,18 @@ impl ForwardedUser for () {
     }
 }
 
+/// Forwards the [`Principal::User`](unitycatalog_handlers::Principal::User) name;
+/// an anonymous principal forwards nothing.
+#[cfg(feature = "handlers")]
+impl ForwardedUser for unitycatalog_handlers::RequestContext {
+    fn forwarded_user(&self) -> Option<&str> {
+        match &self.recipient {
+            unitycatalog_handlers::Principal::User(name) => Some(name),
+            unitycatalog_handlers::Principal::Anonymous => None,
+        }
+    }
+}
+
 /// The backend port: authorize a request and open a verb-scoped, prefixed store.
 ///
 /// `Cx` is the host's per-request context (mangrove uses its `RequestContext`; the

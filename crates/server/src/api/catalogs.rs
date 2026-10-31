@@ -4,21 +4,16 @@ use unitycatalog_common::models::catalogs::v1::*;
 use unitycatalog_common::models::{ObjectLabel, ResourceIdent, ResourceName, ResourceRef};
 
 use super::{RequestContext, SecuredAction};
-pub use crate::codegen::catalogs::CatalogHandler;
 use crate::policy::{Permission, Policy, process_resources};
+use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::{ProvidesLocalStoragePolicy, ProvidesManagedStorageRoot};
-use crate::store::ResourceStore;
+use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
+pub use unitycatalog_handlers::catalogs::CatalogHandler;
 
 #[async_trait::async_trait]
-impl<
-    T: ResourceStore
-        + Policy<RequestContext>
-        + ProvidesLocalStoragePolicy
-        + ProvidesManagedStorageRoot,
-> CatalogHandler<RequestContext> for T
-{
+impl CatalogHandler<RequestContext> for ServerHandler<RequestContext> {
     #[tracing::instrument(skip(self, context), fields(resource_name))]
     async fn create_catalog(
         &self,

@@ -15,7 +15,7 @@ pub use tag_policies::TagPolicyHandler;
 pub use temporary_credentials::TemporaryCredentialHandler;
 pub use volumes::VolumeHandler;
 
-use crate::policy::{Permission, Principal};
+use crate::policy::Permission;
 use unitycatalog_common::models::ResourceIdent;
 
 // TODO: implement once AssociationLabel::CreatedBy and AssociationLabel::UpdatedBy variants are
@@ -97,35 +97,7 @@ impl<'a> UpdateMask<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct RequestContext {
-    pub recipient: Principal,
-}
-
-impl RequestContext {
-    pub fn recipient(&self) -> &Principal {
-        &self.recipient
-    }
-}
-
-impl AsRef<Principal> for RequestContext {
-    fn as_ref(&self) -> &Principal {
-        &self.recipient
-    }
-}
-
-// The storage-proxy client arm requires its backend context to expose a
-// forwarded identity. Gated on `bin`, the only feature that pulls in the
-// `unitycatalog-storage-proxy` dependency (and mounts the client arm in `run`).
-#[cfg(feature = "bin")]
-impl unitycatalog_storage_proxy::ForwardedUser for RequestContext {
-    fn forwarded_user(&self) -> Option<&str> {
-        match &self.recipient {
-            Principal::User(name) => Some(name),
-            Principal::Anonymous => None,
-        }
-    }
-}
+pub use unitycatalog_handlers::RequestContext;
 
 pub trait SecuredAction: Send + Sync {
     /// The resource that the action is performed on.

@@ -8,35 +8,10 @@ use futures_util::{FutureExt, future::BoxFuture};
 use tower::{Layer, Service};
 use unitycatalog_common::{Error, Result};
 
-use crate::api::RequestContext;
 use crate::policy::Principal;
 
 /// The default header a reverse proxy uses to forward the authenticated user.
 pub const DEFAULT_FORWARDED_USER_HEADER: &str = "x-forwarded-user";
-
-/// Extract a [`RequestContext`] from the [`Principal`] that the
-/// [`AuthenticationMiddleware`] inserted into the request extensions.
-///
-/// This is the transport-side counterpart to that middleware: the middleware
-/// writes the `Principal`, this reads it back so handlers can receive a
-/// `RequestContext`. It lives here (rather than next to the `RequestContext`
-/// definition in `crate::api`) to keep the `api` module free of any axum
-/// coupling.
-impl<S: Send + Sync> axum::extract::FromRequestParts<S> for RequestContext {
-    type Rejection = std::convert::Infallible;
-
-    async fn from_request_parts(
-        parts: &mut axum::http::request::Parts,
-        _state: &S,
-    ) -> std::result::Result<Self, Self::Rejection> {
-        let recipient = parts
-            .extensions
-            .get::<Principal>()
-            .cloned()
-            .unwrap_or_else(Principal::anonymous);
-        Ok(RequestContext { recipient })
-    }
-}
 
 /// Authenticator for authenticating requests to a sharing server.
 ///
