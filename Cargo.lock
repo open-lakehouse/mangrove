@@ -4153,6 +4153,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "olai-uc-handlers"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "axum",
+ "object_store",
+ "olai-http",
+ "olai-store",
+ "olai-uc-common",
+ "serde_json",
+ "thiserror",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "olai-uc-object-store"
 version = "0.0.6"
 dependencies = [

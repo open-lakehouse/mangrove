@@ -55,8 +55,13 @@ generate:
     dir: crates/common/src/models
     crate_name: unitycatalog_common
 
+  # Handler traits + axum route fns land in the light `olai-uc-handlers` crate
+  # (not the server) so standalone services can reuse them per resource; its
+  # `lib.rs` feature-gates each generated service module.
   server:
-    output: crates/server/src
+    output: crates/handlers/src
+    context_type: crate::RequestContext
+    result_type: crate::Result
     error_type_path: crate::Error
     resource_enum: true
     store_integration: true

@@ -1,0 +1,100 @@
+[package]
+# Published to crates.io under a provisional `olai-uc-*` name while the design
+# settles; the in-workspace dependency key + crate identifier stay
+# `unitycatalog(_)handlers` via each dependent's `package =` alias, so no source
+# changes. See release-plz.toml / CONTRIBUTING.md.
+name = "olai-uc-handlers"
+version = "0.0.1"
+description = "Resource-gated Unity Catalog handler traits and axum route functions, with the error and request-context types they need."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+# Crate-local README (shown on crates.io / docs.rs), overriding the inherited
+# workspace-root README which describes the whole project rather than this crate.
+readme = "README.md"
+rust-version.workspace = true
+
+[lib]
+# Keep the Rust crate identifier stable (`unitycatalog_handlers`) independent of
+# the provisional `olai-uc-*` package name.
+name = "unitycatalog_handlers"
+
+[dependencies]
+# Only the wire models are needed; resources are switched on per feature below.
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.6", default-features = false }
+
+# workspace dependencies in alphabetical order
+async-trait = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+# axum route functions + `IntoResponse` / `FromRequestParts` (feature `axum`)
+axum = { workspace = true, optional = true }
+
+# Error sources of backends built on these crates; each adds an `Error` variant
+# and the matching `From` impl (features `object-store`, `store`, `cloud`).
+object_store = { workspace = true, optional = true }
+olai-http = { workspace = true, optional = true }
+olai-store = { workspace = true, optional = true }
+
+[features]
+default = ["all-resources"]
+
+# One feature per generated model package, matching `olai-uc-common`. Each gates
+# the handler traits of the services built on that package.
+all-resources = [
+  "agent_skills",
+  "agents",
+  "catalogs",
+  "credentials",
+  "external_locations",
+  "functions",
+  "model_versions",
+  "policies",
+  "providers",
+  "recipients",
+  "registered_models",
+  "schemas",
+  "shares",
+  "staging_tables",
+  "tables",
+  "tags",
+  "temporary_credentials",
+  "volumes",
+]
+agent_skills = ["unitycatalog-common/agent_skills"]
+agents = ["unitycatalog-common/agents"]
+catalogs = ["unitycatalog-common/catalogs"]
+credentials = ["unitycatalog-common/credentials"]
+external_locations = ["unitycatalog-common/external_locations"]
+functions = ["unitycatalog-common/functions"]
+model_versions = ["unitycatalog-common/model_versions"]
+policies = ["unitycatalog-common/policies"]
+providers = ["unitycatalog-common/providers"]
+recipients = ["unitycatalog-common/recipients"]
+registered_models = ["unitycatalog-common/registered_models"]
+schemas = ["unitycatalog-common/schemas"]
+shares = ["unitycatalog-common/shares"]
+staging_tables = ["unitycatalog-common/staging_tables"]
+tables = ["unitycatalog-common/tables"]
+# the entity-tag-assignment and tag-policy services share the `tags` models
+tags = ["unitycatalog-common/tags"]
+temporary_credentials = ["unitycatalog-common/temporary_credentials"]
+volumes = ["unitycatalog-common/volumes"]
+
+# The generated axum route functions (`<service>::server`), plus `IntoResponse`
+# for `Error` and `FromRequestParts` for `RequestContext`.
+axum = ["dep:axum", "unitycatalog-common/axum"]
+
+# `Error` variants (and `From` impls) for backend error sources.
+object-store = ["dep:object_store"]
+store = ["dep:olai-store"]
+cloud = ["dep:olai-http"]
+
+[package.metadata.docs.rs]
+# The crate and generated module docs link to axum items.
+all-features = true
