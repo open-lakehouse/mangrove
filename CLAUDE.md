@@ -207,7 +207,7 @@ staged, but still run the commands above before opening a PR. Full details:
 ```bash
 cargo fmt --all --check \
   && cargo clippy --workspace --all-targets --all-features -- -D warnings \
-  && cargo nextest run --workspace --all-features --profile ci -E 'not binary(commit_coordinator)' \
+  && cargo nextest run --workspace --all-features --profile ci -E 'not (package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access)))' \
   && cargo test --workspace --all-features --doc
 ```
 
