@@ -483,6 +483,303 @@ impl ::core::convert::From<PyPolicyType> for super::policies::v1::PolicyType {
     }
 }
 #[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "ProviderAuthenticationType", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyProviderAuthenticationType {
+    PROVIDER_AUTHENTICATION_TYPE_UNSPECIFIED = 0isize,
+    TOKEN = 1isize,
+    OAUTH_CLIENT_CREDENTIALS = 2isize,
+}
+impl PyProviderAuthenticationType {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyProviderAuthenticationType::PROVIDER_AUTHENTICATION_TYPE_UNSPECIFIED => 0i32,
+            PyProviderAuthenticationType::TOKEN => 1i32,
+            PyProviderAuthenticationType::OAUTH_CLIENT_CREDENTIALS => 2i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyProviderAuthenticationType::PROVIDER_AUTHENTICATION_TYPE_UNSPECIFIED,
+            1i32 => PyProviderAuthenticationType::TOKEN,
+            2i32 => PyProviderAuthenticationType::OAUTH_CLIENT_CREDENTIALS,
+            _ => PyProviderAuthenticationType::PROVIDER_AUTHENTICATION_TYPE_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::providers::v1::ProviderAuthenticationType>
+    for PyProviderAuthenticationType
+{
+    fn from(value: super::providers::v1::ProviderAuthenticationType) -> Self {
+        PyProviderAuthenticationType::__from_proto_i32(
+            <super::providers::v1::ProviderAuthenticationType as ::buffa::Enumeration>::to_i32(
+                &value,
+            ),
+        )
+    }
+}
+impl ::core::convert::From<PyProviderAuthenticationType>
+    for super::providers::v1::ProviderAuthenticationType
+{
+    fn from(value: PyProviderAuthenticationType) -> Self {
+        let n = value.__to_proto_i32();
+        <super::providers::v1::ProviderAuthenticationType as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "AuthenticationType", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyAuthenticationType {
+    AUTHENTICATION_TYPE_UNSPECIFIED = 0isize,
+    TOKEN = 1isize,
+    OAUTH_CLIENT_CREDENTIALS = 2isize,
+}
+impl PyAuthenticationType {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyAuthenticationType::AUTHENTICATION_TYPE_UNSPECIFIED => 0i32,
+            PyAuthenticationType::TOKEN => 1i32,
+            PyAuthenticationType::OAUTH_CLIENT_CREDENTIALS => 2i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyAuthenticationType::AUTHENTICATION_TYPE_UNSPECIFIED,
+            1i32 => PyAuthenticationType::TOKEN,
+            2i32 => PyAuthenticationType::OAUTH_CLIENT_CREDENTIALS,
+            _ => PyAuthenticationType::AUTHENTICATION_TYPE_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::recipients::v1::AuthenticationType> for PyAuthenticationType {
+    fn from(value: super::recipients::v1::AuthenticationType) -> Self {
+        PyAuthenticationType::__from_proto_i32(
+            <super::recipients::v1::AuthenticationType as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyAuthenticationType> for super::recipients::v1::AuthenticationType {
+    fn from(value: PyAuthenticationType) -> Self {
+        let n = value.__to_proto_i32();
+        <super::recipients::v1::AuthenticationType as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "Action", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyAction {
+    ACTION_UNSPECIFIED = 0isize,
+    ADD = 1isize,
+    REMOVE = 2isize,
+    UPDATE = 3isize,
+}
+impl PyAction {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyAction::ACTION_UNSPECIFIED => 0i32,
+            PyAction::ADD => 1i32,
+            PyAction::REMOVE => 2i32,
+            PyAction::UPDATE => 3i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyAction::ACTION_UNSPECIFIED,
+            1i32 => PyAction::ADD,
+            2i32 => PyAction::REMOVE,
+            3i32 => PyAction::UPDATE,
+            _ => PyAction::ACTION_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::shares::v1::Action> for PyAction {
+    fn from(value: super::shares::v1::Action) -> Self {
+        PyAction::__from_proto_i32(<super::shares::v1::Action as ::buffa::Enumeration>::to_i32(
+            &value,
+        ))
+    }
+}
+impl ::core::convert::From<PyAction> for super::shares::v1::Action {
+    fn from(value: PyAction) -> Self {
+        let n = value.__to_proto_i32();
+        <super::shares::v1::Action as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "DataObjectStatus", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyDataObjectStatus {
+    DATA_OBJECT_STATUS_UNSPECIFIED = 0isize,
+    ACTIVE = 1isize,
+    PERMISSION_DENIED = 2isize,
+}
+impl PyDataObjectStatus {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyDataObjectStatus::DATA_OBJECT_STATUS_UNSPECIFIED => 0i32,
+            PyDataObjectStatus::ACTIVE => 1i32,
+            PyDataObjectStatus::PERMISSION_DENIED => 2i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyDataObjectStatus::DATA_OBJECT_STATUS_UNSPECIFIED,
+            1i32 => PyDataObjectStatus::ACTIVE,
+            2i32 => PyDataObjectStatus::PERMISSION_DENIED,
+            _ => PyDataObjectStatus::DATA_OBJECT_STATUS_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::shares::v1::DataObjectStatus> for PyDataObjectStatus {
+    fn from(value: super::shares::v1::DataObjectStatus) -> Self {
+        PyDataObjectStatus::__from_proto_i32(
+            <super::shares::v1::DataObjectStatus as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyDataObjectStatus> for super::shares::v1::DataObjectStatus {
+    fn from(value: PyDataObjectStatus) -> Self {
+        let n = value.__to_proto_i32();
+        <super::shares::v1::DataObjectStatus as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "DataObjectType", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyDataObjectType {
+    DATA_OBJECT_TYPE_UNSPECIFIED = 0isize,
+    TABLE = 1isize,
+    SCHEMA = 2isize,
+    VIEW = 3isize,
+    MATERIALIZED_VIEW = 4isize,
+    STREAMING_TABLE = 5isize,
+    MODEL = 6isize,
+    FUNCTION = 8isize,
+    VOLUME = 10isize,
+    AGENT_SKILL = 11isize,
+}
+impl PyDataObjectType {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyDataObjectType::DATA_OBJECT_TYPE_UNSPECIFIED => 0i32,
+            PyDataObjectType::TABLE => 1i32,
+            PyDataObjectType::SCHEMA => 2i32,
+            PyDataObjectType::VIEW => 3i32,
+            PyDataObjectType::MATERIALIZED_VIEW => 4i32,
+            PyDataObjectType::STREAMING_TABLE => 5i32,
+            PyDataObjectType::MODEL => 6i32,
+            PyDataObjectType::FUNCTION => 8i32,
+            PyDataObjectType::VOLUME => 10i32,
+            PyDataObjectType::AGENT_SKILL => 11i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyDataObjectType::DATA_OBJECT_TYPE_UNSPECIFIED,
+            1i32 => PyDataObjectType::TABLE,
+            2i32 => PyDataObjectType::SCHEMA,
+            3i32 => PyDataObjectType::VIEW,
+            4i32 => PyDataObjectType::MATERIALIZED_VIEW,
+            5i32 => PyDataObjectType::STREAMING_TABLE,
+            6i32 => PyDataObjectType::MODEL,
+            8i32 => PyDataObjectType::FUNCTION,
+            10i32 => PyDataObjectType::VOLUME,
+            11i32 => PyDataObjectType::AGENT_SKILL,
+            _ => PyDataObjectType::DATA_OBJECT_TYPE_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::shares::v1::DataObjectType> for PyDataObjectType {
+    fn from(value: super::shares::v1::DataObjectType) -> Self {
+        PyDataObjectType::__from_proto_i32(
+            <super::shares::v1::DataObjectType as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyDataObjectType> for super::shares::v1::DataObjectType {
+    fn from(value: PyDataObjectType) -> Self {
+        let n = value.__to_proto_i32();
+        <super::shares::v1::DataObjectType as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "HistoryStatus", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyHistoryStatus {
+    DISABLED = 0isize,
+    ENABLED = 1isize,
+}
+impl PyHistoryStatus {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyHistoryStatus::DISABLED => 0i32,
+            PyHistoryStatus::ENABLED => 1i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyHistoryStatus::DISABLED,
+            1i32 => PyHistoryStatus::ENABLED,
+            _ => PyHistoryStatus::DISABLED,
+        }
+    }
+}
+impl ::core::convert::From<super::shares::v1::HistoryStatus> for PyHistoryStatus {
+    fn from(value: super::shares::v1::HistoryStatus) -> Self {
+        PyHistoryStatus::__from_proto_i32(
+            <super::shares::v1::HistoryStatus as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyHistoryStatus> for super::shares::v1::HistoryStatus {
+    fn from(value: PyHistoryStatus) -> Self {
+        let n = value.__to_proto_i32();
+        <super::shares::v1::HistoryStatus as ::buffa::Enumeration>::from_i32(n).unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
+#[::pyo3::pyclass(eq, eq_int, name = "PartitionValueOp", from_py_object)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum PyPartitionValueOp {
+    PARTITION_VALUE_OP_UNSPECIFIED = 0isize,
+    EQUAL = 1isize,
+    LIKE = 2isize,
+}
+impl PyPartitionValueOp {
+    fn __to_proto_i32(self) -> i32 {
+        match self {
+            PyPartitionValueOp::PARTITION_VALUE_OP_UNSPECIFIED => 0i32,
+            PyPartitionValueOp::EQUAL => 1i32,
+            PyPartitionValueOp::LIKE => 2i32,
+        }
+    }
+    fn __from_proto_i32(value: i32) -> Self {
+        match value {
+            0i32 => PyPartitionValueOp::PARTITION_VALUE_OP_UNSPECIFIED,
+            1i32 => PyPartitionValueOp::EQUAL,
+            2i32 => PyPartitionValueOp::LIKE,
+            _ => PyPartitionValueOp::PARTITION_VALUE_OP_UNSPECIFIED,
+        }
+    }
+}
+impl ::core::convert::From<super::shares::v1::PartitionValueOp> for PyPartitionValueOp {
+    fn from(value: super::shares::v1::PartitionValueOp) -> Self {
+        PyPartitionValueOp::__from_proto_i32(
+            <super::shares::v1::PartitionValueOp as ::buffa::Enumeration>::to_i32(&value),
+        )
+    }
+}
+impl ::core::convert::From<PyPartitionValueOp> for super::shares::v1::PartitionValueOp {
+    fn from(value: PyPartitionValueOp) -> Self {
+        let n = value.__to_proto_i32();
+        <super::shares::v1::PartitionValueOp as ::buffa::Enumeration>::from_i32(n)
+            .unwrap_or_default()
+    }
+}
+#[allow(non_camel_case_types)]
 #[::pyo3::pyclass(eq, eq_int, name = "ColumnTypeName", from_py_object)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum PyColumnTypeName {
@@ -9563,6 +9860,1603 @@ impl ::core::convert::From<PyUpdatePolicyRequest> for super::policies::v1::Updat
         value.0
     }
 }
+#[::pyo3::pyclass(name = "CreateProviderRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyCreateProviderRequest(pub super::providers::v1::CreateProviderRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyCreateProviderRequest {
+    #[new]
+    #[pyo3(
+        signature = (
+            name = None,
+            authentication_type = None,
+            owner = None,
+            comment = None,
+            recipient_profile_str = None,
+            properties = None
+        )
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        authentication_type: ::core::option::Option<PyProviderAuthenticationType>,
+        owner: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        recipient_profile_str: ::core::option::Option<::std::string::String>,
+        properties: ::core::option::Option<
+            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        >,
+    ) -> Self {
+        let mut inner =
+            <super::providers::v1::CreateProviderRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        if let ::core::option::Option::Some(value) = authentication_type {
+            inner.authentication_type =
+                ::buffa::EnumValue::Known(
+                    <super::providers::v1::ProviderAuthenticationType as ::core::convert::From<
+                        _,
+                    >>::from(value),
+                );
+        }
+        {
+            let value = owner;
+            inner.owner = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = recipient_profile_str;
+            inner.recipient_profile_str = value;
+        }
+        if let ::core::option::Option::Some(value) = properties {
+            inner.properties = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn authentication_type(&self) -> PyProviderAuthenticationType {
+        PyProviderAuthenticationType::from(
+            self.0.authentication_type.as_known().unwrap_or_default(),
+        )
+    }
+    #[getter]
+    fn owner(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.owner.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn recipient_profile_str(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.recipient_profile_str.clone()
+    }
+    #[getter]
+    fn properties(
+        &self,
+    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
+        self.0.properties.clone()
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(authentication_type)]
+    fn set_authentication_type(&mut self, value: PyProviderAuthenticationType) {
+        self.0.authentication_type = ::buffa::EnumValue::Known(
+            <super::providers::v1::ProviderAuthenticationType as ::core::convert::From<_>>::from(
+                value,
+            ),
+        );
+    }
+    #[setter(owner)]
+    fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.owner = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(recipient_profile_str)]
+    fn set_recipient_profile_str(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.recipient_profile_str = value;
+    }
+    #[setter(properties)]
+    fn set_properties(
+        &mut self,
+        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+    ) {
+        self.0.properties = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::providers::v1::CreateProviderRequest>
+    for PyCreateProviderRequest
+{
+    fn from(value: super::providers::v1::CreateProviderRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyCreateProviderRequest>
+    for super::providers::v1::CreateProviderRequest
+{
+    fn from(value: PyCreateProviderRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "DeleteProviderRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyDeleteProviderRequest(pub super::providers::v1::DeleteProviderRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyDeleteProviderRequest {
+    #[new]
+    #[pyo3(signature = (name = None))]
+    fn new(name: ::core::option::Option<::std::string::String>) -> Self {
+        let mut inner =
+            <super::providers::v1::DeleteProviderRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::providers::v1::DeleteProviderRequest>
+    for PyDeleteProviderRequest
+{
+    fn from(value: super::providers::v1::DeleteProviderRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyDeleteProviderRequest>
+    for super::providers::v1::DeleteProviderRequest
+{
+    fn from(value: PyDeleteProviderRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "GetProviderRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyGetProviderRequest(pub super::providers::v1::GetProviderRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGetProviderRequest {
+    #[new]
+    #[pyo3(signature = (name = None))]
+    fn new(name: ::core::option::Option<::std::string::String>) -> Self {
+        let mut inner =
+            <super::providers::v1::GetProviderRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::providers::v1::GetProviderRequest> for PyGetProviderRequest {
+    fn from(value: super::providers::v1::GetProviderRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyGetProviderRequest> for super::providers::v1::GetProviderRequest {
+    fn from(value: PyGetProviderRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListProvidersRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyListProvidersRequest(pub super::providers::v1::ListProvidersRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListProvidersRequest {
+    #[new]
+    #[pyo3(signature = (max_results = None, page_token = None))]
+    fn new(
+        max_results: ::core::option::Option<i32>,
+        page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::providers::v1::ListProvidersRequest as ::core::default::Default>::default();
+        {
+            let value = max_results;
+            inner.max_results = value;
+        }
+        {
+            let value = page_token;
+            inner.page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn max_results(&self) -> ::core::option::Option<i32> {
+        self.0.max_results
+    }
+    #[getter]
+    fn page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.page_token.clone()
+    }
+    #[setter(max_results)]
+    fn set_max_results(&mut self, value: ::core::option::Option<i32>) {
+        self.0.max_results = value;
+    }
+    #[setter(page_token)]
+    fn set_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::providers::v1::ListProvidersRequest> for PyListProvidersRequest {
+    fn from(value: super::providers::v1::ListProvidersRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListProvidersRequest> for super::providers::v1::ListProvidersRequest {
+    fn from(value: PyListProvidersRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListProvidersResponse", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyListProvidersResponse(pub super::providers::v1::ListProvidersResponse);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListProvidersResponse {
+    #[new]
+    #[pyo3(signature = (providers = None, next_page_token = None))]
+    fn new(
+        providers: ::core::option::Option<::std::vec::Vec<PyProvider>>,
+        next_page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::providers::v1::ListProvidersResponse as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = providers {
+            inner.providers = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = next_page_token;
+            inner.next_page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn providers(&self) -> ::std::vec::Vec<PyProvider> {
+        self.0
+            .providers
+            .iter()
+            .cloned()
+            .map(PyProvider::from)
+            .collect()
+    }
+    #[getter]
+    fn next_page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.next_page_token.clone()
+    }
+    #[setter(providers)]
+    fn set_providers(&mut self, value: ::std::vec::Vec<PyProvider>) {
+        self.0.providers = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(next_page_token)]
+    fn set_next_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.next_page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::providers::v1::ListProvidersResponse>
+    for PyListProvidersResponse
+{
+    fn from(value: super::providers::v1::ListProvidersResponse) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListProvidersResponse>
+    for super::providers::v1::ListProvidersResponse
+{
+    fn from(value: PyListProvidersResponse) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "Provider", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyProvider(pub super::providers::v1::Provider);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyProvider {
+    #[new]
+    #[pyo3(
+        signature = (
+            id = None,
+            name = None,
+            authentication_type = None,
+            owner = None,
+            comment = None,
+            recipient_profile_str = None,
+            properties = None,
+            created_at = None,
+            created_by = None,
+            updated_at = None,
+            updated_by = None
+        )
+    )]
+    fn new(
+        id: ::core::option::Option<::std::string::String>,
+        name: ::core::option::Option<::std::string::String>,
+        authentication_type: ::core::option::Option<PyProviderAuthenticationType>,
+        owner: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        recipient_profile_str: ::core::option::Option<::std::string::String>,
+        properties: ::core::option::Option<
+            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        >,
+        created_at: ::core::option::Option<i64>,
+        created_by: ::core::option::Option<::std::string::String>,
+        updated_at: ::core::option::Option<i64>,
+        updated_by: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner = <super::providers::v1::Provider as ::core::default::Default>::default();
+        {
+            let value = id;
+            inner.id = value;
+        }
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        if let ::core::option::Option::Some(value) = authentication_type {
+            inner.authentication_type =
+                ::buffa::EnumValue::Known(
+                    <super::providers::v1::ProviderAuthenticationType as ::core::convert::From<
+                        _,
+                    >>::from(value),
+                );
+        }
+        {
+            let value = owner;
+            inner.owner = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = recipient_profile_str;
+            inner.recipient_profile_str = value;
+        }
+        if let ::core::option::Option::Some(value) = properties {
+            inner.properties = value;
+        }
+        {
+            let value = created_at;
+            inner.created_at = value;
+        }
+        {
+            let value = created_by;
+            inner.created_by = value;
+        }
+        {
+            let value = updated_at;
+            inner.updated_at = value;
+        }
+        {
+            let value = updated_by;
+            inner.updated_by = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn id(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.id.clone()
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn authentication_type(&self) -> PyProviderAuthenticationType {
+        PyProviderAuthenticationType::from(
+            self.0.authentication_type.as_known().unwrap_or_default(),
+        )
+    }
+    #[getter]
+    fn owner(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.owner.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn recipient_profile_str(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.recipient_profile_str.clone()
+    }
+    #[getter]
+    fn properties(
+        &self,
+    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
+        self.0.properties.clone()
+    }
+    #[getter]
+    fn created_at(&self) -> ::core::option::Option<i64> {
+        self.0.created_at
+    }
+    #[getter]
+    fn created_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.created_by.clone()
+    }
+    #[getter]
+    fn updated_at(&self) -> ::core::option::Option<i64> {
+        self.0.updated_at
+    }
+    #[getter]
+    fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.updated_by.clone()
+    }
+    #[setter(id)]
+    fn set_id(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.id = value;
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(authentication_type)]
+    fn set_authentication_type(&mut self, value: PyProviderAuthenticationType) {
+        self.0.authentication_type = ::buffa::EnumValue::Known(
+            <super::providers::v1::ProviderAuthenticationType as ::core::convert::From<_>>::from(
+                value,
+            ),
+        );
+    }
+    #[setter(owner)]
+    fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.owner = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(recipient_profile_str)]
+    fn set_recipient_profile_str(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.recipient_profile_str = value;
+    }
+    #[setter(properties)]
+    fn set_properties(
+        &mut self,
+        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+    ) {
+        self.0.properties = value;
+    }
+    #[setter(created_at)]
+    fn set_created_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.created_at = value;
+    }
+    #[setter(created_by)]
+    fn set_created_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.created_by = value;
+    }
+    #[setter(updated_at)]
+    fn set_updated_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.updated_at = value;
+    }
+    #[setter(updated_by)]
+    fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.updated_by = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::providers::v1::Provider> for PyProvider {
+    fn from(value: super::providers::v1::Provider) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyProvider> for super::providers::v1::Provider {
+    fn from(value: PyProvider) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "UpdateProviderRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyUpdateProviderRequest(pub super::providers::v1::UpdateProviderRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyUpdateProviderRequest {
+    #[new]
+    #[pyo3(
+        signature = (
+            name = None,
+            new_name = None,
+            owner = None,
+            comment = None,
+            recipient_profile_str = None,
+            properties = None
+        )
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        new_name: ::core::option::Option<::std::string::String>,
+        owner: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        recipient_profile_str: ::core::option::Option<::std::string::String>,
+        properties: ::core::option::Option<
+            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        >,
+    ) -> Self {
+        let mut inner =
+            <super::providers::v1::UpdateProviderRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        {
+            let value = new_name;
+            inner.new_name = value;
+        }
+        {
+            let value = owner;
+            inner.owner = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = recipient_profile_str;
+            inner.recipient_profile_str = value;
+        }
+        if let ::core::option::Option::Some(value) = properties {
+            inner.properties = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn new_name(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.new_name.clone()
+    }
+    #[getter]
+    fn owner(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.owner.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn recipient_profile_str(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.recipient_profile_str.clone()
+    }
+    #[getter]
+    fn properties(
+        &self,
+    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
+        self.0.properties.clone()
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(new_name)]
+    fn set_new_name(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.new_name = value;
+    }
+    #[setter(owner)]
+    fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.owner = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(recipient_profile_str)]
+    fn set_recipient_profile_str(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.recipient_profile_str = value;
+    }
+    #[setter(properties)]
+    fn set_properties(
+        &mut self,
+        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+    ) {
+        self.0.properties = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::providers::v1::UpdateProviderRequest>
+    for PyUpdateProviderRequest
+{
+    fn from(value: super::providers::v1::UpdateProviderRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyUpdateProviderRequest>
+    for super::providers::v1::UpdateProviderRequest
+{
+    fn from(value: PyUpdateProviderRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "CreateRecipientRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyCreateRecipientRequest(pub super::recipients::v1::CreateRecipientRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyCreateRecipientRequest {
+    #[new]
+    #[pyo3(
+        signature = (
+            name = None,
+            authentication_type = None,
+            owner = None,
+            comment = None,
+            properties_kvpairs = None,
+            expiration_time = None
+        )
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        authentication_type: ::core::option::Option<PyAuthenticationType>,
+        owner: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
+        expiration_time: ::core::option::Option<i64>,
+    ) -> Self {
+        let mut inner =
+            <super::recipients::v1::CreateRecipientRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        if let ::core::option::Option::Some(value) = authentication_type {
+            inner.authentication_type = ::buffa::EnumValue::Known(
+                <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(
+                    value,
+                ),
+            );
+        }
+        if let ::core::option::Option::Some(value) = owner {
+            inner.owner = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = properties_kvpairs;
+            inner.properties_kvpairs = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = expiration_time;
+            inner.expiration_time = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn authentication_type(&self) -> PyAuthenticationType {
+        PyAuthenticationType::from(self.0.authentication_type.as_known().unwrap_or_default())
+    }
+    #[getter]
+    fn owner(&self) -> ::std::string::String {
+        self.0.owner.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn properties_kvpairs(&self) -> ::core::option::Option<PySecurablePropertiesKvPairs> {
+        self.0
+            .properties_kvpairs
+            .clone()
+            .into_option()
+            .map(PySecurablePropertiesKvPairs::from)
+    }
+    #[getter]
+    fn expiration_time(&self) -> ::core::option::Option<i64> {
+        self.0.expiration_time
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(authentication_type)]
+    fn set_authentication_type(&mut self, value: PyAuthenticationType) {
+        self.0.authentication_type = ::buffa::EnumValue::Known(
+            <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(value),
+        );
+    }
+    #[setter(owner)]
+    fn set_owner(&mut self, value: ::std::string::String) {
+        self.0.owner = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(properties_kvpairs)]
+    fn set_properties_kvpairs(
+        &mut self,
+        value: ::core::option::Option<PySecurablePropertiesKvPairs>,
+    ) {
+        self.0.properties_kvpairs = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(expiration_time)]
+    fn set_expiration_time(&mut self, value: ::core::option::Option<i64>) {
+        self.0.expiration_time = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::CreateRecipientRequest>
+    for PyCreateRecipientRequest
+{
+    fn from(value: super::recipients::v1::CreateRecipientRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyCreateRecipientRequest>
+    for super::recipients::v1::CreateRecipientRequest
+{
+    fn from(value: PyCreateRecipientRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "DeleteRecipientRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyDeleteRecipientRequest(pub super::recipients::v1::DeleteRecipientRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyDeleteRecipientRequest {
+    #[new]
+    #[pyo3(signature = (name = None))]
+    fn new(name: ::core::option::Option<::std::string::String>) -> Self {
+        let mut inner =
+            <super::recipients::v1::DeleteRecipientRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::DeleteRecipientRequest>
+    for PyDeleteRecipientRequest
+{
+    fn from(value: super::recipients::v1::DeleteRecipientRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyDeleteRecipientRequest>
+    for super::recipients::v1::DeleteRecipientRequest
+{
+    fn from(value: PyDeleteRecipientRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "GetRecipientRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyGetRecipientRequest(pub super::recipients::v1::GetRecipientRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGetRecipientRequest {
+    #[new]
+    #[pyo3(signature = (name = None))]
+    fn new(name: ::core::option::Option<::std::string::String>) -> Self {
+        let mut inner =
+            <super::recipients::v1::GetRecipientRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::GetRecipientRequest> for PyGetRecipientRequest {
+    fn from(value: super::recipients::v1::GetRecipientRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyGetRecipientRequest> for super::recipients::v1::GetRecipientRequest {
+    fn from(value: PyGetRecipientRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListRecipientsRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyListRecipientsRequest(pub super::recipients::v1::ListRecipientsRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListRecipientsRequest {
+    #[new]
+    #[pyo3(signature = (max_results = None, page_token = None))]
+    fn new(
+        max_results: ::core::option::Option<i32>,
+        page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::recipients::v1::ListRecipientsRequest as ::core::default::Default>::default();
+        {
+            let value = max_results;
+            inner.max_results = value;
+        }
+        {
+            let value = page_token;
+            inner.page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn max_results(&self) -> ::core::option::Option<i32> {
+        self.0.max_results
+    }
+    #[getter]
+    fn page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.page_token.clone()
+    }
+    #[setter(max_results)]
+    fn set_max_results(&mut self, value: ::core::option::Option<i32>) {
+        self.0.max_results = value;
+    }
+    #[setter(page_token)]
+    fn set_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::ListRecipientsRequest>
+    for PyListRecipientsRequest
+{
+    fn from(value: super::recipients::v1::ListRecipientsRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListRecipientsRequest>
+    for super::recipients::v1::ListRecipientsRequest
+{
+    fn from(value: PyListRecipientsRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListRecipientsResponse", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyListRecipientsResponse(pub super::recipients::v1::ListRecipientsResponse);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListRecipientsResponse {
+    #[new]
+    #[pyo3(signature = (recipients = None, next_page_token = None))]
+    fn new(
+        recipients: ::core::option::Option<::std::vec::Vec<PyRecipient>>,
+        next_page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::recipients::v1::ListRecipientsResponse as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = recipients {
+            inner.recipients = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = next_page_token;
+            inner.next_page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn recipients(&self) -> ::std::vec::Vec<PyRecipient> {
+        self.0
+            .recipients
+            .iter()
+            .cloned()
+            .map(PyRecipient::from)
+            .collect()
+    }
+    #[getter]
+    fn next_page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.next_page_token.clone()
+    }
+    #[setter(recipients)]
+    fn set_recipients(&mut self, value: ::std::vec::Vec<PyRecipient>) {
+        self.0.recipients = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(next_page_token)]
+    fn set_next_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.next_page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::ListRecipientsResponse>
+    for PyListRecipientsResponse
+{
+    fn from(value: super::recipients::v1::ListRecipientsResponse) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListRecipientsResponse>
+    for super::recipients::v1::ListRecipientsResponse
+{
+    fn from(value: PyListRecipientsResponse) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "Recipient", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyRecipient(pub super::recipients::v1::Recipient);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyRecipient {
+    #[new]
+    #[pyo3(
+        signature = (
+            id = None,
+            name = None,
+            authentication_type = None,
+            owner = None,
+            comment = None,
+            properties_kvpairs = None,
+            created_at = None,
+            created_by = None,
+            tokens = None,
+            updated_at = None,
+            updated_by = None
+        )
+    )]
+    fn new(
+        id: ::core::option::Option<::std::string::String>,
+        name: ::core::option::Option<::std::string::String>,
+        authentication_type: ::core::option::Option<PyAuthenticationType>,
+        owner: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
+        created_at: ::core::option::Option<i64>,
+        created_by: ::core::option::Option<::std::string::String>,
+        tokens: ::core::option::Option<::std::vec::Vec<PyRecipientToken>>,
+        updated_at: ::core::option::Option<i64>,
+        updated_by: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner = <super::recipients::v1::Recipient as ::core::default::Default>::default();
+        {
+            let value = id;
+            inner.id = value;
+        }
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        if let ::core::option::Option::Some(value) = authentication_type {
+            inner.authentication_type = ::buffa::EnumValue::Known(
+                <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(
+                    value,
+                ),
+            );
+        }
+        {
+            let value = owner;
+            inner.owner = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = properties_kvpairs;
+            inner.properties_kvpairs = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = created_at;
+            inner.created_at = value;
+        }
+        {
+            let value = created_by;
+            inner.created_by = value;
+        }
+        if let ::core::option::Option::Some(value) = tokens {
+            inner.tokens = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = updated_at;
+            inner.updated_at = value;
+        }
+        {
+            let value = updated_by;
+            inner.updated_by = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn id(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.id.clone()
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn authentication_type(&self) -> PyAuthenticationType {
+        PyAuthenticationType::from(self.0.authentication_type.as_known().unwrap_or_default())
+    }
+    #[getter]
+    fn owner(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.owner.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn properties_kvpairs(&self) -> ::core::option::Option<PySecurablePropertiesKvPairs> {
+        self.0
+            .properties_kvpairs
+            .clone()
+            .into_option()
+            .map(PySecurablePropertiesKvPairs::from)
+    }
+    #[getter]
+    fn created_at(&self) -> ::core::option::Option<i64> {
+        self.0.created_at
+    }
+    #[getter]
+    fn created_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.created_by.clone()
+    }
+    #[getter]
+    fn tokens(&self) -> ::std::vec::Vec<PyRecipientToken> {
+        self.0
+            .tokens
+            .iter()
+            .cloned()
+            .map(PyRecipientToken::from)
+            .collect()
+    }
+    #[getter]
+    fn updated_at(&self) -> ::core::option::Option<i64> {
+        self.0.updated_at
+    }
+    #[getter]
+    fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.updated_by.clone()
+    }
+    #[setter(id)]
+    fn set_id(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.id = value;
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(authentication_type)]
+    fn set_authentication_type(&mut self, value: PyAuthenticationType) {
+        self.0.authentication_type = ::buffa::EnumValue::Known(
+            <super::recipients::v1::AuthenticationType as ::core::convert::From<_>>::from(value),
+        );
+    }
+    #[setter(owner)]
+    fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.owner = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(properties_kvpairs)]
+    fn set_properties_kvpairs(
+        &mut self,
+        value: ::core::option::Option<PySecurablePropertiesKvPairs>,
+    ) {
+        self.0.properties_kvpairs = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(created_at)]
+    fn set_created_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.created_at = value;
+    }
+    #[setter(created_by)]
+    fn set_created_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.created_by = value;
+    }
+    #[setter(tokens)]
+    fn set_tokens(&mut self, value: ::std::vec::Vec<PyRecipientToken>) {
+        self.0.tokens = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(updated_at)]
+    fn set_updated_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.updated_at = value;
+    }
+    #[setter(updated_by)]
+    fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.updated_by = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::Recipient> for PyRecipient {
+    fn from(value: super::recipients::v1::Recipient) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyRecipient> for super::recipients::v1::Recipient {
+    fn from(value: PyRecipient) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "RecipientToken", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyRecipientToken(pub super::recipients::v1::RecipientToken);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyRecipientToken {
+    #[new]
+    #[pyo3(
+        signature = (
+            id = None,
+            created_at = None,
+            created_by = None,
+            activation_url = None,
+            expiration_time = None,
+            updated_at = None,
+            updated_by = None
+        )
+    )]
+    fn new(
+        id: ::core::option::Option<::std::string::String>,
+        created_at: ::core::option::Option<i64>,
+        created_by: ::core::option::Option<::std::string::String>,
+        activation_url: ::core::option::Option<::std::string::String>,
+        expiration_time: ::core::option::Option<i64>,
+        updated_at: ::core::option::Option<i64>,
+        updated_by: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::recipients::v1::RecipientToken as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = id {
+            inner.id = value;
+        }
+        if let ::core::option::Option::Some(value) = created_at {
+            inner.created_at = value;
+        }
+        if let ::core::option::Option::Some(value) = created_by {
+            inner.created_by = value;
+        }
+        if let ::core::option::Option::Some(value) = activation_url {
+            inner.activation_url = value;
+        }
+        if let ::core::option::Option::Some(value) = expiration_time {
+            inner.expiration_time = value;
+        }
+        if let ::core::option::Option::Some(value) = updated_at {
+            inner.updated_at = value;
+        }
+        if let ::core::option::Option::Some(value) = updated_by {
+            inner.updated_by = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn id(&self) -> ::std::string::String {
+        self.0.id.clone()
+    }
+    #[getter]
+    fn created_at(&self) -> i64 {
+        self.0.created_at
+    }
+    #[getter]
+    fn created_by(&self) -> ::std::string::String {
+        self.0.created_by.clone()
+    }
+    #[getter]
+    fn activation_url(&self) -> ::std::string::String {
+        self.0.activation_url.clone()
+    }
+    #[getter]
+    fn expiration_time(&self) -> i64 {
+        self.0.expiration_time
+    }
+    #[getter]
+    fn updated_at(&self) -> i64 {
+        self.0.updated_at
+    }
+    #[getter]
+    fn updated_by(&self) -> ::std::string::String {
+        self.0.updated_by.clone()
+    }
+    #[setter(id)]
+    fn set_id(&mut self, value: ::std::string::String) {
+        self.0.id = value;
+    }
+    #[setter(created_at)]
+    fn set_created_at(&mut self, value: i64) {
+        self.0.created_at = value;
+    }
+    #[setter(created_by)]
+    fn set_created_by(&mut self, value: ::std::string::String) {
+        self.0.created_by = value;
+    }
+    #[setter(activation_url)]
+    fn set_activation_url(&mut self, value: ::std::string::String) {
+        self.0.activation_url = value;
+    }
+    #[setter(expiration_time)]
+    fn set_expiration_time(&mut self, value: i64) {
+        self.0.expiration_time = value;
+    }
+    #[setter(updated_at)]
+    fn set_updated_at(&mut self, value: i64) {
+        self.0.updated_at = value;
+    }
+    #[setter(updated_by)]
+    fn set_updated_by(&mut self, value: ::std::string::String) {
+        self.0.updated_by = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::RecipientToken> for PyRecipientToken {
+    fn from(value: super::recipients::v1::RecipientToken) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyRecipientToken> for super::recipients::v1::RecipientToken {
+    fn from(value: PyRecipientToken) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "RotateRecipientTokenRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyRotateRecipientTokenRequest(pub super::recipients::v1::RotateRecipientTokenRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyRotateRecipientTokenRequest {
+    #[new]
+    #[pyo3(signature = (name = None, existing_token_expire_in_seconds = None))]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        existing_token_expire_in_seconds: ::core::option::Option<i64>,
+    ) -> Self {
+        let mut inner = <super::recipients::v1::RotateRecipientTokenRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        {
+            let value = existing_token_expire_in_seconds;
+            inner.existing_token_expire_in_seconds = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn existing_token_expire_in_seconds(&self) -> ::core::option::Option<i64> {
+        self.0.existing_token_expire_in_seconds
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(existing_token_expire_in_seconds)]
+    fn set_existing_token_expire_in_seconds(&mut self, value: ::core::option::Option<i64>) {
+        self.0.existing_token_expire_in_seconds = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::RotateRecipientTokenRequest>
+    for PyRotateRecipientTokenRequest
+{
+    fn from(value: super::recipients::v1::RotateRecipientTokenRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyRotateRecipientTokenRequest>
+    for super::recipients::v1::RotateRecipientTokenRequest
+{
+    fn from(value: PyRotateRecipientTokenRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "SecurablePropertiesKvPairs", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PySecurablePropertiesKvPairs(pub super::recipients::v1::SecurablePropertiesKvPairs);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PySecurablePropertiesKvPairs {
+    #[new]
+    #[pyo3(signature = (properties = None))]
+    fn new(
+        properties: ::core::option::Option<
+            ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+        >,
+    ) -> Self {
+        let mut inner = <super::recipients::v1::SecurablePropertiesKvPairs as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = properties {
+            inner.properties = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn properties(
+        &self,
+    ) -> ::std::collections::HashMap<::std::string::String, ::std::string::String> {
+        self.0.properties.clone()
+    }
+    #[setter(properties)]
+    fn set_properties(
+        &mut self,
+        value: ::std::collections::HashMap<::std::string::String, ::std::string::String>,
+    ) {
+        self.0.properties = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::SecurablePropertiesKvPairs>
+    for PySecurablePropertiesKvPairs
+{
+    fn from(value: super::recipients::v1::SecurablePropertiesKvPairs) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PySecurablePropertiesKvPairs>
+    for super::recipients::v1::SecurablePropertiesKvPairs
+{
+    fn from(value: PySecurablePropertiesKvPairs) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "UpdateRecipientRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyUpdateRecipientRequest(pub super::recipients::v1::UpdateRecipientRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyUpdateRecipientRequest {
+    #[new]
+    #[pyo3(
+        signature = (
+            name = None,
+            new_name = None,
+            owner = None,
+            comment = None,
+            properties_kvpairs = None,
+            expiration_time = None
+        )
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        new_name: ::core::option::Option<::std::string::String>,
+        owner: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
+        expiration_time: ::core::option::Option<i64>,
+    ) -> Self {
+        let mut inner =
+            <super::recipients::v1::UpdateRecipientRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        {
+            let value = new_name;
+            inner.new_name = value;
+        }
+        {
+            let value = owner;
+            inner.owner = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = properties_kvpairs;
+            inner.properties_kvpairs = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        {
+            let value = expiration_time;
+            inner.expiration_time = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn new_name(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.new_name.clone()
+    }
+    #[getter]
+    fn owner(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.owner.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn properties_kvpairs(&self) -> ::core::option::Option<PySecurablePropertiesKvPairs> {
+        self.0
+            .properties_kvpairs
+            .clone()
+            .into_option()
+            .map(PySecurablePropertiesKvPairs::from)
+    }
+    #[getter]
+    fn expiration_time(&self) -> ::core::option::Option<i64> {
+        self.0.expiration_time
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(new_name)]
+    fn set_new_name(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.new_name = value;
+    }
+    #[setter(owner)]
+    fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.owner = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(properties_kvpairs)]
+    fn set_properties_kvpairs(
+        &mut self,
+        value: ::core::option::Option<PySecurablePropertiesKvPairs>,
+    ) {
+        self.0.properties_kvpairs = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    #[setter(expiration_time)]
+    fn set_expiration_time(&mut self, value: ::core::option::Option<i64>) {
+        self.0.expiration_time = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::recipients::v1::UpdateRecipientRequest>
+    for PyUpdateRecipientRequest
+{
+    fn from(value: super::recipients::v1::UpdateRecipientRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyUpdateRecipientRequest>
+    for super::recipients::v1::UpdateRecipientRequest
+{
+    fn from(value: PyUpdateRecipientRequest) -> Self {
+        value.0
+    }
+}
 #[::pyo3::pyclass(name = "CreateRegisteredModelRequest", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PyCreateRegisteredModelRequest(
@@ -10954,6 +12848,1395 @@ impl ::core::convert::From<super::schemas::v1::UpdateSchemaRequest> for PyUpdate
 }
 impl ::core::convert::From<PyUpdateSchemaRequest> for super::schemas::v1::UpdateSchemaRequest {
     fn from(value: PyUpdateSchemaRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "CreateShareRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyCreateShareRequest(pub super::shares::v1::CreateShareRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyCreateShareRequest {
+    #[new]
+    #[pyo3(signature = (name = None, comment = None, storage_root = None))]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        storage_root: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::shares::v1::CreateShareRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = storage_root;
+            inner.storage_root = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn storage_root(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.storage_root.clone()
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(storage_root)]
+    fn set_storage_root(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.storage_root = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::CreateShareRequest> for PyCreateShareRequest {
+    fn from(value: super::shares::v1::CreateShareRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyCreateShareRequest> for super::shares::v1::CreateShareRequest {
+    fn from(value: PyCreateShareRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "DataObject", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyDataObject(pub super::shares::v1::DataObject);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyDataObject {
+    #[new]
+    #[pyo3(
+        signature = (
+            name = None,
+            data_object_type = None,
+            added_at = None,
+            added_by = None,
+            comment = None,
+            shared_as = None,
+            partitions = None,
+            cdf_enabled = None,
+            history_data_sharing_status = None,
+            start_version = None,
+            string_shared_as = None,
+            status = None
+        )
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        data_object_type: ::core::option::Option<PyDataObjectType>,
+        added_at: ::core::option::Option<i64>,
+        added_by: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        shared_as: ::core::option::Option<::std::string::String>,
+        partitions: ::core::option::Option<::std::vec::Vec<PyPartition>>,
+        cdf_enabled: ::core::option::Option<bool>,
+        history_data_sharing_status: ::core::option::Option<PyHistoryStatus>,
+        start_version: ::core::option::Option<i64>,
+        string_shared_as: ::core::option::Option<::std::string::String>,
+        status: ::core::option::Option<PyDataObjectStatus>,
+    ) -> Self {
+        let mut inner = <super::shares::v1::DataObject as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        if let ::core::option::Option::Some(value) = data_object_type {
+            inner.data_object_type = ::buffa::EnumValue::Known(
+                <super::shares::v1::DataObjectType as ::core::convert::From<_>>::from(value),
+            );
+        }
+        {
+            let value = added_at;
+            inner.added_at = value;
+        }
+        {
+            let value = added_by;
+            inner.added_by = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = shared_as;
+            inner.shared_as = value;
+        }
+        if let ::core::option::Option::Some(value) = partitions {
+            inner.partitions = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = cdf_enabled;
+            inner.cdf_enabled = value;
+        }
+        {
+            let value = history_data_sharing_status;
+            inner.history_data_sharing_status = value.map(|e| {
+                ::buffa::EnumValue::Known(
+                    <super::shares::v1::HistoryStatus as ::core::convert::From<_>>::from(e),
+                )
+            });
+        }
+        {
+            let value = start_version;
+            inner.start_version = value;
+        }
+        {
+            let value = string_shared_as;
+            inner.string_shared_as = value;
+        }
+        {
+            let value = status;
+            inner.status = value.map(|e| {
+                ::buffa::EnumValue::Known(
+                    <super::shares::v1::DataObjectStatus as ::core::convert::From<_>>::from(e),
+                )
+            });
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn data_object_type(&self) -> PyDataObjectType {
+        PyDataObjectType::from(self.0.data_object_type.as_known().unwrap_or_default())
+    }
+    #[getter]
+    fn added_at(&self) -> ::core::option::Option<i64> {
+        self.0.added_at
+    }
+    #[getter]
+    fn added_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.added_by.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn shared_as(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.shared_as.clone()
+    }
+    #[getter]
+    fn partitions(&self) -> ::std::vec::Vec<PyPartition> {
+        self.0
+            .partitions
+            .iter()
+            .cloned()
+            .map(PyPartition::from)
+            .collect()
+    }
+    #[getter]
+    fn cdf_enabled(&self) -> ::core::option::Option<bool> {
+        self.0.cdf_enabled
+    }
+    #[getter]
+    fn history_data_sharing_status(&self) -> ::core::option::Option<PyHistoryStatus> {
+        self.0
+            .history_data_sharing_status
+            .as_ref()
+            .and_then(|e| e.as_known())
+            .map(PyHistoryStatus::from)
+    }
+    #[getter]
+    fn start_version(&self) -> ::core::option::Option<i64> {
+        self.0.start_version
+    }
+    #[getter]
+    fn string_shared_as(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.string_shared_as.clone()
+    }
+    #[getter]
+    fn status(&self) -> ::core::option::Option<PyDataObjectStatus> {
+        self.0
+            .status
+            .as_ref()
+            .and_then(|e| e.as_known())
+            .map(PyDataObjectStatus::from)
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(data_object_type)]
+    fn set_data_object_type(&mut self, value: PyDataObjectType) {
+        self.0.data_object_type = ::buffa::EnumValue::Known(
+            <super::shares::v1::DataObjectType as ::core::convert::From<_>>::from(value),
+        );
+    }
+    #[setter(added_at)]
+    fn set_added_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.added_at = value;
+    }
+    #[setter(added_by)]
+    fn set_added_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.added_by = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(shared_as)]
+    fn set_shared_as(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.shared_as = value;
+    }
+    #[setter(partitions)]
+    fn set_partitions(&mut self, value: ::std::vec::Vec<PyPartition>) {
+        self.0.partitions = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(cdf_enabled)]
+    fn set_cdf_enabled(&mut self, value: ::core::option::Option<bool>) {
+        self.0.cdf_enabled = value;
+    }
+    #[setter(history_data_sharing_status)]
+    fn set_history_data_sharing_status(&mut self, value: ::core::option::Option<PyHistoryStatus>) {
+        self.0.history_data_sharing_status = value.map(|e| {
+            ::buffa::EnumValue::Known(
+                <super::shares::v1::HistoryStatus as ::core::convert::From<_>>::from(e),
+            )
+        });
+    }
+    #[setter(start_version)]
+    fn set_start_version(&mut self, value: ::core::option::Option<i64>) {
+        self.0.start_version = value;
+    }
+    #[setter(string_shared_as)]
+    fn set_string_shared_as(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.string_shared_as = value;
+    }
+    #[setter(status)]
+    fn set_status(&mut self, value: ::core::option::Option<PyDataObjectStatus>) {
+        self.0.status = value.map(|e| {
+            ::buffa::EnumValue::Known(
+                <super::shares::v1::DataObjectStatus as ::core::convert::From<_>>::from(e),
+            )
+        });
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::DataObject> for PyDataObject {
+    fn from(value: super::shares::v1::DataObject) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyDataObject> for super::shares::v1::DataObject {
+    fn from(value: PyDataObject) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "DataObjectUpdate", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyDataObjectUpdate(pub super::shares::v1::DataObjectUpdate);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyDataObjectUpdate {
+    #[new]
+    #[pyo3(signature = (action = None, data_object = None))]
+    fn new(
+        action: ::core::option::Option<PyAction>,
+        data_object: ::core::option::Option<PyDataObject>,
+    ) -> Self {
+        let mut inner =
+            <super::shares::v1::DataObjectUpdate as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = action {
+            inner.action =
+                ::buffa::EnumValue::Known(<super::shares::v1::Action as ::core::convert::From<
+                    _,
+                >>::from(value));
+        }
+        {
+            let value = data_object;
+            inner.data_object = value
+                .map(|w| ::buffa::MessageField::some(w.into()))
+                .unwrap_or_default();
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn action(&self) -> PyAction {
+        PyAction::from(self.0.action.as_known().unwrap_or_default())
+    }
+    #[getter]
+    fn data_object(&self) -> ::core::option::Option<PyDataObject> {
+        self.0
+            .data_object
+            .clone()
+            .into_option()
+            .map(PyDataObject::from)
+    }
+    #[setter(action)]
+    fn set_action(&mut self, value: PyAction) {
+        self.0.action = ::buffa::EnumValue::Known(
+            <super::shares::v1::Action as ::core::convert::From<_>>::from(value),
+        );
+    }
+    #[setter(data_object)]
+    fn set_data_object(&mut self, value: ::core::option::Option<PyDataObject>) {
+        self.0.data_object = value
+            .map(|w| ::buffa::MessageField::some(w.into()))
+            .unwrap_or_default();
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::DataObjectUpdate> for PyDataObjectUpdate {
+    fn from(value: super::shares::v1::DataObjectUpdate) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyDataObjectUpdate> for super::shares::v1::DataObjectUpdate {
+    fn from(value: PyDataObjectUpdate) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "DeleteShareRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyDeleteShareRequest(pub super::shares::v1::DeleteShareRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyDeleteShareRequest {
+    #[new]
+    #[pyo3(signature = (name = None))]
+    fn new(name: ::core::option::Option<::std::string::String>) -> Self {
+        let mut inner =
+            <super::shares::v1::DeleteShareRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::DeleteShareRequest> for PyDeleteShareRequest {
+    fn from(value: super::shares::v1::DeleteShareRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyDeleteShareRequest> for super::shares::v1::DeleteShareRequest {
+    fn from(value: PyDeleteShareRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "GetPermissionsRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyGetPermissionsRequest(pub super::shares::v1::GetPermissionsRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGetPermissionsRequest {
+    #[new]
+    #[pyo3(signature = (name = None, max_results = None, page_token = None))]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        max_results: ::core::option::Option<i32>,
+        page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::shares::v1::GetPermissionsRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        {
+            let value = max_results;
+            inner.max_results = value;
+        }
+        {
+            let value = page_token;
+            inner.page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn max_results(&self) -> ::core::option::Option<i32> {
+        self.0.max_results
+    }
+    #[getter]
+    fn page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.page_token.clone()
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(max_results)]
+    fn set_max_results(&mut self, value: ::core::option::Option<i32>) {
+        self.0.max_results = value;
+    }
+    #[setter(page_token)]
+    fn set_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::GetPermissionsRequest> for PyGetPermissionsRequest {
+    fn from(value: super::shares::v1::GetPermissionsRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyGetPermissionsRequest> for super::shares::v1::GetPermissionsRequest {
+    fn from(value: PyGetPermissionsRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "GetPermissionsResponse", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyGetPermissionsResponse(pub super::shares::v1::GetPermissionsResponse);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGetPermissionsResponse {
+    #[new]
+    #[pyo3(signature = (privilege_assignments = None, next_page_token = None))]
+    fn new(
+        privilege_assignments: ::core::option::Option<::std::vec::Vec<PyPrivilegeAssignment>>,
+        next_page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::shares::v1::GetPermissionsResponse as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = privilege_assignments {
+            inner.privilege_assignments =
+                value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = next_page_token;
+            inner.next_page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn privilege_assignments(&self) -> ::std::vec::Vec<PyPrivilegeAssignment> {
+        self.0
+            .privilege_assignments
+            .iter()
+            .cloned()
+            .map(PyPrivilegeAssignment::from)
+            .collect()
+    }
+    #[getter]
+    fn next_page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.next_page_token.clone()
+    }
+    #[setter(privilege_assignments)]
+    fn set_privilege_assignments(&mut self, value: ::std::vec::Vec<PyPrivilegeAssignment>) {
+        self.0.privilege_assignments = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(next_page_token)]
+    fn set_next_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.next_page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::GetPermissionsResponse> for PyGetPermissionsResponse {
+    fn from(value: super::shares::v1::GetPermissionsResponse) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyGetPermissionsResponse> for super::shares::v1::GetPermissionsResponse {
+    fn from(value: PyGetPermissionsResponse) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "GetShareRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyGetShareRequest(pub super::shares::v1::GetShareRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGetShareRequest {
+    #[new]
+    #[pyo3(signature = (name = None, include_shared_data = None))]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        include_shared_data: ::core::option::Option<bool>,
+    ) -> Self {
+        let mut inner = <super::shares::v1::GetShareRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        {
+            let value = include_shared_data;
+            inner.include_shared_data = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn include_shared_data(&self) -> ::core::option::Option<bool> {
+        self.0.include_shared_data
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(include_shared_data)]
+    fn set_include_shared_data(&mut self, value: ::core::option::Option<bool>) {
+        self.0.include_shared_data = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::GetShareRequest> for PyGetShareRequest {
+    fn from(value: super::shares::v1::GetShareRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyGetShareRequest> for super::shares::v1::GetShareRequest {
+    fn from(value: PyGetShareRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListSharesRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyListSharesRequest(pub super::shares::v1::ListSharesRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListSharesRequest {
+    #[new]
+    #[pyo3(signature = (max_results = None, page_token = None))]
+    fn new(
+        max_results: ::core::option::Option<i32>,
+        page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::shares::v1::ListSharesRequest as ::core::default::Default>::default();
+        {
+            let value = max_results;
+            inner.max_results = value;
+        }
+        {
+            let value = page_token;
+            inner.page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn max_results(&self) -> ::core::option::Option<i32> {
+        self.0.max_results
+    }
+    #[getter]
+    fn page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.page_token.clone()
+    }
+    #[setter(max_results)]
+    fn set_max_results(&mut self, value: ::core::option::Option<i32>) {
+        self.0.max_results = value;
+    }
+    #[setter(page_token)]
+    fn set_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::ListSharesRequest> for PyListSharesRequest {
+    fn from(value: super::shares::v1::ListSharesRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListSharesRequest> for super::shares::v1::ListSharesRequest {
+    fn from(value: PyListSharesRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "ListSharesResponse", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyListSharesResponse(pub super::shares::v1::ListSharesResponse);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyListSharesResponse {
+    #[new]
+    #[pyo3(signature = (shares = None, next_page_token = None))]
+    fn new(
+        shares: ::core::option::Option<::std::vec::Vec<PyShare>>,
+        next_page_token: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::shares::v1::ListSharesResponse as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = shares {
+            inner.shares = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = next_page_token;
+            inner.next_page_token = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn shares(&self) -> ::std::vec::Vec<PyShare> {
+        self.0.shares.iter().cloned().map(PyShare::from).collect()
+    }
+    #[getter]
+    fn next_page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.next_page_token.clone()
+    }
+    #[setter(shares)]
+    fn set_shares(&mut self, value: ::std::vec::Vec<PyShare>) {
+        self.0.shares = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(next_page_token)]
+    fn set_next_page_token(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.next_page_token = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::ListSharesResponse> for PyListSharesResponse {
+    fn from(value: super::shares::v1::ListSharesResponse) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyListSharesResponse> for super::shares::v1::ListSharesResponse {
+    fn from(value: PyListSharesResponse) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "Partition", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyPartition(pub super::shares::v1::Partition);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyPartition {
+    #[new]
+    #[pyo3(signature = (values = None))]
+    fn new(values: ::core::option::Option<::std::vec::Vec<PyPartitionValue>>) -> Self {
+        let mut inner = <super::shares::v1::Partition as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = values {
+            inner.values = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn values(&self) -> ::std::vec::Vec<PyPartitionValue> {
+        self.0
+            .values
+            .iter()
+            .cloned()
+            .map(PyPartitionValue::from)
+            .collect()
+    }
+    #[setter(values)]
+    fn set_values(&mut self, value: ::std::vec::Vec<PyPartitionValue>) {
+        self.0.values = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::Partition> for PyPartition {
+    fn from(value: super::shares::v1::Partition) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyPartition> for super::shares::v1::Partition {
+    fn from(value: PyPartition) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "PartitionValue", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyPartitionValue(pub super::shares::v1::PartitionValue);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyPartitionValue {
+    #[new]
+    #[pyo3(
+        signature = (name = None, value = None, recipient_property_key = None, op = None)
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        value: ::core::option::Option<::std::string::String>,
+        recipient_property_key: ::core::option::Option<::std::string::String>,
+        op: ::core::option::Option<PyPartitionValueOp>,
+    ) -> Self {
+        let mut inner = <super::shares::v1::PartitionValue as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        {
+            let value = value;
+            inner.value = value;
+        }
+        {
+            let value = recipient_property_key;
+            inner.recipient_property_key = value;
+        }
+        if let ::core::option::Option::Some(value) = op {
+            inner.op = ::buffa::EnumValue::Known(
+                <super::shares::v1::PartitionValueOp as ::core::convert::From<_>>::from(value),
+            );
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn value(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.value.clone()
+    }
+    #[getter]
+    fn recipient_property_key(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.recipient_property_key.clone()
+    }
+    #[getter]
+    fn op(&self) -> PyPartitionValueOp {
+        PyPartitionValueOp::from(self.0.op.as_known().unwrap_or_default())
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(value)]
+    fn set_value(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.value = value;
+    }
+    #[setter(recipient_property_key)]
+    fn set_recipient_property_key(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.recipient_property_key = value;
+    }
+    #[setter(op)]
+    fn set_op(&mut self, value: PyPartitionValueOp) {
+        self.0.op = ::buffa::EnumValue::Known(
+            <super::shares::v1::PartitionValueOp as ::core::convert::From<_>>::from(value),
+        );
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::PartitionValue> for PyPartitionValue {
+    fn from(value: super::shares::v1::PartitionValue) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyPartitionValue> for super::shares::v1::PartitionValue {
+    fn from(value: PyPartitionValue) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "PermissionsChange", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyPermissionsChange(pub super::shares::v1::PermissionsChange);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyPermissionsChange {
+    #[new]
+    #[pyo3(signature = (principal = None, add = None, remove = None))]
+    fn new(
+        principal: ::core::option::Option<::std::string::String>,
+        add: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        remove: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+    ) -> Self {
+        let mut inner =
+            <super::shares::v1::PermissionsChange as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = principal {
+            inner.principal = value;
+        }
+        if let ::core::option::Option::Some(value) = add {
+            inner.add = value;
+        }
+        if let ::core::option::Option::Some(value) = remove {
+            inner.remove = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn principal(&self) -> ::std::string::String {
+        self.0.principal.clone()
+    }
+    #[getter]
+    fn add(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.add.clone()
+    }
+    #[getter]
+    fn remove(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.remove.clone()
+    }
+    #[setter(principal)]
+    fn set_principal(&mut self, value: ::std::string::String) {
+        self.0.principal = value;
+    }
+    #[setter(add)]
+    fn set_add(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.add = value;
+    }
+    #[setter(remove)]
+    fn set_remove(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.remove = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::PermissionsChange> for PyPermissionsChange {
+    fn from(value: super::shares::v1::PermissionsChange) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyPermissionsChange> for super::shares::v1::PermissionsChange {
+    fn from(value: PyPermissionsChange) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "PrivilegeAssignment", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyPrivilegeAssignment(pub super::shares::v1::PrivilegeAssignment);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyPrivilegeAssignment {
+    #[new]
+    #[pyo3(signature = (principal = None, privileges = None))]
+    fn new(
+        principal: ::core::option::Option<::std::string::String>,
+        privileges: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+    ) -> Self {
+        let mut inner =
+            <super::shares::v1::PrivilegeAssignment as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = principal {
+            inner.principal = value;
+        }
+        if let ::core::option::Option::Some(value) = privileges {
+            inner.privileges = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn principal(&self) -> ::std::string::String {
+        self.0.principal.clone()
+    }
+    #[getter]
+    fn privileges(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.privileges.clone()
+    }
+    #[setter(principal)]
+    fn set_principal(&mut self, value: ::std::string::String) {
+        self.0.principal = value;
+    }
+    #[setter(privileges)]
+    fn set_privileges(&mut self, value: ::std::vec::Vec<::std::string::String>) {
+        self.0.privileges = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::PrivilegeAssignment> for PyPrivilegeAssignment {
+    fn from(value: super::shares::v1::PrivilegeAssignment) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyPrivilegeAssignment> for super::shares::v1::PrivilegeAssignment {
+    fn from(value: PyPrivilegeAssignment) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "Share", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyShare(pub super::shares::v1::Share);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyShare {
+    #[new]
+    #[pyo3(
+        signature = (
+            id = None,
+            name = None,
+            objects = None,
+            owner = None,
+            comment = None,
+            storage_location = None,
+            storage_root = None,
+            created_at = None,
+            created_by = None,
+            updated_at = None,
+            updated_by = None
+        )
+    )]
+    fn new(
+        id: ::core::option::Option<::std::string::String>,
+        name: ::core::option::Option<::std::string::String>,
+        objects: ::core::option::Option<::std::vec::Vec<PyDataObject>>,
+        owner: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+        storage_location: ::core::option::Option<::std::string::String>,
+        storage_root: ::core::option::Option<::std::string::String>,
+        created_at: ::core::option::Option<i64>,
+        created_by: ::core::option::Option<::std::string::String>,
+        updated_at: ::core::option::Option<i64>,
+        updated_by: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner = <super::shares::v1::Share as ::core::default::Default>::default();
+        {
+            let value = id;
+            inner.id = value;
+        }
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        if let ::core::option::Option::Some(value) = objects {
+            inner.objects = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = owner;
+            inner.owner = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        {
+            let value = storage_location;
+            inner.storage_location = value;
+        }
+        {
+            let value = storage_root;
+            inner.storage_root = value;
+        }
+        {
+            let value = created_at;
+            inner.created_at = value;
+        }
+        {
+            let value = created_by;
+            inner.created_by = value;
+        }
+        {
+            let value = updated_at;
+            inner.updated_at = value;
+        }
+        {
+            let value = updated_by;
+            inner.updated_by = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn id(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.id.clone()
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn objects(&self) -> ::std::vec::Vec<PyDataObject> {
+        self.0
+            .objects
+            .iter()
+            .cloned()
+            .map(PyDataObject::from)
+            .collect()
+    }
+    #[getter]
+    fn owner(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.owner.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[getter]
+    fn storage_location(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.storage_location.clone()
+    }
+    #[getter]
+    fn storage_root(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.storage_root.clone()
+    }
+    #[getter]
+    fn created_at(&self) -> ::core::option::Option<i64> {
+        self.0.created_at
+    }
+    #[getter]
+    fn created_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.created_by.clone()
+    }
+    #[getter]
+    fn updated_at(&self) -> ::core::option::Option<i64> {
+        self.0.updated_at
+    }
+    #[getter]
+    fn updated_by(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.updated_by.clone()
+    }
+    #[setter(id)]
+    fn set_id(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.id = value;
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(objects)]
+    fn set_objects(&mut self, value: ::std::vec::Vec<PyDataObject>) {
+        self.0.objects = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(owner)]
+    fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.owner = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    #[setter(storage_location)]
+    fn set_storage_location(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.storage_location = value;
+    }
+    #[setter(storage_root)]
+    fn set_storage_root(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.storage_root = value;
+    }
+    #[setter(created_at)]
+    fn set_created_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.created_at = value;
+    }
+    #[setter(created_by)]
+    fn set_created_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.created_by = value;
+    }
+    #[setter(updated_at)]
+    fn set_updated_at(&mut self, value: ::core::option::Option<i64>) {
+        self.0.updated_at = value;
+    }
+    #[setter(updated_by)]
+    fn set_updated_by(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.updated_by = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::Share> for PyShare {
+    fn from(value: super::shares::v1::Share) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyShare> for super::shares::v1::Share {
+    fn from(value: PyShare) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "UpdatePermissionsRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyUpdatePermissionsRequest(pub super::shares::v1::UpdatePermissionsRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyUpdatePermissionsRequest {
+    #[new]
+    #[pyo3(signature = (name = None, changes = None, omit_permissions_list = None))]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        changes: ::core::option::Option<::std::vec::Vec<PyPermissionsChange>>,
+        omit_permissions_list: ::core::option::Option<bool>,
+    ) -> Self {
+        let mut inner =
+            <super::shares::v1::UpdatePermissionsRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        if let ::core::option::Option::Some(value) = changes {
+            inner.changes = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = omit_permissions_list;
+            inner.omit_permissions_list = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn changes(&self) -> ::std::vec::Vec<PyPermissionsChange> {
+        self.0
+            .changes
+            .iter()
+            .cloned()
+            .map(PyPermissionsChange::from)
+            .collect()
+    }
+    #[getter]
+    fn omit_permissions_list(&self) -> ::core::option::Option<bool> {
+        self.0.omit_permissions_list
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(changes)]
+    fn set_changes(&mut self, value: ::std::vec::Vec<PyPermissionsChange>) {
+        self.0.changes = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(omit_permissions_list)]
+    fn set_omit_permissions_list(&mut self, value: ::core::option::Option<bool>) {
+        self.0.omit_permissions_list = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::UpdatePermissionsRequest>
+    for PyUpdatePermissionsRequest
+{
+    fn from(value: super::shares::v1::UpdatePermissionsRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyUpdatePermissionsRequest>
+    for super::shares::v1::UpdatePermissionsRequest
+{
+    fn from(value: PyUpdatePermissionsRequest) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "UpdatePermissionsResponse", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyUpdatePermissionsResponse(pub super::shares::v1::UpdatePermissionsResponse);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyUpdatePermissionsResponse {
+    #[new]
+    #[pyo3(signature = (privilege_assignments = None))]
+    fn new(
+        privilege_assignments: ::core::option::Option<::std::vec::Vec<PyPrivilegeAssignment>>,
+    ) -> Self {
+        let mut inner =
+            <super::shares::v1::UpdatePermissionsResponse as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = privilege_assignments {
+            inner.privilege_assignments =
+                value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn privilege_assignments(&self) -> ::std::vec::Vec<PyPrivilegeAssignment> {
+        self.0
+            .privilege_assignments
+            .iter()
+            .cloned()
+            .map(PyPrivilegeAssignment::from)
+            .collect()
+    }
+    #[setter(privilege_assignments)]
+    fn set_privilege_assignments(&mut self, value: ::std::vec::Vec<PyPrivilegeAssignment>) {
+        self.0.privilege_assignments = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::UpdatePermissionsResponse>
+    for PyUpdatePermissionsResponse
+{
+    fn from(value: super::shares::v1::UpdatePermissionsResponse) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyUpdatePermissionsResponse>
+    for super::shares::v1::UpdatePermissionsResponse
+{
+    fn from(value: PyUpdatePermissionsResponse) -> Self {
+        value.0
+    }
+}
+#[::pyo3::pyclass(name = "UpdateShareRequest", from_py_object)]
+#[derive(Clone, Debug)]
+pub struct PyUpdateShareRequest(pub super::shares::v1::UpdateShareRequest);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyUpdateShareRequest {
+    #[new]
+    #[pyo3(
+        signature = (
+            name = None,
+            updates = None,
+            new_name = None,
+            owner = None,
+            comment = None
+        )
+    )]
+    fn new(
+        name: ::core::option::Option<::std::string::String>,
+        updates: ::core::option::Option<::std::vec::Vec<PyDataObjectUpdate>>,
+        new_name: ::core::option::Option<::std::string::String>,
+        owner: ::core::option::Option<::std::string::String>,
+        comment: ::core::option::Option<::std::string::String>,
+    ) -> Self {
+        let mut inner =
+            <super::shares::v1::UpdateShareRequest as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = name {
+            inner.name = value;
+        }
+        if let ::core::option::Option::Some(value) = updates {
+            inner.updates = value.into_iter().map(::core::convert::Into::into).collect();
+        }
+        {
+            let value = new_name;
+            inner.new_name = value;
+        }
+        {
+            let value = owner;
+            inner.owner = value;
+        }
+        {
+            let value = comment;
+            inner.comment = value;
+        }
+        Self(inner)
+    }
+    #[getter]
+    fn name(&self) -> ::std::string::String {
+        self.0.name.clone()
+    }
+    #[getter]
+    fn updates(&self) -> ::std::vec::Vec<PyDataObjectUpdate> {
+        self.0
+            .updates
+            .iter()
+            .cloned()
+            .map(PyDataObjectUpdate::from)
+            .collect()
+    }
+    #[getter]
+    fn new_name(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.new_name.clone()
+    }
+    #[getter]
+    fn owner(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.owner.clone()
+    }
+    #[getter]
+    fn comment(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.comment.clone()
+    }
+    #[setter(name)]
+    fn set_name(&mut self, value: ::std::string::String) {
+        self.0.name = value;
+    }
+    #[setter(updates)]
+    fn set_updates(&mut self, value: ::std::vec::Vec<PyDataObjectUpdate>) {
+        self.0.updates = value.into_iter().map(::core::convert::Into::into).collect();
+    }
+    #[setter(new_name)]
+    fn set_new_name(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.new_name = value;
+    }
+    #[setter(owner)]
+    fn set_owner(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.owner = value;
+    }
+    #[setter(comment)]
+    fn set_comment(&mut self, value: ::core::option::Option<::std::string::String>) {
+        self.0.comment = value;
+    }
+    fn __repr__(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self.0)
+    }
+    fn __eq__(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::core::convert::From<super::shares::v1::UpdateShareRequest> for PyUpdateShareRequest {
+    fn from(value: super::shares::v1::UpdateShareRequest) -> Self {
+        Self(value)
+    }
+}
+impl ::core::convert::From<PyUpdateShareRequest> for super::shares::v1::UpdateShareRequest {
+    fn from(value: PyUpdateShareRequest) -> Self {
         value.0
     }
 }

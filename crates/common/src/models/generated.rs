@@ -108,6 +108,24 @@ pub mod policies {
 #[cfg(feature = "policies")]
 pub use policies::v1::PolicyInfo;
 
+#[cfg(feature = "providers")]
+pub mod providers {
+    pub mod v1 {
+        include!("_gen/unitycatalog.providers.v1.rs");
+    }
+}
+#[cfg(feature = "providers")]
+pub use providers::v1::Provider;
+
+#[cfg(feature = "recipients")]
+pub mod recipients {
+    pub mod v1 {
+        include!("_gen/unitycatalog.recipients.v1.rs");
+    }
+}
+#[cfg(feature = "recipients")]
+pub use recipients::v1::Recipient;
+
 #[cfg(feature = "registered_models")]
 pub mod registered_models {
     pub mod v1 {
@@ -125,6 +143,15 @@ pub mod schemas {
 }
 #[cfg(feature = "schemas")]
 pub use schemas::v1::Schema;
+
+#[cfg(feature = "shares")]
+pub mod shares {
+    pub mod v1 {
+        include!("_gen/unitycatalog.shares.v1.rs");
+    }
+}
+#[cfg(feature = "shares")]
+pub use shares::v1::Share;
 
 #[cfg(feature = "staging_tables")]
 pub mod staging_tables {

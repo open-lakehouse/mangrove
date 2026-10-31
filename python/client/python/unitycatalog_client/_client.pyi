@@ -517,6 +517,85 @@ class Credential:
         used_for_managed_storage: Optional[bool] = None,
     ) -> None: ...
 
+class DataObject:
+    added_at: Optional[int]
+    """The time when this data object is added to the share, in epoch milliseconds."""
+    added_by: Optional[str]
+    """Username of the sharer."""
+    cdf_enabled: Optional[bool]
+    """Whether to enable cdf or indicate if cdf is enabled on the shared object."""
+    comment: Optional[str]
+    """A user-provided comment when adding the data object to the share."""
+    data_object_type: DataObjectType
+    """Type of the data object."""
+    history_data_sharing_status: Optional[HistoryStatus]
+    """
+    Whether to enable or disable sharing of data history. If not specified, the default is
+    DISABLED.
+    """
+    name: str
+    """
+    A fully qualified name that uniquely identifies a data object. For example, a table's
+    fully qualified name is in the format of <catalog>.<schema>.<table>,
+    """
+    partitions: List[Partition]
+    """Array of partitions for the shared data."""
+    shared_as: Optional[str]
+    """
+    A user-provided new name for the data object within the share. If this new name is not
+    provided, the object's original name will be used as the shared_as name. The shared_as
+    name must be unique within a share. For tables, the new name must follow the format
+    of <schema>.<table>: two parts, each consisting only of alphanumeric characters and
+    underscores, without the catalog part. Do not set it for non-table data objects; use
+    string_shared_as instead.
+    """
+    start_version: Optional[int]
+    """
+    The start version associated with the object. This allows data providers to control the
+    lowest object version that is accessible by clients. If specified, clients can query
+    snapshots or changes for versions >= start_version. If not specified, clients can only
+    query starting from the version of the object at the time it was added to the share. NOTE:
+    The start_version should be <= the current version of the object.
+    """
+    status: Optional[DataObjectStatus]
+    """Whether the data object is still accessible to the share."""
+    string_shared_as: Optional[str]
+    """
+    A user-provided alias for a non-table data object (e.g. a volume) within the share. For
+    volumes, functions and models it is a two-part name <schema>.<name>, each part consisting
+    only of alphanumeric characters and underscores. If not provided, the object's original
+    name minus its catalog is used. It must be unique among objects of the same type within
+    the share. Do not set it for table-like data objects; use shared_as instead.
+    """
+
+    def __init__(
+        self,
+        added_at: Optional[int] = None,
+        added_by: Optional[str] = None,
+        cdf_enabled: Optional[bool] = None,
+        comment: Optional[str] = None,
+        data_object_type: Optional[DataObjectType] = None,
+        history_data_sharing_status: Optional[HistoryStatus] = None,
+        name: Optional[str] = None,
+        partitions: Optional[List[Partition]] = None,
+        shared_as: Optional[str] = None,
+        start_version: Optional[int] = None,
+        status: Optional[DataObjectStatus] = None,
+        string_shared_as: Optional[str] = None,
+    ) -> None: ...
+
+class DataObjectUpdate:
+    """Data object update."""
+
+    action: Action
+    """The action to perform on the data object."""
+    data_object: Optional[DataObject]
+    """The data object that is being added, removed, or updated."""
+
+    def __init__(
+        self, action: Optional[Action] = None, data_object: Optional[DataObject] = None
+    ) -> None: ...
+
 class DatabricksGcpServiceAccount:
     """The Databricks managed GCP service account configuration."""
 
@@ -828,6 +907,20 @@ class GcpOauthToken:
 
     def __init__(self, oauth_token: Optional[str] = None) -> None: ...
 
+class GetPermissionsResponse:
+    """Response to list shares."""
+
+    next_page_token: Optional[str]
+    """Opaque pagination token to go to next page based on previous query."""
+    privilege_assignments: List[PrivilegeAssignment]
+    """The privileges assigned to each principal"""
+
+    def __init__(
+        self,
+        next_page_token: Optional[str] = None,
+        privilege_assignments: Optional[List[PrivilegeAssignment]] = None,
+    ) -> None: ...
+
 class GetTableExistsResponse:
     table_exists: bool
     """Boolean reflecting if table exists."""
@@ -950,6 +1043,55 @@ class ModelVersion:
         version: Optional[int] = None,
     ) -> None: ...
 
+class Partition:
+    """A partition specification: the conjunction of its partition values."""
+
+    values: List[PartitionValue]
+    """An array of partition values."""
+
+    def __init__(self, values: Optional[List[PartitionValue]] = None) -> None: ...
+
+class PartitionValue:
+    """A partition column value a shared table is restricted to."""
+
+    name: str
+    """The name of the partition column."""
+    op: PartitionValueOp
+    """The operator to apply for the value."""
+    recipient_property_key: Optional[str]
+    """
+    The key of a Delta Sharing recipient property whose value the partition column is matched
+    against, e.g. "databricks-account-id". Mutually exclusive with value.
+    """
+    value: Optional[str]
+    """
+    The value of the partition column; unset means a `null` value. Mutually exclusive with
+    recipient_property_key.
+    """
+
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        op: Optional[PartitionValueOp] = None,
+        recipient_property_key: Optional[str] = None,
+        value: Optional[str] = None,
+    ) -> None: ...
+
+class PermissionsChange:
+    add: List[str]
+    """The set of privileges to add."""
+    principal: str
+    """The principal (user email address or group name)."""
+    remove: List[str]
+    """The set of privileges to remove."""
+
+    def __init__(
+        self,
+        add: Optional[List[str]] = None,
+        principal: Optional[str] = None,
+        remove: Optional[List[str]] = None,
+    ) -> None: ...
+
 class PolicyInfo:
     """A row-filter or column-mask policy bound to principals and scoped to a securable.
 
@@ -1029,6 +1171,19 @@ class PolicyInfo:
         row_filter: Optional[FunctionRef] = None,
     ) -> None: ...
 
+class PrivilegeAssignment:
+    principal: str
+    """
+    The principal (user email address or group name). For deleted principals, principal is
+    empty while principal_id is populated.
+    """
+    privileges: List[str]
+    """The privileges assigned to the principal."""
+
+    def __init__(
+        self, principal: Optional[str] = None, privileges: Optional[List[str]] = None
+    ) -> None: ...
+
 class PrivilegeOptions:
     """The privileges a deny or grant policy applies to."""
 
@@ -1036,6 +1191,53 @@ class PrivilegeOptions:
     """The privileges to deny or grant when the principal and condition match."""
 
     def __init__(self, privileges: Optional[List[str]] = None) -> None: ...
+
+class Provider:
+    """A provider represents an organization sharing data with this metastore.
+
+    A provider is the inbound counterpart of a recipient: it is registered from a share activation/
+    credential file and is used to access shares offered by an upstream Delta Sharing server."""
+
+    authentication_type: ProviderAuthenticationType
+    """The delta sharing authentication type."""
+    comment: Optional[str]
+    """Description about the provider."""
+    created_at: Optional[int]
+    """Time at which this provider was created, in epoch milliseconds."""
+    created_by: Optional[str]
+    """Username of the creator of the provider."""
+    id: Optional[str]
+    """Unique ID of the provider."""
+    name: str
+    """The name of the provider."""
+    owner: Optional[str]
+    """Username of the provider owner."""
+    properties: Dict[str, str]
+    """A map of key-value properties attached to the provider."""
+    recipient_profile_str: Optional[str]
+    """
+    The recipient profile (credential file contents) used to connect to the sharing server.
+    Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
+    """
+    updated_at: Optional[int]
+    """Time at which this provider was updated, in epoch milliseconds."""
+    updated_by: Optional[str]
+    """Username of the provider updater."""
+
+    def __init__(
+        self,
+        authentication_type: Optional[ProviderAuthenticationType] = None,
+        comment: Optional[str] = None,
+        created_at: Optional[int] = None,
+        created_by: Optional[str] = None,
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        owner: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None,
+        recipient_profile_str: Optional[str] = None,
+        updated_at: Optional[int] = None,
+        updated_by: Optional[str] = None,
+    ) -> None: ...
 
 class R2TemporaryCredentials:
     access_key_id: str
@@ -1050,6 +1252,75 @@ class R2TemporaryCredentials:
         access_key_id: Optional[str] = None,
         secret_access_key: Optional[str] = None,
         session_token: Optional[str] = None,
+    ) -> None: ...
+
+class Recipient:
+    authentication_type: AuthenticationType
+    """The delta sharing authentication type."""
+    comment: Optional[str]
+    """Description about the recipient."""
+    created_at: Optional[int]
+    """Time at which this recipient was created, in epoch milliseconds."""
+    created_by: Optional[str]
+    """Username of recipient creator."""
+    id: Optional[str]
+    """Unique ID of the recipient."""
+    name: str
+    """The name of the recipient."""
+    owner: Optional[str]
+    """Username of the recipient owner."""
+    properties_kvpairs: Optional[SecurablePropertiesKvPairs]
+    """Recipient properties as map of string key-value pairs."""
+    tokens: List[RecipientToken]
+    """This field is only present when the authentication_type is TOKEN."""
+    updated_at: Optional[int]
+    """Time at which this recipient was updated, in epoch milliseconds."""
+    updated_by: Optional[str]
+    """Username of recipient updater."""
+
+    def __init__(
+        self,
+        authentication_type: Optional[AuthenticationType] = None,
+        comment: Optional[str] = None,
+        created_at: Optional[int] = None,
+        created_by: Optional[str] = None,
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        owner: Optional[str] = None,
+        properties_kvpairs: Optional[SecurablePropertiesKvPairs] = None,
+        tokens: Optional[List[RecipientToken]] = None,
+        updated_at: Optional[int] = None,
+        updated_by: Optional[str] = None,
+    ) -> None: ...
+
+class RecipientToken:
+    activation_url: str
+    """
+    Full activation URL to retrieve the access token. It will be empty if the token is already
+    retrieved.
+    """
+    created_at: int
+    """Time at which this recipient token was created, in epoch milliseconds."""
+    created_by: str
+    """Username of recipient token creator."""
+    expiration_time: int
+    """Expiration timestamp of the token in epoch milliseconds."""
+    id: str
+    """Unique ID of the recipient token."""
+    updated_at: int
+    """Time at which this recipient token was updated, in epoch milliseconds."""
+    updated_by: str
+    """Username of recipient token updater."""
+
+    def __init__(
+        self,
+        activation_url: Optional[str] = None,
+        created_at: Optional[int] = None,
+        created_by: Optional[str] = None,
+        expiration_time: Optional[int] = None,
+        id: Optional[str] = None,
+        updated_at: Optional[int] = None,
+        updated_by: Optional[str] = None,
     ) -> None: ...
 
 class RegisteredModel:
@@ -1167,6 +1438,53 @@ class Schema:
         owner: Optional[str] = None,
         properties: Optional[Dict[str, str]] = None,
         schema_id: Optional[str] = None,
+        storage_location: Optional[str] = None,
+        storage_root: Optional[str] = None,
+        updated_at: Optional[int] = None,
+        updated_by: Optional[str] = None,
+    ) -> None: ...
+
+class SecurablePropertiesKvPairs:
+    """An object with the properties of a securable as key-value pairs."""
+
+    properties: Dict[str, str]
+    """A map of key-value properties attached to the securable."""
+
+    def __init__(self, properties: Optional[Dict[str, str]] = None) -> None: ...
+
+class Share:
+    comment: Optional[str]
+    """User-provided free-form text description."""
+    created_at: Optional[int]
+    """Time at which this share was created, in epoch milliseconds."""
+    created_by: Optional[str]
+    """Username of the creator of the share."""
+    id: Optional[str]
+    """Unique ID of the share."""
+    name: str
+    """Name of the share."""
+    objects: List[DataObject]
+    """A list of shared data objects within the share."""
+    owner: Optional[str]
+    """Username of current owner of share."""
+    storage_location: Optional[str]
+    """Storage Location URL (full path) for the share."""
+    storage_root: Optional[str]
+    """Storage root URL for the share."""
+    updated_at: Optional[int]
+    """Time at which this share was updated, in epoch milliseconds."""
+    updated_by: Optional[str]
+    """Username of share updater."""
+
+    def __init__(
+        self,
+        comment: Optional[str] = None,
+        created_at: Optional[int] = None,
+        created_by: Optional[str] = None,
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        objects: Optional[List[DataObject]] = None,
+        owner: Optional[str] = None,
         storage_location: Optional[str] = None,
         storage_root: Optional[str] = None,
         updated_at: Optional[int] = None,
@@ -1380,6 +1698,14 @@ class TemporaryCredential:
         r2_temp_credentials: Optional[R2TemporaryCredentials] = None,
     ) -> None: ...
 
+class UpdatePermissionsResponse:
+    privilege_assignments: List[PrivilegeAssignment]
+    """The privileges assigned to each principal"""
+
+    def __init__(
+        self, privilege_assignments: Optional[List[PrivilegeAssignment]] = None
+    ) -> None: ...
+
 class Value:
     """An allowed value for a governed tag."""
 
@@ -1446,6 +1772,13 @@ class Volume:
         volume_type: Optional[VolumeType] = None,
     ) -> None: ...
 
+class Action(enum.Enum):
+    ACTION_UNSPECIFIED = "ACTION_UNSPECIFIED"
+    """Unspecified action."""
+    ADD = "ADD"
+    REMOVE = "REMOVE"
+    UPDATE = "UPDATE"
+
 class AgentSkillType(enum.Enum):
     """How an agent skill's storage location is provisioned."""
 
@@ -1455,6 +1788,14 @@ class AgentSkillType(enum.Enum):
     MANAGED = "MANAGED"
     """The skill directory lives at a server-derived location under the parent schema/catalog managed
     storage root."""
+
+class AuthenticationType(enum.Enum):
+    AUTHENTICATION_TYPE_UNSPECIFIED = "AUTHENTICATION_TYPE_UNSPECIFIED"
+    """No authentication is required."""
+    OAUTH_CLIENT_CREDENTIALS = "OAUTH_CLIENT_CREDENTIALS"
+    """OAuth2 authentication is required."""
+    TOKEN = "TOKEN"
+    """Basic authentication is required."""
 
 class CatalogType(enum.Enum):
     """The type of the catalog."""
@@ -1491,6 +1832,31 @@ class ColumnTypeName(enum.Enum):
     TIMESTAMP_NTZ = "TIMESTAMP_NTZ"
     USER_DEFINED_TYPE = "USER_DEFINED_TYPE"
     VARIANT = "VARIANT"
+
+class DataObjectStatus(enum.Enum):
+    """Whether a shared data object is still accessible to the share."""
+
+    ACTIVE = "ACTIVE"
+    """The data object is accessible."""
+    DATA_OBJECT_STATUS_UNSPECIFIED = "DATA_OBJECT_STATUS_UNSPECIFIED"
+    PERMISSION_DENIED = "PERMISSION_DENIED"
+    """The share owner lost access to the data object."""
+
+class DataObjectType(enum.Enum):
+    AGENT_SKILL = "AGENT_SKILL"
+    """An agent skill (a directory of SKILL.md + scripts/assets) shared as a storage-backed asset on top of
+    a volume (OpenSharing)."""
+    DATA_OBJECT_TYPE_UNSPECIFIED = "DATA_OBJECT_TYPE_UNSPECIFIED"
+    """Unknown data object type."""
+    FUNCTION = "FUNCTION"
+    MATERIALIZED_VIEW = "MATERIALIZED_VIEW"
+    MODEL = "MODEL"
+    SCHEMA = "SCHEMA"
+    STREAMING_TABLE = "STREAMING_TABLE"
+    TABLE = "TABLE"
+    VIEW = "VIEW"
+    VOLUME = "VOLUME"
+    """A Unity Catalog volume shared as a storage-backed asset (OpenSharing)."""
 
 class DataSourceFormat(enum.Enum):
     AVRO = "AVRO"
@@ -1552,6 +1918,12 @@ class GenerateTemporaryVolumeCredentialsRequestOperation(enum.Enum):
     WRITE_VOLUME = "WRITE_VOLUME"
     """The operation is read and write."""
 
+class HistoryStatus(enum.Enum):
+    DISABLED = "DISABLED"
+    """Data history sharing is disabled."""
+    ENABLED = "ENABLED"
+    """Data history sharing is enabled."""
+
 class InvocationProtocol(enum.Enum):
     """The protocol a recipient uses to invoke an agent."""
 
@@ -1595,6 +1967,15 @@ class ParameterStyle(enum.Enum):
     S = "S"
     """The parameters are passed positionally (S = SQL)."""
 
+class PartitionValueOp(enum.Enum):
+    """The operator a partition value is matched with."""
+
+    EQUAL = "EQUAL"
+    """The partition column equals the value."""
+    LIKE = "LIKE"
+    """The partition column matches the value as a SQL LIKE pattern."""
+    PARTITION_VALUE_OP_UNSPECIFIED = "PARTITION_VALUE_OP_UNSPECIFIED"
+
 class PolicyType(enum.Enum):
     """The kind of enforcement a policy applies."""
 
@@ -1607,6 +1988,16 @@ class PolicyType(enum.Enum):
     POLICY_TYPE_ROW_FILTER = "POLICY_TYPE_ROW_FILTER"
     """Filters rows returned from the securable based on the when_condition and match_columns."""
     POLICY_TYPE_UNSPECIFIED = "POLICY_TYPE_UNSPECIFIED"
+
+class ProviderAuthenticationType(enum.Enum):
+    """The delta sharing authentication type used by a provider."""
+
+    OAUTH_CLIENT_CREDENTIALS = "OAUTH_CLIENT_CREDENTIALS"
+    """OAuth2 client-credentials authentication."""
+    PROVIDER_AUTHENTICATION_TYPE_UNSPECIFIED = "PROVIDER_AUTHENTICATION_TYPE_UNSPECIFIED"
+    """No authentication type specified."""
+    TOKEN = "TOKEN"
+    """Token-based authentication (open sharing via a credential file)."""
 
 class Purpose(enum.Enum):
     """The purpose of a credential."""
@@ -2069,6 +2460,124 @@ class PolicyClient:
         """
         ...
 
+class ProviderClient:
+    def delete(self) -> None:
+        """
+        Delete a provider.
+
+
+        Returns:
+            None
+        """
+        ...
+    def get(self) -> Provider:
+        """
+        Get a provider by name.
+
+
+        Returns:
+            A provider represents an organization sharing data with this metastore. A provider is the
+            inbound counterpart of a recipient: it is registered from a share activation/ credential
+            file
+            and is used to access shares offered by an upstream Delta Sharing server.
+        """
+        ...
+    def update(
+        self,
+        new_name: Optional[str] = None,
+        owner: Optional[str] = None,
+        comment: Optional[str] = None,
+        recipient_profile_str: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None,
+    ) -> Provider:
+        """
+        Update a provider.
+
+
+        Args:
+            new_name: New name for the provider.
+            owner: Username of the provider owner.
+            comment: Description about the provider.
+            recipient_profile_str: The recipient profile (credential file contents) used to connect to
+                                   the sharing server. Required when authentication_type is TOKEN or
+                                   OAUTH_CLIENT_CREDENTIALS.
+            properties: Provider properties as map of string key-value pairs. When provided in update
+                        request, the specified properties will override the existing properties. To add and
+                        remove properties, one would need to perform a read-modify-write.
+
+
+        Returns:
+            A provider represents an organization sharing data with this metastore. A provider is the
+            inbound counterpart of a recipient: it is registered from a share activation/ credential
+            file
+            and is used to access shares offered by an upstream Delta Sharing server.
+        """
+        ...
+
+class RecipientClient:
+    def delete(self) -> None:
+        """
+        Delete a recipient.
+
+
+        Returns:
+            None
+        """
+        ...
+    def get(self) -> Recipient:
+        """
+        Get a recipient by name.
+
+
+        Returns:
+            The requested resource
+        """
+        ...
+    def rotate_recipient_token(
+        self, existing_token_expire_in_seconds: Optional[int] = None
+    ) -> Recipient:
+        """
+        Rotate a recipient's token: issue a new token (and activation link) and retire the existing one.
+
+
+        Args:
+            existing_token_expire_in_seconds: Seconds until the existing token expires. It can only shorten
+                                              the existing token's lifetime, never extend it; 0 expires
+                                              it immediately.
+
+
+        Returns:
+            The requested resource
+        """
+        ...
+    def update(
+        self,
+        new_name: Optional[str] = None,
+        owner: Optional[str] = None,
+        comment: Optional[str] = None,
+        properties_kvpairs: Optional[SecurablePropertiesKvPairs] = None,
+        expiration_time: Optional[int] = None,
+    ) -> Recipient:
+        """
+        Update a recipient.
+
+
+        Args:
+            new_name: New name for the recipient
+            owner: Username of the recipient owner.
+            comment: Description about the recipient.
+            properties_kvpairs: Recipient properties as map of string key-value pairs. When provided
+                                in update request, the specified properties will override the existing
+                                properties. To add and remove properties, one would need to perform a read-
+                                modify-write.
+            expiration_time: Expiration timestamp of the token, in epoch milliseconds.
+
+
+        Returns:
+            The requested resource
+        """
+        ...
+
 class RegisteredModelClient:
     def delete(self, force: Optional[bool] = None) -> None:
         """
@@ -2200,6 +2709,72 @@ class SchemaClient:
     ) -> RegisteredModelClient: ...
     def table(self, catalog_name: str, schema_name: str, table_name: str) -> TableClient: ...
     def volume(self, catalog_name: str, schema_name: str, volume_name: str) -> VolumeClient: ...
+
+class ShareClient:
+    def delete(self) -> None:
+        """
+        Deletes a share.
+
+
+        Returns:
+            None
+        """
+        ...
+    def get(self, include_shared_data: Optional[bool] = None) -> Share:
+        """
+        Get a share by name.
+
+
+        Args:
+            include_shared_data: Query for data to include in the share.
+
+
+        Returns:
+            The requested resource
+        """
+        ...
+    def update_permissions(
+        self,
+        changes: Optional[List[PermissionsChange]] = None,
+        omit_permissions_list: Optional[bool] = None,
+    ) -> UpdatePermissionsResponse:
+        """
+        Updates the permissions for a data share in the metastore.
+
+
+        Args:
+            changes: Array of permissions change objects.
+            omit_permissions_list: Whether to return the latest permissions list of the share in the
+                                   response.
+
+
+        Returns:
+            The requested resource
+        """
+        ...
+    def update(
+        self,
+        updates: Optional[List[DataObjectUpdate]] = None,
+        new_name: Optional[str] = None,
+        owner: Optional[str] = None,
+        comment: Optional[str] = None,
+    ) -> Share:
+        """
+        Update a share.
+
+
+        Args:
+            updates: Array of shared data object updates. At most 100 data objects may be updated per
+                     request.
+            new_name: A new name for the share.
+            owner: Owner of the share.
+            comment: User-provided free-form text description.
+
+
+        Returns:
+            The requested resource
+        """
+        ...
 
 class StagingTableClient: ...
 
@@ -2612,6 +3187,66 @@ class UnityCatalogClient:
             `when_condition` is stored and returned opaque — this service does not parse or evaluate it.
         """
         ...
+    def create_provider(
+        self,
+        name: str,
+        authentication_type: ProviderAuthenticationType,
+        owner: Optional[str] = None,
+        comment: Optional[str] = None,
+        recipient_profile_str: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None,
+    ) -> Provider:
+        """
+        Create a new provider.
+
+
+        Args:
+            name: Name of the provider.
+            authentication_type: The delta sharing authentication type.
+            owner: Username of the provider owner.
+            comment: Description about the provider.
+            recipient_profile_str: The recipient profile (credential file contents) used to connect to
+                                   the sharing server. Required when authentication_type is TOKEN or
+                                   OAUTH_CLIENT_CREDENTIALS.
+            properties: Provider properties as map of string key-value pairs.
+
+
+        Returns:
+            A provider represents an organization sharing data with this metastore. A provider is the
+            inbound counterpart of a recipient: it is registered from a share activation/ credential
+            file
+            and is used to access shares offered by an upstream Delta Sharing server.
+        """
+        ...
+    def create_recipient(
+        self,
+        name: str,
+        authentication_type: AuthenticationType,
+        owner: str,
+        comment: Optional[str] = None,
+        properties_kvpairs: Optional[SecurablePropertiesKvPairs] = None,
+        expiration_time: Optional[int] = None,
+    ) -> Recipient:
+        """
+        Create a new recipient.
+
+
+        Args:
+            name: Name of the recipient.
+            authentication_type: The delta sharing authentication type.
+            owner: Username of the recipient owner.
+            comment: Description about the recipient.
+            properties_kvpairs: Recipient properties as map of string key-value pairs. When provided
+                                in update request, the specified properties will override the existing
+                                properties. To add and remove properties, one would need to perform a read-
+                                modify-write.
+            expiration_time: Expiration timestamp of the token, in epoch milliseconds.
+
+
+        Returns:
+            The requested resource
+        """
+        ...
     def create_registered_model(
         self, name: str, catalog_name: str, schema_name: str, comment: Optional[str] = None
     ) -> RegisteredModel:
@@ -2661,6 +3296,23 @@ class UnityCatalogClient:
 
         Returns:
             A schema is a namespace within a catalog that contains tables.
+        """
+        ...
+    def create_share(
+        self, name: str, comment: Optional[str] = None, storage_root: Optional[str] = None
+    ) -> Share:
+        """
+        Create a new share.
+
+
+        Args:
+            name: Name of the share.
+            comment: User-provided free-form text description.
+            storage_root: Storage root URL for the share.
+
+
+        Returns:
+            The requested resource
         """
         ...
     def create_staging_table(self, name: str, catalog_name: str, schema_name: str) -> StagingTable:
@@ -3130,6 +3782,34 @@ class UnityCatalogClient:
             List of The model versions returned.
         """
         ...
+    def list_providers(self, max_results: Optional[int] = None) -> Iterator[Provider]:
+        """
+        List providers.
+
+
+        Args:
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
+
+
+        Returns:
+            List of List of providers.
+        """
+        ...
+    def list_recipients(self, max_results: Optional[int] = None) -> Iterator[Recipient]:
+        """
+        List recipients.
+
+
+        Args:
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
+
+
+        Returns:
+            List of List of recipients.
+        """
+        ...
     def list_registered_models(
         self,
         catalog_name: Optional[str] = None,
@@ -3182,6 +3862,20 @@ class UnityCatalogClient:
 
         Returns:
             List of The schemas returned.
+        """
+        ...
+    def list_shares(self, max_results: Optional[int] = None) -> Iterator[Share]:
+        """
+        List shares.
+
+
+        Args:
+            max_results: The maximum number of results per page that should be returned. If unset or 0, the
+                         server's default page size is used. Negative values are rejected.
+
+
+        Returns:
+            List of List of shares.
         """
         ...
     def list_tables(
@@ -3333,10 +4027,13 @@ class UnityCatalogClient:
     ) -> FunctionClient: ...
     def model_version(self, model_version_name: str) -> ModelVersionClient: ...
     def policy(self, policy_name: str) -> PolicyClient: ...
+    def provider(self, provider_name: str) -> ProviderClient: ...
+    def recipient(self, recipient_name: str) -> RecipientClient: ...
     def registered_model(
         self, catalog_name: str, schema_name: str, registered_model_name: str
     ) -> RegisteredModelClient: ...
     def schema(self, catalog_name: str, schema_name: str) -> SchemaClient: ...
+    def share(self, share_name: str) -> ShareClient: ...
     def staging_table(self, staging_table_name: str) -> StagingTableClient: ...
     def table(self, catalog_name: str, schema_name: str, table_name: str) -> TableClient: ...
     def tag_policy(self, tag_policy_name: str) -> TagPolicyClient: ...

@@ -12,8 +12,11 @@ import {
   type ListEntityTagAssignmentsResponse,
   type ModelVersion,
   type PolicyInfo,
+  type Provider,
+  type Recipient,
   type RegisteredModel,
   type Schema,
+  type Share,
   type StagingTable,
   type Table,
   type TagPolicy,
@@ -30,8 +33,11 @@ import {
   ListEntityTagAssignmentsResponseSchema,
   ModelVersionSchema,
   PolicyInfoSchema,
+  ProviderSchema,
+  RecipientSchema,
   RegisteredModelSchema,
   SchemaSchema,
+  ShareSchema,
   StagingTableSchema,
   TableSchema,
   TagPolicySchema,
@@ -46,8 +52,11 @@ import {
   NapiExternalLocationClient as NativeExternalLocationClient,
   NapiFunctionClient as NativeFunctionClient,
   NapiPolicyClient as NativePolicyClient,
+  NapiProviderClient as NativeProviderClient,
+  NapiRecipientClient as NativeRecipientClient,
   NapiRegisteredModelClient as NativeRegisteredModelClient,
   NapiSchemaClient as NativeSchemaClient,
+  NapiShareClient as NativeShareClient,
   NapiStagingTableClient as NativeStagingTableClient,
   NapiTableClient as NativeTableClient,
   NapiTagPolicyClient as NativeTagPolicyClient,
@@ -508,6 +517,79 @@ export interface UpdatePolicyOptions {
   updateMask?: string;
 }
 
+export interface ListProvidersOptions {
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
+  maxResults?: number;
+  /** Opaque pagination token to go to next page based on previous query. */
+  pageToken?: string;
+}
+
+export interface CreateProviderOptions {
+  /** Username of the provider owner. */
+  owner?: string;
+  /** Description about the provider. */
+  comment?: string;
+  /** The recipient profile (credential file contents) used to connect to the
+   *  sharing server. Required when authentication_type is TOKEN or
+   *  OAUTH_CLIENT_CREDENTIALS. */
+  recipientProfileStr?: string;
+  /** Provider properties as map of string key-value pairs. */
+  properties?: Record<string, string>;
+}
+
+export interface UpdateProviderOptions {
+  /** New name for the provider. */
+  newName?: string;
+  /** Username of the provider owner. */
+  owner?: string;
+  /** Description about the provider. */
+  comment?: string;
+  /** The recipient profile (credential file contents) used to connect to the
+   *  sharing server. Required when authentication_type is TOKEN or
+   *  OAUTH_CLIENT_CREDENTIALS. */
+  recipientProfileStr?: string;
+  /** Provider properties as map of string key-value pairs.
+   * 
+   *  When provided in update request, the specified properties will override the existing properties.
+   *  To add and remove properties, one would need to perform a read-modify-write. */
+  properties?: Record<string, string>;
+}
+
+export interface ListRecipientsOptions {
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
+  maxResults?: number;
+  /** Opaque pagination token to go to next page based on previous query. */
+  pageToken?: string;
+}
+
+export interface CreateRecipientOptions {
+  /** Description about the recipient. */
+  comment?: string;
+  /** Expiration timestamp of the token, in epoch milliseconds. */
+  expirationTime?: number;
+}
+
+export interface UpdateRecipientOptions {
+  /** New name for the recipient */
+  newName?: string;
+  /** Username of the recipient owner. */
+  owner?: string;
+  /** Description about the recipient. */
+  comment?: string;
+  /** Expiration timestamp of the token, in epoch milliseconds. */
+  expirationTime?: number;
+}
+
+export interface RotateRecipientTokenOptions {
+  /** Seconds until the existing token expires. It can only shorten the
+   *  existing token's lifetime, never extend it; 0 expires it immediately. */
+  existingTokenExpireInSeconds?: number;
+}
+
 export interface ListRegisteredModelsOptions {
   /** Name of parent catalog for models of interest. */
   catalogName?: string;
@@ -592,6 +674,50 @@ export interface UpdateSchemaOptions {
 export interface DeleteSchemaOptions {
   /** Force deletion even if the schema is not empty. */
   force?: boolean;
+}
+
+export interface ListSharesOptions {
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
+  maxResults?: number;
+  /** Opaque pagination token to go to next page based on previous query. */
+  pageToken?: string;
+}
+
+export interface CreateShareOptions {
+  /** User-provided free-form text description. */
+  comment?: string;
+  /** Storage root URL for the share. */
+  storageRoot?: string;
+}
+
+export interface GetShareOptions {
+  /** Query for data to include in the share. */
+  includeSharedData?: boolean;
+}
+
+export interface UpdateShareOptions {
+  /** A new name for the share. */
+  newName?: string;
+  /** Owner of the share. */
+  owner?: string;
+  /** User-provided free-form text description. */
+  comment?: string;
+}
+
+export interface GetPermissionsOptions {
+  /** The maximum number of results per page that should be returned.
+   * 
+   *  If unset or 0, the server's default page size is used. Negative values are rejected. */
+  maxResults?: number;
+  /** Opaque pagination token to go to next page based on previous query. */
+  pageToken?: string;
+}
+
+export interface UpdatePermissionsOptions {
+  /** Whether to return the latest permissions list of the share in the response. */
+  omitPermissionsList?: boolean;
 }
 
 export interface ListTableSummariesOptions {
@@ -988,6 +1114,82 @@ export class PolicyClient {
 
 }
 
+export class ProviderClient {
+  private readonly inner: NativeProviderClient;
+
+  /** @internal */
+  constructor(inner: NativeProviderClient) {
+    this.inner = inner;
+  }
+
+  /**
+     * Get a provider by name.
+     */
+  async get(): Promise<Provider> {
+    try {
+      return fromBinary(ProviderSchema, await this.inner.get());
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Update a provider.
+     */
+  async update(options?: UpdateProviderOptions): Promise<Provider> {
+    const { newName, owner, comment, recipientProfileStr, properties } = options || {};
+    try {
+      return fromBinary(ProviderSchema, await this.inner.update(newName, owner, comment, recipientProfileStr, properties));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Delete a provider.
+     */
+  async delete(): Promise<void> {
+    try {
+      await this.inner.delete();
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+}
+
+export class RecipientClient {
+  private readonly inner: NativeRecipientClient;
+
+  /** @internal */
+  constructor(inner: NativeRecipientClient) {
+    this.inner = inner;
+  }
+
+  /**
+     * Get a recipient by name.
+     */
+  async get(): Promise<Recipient> {
+    try {
+      return fromBinary(RecipientSchema, await this.inner.get());
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Update a recipient.
+     */
+  async update(options?: UpdateRecipientOptions): Promise<Recipient> {
+    const { newName, owner, comment, expirationTime } = options || {};
+    try {
+      return fromBinary(RecipientSchema, await this.inner.update(newName, owner, comment, expirationTime));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Delete a recipient.
+     */
+  async delete(): Promise<void> {
+    try {
+      await this.inner.delete();
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+}
+
 export class RegisteredModelClient {
   private readonly inner: NativeRegisteredModelClient;
 
@@ -1078,6 +1280,45 @@ export class SchemaClient {
     const { force } = options || {};
     try {
       await this.inner.delete(force);
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+}
+
+export class ShareClient {
+  private readonly inner: NativeShareClient;
+
+  /** @internal */
+  constructor(inner: NativeShareClient) {
+    this.inner = inner;
+  }
+
+  /**
+     * Get a share by name.
+     */
+  async get(options?: GetShareOptions): Promise<Share> {
+    const { includeSharedData } = options || {};
+    try {
+      return fromBinary(ShareSchema, await this.inner.get(includeSharedData));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Update a share.
+     */
+  async update(options?: UpdateShareOptions): Promise<Share> {
+    const { newName, owner, comment } = options || {};
+    try {
+      return fromBinary(ShareSchema, await this.inner.update(newName, owner, comment));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Deletes a share.
+     */
+  async delete(): Promise<void> {
+    try {
+      await this.inner.delete();
     } catch (e) { throw parseNativeError(e); }
   }
 
@@ -1606,6 +1847,82 @@ export class UnityCatalogClient {
   }
 
   /**
+     * List providers.
+     */
+  async listProviders(options?: ListProvidersOptions): Promise<Provider[]> {
+    const { maxResults } = options || {};
+    try {
+      return (await this.inner.listProviders(maxResults)).map((data) =>
+        fromBinary(ProviderSchema, data),
+      );
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * List providers.
+     */
+  async *listProvidersStream(options?: ListProvidersOptions): AsyncIterable<Provider> {
+    const { maxResults } = options || {};
+    try {
+      for await (const data of this.inner.listProvidersStream(maxResults)) {
+        yield fromBinary(ProviderSchema, data);
+      }
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Create a new provider.
+     */
+  async createProvider(name: string, authenticationType: number, options?: CreateProviderOptions): Promise<Provider> {
+    const { owner, comment, recipientProfileStr, properties } = options || {};
+    try {
+      return fromBinary(ProviderSchema, await this.inner.createProvider(name, authenticationType, owner, comment, recipientProfileStr, properties));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  provider(providerName: string): ProviderClient {
+    return new ProviderClient(this.inner.provider(providerName));
+  }
+
+  /**
+     * List recipients.
+     */
+  async listRecipients(options?: ListRecipientsOptions): Promise<Recipient[]> {
+    const { maxResults } = options || {};
+    try {
+      return (await this.inner.listRecipients(maxResults)).map((data) =>
+        fromBinary(RecipientSchema, data),
+      );
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * List recipients.
+     */
+  async *listRecipientsStream(options?: ListRecipientsOptions): AsyncIterable<Recipient> {
+    const { maxResults } = options || {};
+    try {
+      for await (const data of this.inner.listRecipientsStream(maxResults)) {
+        yield fromBinary(RecipientSchema, data);
+      }
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Create a new recipient.
+     */
+  async createRecipient(name: string, authenticationType: number, owner: string, options?: CreateRecipientOptions): Promise<Recipient> {
+    const { comment, expirationTime } = options || {};
+    try {
+      return fromBinary(RecipientSchema, await this.inner.createRecipient(name, authenticationType, owner, comment, expirationTime));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  recipient(recipientName: string): RecipientClient {
+    return new RecipientClient(this.inner.recipient(recipientName));
+  }
+
+  /**
      * List registered models
      * 
      * List registered models within the specified parent catalog and schema. If
@@ -1701,6 +2018,44 @@ export class UnityCatalogClient {
 
   schema(catalogName: string, schemaName: string): SchemaClient {
     return new SchemaClient(this.inner.schema(catalogName, schemaName));
+  }
+
+  /**
+     * List shares.
+     */
+  async listShares(options?: ListSharesOptions): Promise<Share[]> {
+    const { maxResults } = options || {};
+    try {
+      return (await this.inner.listShares(maxResults)).map((data) =>
+        fromBinary(ShareSchema, data),
+      );
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * List shares.
+     */
+  async *listSharesStream(options?: ListSharesOptions): AsyncIterable<Share> {
+    const { maxResults } = options || {};
+    try {
+      for await (const data of this.inner.listSharesStream(maxResults)) {
+        yield fromBinary(ShareSchema, data);
+      }
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Create a new share.
+     */
+  async createShare(name: string, options?: CreateShareOptions): Promise<Share> {
+    const { comment, storageRoot } = options || {};
+    try {
+      return fromBinary(ShareSchema, await this.inner.createShare(name, comment, storageRoot));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  share(shareName: string): ShareClient {
+    return new ShareClient(this.inner.share(shareName));
   }
 
   /**

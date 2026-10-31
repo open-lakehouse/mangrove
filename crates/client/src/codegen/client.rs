@@ -9,8 +9,11 @@ use crate::codegen::external_locations::*;
 use crate::codegen::functions::*;
 use crate::codegen::model_versions::*;
 use crate::codegen::policies::*;
+use crate::codegen::providers::*;
+use crate::codegen::recipients::*;
 use crate::codegen::registered_models::*;
 use crate::codegen::schemas::*;
+use crate::codegen::shares::*;
 use crate::codegen::staging_tables::*;
 use crate::codegen::tables::*;
 use crate::codegen::tag_policies::*;
@@ -28,8 +31,11 @@ use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
 use unitycatalog_common::models::model_versions::v1::*;
 use unitycatalog_common::models::policies::v1::*;
+use unitycatalog_common::models::providers::v1::*;
+use unitycatalog_common::models::recipients::v1::*;
 use unitycatalog_common::models::registered_models::v1::*;
 use unitycatalog_common::models::schemas::v1::*;
+use unitycatalog_common::models::shares::v1::*;
 use unitycatalog_common::models::staging_tables::v1::*;
 use unitycatalog_common::models::tables::v1::*;
 use unitycatalog_common::models::tags::v1::*;
@@ -134,6 +140,20 @@ impl UnityCatalogClient {
             self.base_url.clone(),
         )
     }
+    ///Low-level `providers` client exposing request/response passthrough methods.
+    pub fn providers_client(&self) -> crate::codegen::providers::ProviderServiceClient {
+        crate::codegen::providers::ProviderServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+    ///Low-level `recipients` client exposing request/response passthrough methods.
+    pub fn recipients_client(&self) -> crate::codegen::recipients::RecipientServiceClient {
+        crate::codegen::recipients::RecipientServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
     ///Low-level `registered_models` client exposing request/response passthrough methods.
     pub fn registered_models_client(
         &self,
@@ -149,6 +169,10 @@ impl UnityCatalogClient {
             self.client.clone(),
             self.base_url.clone(),
         )
+    }
+    ///Low-level `shares` client exposing request/response passthrough methods.
+    pub fn shares_client(&self) -> crate::codegen::shares::ShareServiceClient {
+        crate::codegen::shares::ShareServiceClient::new(self.client.clone(), self.base_url.clone())
     }
     ///Low-level `staging_tables` client exposing request/response passthrough methods.
     pub fn staging_tables_client(
@@ -852,6 +876,83 @@ impl UnityCatalogClient {
             ),
         )
     }
+    /// List providers.
+    pub fn list_providers(&self) -> ListProvidersBuilder {
+        ListProvidersBuilder::new(crate::codegen::providers::ProviderServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        ))
+    }
+    /// Create a new provider.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Name of the provider.
+    /// * `authentication_type` - The delta sharing authentication type.
+    pub fn create_provider(
+        &self,
+        name: impl Into<String>,
+        authentication_type: ProviderAuthenticationType,
+    ) -> CreateProviderBuilder {
+        CreateProviderBuilder::new(
+            crate::codegen::providers::ProviderServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            name,
+            authentication_type,
+        )
+    }
+    /// Access the `provider` resource scoped to the given name.
+    pub fn provider(&self, provider_name: impl Into<String>) -> ProviderClient {
+        ProviderClient::new(
+            provider_name,
+            crate::codegen::providers::ProviderServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+        )
+    }
+    /// List recipients.
+    pub fn list_recipients(&self) -> ListRecipientsBuilder {
+        ListRecipientsBuilder::new(crate::codegen::recipients::RecipientServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        ))
+    }
+    /// Create a new recipient.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Name of the recipient.
+    /// * `authentication_type` - The delta sharing authentication type.
+    /// * `owner` - Username of the recipient owner.
+    pub fn create_recipient(
+        &self,
+        name: impl Into<String>,
+        authentication_type: AuthenticationType,
+        owner: impl Into<String>,
+    ) -> CreateRecipientBuilder {
+        CreateRecipientBuilder::new(
+            crate::codegen::recipients::RecipientServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            name,
+            authentication_type,
+            owner,
+        )
+    }
+    /// Access the `recipient` resource scoped to the given name.
+    pub fn recipient(&self, recipient_name: impl Into<String>) -> RecipientClient {
+        RecipientClient::new(
+            recipient_name,
+            crate::codegen::recipients::RecipientServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+        )
+    }
     /// List registered models
     ///
     /// List registered models within the specified parent catalog and schema. If
@@ -981,6 +1082,37 @@ impl UnityCatalogClient {
         SchemaClient::from_full_name(
             full_name,
             crate::codegen::schemas::SchemaServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+        )
+    }
+    /// List shares.
+    pub fn list_shares(&self) -> ListSharesBuilder {
+        ListSharesBuilder::new(crate::codegen::shares::ShareServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        ))
+    }
+    /// Create a new share.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Name of the share.
+    pub fn create_share(&self, name: impl Into<String>) -> CreateShareBuilder {
+        CreateShareBuilder::new(
+            crate::codegen::shares::ShareServiceClient::new(
+                self.client.clone(),
+                self.base_url.clone(),
+            ),
+            name,
+        )
+    }
+    /// Access the `share` resource scoped to the given name.
+    pub fn share(&self, share_name: impl Into<String>) -> ShareClient {
+        ShareClient::new(
+            share_name,
+            crate::codegen::shares::ShareServiceClient::new(
                 self.client.clone(),
                 self.base_url.clone(),
             ),

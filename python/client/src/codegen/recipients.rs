@@ -1,0 +1,71 @@
+// @generated — do not edit by hand.
+use crate::codegen::runtime::{ListIterator, block_on};
+use crate::error::PyUnityCatalogError;
+use futures::stream::StreamExt;
+use pyo3::IntoPyObjectExt;
+use pyo3::prelude::*;
+use std::collections::HashMap;
+use unitycatalog_client::RecipientClient;
+use unitycatalog_common::models::recipients::v1::*;
+use unitycatalog_common::models::*;
+#[pyclass(name = "RecipientClient")]
+pub struct PyRecipientClient {
+    pub(crate) client: RecipientClient,
+}
+#[pymethods]
+impl PyRecipientClient {
+    pub fn get(&self, py: Python<'_>) -> PyResult<PyRecipient> {
+        let request = self.client.get();
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyRecipient::from(result))
+    }
+    #[pyo3(
+        signature = (
+            new_name = None,
+            owner = None,
+            comment = None,
+            properties_kvpairs = None,
+            expiration_time = None
+        )
+    )]
+    pub fn update(
+        &self,
+        py: Python<'_>,
+        new_name: Option<String>,
+        owner: Option<String>,
+        comment: Option<String>,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
+        expiration_time: Option<i64>,
+    ) -> PyResult<PyRecipient> {
+        let mut request = self.client.update();
+        request = request.with_new_name(new_name);
+        request = request.with_owner(owner);
+        request = request.with_comment(comment);
+        request =
+            request.with_properties_kvpairs(properties_kvpairs.map(::core::convert::Into::into));
+        request = request.with_expiration_time(expiration_time);
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyRecipient::from(result))
+    }
+    pub fn delete(&self, py: Python<'_>) -> PyResult<()> {
+        let request = self.client.delete();
+        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(())
+    }
+    #[pyo3(signature = (existing_token_expire_in_seconds = None))]
+    pub fn rotate_recipient_token(
+        &self,
+        py: Python<'_>,
+        existing_token_expire_in_seconds: Option<i64>,
+    ) -> PyResult<PyRecipient> {
+        let mut request = self.client.rotate_recipient_token();
+        request = request.with_existing_token_expire_in_seconds(existing_token_expire_in_seconds);
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyRecipient::from(result))
+    }
+}
+impl PyRecipientClient {
+    pub fn new(client: RecipientClient) -> Self {
+        Self { client }
+    }
+}

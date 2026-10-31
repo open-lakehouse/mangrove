@@ -11,11 +11,14 @@ mod name;
 pub enum ResourceIdent {
     Agent(ResourceRef),
     AgentSkill(ResourceRef),
+    Share(ResourceRef),
     Credential(ResourceRef),
     ExternalLocation(ResourceRef),
     Catalog(ResourceRef),
     Schema(ResourceRef),
     Table(ResourceRef),
+    Recipient(ResourceRef),
+    Provider(ResourceRef),
     Column(ResourceRef),
     Volume(ResourceRef),
     Function(ResourceRef),
@@ -43,6 +46,10 @@ impl ResourceIdent {
         Self::AgentSkill(name.into())
     }
 
+    pub fn share(name: impl Into<ResourceRef>) -> Self {
+        Self::Share(name.into())
+    }
+
     pub fn credential(name: impl Into<ResourceRef>) -> Self {
         Self::Credential(name.into())
     }
@@ -65,6 +72,14 @@ impl ResourceIdent {
 
     pub fn external_location(name: impl Into<ResourceRef>) -> Self {
         Self::ExternalLocation(name.into())
+    }
+
+    pub fn recipient(name: impl Into<ResourceRef>) -> Self {
+        Self::Recipient(name.into())
+    }
+
+    pub fn provider(name: impl Into<ResourceRef>) -> Self {
+        Self::Provider(name.into())
     }
 
     pub fn volume(name: impl Into<ResourceRef>) -> Self {
@@ -101,11 +116,14 @@ impl std::fmt::Display for ResourceIdent {
         match self {
             ResourceIdent::Agent(r) => write!(f, "agent:{}", r),
             ResourceIdent::AgentSkill(r) => write!(f, "agent_skill:{}", r),
+            ResourceIdent::Share(r) => write!(f, "share:{}", r),
             ResourceIdent::Credential(r) => write!(f, "credential:{}", r),
             ResourceIdent::ExternalLocation(r) => write!(f, "external_location:{}", r),
             ResourceIdent::Catalog(r) => write!(f, "catalog:{}", r),
             ResourceIdent::Schema(r) => write!(f, "schema:{}", r),
             ResourceIdent::Table(r) => write!(f, "table:{}", r),
+            ResourceIdent::Recipient(r) => write!(f, "recipient:{}", r),
+            ResourceIdent::Provider(r) => write!(f, "provider:{}", r),
             ResourceIdent::Column(r) => write!(f, "column:{}", r),
             ResourceIdent::Volume(r) => write!(f, "volume:{}", r),
             ResourceIdent::Function(r) => write!(f, "function:{}", r),
@@ -123,11 +141,14 @@ impl AsRef<ResourceRef> for ResourceIdent {
         match self {
             ResourceIdent::Agent(r) => r,
             ResourceIdent::AgentSkill(r) => r,
+            ResourceIdent::Share(r) => r,
             ResourceIdent::Credential(r) => r,
             ResourceIdent::ExternalLocation(r) => r,
             ResourceIdent::Catalog(r) => r,
             ResourceIdent::Schema(r) => r,
             ResourceIdent::Table(r) => r,
+            ResourceIdent::Recipient(r) => r,
+            ResourceIdent::Provider(r) => r,
             ResourceIdent::Column(r) => r,
             ResourceIdent::Volume(r) => r,
             ResourceIdent::Function(r) => r,
@@ -145,11 +166,14 @@ impl AsRef<ObjectLabel> for ResourceIdent {
         match self {
             ResourceIdent::Agent(_) => &ObjectLabel::Agent,
             ResourceIdent::AgentSkill(_) => &ObjectLabel::AgentSkill,
+            ResourceIdent::Share(_) => &ObjectLabel::Share,
             ResourceIdent::Credential(_) => &ObjectLabel::Credential,
             ResourceIdent::ExternalLocation(_) => &ObjectLabel::ExternalLocation,
             ResourceIdent::Catalog(_) => &ObjectLabel::Catalog,
             ResourceIdent::Schema(_) => &ObjectLabel::Schema,
             ResourceIdent::Table(_) => &ObjectLabel::Table,
+            ResourceIdent::Recipient(_) => &ObjectLabel::Recipient,
+            ResourceIdent::Provider(_) => &ObjectLabel::Provider,
             ResourceIdent::Column(_) => &ObjectLabel::Column,
             ResourceIdent::Volume(_) => &ObjectLabel::Volume,
             ResourceIdent::Function(_) => &ObjectLabel::Function,
@@ -167,11 +191,14 @@ impl From<ResourceIdent> for ResourceRef {
         match ident {
             ResourceIdent::Agent(r) => r,
             ResourceIdent::AgentSkill(r) => r,
+            ResourceIdent::Share(r) => r,
             ResourceIdent::Credential(r) => r,
             ResourceIdent::ExternalLocation(r) => r,
             ResourceIdent::Catalog(r) => r,
             ResourceIdent::Schema(r) => r,
             ResourceIdent::Table(r) => r,
+            ResourceIdent::Recipient(r) => r,
+            ResourceIdent::Provider(r) => r,
             ResourceIdent::Column(r) => r,
             ResourceIdent::Volume(r) => r,
             ResourceIdent::Function(r) => r,
@@ -229,11 +256,14 @@ impl ObjectLabel {
         match self {
             ObjectLabel::Agent => ResourceIdent::agent(id),
             ObjectLabel::AgentSkill => ResourceIdent::agent_skill(id),
+            ObjectLabel::Share => ResourceIdent::share(id),
             ObjectLabel::Credential => ResourceIdent::credential(id),
             ObjectLabel::Catalog => ResourceIdent::catalog(id),
             ObjectLabel::Schema => ResourceIdent::schema(id),
             ObjectLabel::Table => ResourceIdent::table(id),
             ObjectLabel::ExternalLocation => ResourceIdent::external_location(id),
+            ObjectLabel::Recipient => ResourceIdent::recipient(id),
+            ObjectLabel::Provider => ResourceIdent::provider(id),
             ObjectLabel::Column => ResourceIdent::column(id),
             ObjectLabel::Volume => ResourceIdent::volume(id),
             ObjectLabel::Function => ResourceIdent::function(id),

@@ -39,6 +39,11 @@
 //! binary. See the crate README for the full table.
 
 pub mod api;
+// The shares / recipients / providers models are generated here so they are
+// published with the rest of the Unity Catalog models, but this server does not
+// serve those APIs (distributary does), so their generated handler traits and
+// axum handlers (and their re-exports) have no users.
+#[allow(dead_code, unused_imports)]
 mod codegen;
 pub mod error;
 pub mod handlers;

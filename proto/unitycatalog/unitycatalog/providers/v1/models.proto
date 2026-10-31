@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package unitycatalog.providers.v1;
+
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+
+// The delta sharing authentication type used by a provider.
+enum ProviderAuthenticationType {
+  // No authentication type specified.
+  PROVIDER_AUTHENTICATION_TYPE_UNSPECIFIED = 0;
+
+  // Token-based authentication (open sharing via a credential file).
+  TOKEN = 1;
+
+  // OAuth2 client-credentials authentication.
+  OAUTH_CLIENT_CREDENTIALS = 2;
+}
+
+// A provider represents an organization sharing data with this metastore.
+//
+// A provider is the inbound counterpart of a recipient: it is registered from a
+// share activation/credential file and is used to access shares offered by an
+// upstream Delta Sharing server.
+message Provider {
+  option (google.api.resource) = {
+    type: "unitycatalog.io/Provider"
+    pattern: "providers/{provider}"
+    plural: "providers"
+    singular: "provider"
+  };
+
+  // Unique ID of the provider.
+  optional string id = 100 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_behavior) = IDENTIFIER
+  ];
+
+  // The name of the provider.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The delta sharing authentication type.
+  ProviderAuthenticationType authentication_type = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Username of the provider owner.
+  optional string owner = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Description about the provider.
+  optional string comment = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // The recipient profile (credential file contents) used to connect to the
+  // sharing server. Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
+  optional string recipient_profile_str = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // A map of key-value properties attached to the provider.
+  map<string, string> properties = 6;
+
+  // Time at which this provider was created, in epoch milliseconds.
+  optional int64 created_at = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Username of the creator of the provider.
+  optional string created_by = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Time at which this provider was updated, in epoch milliseconds.
+  optional int64 updated_at = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Username of the provider updater.
+  optional string updated_by = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
