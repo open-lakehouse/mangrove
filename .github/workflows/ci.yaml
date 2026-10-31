@@ -141,8 +141,11 @@ jobs:
         with:
           tool: cargo-hack
 
+      # No `--no-dev-deps`: it strips dev-dependencies from Cargo.toml while
+      # running, which invalidates Cargo.lock under `--locked`. A plain `check`
+      # (no `--all-targets`) does not build dev-dependencies anyway.
       - name: Check each feature
-        run: cargo hack check --locked -p olai-uc-common --each-feature --no-dev-deps
+        run: cargo hack check --locked -p olai-uc-common --each-feature
 
       - name: Check object-store (resource subset)
         run: cargo check --locked -p olai-uc-object-store
