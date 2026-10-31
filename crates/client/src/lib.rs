@@ -35,6 +35,12 @@
 //! enables them all. Disable default features and list only the resources you call
 //! to keep the rest of the model packages out of the build.
 //!
+//! With the `handlers` feature (native only), each per-service client also
+//! implements its `olai-uc-handlers` trait — `CatalogServiceClient` is a
+//! `CatalogHandler`, and so on — forwarding every call to the server it points
+//! at. A service can then back individual resources with an upstream Unity
+//! Catalog. Client errors convert into the handler error for the same condition.
+//!
 //! Fallible calls return [`Result`], whose error type [`Error`] distinguishes UC
 //! API errors ([`UcApiError`]) from Delta error envelopes and offers predicates
 //! like [`Error::is_not_found`] for control flow.
@@ -80,6 +86,8 @@ pub use temporary_credentials::*;
 pub mod codegen;
 mod delta_v1;
 pub mod error;
+#[cfg(all(feature = "handlers", not(target_arch = "wasm32")))]
+mod handlers;
 #[cfg(feature = "temporary_credentials")]
 mod temporary_credentials;
 

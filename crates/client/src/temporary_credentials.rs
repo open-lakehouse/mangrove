@@ -245,7 +245,7 @@ impl TemporaryCredentialClient {
     /// deserializer, so only the active variant remains. We replicate the
     /// generated client's request/error handling so behaviour is otherwise
     /// identical.
-    async fn post_credential<R: serde::Serialize>(
+    pub(crate) async fn post_credential<R: serde::Serialize>(
         &self,
         path: &str,
         request: &R,

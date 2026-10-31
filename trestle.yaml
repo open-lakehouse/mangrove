@@ -34,6 +34,13 @@ generate:
       # Gate each service behind a cargo feature named after its model package,
       # matching the per-resource features of olai-uc-common / olai-uc-handlers.
       resource_features: true
+      # `impl <Handler> for <ServiceClient>` per service (feature `handlers`), so a
+      # client can back a resource with an upstream server. Temporary credentials
+      # are hand-written: they reuse the client's null-oneof response workaround.
+      handler_impls:
+        crate: unitycatalog_handlers
+        feature: handlers
+        skip: [temporary_credentials]
     python:
       output: python/client/src
       error_type: PyUnityCatalogError

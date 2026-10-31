@@ -9,5 +9,7 @@ pub use resource::*;
 pub mod builders;
 #[allow(dead_code, clippy::too_many_arguments, clippy::doc_lazy_continuation)]
 pub mod client;
+#[cfg(all(feature = "handlers", not(target_arch = "wasm32")))]
+mod handler;
 #[allow(dead_code, clippy::too_many_arguments, clippy::doc_lazy_continuation)]
 pub mod resource;
