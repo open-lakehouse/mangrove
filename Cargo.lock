@@ -4259,6 +4259,7 @@ dependencies = [
  "olai-uc-object-store",
  "olai-uc-postgres",
  "olai-uc-sqlite",
+ "olai-uc-storage-access",
  "olai-uc-storage-proxy",
  "olai-vended-store",
  "percent-encoding",

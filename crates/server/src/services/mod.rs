@@ -7,6 +7,9 @@ use unitycatalog_common::models::ResourceIdent;
 use unitycatalog_delta_api::coordinator::{
     CommitCoordinator, InMemoryCommitCoordinator, ProvidesCommitCoordinator,
 };
+use unitycatalog_storage_access::{
+    InMemoryStorageAccess, ProvidesStorageAccessStore, StorageAccessStore,
+};
 
 mod delta_backend;
 pub mod location;
@@ -49,6 +52,8 @@ pub struct ServerHandler<Cx> {
 }
 
 impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
+    /// Construct a handler keeping credentials, external locations and Delta
+    /// commits in memory, for tests and ephemeral servers.
     pub fn try_new_tokio(
         policy: Arc<dyn Policy<Cx>>,
         store: Arc<dyn ResourceStore>,
@@ -56,21 +61,23 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
         Self::try_new_tokio_with_coordinator(
             policy,
             store,
+            Arc::new(InMemoryStorageAccess::new()),
             Arc::new(InMemoryCommitCoordinator::default()),
         )
     }
 
-    /// Construct a handler backed by a specific [`CommitCoordinator`].
+    /// Construct a handler over specific stores.
     ///
-    /// Use this to wire a persistent coordinator (e.g. the Postgres-backed
-    /// `GraphStore`) instead of the default in-memory one.
+    /// Use this to wire a durable backend: its [`StorageAccessStore`] and its
+    /// persistent [`CommitCoordinator`] (e.g. the Postgres-backed ones).
     pub fn try_new_tokio_with_coordinator(
         policy: Arc<dyn Policy<Cx>>,
         store: Arc<dyn ResourceStore>,
+        storage_access: Arc<dyn StorageAccessStore>,
         commit_coordinator: Arc<dyn CommitCoordinator>,
     ) -> Result<Self> {
         let handler = Arc::new(
-            ServerHandlerInner::new(policy.clone(), store.clone())
+            ServerHandlerInner::new(policy.clone(), store.clone(), storage_access)
                 .with_commit_coordinator(commit_coordinator),
         );
         Ok(Self { handler })
@@ -91,6 +98,7 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
         let inner = ServerHandlerInner {
             policy: prev.policy.clone(),
             store: prev.store.clone(),
+            storage_access: prev.storage_access.clone(),
             commit_coordinator: prev.commit_coordinator.clone(),
             local_storage_policy: policy.into(),
             managed_storage_root: prev.managed_storage_root.clone(),
@@ -109,6 +117,7 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
         let inner = ServerHandlerInner {
             policy: prev.policy.clone(),
             store: prev.store.clone(),
+            storage_access: prev.storage_access.clone(),
             commit_coordinator: prev.commit_coordinator.clone(),
             local_storage_policy: prev.local_storage_policy.clone(),
             managed_storage_root: root.map(Into::into),
@@ -122,6 +131,8 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
 pub struct ServerHandlerInner<Cx> {
     policy: Arc<dyn Policy<Cx>>,
     store: Arc<dyn ResourceStore>,
+    /// Credentials and the external locations they govern.
+    storage_access: Arc<dyn StorageAccessStore>,
     /// Delta catalog-managed commit coordinator (in-memory by default).
     commit_coordinator: Arc<dyn CommitCoordinator>,
     /// Allowlist governing which host paths may back a `file://` storage
@@ -134,10 +145,15 @@ pub struct ServerHandlerInner<Cx> {
 }
 
 impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
-    pub fn new(policy: Arc<dyn Policy<Cx>>, store: Arc<dyn ResourceStore>) -> Self {
+    pub fn new(
+        policy: Arc<dyn Policy<Cx>>,
+        store: Arc<dyn ResourceStore>,
+        storage_access: Arc<dyn StorageAccessStore>,
+    ) -> Self {
         Self {
             policy,
             store,
+            storage_access,
             commit_coordinator: Arc::new(InMemoryCommitCoordinator::default()),
             // Deny all local (file://) storage until a policy is configured.
             local_storage_policy: Arc::new(LocalStoragePolicy::deny_all()),
@@ -241,6 +257,18 @@ impl<Cx: Send + Sync + 'static> ProvidesResourceStore for ServerHandlerInner<Cx>
 impl<Cx: Send + Sync + 'static> ProvidesResourceStore for ServerHandler<Cx> {
     fn store(&self) -> &dyn ResourceStore {
         self.handler.store.as_ref()
+    }
+}
+
+impl<Cx: Send + Sync + 'static> ProvidesStorageAccessStore for ServerHandlerInner<Cx> {
+    fn storage_access(&self) -> &dyn StorageAccessStore {
+        self.storage_access.as_ref()
+    }
+}
+
+impl<Cx: Send + Sync + 'static> ProvidesStorageAccessStore for ServerHandler<Cx> {
+    fn storage_access(&self) -> &dyn StorageAccessStore {
+        self.handler.storage_access.as_ref()
     }
 }
 

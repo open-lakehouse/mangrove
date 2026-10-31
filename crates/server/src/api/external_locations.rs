@@ -1,18 +1,14 @@
-use itertools::Itertools;
-
 use unitycatalog_common::models::external_locations::v1::*;
-use unitycatalog_common::models::{
-    ObjectLabel, ResourceExt, ResourceIdent, ResourceName, ResourceRef,
-};
+use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
+use unitycatalog_storage_access::{ExternalLocationUpdate, Page, ProvidesStorageAccessStore};
 
 use super::{RequestContext, SecuredAction};
+use crate::Result;
+use crate::error::from_store;
 use crate::policy::{Permission, Policy, process_resources};
 use crate::services::ProvidesLocalStoragePolicy;
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
-use crate::services::object_store::{list_external_locations, locations_overlap};
-use crate::store::{ResourceStore, ResourceStoreReader};
-use crate::{Error, Result};
 pub use unitycatalog_handlers::external_locations::ExternalLocationHandler;
 
 #[async_trait::async_trait]
@@ -32,13 +28,11 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
         self.local_storage_policy()
             .check(&StorageLocationUrl::parse(&request.url)?)?;
 
-        // Reject locations that overlap an existing external location: Unity
-        // Catalog forbids one external location from nesting inside another (in
-        // either direction), so credential vending can resolve a single owner
-        // for any storage path.
-        check_no_overlap(self, &request.url, &request.name).await?;
-
-        let mut resource = ExternalLocation {
+        // The store resolves the credential and refuses a URL overlapping another
+        // location: Unity Catalog forbids one external location from nesting
+        // inside another (in either direction), so credential vending can resolve
+        // a single owner for any storage path.
+        let location = ExternalLocation {
             name: request.name,
             url: request.url,
             credential_name: request.credential_name,
@@ -46,18 +40,13 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
             comment: request.comment,
             ..Default::default()
         };
-        let cred_ident = ResourceIdent::Credential(
-            ResourceName::from_naive_str_split(&resource.credential_name).into(),
-        );
-        let (_credential, credential_ref) = self.get(&cred_ident).await?;
-        if let ResourceRef::Uuid(uuid) = credential_ref {
-            resource.credential_id = uuid.hyphenated().to_string();
-        }
 
         // TODO: validate we can access the url with the provide credential
 
-        let info = self.create(resource.into()).await?.0.try_into()?;
-        Ok(info)
+        self.storage_access()
+            .create_external_location(location)
+            .await
+            .map_err(from_store)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -69,7 +58,10 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
         // TODO: check if the location is used by any resources
-        Ok(self.delete(&request.resource()).await?)
+        self.storage_access()
+            .delete_external_location(&request.name)
+            .await
+            .map_err(from_store)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -80,10 +72,10 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<ExternalLocation> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
-
-        // TODO: populate relation fields (updated_* etc.)
-
-        Ok(self.get(&request.resource()).await?.0.try_into()?)
+        self.storage_access()
+            .get_external_location(&request.name)
+            .await
+            .map_err(from_store)
     }
 
     #[tracing::instrument(skip(self, context))]
@@ -93,17 +85,15 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
         context: RequestContext,
     ) -> Result<ListExternalLocationsResponse> {
         self.check_required(&request, &context).await?;
-        let (mut resources, next_page_token) = self
-            .list(
-                &ObjectLabel::ExternalLocation,
-                None,
-                super::page_size(request.max_results)?,
-                request.page_token,
-            )
-            .await?;
-        process_resources(self, &context, &Permission::Read, &mut resources).await?;
+        let page = Page::new(super::page_size(request.max_results)?, request.page_token);
+        let (mut external_locations, next_page_token) = self
+            .storage_access()
+            .list_external_locations(page)
+            .await
+            .map_err(from_store)?;
+        process_resources(self, &context, &Permission::Read, &mut external_locations).await?;
         Ok(ListExternalLocationsResponse {
-            external_locations: resources.into_iter().map(|r| r.try_into()).try_collect()?,
+            external_locations,
             next_page_token,
             ..Default::default()
         })
@@ -118,75 +108,25 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
 
-        let (current, _) = self.get(&request.resource()).await?;
-        let curr_ident = current.resource_ident();
-        let mut current: ExternalLocation = current.try_into()?;
-
-        if let Some(name) = request.new_name {
-            current.name = name;
+        // A new local (file://) URL must sit within an allowed root. The store
+        // re-checks overlap (excluding this location) and resolves a new credential.
+        if let Some(url) = &request.url {
+            self.local_storage_policy()
+                .check(&StorageLocationUrl::parse(url)?)?;
         }
-        if let Some(url) = request.url {
-            // Re-validate overlap when the URL changes, excluding this
-            // location's own record (matched by name) from the comparison.
-            if url != current.url {
-                // A new local (file://) URL must sit within an allowed root.
-                self.local_storage_policy()
-                    .check(&StorageLocationUrl::parse(&url)?)?;
-                check_no_overlap(self, &url, &current.name).await?;
-            }
-            current.url = url;
-        }
-        if let Some(credential_name) = request.credential_name {
-            current.credential_name = credential_name;
-        }
-        if let Some(read_only) = request.read_only {
-            current.read_only = read_only;
-        }
-        if let Some(comment) = request.comment {
-            current.comment = Some(comment);
-        }
-
-        // TODO:
-        // - add update_* relations
-        // - update owner if necessary
-
-        Ok(self
-            .update(&curr_ident, current.into())
-            .await?
-            .0
-            .try_into()?)
-    }
-}
-
-/// Reject `url` if it overlaps any existing external location other than the
-/// one named `self_name` (so updating a location to its own URL is a no-op).
-///
-/// Unity Catalog forbids external locations from overlapping one another in
-/// either direction (ancestor or descendant), matched on path-segment
-/// boundaries.
-async fn check_no_overlap(
-    store: &(impl ResourceStore + ?Sized),
-    url: &str,
-    self_name: &str,
-) -> Result<()> {
-    let new_url = StorageLocationUrl::parse(url).map_err(|e| {
-        Error::invalid_argument(format!("invalid external location url '{url}': {e}"))
-    })?;
-    for existing in list_external_locations(store).await? {
-        if existing.name == self_name {
-            continue;
-        }
-        let Ok(existing_url) = StorageLocationUrl::parse(&existing.url) else {
-            continue;
+        let update = ExternalLocationUpdate {
+            new_name: request.new_name,
+            url: request.url,
+            credential_name: request.credential_name,
+            read_only: request.read_only,
+            comment: request.comment,
+            owner: request.owner,
         };
-        if locations_overlap(&new_url, &existing_url) {
-            return Err(Error::invalid_argument(format!(
-                "external location url '{url}' overlaps existing external location '{}' ('{}')",
-                existing.name, existing.url
-            )));
-        }
+        self.storage_access()
+            .update_external_location(&request.name, update)
+            .await
+            .map_err(from_store)
     }
-    Ok(())
 }
 
 impl SecuredAction for CreateExternalLocationRequest {
@@ -249,6 +189,7 @@ mod tests {
     use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 
     use super::*;
+    use crate::Error;
     use crate::api::CredentialHandler;
     use crate::memory::InMemoryResourceStore;
     use crate::policy::ConstantPolicy;

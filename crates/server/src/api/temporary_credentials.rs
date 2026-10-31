@@ -1,4 +1,3 @@
-use unitycatalog_common::models::credentials::v1::GetCredentialRequest;
 use unitycatalog_common::models::model_versions::v1::ModelVersion;
 use unitycatalog_common::models::tables::v1::Table;
 use unitycatalog_common::models::temporary_credentials::v1::*;
@@ -6,18 +5,18 @@ use unitycatalog_common::models::volumes::v1::Volume;
 use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 
 use super::RequestContext;
-use crate::api::credentials::CredentialHandlerExt;
+use crate::error::from_store;
 use crate::policy::{Permission, Policy};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
-use crate::services::object_store::find_external_location_for_url;
 use crate::services::vending::{mint, to_temporary_credential};
-use crate::store::{ResourceStore, ResourceStoreReader};
+use crate::store::ResourceStoreReader;
 use crate::{Error, Result};
 pub use unitycatalog_handlers::temporary_credentials::TemporaryCredentialHandler;
 
 use buffa::Enumeration;
 use olai_storage_credentials::AccessLevel;
+use unitycatalog_storage_access::ProvidesStorageAccessStore;
 
 /// Vend a temporary credential for a securable stored at `location`.
 ///
@@ -31,20 +30,17 @@ pub(crate) async fn vend_for_location<T>(
     access: AccessLevel,
 ) -> Result<TemporaryCredential>
 where
-    T: ResourceStore + CredentialHandlerExt + ?Sized,
+    T: ProvidesStorageAccessStore + ?Sized,
 {
     let credential = if location.is_local() {
         None
     } else {
-        let ext_loc = find_external_location_for_url(location, handler).await?;
-        Some(
-            handler
-                .get_credential_internal(GetCredentialRequest {
-                    name: ext_loc.credential_name.clone(),
-                    ..Default::default()
-                })
-                .await?,
-        )
+        let governed = handler
+            .storage_access()
+            .governing_location(location.location())
+            .await
+            .map_err(from_store)?;
+        Some(governed.credential)
     };
     let vended = mint(credential.as_ref(), location, access).await?;
     Ok(to_temporary_credential(&vended, location))
@@ -111,16 +107,21 @@ impl TemporaryCredentialHandler<RequestContext> for ServerHandler<RequestContext
             return vend_for_location(self, &storage_url, operation).await;
         }
 
-        let ext_loc = find_external_location_for_url(&storage_url, self).await?;
+        let governed = self
+            .storage_access()
+            .governing_location(storage_url.location())
+            .await
+            .map_err(from_store)?;
         // Authorize against the concrete external location and the operation
         // actually requested, rather than the unscoped `SecuredAction` default.
         self.authorize_checked(
-            &(&ext_loc).into(),
+            &(&governed.location).into(),
             &required_permission(operation),
             &context,
         )
         .await?;
-        vend_for_location(self, &storage_url, operation).await
+        let vended = mint(Some(&governed.credential), &storage_url, operation).await?;
+        Ok(to_temporary_credential(&vended, &storage_url))
     }
 
     /// Generate temporary credentials for a volume.

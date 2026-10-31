@@ -1,57 +1,14 @@
-use itertools::Itertools;
-use unitycatalog_common::models::external_locations::v1::ExternalLocation;
 use unitycatalog_common::models::tables::v1::Table;
 use unitycatalog_common::models::volumes::v1::Volume;
 
+use unitycatalog_storage_access::ProvidesStorageAccessStore;
+
 use super::ProvidesLocalStoragePolicy;
 use crate::api::staging_tables::MANAGED_STORAGE_PREFIX;
+use crate::error::from_store;
 use crate::services::location::StorageLocationUrl;
 use crate::store::ResourceStore;
 use crate::{Error, Result};
-
-/// Find the most specific external location whose URL is a prefix of `location`.
-///
-/// Returns the external location with the longest matching URL prefix, which
-/// provides the most specific credential for the requested storage path.
-pub(crate) async fn find_external_location_for_url(
-    location: &StorageLocationUrl,
-    handler: &(impl ResourceStore + ?Sized),
-) -> Result<ExternalLocation> {
-    let locations = list_external_locations(handler).await?;
-    // The deepest covering location governs; unparsable registrations are skipped.
-    locations
-        .into_iter()
-        .filter_map(|l| {
-            let url = StorageLocationUrl::parse(&l.url).ok()?;
-            location
-                .starts_with(&url)
-                .then(|| (url.path().parts().count(), l))
-        })
-        .max_by_key(|(depth, _)| *depth)
-        .map(|(_, l)| l)
-        .ok_or(Error::NotFound)
-}
-
-/// All registered external locations paired with their parsed URLs.
-///
-/// Returned with each location's name so callers can exclude a specific record
-/// (e.g. the one being updated).
-///
-/// TODO(roeap): just listing all external locations could be very inefficient.
-/// introduce an endpoint that allows us to query for specific resource properties instead
-pub(crate) async fn list_external_locations(
-    handler: &(impl ResourceStore + ?Sized),
-) -> Result<Vec<ExternalLocation>> {
-    let (locations, _) = handler
-        .list(
-            &unitycatalog_common::ObjectLabel::ExternalLocation,
-            None,
-            None,
-            None,
-        )
-        .await?;
-    Ok(locations.into_iter().map(|l| l.try_into()).try_collect()?)
-}
 
 /// All non-empty `storage_location`s currently registered for tables and
 /// volumes, parsed into [`StorageLocationUrl`]s.
@@ -60,8 +17,8 @@ pub(crate) async fn list_external_locations(
 /// table or volume. Entries without a storage location, or whose location fails
 /// to parse, are skipped — matching the tolerance of the other helpers here.
 ///
-/// TODO(roeap): just listing all tables and volumes could be very inefficient.
-/// introduce an endpoint that allows us to query for specific resource properties instead
+/// TODO(roeap): just listing all tables and volumes could be very inefficient; this
+/// needs an indexed property/prefix query on the resource store.
 pub(crate) async fn list_table_volume_locations(
     handler: &(impl ResourceStore + ?Sized),
 ) -> Result<Vec<StorageLocationUrl>> {
@@ -102,11 +59,9 @@ pub(crate) async fn list_table_volume_locations(
 /// 2. the path must be contained within a registered external location; and
 /// 3. the path must not overlap any existing table or volume.
 ///
-/// Returns [`Error::invalid_argument`] on a violation. The containment check
-/// reuses [`find_external_location_for_url`]; a missing enclosing location
-/// surfaces as a clear argument error rather than the raw `NotFound`.
+/// Returns [`Error::invalid_argument`] on a violation.
 pub(crate) async fn validate_external_storage_location(
-    handler: &(impl ResourceStore + ProvidesLocalStoragePolicy + ?Sized),
+    handler: &(impl ResourceStore + ProvidesLocalStoragePolicy + ProvidesStorageAccessStore + ?Sized),
     location: &StorageLocationUrl,
 ) -> Result<()> {
     // 0. Local (file://) locations must sit within an allowed host root.
@@ -128,7 +83,7 @@ pub(crate) async fn validate_external_storage_location(
     }
 
     // 2. Must reside within a registered external location.
-    if let Err(Error::NotFound) = find_external_location_for_url(location, handler).await {
+    if !is_covered(handler, location).await? {
         return Err(Error::invalid_argument(format!(
             "storage location '{}' is not contained within any registered external location",
             location.raw()
@@ -170,7 +125,7 @@ pub(crate) async fn validate_external_storage_location(
 /// the dev-server single-local-root fallback are server configuration and are
 /// not required to be covered by an external location.
 pub(crate) async fn validate_managed_storage_root(
-    handler: &(impl ResourceStore + ProvidesLocalStoragePolicy + ?Sized),
+    handler: &(impl ProvidesLocalStoragePolicy + ProvidesStorageAccessStore + ?Sized),
     location: &StorageLocationUrl,
 ) -> Result<()> {
     // 1. Local (file://) roots must sit within an allowed host root.
@@ -188,7 +143,7 @@ pub(crate) async fn validate_managed_storage_root(
     }
 
     // 3. Must be contained within a registered external location.
-    if let Err(Error::NotFound) = find_external_location_for_url(location, handler).await {
+    if !is_covered(handler, location).await? {
         return Err(Error::invalid_argument(format!(
             "managed storage_root '{}' is not contained within any registered external location",
             location.raw()
@@ -196,6 +151,19 @@ pub(crate) async fn validate_managed_storage_root(
     }
 
     Ok(())
+}
+
+/// Whether a registered external location covers `location`.
+async fn is_covered(
+    handler: &(impl ProvidesStorageAccessStore + ?Sized),
+    location: &StorageLocationUrl,
+) -> Result<bool> {
+    Ok(handler
+        .storage_access()
+        .covering_location(location.location())
+        .await
+        .map_err(from_store)?
+        .is_some())
 }
 
 /// Whether a storage location lies within a reserved managed-storage region,

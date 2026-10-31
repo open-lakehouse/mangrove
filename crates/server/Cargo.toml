@@ -45,6 +45,11 @@ unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", ve
   "cloud",
 ] }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.6" }
+# Credentials and external locations, with location resolution. The in-memory
+# store backs handlers built without a durable backend.
+unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.1", features = [
+  "memory",
+] }
 unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.6", features = [
   "client-arm",
 ], optional = true }
