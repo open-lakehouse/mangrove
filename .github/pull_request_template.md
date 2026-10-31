@@ -3,7 +3,7 @@
 - [ ] A description of the changes is added to the description of this PR.
 - [ ] If there is a related issue, make sure it is linked to this PR.
 - [ ] If you've fixed a bug or added code that should be tested, add tests!
-- [ ] If you've added or modified a feature, documentation in `docs` is updated
+- [ ] If you've added or modified a feature, the relevant README / `.github/CONTRIBUTING.md` is updated
 
 **Description of changes**
 

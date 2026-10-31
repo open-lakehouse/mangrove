@@ -8,12 +8,25 @@
 - buf ([install instructions](https://buf.build/docs/installation))
 - just ([install instructions](https://just.systems/man/en/))
 - bun ([install instructions](https://bun.sh/docs/installation))
+- For codegen only: the `trestle` CLI (`brew install open-lakehouse/tap/trestle`) and
+  a [`trestle`](https://github.com/open-lakehouse/trestle) source checkout at
+  `../trestle` (or `TRESTLE_ROOT`). `cargo check` / `cargo test` need neither.
+
+Enable the repo git hooks once per clone with `bun run setup-hooks` (sets
+`core.hooksPath=.githooks`). The hook chains any global hook and guards both
+lockfiles. Because `core.hooksPath` is then set, the `pre-commit` framework
+(`.pre-commit-config.yaml`: Biome, typos, Ruff, cargo fmt/check) can't install as a
+hook alongside it; run `pre-commit run` by hand, or skip `setup-hooks` and use
+`pre-commit install` instead (then run the lockfile checks yourself:
+`bun run strip-lock-proxy:check`, `bun run cargo-lock-trestle:check`).
 
 Behind the Databricks corporate network, point your user-level `~/.npmrc` at the
-internal npm mirror (`registry=https://npm-proxy.cloud.databricks.com/`). `bun.lock`
-stores the mirror host in each tarball URL, so installs go through the proxy
-instead of hitting `registry.npmjs.org` directly (which fails TLS inspection).
-CI and Docker builds rewrite those URLs to the public registry at install time.
+internal npm mirror (`registry=https://npm-proxy.cloud.databricks.com/`); a direct
+`registry.npmjs.org` fetch fails TLS inspection. Bun records the mirror's tarball URLs
+in `bun.lock`, which CI runners can't reach, so the committed lock keeps those
+resolution fields empty: a root `postinstall` strips them after every `bun install`,
+the pre-commit hook strips a staged `bun.lock` as a backstop, and CI fails on any
+leftover (`bun run strip-lock-proxy:check`).
 
 ### Task runner layout (`just`)
 
@@ -76,14 +89,16 @@ To add a new resource/API surface, follow these steps:
 
 2. **Generate base code**: Run `just generate-proto` to generate common models
 
-3. **Update exports**: Add new types to `unitycatalog_common::models` module exports
+3. **Wire up the models**: mount the new package in
+   `crates/common/src/models/generated.rs` (and `generated_extractors.rs`) behind a
+   feature of the same name, and add that feature to `all-resources` in
+   `crates/common/Cargo.toml`. The drift test in `generated.rs` fails until you do.
 
-4. **Generate clients**: Run `just generate-code` for server/client boilerplate
+4. **Generate clients**: Run `just generate-code` for the handler traits
+   (`crates/handlers`), client and server boilerplate
 
-5. **Implement high-level client**:
-   - Create `crates/client/src/<resource>.rs` with ergonomic methods
-   - Add to `lib.rs` exports and main client struct
-   - Add streaming support for list operations
+5. **Hand-written client ergonomics** (only where codegen falls short): add them next
+   to the existing helpers in `crates/client/src/` and export them from `lib.rs`.
 
 6. **Python bindings** are generated: `just generate-code` emits the extension
    module (`python/client/src/codegen`), with the new API's model classes and
@@ -126,7 +141,7 @@ new deployable service or CLI, keep to this contract so the two stay aligned:
 - **Two binaries.**
   - **`uc-server`** (crate `olai-uc-server`, `crates/server`) is the deployable service. It
     has three subcommands:
-    - `serve` — run the REST/Delta-Sharing service. It does **not** migrate a durable
+    - `serve` — run the REST service. It does **not** migrate a durable
       backend; run `migrate` first. *Exception:* an ephemeral `:memory:` SQLite backend is
       auto-migrated at startup (a separate `migrate` process can't reach a fresh in-process
       DB), so a config-less `uc-server serve` works out of the box.
@@ -175,10 +190,13 @@ touch it (and bumps its dependents automatically), so e.g. `olai-uc-object-store
 `olai-uc-datafusion` can release on their own cadence. Config: `release-plz.toml` (the
 changelog/git-cliff config is embedded there — there is no separate `cliff.toml`).
 
-Use a `(scope)` matching the affected crate's short name — `common`, `client`,
+PRs are squash-merged, so the **PR title is the only commit release-plz sees**. Use a
+`(scope)` matching the affected crate's short name — `common`, `client`,
 `object-store`, `postgres`, `sqlite`, `datafusion`, `server`, `cli` — so the bump and
-changelog land on the right crate. Prefer several focused commits over one
-mixed commit; keep generated output in the same commit as its source.
+changelog land on the right crate. Commits inside a PR only matter for review. When a
+change spans several crates or change types that each deserve their own changelog
+entry, split it into a stack of PRs (one `type(scope)` per layer; see `AGENTS.md`)
+rather than one mixed PR.
 
 **Cross-repo (trestle) dependencies.** The trestle crates (`olai-http`, `olai-store`,
 `olai-storage-credentials`, `olai-vended-store`, `olai-credential-vending`) are declared as plain
@@ -269,6 +287,16 @@ is published unless the `JS_PUBLISH_ENABLED` repo variable is `"true"`. A releas
 while it was off can be published later via `workflow_dispatch` on `js-release.yaml`
 with its tag. No npmjs publishing yet.
 
+- When a published package gains source files outside its crate's `include` list, add
+  them, or changes to them won't release the package
+  (`cargo package -p <crate> --list --allow-dirty` shows the set).
+- A new publishable npm package needs a crate (placeholder if it has no Rust), a
+  `[[package]]` entry in `release-plz.toml`, its dir in `js-release.yaml`'s crate → dir
+  map, and the crate name in `release-plz.yml`'s npm detect step. Workspace packages
+  depend on it with `workspace:*`.
+- The UI packages stay `private: true`; don't add npmjs publishing or un-private one
+  without a maintainer asking for it.
+
 **First-publish bootstrap.** crates.io OIDC trusted publishing cannot create a crate name
 that has never existed. Each `olai-uc-*` crate therefore needs a one-time token bootstrap
 before release-plz can publish it via OIDC. Until then it carries `release = false` in
@@ -299,7 +327,5 @@ all: `olai-uc-datafusion` (standing git-dep block via the `deltalake-core` git r
 ## AI-assisted contributions
 
 AI-assisted changes are welcome. Understand the diff before submitting it, match
-the surrounding style, and don't include code you can't explain. Every commit
-carries the `AI-assisted-by: Isaac` trailer and PR bodies end with the
-attribution line — both are defined in `~/.claude/CLAUDE.md`. The commit/sign
-mechanics live in the `/commit` skill (`.claude/skills/commit/SKILL.md`).
+the surrounding style, and don't include code you can't explain. Agent instructions
+live in [`AGENTS.md`](../AGENTS.md) (imported by `CLAUDE.md`).
