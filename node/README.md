@@ -56,7 +56,7 @@ behavior crosses package boundaries only through seams: `QueryRunner`,
 - Workspace directory names match the unscoped package name (except `client/`,
   which holds the NAPI crate and `app/`).
 - Published packages are released by release-plz through a crate each (see
-  `.agents/rules/js-release-rule.mdc`).
+  the npm section of `.github/CONTRIBUTING.md`).
 
 ## Building and consuming
 

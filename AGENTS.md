@@ -1,254 +1,129 @@
 # Agent Instructions
 
-Instructions for AI coding agents (Claude Code, Cursor, Codex, Copilot, etc.) working
-in this repository.
-
-## How rules are organized
-
-| Location | Purpose |
-|----------|---------|
-| **`AGENTS.md`** (this file) | Portable, harness-agnostic agent instructions |
-| **[`CLAUDE.md`](CLAUDE.md)** | Full repository guidelines — structure, build commands, codegen, PR workflow |
-| **[`.agents/rules/`](.agents/rules/)** | Canonical always-applied rules (`.mdc` files with YAML frontmatter) |
-| **[`.cursor/rules/`](.cursor/rules/)** | Cursor-specific copies of selected rules (when present) |
-
-**Precedence:** explicit user chat instructions override everything; then the closest
-`AGENTS.md` in the directory tree; then `.agents/rules/*.mdc` for always-applied
-constraints.
-
-When a rule exists in both this file and `.agents/rules/`, treat
-**`.agents/rules/` as the source of truth** and keep this file in sync when rules
-change.
-
----
-
-## Always-applied rules
-
-These rules apply to every agent session. Full text lives in `.agents/rules/`.
-
-### 1. Branching workflow
-
-**File:** [`.agents/rules/branching-rule.mdc`](.agents/rules/branching-rule.mdc)
-
-- **Never commit directly to `main`.** Create a feature branch before the first file change.
-- Before starting work, check the current branch. If on `main`, create and switch to a new branch.
-- Suggest a branch name using `feat/<short-description>` and offer the user a choice (suggested name or their own).
-- Branch prefixes:
-
-  | Prefix | Use when |
-  |--------|----------|
-  | `feat/` | Adding new functionality |
-  | `fix/` | Fixing a bug |
-  | `chore/` | Build, CI, dependency, or repo upkeep |
-  | `refactor/` | Restructuring without behavior change |
-  | `test/` | Adding or improving tests only |
-
-- One logical unit of work per branch. Keep names short, lowercase, and hyphen-separated.
-
-### 2. Testing discipline
-
-**File:** [`.agents/rules/testing-discipline.mdc`](.agents/rules/testing-discipline.mdc)
-
-**Core principles:**
-
-1. Every change ships with tests — no production code is complete without test coverage.
-2. Never delete a passing test. Fix the code or update the test to match correct behavior.
-3. Target ~80% coverage across methods and conditional branches.
-
-**Rust**
-
-- Unit tests in `#[cfg(test)]` modules; integration/acceptance in `tests/` or `crates/acceptance/`.
-- Use `rstest` for parameterized tests.
-- Run: `cargo nextest run --workspace --all-features`
-- Doctests: `cargo test --workspace --doc` (nextest does not run them).
-- Coverage:
-
-  ```bash
-  cargo llvm-cov nextest --workspace --all-features --lcov --output-path lcov.info
-  cargo llvm-cov --doc --workspace --all-features --lcov --output-path lcov.info
-  ```
-
-**Go**
-
-- Table-driven tests with the standard `testing` package (`foo.go` → `foo_test.go`).
-- Go has no native `--lcov` flag. Collect and convert:
-
-  ```bash
-  go test ./... -coverprofile=coverage.out
-  go install github.com/jandelgado/gcov2lcov@latest
-  gcov2lcov -infile=coverage.out -outfile=lcov.info
-  ```
-
-- Local review: `go tool cover -func=coverage.out`
-
-**TypeScript**
-
-- Use `bun:test`. Co-locate tests (`foo.ts` → `foo.test.ts`) or use `__test__/`.
-- Coverage:
-
-  ```bash
-  bun test --coverage --coverage-reporter=lcov
-  # or: bun run test:coverage
-  ```
-
-  Writes `coverage/lcov.info`.
-
-**All languages:** upload LCOV output via the Codecov GitHub Action. Do not skip flaky tests, delete tests to green a suite, or assert on non-deterministic values without controlling inputs.
-
-### 3. bun.lock proxy stripping
-
-**File:** [`.agents/rules/bun-clean-lock-rule.mdc`](.agents/rules/bun-clean-lock-rule.mdc)
-
-Local Bun installs may bake a private npm registry/proxy URL into the resolution
-(second) field of `bun.lock`. **Never open a PR with those URLs committed.**
-
-Before any PR that touches `bun.lock`:
-
-```bash
-bun run strip-lock-proxy
-bun run strip-lock-proxy:check
-```
-
-- Strip logic is host-agnostic — clear any `http(s)` registry tarball URL in the resolution slot, leaving `""`.
-- Only the resolution field is modified; names, versions, dependency maps, and integrity hashes are untouched.
-- Enforced by the pre-commit hook when `bun.lock` is staged (see **Git hooks** below).
-
-### 4. Cargo.lock and trestle
-
-**File:** [`.agents/rules/cargo-lock-trestle-rule.mdc`](.agents/rules/cargo-lock-trestle-rule.mdc)
-
-CI resolves the trestle `olai-*` crates from crates.io. Local `just configure-trestle-deps`
-patches from `../trestle` must not alter committed `Cargo.lock`.
-
-Before any PR that touches `Cargo.lock`:
-
-```bash
-bun run cargo-lock-trestle:check
-```
-
-If it fails after building with local patches: `git checkout main -- Cargo.lock`.
-
-Enforced by the pre-commit hook when `Cargo.lock` is staged (see **Git hooks** below).
-
-### 5. JS/TS release (release-plz, GitHub Packages)
-
-**File:** [`.agents/rules/js-release-rule.mdc`](.agents/rules/js-release-rule.mdc)
-
-The publishable npm packages are released by **release-plz**, through crates:
-`unity-catalog-node` (the NAPI extension's own `node/client/Cargo.toml`) and
-`unity-catalog-client` (a placeholder `node/unity-catalog-client/Cargo.toml`).
-
-- The version lives in the crate's `Cargo.toml`; `package.json` stays `0.0.0` in
-  git and is stamped at publish. Never bump either by hand.
-- Commits touching a crate's `include`d files bump it in the release-plz Release PR,
-  like any crate. Merging it tags `<crate>-v<version>`, and release-plz.yml's `npm`
-  job ([`js-release.yaml`](.github/workflows/js-release.yaml)) publishes to
-  **GitHub Packages only** (no npmjs yet), gated on the `JS_PUBLISH_ENABLED` repo
-  variable.
-- The UI packages stay `private: true` and are not released to npm. The server's
-  bundled UI is tracked by a third placeholder, `uc-app` (`node/Cargo.toml`, every
-  tracked file under `node/`), which the server lists in `changelog_include`: a UI
-  change releases the server and rebuilds its Docker image. Nothing to regenerate.
-
-### Git hooks (`setup-hooks`)
-
-The repo ships **local git hooks** under [`.githooks/`](.githooks/) that automate PR
-hygiene checks. Git does not run them until you point `core.hooksPath` at `.githooks`
-for this clone.
-
-**Activate once per clone:**
-
-```bash
-bun run setup-hooks
-```
-
-That runs `git config core.hooksPath .githooks` (repo-local config only — not global). Verify:
-
-```bash
-git config --get core.hooksPath   # should print: .githooks
-```
-
-**What `pre-commit` does** (in order):
-
-| Step | When | Action |
-|------|------|--------|
-| 1 | Always | Re-invokes any **global** `pre-commit` hook first (e.g. Databricks gitleaks), so enabling repo hooks does not disable corporate scanners |
-| 2 | `bun.lock` staged | Strips private npm proxy URLs from the resolution field and re-stages the file |
-| 3 | `Cargo.lock` staged | Verifies the trestle `olai-*` crates still have crates.io `source` + `checksum` lines |
-
-**Prerequisites on PATH:** `bun` (pre-commit step 2).
-If a tool is missing, that step is skipped with a warning — run the manual checks below
-before opening a PR.
-
-**Manual pre-PR checks** (same gates CI enforces; run even if hooks are not installed):
-
-```bash
-bun run strip-lock-proxy:check
-bun run cargo-lock-trestle:check
-```
-
-Hooks are a safety net, not a substitute for the checks above when committing outside git
-(e.g. `git commit --no-verify`) or when staged files do not trigger a given step.
-
----
-
-## Repository guidelines
-
-See **[`CLAUDE.md`](CLAUDE.md)** for the full guide. Key points agents should know:
-
-### Project structure
-
-Multi-crate Rust workspace (`crates/`) with Python (`python/client/`), Node/TypeScript
-(`node/`), protobuf (`proto/`), and generated code throughout. Use `just` as the
-primary task runner.
-
-### Code generation
-
-**Never hand-edit generated files** — anything under `crates/**/codegen/**`,
-`crates/**/models/_gen/**`, files marked `// @generated`, etc. Change proto/codegen
-inputs and regenerate with `just generate`; commit generated output in the same commit.
-
-### Common commands
+Instructions for AI coding agents working in this repository. This is the single
+canonical file: `CLAUDE.md` imports it, and Cursor/Codex read it directly. Human
+contributor detail (prerequisites, release mechanics, PyO3 stubs, service layout)
+lives in [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md).
+
+## Project map
+
+Multi-crate Rust workspace with language bindings:
+
+- `crates/` — `common` (shared models; mostly generated proto code, feature-gated
+  per resource), `handlers` (generated per-resource handler traits + axum routes),
+  `client`, `server`, `cli`, `delta-api`, `files-api` / `files-proto`,
+  `storage-proxy`, `storage-access` (credentials + external-locations store port),
+  `object-store`, `datafusion`, `postgres`, `sqlite`, `acceptance`
+- `wasm/` — a **separate** Cargo workspace (own `Cargo.lock`) for the in-browser
+  query engine
+- `python/client/` — PyO3 bindings · `node/` — NAPI client, TS client, UI packages
+  (see [`node/README.md`](node/README.md))
+- `proto/` — API definitions (source of truth) · `openapi/` — generated specs ·
+  `dev/` — docker-compose, scripts, Marimo notebooks
+- Open Sharing / Delta Sharing serving lives in
+  [`distributary`](https://github.com/open-lakehouse/distributary); the
+  shares/recipients/providers models stay here. Cloud auth/HTTP and storage come
+  from the external trestle crates (`olai-http`, `olai-store`, …).
+
+## Commands
+
+[`just`](https://just.systems/) recipes live in modules; call them namespaced
+(`just --list` shows the tree). A few common ones also work flat via aliases.
 
 | Command | Purpose |
-|---------|---------|
-| `just generate` | Full code generation pipeline |
-| `just rest` | Start development REST server |
-| `just test-node` | Run Node.js binding tests |
-| `just fix` | Auto-fix Rust and Node.js code issues |
-| `just fmt` | Format all code |
-| `cargo nextest run --workspace --all-features` | Run Rust test suite |
-| `bun run test:coverage` | TypeScript tests with LCOV coverage |
-| `bun run setup-hooks` | Enable repo git hooks (pre-commit; once per clone) |
+|---|---|
+| `just generate` | Full codegen pipeline (needs `trestle` + a `../trestle` checkout) |
+| `just dev rest` / `just dev rest-db` | Dev server (in-memory SQLite / Postgres) |
+| `just meta fix` / `just meta fmt` | Auto-fix lint, format (Rust, Node, Python) |
+| `just meta lint-node` | Lint + typecheck the `node/` workspace |
+| `just build build-py` / `just build build-node` | Build Python / Node bindings |
+| `just test test-node` / `just test test-node-integration` | Node tests |
+| `just dev configure-trestle-deps` | Patch trestle crates from `../trestle` (gitignored) |
 
-### Pre-push check (mimics CI)
+The fast edit/check loop (`cargo check`, `cargo test`) needs none of the codegen
+tooling.
+
+## Hard rules
+
+- **Never hand-edit generated files**: anything under `crates/**/codegen/**`,
+  `crates/**/models/gen/**`, `crates/**/models/_gen/**`, or starting with
+  `// @generated`. Change the proto/codegen input, regenerate, and keep the
+  generated output in the same commit as its source change. Python stubs
+  (`python/client/python/unitycatalog_client/_client/*.pyi`) are generated too, by
+  `just codegen generate-py-stubs` (see CONTRIBUTING).
+- **Never commit `Cargo.lock` built under a local trestle path patch.** CI resolves
+  the trestle crates from crates.io. Check with `bun run cargo-lock-trestle:check`;
+  if it fails, `git checkout main -- Cargo.lock`. Never commit a
+  `[patch.crates-io]`.
+- **Never bump versions or edit changelogs by hand** (crates or `package.json`);
+  release-plz does it from the Release PR.
+- **Never commit to `main`.** Stage files by name — never `git add -A` / `git add .`.
+
+## Testing
+
+- Changes ship with tests; never delete or comment out a passing test to green a
+  suite — fix the code or update the test to the new correct behavior.
+- **Rust:** unit tests in `#[cfg(test)]` modules, integration tests in `tests/` and
+  `crates/acceptance/`; `rstest` for parameterized cases. Run
+  `cargo nextest run --workspace --all-features`, plus
+  `cargo test --workspace --all-features --doc` (nextest skips doctests).
+- **TypeScript:** `node/client` uses Jest; the other `node/` packages use
+  `bun:test` with co-located `*.test.ts`.
+- Cover error and edge paths, not just the happy path. Control non-deterministic
+  inputs (time, random IDs). Coverage is reported by CI (Codecov, informational) —
+  use it as guidance, not a gate.
+
+## Style
+
+Rust: `cargo fmt` + `cargo clippy` (edition/MSRV in the workspace `Cargo.toml`).
+TS/JS: Biome, 2-space indent. Python: Ruff, 100-char lines. `typos` runs in
+pre-commit. Trim trailing whitespace; end files with a newline.
+
+## Branches, PRs and stacks
+
+- **PRs are squash-merged. The PR title is the commit release-plz sees** — a
+  conventional commit (`feat` `fix` `refactor` `docs` `test` `chore` `perf` `build`
+  `ci`, `!` for breaking) with the affected crate's short name as scope, e.g.
+  `feat(client): …`. CI lints it (`pr-title.yml`). Commits inside a PR are for
+  review only.
+- **One coherent change = one PR.** When work should land on `main` as *separate*
+  commits — several crates or change types that each deserve their own changelog
+  entry/bump — use a stack, one layer per `type(scope)`.
+- **Stacks** use the [`gh stack`](https://github.com/github/gh-stack) extension:
+  `gh stack init <base>` adopts a branch, `gh stack add <branch>` creates the next
+  layer, `gh stack submit` pushes and links the PRs (each layer targets the one
+  below), `gh stack sync --prune` cascades after a lower layer merges,
+  `gh stack rebase` / `gh stack modify` restructure. Prefer these over raw
+  `git rebase --onto` + `gh pr edit --base`, which leaves stack tracking stale.
+- **Create branches server-side first.** The push-time secret scanner checks the
+  full ancestry of a branch's first push and trips on old false positives in
+  `main`'s history. Create the ref remotely, then fetch and track it:
+
+  ```bash
+  gh api repos/open-lakehouse/mangrove/git/refs -f ref=refs/heads/<branch> \
+    -f sha="$(git rev-parse origin/main)"
+  git fetch origin <branch> && git switch --track origin/<branch>
+  ```
+
+  For a stack layer, use the parent layer's tip as `sha`.
+- PR body: what changed and why, a test plan, and `Closes #N` when an issue exists.
+- **Re-trigger CI with an empty commit** (`git commit --allow-empty`), never by
+  closing/reopening the PR.
+
+### Pre-push check (mirrors CI)
 
 ```bash
 cargo fmt --all --check \
   && cargo clippy --workspace --all-targets --all-features -- -D warnings \
-  && cargo nextest run --workspace --all-features --profile ci -E 'not binary(commit_coordinator)' \
+  && cargo nextest run --workspace --all-features --profile ci \
+       -E 'not (package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access)))' \
   && cargo test --workspace --all-features --doc
 ```
 
-### Pull requests
+## Environment
 
-- Work on a feature branch (`feat/`, `fix/`, etc.) — never `main`.
-- Generated code goes in the same commit as the source change that produced it.
-- Strip `bun.lock` proxy URLs before opening a PR (see rule above).
-- PR title: `<type>: <description> (#<issue>)`. Include test plan, `Closes #N`, and follow-up refs.
-
-### Commit workflow
-
-Commit **unsigned** as you go; sign the whole branch once before opening a PR.
-See `.claude/skills/commit/SKILL.md` for the commit skill. Only create commits when
-the user asks.
-
----
-
-## Maintaining these instructions
-
-When adding or changing an always-applied rule:
-
-1. Add or update the `.mdc` file in `.agents/rules/`.
-2. Mirror to `.cursor/rules/` if the rule should apply in Cursor with `alwaysApply`.
-3. Update this `AGENTS.md` summary so harnesses that only read the root file stay current.
+Some targets need services or credentials (a local `.env` is dotenv-loaded):
+`just dev rest-db` / `just build build-sqlx` need Docker + Postgres;
+`just test record-managed` needs `DATABRICKS_HOST`, `DATABRICKS_TOKEN` and
+`DATABRICKS_STORAGE_ROOT`. Enable the repo git hooks once per clone with
+`bun run setup-hooks`.
