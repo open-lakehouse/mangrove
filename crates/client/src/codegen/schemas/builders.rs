@@ -1,6 +1,7 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
 #![allow(unused_imports)]
+
 #[cfg(not(target_arch = "wasm32"))]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 #[cfg(target_arch = "wasm32")]
@@ -15,11 +16,13 @@ use crate::Result;
 use futures::{StreamExt, TryStreamExt};
 use std::future::IntoFuture;
 use unitycatalog_common::models::schemas::v1::*;
+
 /// Builder for listing schemas
 pub struct ListSchemasBuilder {
     client: SchemaServiceClient,
     request: ListSchemasRequest,
 }
+
 impl ListSchemasBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `SchemaServiceClient`.
@@ -30,23 +33,27 @@ impl ListSchemasBuilder {
         };
         Self { client, request }
     }
-    /** The maximum number of results per page that should be returned.
 
-    If unset or 0, the server's default page size is used. Negative values are rejected.*/
+    /// The maximum number of results per page that should be returned.
+    ///
+    /// If unset or 0, the server's default page size is used. Negative values are rejected.
     pub fn with_max_results(mut self, max_results: impl Into<Option<i32>>) -> Self {
         self.request.max_results = max_results.into();
         self
     }
+
     /// Opaque pagination token to go to next page based on previous query.
     pub fn with_page_token(mut self, page_token: impl Into<Option<String>>) -> Self {
         self.request.page_token = page_token.into();
         self
     }
+
     /// Whether to include schemas in the response for which the principal can only access selective metadata for
     pub fn with_include_browse(mut self, include_browse: impl Into<Option<bool>>) -> Self {
         self.request.include_browse = include_browse.into();
         self
     }
+
     /// Convert paginated request into stream of results
     pub fn into_stream(self) -> BoxStr<'static, Result<Schema>> {
         let remaining = self.request.max_results;
@@ -54,8 +61,12 @@ impl ListSchemasBuilder {
             (self, remaining),
             move |(mut builder, mut remaining), page_token| async move {
                 builder.request.page_token = page_token;
-                let res = builder.client.list_schemas(&builder.request).await?;
+                if remaining.is_some() {
+                    builder.request.max_results = remaining;
+                }
+                let mut res = builder.client.list_schemas(&builder.request).await?;
                 if let Some(ref mut rem) = remaining {
+                    res.schemas.truncate((*rem).max(0) as usize);
                     *rem -= res.schemas.len() as i32;
                 }
                 let next_page_token = if remaining.is_some_and(|r| r <= 0) {
@@ -75,6 +86,7 @@ impl ListSchemasBuilder {
         stream
     }
 }
+
 impl IntoFuture for ListSchemasBuilder {
     type Output = Result<ListSchemasResponse>;
     type IntoFuture = BoxFut<'static, Self::Output>;
@@ -84,11 +96,13 @@ impl IntoFuture for ListSchemasBuilder {
         Box::pin(async move { client.list_schemas(&request).await })
     }
 }
+
 /// Builder for creating a schema
 pub struct CreateSchemaBuilder {
     client: SchemaServiceClient,
     request: CreateSchemaRequest,
 }
+
 impl CreateSchemaBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `SchemaServiceClient`.
@@ -104,11 +118,13 @@ impl CreateSchemaBuilder {
         };
         Self { client, request }
     }
+
     /// User-provided free-form text description.
     pub fn with_comment(mut self, comment: impl Into<Option<String>>) -> Self {
         self.request.comment = comment.into();
         self
     }
+
     /// A map of key-value properties attached to the securable.
     pub fn with_properties<I, K, V>(mut self, properties: I) -> Self
     where
@@ -122,15 +138,17 @@ impl CreateSchemaBuilder {
             .collect();
         self
     }
-    /** Storage root URL for managed storage location of the schema.
 
-    If not set, managed securables under this schema fall back to the parent
-    catalog's storage location. Example: `s3://bucket/ucroot`.*/
+    /// Storage root URL for managed storage location of the schema.
+    ///
+    /// If not set, managed securables under this schema fall back to the parent
+    /// catalog's storage location. Example: `s3://bucket/ucroot`.
     pub fn with_storage_root(mut self, storage_root: impl Into<Option<String>>) -> Self {
         self.request.storage_root = storage_root.into();
         self
     }
 }
+
 impl IntoFuture for CreateSchemaBuilder {
     type Output = Result<Schema>;
     type IntoFuture = BoxFut<'static, Self::Output>;
@@ -140,11 +158,13 @@ impl IntoFuture for CreateSchemaBuilder {
         Box::pin(async move { client.create_schema(&request).await })
     }
 }
+
 /// Builder for getting a schema
 pub struct GetSchemaBuilder {
     client: SchemaServiceClient,
     request: GetSchemaRequest,
 }
+
 impl GetSchemaBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `SchemaServiceClient`.
@@ -155,12 +175,14 @@ impl GetSchemaBuilder {
         };
         Self { client, request }
     }
+
     /// Whether to include schemas in the response for which the principal can only access selective metadata for
     pub fn with_include_browse(mut self, include_browse: impl Into<Option<bool>>) -> Self {
         self.request.include_browse = include_browse.into();
         self
     }
 }
+
 impl IntoFuture for GetSchemaBuilder {
     type Output = Result<Schema>;
     type IntoFuture = BoxFut<'static, Self::Output>;
@@ -170,11 +192,13 @@ impl IntoFuture for GetSchemaBuilder {
         Box::pin(async move { client.get_schema(&request).await })
     }
 }
+
 /// Builder for updating a schema
 pub struct UpdateSchemaBuilder {
     client: SchemaServiceClient,
     request: UpdateSchemaRequest,
 }
+
 impl UpdateSchemaBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `SchemaServiceClient`.
@@ -185,15 +209,17 @@ impl UpdateSchemaBuilder {
         };
         Self { client, request }
     }
+
     /// User-provided free-form text description.
     pub fn with_comment(mut self, comment: impl Into<Option<String>>) -> Self {
         self.request.comment = comment.into();
         self
     }
-    /** A map of key-value properties attached to the securable.
 
-    When provided in update request, the specified properties will override the existing properties.
-    To add and remove properties, one would need to perform a read-modify-write.*/
+    /// A map of key-value properties attached to the securable.
+    ///
+    /// When provided in update request, the specified properties will override the existing properties.
+    /// To add and remove properties, one would need to perform a read-modify-write.
     pub fn with_properties<I, K, V>(mut self, properties: I) -> Self
     where
         I: IntoIterator<Item = (K, V)>,
@@ -206,12 +232,14 @@ impl UpdateSchemaBuilder {
             .collect();
         self
     }
+
     /// New name for the schema.
     pub fn with_new_name(mut self, new_name: impl Into<Option<String>>) -> Self {
         self.request.new_name = new_name.into();
         self
     }
 }
+
 impl IntoFuture for UpdateSchemaBuilder {
     type Output = Result<Schema>;
     type IntoFuture = BoxFut<'static, Self::Output>;
@@ -221,11 +249,13 @@ impl IntoFuture for UpdateSchemaBuilder {
         Box::pin(async move { client.update_schema(&request).await })
     }
 }
+
 /// Builder for deleting a schema
 pub struct DeleteSchemaBuilder {
     client: SchemaServiceClient,
     request: DeleteSchemaRequest,
 }
+
 impl DeleteSchemaBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `SchemaServiceClient`.
@@ -236,12 +266,14 @@ impl DeleteSchemaBuilder {
         };
         Self { client, request }
     }
+
     /// Force deletion even if the schema is not empty.
     pub fn with_force(mut self, force: impl Into<Option<bool>>) -> Self {
         self.request.force = force.into();
         self
     }
 }
+
 impl IntoFuture for DeleteSchemaBuilder {
     type Output = Result<()>;
     type IntoFuture = BoxFut<'static, Self::Output>;

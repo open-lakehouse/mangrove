@@ -1,6 +1,7 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
 #![allow(unused_imports)]
+
 #[cfg(not(target_arch = "wasm32"))]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 #[cfg(target_arch = "wasm32")]
@@ -15,11 +16,13 @@ use crate::Result;
 use futures::{StreamExt, TryStreamExt};
 use std::future::IntoFuture;
 use unitycatalog_common::models::providers::v1::*;
+
 /// Builder for listing providers
 pub struct ListProvidersBuilder {
     client: ProviderServiceClient,
     request: ListProvidersRequest,
 }
+
 impl ListProvidersBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `ProviderServiceClient`.
@@ -29,18 +32,21 @@ impl ListProvidersBuilder {
         };
         Self { client, request }
     }
-    /** The maximum number of results per page that should be returned.
 
-    If unset or 0, the server's default page size is used. Negative values are rejected.*/
+    /// The maximum number of results per page that should be returned.
+    ///
+    /// If unset or 0, the server's default page size is used. Negative values are rejected.
     pub fn with_max_results(mut self, max_results: impl Into<Option<i32>>) -> Self {
         self.request.max_results = max_results.into();
         self
     }
+
     /// Opaque pagination token to go to next page based on previous query.
     pub fn with_page_token(mut self, page_token: impl Into<Option<String>>) -> Self {
         self.request.page_token = page_token.into();
         self
     }
+
     /// Convert paginated request into stream of results
     pub fn into_stream(self) -> BoxStr<'static, Result<Provider>> {
         let remaining = self.request.max_results;
@@ -48,8 +54,12 @@ impl ListProvidersBuilder {
             (self, remaining),
             move |(mut builder, mut remaining), page_token| async move {
                 builder.request.page_token = page_token;
-                let res = builder.client.list_providers(&builder.request).await?;
+                if remaining.is_some() {
+                    builder.request.max_results = remaining;
+                }
+                let mut res = builder.client.list_providers(&builder.request).await?;
                 if let Some(ref mut rem) = remaining {
+                    res.providers.truncate((*rem).max(0) as usize);
                     *rem -= res.providers.len() as i32;
                 }
                 let next_page_token = if remaining.is_some_and(|r| r <= 0) {
@@ -69,6 +79,7 @@ impl ListProvidersBuilder {
         stream
     }
 }
+
 impl IntoFuture for ListProvidersBuilder {
     type Output = Result<ListProvidersResponse>;
     type IntoFuture = BoxFut<'static, Self::Output>;
@@ -78,11 +89,13 @@ impl IntoFuture for ListProvidersBuilder {
         Box::pin(async move { client.list_providers(&request).await })
     }
 }
+
 /// Builder for creating a provider
 pub struct CreateProviderBuilder {
     client: ProviderServiceClient,
     request: CreateProviderRequest,
 }
+
 impl CreateProviderBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `ProviderServiceClient`.
@@ -98,19 +111,22 @@ impl CreateProviderBuilder {
         };
         Self { client, request }
     }
+
     /// Username of the provider owner.
     pub fn with_owner(mut self, owner: impl Into<Option<String>>) -> Self {
         self.request.owner = owner.into();
         self
     }
+
     /// Description about the provider.
     pub fn with_comment(mut self, comment: impl Into<Option<String>>) -> Self {
         self.request.comment = comment.into();
         self
     }
-    /** The recipient profile (credential file contents) used to connect to the
-    sharing server. Required when authentication_type is TOKEN or
-    OAUTH_CLIENT_CREDENTIALS.*/
+
+    /// The recipient profile (credential file contents) used to connect to the
+    /// sharing server. Required when authentication_type is TOKEN or
+    /// OAUTH_CLIENT_CREDENTIALS.
     pub fn with_recipient_profile_str(
         mut self,
         recipient_profile_str: impl Into<Option<String>>,
@@ -118,6 +134,7 @@ impl CreateProviderBuilder {
         self.request.recipient_profile_str = recipient_profile_str.into();
         self
     }
+
     /// Provider properties as map of string key-value pairs.
     pub fn with_properties<I, K, V>(mut self, properties: I) -> Self
     where
@@ -132,6 +149,7 @@ impl CreateProviderBuilder {
         self
     }
 }
+
 impl IntoFuture for CreateProviderBuilder {
     type Output = Result<Provider>;
     type IntoFuture = BoxFut<'static, Self::Output>;
@@ -141,11 +159,13 @@ impl IntoFuture for CreateProviderBuilder {
         Box::pin(async move { client.create_provider(&request).await })
     }
 }
+
 /// Builder for getting a provider
 pub struct GetProviderBuilder {
     client: ProviderServiceClient,
     request: GetProviderRequest,
 }
+
 impl GetProviderBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `ProviderServiceClient`.
@@ -157,6 +177,7 @@ impl GetProviderBuilder {
         Self { client, request }
     }
 }
+
 impl IntoFuture for GetProviderBuilder {
     type Output = Result<Provider>;
     type IntoFuture = BoxFut<'static, Self::Output>;
@@ -166,11 +187,13 @@ impl IntoFuture for GetProviderBuilder {
         Box::pin(async move { client.get_provider(&request).await })
     }
 }
+
 /// Builder for updating a provider
 pub struct UpdateProviderBuilder {
     client: ProviderServiceClient,
     request: UpdateProviderRequest,
 }
+
 impl UpdateProviderBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `ProviderServiceClient`.
@@ -181,24 +204,28 @@ impl UpdateProviderBuilder {
         };
         Self { client, request }
     }
+
     /// New name for the provider.
     pub fn with_new_name(mut self, new_name: impl Into<Option<String>>) -> Self {
         self.request.new_name = new_name.into();
         self
     }
+
     /// Username of the provider owner.
     pub fn with_owner(mut self, owner: impl Into<Option<String>>) -> Self {
         self.request.owner = owner.into();
         self
     }
+
     /// Description about the provider.
     pub fn with_comment(mut self, comment: impl Into<Option<String>>) -> Self {
         self.request.comment = comment.into();
         self
     }
-    /** The recipient profile (credential file contents) used to connect to the
-    sharing server. Required when authentication_type is TOKEN or
-    OAUTH_CLIENT_CREDENTIALS.*/
+
+    /// The recipient profile (credential file contents) used to connect to the
+    /// sharing server. Required when authentication_type is TOKEN or
+    /// OAUTH_CLIENT_CREDENTIALS.
     pub fn with_recipient_profile_str(
         mut self,
         recipient_profile_str: impl Into<Option<String>>,
@@ -206,10 +233,11 @@ impl UpdateProviderBuilder {
         self.request.recipient_profile_str = recipient_profile_str.into();
         self
     }
-    /** Provider properties as map of string key-value pairs.
 
-    When provided in update request, the specified properties will override the existing properties.
-    To add and remove properties, one would need to perform a read-modify-write.*/
+    /// Provider properties as map of string key-value pairs.
+    ///
+    /// When provided in update request, the specified properties will override the existing properties.
+    /// To add and remove properties, one would need to perform a read-modify-write.
     pub fn with_properties<I, K, V>(mut self, properties: I) -> Self
     where
         I: IntoIterator<Item = (K, V)>,
@@ -223,6 +251,7 @@ impl UpdateProviderBuilder {
         self
     }
 }
+
 impl IntoFuture for UpdateProviderBuilder {
     type Output = Result<Provider>;
     type IntoFuture = BoxFut<'static, Self::Output>;
@@ -232,11 +261,13 @@ impl IntoFuture for UpdateProviderBuilder {
         Box::pin(async move { client.update_provider(&request).await })
     }
 }
+
 /// Builder for deleting a provider
 pub struct DeleteProviderBuilder {
     client: ProviderServiceClient,
     request: DeleteProviderRequest,
 }
+
 impl DeleteProviderBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `ProviderServiceClient`.
@@ -248,6 +279,7 @@ impl DeleteProviderBuilder {
         Self { client, request }
     }
 }
+
 impl IntoFuture for DeleteProviderBuilder {
     type Output = Result<()>;
     type IntoFuture = BoxFut<'static, Self::Output>;

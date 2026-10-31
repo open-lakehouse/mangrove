@@ -1,9 +1,11 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, clippy::too_many_arguments)]
+
 use super::handler::TableHandler;
 use crate::Result;
 use axum::extract::State;
 use unitycatalog_common::models::tables::v1::*;
+
 pub async fn list_table_summaries<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -16,6 +18,7 @@ where
     let result = handler.list_table_summaries(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn list_tables<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -28,6 +31,7 @@ where
     let result = handler.list_tables(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn create_table<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -40,6 +44,7 @@ where
     let result = handler.create_table(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn get_table<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -52,6 +57,7 @@ where
     let result = handler.get_table(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn get_table_exists<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -64,6 +70,7 @@ where
     let result = handler.get_table_exists(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn delete_table<T, Cx>(
     State(handler): State<T>,
     context: Cx,

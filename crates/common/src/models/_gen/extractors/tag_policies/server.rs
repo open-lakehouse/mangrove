@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::tags::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListTagPoliciesRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -29,6 +31,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListTagPoliciesReque
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateTagPolicyRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -42,6 +45,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateTagPolicyRequest {
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetTagPolicyRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -58,6 +62,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetTagPolicyRequest 
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateTagPolicyRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -84,6 +89,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateTagPolicyRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteTagPolicyRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(

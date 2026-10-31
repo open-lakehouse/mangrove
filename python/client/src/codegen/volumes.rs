@@ -1,47 +1,76 @@
 // @generated — do not edit by hand.
-use crate::codegen::runtime::{ListIterator, block_on};
-use crate::error::PyUnityCatalogError;
-use futures::stream::StreamExt;
-use pyo3::IntoPyObjectExt;
+use crate::codegen::error::{PyUnityCatalogError, PyUnityCatalogResult};
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::VolumeClient;
 use unitycatalog_common::models::volumes::v1::*;
 use unitycatalog_common::models::*;
-#[pyclass(name = "VolumeClient")]
+
+/// The requests on one `Volume`.
+#[pyclass(name = "VolumeClient", module = "unitycatalog_client._client.volumes")]
 pub struct PyVolumeClient {
     pub(crate) client: VolumeClient,
 }
+
 #[pymethods]
 impl PyVolumeClient {
+    /// Args:
+    ///     include_browse: Whether to include volumes in the response for which the principal can only
+    ///                     access selective metadata for
+    ///
+    /// Returns:
+    ///     The requested resource
     #[pyo3(signature = (include_browse = None))]
-    pub fn get(&self, py: Python<'_>, include_browse: Option<bool>) -> PyResult<PyVolume> {
-        let mut request = self.client.get();
-        request = request.with_include_browse(include_browse);
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyVolume::from(result))
+    pub fn get(&self, py: Python, include_browse: Option<bool>) -> PyUnityCatalogResult<PyVolume> {
+        let request = self.client.get().with_include_browse(include_browse);
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyVolume::from(result))
+        })
     }
+
+    /// Args:
+    ///     new_name: New name for the volume.
+    ///     comment: The comment attached to the volume
+    ///     owner: The identifier of the user who owns the volume
+    ///
+    /// Returns:
+    ///     The requested resource
     #[pyo3(signature = (new_name = None, comment = None, owner = None))]
     pub fn update(
         &self,
-        py: Python<'_>,
+        py: Python,
         new_name: Option<String>,
         comment: Option<String>,
         owner: Option<String>,
-    ) -> PyResult<PyVolume> {
-        let mut request = self.client.update();
-        request = request.with_new_name(new_name);
-        request = request.with_comment(comment);
-        request = request.with_owner(owner);
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyVolume::from(result))
+    ) -> PyUnityCatalogResult<PyVolume> {
+        let request = self
+            .client
+            .update()
+            .with_new_name(new_name)
+            .with_comment(comment)
+            .with_owner(owner);
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyVolume::from(result))
+        })
     }
-    pub fn delete(&self, py: Python<'_>) -> PyResult<()> {
+
+    pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
-        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(())
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(result)
+        })
     }
 }
+
 impl PyVolumeClient {
     pub fn new(client: VolumeClient) -> Self {
         Self { client }

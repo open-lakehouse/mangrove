@@ -1,9 +1,11 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, clippy::too_many_arguments)]
+
 use super::handler::ExternalLocationHandler;
 use crate::Result;
 use axum::extract::State;
 use unitycatalog_common::models::external_locations::v1::*;
+
 pub async fn list_external_locations<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -16,6 +18,7 @@ where
     let result = handler.list_external_locations(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn create_external_location<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -28,6 +31,7 @@ where
     let result = handler.create_external_location(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn get_external_location<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -40,6 +44,7 @@ where
     let result = handler.get_external_location(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn update_external_location<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -52,6 +57,7 @@ where
     let result = handler.update_external_location(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn delete_external_location<T, Cx>(
     State(handler): State<T>,
     context: Cx,

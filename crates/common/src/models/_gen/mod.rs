@@ -4,9 +4,15 @@
 #![allow(clippy::useless_borrows_in_formatting)]
 #![allow(non_camel_case_types)]
 #![allow(clippy::derivable_impls)]
+#![allow(clippy::match_single_binding)]
+#![allow(clippy::uninlined_format_args)]
+#![allow(clippy::doc_lazy_continuation)]
+
 use std::collections::HashMap;
+
 pub mod labels;
 pub use labels::{ObjectLabel, Resource};
+
 #[cfg(feature = "python")]
 #[allow(clippy::clone_on_copy)]
 pub mod pyo3_impls;
@@ -30,96 +36,115 @@ pub use tables::v1::Column;
 pub use tables::v1::Table;
 pub use tags::v1::TagPolicy;
 pub use volumes::v1::Volume;
+
 pub type PropertyMap = HashMap<String, serde_json::Value>;
 pub mod agent_skills {
     pub mod v0alpha1 {
         include!("./unitycatalog.agent_skills.v0alpha1.rs");
     }
 }
+
 pub mod agents {
     pub mod v0alpha1 {
         include!("./unitycatalog.agents.v0alpha1.rs");
     }
 }
+
 pub mod catalogs {
     pub mod v1 {
         include!("./unitycatalog.catalogs.v1.rs");
     }
 }
+
 pub mod credentials {
     pub mod v1 {
         include!("./unitycatalog.credentials.v1.rs");
     }
 }
+
 pub mod external_locations {
     pub mod v1 {
         include!("./unitycatalog.external_locations.v1.rs");
     }
 }
+
 pub mod functions {
     pub mod v1 {
         include!("./unitycatalog.functions.v1.rs");
     }
 }
+
 pub mod model_versions {
     pub mod v1 {
         include!("./unitycatalog.model_versions.v1.rs");
     }
 }
+
 pub mod policies {
     pub mod v1 {
         include!("./unitycatalog.policies.v1.rs");
     }
 }
+
 pub mod providers {
     pub mod v1 {
         include!("./unitycatalog.providers.v1.rs");
     }
 }
+
 pub mod recipients {
     pub mod v1 {
         include!("./unitycatalog.recipients.v1.rs");
     }
 }
+
 pub mod registered_models {
     pub mod v1 {
         include!("./unitycatalog.registered_models.v1.rs");
     }
 }
+
 pub mod schemas {
     pub mod v1 {
         include!("./unitycatalog.schemas.v1.rs");
     }
 }
+
 pub mod shares {
     pub mod v1 {
         include!("./unitycatalog.shares.v1.rs");
     }
 }
+
 pub mod staging_tables {
     pub mod v1 {
         include!("./unitycatalog.staging_tables.v1.rs");
     }
 }
+
 pub mod tables {
     pub mod v1 {
         include!("./unitycatalog.tables.v1.rs");
     }
 }
+
 pub mod tags {
     pub mod v1 {
         include!("./unitycatalog.tags.v1.rs");
     }
 }
+
 pub mod temporary_credentials {
     pub mod v1 {
         include!("./unitycatalog.temporary_credentials.v1.rs");
     }
 }
+
 pub mod volumes {
     pub mod v1 {
         include!("./unitycatalog.volumes.v1.rs");
     }
 }
+
 #[cfg(feature = "axum")]
 pub mod extractors;

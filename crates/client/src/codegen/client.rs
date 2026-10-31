@@ -1,52 +1,130 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
-use crate::codegen::agent_skills::*;
-use crate::codegen::agents::*;
-use crate::codegen::catalogs::*;
-use crate::codegen::credentials::*;
-use crate::codegen::entity_tag_assignments::*;
-use crate::codegen::external_locations::*;
-use crate::codegen::functions::*;
-use crate::codegen::model_versions::*;
-use crate::codegen::policies::*;
-use crate::codegen::providers::*;
-use crate::codegen::recipients::*;
-use crate::codegen::registered_models::*;
-use crate::codegen::schemas::*;
-use crate::codegen::shares::*;
-use crate::codegen::staging_tables::*;
-use crate::codegen::tables::*;
-use crate::codegen::tag_policies::*;
-use crate::codegen::temporary_credentials::*;
-use crate::codegen::volumes::*;
+
 #[cfg(not(target_arch = "wasm32"))]
 use ::olai_http::CloudClient as Transport;
+
 #[cfg(target_arch = "wasm32")]
 use ::olai_http_wasm::WasmClient as Transport;
-use unitycatalog_common::models::agent_skills::v0alpha1::*;
-use unitycatalog_common::models::agents::v0alpha1::*;
-use unitycatalog_common::models::catalogs::v1::*;
-use unitycatalog_common::models::credentials::v1::*;
-use unitycatalog_common::models::external_locations::v1::*;
-use unitycatalog_common::models::functions::v1::*;
-use unitycatalog_common::models::model_versions::v1::*;
-use unitycatalog_common::models::policies::v1::*;
-use unitycatalog_common::models::providers::v1::*;
-use unitycatalog_common::models::recipients::v1::*;
-use unitycatalog_common::models::registered_models::v1::*;
-use unitycatalog_common::models::schemas::v1::*;
-use unitycatalog_common::models::shares::v1::*;
-use unitycatalog_common::models::staging_tables::v1::*;
-use unitycatalog_common::models::tables::v1::*;
-use unitycatalog_common::models::tags::v1::*;
-use unitycatalog_common::models::temporary_credentials::v1::*;
-use unitycatalog_common::models::volumes::v1::*;
 use url::Url;
+
+#[cfg(feature = "agent_skills")]
+use crate::codegen::agent_skills::*;
+
+#[cfg(feature = "agents")]
+use crate::codegen::agents::*;
+
+#[cfg(feature = "catalogs")]
+use crate::codegen::catalogs::*;
+
+#[cfg(feature = "credentials")]
+use crate::codegen::credentials::*;
+
+#[cfg(feature = "tags")]
+use crate::codegen::entity_tag_assignments::*;
+
+#[cfg(feature = "external_locations")]
+use crate::codegen::external_locations::*;
+
+#[cfg(feature = "functions")]
+use crate::codegen::functions::*;
+
+#[cfg(feature = "model_versions")]
+use crate::codegen::model_versions::*;
+
+#[cfg(feature = "policies")]
+use crate::codegen::policies::*;
+
+#[cfg(feature = "providers")]
+use crate::codegen::providers::*;
+
+#[cfg(feature = "recipients")]
+use crate::codegen::recipients::*;
+
+#[cfg(feature = "registered_models")]
+use crate::codegen::registered_models::*;
+
+#[cfg(feature = "schemas")]
+use crate::codegen::schemas::*;
+
+#[cfg(feature = "shares")]
+use crate::codegen::shares::*;
+
+#[cfg(feature = "staging_tables")]
+use crate::codegen::staging_tables::*;
+
+#[cfg(feature = "tables")]
+use crate::codegen::tables::*;
+
+#[cfg(feature = "tags")]
+use crate::codegen::tag_policies::*;
+
+#[cfg(feature = "temporary_credentials")]
+use crate::codegen::temporary_credentials::*;
+
+#[cfg(feature = "volumes")]
+use crate::codegen::volumes::*;
+
+#[cfg(feature = "agent_skills")]
+use unitycatalog_common::models::agent_skills::v0alpha1::*;
+
+#[cfg(feature = "agents")]
+use unitycatalog_common::models::agents::v0alpha1::*;
+
+#[cfg(feature = "catalogs")]
+use unitycatalog_common::models::catalogs::v1::*;
+
+#[cfg(feature = "credentials")]
+use unitycatalog_common::models::credentials::v1::*;
+
+#[cfg(feature = "tags")]
+use unitycatalog_common::models::tags::v1::*;
+
+#[cfg(feature = "external_locations")]
+use unitycatalog_common::models::external_locations::v1::*;
+
+#[cfg(feature = "functions")]
+use unitycatalog_common::models::functions::v1::*;
+
+#[cfg(feature = "model_versions")]
+use unitycatalog_common::models::model_versions::v1::*;
+
+#[cfg(feature = "policies")]
+use unitycatalog_common::models::policies::v1::*;
+
+#[cfg(feature = "providers")]
+use unitycatalog_common::models::providers::v1::*;
+
+#[cfg(feature = "recipients")]
+use unitycatalog_common::models::recipients::v1::*;
+
+#[cfg(feature = "registered_models")]
+use unitycatalog_common::models::registered_models::v1::*;
+
+#[cfg(feature = "schemas")]
+use unitycatalog_common::models::schemas::v1::*;
+
+#[cfg(feature = "shares")]
+use unitycatalog_common::models::shares::v1::*;
+
+#[cfg(feature = "staging_tables")]
+use unitycatalog_common::models::staging_tables::v1::*;
+
+#[cfg(feature = "tables")]
+use unitycatalog_common::models::tables::v1::*;
+
+#[cfg(feature = "temporary_credentials")]
+use unitycatalog_common::models::temporary_credentials::v1::*;
+
+#[cfg(feature = "volumes")]
+use unitycatalog_common::models::volumes::v1::*;
+
 #[derive(Clone)]
 pub struct UnityCatalogClient {
-    client: Transport,
-    base_url: Url,
+    pub(crate) client: Transport,
+    pub(crate) base_url: Url,
 }
+
 impl UnityCatalogClient {
     /// Create a new aggregate client from a cloud client and base URL.
     ///
@@ -58,22 +136,29 @@ impl UnityCatalogClient {
         }
         Self { client, base_url }
     }
+
     #[cfg(not(target_arch = "wasm32"))]
     /// Create a new aggregate client with no authentication.
     pub fn new_unauthenticated(base_url: Url) -> Self {
         Self::new(Transport::new_unauthenticated(), base_url)
     }
+
     #[cfg(not(target_arch = "wasm32"))]
     /// Create a new aggregate client authenticating with a bearer token.
     pub fn new_with_token(base_url: Url, token: impl ToString) -> Self {
         Self::new(Transport::new_with_token(token), base_url)
     }
+
     #[cfg(target_arch = "wasm32")]
     /// Create a new aggregate client. The browser supplies the session
     /// (cookies / forwarded auth) on each request.
     pub fn new_in_browser(base_url: Url) -> Self {
         Self::new(Transport::new(), base_url)
     }
+}
+
+#[cfg(feature = "agent_skills")]
+impl UnityCatalogClient {
     ///Low-level `agent_skills` client exposing request/response passthrough methods.
     pub fn agent_skills_client(&self) -> crate::codegen::agent_skills::AgentSkillServiceClient {
         crate::codegen::agent_skills::AgentSkillServiceClient::new(
@@ -81,135 +166,7 @@ impl UnityCatalogClient {
             self.base_url.clone(),
         )
     }
-    ///Low-level `agents` client exposing request/response passthrough methods.
-    pub fn agents_client(&self) -> crate::codegen::agents::AgentServiceClient {
-        crate::codegen::agents::AgentServiceClient::new(self.client.clone(), self.base_url.clone())
-    }
-    ///Low-level `catalogs` client exposing request/response passthrough methods.
-    pub fn catalogs_client(&self) -> crate::codegen::catalogs::CatalogServiceClient {
-        crate::codegen::catalogs::CatalogServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `credentials` client exposing request/response passthrough methods.
-    pub fn credentials_client(&self) -> crate::codegen::credentials::CredentialServiceClient {
-        crate::codegen::credentials::CredentialServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `entity_tag_assignments` client exposing request/response passthrough methods.
-    pub fn entity_tag_assignments_client(
-        &self,
-    ) -> crate::codegen::entity_tag_assignments::EntityTagAssignmentClient {
-        crate::codegen::entity_tag_assignments::EntityTagAssignmentClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `external_locations` client exposing request/response passthrough methods.
-    pub fn external_locations_client(
-        &self,
-    ) -> crate::codegen::external_locations::ExternalLocationServiceClient {
-        crate::codegen::external_locations::ExternalLocationServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `functions` client exposing request/response passthrough methods.
-    pub fn functions_client(&self) -> crate::codegen::functions::FunctionServiceClient {
-        crate::codegen::functions::FunctionServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `model_versions` client exposing request/response passthrough methods.
-    pub fn model_versions_client(
-        &self,
-    ) -> crate::codegen::model_versions::ModelVersionServiceClient {
-        crate::codegen::model_versions::ModelVersionServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `policies` client exposing request/response passthrough methods.
-    pub fn policies_client(&self) -> crate::codegen::policies::PolicyServiceClient {
-        crate::codegen::policies::PolicyServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `providers` client exposing request/response passthrough methods.
-    pub fn providers_client(&self) -> crate::codegen::providers::ProviderServiceClient {
-        crate::codegen::providers::ProviderServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `recipients` client exposing request/response passthrough methods.
-    pub fn recipients_client(&self) -> crate::codegen::recipients::RecipientServiceClient {
-        crate::codegen::recipients::RecipientServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `registered_models` client exposing request/response passthrough methods.
-    pub fn registered_models_client(
-        &self,
-    ) -> crate::codegen::registered_models::RegisteredModelServiceClient {
-        crate::codegen::registered_models::RegisteredModelServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `schemas` client exposing request/response passthrough methods.
-    pub fn schemas_client(&self) -> crate::codegen::schemas::SchemaServiceClient {
-        crate::codegen::schemas::SchemaServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `shares` client exposing request/response passthrough methods.
-    pub fn shares_client(&self) -> crate::codegen::shares::ShareServiceClient {
-        crate::codegen::shares::ShareServiceClient::new(self.client.clone(), self.base_url.clone())
-    }
-    ///Low-level `staging_tables` client exposing request/response passthrough methods.
-    pub fn staging_tables_client(
-        &self,
-    ) -> crate::codegen::staging_tables::StagingTableServiceClient {
-        crate::codegen::staging_tables::StagingTableServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `tables` client exposing request/response passthrough methods.
-    pub fn tables_client(&self) -> crate::codegen::tables::TableServiceClient {
-        crate::codegen::tables::TableServiceClient::new(self.client.clone(), self.base_url.clone())
-    }
-    ///Low-level `tag_policies` client exposing request/response passthrough methods.
-    pub fn tag_policies_client(&self) -> crate::codegen::tag_policies::TagPolicyServiceClient {
-        crate::codegen::tag_policies::TagPolicyServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `temporary_credentials` client exposing request/response passthrough methods.
-    pub fn temporary_credentials_client(
-        &self,
-    ) -> crate::codegen::temporary_credentials::TemporaryCredentialClient {
-        crate::codegen::temporary_credentials::TemporaryCredentialClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
-    ///Low-level `volumes` client exposing request/response passthrough methods.
-    pub fn volumes_client(&self) -> crate::codegen::volumes::VolumeServiceClient {
-        crate::codegen::volumes::VolumeServiceClient::new(
-            self.client.clone(),
-            self.base_url.clone(),
-        )
-    }
+
     /// Lists agent skills.
     ///
     /// # Arguments
@@ -230,6 +187,7 @@ impl UnityCatalogClient {
             schema_name,
         )
     }
+
     /// # Arguments
     ///
     /// * `catalog_name` - The identifier of the catalog.
@@ -254,6 +212,7 @@ impl UnityCatalogClient {
             agent_skill_type,
         )
     }
+
     /// Access the `agent_skill` resource scoped to the given name.
     pub fn agent_skill(
         &self,
@@ -271,6 +230,7 @@ impl UnityCatalogClient {
             ),
         )
     }
+
     /// Access the `agent_skill` resource from its dot-joined full name.
     pub fn agent_skill_from_full_name(&self, full_name: impl Into<String>) -> AgentSkillClient {
         AgentSkillClient::from_full_name(
@@ -281,6 +241,15 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "agents")]
+impl UnityCatalogClient {
+    ///Low-level `agents` client exposing request/response passthrough methods.
+    pub fn agents_client(&self) -> crate::codegen::agents::AgentServiceClient {
+        crate::codegen::agents::AgentServiceClient::new(self.client.clone(), self.base_url.clone())
+    }
+
     /// Lists agents.
     ///
     /// # Arguments
@@ -301,6 +270,7 @@ impl UnityCatalogClient {
             schema_name,
         )
     }
+
     /// # Arguments
     ///
     /// * `catalog_name` - The identifier of the catalog.
@@ -328,6 +298,7 @@ impl UnityCatalogClient {
             endpoint,
         )
     }
+
     /// Access the `agent` resource scoped to the given name.
     pub fn agent(
         &self,
@@ -345,6 +316,7 @@ impl UnityCatalogClient {
             ),
         )
     }
+
     /// Access the `agent` resource from its dot-joined full name.
     pub fn agent_from_full_name(&self, full_name: impl Into<String>) -> AgentClient {
         AgentClient::from_full_name(
@@ -355,6 +327,18 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "catalogs")]
+impl UnityCatalogClient {
+    ///Low-level `catalogs` client exposing request/response passthrough methods.
+    pub fn catalogs_client(&self) -> crate::codegen::catalogs::CatalogServiceClient {
+        crate::codegen::catalogs::CatalogServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// List catalogs
     ///
     /// Gets an array of catalogs in the metastore. If the caller is the metastore admin,
@@ -367,6 +351,7 @@ impl UnityCatalogClient {
             self.base_url.clone(),
         ))
     }
+
     /// Create a new catalog
     ///
     /// Creates a new catalog instance in the parent metastore if the caller
@@ -384,6 +369,7 @@ impl UnityCatalogClient {
             name,
         )
     }
+
     /// Access the `catalog` resource scoped to the given name.
     pub fn catalog(&self, catalog_name: impl Into<String>) -> CatalogClient {
         CatalogClient::new(
@@ -394,12 +380,25 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "credentials")]
+impl UnityCatalogClient {
+    ///Low-level `credentials` client exposing request/response passthrough methods.
+    pub fn credentials_client(&self) -> crate::codegen::credentials::CredentialServiceClient {
+        crate::codegen::credentials::CredentialServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     pub fn list_credentials(&self) -> ListCredentialsBuilder {
         ListCredentialsBuilder::new(crate::codegen::credentials::CredentialServiceClient::new(
             self.client.clone(),
             self.base_url.clone(),
         ))
     }
+
     /// # Arguments
     ///
     /// * `name` - The credential name. The name must be unique among storage and service credentials within the metastore.
@@ -418,6 +417,7 @@ impl UnityCatalogClient {
             purpose,
         )
     }
+
     /// Access the `credential` resource scoped to the given name.
     pub fn credential(&self, credential_name: impl Into<String>) -> CredentialClient {
         CredentialClient::new(
@@ -428,6 +428,20 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "tags")]
+impl UnityCatalogClient {
+    ///Low-level `entity_tag_assignments` client exposing request/response passthrough methods.
+    pub fn entity_tag_assignments_client(
+        &self,
+    ) -> crate::codegen::entity_tag_assignments::EntityTagAssignmentClient {
+        crate::codegen::entity_tag_assignments::EntityTagAssignmentClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// List entity tag assignments
     ///
     /// Gets the tag assignments for the specified entity.
@@ -450,6 +464,7 @@ impl UnityCatalogClient {
             entity_name,
         )
     }
+
     /// Create an entity tag assignment
     ///
     /// Assigns a tag to a Unity Catalog entity.
@@ -477,6 +492,7 @@ impl UnityCatalogClient {
             tag_key,
         )
     }
+
     /// Get an entity tag assignment
     ///
     /// Gets the tag assignment for the specified entity and tag key.
@@ -502,6 +518,7 @@ impl UnityCatalogClient {
             tag_key,
         )
     }
+
     /// Update an entity tag assignment
     ///
     /// Updates the tag assignment for the specified entity and tag key.
@@ -527,6 +544,7 @@ impl UnityCatalogClient {
             tag_key,
         )
     }
+
     /// Delete an entity tag assignment
     ///
     /// Deletes the tag assignment for the specified entity and tag key.
@@ -552,6 +570,20 @@ impl UnityCatalogClient {
             tag_key,
         )
     }
+}
+
+#[cfg(feature = "external_locations")]
+impl UnityCatalogClient {
+    ///Low-level `external_locations` client exposing request/response passthrough methods.
+    pub fn external_locations_client(
+        &self,
+    ) -> crate::codegen::external_locations::ExternalLocationServiceClient {
+        crate::codegen::external_locations::ExternalLocationServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// List external locations
     pub fn list_external_locations(&self) -> ListExternalLocationsBuilder {
         ListExternalLocationsBuilder::new(
@@ -561,6 +593,7 @@ impl UnityCatalogClient {
             ),
         )
     }
+
     /// Create a new external location
     ///
     /// # Arguments
@@ -584,6 +617,7 @@ impl UnityCatalogClient {
             credential_name,
         )
     }
+
     /// Access the `external_location` resource scoped to the given name.
     pub fn external_location(
         &self,
@@ -597,6 +631,18 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "functions")]
+impl UnityCatalogClient {
+    ///Low-level `functions` client exposing request/response passthrough methods.
+    pub fn functions_client(&self) -> crate::codegen::functions::FunctionServiceClient {
+        crate::codegen::functions::FunctionServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// List functions
     ///
     /// List functions within the specified parent catalog and schema. If the caller is the metastore
@@ -622,6 +668,7 @@ impl UnityCatalogClient {
             schema_name,
         )
     }
+
     /// Create a function
     ///
     /// Creates a new function. The caller must be a metastore admin or have the CREATE_FUNCTION
@@ -639,6 +686,7 @@ impl UnityCatalogClient {
             function_info,
         )
     }
+
     /// Access the `function` resource scoped to the given name.
     pub fn function(
         &self,
@@ -656,6 +704,7 @@ impl UnityCatalogClient {
             ),
         )
     }
+
     /// Access the `function` resource from its dot-joined full name.
     pub fn function_from_full_name(&self, full_name: impl Into<String>) -> FunctionClient {
         FunctionClient::from_full_name(
@@ -666,6 +715,20 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "model_versions")]
+impl UnityCatalogClient {
+    ///Low-level `model_versions` client exposing request/response passthrough methods.
+    pub fn model_versions_client(
+        &self,
+    ) -> crate::codegen::model_versions::ModelVersionServiceClient {
+        crate::codegen::model_versions::ModelVersionServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// List model versions
     ///
     /// List the model versions of the specified registered model. If the caller is
@@ -685,6 +748,7 @@ impl UnityCatalogClient {
             full_name,
         )
     }
+
     /// Create a model version
     ///
     /// Creates a new model version in PENDING_REGISTRATION status. The server
@@ -716,6 +780,7 @@ impl UnityCatalogClient {
             source,
         )
     }
+
     /// Get a model version
     ///
     /// Gets a model version by its parent model name and version number.
@@ -739,6 +804,7 @@ impl UnityCatalogClient {
             version,
         )
     }
+
     /// Update a model version
     ///
     /// Updates the model version that matches the supplied name and version.
@@ -762,6 +828,7 @@ impl UnityCatalogClient {
             version,
         )
     }
+
     /// Delete a model version
     ///
     /// Deletes the model version that matches the supplied name and version. For the
@@ -787,6 +854,7 @@ impl UnityCatalogClient {
             version,
         )
     }
+
     /// Finalize a model version
     ///
     /// Transitions a model version to READY once all artifacts have been written to
@@ -811,6 +879,18 @@ impl UnityCatalogClient {
             version,
         )
     }
+}
+
+#[cfg(feature = "policies")]
+impl UnityCatalogClient {
+    ///Low-level `policies` client exposing request/response passthrough methods.
+    pub fn policies_client(&self) -> crate::codegen::policies::PolicyServiceClient {
+        crate::codegen::policies::PolicyServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// List policies
     ///
     /// Gets an array of policies defined on the specified securable. There is no guarantee
@@ -836,6 +916,7 @@ impl UnityCatalogClient {
             on_securable_fullname,
         )
     }
+
     /// Create a new policy
     ///
     /// Creates a new row-filter or column-mask policy on the specified securable.
@@ -866,6 +947,7 @@ impl UnityCatalogClient {
             policy_type,
         )
     }
+
     /// Access the `policy` resource scoped to the given name.
     pub fn policy(&self, policy_name: impl Into<String>) -> PolicyClient {
         PolicyClient::new(
@@ -876,6 +958,18 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "providers")]
+impl UnityCatalogClient {
+    ///Low-level `providers` client exposing request/response passthrough methods.
+    pub fn providers_client(&self) -> crate::codegen::providers::ProviderServiceClient {
+        crate::codegen::providers::ProviderServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// List providers.
     pub fn list_providers(&self) -> ListProvidersBuilder {
         ListProvidersBuilder::new(crate::codegen::providers::ProviderServiceClient::new(
@@ -883,6 +977,7 @@ impl UnityCatalogClient {
             self.base_url.clone(),
         ))
     }
+
     /// Create a new provider.
     ///
     /// # Arguments
@@ -903,6 +998,7 @@ impl UnityCatalogClient {
             authentication_type,
         )
     }
+
     /// Access the `provider` resource scoped to the given name.
     pub fn provider(&self, provider_name: impl Into<String>) -> ProviderClient {
         ProviderClient::new(
@@ -913,6 +1009,18 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "recipients")]
+impl UnityCatalogClient {
+    ///Low-level `recipients` client exposing request/response passthrough methods.
+    pub fn recipients_client(&self) -> crate::codegen::recipients::RecipientServiceClient {
+        crate::codegen::recipients::RecipientServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// List recipients.
     pub fn list_recipients(&self) -> ListRecipientsBuilder {
         ListRecipientsBuilder::new(crate::codegen::recipients::RecipientServiceClient::new(
@@ -920,6 +1028,7 @@ impl UnityCatalogClient {
             self.base_url.clone(),
         ))
     }
+
     /// Create a new recipient.
     ///
     /// # Arguments
@@ -943,6 +1052,7 @@ impl UnityCatalogClient {
             owner,
         )
     }
+
     /// Access the `recipient` resource scoped to the given name.
     pub fn recipient(&self, recipient_name: impl Into<String>) -> RecipientClient {
         RecipientClient::new(
@@ -953,6 +1063,20 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "registered_models")]
+impl UnityCatalogClient {
+    ///Low-level `registered_models` client exposing request/response passthrough methods.
+    pub fn registered_models_client(
+        &self,
+    ) -> crate::codegen::registered_models::RegisteredModelServiceClient {
+        crate::codegen::registered_models::RegisteredModelServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// List registered models
     ///
     /// List registered models within the specified parent catalog and schema. If
@@ -968,6 +1092,7 @@ impl UnityCatalogClient {
             ),
         )
     }
+
     /// Create a registered model
     ///
     /// Creates a new registered model. The caller must be a metastore admin or have
@@ -994,6 +1119,7 @@ impl UnityCatalogClient {
             schema_name,
         )
     }
+
     /// Access the `registered_model` resource scoped to the given name.
     pub fn registered_model(
         &self,
@@ -1011,6 +1137,7 @@ impl UnityCatalogClient {
             ),
         )
     }
+
     /// Access the `registered_model` resource from its dot-joined full name.
     pub fn registered_model_from_full_name(
         &self,
@@ -1024,6 +1151,18 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "schemas")]
+impl UnityCatalogClient {
+    ///Low-level `schemas` client exposing request/response passthrough methods.
+    pub fn schemas_client(&self) -> crate::codegen::schemas::SchemaServiceClient {
+        crate::codegen::schemas::SchemaServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// Gets an array of schemas for a catalog in the metastore. If the caller is the metastore
     /// admin or the owner of the parent catalog, all schemas for the catalog will be retrieved.
     /// Otherwise, only schemas owned by the caller (or for which the caller has the USE_SCHEMA privilege)
@@ -1041,6 +1180,7 @@ impl UnityCatalogClient {
             catalog_name,
         )
     }
+
     /// Creates a new schema for catalog in the Metatastore. The caller must be a metastore admin,
     /// or have the CREATE_SCHEMA privilege in the parent catalog.
     ///
@@ -1062,6 +1202,7 @@ impl UnityCatalogClient {
             catalog_name,
         )
     }
+
     /// Access the `schema` resource scoped to the given name.
     pub fn schema(
         &self,
@@ -1077,6 +1218,7 @@ impl UnityCatalogClient {
             ),
         )
     }
+
     /// Access the `schema` resource from its dot-joined full name.
     pub fn schema_from_full_name(&self, full_name: impl Into<String>) -> SchemaClient {
         SchemaClient::from_full_name(
@@ -1087,6 +1229,15 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "shares")]
+impl UnityCatalogClient {
+    ///Low-level `shares` client exposing request/response passthrough methods.
+    pub fn shares_client(&self) -> crate::codegen::shares::ShareServiceClient {
+        crate::codegen::shares::ShareServiceClient::new(self.client.clone(), self.base_url.clone())
+    }
+
     /// List shares.
     pub fn list_shares(&self) -> ListSharesBuilder {
         ListSharesBuilder::new(crate::codegen::shares::ShareServiceClient::new(
@@ -1094,6 +1245,7 @@ impl UnityCatalogClient {
             self.base_url.clone(),
         ))
     }
+
     /// Create a new share.
     ///
     /// # Arguments
@@ -1108,6 +1260,7 @@ impl UnityCatalogClient {
             name,
         )
     }
+
     /// Access the `share` resource scoped to the given name.
     pub fn share(&self, share_name: impl Into<String>) -> ShareClient {
         ShareClient::new(
@@ -1118,6 +1271,20 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "staging_tables")]
+impl UnityCatalogClient {
+    ///Low-level `staging_tables` client exposing request/response passthrough methods.
+    pub fn staging_tables_client(
+        &self,
+    ) -> crate::codegen::staging_tables::StagingTableServiceClient {
+        crate::codegen::staging_tables::StagingTableServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// Creates a new staging table, allocating an immutable table id and a storage
     /// location under the parent schema/catalog managed storage root. The caller
     /// must have the CREATE privilege on the parent schema.
@@ -1143,6 +1310,7 @@ impl UnityCatalogClient {
             schema_name,
         )
     }
+
     /// Access the `staging_table` resource scoped to the given name.
     pub fn staging_table(&self, staging_table_name: impl Into<String>) -> StagingTableClient {
         StagingTableClient::new(
@@ -1153,6 +1321,15 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "tables")]
+impl UnityCatalogClient {
+    ///Low-level `tables` client exposing request/response passthrough methods.
+    pub fn tables_client(&self) -> crate::codegen::tables::TableServiceClient {
+        crate::codegen::tables::TableServiceClient::new(self.client.clone(), self.base_url.clone())
+    }
+
     /// Gets an array of summaries for tables for a schema and catalog within the metastore. The table summaries returned are either:
     /// - summaries for tables (within the current metastore and parent catalog and schema), when the user is a metastore admin, or:
     /// - summaries for tables and schemas (within the current metastore and parent catalog) for which the user has ownership or the
@@ -1176,6 +1353,7 @@ impl UnityCatalogClient {
             catalog_name,
         )
     }
+
     /// Gets an array of all tables for the current metastore under the parent catalog and schema.
     ///
     /// The caller must be a metastore admin or an owner of (or have the SELECT privilege on) the table.
@@ -1201,6 +1379,7 @@ impl UnityCatalogClient {
             schema_name,
         )
     }
+
     /// Create a table
     ///
     /// # Arguments
@@ -1228,6 +1407,7 @@ impl UnityCatalogClient {
             data_source_format,
         )
     }
+
     /// Access the `table` resource scoped to the given name.
     pub fn table(
         &self,
@@ -1245,6 +1425,7 @@ impl UnityCatalogClient {
             ),
         )
     }
+
     /// Access the `table` resource from its dot-joined full name.
     pub fn table_from_full_name(&self, full_name: impl Into<String>) -> TableClient {
         TableClient::from_full_name(
@@ -1255,6 +1436,18 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "tags")]
+impl UnityCatalogClient {
+    ///Low-level `tag_policies` client exposing request/response passthrough methods.
+    pub fn tag_policies_client(&self) -> crate::codegen::tag_policies::TagPolicyServiceClient {
+        crate::codegen::tag_policies::TagPolicyServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// List tag policies
     ///
     /// Gets an array of tag policies. There is no guarantee of a specific ordering
@@ -1265,6 +1458,7 @@ impl UnityCatalogClient {
             self.base_url.clone(),
         ))
     }
+
     /// Create a new tag policy
     ///
     /// Creates a new governed tag definition.
@@ -1281,6 +1475,7 @@ impl UnityCatalogClient {
             tag_key,
         )
     }
+
     /// Access the `tag_policy` resource scoped to the given name.
     pub fn tag_policy(&self, tag_policy_name: impl Into<String>) -> TagPolicyClient {
         TagPolicyClient::new(
@@ -1291,6 +1486,20 @@ impl UnityCatalogClient {
             ),
         )
     }
+}
+
+#[cfg(feature = "temporary_credentials")]
+impl UnityCatalogClient {
+    ///Low-level `temporary_credentials` client exposing request/response passthrough methods.
+    pub fn temporary_credentials_client(
+        &self,
+    ) -> crate::codegen::temporary_credentials::TemporaryCredentialClient {
+        crate::codegen::temporary_credentials::TemporaryCredentialClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// Generate a new set of credentials for a table.
     ///
     /// The metastore must have the `external_access_enabled` flag set to true
@@ -1317,6 +1526,7 @@ impl UnityCatalogClient {
             operation,
         )
     }
+
     /// Generate a new set of credentials for a path.
     ///
     /// Only external storage paths (external locations and external tables) are
@@ -1344,6 +1554,7 @@ impl UnityCatalogClient {
             operation,
         )
     }
+
     /// Generate a new set of credentials for a volume.
     ///
     /// The metastore must have the `external_access_enabled` flag set to true
@@ -1370,6 +1581,7 @@ impl UnityCatalogClient {
             operation,
         )
     }
+
     /// Generate a new set of credentials for a model version.
     ///
     /// The metastore must have the `external_access_enabled` flag set to true
@@ -1406,6 +1618,18 @@ impl UnityCatalogClient {
             operation,
         )
     }
+}
+
+#[cfg(feature = "volumes")]
+impl UnityCatalogClient {
+    ///Low-level `volumes` client exposing request/response passthrough methods.
+    pub fn volumes_client(&self) -> crate::codegen::volumes::VolumeServiceClient {
+        crate::codegen::volumes::VolumeServiceClient::new(
+            self.client.clone(),
+            self.base_url.clone(),
+        )
+    }
+
     /// Lists volumes.
     ///
     /// # Arguments
@@ -1426,6 +1650,7 @@ impl UnityCatalogClient {
             schema_name,
         )
     }
+
     /// # Arguments
     ///
     /// * `catalog_name` - The identifier of the catalog
@@ -1454,6 +1679,7 @@ impl UnityCatalogClient {
             volume_type,
         )
     }
+
     /// Access the `volume` resource scoped to the given name.
     pub fn volume(
         &self,
@@ -1471,6 +1697,7 @@ impl UnityCatalogClient {
             ),
         )
     }
+
     /// Access the `volume` resource from its dot-joined full name.
     pub fn volume_from_full_name(&self, full_name: impl Into<String>) -> VolumeClient {
         VolumeClient::from_full_name(

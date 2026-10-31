@@ -1,6 +1,7 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
 #![allow(unused_imports)]
+
 #[cfg(not(target_arch = "wasm32"))]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 #[cfg(target_arch = "wasm32")]
@@ -9,11 +10,13 @@ use super::client::*;
 use crate::Result;
 use std::future::IntoFuture;
 use unitycatalog_common::models::temporary_credentials::v1::*;
+
 /// Builder for temporary table credentials
 pub struct GenerateTemporaryTableCredentialsBuilder {
     client: TemporaryCredentialClient,
     request: GenerateTemporaryTableCredentialsRequest,
 }
+
 impl GenerateTemporaryTableCredentialsBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `TemporaryCredentialClient`.
@@ -30,6 +33,7 @@ impl GenerateTemporaryTableCredentialsBuilder {
         Self { client, request }
     }
 }
+
 impl IntoFuture for GenerateTemporaryTableCredentialsBuilder {
     type Output = Result<TemporaryCredential>;
     type IntoFuture = BoxFut<'static, Self::Output>;
@@ -39,11 +43,13 @@ impl IntoFuture for GenerateTemporaryTableCredentialsBuilder {
         Box::pin(async move { client.generate_temporary_table_credentials(&request).await })
     }
 }
+
 /// Builder for temporary path credentials
 pub struct GenerateTemporaryPathCredentialsBuilder {
     client: TemporaryCredentialClient,
     request: GenerateTemporaryPathCredentialsRequest,
 }
+
 impl GenerateTemporaryPathCredentialsBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `TemporaryCredentialClient`.
@@ -59,14 +65,16 @@ impl GenerateTemporaryPathCredentialsBuilder {
         };
         Self { client, request }
     }
-    /** When set to true, the service will not validate that the generated
-    credentials can perform write operations, therefore no new paths will be
-    created and the response will not contain valid credentials. Defaults to false.*/
+
+    /// When set to true, the service will not validate that the generated
+    /// credentials can perform write operations, therefore no new paths will be
+    /// created and the response will not contain valid credentials. Defaults to false.
     pub fn with_dry_run(mut self, dry_run: impl Into<Option<bool>>) -> Self {
         self.request.dry_run = dry_run.into();
         self
     }
 }
+
 impl IntoFuture for GenerateTemporaryPathCredentialsBuilder {
     type Output = Result<TemporaryCredential>;
     type IntoFuture = BoxFut<'static, Self::Output>;
@@ -76,11 +84,13 @@ impl IntoFuture for GenerateTemporaryPathCredentialsBuilder {
         Box::pin(async move { client.generate_temporary_path_credentials(&request).await })
     }
 }
+
 /// Builder for temporary volume credentials
 pub struct GenerateTemporaryVolumeCredentialsBuilder {
     client: TemporaryCredentialClient,
     request: GenerateTemporaryVolumeCredentialsRequest,
 }
+
 impl GenerateTemporaryVolumeCredentialsBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `TemporaryCredentialClient`.
@@ -97,6 +107,7 @@ impl GenerateTemporaryVolumeCredentialsBuilder {
         Self { client, request }
     }
 }
+
 impl IntoFuture for GenerateTemporaryVolumeCredentialsBuilder {
     type Output = Result<TemporaryCredential>;
     type IntoFuture = BoxFut<'static, Self::Output>;
@@ -106,11 +117,13 @@ impl IntoFuture for GenerateTemporaryVolumeCredentialsBuilder {
         Box::pin(async move { client.generate_temporary_volume_credentials(&request).await })
     }
 }
+
 /// Builder for temporary model version credentials
 pub struct GenerateTemporaryModelVersionCredentialsBuilder {
     client: TemporaryCredentialClient,
     request: GenerateTemporaryModelVersionCredentialsRequest,
 }
+
 impl GenerateTemporaryModelVersionCredentialsBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `TemporaryCredentialClient`.
@@ -133,6 +146,7 @@ impl GenerateTemporaryModelVersionCredentialsBuilder {
         Self { client, request }
     }
 }
+
 impl IntoFuture for GenerateTemporaryModelVersionCredentialsBuilder {
     type Output = Result<TemporaryCredential>;
     type IntoFuture = BoxFut<'static, Self::Output>;

@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use pyo3::prelude::*;
 use unitycatalog_common::UCReference;
 
-use crate::error::PyUnityCatalogResult;
+use crate::codegen::error::PyUnityCatalogResult;
 
 /// Parse a Unity Catalog URL into a `(kind, payload)` tuple.
 ///
@@ -22,12 +22,11 @@ use crate::error::PyUnityCatalogResult;
 /// * ``"path"``   — payload has a single `url` key carrying the raw cloud
 ///   URL string.
 ///
-/// Raises a `UnityCatalogError` subclass (currently `GenericError`) on
-/// invalid input.
+/// Raises a `UnityCatalogError` on invalid input.
 #[pyfunction]
 #[pyo3(name = "parse_uc_url", signature = (url, /))]
 pub fn parse_uc_url(url: &str) -> PyUnityCatalogResult<(String, HashMap<String, String>)> {
-    let reference = UCReference::parse(url)?;
+    let reference = UCReference::parse(url).map_err(unitycatalog_client::Error::from)?;
     let (kind, payload) = match reference {
         UCReference::Volume {
             catalog,

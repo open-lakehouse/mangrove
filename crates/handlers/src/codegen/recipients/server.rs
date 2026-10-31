@@ -1,9 +1,11 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, clippy::too_many_arguments)]
+
 use super::handler::RecipientHandler;
 use crate::Result;
 use axum::extract::State;
 use unitycatalog_common::models::recipients::v1::*;
+
 pub async fn list_recipients<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -16,6 +18,7 @@ where
     let result = handler.list_recipients(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn create_recipient<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -28,6 +31,7 @@ where
     let result = handler.create_recipient(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn get_recipient<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -40,6 +44,7 @@ where
     let result = handler.get_recipient(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn update_recipient<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -52,6 +57,7 @@ where
     let result = handler.update_recipient(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn delete_recipient<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -64,6 +70,7 @@ where
     handler.delete_recipient(request, context).await?;
     Ok(())
 }
+
 pub async fn rotate_recipient_token<T, Cx>(
     State(handler): State<T>,
     context: Cx,

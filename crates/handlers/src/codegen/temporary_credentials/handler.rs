@@ -15,6 +15,7 @@
 use crate::Result;
 use async_trait::async_trait;
 use unitycatalog_common::models::temporary_credentials::v1::*;
+
 #[async_trait]
 pub trait TemporaryCredentialHandler<Cx = crate::RequestContext>: Send + Sync + 'static {
     /// Generate a new set of credentials for a table.

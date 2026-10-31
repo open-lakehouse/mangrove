@@ -1,9 +1,11 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, clippy::too_many_arguments)]
+
 use super::handler::StagingTableHandler;
 use crate::Result;
 use axum::extract::State;
 use unitycatalog_common::models::staging_tables::v1::*;
+
 pub async fn create_staging_table<T, Cx>(
     State(handler): State<T>,
     context: Cx,

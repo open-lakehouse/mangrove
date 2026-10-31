@@ -106,7 +106,7 @@ pbjson = { version = "0.9" }
 pbjson-types = "0.9"
 prost = { version = "0.14.1" }
 prost-types = { version = "0.14.1" }
-pyo3 = { version = "0.28", features = ["macros", "indexmap"] }
+pyo3 = { version = "0.30", features = ["macros", "indexmap"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 serde_yml = { version = "0.0.12" }

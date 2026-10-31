@@ -1,18 +1,22 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
-use crate::Result;
+
 #[cfg(not(target_arch = "wasm32"))]
 use ::olai_http::CloudClient as Transport;
+
+use crate::Result;
 #[cfg(target_arch = "wasm32")]
 use ::olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::models::temporary_credentials::v1::*;
 use url::Url;
+
 /// HTTP client for service operations
 #[derive(Clone)]
 pub struct TemporaryCredentialClient {
     pub(crate) client: Transport,
     pub(crate) base_url: Url,
 }
+
 impl TemporaryCredentialClient {
     /// Create a new client instance
     pub fn new(client: Transport, mut base_url: Url) -> Self {
@@ -21,6 +25,7 @@ impl TemporaryCredentialClient {
         }
         Self { client, base_url }
     }
+
     /// Generate a new set of credentials for a table.
     ///
     /// The metastore must have the `external_access_enabled` flag set to true
@@ -38,6 +43,7 @@ impl TemporaryCredentialClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Generate a new set of credentials for a path.
     ///
     /// Only external storage paths (external locations and external tables) are
@@ -58,6 +64,7 @@ impl TemporaryCredentialClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Generate a new set of credentials for a volume.
     ///
     /// The metastore must have the `external_access_enabled` flag set to true
@@ -75,6 +82,7 @@ impl TemporaryCredentialClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Generate a new set of credentials for a model version.
     ///
     /// The metastore must have the `external_access_enabled` flag set to true

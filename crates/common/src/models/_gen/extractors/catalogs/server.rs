@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::catalogs::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListCatalogsRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -29,6 +31,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListCatalogsRequest 
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateCatalogRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -42,6 +45,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateCatalogRequest {
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetCatalogRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -68,6 +72,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetCatalogRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateCatalogRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -96,6 +101,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateCatalogRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteCatalogRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(

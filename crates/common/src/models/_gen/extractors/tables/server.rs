@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::tables::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListTableSummariesRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -44,6 +46,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListTableSummariesRe
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListTablesRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -101,6 +104,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListTablesRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateTableRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -114,6 +118,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateTableRequest {
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetTableRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -151,6 +156,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetTableRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetTableExistsRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -168,6 +174,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetTableExistsReques
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteTableRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(

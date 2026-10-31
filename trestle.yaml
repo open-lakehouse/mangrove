@@ -31,13 +31,32 @@ generate:
       # crate builds for both native and wasm32, without the #[wasm_bindgen] JS
       # binding layer (which is gated on a node.wasm output).
       dual_transport: true
+      # Gate each service behind a cargo feature named after its model package,
+      # matching the per-resource features of olai-uc-common / olai-uc-handlers.
+      resource_features: true
+      # `impl <Handler> for <ServiceClient>` per service (feature `handlers`), so a
+      # client can back a resource with an upstream server. Temporary credentials
+      # are hand-written: they reuse the client's null-oneof response workaround.
+      handler_impls:
+        crate: unitycatalog_handlers
+        feature: handlers
+        skip: [temporary_credentials]
     python:
       output: python/client/src
       error_type: PyUnityCatalogError
       result_type: PyUnityCatalogResult
-      typings_package_filter: unitycatalog
-      # Blocking API only; the async flavor would add a pyo3-async-runtimes dependency.
-      api: sync
+      # The pure-Python package (gets `_enums.py`) and the extension module the
+      # generated `#[pymodule]` is mounted as. Stubs come from PyO3 introspection.
+      package:
+        dir: python/client/python/unitycatalog_client
+        name: unitycatalog_client
+      module: unitycatalog_client._client
+      options:
+        # Hand-written additions to the extension module: the name-resolving
+        # credential client and the UC URL parser behind `unitycatalog_client.obstore`.
+        exports:
+          - crate::client::PyTemporaryCredentialClient
+          - crate::reference::parse_uc_url
     node:
       napi:
         output: node/client/src

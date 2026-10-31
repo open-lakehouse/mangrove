@@ -1,15 +1,20 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
+use unitycatalog_common::models::catalogs::v1::*;
+
 use super::builders::*;
 use super::client::CatalogServiceClient;
-use unitycatalog_common::models::catalogs::v1::*;
+#[cfg(feature = "schemas")]
 use unitycatalog_common::models::schemas::v1::*;
+
 /// A client scoped to a single `catalog`.
 #[derive(Clone)]
 pub struct CatalogClient {
     pub(crate) catalog_name: String,
     pub(crate) client: CatalogServiceClient,
 }
+
 impl CatalogClient {
     /// Create a client bound to the resource's name components.
     pub fn new(catalog_name: impl Into<String>, client: CatalogServiceClient) -> Self {
@@ -18,14 +23,17 @@ impl CatalogClient {
             client,
         }
     }
+
     /// This resource's own name (the leaf component).
     pub fn name(&self) -> &str {
         &self.catalog_name
     }
+
     /// The fully-qualified name of this resource.
     pub fn full_name(&self) -> String {
         self.catalog_name.clone()
     }
+
     /// Get a catalog
     ///
     /// Gets the specified catalog in a metastore. The caller must be a metastore admin,
@@ -33,6 +41,7 @@ impl CatalogClient {
     pub fn get(&self) -> GetCatalogBuilder {
         GetCatalogBuilder::new(self.client.clone(), &self.catalog_name)
     }
+
     /// Update a catalog
     ///
     /// Updates the catalog that matches the supplied name. The caller must be either
@@ -40,6 +49,7 @@ impl CatalogClient {
     pub fn update(&self) -> UpdateCatalogBuilder {
         UpdateCatalogBuilder::new(self.client.clone(), &self.catalog_name)
     }
+
     /// Delete a catalog
     ///
     /// Deletes the catalog that matches the supplied name. The caller must
@@ -47,6 +57,8 @@ impl CatalogClient {
     pub fn delete(&self) -> DeleteCatalogBuilder {
         DeleteCatalogBuilder::new(self.client.clone(), &self.catalog_name)
     }
+
+    #[cfg(feature = "schemas")]
     /// Access a `schema` within this resource.
     pub fn schema(&self, schema_name: impl Into<String>) -> crate::codegen::schemas::SchemaClient {
         crate::codegen::schemas::SchemaClient::new(
@@ -58,6 +70,8 @@ impl CatalogClient {
             ),
         )
     }
+
+    #[cfg(feature = "schemas")]
     /// Create a `schema` within this resource.
     pub fn create_schema(
         &self,
@@ -72,6 +86,8 @@ impl CatalogClient {
             &self.catalog_name,
         )
     }
+
+    #[cfg(feature = "schemas")]
     /// List `schema` resources within this resource.
     pub fn list_schemas(&self) -> crate::codegen::schemas::ListSchemasBuilder {
         crate::codegen::schemas::ListSchemasBuilder::new(

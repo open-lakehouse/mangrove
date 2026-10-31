@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::temporary_credentials::v1::*;
 use axum::RequestExt;
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for GenerateTemporaryTableCredentialsRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -15,6 +17,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for GenerateTemporaryTableCre
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for GenerateTemporaryPathCredentialsRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -28,6 +31,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for GenerateTemporaryPathCred
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for GenerateTemporaryVolumeCredentialsRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -41,6 +45,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for GenerateTemporaryVolumeCr
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S>
     for GenerateTemporaryModelVersionCredentialsRequest
 {

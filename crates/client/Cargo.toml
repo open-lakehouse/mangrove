@@ -18,10 +18,14 @@ name = "unitycatalog_client"
 # The client uses only the wire DTOs from these crates, not their server-side
 # surfaces — so disable default features (delta-api's `server`/axum,
 # common's `rest-client`/`store`) to keep the wasm build free of axum/tokio/olai-store.
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.6", default-features = false, features = [
-  "all-resources",
-] }
+# Resource model packages are switched on per feature below.
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.6", default-features = false }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.6", default-features = false }
+
+# Handler traits the clients implement (feature `handlers`); resources follow the
+# client's own resource features.
+unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", version = "0.0.1", default-features = false, optional = true }
+async-trait = { workspace = true, optional = true }
 
 # Generated request builders wrap enum query params in `buffa::EnumValue::Known`.
 buffa = { workspace = true }
@@ -34,6 +38,55 @@ url = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 
 futures = { version = "0.3" }
+
+[features]
+default = ["all-resources"]
+
+# One feature per generated model package, matching `olai-uc-common`. Each gates
+# the clients of the services built on that package.
+all-resources = [
+  "agent_skills",
+  "agents",
+  "catalogs",
+  "credentials",
+  "external_locations",
+  "functions",
+  "model_versions",
+  "policies",
+  "providers",
+  "recipients",
+  "registered_models",
+  "schemas",
+  "shares",
+  "staging_tables",
+  "tables",
+  "tags",
+  "temporary_credentials",
+  "volumes",
+]
+agent_skills = ["unitycatalog-common/agent_skills", "unitycatalog-handlers?/agent_skills"]
+agents = ["unitycatalog-common/agents", "unitycatalog-handlers?/agents"]
+catalogs = ["unitycatalog-common/catalogs", "unitycatalog-handlers?/catalogs"]
+credentials = ["unitycatalog-common/credentials", "unitycatalog-handlers?/credentials"]
+external_locations = ["unitycatalog-common/external_locations", "unitycatalog-handlers?/external_locations"]
+functions = ["unitycatalog-common/functions", "unitycatalog-handlers?/functions"]
+model_versions = ["unitycatalog-common/model_versions", "unitycatalog-handlers?/model_versions"]
+policies = ["unitycatalog-common/policies", "unitycatalog-handlers?/policies"]
+providers = ["unitycatalog-common/providers", "unitycatalog-handlers?/providers"]
+recipients = ["unitycatalog-common/recipients", "unitycatalog-handlers?/recipients"]
+registered_models = ["unitycatalog-common/registered_models", "unitycatalog-handlers?/registered_models"]
+schemas = ["unitycatalog-common/schemas", "unitycatalog-handlers?/schemas"]
+shares = ["unitycatalog-common/shares", "unitycatalog-handlers?/shares"]
+staging_tables = ["unitycatalog-common/staging_tables", "unitycatalog-handlers?/staging_tables"]
+tables = ["unitycatalog-common/tables", "unitycatalog-handlers?/tables"]
+# the entity-tag-assignment and tag-policy services share the `tags` models
+tags = ["unitycatalog-common/tags", "unitycatalog-handlers?/tags"]
+temporary_credentials = ["unitycatalog-common/temporary_credentials", "unitycatalog-handlers?/temporary_credentials"]
+volumes = ["unitycatalog-common/volumes", "unitycatalog-handlers?/volumes"]
+
+# `impl <Handler> for <ServiceClient>` for every enabled resource, so a client can
+# serve a resource by forwarding to an upstream server. Native only.
+handlers = ["dep:unitycatalog-handlers", "dep:async-trait"]
 
 # HTTP transport, selected per target. Native uses olai-http's CloudClient
 # (cloud credential discovery, signing, retry). wasm32 uses olai-http-wasm's

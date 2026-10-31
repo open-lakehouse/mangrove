@@ -1,194 +1,88 @@
-use pyo3::create_exception;
-use pyo3::exceptions::{PyIOError, PyValueError};
-use pyo3::prelude::*;
-use thiserror::Error;
-use unitycatalog_client::error::UcApiError;
-use unitycatalog_common::error::Error as UCError;
+//! How a client error reaches the generated exception classes.
+//!
+//! The generated `codegen/error.rs` raises a client error as `UnityCatalogError` or the
+//! subclass of its HTTP status (`NotFoundError`, `ConflictError`, …), reading the server's
+//! error answer through [`ApiErrorAnswer`]. The client keeps its own error type
+//! ([`unitycatalog_client::Error`]), so the answer is read from it here.
 
-/// A type wrapper around `Result<T, PyUnityCatalogError>`.
-pub type PyUnityCatalogResult<T> = Result<T, PyUnityCatalogError>;
+use unitycatalog_client::{Error, UcApiError};
 
-// Base exception
-create_exception!(
-    unitycatalog_client,
-    UnityCatalogError,
-    pyo3::exceptions::PyException,
-    "The base Python-facing exception from which all other errors subclass."
-);
+use crate::codegen::error::{ApiErrorAnswer, ApiErrorParts};
 
-// Subclasses from base exception
-create_exception!(
-    unitycatalog_client,
-    GenericError,
-    UnityCatalogError,
-    "A Python-facing exception wrapping [unitycatalog_common::Error::Generic]."
-);
-
-create_exception!(
-    unitycatalog_client,
-    NotFoundError,
-    UnityCatalogError,
-    "Raised when a requested resource does not exist (RESOURCE_NOT_FOUND)."
-);
-
-create_exception!(
-    unitycatalog_client,
-    AlreadyExistsError,
-    UnityCatalogError,
-    "Raised when a resource already exists (RESOURCE_ALREADY_EXISTS)."
-);
-
-create_exception!(
-    unitycatalog_client,
-    PermissionDeniedError,
-    UnityCatalogError,
-    "Raised when the caller lacks permission (PERMISSION_DENIED)."
-);
-
-create_exception!(
-    unitycatalog_client,
-    UnauthenticatedError,
-    UnityCatalogError,
-    "Raised when the request is not authenticated (UNAUTHENTICATED)."
-);
-
-create_exception!(
-    unitycatalog_client,
-    InvalidParameterError,
-    UnityCatalogError,
-    "Raised when a request parameter is invalid (INVALID_PARAMETER_VALUE)."
-);
-
-create_exception!(
-    unitycatalog_client,
-    RequestLimitError,
-    UnityCatalogError,
-    "Raised when the request rate limit is exceeded (REQUEST_LIMIT_EXCEEDED)."
-);
-
-create_exception!(
-    unitycatalog_client,
-    InternalServerError,
-    UnityCatalogError,
-    "Raised when the server encounters an internal error (INTERNAL_ERROR)."
-);
-
-create_exception!(
-    unitycatalog_client,
-    ServiceUnavailableError,
-    UnityCatalogError,
-    "Raised when the service is temporarily unavailable (TEMPORARILY_UNAVAILABLE)."
-);
-
-/// The Error variants returned by this crate.
-#[derive(Error, Debug)]
-#[non_exhaustive]
-pub enum PyUnityCatalogError {
-    /// A wrapped [unitycatalog_common::error::Error]
-    #[error(transparent)]
-    UnityCatalogError(#[from] unitycatalog_common::error::Error),
-
-    /// A wrapped [unitycatalog_client::error::Error]
-    #[error(transparent)]
-    UnityCatalogClientError(#[from] unitycatalog_client::error::Error),
-
-    /// A wrapped [PyErr]
-    #[error(transparent)]
-    PyErr(#[from] PyErr),
-
-    /// A wrapped [std::io::Error]
-    #[error(transparent)]
-    IOError(#[from] std::io::Error),
-
-    /// A wrapped [url::ParseError]
-    #[error(transparent)]
-    InvalidUrl(#[from] url::ParseError),
-}
-
-impl From<PyUnityCatalogError> for PyErr {
-    fn from(error: PyUnityCatalogError) -> Self {
-        match error {
-            PyUnityCatalogError::PyErr(err) => err,
-            PyUnityCatalogError::UnityCatalogError(ref err) => match err {
-                UCError::Generic(_) => GenericError::new_err(print_with_debug(err)),
-                _ => GenericError::new_err(print_with_debug(err)),
+impl ApiErrorAnswer for Error {
+    fn into_api_error(self) -> Result<ApiErrorParts, Self> {
+        match self {
+            Error::Api(api) => Ok(api_parts(api)),
+            Error::Delta(model) => Ok(ApiErrorParts {
+                code: serde_json::to_value(model.error_type)
+                    .ok()
+                    .and_then(|v| v.as_str().map(str::to_string)),
+                message: model.message,
+                status: model.code,
+                details: Vec::new(),
+            }),
+            // The generated clients surface an error status as a transport error wrapping
+            // the retry layer's error, which still carries the status and body.
+            Error::ClientError { source } => match retry_answer(&source) {
+                Some(parts) => Ok(parts),
+                None => Err(Error::ClientError { source }),
             },
-            PyUnityCatalogError::UnityCatalogClientError(ref err) => match err {
-                unitycatalog_client::Error::Api(api_err) => match api_err {
-                    UcApiError::NotFound { .. } => NotFoundError::new_err(api_err.to_string()),
-                    UcApiError::AlreadyExists { .. } => {
-                        AlreadyExistsError::new_err(api_err.to_string())
-                    }
-                    UcApiError::PermissionDenied { .. } => {
-                        PermissionDeniedError::new_err(api_err.to_string())
-                    }
-                    UcApiError::Unauthenticated { .. } => {
-                        UnauthenticatedError::new_err(api_err.to_string())
-                    }
-                    UcApiError::InvalidParameter { .. } => {
-                        InvalidParameterError::new_err(api_err.to_string())
-                    }
-                    UcApiError::RequestLimitExceeded { .. } => {
-                        RequestLimitError::new_err(api_err.to_string())
-                    }
-                    UcApiError::InternalError { .. } => {
-                        InternalServerError::new_err(api_err.to_string())
-                    }
-                    UcApiError::TemporarilyUnavailable { .. } => {
-                        ServiceUnavailableError::new_err(api_err.to_string())
-                    }
-                    UcApiError::Other { .. } => GenericError::new_err(api_err.to_string()),
-                    _ => GenericError::new_err(api_err.to_string()),
-                },
-                _ => GenericError::new_err(print_with_debug_client(err)),
-            },
-            PyUnityCatalogError::IOError(err) => PyIOError::new_err(err),
-            PyUnityCatalogError::InvalidUrl(err) => PyValueError::new_err(err.to_string()),
+            other => Err(other),
         }
     }
 }
 
-fn print_with_debug(err: &UCError) -> String {
-    // #? gives "pretty-printing" for debug
-    // https://doc.rust-lang.org/std/fmt/trait.Debug.html
-    format!("{err}\n\nDebug source:\n{err:#?}")
+fn api_parts(api: UcApiError) -> ApiErrorParts {
+    let status = api.http_status();
+    let code = Some(api.error_code().to_string()).filter(|code| !code.is_empty());
+    let message = match api {
+        UcApiError::InvalidParameter { message }
+        | UcApiError::Unauthenticated { message }
+        | UcApiError::PermissionDenied { message }
+        | UcApiError::NotFound { message }
+        | UcApiError::AlreadyExists { message }
+        | UcApiError::RequestLimitExceeded { message }
+        | UcApiError::InternalError { message }
+        | UcApiError::TemporarilyUnavailable { message }
+        | UcApiError::Other { message, .. } => message,
+        other => other.to_string(),
+    };
+    ApiErrorParts {
+        message,
+        code,
+        status,
+        details: Vec::new(),
+    }
 }
 
-fn print_with_debug_client(err: &unitycatalog_client::Error) -> String {
-    // #? gives "pretty-printing" for debug
-    // https://doc.rust-lang.org/std/fmt/trait.Debug.html
-    format!("{err}\n\nDebug source:\n{err:#?}")
-}
-
-/// Register all exception types with the given PyO3 module.
-pub(crate) fn register_exceptions(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("UnityCatalogError", m.py().get_type::<UnityCatalogError>())?;
-    m.add("GenericError", m.py().get_type::<GenericError>())?;
-    m.add("NotFoundError", m.py().get_type::<NotFoundError>())?;
-    m.add(
-        "AlreadyExistsError",
-        m.py().get_type::<AlreadyExistsError>(),
-    )?;
-    m.add(
-        "PermissionDeniedError",
-        m.py().get_type::<PermissionDeniedError>(),
-    )?;
-    m.add(
-        "UnauthenticatedError",
-        m.py().get_type::<UnauthenticatedError>(),
-    )?;
-    m.add(
-        "InvalidParameterError",
-        m.py().get_type::<InvalidParameterError>(),
-    )?;
-    m.add("RequestLimitError", m.py().get_type::<RequestLimitError>())?;
-    m.add(
-        "InternalServerError",
-        m.py().get_type::<InternalServerError>(),
-    )?;
-    m.add(
-        "ServiceUnavailableError",
-        m.py().get_type::<ServiceUnavailableError>(),
-    )?;
-    Ok(())
+/// The error answer inside an `olai_http` error, read like a UC error body
+/// (`{"error_code": …, "message": …, "details": […]}`).
+fn retry_answer(err: &olai_http::Error) -> Option<ApiErrorParts> {
+    use olai_http::Error as Http;
+    let retry = match err {
+        Http::NotFound { source }
+        | Http::AlreadyExists { source }
+        | Http::Precondition { source }
+        | Http::NotModified { source }
+        | Http::PermissionDenied { source }
+        | Http::Unauthenticated { source }
+        | Http::Generic { source } => source.downcast_ref::<olai_http::RetryError>()?,
+        _ => return None,
+    };
+    let status = retry.status()?.as_u16();
+    let body = retry.body().unwrap_or_default();
+    let json = serde_json::from_str::<serde_json::Value>(body).ok();
+    let text = |keys: &[&str]| {
+        keys.iter()
+            .find_map(|key| json.as_ref()?.get(key)?.as_str().map(str::to_string))
+    };
+    Some(ApiErrorParts {
+        code: text(&["error_code", "errorCode"]),
+        message: text(&["message"]).unwrap_or_else(|| body.trim().to_string()),
+        status,
+        details: json
+            .as_ref()
+            .and_then(|v| v.get("details")?.as_array().cloned())
+            .unwrap_or_default(),
+    })
 }

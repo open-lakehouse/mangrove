@@ -1,24 +1,57 @@
 // @generated — do not edit by hand.
-use crate::codegen::runtime::{ListIterator, block_on};
-use crate::error::PyUnityCatalogError;
-use futures::stream::StreamExt;
-use pyo3::IntoPyObjectExt;
+use crate::codegen::error::{PyUnityCatalogError, PyUnityCatalogResult};
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::ProviderClient;
 use unitycatalog_common::models::providers::v1::*;
 use unitycatalog_common::models::*;
-#[pyclass(name = "ProviderClient")]
+
+/// The requests on one `Provider`.
+#[pyclass(
+    name = "ProviderClient",
+    module = "unitycatalog_client._client.providers"
+)]
 pub struct PyProviderClient {
     pub(crate) client: ProviderClient,
 }
+
 #[pymethods]
 impl PyProviderClient {
-    pub fn get(&self, py: Python<'_>) -> PyResult<PyProvider> {
+    /// Get a provider by name.
+    ///
+    /// Returns:
+    ///     A provider represents an organization sharing data with this metastore. A provider is the
+    ///     inbound counterpart of a recipient: it is registered from a share activation/ credential
+    ///     file
+    ///     and is used to access shares offered by an upstream Delta Sharing server.
+    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyProvider> {
         let request = self.client.get();
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyProvider::from(result))
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyProvider::from(result))
+        })
     }
+
+    /// Update a provider.
+    ///
+    /// Args:
+    ///     new_name: New name for the provider.
+    ///     owner: Username of the provider owner.
+    ///     comment: Description about the provider.
+    ///     recipient_profile_str: The recipient profile (credential file contents) used to connect to
+    ///                            the sharing server. Required when authentication_type is TOKEN or
+    ///                            OAUTH_CLIENT_CREDENTIALS.
+    ///     properties: Provider properties as map of string key-value pairs. When provided in update
+    ///                 request, the specified properties will override the existing properties. To add and
+    ///                 remove properties, one would need to perform a read-modify-write.
+    ///
+    /// Returns:
+    ///     A provider represents an organization sharing data with this metastore. A provider is the
+    ///     inbound counterpart of a recipient: it is registered from a share activation/ credential
+    ///     file
+    ///     and is used to access shares offered by an upstream Delta Sharing server.
     #[pyo3(
         signature = (
             new_name = None,
@@ -30,30 +63,41 @@ impl PyProviderClient {
     )]
     pub fn update(
         &self,
-        py: Python<'_>,
+        py: Python,
         new_name: Option<String>,
         owner: Option<String>,
         comment: Option<String>,
         recipient_profile_str: Option<String>,
         properties: Option<HashMap<String, String>>,
-    ) -> PyResult<PyProvider> {
-        let mut request = self.client.update();
-        request = request.with_new_name(new_name);
-        request = request.with_owner(owner);
-        request = request.with_comment(comment);
-        request = request.with_recipient_profile_str(recipient_profile_str);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyProvider::from(result))
+    ) -> PyUnityCatalogResult<PyProvider> {
+        let request = self
+            .client
+            .update()
+            .with_new_name(new_name)
+            .with_owner(owner)
+            .with_comment(comment)
+            .with_recipient_profile_str(recipient_profile_str)
+            .with_properties(properties.unwrap_or_default());
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyProvider::from(result))
+        })
     }
-    pub fn delete(&self, py: Python<'_>) -> PyResult<()> {
+
+    /// Delete a provider.
+    pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
-        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(())
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(result)
+        })
     }
 }
+
 impl PyProviderClient {
     pub fn new(client: ProviderClient) -> Self {
         Self { client }

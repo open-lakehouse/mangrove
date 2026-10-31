@@ -20,7 +20,7 @@ SERVER_OPENAPI_DIR := "crates/server/openapi"
 
 # run the full unitycatalog code-generation pipeline (proto + code + fix)
 [group('codegen')]
-generate: generate-proto generate-code
+generate: generate-proto generate-code generate-py-stubs
     just meta fix
 
 # Generation of external types (google.api / gnostic extensions) now lives in the
@@ -28,7 +28,7 @@ generate: generate-proto generate-code
 #
 # alias of `generate` (kept for muscle memory; identical pipeline)
 [group('codegen')]
-generate-full: generate-proto generate-code
+generate-full: generate-proto generate-code generate-py-stubs
     just meta fix
 
 # run code generation for proto files (unitycatalog, incl. openapi)
@@ -79,7 +79,7 @@ sync-server-openapi:
     done
     echo "→ synced openapi.yaml, delta.yaml into {{ SERVER_OPENAPI_DIR }}"
 
-# generate rest server and client code with the build crate (splices the PyO3 stub)
+# generate rest server and client code with the build crate
 [group('codegen')]
 [no-cd]
 generate-code:
@@ -88,22 +88,16 @@ generate-code:
       --descriptors {{ justfile_directory() }}/descriptors.bin
     rm {{ justfile_directory() }}/descriptors.bin
     just meta fmt
-    mv python/client/src/codegen/client.pyi python/client/python/unitycatalog_client/_client.pyi
-    # Splice in the hand-written PyO3 surface (exceptions, free functions,
-    # and the hand-written `#[pymethods]` on `TemporaryCredentialClient`).
-    # The codegen-emitted empty `class TemporaryCredentialClient: ...`
-    # placeholder is stripped first so the supplement can replace it with
-    # the fully-typed declaration. The supplement lives outside the
-    # package directory so type-checkers do not validate it standalone
-    # (it is a fragment, not a complete stub). Source-of-truth:
-    # `python/client/_client_supplement.pyi`.
-    grep -v '^class TemporaryCredentialClient: \.\.\.$' \
-      python/client/python/unitycatalog_client/_client.pyi \
-      > python/client/python/unitycatalog_client/_client.pyi.tmp
-    mv python/client/python/unitycatalog_client/_client.pyi.tmp \
-      python/client/python/unitycatalog_client/_client.pyi
-    cat python/client/_client_supplement.pyi \
-      >> python/client/python/unitycatalog_client/_client.pyi
+
+# write the Python stubs of the extension module from PyO3's introspection data
+# (the cdylib carries them with `experimental-inspect`; run after `generate-code`)
+[group('codegen')]
+[no-cd]
+generate-py-stubs:
+    cargo build -p unitycatalog-client-py
+    cargo run -p unitycatalog-client-py --example write_stubs -- \
+      target/debug/libunitycatalog_client.{{ if os() == "macos" { "dylib" } else { "so" } }} \
+      python/client/python/unitycatalog_client/_client
 
 # generate types for the node client (slow-changing external types)
 [group('codegen')]

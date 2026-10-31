@@ -16,6 +16,7 @@
 use crate::Result;
 use async_trait::async_trait;
 use unitycatalog_common::models::staging_tables::v1::*;
+
 #[async_trait]
 pub trait StagingTableHandler<Cx = crate::RequestContext>: Send + Sync + 'static {
     /// Creates a new staging table, allocating an immutable table id and a storage

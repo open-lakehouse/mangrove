@@ -1,18 +1,23 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
-use crate::Result;
+
 #[cfg(not(target_arch = "wasm32"))]
 use ::olai_http::CloudClient as Transport;
+
+use super::super::encode_path_value;
+use crate::Result;
 #[cfg(target_arch = "wasm32")]
 use ::olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::models::tables::v1::*;
 use url::Url;
+
 /// HTTP client for service operations
 #[derive(Clone)]
 pub struct TableServiceClient {
     pub(crate) client: Transport,
     pub(crate) base_url: Url,
 }
+
 impl TableServiceClient {
     /// Create a new client instance
     pub fn new(client: Transport, mut base_url: Url) -> Self {
@@ -21,6 +26,7 @@ impl TableServiceClient {
         }
         Self { client, base_url }
     }
+
     /// Gets an array of summaries for tables for a schema and catalog within the metastore. The table summaries returned are either:
     /// - summaries for tables (within the current metastore and parent catalog and schema), when the user is a metastore admin, or:
     /// - summaries for tables and schemas (within the current metastore and parent catalog) for which the user has ownership or the
@@ -62,6 +68,7 @@ impl TableServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Gets an array of all tables for the current metastore under the parent catalog and schema.
     ///
     /// The caller must be a metastore admin or an owner of (or have the SELECT privilege on) the table.
@@ -113,6 +120,7 @@ impl TableServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Create a table
     pub async fn create_table(&self, request: &CreateTableRequest) -> Result<Table> {
         let url = self.base_url.join("tables")?;
@@ -123,9 +131,10 @@ impl TableServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Get a table
     pub async fn get_table(&self, request: &GetTableRequest) -> Result<Table> {
-        let formatted_path = format!("tables/{}", request.full_name);
+        let formatted_path = format!("tables/{}", encode_path_value(&request.full_name, false));
         let mut url = self.base_url.join(&formatted_path)?;
         if let Some(ref value) = request.include_delta_metadata {
             url.query_pairs_mut()
@@ -146,12 +155,16 @@ impl TableServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Get boolean reflecting if table exists
     pub async fn get_table_exists(
         &self,
         request: &GetTableExistsRequest,
     ) -> Result<GetTableExistsResponse> {
-        let formatted_path = format!("tables/{}/exists", request.full_name);
+        let formatted_path = format!(
+            "tables/{}/exists",
+            encode_path_value(&request.full_name, false)
+        );
         let url = self.base_url.join(&formatted_path)?;
         let response = self.client.get(url).send().await?;
         if !response.status().is_success() {
@@ -160,9 +173,10 @@ impl TableServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Delete a table
     pub async fn delete_table(&self, request: &DeleteTableRequest) -> Result<()> {
-        let formatted_path = format!("tables/{}", request.full_name);
+        let formatted_path = format!("tables/{}", encode_path_value(&request.full_name, false));
         let url = self.base_url.join(&formatted_path)?;
         let response = self.client.delete(url).send().await?;
         if !response.status().is_success() {

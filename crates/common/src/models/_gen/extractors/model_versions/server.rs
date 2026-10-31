@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::model_versions::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListModelVersionsRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -39,6 +41,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListModelVersionsReq
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateModelVersionRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -52,6 +55,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateModelVersionRequest
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetModelVersionRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -79,6 +83,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetModelVersionReque
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateModelVersionRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -104,6 +109,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateModelVersionRequest
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteModelVersionRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -121,6 +127,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteModelVersionRe
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for FinalizeModelVersionRequest {
     type Rejection = axum::response::Response;
     async fn from_request(

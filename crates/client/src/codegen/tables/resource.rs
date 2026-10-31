@@ -1,8 +1,10 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::builders::*;
 use super::client::TableServiceClient;
 use unitycatalog_common::models::tables::v1::*;
+
 /// A client scoped to a single `table`.
 #[derive(Clone)]
 pub struct TableClient {
@@ -11,6 +13,7 @@ pub struct TableClient {
     pub(crate) table_name: String,
     pub(crate) client: TableServiceClient,
 }
+
 impl TableClient {
     /// Create a client bound to the resource's name components.
     pub fn new(
@@ -26,6 +29,7 @@ impl TableClient {
             client,
         }
     }
+
     /// Create a `table` client from its dot-joined full name (e.g. `"catalog_name.schema_name.table_name"`).
     pub fn from_full_name(full_name: impl Into<String>, client: TableServiceClient) -> Self {
         let full_name = full_name.into();
@@ -35,18 +39,22 @@ impl TableClient {
         let table_name = parts.next().unwrap_or_default();
         Self::new(catalog_name, schema_name, table_name, client)
     }
+
     /// The `catalog_name` component of this resource's name.
     pub fn catalog_name(&self) -> &str {
         &self.catalog_name
     }
+
     /// The `schema_name` component of this resource's name.
     pub fn schema_name(&self) -> &str {
         &self.schema_name
     }
+
     /// This resource's own name (the leaf component).
     pub fn name(&self) -> &str {
         &self.table_name
     }
+
     /// The fully-qualified name of this resource (its dot-joined name components).
     pub fn full_name(&self) -> String {
         format!(
@@ -54,6 +62,7 @@ impl TableClient {
             self.catalog_name, self.schema_name, self.table_name
         )
     }
+
     /// Get a table
     pub fn get(&self) -> GetTableBuilder {
         GetTableBuilder::new(
@@ -64,6 +73,7 @@ impl TableClient {
             ),
         )
     }
+
     /// Get boolean reflecting if table exists
     pub fn get_table_exists(&self) -> GetTableExistsBuilder {
         GetTableExistsBuilder::new(
@@ -74,6 +84,7 @@ impl TableClient {
             ),
         )
     }
+
     /// Delete a table
     pub fn delete(&self) -> DeleteTableBuilder {
         DeleteTableBuilder::new(

@@ -1,9 +1,11 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, clippy::too_many_arguments)]
+
 use super::handler::CredentialHandler;
 use crate::Result;
 use axum::extract::State;
 use unitycatalog_common::models::credentials::v1::*;
+
 pub async fn list_credentials<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -16,6 +18,7 @@ where
     let result = handler.list_credentials(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn create_credential<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -28,6 +31,7 @@ where
     let result = handler.create_credential(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn get_credential<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -40,6 +44,7 @@ where
     let result = handler.get_credential(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn update_credential<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -52,6 +57,7 @@ where
     let result = handler.update_credential(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn delete_credential<T, Cx>(
     State(handler): State<T>,
     context: Cx,

@@ -1,6 +1,7 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut)]
 #![allow(unused_imports)]
+
 #[cfg(not(target_arch = "wasm32"))]
 type BoxFut<'a, T> = ::futures::future::BoxFuture<'a, T>;
 #[cfg(target_arch = "wasm32")]
@@ -9,11 +10,13 @@ use super::client::*;
 use crate::Result;
 use std::future::IntoFuture;
 use unitycatalog_common::models::staging_tables::v1::*;
+
 /// Builder for creating a staging table
 pub struct CreateStagingTableBuilder {
     client: StagingTableServiceClient,
     request: CreateStagingTableRequest,
 }
+
 impl CreateStagingTableBuilder {
     /// Create a new builder instance.
     /// Obtain via the corresponding method on `StagingTableServiceClient`.
@@ -32,6 +35,7 @@ impl CreateStagingTableBuilder {
         Self { client, request }
     }
 }
+
 impl IntoFuture for CreateStagingTableBuilder {
     type Output = Result<StagingTable>;
     type IntoFuture = BoxFut<'static, Self::Output>;

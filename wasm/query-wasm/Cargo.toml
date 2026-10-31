@@ -52,7 +52,11 @@ olai-delta-df = { path = "../olai-delta-df" }
 # object_store `[patch.crates-io]` unifies the store type across the whole graph.
 # Default features off mirrors how the object-store crate itself depends on the client.
 unitycatalog-object-store = { package = "olai-uc-object-store", path = "../../crates/object-store", default-features = false }
-unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client", default-features = false }
+unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client", default-features = false, features = [
+  "tables",
+  "temporary_credentials",
+  "volumes",
+] }
 # The Delta v1 wire models (DeltaLoadTableResponse) the loadTable gate reads.
 # default-features = false drops the `server` (axum) surface — models only.
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../../crates/delta-api", default-features = false }

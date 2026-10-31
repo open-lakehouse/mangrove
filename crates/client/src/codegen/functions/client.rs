@@ -1,18 +1,23 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
-use crate::Result;
+
 #[cfg(not(target_arch = "wasm32"))]
 use ::olai_http::CloudClient as Transport;
+
+use super::super::encode_path_value;
+use crate::Result;
 #[cfg(target_arch = "wasm32")]
 use ::olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::models::functions::v1::*;
 use url::Url;
+
 /// HTTP client for service operations
 #[derive(Clone)]
 pub struct FunctionServiceClient {
     pub(crate) client: Transport,
     pub(crate) base_url: Url,
 }
+
 impl FunctionServiceClient {
     /// Create a new client instance
     pub fn new(client: Transport, mut base_url: Url) -> Self {
@@ -21,6 +26,7 @@ impl FunctionServiceClient {
         }
         Self { client, base_url }
     }
+
     /// List functions
     ///
     /// List functions within the specified parent catalog and schema. If the caller is the metastore
@@ -55,6 +61,7 @@ impl FunctionServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Create a function
     ///
     /// Creates a new function. The caller must be a metastore admin or have the CREATE_FUNCTION
@@ -68,13 +75,14 @@ impl FunctionServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Get a function
     ///
     /// Gets a function from within a parent catalog and schema. For the fetch to succeed,
     /// the caller must be a metastore admin, the owner of the function, or have SELECT on
     /// the function.
     pub async fn get_function(&self, request: &GetFunctionRequest) -> Result<Function> {
-        let formatted_path = format!("functions/{}", request.name);
+        let formatted_path = format!("functions/{}", encode_path_value(&request.name, false));
         let mut url = self.base_url.join(&formatted_path)?;
         if let Some(ref value) = request.include_browse {
             url.query_pairs_mut()
@@ -87,26 +95,30 @@ impl FunctionServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Update a function
     ///
     /// Updates the function that matches the supplied name. Only the owner of the function
     /// can be updated.
     pub async fn update_function(&self, request: &UpdateFunctionRequest) -> Result<Function> {
-        let formatted_path = format!("functions/{}", request.name);
+        let formatted_path = format!("functions/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.patch(url).json(request).send().await?;
+        let mut body = request.clone();
+        body.name = Default::default();
+        let response = self.client.patch(url).json(&body).send().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Delete a function
     ///
     /// Deletes the function that matches the supplied name. For the deletion to succeed,
     /// the caller must be the owner of the function.
     pub async fn delete_function(&self, request: &DeleteFunctionRequest) -> Result<()> {
-        let formatted_path = format!("functions/{}", request.name);
+        let formatted_path = format!("functions/{}", encode_path_value(&request.name, false));
         let mut url = self.base_url.join(&formatted_path)?;
         if let Some(ref value) = request.force {
             url.query_pairs_mut()

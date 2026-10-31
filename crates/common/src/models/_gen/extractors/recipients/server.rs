@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::recipients::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListRecipientsRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -29,6 +31,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListRecipientsReques
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateRecipientRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -42,6 +45,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateRecipientRequest {
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetRecipientRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -58,6 +62,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetRecipientRequest 
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateRecipientRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -92,6 +97,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateRecipientRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteRecipientRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -108,6 +114,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteRecipientReque
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for RotateRecipientTokenRequest {
     type Rejection = axum::response::Response;
     async fn from_request(

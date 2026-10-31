@@ -1,25 +1,33 @@
 use crate::Transport;
 use reqwest::IntoUrl;
+#[cfg(feature = "model_versions")]
+use unitycatalog_common::model_versions::v1::GetModelVersionRequest;
+#[cfg(feature = "model_versions")]
+use unitycatalog_common::models::temporary_credentials::v1::GenerateTemporaryModelVersionCredentialsRequest;
+#[cfg(feature = "tables")]
+use unitycatalog_common::models::temporary_credentials::v1::GenerateTemporaryTableCredentialsRequest;
+#[cfg(feature = "volumes")]
+use unitycatalog_common::models::temporary_credentials::v1::GenerateTemporaryVolumeCredentialsRequest;
 use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
-use unitycatalog_common::{
-    model_versions::v1::GetModelVersionRequest,
-    models::temporary_credentials::v1::{
-        GenerateTemporaryModelVersionCredentialsRequest, GenerateTemporaryPathCredentialsRequest,
-        GenerateTemporaryTableCredentialsRequest, GenerateTemporaryVolumeCredentialsRequest,
-        generate_temporary_model_version_credentials_request::Operation as MvOperation,
-        generate_temporary_path_credentials_request::Operation as PthOperation,
-        generate_temporary_table_credentials_request::Operation as TblOperation,
-        generate_temporary_volume_credentials_request::Operation as VolOperation,
-    },
-    tables::v1::GetTableRequest,
-    volumes::v1::GetVolumeRequest,
+use unitycatalog_common::models::temporary_credentials::v1::{
+    GenerateTemporaryPathCredentialsRequest,
+    generate_temporary_model_version_credentials_request::Operation as MvOperation,
+    generate_temporary_path_credentials_request::Operation as PthOperation,
+    generate_temporary_table_credentials_request::Operation as TblOperation,
+    generate_temporary_volume_credentials_request::Operation as VolOperation,
 };
+#[cfg(feature = "tables")]
+use unitycatalog_common::tables::v1::GetTableRequest;
+#[cfg(feature = "volumes")]
+use unitycatalog_common::volumes::v1::GetVolumeRequest;
 use url::Url;
 use uuid::Uuid;
 
 use crate::Result;
+#[cfg(feature = "tables")]
 use crate::codegen::tables::TableServiceClient;
 pub(super) use crate::codegen::temporary_credentials::TemporaryCredentialClient as TemporaryCredentialClientBase;
+#[cfg(feature = "volumes")]
 use crate::codegen::volumes::client::VolumeServiceClient;
 
 /// A reference to a table in unity catalog.
@@ -237,7 +245,7 @@ impl TemporaryCredentialClient {
     /// deserializer, so only the active variant remains. We replicate the
     /// generated client's request/error handling so behaviour is otherwise
     /// identical.
-    async fn post_credential<R: serde::Serialize>(
+    pub(crate) async fn post_credential<R: serde::Serialize>(
         &self,
         path: &str,
         request: &R,
@@ -276,6 +284,7 @@ impl TemporaryCredentialClient {
         Ok(serde_json::from_value(value)?)
     }
 
+    #[cfg(feature = "tables")]
     /// Gets a temporary credential for reading or writing to a table.
     ///
     /// # Arguments
@@ -355,6 +364,7 @@ impl TemporaryCredentialClient {
         ))
     }
 
+    #[cfg(feature = "volumes")]
     /// Gets a temporary credential for reading or writing to a volume.
     ///
     /// # Arguments
@@ -409,6 +419,7 @@ impl TemporaryCredentialClient {
         Ok((credential, uuid))
     }
 
+    #[cfg(feature = "model_versions")]
     /// Gets a temporary credential for reading or writing to a model version.
     ///
     /// # Arguments
@@ -478,6 +489,7 @@ impl TemporaryCredentialClient {
 /// some servers (e.g. the OSS reference) omit it for table/volume credentials and
 /// only echo it for path credentials. When we already know the securable's
 /// storage location we fill it in so the store can be built.
+#[cfg(any(feature = "tables", feature = "volumes", feature = "model_versions"))]
 fn backfill_credential_url(credential: &mut TemporaryCredential, storage_location: Option<String>) {
     if credential.url.is_empty()
         && let Some(location) = storage_location

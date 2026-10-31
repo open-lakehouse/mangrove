@@ -1,24 +1,50 @@
 // @generated — do not edit by hand.
-use crate::codegen::runtime::{ListIterator, block_on};
-use crate::error::PyUnityCatalogError;
-use futures::stream::StreamExt;
-use pyo3::IntoPyObjectExt;
+use crate::codegen::error::{PyUnityCatalogError, PyUnityCatalogResult};
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::RecipientClient;
 use unitycatalog_common::models::recipients::v1::*;
 use unitycatalog_common::models::*;
-#[pyclass(name = "RecipientClient")]
+
+/// The requests on one `Recipient`.
+#[pyclass(
+    name = "RecipientClient",
+    module = "unitycatalog_client._client.recipients"
+)]
 pub struct PyRecipientClient {
     pub(crate) client: RecipientClient,
 }
+
 #[pymethods]
 impl PyRecipientClient {
-    pub fn get(&self, py: Python<'_>) -> PyResult<PyRecipient> {
+    /// Get a recipient by name.
+    ///
+    /// Returns:
+    ///     The requested resource
+    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyRecipient> {
         let request = self.client.get();
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyRecipient::from(result))
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
+        })
     }
+
+    /// Update a recipient.
+    ///
+    /// Args:
+    ///     new_name: New name for the recipient
+    ///     owner: Username of the recipient owner.
+    ///     comment: Description about the recipient.
+    ///     properties_kvpairs: Recipient properties as map of string key-value pairs. When provided
+    ///                         in update request, the specified properties will override the existing
+    ///                         properties. To add and remove properties, one would need to perform a read-
+    ///                         modify-write.
+    ///     expiration_time: Expiration timestamp of the token, in epoch milliseconds.
+    ///
+    /// Returns:
+    ///     The requested resource
     #[pyo3(
         signature = (
             new_name = None,
@@ -30,40 +56,68 @@ impl PyRecipientClient {
     )]
     pub fn update(
         &self,
-        py: Python<'_>,
+        py: Python,
         new_name: Option<String>,
         owner: Option<String>,
         comment: Option<String>,
         properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
         expiration_time: Option<i64>,
-    ) -> PyResult<PyRecipient> {
-        let mut request = self.client.update();
-        request = request.with_new_name(new_name);
-        request = request.with_owner(owner);
-        request = request.with_comment(comment);
-        request =
-            request.with_properties_kvpairs(properties_kvpairs.map(::core::convert::Into::into));
-        request = request.with_expiration_time(expiration_time);
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyRecipient::from(result))
+    ) -> PyUnityCatalogResult<PyRecipient> {
+        let request = self
+            .client
+            .update()
+            .with_new_name(new_name)
+            .with_owner(owner)
+            .with_comment(comment)
+            .with_properties_kvpairs(properties_kvpairs.map(::core::convert::Into::into))
+            .with_expiration_time(expiration_time);
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
+        })
     }
-    pub fn delete(&self, py: Python<'_>) -> PyResult<()> {
+
+    /// Delete a recipient.
+    pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
-        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(())
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(result)
+        })
     }
+
+    /// Rotate a recipient's token: issue a new token (and activation link) and retire the existing one.
+    ///
+    /// Args:
+    ///     existing_token_expire_in_seconds: Seconds until the existing token expires. It can only shorten
+    ///                                       the existing token's lifetime, never extend it; 0 expires
+    ///                                       it immediately.
+    ///
+    /// Returns:
+    ///     The requested resource
     #[pyo3(signature = (existing_token_expire_in_seconds = None))]
     pub fn rotate_recipient_token(
         &self,
-        py: Python<'_>,
+        py: Python,
         existing_token_expire_in_seconds: Option<i64>,
-    ) -> PyResult<PyRecipient> {
-        let mut request = self.client.rotate_recipient_token();
-        request = request.with_existing_token_expire_in_seconds(existing_token_expire_in_seconds);
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyRecipient::from(result))
+    ) -> PyUnityCatalogResult<PyRecipient> {
+        let request = self
+            .client
+            .rotate_recipient_token()
+            .with_existing_token_expire_in_seconds(existing_token_expire_in_seconds);
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
+        })
     }
 }
+
 impl PyRecipientClient {
     pub fn new(client: RecipientClient) -> Self {
         Self { client }

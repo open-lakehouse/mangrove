@@ -85,32 +85,34 @@ To add a new resource/API surface, follow these steps:
    - Add to `lib.rs` exports and main client struct
    - Add streaming support for list operations
 
-6. **Add Python bindings**:
-   - Import new types in `python/client/src/lib.rs`; add the client wrapper in
-     `python/client/src/client.rs`.
-   - Re-run `just generate-code` (regenerates `_client.pyi`), then re-export any
-     new pyclass at the package root — see **Hand-written PyO3 helpers** below
-     for the `from ._client import Foo as Foo` convention.
+6. **Python bindings** are generated: `just generate-code` emits the extension
+   module (`python/client/src/codegen`), with the new API's model classes and
+   resource client in a submodule `unitycatalog_client._client.<api>`, and the enums
+   in `_enums.py`. Then:
+   - Run `just codegen generate-py-stubs` to rewrite the stubs (`_client/*.pyi`).
+   - For a new proto package, add its `from ._client.<api> import *` line to
+     `python/client/python/unitycatalog_client/__init__.py`.
 
 ### Hand-written PyO3 helpers
 
 A few Python bindings are not proto-derived (e.g. `parse_uc_url`, ergonomic
 `temporary_*_credential` methods that resolve name → UUID before calling the
-generated RPC). They live in `python/client/src/{client,reference}.rs`; type
-checkers can't read their attributes off the compiled `.so` and trestle codegen
-doesn't see them. **Never hand-edit `_client.pyi`** (it is fully regenerated).
-Instead:
+generated RPC). They live in `python/client/src/{client,reference}.rs`. The
+extension module is generated, so:
 
-- **Declare the symbol in `python/client/_client_supplement.pyi`.** `just
-  generate-code` appends this fragment to the codegen-emitted `_client.pyi`, so
-  the merged stub describes the full `_client` runtime surface. The supplement
-  lives outside the package dir so type checkers don't validate it standalone.
-- **Re-export from the package root** via the PEP 484 form `from ._client import
-  Foo as Foo` in `python/client/python/unitycatalog_client/__init__.py` — the
-  same idiom used for codegen-derived types. Do this whenever you
-  `m.add_class::<Foo>()` (or register a new exception / free function) in
-  `python/client/src/lib.rs`. Keep internal helpers (e.g. `parse_uc_url`) out of
-  the root re-export list; consumers import them from `..._client` directly.
+- **Export the item through `trestle.yaml`**: add its Rust path to
+  `clients.python.options.exports`, and trestle mounts it in the generated
+  `#[pymodule]`. Give a class `module = "unitycatalog_client._client"`.
+- **Stubs come from the compiled module**: `just codegen generate-py-stubs` reads
+  PyO3's introspection data, so hand-written items get stubs like generated ones.
+  **Never hand-edit `_client/*.pyi`.**
+- **Re-export public classes at the package root** with the PEP 484 form
+  `from ._client import Foo as Foo` in
+  `python/client/python/unitycatalog_client/__init__.py`. Keep internal helpers
+  (e.g. `parse_uc_url`) out of the root; consumers import them from `..._client`.
+- **Client errors**: `python/client/src/error.rs` implements the generated
+  `ApiErrorAnswer` for `unitycatalog_client::Error`, which picks the exception
+  class (by HTTP status) and its `code`/`message`.
 - **For proto-shaped surface** (a regular `Get/Update/Delete/Create/List` RPC, or
   a `Custom(Post|Patch)` RPC the Python emitter renders), prefer extending the
   proto so trestle generates everything end-to-end.

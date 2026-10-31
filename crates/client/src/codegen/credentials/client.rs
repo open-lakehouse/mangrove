@@ -1,18 +1,23 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
-use crate::Result;
+
 #[cfg(not(target_arch = "wasm32"))]
 use ::olai_http::CloudClient as Transport;
+
+use super::super::encode_path_value;
+use crate::Result;
 #[cfg(target_arch = "wasm32")]
 use ::olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::models::credentials::v1::*;
 use url::Url;
+
 /// HTTP client for service operations
 #[derive(Clone)]
 pub struct CredentialServiceClient {
     pub(crate) client: Transport,
     pub(crate) base_url: Url,
 }
+
 impl CredentialServiceClient {
     /// Create a new client instance
     pub fn new(client: Transport, mut base_url: Url) -> Self {
@@ -21,6 +26,7 @@ impl CredentialServiceClient {
         }
         Self { client, base_url }
     }
+
     pub async fn list_credentials(
         &self,
         request: &ListCredentialsRequest,
@@ -46,6 +52,7 @@ impl CredentialServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     pub async fn create_credential(&self, request: &CreateCredentialRequest) -> Result<Credential> {
         let url = self.base_url.join("credentials")?;
         let response = self.client.post(url).json(request).send().await?;
@@ -55,8 +62,9 @@ impl CredentialServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     pub async fn get_credential(&self, request: &GetCredentialRequest) -> Result<Credential> {
-        let formatted_path = format!("credentials/{}", request.name);
+        let formatted_path = format!("credentials/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
         let response = self.client.get(url).send().await?;
         if !response.status().is_success() {
@@ -65,18 +73,22 @@ impl CredentialServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     pub async fn update_credential(&self, request: &UpdateCredentialRequest) -> Result<Credential> {
-        let formatted_path = format!("credentials/{}", request.name);
+        let formatted_path = format!("credentials/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.patch(url).json(request).send().await?;
+        let mut body = request.clone();
+        body.name = Default::default();
+        let response = self.client.patch(url).json(&body).send().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     pub async fn delete_credential(&self, request: &DeleteCredentialRequest) -> Result<()> {
-        let formatted_path = format!("credentials/{}", request.name);
+        let formatted_path = format!("credentials/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
         let response = self.client.delete(url).send().await?;
         if !response.status().is_success() {
