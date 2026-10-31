@@ -15,8 +15,10 @@ The project follows a multi-crate Rust workspace architecture with language bind
   - `cli/` - Command-line interface
   - `object-store/` - Cloud object storage abstraction (AWS, Azure, GCP)
   - `acceptance/` - Acceptance testing utilities
-- Open Sharing / Delta Sharing (protocol, admin API, sharing server) lives in its own
-  repository, [`distributary`](https://github.com/open-lakehouse/distributary)
+- Open Sharing / Delta Sharing (protocol, sharing server) lives in its own
+  repository, [`distributary`](https://github.com/open-lakehouse/distributary). The
+  shares/recipients/providers protos and models stay here so all Unity Catalog models
+  publish from one place; uc-server does not serve those APIs.
 - Cloud auth/HTTP and storage abstractions come from the external `olai-http` /
   `olai-store` crates (published from the [`trestle`](https://github.com/open-lakehouse/trestle)
   codegen repo). See [Code generation](#code-generation).

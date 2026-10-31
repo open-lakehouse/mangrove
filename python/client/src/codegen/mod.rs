@@ -15,10 +15,16 @@ pub mod functions;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod policies;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
+pub mod providers;
+#[allow(dead_code, unused_imports, clippy::too_many_arguments)]
+pub mod recipients;
+#[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod registered_models;
 pub mod runtime;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod schemas;
+#[allow(dead_code, unused_imports, clippy::too_many_arguments)]
+pub mod shares;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
 pub mod staging_tables;
 #[allow(dead_code, unused_imports, clippy::too_many_arguments)]
@@ -34,9 +40,12 @@ use crate::codegen::credentials::PyCredentialClient;
 use crate::codegen::external_locations::PyExternalLocationClient;
 use crate::codegen::functions::PyFunctionClient;
 use crate::codegen::policies::PyPolicyClient;
+use crate::codegen::providers::PyProviderClient;
+use crate::codegen::recipients::PyRecipientClient;
 use crate::codegen::registered_models::PyRegisteredModelClient;
 use crate::codegen::runtime::{ListIterator, block_on};
 use crate::codegen::schemas::PySchemaClient;
+use crate::codegen::shares::PyShareClient;
 use crate::codegen::staging_tables::PyStagingTableClient;
 use crate::codegen::tables::PyTableClient;
 use crate::codegen::tag_policies::PyTagPolicyClient;
@@ -55,8 +64,11 @@ use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
 use unitycatalog_common::models::model_versions::v1::*;
 use unitycatalog_common::models::policies::v1::*;
+use unitycatalog_common::models::providers::v1::*;
+use unitycatalog_common::models::recipients::v1::*;
 use unitycatalog_common::models::registered_models::v1::*;
 use unitycatalog_common::models::schemas::v1::*;
+use unitycatalog_common::models::shares::v1::*;
 use unitycatalog_common::models::staging_tables::v1::*;
 use unitycatalog_common::models::tables::v1::*;
 use unitycatalog_common::models::tags::v1::*;
@@ -646,6 +658,88 @@ impl PyUnityCatalogClient {
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PyPolicyInfo::from(result))
     }
+    #[pyo3(signature = (max_results = None))]
+    pub fn list_providers(&self, max_results: Option<i32>) -> PyResult<ListIterator> {
+        let mut request = self.client.list_providers();
+        request = request.with_max_results(max_results);
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyProvider::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
+    }
+    #[pyo3(
+        signature = (
+            name,
+            authentication_type,
+            owner = None,
+            comment = None,
+            recipient_profile_str = None,
+            properties = None
+        )
+    )]
+    pub fn create_provider(
+        &self,
+        py: Python<'_>,
+        name: String,
+        authentication_type: PyProviderAuthenticationType,
+        owner: Option<String>,
+        comment: Option<String>,
+        recipient_profile_str: Option<String>,
+        properties: Option<HashMap<String, String>>,
+    ) -> PyResult<PyProvider> {
+        let mut request = self
+            .client
+            .create_provider(name, authentication_type.into());
+        request = request.with_owner(owner);
+        request = request.with_comment(comment);
+        request = request.with_recipient_profile_str(recipient_profile_str);
+        if let Some(properties) = properties {
+            request = request.with_properties(properties);
+        }
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyProvider::from(result))
+    }
+    #[pyo3(signature = (max_results = None))]
+    pub fn list_recipients(&self, max_results: Option<i32>) -> PyResult<ListIterator> {
+        let mut request = self.client.list_recipients();
+        request = request.with_max_results(max_results);
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyRecipient::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
+    }
+    #[pyo3(
+        signature = (
+            name,
+            authentication_type,
+            owner,
+            comment = None,
+            properties_kvpairs = None,
+            expiration_time = None
+        )
+    )]
+    pub fn create_recipient(
+        &self,
+        py: Python<'_>,
+        name: String,
+        authentication_type: PyAuthenticationType,
+        owner: String,
+        comment: Option<String>,
+        properties_kvpairs: ::core::option::Option<PySecurablePropertiesKvPairs>,
+        expiration_time: Option<i64>,
+    ) -> PyResult<PyRecipient> {
+        let mut request = self
+            .client
+            .create_recipient(name, authentication_type.into(), owner);
+        request = request.with_comment(comment);
+        request =
+            request.with_properties_kvpairs(properties_kvpairs.map(::core::convert::Into::into));
+        request = request.with_expiration_time(expiration_time);
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyRecipient::from(result))
+    }
     #[pyo3(
         signature = (
             catalog_name = None,
@@ -730,6 +824,30 @@ impl PyUnityCatalogClient {
         request = request.with_storage_root(storage_root);
         let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
         Ok(PySchema::from(result))
+    }
+    #[pyo3(signature = (max_results = None))]
+    pub fn list_shares(&self, max_results: Option<i32>) -> PyResult<ListIterator> {
+        let mut request = self.client.list_shares();
+        request = request.with_max_results(max_results);
+        let items = request.into_stream().map(|item| {
+            let item = item.map_err(PyUnityCatalogError::from)?;
+            Python::attach(|py| PyShare::from(item).into_py_any(py))
+        });
+        Ok(ListIterator::new(items))
+    }
+    #[pyo3(signature = (name, comment = None, storage_root = None))]
+    pub fn create_share(
+        &self,
+        py: Python<'_>,
+        name: String,
+        comment: Option<String>,
+        storage_root: Option<String>,
+    ) -> PyResult<PyShare> {
+        let mut request = self.client.create_share(name);
+        request = request.with_comment(comment);
+        request = request.with_storage_root(storage_root);
+        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
+        Ok(PyShare::from(result))
     }
     #[pyo3(signature = (name, catalog_name, schema_name))]
     pub fn create_staging_table(
@@ -1037,6 +1155,16 @@ impl PyUnityCatalogClient {
             client: self.client.policy(policy_name),
         }
     }
+    pub fn provider(&self, provider_name: String) -> PyProviderClient {
+        PyProviderClient {
+            client: self.client.provider(provider_name),
+        }
+    }
+    pub fn recipient(&self, recipient_name: String) -> PyRecipientClient {
+        PyRecipientClient {
+            client: self.client.recipient(recipient_name),
+        }
+    }
     pub fn registered_model(
         &self,
         catalog_name: String,
@@ -1052,6 +1180,11 @@ impl PyUnityCatalogClient {
         let full_name = format!("{}.{}", catalog_name, schema_name);
         PySchemaClient {
             client: self.client.schema_from_full_name(full_name),
+        }
+    }
+    pub fn share(&self, share_name: String) -> PyShareClient {
+        PyShareClient {
+            client: self.client.share(share_name),
         }
     }
     pub fn staging_table(&self, staging_table_name: String) -> PyStagingTableClient {
@@ -1100,8 +1233,11 @@ pub fn register_clients(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyExternalLocationClient>()?;
     m.add_class::<PyFunctionClient>()?;
     m.add_class::<PyPolicyClient>()?;
+    m.add_class::<PyProviderClient>()?;
+    m.add_class::<PyRecipientClient>()?;
     m.add_class::<PyRegisteredModelClient>()?;
     m.add_class::<PySchemaClient>()?;
+    m.add_class::<PyShareClient>()?;
     m.add_class::<PyStagingTableClient>()?;
     m.add_class::<PyTableClient>()?;
     m.add_class::<PyTagPolicyClient>()?;

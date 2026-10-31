@@ -106,8 +106,11 @@ all-resources = [
   "functions",
   "model_versions",
   "policies",
+  "providers",
+  "recipients",
   "registered_models",
   "schemas",
+  "shares",
   "staging_tables",
   "tables",
   "tags",
@@ -123,8 +126,11 @@ external_locations = []
 functions = ["tables"]
 model_versions = []
 policies = []
+providers = []
+recipients = []
 registered_models = []
 schemas = []
+shares = []
 staging_tables = []
 tables = []
 tags = []

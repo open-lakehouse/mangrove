@@ -1,0 +1,241 @@
+syntax = "proto3";
+
+package unitycatalog.shares.v1;
+
+import "buf/validate/validate.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "unitycatalog/shares/v1/models.proto";
+
+// Request to list shares.
+message ListSharesRequest {
+  // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
+  optional int32 max_results = 1 [
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    },
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // Opaque pagination token to go to next page based on previous query.
+  optional string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response to list shares.
+message ListSharesResponse {
+  // List of shares.
+  repeated Share shares = 1;
+
+  // Opaque pagination token to go to next page based on previous query.
+  optional string next_page_token = 2;
+}
+
+// Creates a new share for data objects.
+//
+// Data objects can be added after creation with update.
+// The caller must be a metastore admin or have the CREATE_SHARE privilege on the metastore.
+message CreateShareRequest {
+  // Name of the share.
+  string name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // User-provided free-form text description.
+  optional string comment = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Storage root URL for the share.
+  optional string storage_root = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Get a share by name.
+message GetShareRequest {
+  // Name of the share.
+  string name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Query for data to include in the share.
+  optional bool include_shared_data = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+enum Action {
+  // Unspecified action.
+  ACTION_UNSPECIFIED = 0;
+
+  ADD = 1;
+
+  REMOVE = 2;
+
+  UPDATE = 3;
+}
+
+// Data object update.
+message DataObjectUpdate {
+  // The action to perform on the data object.
+  Action action = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The data object that is being added, removed, or updated.
+  DataObject data_object = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Update a share.
+//
+// The caller must be a metastore admin or have the UPDATE_SHARE privilege on the metastore.
+message UpdateShareRequest {
+  // Name of the share.
+  string name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Array of shared data object updates.
+  //
+  // At most 100 data objects may be updated per request.
+  repeated DataObjectUpdate updates = 2 [
+    (buf.validate.field).repeated.max_items = 100,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // A new name for the share.
+  optional string new_name = 3 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // Owner of the share.
+  optional string owner = 4 [
+    (buf.validate.field).string.email = true,
+    (buf.validate.field).required = false,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // User-provided free-form text description.
+  optional string comment = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Delete a share.
+//
+// The caller must be a metastore admin or have the DELETE_SHARE privilege on the metastore.
+message DeleteShareRequest {
+  // Name of the share.
+  string name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (buf.validate.field).string.min_len = 3,
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+// Get permissions for a data share.
+message GetPermissionsRequest {
+  // Name of the share.
+  string name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
+  optional int32 max_results = 2 [
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    },
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // Opaque pagination token to go to next page based on previous query.
+  optional string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response to list shares.
+message GetPermissionsResponse {
+  // The privileges assigned to each principal
+  repeated PrivilegeAssignment privilege_assignments = 1;
+
+  // Opaque pagination token to go to next page based on previous query.
+  optional string next_page_token = 2;
+}
+
+message UpdatePermissionsRequest {
+  // Name of the share.
+  string name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Array of permissions change objects.
+  repeated PermissionsChange changes = 2;
+
+  // Whether to return the latest permissions list of the share in the response.
+  optional bool omit_permissions_list = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message UpdatePermissionsResponse {
+  // The privileges assigned to each principal
+  repeated PrivilegeAssignment privilege_assignments = 1;
+}
+
+// Service for managing shares
+service SharesService {
+  // List shares.
+  rpc ListShares(ListSharesRequest) returns (ListSharesResponse) {
+    option (google.api.http) = {get: "/shares"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "ListShares"};
+  }
+
+  // Create a new share.
+  rpc CreateShare(CreateShareRequest) returns (Share) {
+    option (google.api.http) = {
+      post: "/shares"
+      body: "*"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "CreateShare"};
+  }
+
+  // Get a share by name.
+  rpc GetShare(GetShareRequest) returns (Share) {
+    option (google.api.http) = {get: "/shares/{name}"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "GetShare"};
+  }
+
+  // Update a share.
+  rpc UpdateShare(UpdateShareRequest) returns (Share) {
+    option (google.api.http) = {
+      patch: "/shares/{name}"
+      body: "*"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "UpdateShare"};
+  }
+
+  // Deletes a share.
+  rpc DeleteShare(DeleteShareRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/shares/{name}"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "DeleteShare"};
+  }
+
+  // Gets the permissions for a data share from the metastore.
+  rpc GetPermissions(GetPermissionsRequest) returns (GetPermissionsResponse) {
+    option (google.api.http) = {get: "/shares/{name}/permissions"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "GetPermissions"};
+  }
+
+  // Updates the permissions for a data share in the metastore.
+  rpc UpdatePermissions(UpdatePermissionsRequest) returns (UpdatePermissionsResponse) {
+    option (google.api.http) = {
+      patch: "/shares/{name}/permissions"
+      body: "*"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "UpdatePermissions"};
+  }
+}

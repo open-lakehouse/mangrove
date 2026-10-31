@@ -10,6 +10,8 @@ pub use labels::{ObjectLabel, Resource};
 #[cfg(feature = "python")]
 #[allow(clippy::clone_on_copy)]
 pub mod pyo3_impls;
+#[cfg(feature = "python")]
+pub use pyo3_impls::*;
 pub use agent_skills::v0alpha1::AgentSkill;
 pub use agents::v0alpha1::Agent;
 pub use catalogs::v1::Catalog;
@@ -18,10 +20,11 @@ pub use external_locations::v1::ExternalLocation;
 pub use functions::v1::Function;
 pub use model_versions::v1::ModelVersion;
 pub use policies::v1::PolicyInfo;
-#[cfg(feature = "python")]
-pub use pyo3_impls::*;
+pub use providers::v1::Provider;
+pub use recipients::v1::Recipient;
 pub use registered_models::v1::RegisteredModel;
 pub use schemas::v1::Schema;
+pub use shares::v1::Share;
 pub use staging_tables::v1::StagingTable;
 pub use tables::v1::Column;
 pub use tables::v1::Table;
@@ -68,6 +71,16 @@ pub mod policies {
         include!("./unitycatalog.policies.v1.rs");
     }
 }
+pub mod providers {
+    pub mod v1 {
+        include!("./unitycatalog.providers.v1.rs");
+    }
+}
+pub mod recipients {
+    pub mod v1 {
+        include!("./unitycatalog.recipients.v1.rs");
+    }
+}
 pub mod registered_models {
     pub mod v1 {
         include!("./unitycatalog.registered_models.v1.rs");
@@ -76,6 +89,11 @@ pub mod registered_models {
 pub mod schemas {
     pub mod v1 {
         include!("./unitycatalog.schemas.v1.rs");
+    }
+}
+pub mod shares {
+    pub mod v1 {
+        include!("./unitycatalog.shares.v1.rs");
     }
 }
 pub mod staging_tables {

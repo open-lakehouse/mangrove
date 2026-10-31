@@ -56,8 +56,9 @@ skip compiling the rest (about 60% less `common` build time for a five-resource
 subset):
 
 `agent_skills`, `agents`, `catalogs`, `credentials`, `external_locations`,
-`functions` (implies `tables`), `model_versions`, `policies`, `registered_models`,
-`schemas`, `staging_tables`, `tables`, `tags`, `temporary_credentials`, `volumes`.
+`functions` (implies `tables`), `model_versions`, `policies`, `providers`,
+`recipients`, `registered_models`, `schemas`, `shares`, `staging_tables`, `tables`,
+`tags`, `temporary_credentials`, `volumes`.
 
 ```toml
 unitycatalog-common = { package = "olai-uc-common", version = "…", default-features = false, features = [

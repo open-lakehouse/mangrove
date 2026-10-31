@@ -581,6 +581,100 @@ export interface paths {
         patch: operations["UpdatePolicy"];
         trace?: never;
     };
+    "/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List providers. */
+        get: operations["ListProviders"];
+        put?: never;
+        /** @description Create a new provider. */
+        post: operations["CreateProvider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/providers/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get a provider by name. */
+        get: operations["GetProvider"];
+        put?: never;
+        post?: never;
+        /** @description Delete a provider. */
+        delete: operations["DeleteProvider"];
+        options?: never;
+        head?: never;
+        /** @description Update a provider. */
+        patch: operations["UpdateProvider"];
+        trace?: never;
+    };
+    "/recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List recipients. */
+        get: operations["ListRecipients"];
+        put?: never;
+        /** @description Create a new recipient. */
+        post: operations["CreateRecipient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recipients/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get a recipient by name. */
+        get: operations["GetRecipient"];
+        put?: never;
+        post?: never;
+        /** @description Delete a recipient. */
+        delete: operations["DeleteRecipient"];
+        options?: never;
+        head?: never;
+        /** @description Update a recipient. */
+        patch: operations["UpdateRecipient"];
+        trace?: never;
+    };
+    "/recipients/{name}/rotate-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Rotate a recipient's token: issue a new token (and activation link) and
+         *      retire the existing one.
+         */
+        post: operations["RotateRecipientToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/schemas": {
         parameters: {
             query?: never;
@@ -636,6 +730,61 @@ export interface paths {
          *      privilege on the parent catalog.
          */
         patch: operations["UpdateSchema"];
+        trace?: never;
+    };
+    "/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List shares. */
+        get: operations["ListShares"];
+        put?: never;
+        /** @description Create a new share. */
+        post: operations["CreateShare"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/shares/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get a share by name. */
+        get: operations["GetShare"];
+        put?: never;
+        post?: never;
+        /** @description Deletes a share. */
+        delete: operations["DeleteShare"];
+        options?: never;
+        head?: never;
+        /** @description Update a share. */
+        patch: operations["UpdateShare"];
+        trace?: never;
+    };
+    "/shares/{name}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Gets the permissions for a data share from the metastore. */
+        get: operations["GetPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Updates the permissions for a data share in the metastore. */
+        patch: operations["UpdatePermissions"];
         trace?: never;
     };
     "/staging-tables": {
@@ -1575,6 +1724,61 @@ export interface components {
             grant?: components["schemas"]["PrivilegeOptions"];
         };
         /**
+         * Create Provider Request
+         * @description Creates a new provider
+         */
+        CreateProviderRequest: {
+            /** @description Name of the provider. */
+            name: string;
+            /**
+             * Provider Authentication Type
+             * Format: enum
+             * @description The delta sharing authentication type.
+             * @enum {string}
+             */
+            authentication_type: "TOKEN" | "OAUTH_CLIENT_CREDENTIALS";
+            /** @description Username of the provider owner. */
+            owner?: string;
+            /** @description Description about the provider. */
+            comment?: string;
+            /**
+             * @description The recipient profile (credential file contents) used to connect to the
+             *      sharing server. Required when authentication_type is TOKEN or
+             *      OAUTH_CLIENT_CREDENTIALS.
+             */
+            recipient_profile_str?: string;
+            /** @description Provider properties as map of string key-value pairs. */
+            properties?: {
+                [key: string]: string;
+            };
+        };
+        /**
+         * Create Recipient Request
+         * @description Creates a new recipient
+         */
+        CreateRecipientRequest: {
+            /** @description Name of the recipient. */
+            name: string;
+            /**
+             * Authentication Type
+             * Format: enum
+             * @description The delta sharing authentication type.
+             * @enum {string}
+             */
+            authentication_type: "TOKEN" | "OAUTH_CLIENT_CREDENTIALS";
+            /** @description Username of the recipient owner. */
+            owner: string;
+            /** @description Description about the recipient. */
+            comment?: string;
+            /**
+             * Securable Properties Kv Pairs
+             * @description An object with the properties of a securable as key-value pairs.
+             */
+            properties_kvpairs?: components["schemas"]["SecurablePropertiesKvPairs"];
+            /** @description Expiration timestamp of the token, in epoch milliseconds. */
+            expiration_time?: string;
+        };
+        /**
          * Create Registered Model Request
          * @description Create a new registered model.
          */
@@ -1608,6 +1812,19 @@ export interface components {
              * @description If not set, managed securables under this schema fall back to the parent
              *      catalog's storage location. Example: `s3://bucket/ucroot`.
              */
+            storage_root?: string;
+        };
+        /**
+         * Creates a new share for data objects.
+         * @description Data objects can be added after creation with update.
+         *      The caller must be a metastore admin or have the CREATE_SHARE privilege on the metastore.
+         */
+        CreateShareRequest: {
+            /** @description Name of the share. */
+            name: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description Storage root URL for the share. */
             storage_root?: string;
         };
         /**
@@ -1774,6 +1991,90 @@ export interface components {
              * @description The Databricks managed GCP service account configuration.
              */
             databricks_gcp_service_account?: components["schemas"]["DatabricksGcpServiceAccount"];
+        };
+        /** Data Object */
+        DataObject: {
+            /**
+             * A fully qualified name that uniquely identifies a data object.
+             * @description For example, a table's fully qualified name is in the format of <catalog>.<schema>.<table>,
+             */
+            name: string;
+            /**
+             * Data Object Type
+             * Format: enum
+             * @description Type of the data object.
+             * @enum {string}
+             */
+            data_object_type: "DATA_OBJECT_TYPE_UNSPECIFIED" | "TABLE" | "SCHEMA" | "VIEW" | "MATERIALIZED_VIEW" | "STREAMING_TABLE" | "MODEL" | "FUNCTION" | "VOLUME" | "AGENT_SKILL";
+            /** @description The time when this data object is added to the share, in epoch milliseconds. */
+            readonly added_at?: string;
+            /** @description Username of the sharer. */
+            readonly added_by?: string;
+            /** @description A user-provided comment when adding the data object to the share. */
+            comment?: string;
+            /**
+             * A user-provided new name for the data object within the share.
+             * @description If this new name is not provided, the object's original name will be used as the shared_as name.
+             *      The shared_as name must be unique within a share.
+             *      For tables, the new name must follow the format of <schema>.<table>: two parts, each
+             *      consisting only of alphanumeric characters and underscores, without the catalog part.
+             *      Do not set it for non-table data objects; use string_shared_as instead.
+             */
+            shared_as?: string;
+            /** @description Array of partitions for the shared data. */
+            partitions?: components["schemas"]["Partition"][];
+            /** @description Whether to enable cdf or indicate if cdf is enabled on the shared object. */
+            cdf_enabled?: boolean;
+            /**
+             * History Status
+             * Format: enum
+             * @description Whether to enable or disable sharing of data history. If not specified, the default is DISABLED.
+             * @enum {string}
+             */
+            history_data_sharing_status?: "DISABLED" | "ENABLED";
+            /**
+             * The start version associated with the object.
+             * @description This allows data providers to control the lowest object version that is accessible by clients.
+             *      If specified, clients can query snapshots or changes for versions >= start_version.
+             *      If not specified, clients can only query starting from the version of the object at the time it was added to the share.
+             *
+             *      NOTE: The start_version should be <= the current version of the object.
+             */
+            start_version?: string;
+            /**
+             * A user-provided alias for a non-table data object (e.g. a volume) within the share.
+             * @description For volumes, functions and models it is a two-part name <schema>.<name>, each part
+             *      consisting only of alphanumeric characters and underscores. If not provided, the
+             *      object's original name minus its catalog is used. It must be unique among objects of
+             *      the same type within the share. Do not set it for table-like data objects; use
+             *      shared_as instead.
+             */
+            string_shared_as?: string;
+            /**
+             * Data Object Status
+             * Format: enum
+             * @description Whether the data object is still accessible to the share.
+             * @enum {string}
+             */
+            readonly status?: "DATA_OBJECT_STATUS_UNSPECIFIED" | "ACTIVE" | "PERMISSION_DENIED";
+        };
+        /**
+         * Data Object Update
+         * @description Data object update.
+         */
+        DataObjectUpdate: {
+            /**
+             * Action
+             * Format: enum
+             * @description The action to perform on the data object.
+             * @enum {string}
+             */
+            action: "ACTION_UNSPECIFIED" | "ADD" | "REMOVE" | "UPDATE";
+            /**
+             * Data Object
+             * @description The data object that is being added, removed, or updated.
+             */
+            data_object?: WithRequired<components["schemas"]["DataObject"], "name" | "data_object_type">;
         };
         /**
          * Databricks Gcp Service Account
@@ -2161,6 +2462,16 @@ export interface components {
              */
             operation: "READ_VOLUME" | "WRITE_VOLUME";
         };
+        /**
+         * Get Permissions Response
+         * @description Response to list shares.
+         */
+        GetPermissionsResponse: {
+            /** @description The privileges assigned to each principal */
+            privilege_assignments?: components["schemas"]["PrivilegeAssignment"][];
+            /** @description Opaque pagination token to go to next page based on previous query. */
+            next_page_token?: string;
+        };
         /** Get Table Exists Response */
         GetTableExistsResponse: {
             /** @description Boolean reflecting if table exists. */
@@ -2269,6 +2580,26 @@ export interface components {
             next_page_token?: string;
         };
         /**
+         * List Providers Response
+         * @description Response to list providers.
+         */
+        ListProvidersResponse: {
+            /** @description List of providers. */
+            providers?: components["schemas"]["Provider"][];
+            /** @description Opaque pagination token to go to next page based on previous query. */
+            next_page_token?: string;
+        };
+        /**
+         * List Recipients Response
+         * @description Response to list recipients.
+         */
+        ListRecipientsResponse: {
+            /** @description List of recipients. */
+            recipients?: components["schemas"]["Recipient"][];
+            /** @description Opaque pagination token to go to next page based on previous query. */
+            next_page_token?: string;
+        };
+        /**
          * List Registered Models Response
          * @description List registered models response.
          */
@@ -2286,6 +2617,16 @@ export interface components {
             /** @description The schemas returned. */
             schemas?: components["schemas"]["SchemaInfo"][];
             /** @description The next_page_token value to include in the next List request. */
+            next_page_token?: string;
+        };
+        /**
+         * List Shares Response
+         * @description Response to list shares.
+         */
+        ListSharesResponse: {
+            /** @description List of shares. */
+            shares?: components["schemas"]["Share"][];
+            /** @description Opaque pagination token to go to next page based on previous query. */
             next_page_token?: string;
         };
         /** List Table Summaries Response */
@@ -2397,6 +2738,49 @@ export interface components {
             readonly browse_only?: boolean;
         };
         /**
+         * Partition
+         * @description A partition specification: the conjunction of its partition values.
+         */
+        Partition: {
+            /** @description An array of partition values. */
+            values?: components["schemas"]["PartitionValue"][];
+        };
+        /**
+         * Partition Value
+         * @description A partition column value a shared table is restricted to.
+         */
+        PartitionValue: {
+            /** @description The name of the partition column. */
+            name: string;
+            /**
+             * The value of the partition column; unset means a `null` value.
+             * @description Mutually exclusive with recipient_property_key.
+             */
+            value?: string;
+            /**
+             * The key of a Delta Sharing recipient property whose value the partition column is
+             *      matched against, e.g. "databricks-account-id".
+             * @description Mutually exclusive with value.
+             */
+            recipient_property_key?: string;
+            /**
+             * Partition Value Op
+             * Format: enum
+             * @description The operator to apply for the value.
+             * @enum {string}
+             */
+            op: "PARTITION_VALUE_OP_UNSPECIFIED" | "EQUAL" | "LIKE";
+        };
+        /** Permissions Change */
+        PermissionsChange: {
+            /** @description The principal (user email address or group name). */
+            principal: string;
+            /** @description The set of privileges to add. */
+            add?: string[];
+            /** @description The set of privileges to remove. */
+            remove?: string[];
+        };
+        /**
          * A row-filter or column-mask policy bound to principals and scoped to a securable.
          * @description Policies are read as whole documents; enforcement is performed by the query engine,
          *      not by this service. `when_condition` is stored and returned opaque — this service does
@@ -2475,6 +2859,16 @@ export interface components {
              */
             for_securable_type?: string;
         };
+        /** Privilege Assignment */
+        PrivilegeAssignment: {
+            /**
+             * The principal (user email address or group name).
+             * @description For deleted principals, principal is empty while principal_id is populated.
+             */
+            principal: string;
+            /** @description The privileges assigned to the principal. */
+            privileges?: string[];
+        };
         /**
          * Privilege Options
          * @description The privileges a deny or grant policy applies to.
@@ -2482,6 +2876,46 @@ export interface components {
         PrivilegeOptions: {
             /** @description The privileges to deny or grant when the principal and condition match. */
             privileges: string[];
+        };
+        /**
+         * A provider represents an organization sharing data with this metastore.
+         * @description A provider is the inbound counterpart of a recipient: it is registered from a
+         *      share activation/credential file and is used to access shares offered by an
+         *      upstream Delta Sharing server.
+         */
+        Provider: {
+            /** @description Unique ID of the provider. */
+            readonly id?: string;
+            /** @description The name of the provider. */
+            name: string;
+            /**
+             * Provider Authentication Type
+             * Format: enum
+             * @description The delta sharing authentication type.
+             * @enum {string}
+             */
+            authentication_type: "PROVIDER_AUTHENTICATION_TYPE_UNSPECIFIED" | "TOKEN" | "OAUTH_CLIENT_CREDENTIALS";
+            /** @description Username of the provider owner. */
+            owner?: string;
+            /** @description Description about the provider. */
+            comment?: string;
+            /**
+             * @description The recipient profile (credential file contents) used to connect to the
+             *      sharing server. Present for TOKEN and OAUTH_CLIENT_CREDENTIALS authentication.
+             */
+            recipient_profile_str?: string;
+            /** @description A map of key-value properties attached to the provider. */
+            properties?: {
+                [key: string]: string;
+            };
+            /** @description Time at which this provider was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of the creator of the provider. */
+            readonly created_by?: string;
+            /** @description Time at which this provider was updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of the provider updater. */
+            readonly updated_by?: string;
         };
         /** R2 Temporary Credentials */
         R2TemporaryCredentials: {
@@ -2491,6 +2925,56 @@ export interface components {
             secret_access_key: string;
             /** @description The generated JWT that users must pass to use the temporary credentials. */
             session_token: string;
+        };
+        /** Recipient */
+        Recipient: {
+            /** @description Unique ID of the recipient. */
+            readonly id?: string;
+            /** @description The name of the recipient. */
+            name: string;
+            /**
+             * Authentication Type
+             * Format: enum
+             * @description The delta sharing authentication type.
+             * @enum {string}
+             */
+            authentication_type: "AUTHENTICATION_TYPE_UNSPECIFIED" | "TOKEN" | "OAUTH_CLIENT_CREDENTIALS";
+            /** @description Username of the recipient owner. */
+            owner?: string;
+            /** @description Description about the recipient. */
+            comment?: string;
+            /**
+             * Securable Properties Kv Pairs
+             * @description An object with the properties of a securable as key-value pairs.
+             */
+            properties_kvpairs?: components["schemas"]["SecurablePropertiesKvPairs"];
+            /** @description Time at which this recipient was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of recipient creator. */
+            readonly created_by?: string;
+            /** @description This field is only present when the authentication_type is TOKEN. */
+            readonly tokens?: components["schemas"]["RecipientToken"][];
+            /** @description Time at which this recipient was updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of recipient updater. */
+            readonly updated_by?: string;
+        };
+        /** Recipient Token */
+        RecipientToken: {
+            /** @description Unique ID of the recipient token. */
+            readonly id: string;
+            /** @description Time at which this recipient token was created, in epoch milliseconds. */
+            readonly created_at: string;
+            /** @description Username of recipient token creator. */
+            readonly created_by: string;
+            /** @description Full activation URL to retrieve the access token. It will be empty if the token is already retrieved. */
+            readonly activation_url: string;
+            /** @description Expiration timestamp of the token in epoch milliseconds. */
+            readonly expiration_time: string;
+            /** @description Time at which this recipient token was updated, in epoch milliseconds. */
+            readonly updated_at: string;
+            /** @description Username of recipient token updater. */
+            readonly updated_by: string;
         };
         /**
          * A registered model within the three-level namespace (catalog.schema.model).
@@ -2534,6 +3018,17 @@ export interface components {
              *      enabled in the request.
              */
             readonly browse_only?: boolean;
+        };
+        /**
+         * Rotate Recipient Token Request
+         * @description Rotate a recipient's bearer token.
+         */
+        RotateRecipientTokenRequest: {
+            /**
+             * @description Seconds until the existing token expires. It can only shorten the
+             *      existing token's lifetime, never extend it; 0 expires it immediately.
+             */
+            existing_token_expire_in_seconds?: string;
         };
         /**
          * Schema
@@ -2585,6 +3080,41 @@ export interface components {
             updated_at?: number;
             /** @description Username of user who last modified schema. */
             updated_by?: string;
+        };
+        /**
+         * Securable Properties Kv Pairs
+         * @description An object with the properties of a securable as key-value pairs.
+         */
+        SecurablePropertiesKvPairs: {
+            /** @description A map of key-value properties attached to the securable. */
+            properties: {
+                [key: string]: string;
+            };
+        };
+        /** Share */
+        Share: {
+            /** @description Unique ID of the share. */
+            readonly id?: string;
+            /** @description Name of the share. */
+            name: string;
+            /** @description A list of shared data objects within the share. */
+            objects?: components["schemas"]["DataObject"][];
+            /** @description Username of current owner of share. */
+            owner?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
+            /** @description Storage Location URL (full path) for the share. */
+            readonly storage_location?: string;
+            /** @description Storage root URL for the share. */
+            storage_root?: string;
+            /** @description Time at which this share was created, in epoch milliseconds. */
+            readonly created_at?: string;
+            /** @description Username of the creator of the share. */
+            readonly created_by?: string;
+            /** @description Time at which this share was updated, in epoch milliseconds. */
+            readonly updated_at?: string;
+            /** @description Username of share updater. */
+            readonly updated_by?: string;
         };
         /**
          * A staging table is a transient reservation created while provisioning a
@@ -2940,6 +3470,18 @@ export interface components {
             /** @description User-provided free-form text description. */
             comment?: string;
         };
+        /** Update Permissions Request */
+        UpdatePermissionsRequest: {
+            /** @description Array of permissions change objects. */
+            changes?: components["schemas"]["PermissionsChange"][];
+            /** @description Whether to return the latest permissions list of the share in the response. */
+            omit_permissions_list?: boolean;
+        };
+        /** Update Permissions Response */
+        UpdatePermissionsResponse: {
+            /** @description The privileges assigned to each principal */
+            privilege_assignments?: components["schemas"]["PrivilegeAssignment"][];
+        };
         /**
          * Update a policy defined on a securable.
          * @description The policy is identified by the path; the body carries the fields to update.
@@ -2994,6 +3536,51 @@ export interface components {
             update_mask?: string;
         };
         /**
+         * Update Provider Request
+         * @description Update a provider
+         */
+        UpdateProviderRequest: {
+            /** @description New name for the provider. */
+            new_name?: string;
+            /** @description Username of the provider owner. */
+            owner?: string;
+            /** @description Description about the provider. */
+            comment?: string;
+            /**
+             * @description The recipient profile (credential file contents) used to connect to the
+             *      sharing server. Required when authentication_type is TOKEN or
+             *      OAUTH_CLIENT_CREDENTIALS.
+             */
+            recipient_profile_str?: string;
+            /**
+             * Provider properties as map of string key-value pairs.
+             * @description When provided in update request, the specified properties will override the existing properties.
+             *      To add and remove properties, one would need to perform a read-modify-write.
+             */
+            properties?: {
+                [key: string]: string;
+            };
+        };
+        /**
+         * Update Recipient Request
+         * @description Update a recipient
+         */
+        UpdateRecipientRequest: {
+            /** @description New name for the recipient */
+            new_name?: string;
+            /** @description Username of the recipient owner. */
+            owner?: string;
+            /** @description Description about the recipient. */
+            comment?: string;
+            /**
+             * Securable Properties Kv Pairs
+             * @description An object with the properties of a securable as key-value pairs.
+             */
+            properties_kvpairs?: components["schemas"]["SecurablePropertiesKvPairs"];
+            /** @description Expiration timestamp of the token, in epoch milliseconds. */
+            expiration_time?: string;
+        };
+        /**
          * Update Registered Model Request
          * @description Update a registered model.
          */
@@ -3022,6 +3609,23 @@ export interface components {
             };
             /** @description New name for the schema. */
             new_name?: string;
+        };
+        /**
+         * Update a share.
+         * @description The caller must be a metastore admin or have the UPDATE_SHARE privilege on the metastore.
+         */
+        UpdateShareRequest: {
+            /**
+             * Array of shared data object updates.
+             * @description At most 100 data objects may be updated per request.
+             */
+            updates?: components["schemas"]["DataObjectUpdate"][];
+            /** @description A new name for the share. */
+            new_name?: string;
+            /** @description Owner of the share. */
+            owner?: string;
+            /** @description User-provided free-form text description. */
+            comment?: string;
         };
         /**
          * Update Tag Policy Request
@@ -5006,6 +5610,380 @@ export interface operations {
             };
         };
     };
+    ListProviders: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListProvidersResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateProvider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProviderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetProvider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the provider. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteProvider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the provider. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateProvider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the provider. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProviderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Provider"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListRecipients: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListRecipientsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateRecipient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRecipientRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipient"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetRecipient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the recipient. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipient"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteRecipient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the recipient. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateRecipient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the recipient. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRecipientRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipient"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    RotateRecipientToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the recipient. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RotateRecipientTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recipient"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
     ListSchemas: {
         parameters: {
             query?: {
@@ -5180,6 +6158,255 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaInfo"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    ListShares: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListSharesResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    CreateShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Share"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetShare: {
+        parameters: {
+            query?: {
+                /** @description Query for data to include in the share. */
+                include_shared_data?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Name of the share. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Share"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    DeleteShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the share. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the share. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Share"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetPermissions: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The maximum number of results per page that should be returned.
+                 *
+                 *      If unset or 0, the server's default page size is used. Negative values are rejected.
+                 */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Name of the share. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetPermissionsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdatePermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Name of the share. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePermissionsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdatePermissionsResponse"];
                 };
             };
             /** @description Default error response */

@@ -1,0 +1,161 @@
+syntax = "proto3";
+
+package unitycatalog.providers.v1;
+
+import "buf/validate/validate.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "unitycatalog/providers/v1/models.proto";
+
+// Request to list providers.
+message ListProvidersRequest {
+  // The maximum number of results per page that should be returned.
+  //
+  // If unset or 0, the server's default page size is used. Negative values are rejected.
+  optional int32 max_results = 1 [
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    },
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // Opaque pagination token to go to next page based on previous query.
+  optional string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response to list providers.
+message ListProvidersResponse {
+  // List of providers.
+  repeated Provider providers = 1;
+
+  // Opaque pagination token to go to next page based on previous query.
+  optional string next_page_token = 2;
+}
+
+// Creates a new provider
+message CreateProviderRequest {
+  // Name of the provider.
+  string name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // The delta sharing authentication type.
+  ProviderAuthenticationType authentication_type = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {
+      not_in: [0]
+    }
+  ];
+
+  // Username of the provider owner.
+  optional string owner = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Description about the provider.
+  optional string comment = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // The recipient profile (credential file contents) used to connect to the
+  // sharing server. Required when authentication_type is TOKEN or
+  // OAUTH_CLIENT_CREDENTIALS.
+  optional string recipient_profile_str = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Provider properties as map of string key-value pairs.
+  map<string, string> properties = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Get a provider by name.
+message GetProviderRequest {
+  // Name of the provider.
+  string name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+// Update a provider
+message UpdateProviderRequest {
+  // Name of the provider.
+  string name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // New name for the provider.
+  optional string new_name = 2 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // Username of the provider owner.
+  optional string owner = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Description about the provider.
+  optional string comment = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // The recipient profile (credential file contents) used to connect to the
+  // sharing server. Required when authentication_type is TOKEN or
+  // OAUTH_CLIENT_CREDENTIALS.
+  optional string recipient_profile_str = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Provider properties as map of string key-value pairs.
+  //
+  // When provided in update request, the specified properties will override the existing properties.
+  // To add and remove properties, one would need to perform a read-modify-write.
+  map<string, string> properties = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Delete a provider
+message DeleteProviderRequest {
+  // Name of the provider.
+  string name = 1 [
+    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+// Providers
+//
+// A provider represents an organization that shares data with this metastore.
+// It is the inbound counterpart of a recipient: registered from a share
+// activation/credential file and used to access shares offered by an upstream
+// Delta Sharing server.
+service ProvidersService {
+  // List providers.
+  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse) {
+    option (google.api.http) = {get: "/providers"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "ListProviders"};
+  }
+
+  // Create a new provider.
+  rpc CreateProvider(CreateProviderRequest) returns (Provider) {
+    option (google.api.http) = {
+      post: "/providers"
+      body: "*"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "CreateProvider"};
+  }
+
+  // Get a provider by name.
+  rpc GetProvider(GetProviderRequest) returns (Provider) {
+    option (google.api.http) = {get: "/providers/{name}"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "GetProvider"};
+  }
+
+  // Update a provider.
+  rpc UpdateProvider(UpdateProviderRequest) returns (Provider) {
+    option (google.api.http) = {
+      patch: "/providers/{name}"
+      body: "*"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "UpdateProvider"};
+  }
+
+  // Delete a provider.
+  rpc DeleteProvider(DeleteProviderRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/providers/{name}"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "DeleteProvider"};
+  }
+}
