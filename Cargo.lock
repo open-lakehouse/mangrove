@@ -4298,6 +4298,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "olai-uc-storage-access"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "olai-credential-vending",
+ "olai-storage-credentials",
+ "olai-uc-common",
+ "serde_json",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "olai-uc-storage-proxy"
 version = "0.0.6"
 dependencies = [

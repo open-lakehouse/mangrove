@@ -1,0 +1,56 @@
+[package]
+# Published to crates.io under a provisional `olai-uc-*` name while the design
+# settles; the in-workspace dependency key + crate identifier stay
+# `unitycatalog(_)storage_access` via each dependent's `package =` alias.
+name = "olai-uc-storage-access"
+version = "0.0.1"
+description = "Storage access store for the Unity Catalog server: credentials and the external locations they govern, with location resolution."
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+# Crate-local README (shown on crates.io / docs.rs), overriding the inherited
+# workspace-root README which describes the whole project rather than this crate.
+readme = "README.md"
+rust-version.workspace = true
+
+[lib]
+# Keep the Rust crate identifier stable (`unitycatalog_storage_access`)
+# independent of the provisional `olai-uc-*` package name.
+name = "unitycatalog_storage_access"
+
+[dependencies]
+# Only the wire models are needed: the port speaks the generated credential and
+# external location types and the shared error.
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.6", default-features = false, features = [
+  "credentials",
+  "external_locations",
+] }
+
+# workspace dependencies in alphabetical order
+async-trait = { workspace = true }
+chrono = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true, features = ["v7"] }
+
+# crates.io dependencies in alphabetical order
+olai-storage-credentials = { workspace = true }
+
+# `CredentialResolver` over the store (feature `vending`)
+olai-credential-vending = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[features]
+default = []
+# In-process `InMemoryStorageAccess`, for tests and ephemeral servers.
+memory = []
+# `olai_credential_vending::CredentialResolver` for `dyn StorageAccessStore`.
+vending = ["dep:olai-credential-vending", "unitycatalog-common/credential-vending"]
+# The backend conformance suite (`testing::conformance`).
+testing = []
+
+[package.metadata.docs.rs]
+all-features = true

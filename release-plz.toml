@@ -107,6 +107,14 @@ changelog_path = "crates/handlers/CHANGELOG.md"
 release = false
 
 [[package]]
+name = "olai-uc-storage-access"
+changelog_path = "crates/storage-access/CHANGELOG.md"
+# Not yet on crates.io: bootstrap it (bootstrap-publish.yml) BEFORE the next
+# olai-uc-server / olai-uc-postgres / olai-uc-sqlite release, which depend on
+# it, then drop this line and register its Trusted Publisher.
+release = false
+
+[[package]]
 name = "olai-uc-client"
 changelog_path = "crates/client/CHANGELOG.md"
 

@@ -12,6 +12,7 @@ The project follows a multi-crate Rust workspace architecture with language bind
   - `client/` - Unity Catalog client library
   - `handlers/` - Generated per-resource handler traits + axum route fns, with the error/request-context types they need (feature-gated per resource like `common/`)
   - `server/` - REST API server implementation
+  - `storage-access/` - Credentials + external locations store port (location resolution, integrity rules); implemented by `postgres/`, `sqlite/` and in memory
   - `postgres/` - PostgreSQL backend integration
   - `cli/` - Command-line interface
   - `object-store/` - Cloud object storage abstraction (AWS, Azure, GCP)
