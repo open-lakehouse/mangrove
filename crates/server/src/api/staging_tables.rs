@@ -170,8 +170,8 @@ pub(crate) async fn resolve_managed_parent_location(
 /// staging table was allocated there.
 ///
 /// TODO(perf): this lists all staging tables; once the store supports property
-/// filters, query by `staging_location` directly (mirrors the existing TODOs on
-/// `list_external_locations` / `list_table_volume_locations`).
+/// filters, query by `staging_location` directly (mirrors the TODO on
+/// `list_table_volume_locations`).
 pub(crate) async fn find_staging_table_by_location(
     handler: &(impl ResourceStore + ?Sized),
     staging_location: &str,

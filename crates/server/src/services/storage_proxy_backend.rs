@@ -5,13 +5,15 @@
 //! server's existing surfaces: name → resource resolution
 //! ([`TableHandler::get_table`] / [`VolumeHandler::get_volume`]),
 //! [`Policy::authorize_checked`], the credential-vending pipeline
-//! ([`find_external_location_for_url`] → `get_credential_internal` → a minter), and
+//! ([`governing_location`] → a minter), and
 //! object-store construction from the minted credential ([`build_store`]).
 //!
 //! All the *proxy* semantics (streaming, `Range`/`If-Match`, the confused-deputy
 //! prefix confinement) live in [`unitycatalog_storage_proxy`]; this adapter only
 //! authorizes + vends + hands back a scoped store. The store re-mints through the
 //! same cached minter should a long request outlive its credential.
+//!
+//! [`governing_location`]: unitycatalog_storage_access::StorageAccessStore::governing_location
 
 use std::sync::Arc;
 
@@ -22,9 +24,9 @@ use olai_credential_vending::{CredentialMinter, MintRequest};
 use olai_storage_credentials::{AccessLevel, StorageLocation, VendedCredential};
 use olai_vended_store::{CredentialSource, StoreOptions, build_store};
 
-use unitycatalog_common::models::credentials::v1::GetCredentialRequest;
 use unitycatalog_common::models::tables::v1::{GetTableRequest, Table};
 use unitycatalog_common::models::volumes::v1::{GetVolumeRequest, Volume};
+use unitycatalog_storage_access::ProvidesStorageAccessStore;
 use unitycatalog_storage_proxy::backend::reject_key_traversal;
 use unitycatalog_storage_proxy::{
     ProxyCapabilities, ProxyError, ProxyReq, ProxyResult, Securable, StorageProxyBackend,
@@ -32,13 +34,12 @@ use unitycatalog_storage_proxy::{
 
 use crate::Error;
 use crate::api::RequestContext;
-use crate::api::credentials::CredentialHandlerExt;
 use crate::api::tables::TableHandler;
 use crate::api::volumes::VolumeHandler;
+use crate::error::from_store;
 use crate::policy::{Permission, Policy};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
-use crate::services::object_store::find_external_location_for_url;
 use crate::services::vending::minter_for_location;
 
 /// Map a server [`Error`] onto a [`ProxyError`], preserving status semantics
@@ -152,12 +153,15 @@ async fn authorize_and_locate(
         }
         Securable::Path { url } => {
             // A raw path must resolve to a registered external location the caller
-            // is authorized on; `find_external_location_for_url` 404s otherwise.
+            // is authorized on; the lookup 404s otherwise.
             let storage_url =
                 StorageLocationUrl::parse(url.as_str()).map_err(to_proxy_err_location)?;
-            let ext_loc = find_external_location_for_url(&storage_url, handler)
+            let ext_loc = handler
+                .storage_access()
+                .covering_location(storage_url.location())
                 .await
-                .map_err(to_proxy_err)?;
+                .map_err(|e| to_proxy_err(from_store(e)))?
+                .ok_or_else(|| to_proxy_err(Error::NotFound))?;
             handler
                 .authorize_checked(&(&ext_loc).into(), &permission, cx)
                 .await
@@ -209,17 +213,12 @@ async fn open_store(
     let credential = if storage_url.is_local() {
         None
     } else {
-        let ext_loc = find_external_location_for_url(&storage_url, handler)
+        let governed = handler
+            .storage_access()
+            .governing_location(storage_url.location())
             .await
-            .map_err(to_proxy_err)?;
-        let credential = handler
-            .get_credential_internal(GetCredentialRequest {
-                name: ext_loc.credential_name.clone(),
-                ..Default::default()
-            })
-            .await
-            .map_err(to_proxy_err)?;
-        Some(credential)
+            .map_err(|e| to_proxy_err(from_store(e)))?;
+        Some(governed.credential)
     };
     let minter = minter_for_location(credential.as_ref(), &storage_url).map_err(to_proxy_err)?;
     let source = Arc::new(MintSource {

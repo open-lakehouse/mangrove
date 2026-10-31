@@ -505,16 +505,25 @@ async fn connect_postgres(
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
     // The object/association graph store (lifted to `ResourceStore` by
-    // `ObjectStoreAdapter`) and the Delta `CommitCoordinator` are two independent
-    // handles on the same pool. Sensitive fields (credentials, tokens) are sealed
-    // inline on the stored resources rather than in a separate secret store; Delta
+    // `ObjectStoreAdapter`), the storage-access store and the Delta
+    // `CommitCoordinator` are independent handles on the same pool. Sensitive
+    // fields (tokens) are sealed inline on the stored resources; credentials and
+    // external locations live in their own tables with sealed secrets; Delta
     // catalog-managed commits are persisted in the `delta_commits` table.
-    let graph = unitycatalog_postgres::connect_graph(pool.clone(), encryptor);
+    let graph = unitycatalog_postgres::connect_graph(pool.clone(), encryptor.clone());
     let resource_store = Arc::new(ObjectStoreAdapter::new(graph));
+    let storage_access = Arc::new(unitycatalog_postgres::PgStorageAccess::new(
+        pool.clone(),
+        encryptor,
+    ));
     let coordinator = Arc::new(PgCommitCoordinator::new(pool));
-    let handler =
-        ServerHandler::try_new_tokio_with_coordinator(policy.clone(), resource_store, coordinator)
-            .map_err(|e| Error::Generic(e.to_string()))?;
+    let handler = ServerHandler::try_new_tokio_with_coordinator(
+        policy.clone(),
+        resource_store,
+        storage_access,
+        coordinator,
+    )
+    .map_err(|e| Error::Generic(e.to_string()))?;
     Ok((handler, policy))
 }
 
@@ -538,17 +547,24 @@ async fn connect_sqlite(
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
     // The object/association graph store (lifted to `ResourceStore` by
-    // `ObjectStoreAdapter`) and the Delta `CommitCoordinator` are two independent
-    // handles on the same pool. Sensitive fields (credentials, tokens) are sealed
-    // inline on the stored resources rather than in a separate secret store; like
-    // the Postgres backend, Delta catalog-managed commits are persisted in the
-    // `delta_commits` table rather than in memory.
-    let graph = unitycatalog_sqlite::connect_graph(pool.clone(), encryptor);
+    // `ObjectStoreAdapter`), the storage-access store and the Delta
+    // `CommitCoordinator` are independent handles on the same pool, as on the
+    // Postgres backend: credentials and external locations live in their own
+    // tables, Delta catalog-managed commits in the `delta_commits` table.
+    let graph = unitycatalog_sqlite::connect_graph(pool.clone(), encryptor.clone());
     let resource_store = Arc::new(ObjectStoreAdapter::new(graph));
+    let storage_access = Arc::new(unitycatalog_sqlite::SqliteStorageAccess::new(
+        pool.clone(),
+        encryptor,
+    ));
     let coordinator = Arc::new(SqliteCommitCoordinator::new(pool));
-    let handler =
-        ServerHandler::try_new_tokio_with_coordinator(policy.clone(), resource_store, coordinator)
-            .map_err(|e| Error::Generic(e.to_string()))?;
+    let handler = ServerHandler::try_new_tokio_with_coordinator(
+        policy.clone(),
+        resource_store,
+        storage_access,
+        coordinator,
+    )
+    .map_err(|e| Error::Generic(e.to_string()))?;
     Ok((handler, policy))
 }
 

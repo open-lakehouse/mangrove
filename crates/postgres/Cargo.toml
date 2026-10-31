@@ -20,6 +20,7 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
   "store",
 ] }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.6" }
+unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.1" }
 
 # workspace dependencies (in alphabetical order)
 async-trait = { workspace = true }
@@ -32,6 +33,7 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 
 # crates.io dependencies (in alphabetical order)
+olai-storage-credentials = { workspace = true }
 olai-store = { workspace = true, features = ["postgres", "encryption"] }
 sqlx = { workspace = true, features = [
   "postgres",
@@ -45,6 +47,9 @@ sqlx = { workspace = true, features = [
 uuid = { version = "1.8", features = ["serde", "v7"] }
 
 [dev-dependencies]
+unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", features = [
+  "testing",
+] }
 tokio = { version = "1", features = ["rt-multi-thread", "parking_lot"] }
 
 [features]

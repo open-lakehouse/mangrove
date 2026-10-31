@@ -4216,9 +4216,11 @@ dependencies = [
  "bytes",
  "chrono",
  "futures",
+ "olai-storage-credentials",
  "olai-store",
  "olai-uc-common",
  "olai-uc-delta-api",
+ "olai-uc-storage-access",
  "serde",
  "serde_json",
  "sqlx",
@@ -4257,6 +4259,7 @@ dependencies = [
  "olai-uc-object-store",
  "olai-uc-postgres",
  "olai-uc-sqlite",
+ "olai-uc-storage-access",
  "olai-uc-storage-proxy",
  "olai-vended-store",
  "percent-encoding",
@@ -4285,15 +4288,31 @@ dependencies = [
  "bytes",
  "chrono",
  "futures",
+ "olai-storage-credentials",
  "olai-store",
  "olai-uc-common",
  "olai-uc-delta-api",
+ "olai-uc-storage-access",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror",
  "tokio",
  "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "olai-uc-storage-access"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "olai-credential-vending",
+ "olai-storage-credentials",
+ "olai-uc-common",
+ "serde_json",
+ "tokio",
  "uuid",
 ]
 

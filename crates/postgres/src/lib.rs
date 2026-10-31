@@ -8,6 +8,8 @@
 //! fields (credentials, tokens) are sealed inline on the object rows by an
 //! `olai_store::ManagedObjectStore` layer, and [`PgCommitCoordinator`] provides
 //! durable Delta catalog-managed commits over the same connection pool.
+//! Credentials and external locations live in tables of their own, behind
+//! [`PgStorageAccess`].
 //!
 //! Its SQLite sibling is [`unitycatalog-sqlite`](../unitycatalog_sqlite); the two
 //! share the same store contract and differ only in the embedded engine and a few
@@ -17,12 +19,15 @@
 //!
 //! Connect with [`connect_graph`] (or [`connect_pool`] for a bare pool) and run
 //! [`unified_migrator`] to apply both the `olai_store` object-graph schema and the
-//! crate-local `delta_commits` migrations in one ordered ledger.
+//! crate-local migrations (`delta_commits`, the storage-access tables) in one
+//! ordered ledger.
 
 pub use crate::commit_coordinator::PgCommitCoordinator;
 pub use crate::error::{Error, Result};
+pub use crate::storage_access::PgStorageAccess;
 pub use graph::*;
 
 mod commit_coordinator;
 mod error;
 mod graph;
+mod storage_access;

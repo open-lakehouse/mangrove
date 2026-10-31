@@ -32,12 +32,13 @@ use crate::error::Result;
 /// [`ManagedObjectStore`]. `ObjectStoreAdapter` lifts this to `ResourceStore`.
 pub type PgGraphStore = ManagedObjectStore<ObjectLabel, PgStore<ObjectLabel>>;
 
-/// The mangrove-local migrations (`delta_commits`) that ride the same database
+/// The mangrove-local migrations (`delta_commits`, storage access) that ride the same database
 /// as the generic object/association schema.
 ///
 /// These are versioned in a high range (0100+) so they never collide with
 /// `olai_store`'s object-graph migrations (0001+); [`unified_migrator`] merges
-/// the two sets into one ordered ledger.
+/// the two sets into one ordered ledger. Each concern owns a range: 01xx for
+/// `delta_commits`, 02xx for the storage-access tables.
 static LOCAL_MIGRATOR: Migrator = sqlx::migrate!();
 
 /// One [`Migrator`] over `olai_store`'s object-graph schema **and** the
