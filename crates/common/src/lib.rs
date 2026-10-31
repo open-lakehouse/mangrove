@@ -12,22 +12,25 @@
 //! - [`services`] — envelope encryption for sealing sensitive fields inline
 //!   (feature `store`).
 //! - [`credentials_ext`] — conversions to the `olai-storage-credentials` /
-//!   `olai-credential-vending` types (features `credentials`, `credential-vending`).
+//!   `olai-credential-vending` types (features `storage-credentials`, `credential-vending`).
 //! - [`metric_view`] — the single parser for Unity Catalog metric-view definitions
 //!   (feature `metric-view`).
 //!
 //! # Feature flags
 //!
 //! The crate is feature-flag heavy so that downstream crates pull in only what they
-//! need. `rest-client` is on by default; `grpc`, `axum`, `sqlx`, `store`,
-//! `metric-view`, `python`, and `node` gate the corresponding integrations. See the
-//! crate README for the full table.
+//! need. Each generated model package sits behind a resource feature named after
+//! its module (`catalogs`, `tables`, `credentials`, …); `all-resources` enables
+//! them all. `rest-client` and `all-resources` are on by default; `grpc`, `axum`,
+//! `sqlx`, `store`, `metric-view`, `python`, and `node` gate the corresponding
+//! integrations. `store` and `python` span every resource and imply
+//! `all-resources`. See the crate README for the full table.
 
 pub use error::{Error, Result};
 pub use models::*;
 pub use reference::UCReference;
 
-#[cfg(feature = "credentials")]
+#[cfg(feature = "storage-credentials")]
 pub mod credentials_ext;
 pub mod error;
 #[cfg(feature = "metric-view")]
