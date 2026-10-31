@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.10](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.9...olai-uc-server-v0.0.10) - 2026-10-31
+
+### Added
+
+- restore the shares, recipients and providers models (#264)
+- [**breaking**] per-resource features and clients as handlers (#261) (#268)
+
+### Changed
+
+- [**breaking**] extract handler traits into olai-uc-handlers (#262) (#265)
+
+### Documentation
+
+- consolidate and correct agent instructions (#274)
+
+### Performance
+
+- [**breaking**] standalone storage-access store with indexed location resolution (#254) (#273)
+
 ## [0.0.9](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.8...olai-uc-server-v0.0.9) - 2026-10-30
 
 ### Added

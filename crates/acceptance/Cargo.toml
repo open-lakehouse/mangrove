@@ -14,8 +14,8 @@ description = "Acceptance testing framework for Unity Catalog"
 
 [dependencies]
 # repository dependencies
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.6" }
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.6" }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.7" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.7" }
 # Drives the managed-table Delta staging flow (createStagingTable -> commit ->
 # loadTable) and builds a catalog-managed kernel snapshot for the read-back, so
 # the managed_table_lifecycle check exercises the real /delta/v1 write+read path

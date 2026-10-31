@@ -23,7 +23,7 @@ name = "unitycatalog_storage_access"
 [dependencies]
 # Only the wire models are needed: the port speaks the generated credential and
 # external location types and the shared error.
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.6", default-features = false, features = [
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.7", default-features = false, features = [
   "credentials",
   "external_locations",
 ] }

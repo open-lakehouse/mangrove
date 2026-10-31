@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7](https://github.com/open-lakehouse/mangrove/compare/olai-uc-sqlite-v0.0.6...olai-uc-sqlite-v0.0.7) - 2026-10-31
+
+### Performance
+
+- [**breaking**] standalone storage-access store with indexed location resolution (#254) (#273)
+
 ## [0.0.2](https://github.com/open-lakehouse/mangrove/compare/olai-uc-sqlite-v0.0.1...olai-uc-sqlite-v0.0.2) - 2026-07-12
 
 ### Added

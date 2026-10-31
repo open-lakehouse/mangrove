@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2](https://github.com/open-lakehouse/mangrove/compare/uc-app-v0.0.1...uc-app-v0.0.2) - 2026-10-31
+
+### Added
+
+- [**breaking**] per-resource features and clients as handlers (#261) (#268)
+- restore the shares, recipients and providers models (#264)
+
+### Documentation
+
+- consolidate and correct agent instructions (#274)
+
 ## [0.0.1](https://github.com/open-lakehouse/mangrove/releases/tag/uc-app-v0.0.1) - 2026-10-30
 
 ### Added
