@@ -117,8 +117,9 @@ generation tooling — you only need it when changing proto or regenerating.
 `crates/**/codegen/**`, `crates/**/models/gen/**`, `crates/**/models/_gen/**`,
 or any file beginning with `// @generated`. Change the proto/codegen inputs and
 regenerate instead, then commit the generated output in the **same commit** as
-the source change. The one hand-maintained exception is the spliced PyO3 stub
-supplement (`python/client/_client_supplement.pyi`) — see `.github/CONTRIBUTING.md`.
+the source change. The Python stubs (`python/client/python/unitycatalog_client/_client/*.pyi`)
+are generated too, from the compiled module by `just codegen generate-py-stubs` — see
+`.github/CONTRIBUTING.md`.
 
 ## Environment & services
 

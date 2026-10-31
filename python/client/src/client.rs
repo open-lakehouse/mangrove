@@ -8,18 +8,8 @@ use unitycatalog_client::{
 // model is not a Python object.
 use unitycatalog_common::models::PyTemporaryCredential;
 
-pub use crate::codegen::PyUnityCatalogClient;
-pub use crate::codegen::catalogs::PyCatalogClient;
-pub use crate::codegen::credentials::PyCredentialClient;
-pub use crate::codegen::external_locations::PyExternalLocationClient;
-pub use crate::codegen::recipients::PyRecipientClient;
-pub use crate::codegen::schemas::PySchemaClient;
-pub use crate::codegen::shares::PyShareClient;
-pub use crate::codegen::tables::PyTableClient;
-pub use crate::codegen::tag_policies::PyTagPolicyClient;
-pub use crate::codegen::volumes::PyVolumeClient;
-use crate::error::{PyUnityCatalogError, PyUnityCatalogResult};
-use crate::runtime::get_runtime;
+use crate::codegen::error::{PyUnityCatalogError, PyUnityCatalogResult};
+use crate::codegen::runtime::rt;
 
 /// Client for vending short-lived credentials for tables, volumes, and
 /// raw external paths governed by Unity Catalog.
@@ -28,7 +18,10 @@ use crate::runtime::get_runtime;
 /// token=...)`, or use the convenience helpers in
 /// [`unitycatalog_client.obstore`](crate::obstore) to plug the credentials
 /// into the `obstore` Python library.
-#[pyclass(name = "TemporaryCredentialClient", module = "unitycatalog_client")]
+#[pyclass(
+    name = "TemporaryCredentialClient",
+    module = "unitycatalog_client._client"
+)]
 pub struct PyTemporaryCredentialClient {
     client: TemporaryCredentialClient,
 }
@@ -62,15 +55,13 @@ impl PyTemporaryCredentialClient {
             "read" => TableOperation::Read,
             "read_write" => TableOperation::ReadWrite,
             _ => {
-                return Err(PyUnityCatalogError::from(
-                    unitycatalog_common::error::Error::invalid_argument(format!(
-                        "Invalid operation: {}. Must be 'read' or 'read_write'",
-                        operation
-                    )),
-                ));
+                return Err(invalid_operation(format!(
+                    "Invalid operation: {}. Must be 'read' or 'read_write'",
+                    operation
+                )));
             }
         };
-        let runtime = get_runtime(py)?;
+        let runtime = rt();
         py.detach(|| {
             let (credential, uuid) =
                 runtime.block_on(self.client.temporary_table_credential(table_ref, op))?;
@@ -98,15 +89,13 @@ impl PyTemporaryCredentialClient {
             "read" => VolumeOperation::Read,
             "read_write" | "write" => VolumeOperation::ReadWrite,
             _ => {
-                return Err(PyUnityCatalogError::from(
-                    unitycatalog_common::error::Error::invalid_argument(format!(
-                        "Invalid operation: {}. Must be 'read' or 'read_write'",
-                        operation
-                    )),
-                ));
+                return Err(invalid_operation(format!(
+                    "Invalid operation: {}. Must be 'read' or 'read_write'",
+                    operation
+                )));
             }
         };
-        let runtime = get_runtime(py)?;
+        let runtime = rt();
         py.detach(|| {
             let (credential, uuid) =
                 runtime.block_on(self.client.temporary_volume_credential(volume_ref, op))?;
@@ -125,18 +114,16 @@ impl PyTemporaryCredentialClient {
         operation: String,
         dry_run: Option<bool>,
     ) -> PyUnityCatalogResult<(PyTemporaryCredential, String)> {
-        let runtime = get_runtime(py)?;
+        let runtime = rt();
         let op = match operation.as_str().to_ascii_lowercase().as_str() {
             "read" => PathOperation::Read,
             "read_write" => PathOperation::ReadWrite,
             "create_table" => PathOperation::CreateTable,
             _ => {
-                return Err(PyUnityCatalogError::from(
-                    unitycatalog_common::error::Error::invalid_argument(format!(
-                        "Invalid operation: {}. Must be 'read', 'read_write', or 'create_table'",
-                        operation
-                    )),
-                ));
+                return Err(invalid_operation(format!(
+                    "Invalid operation: {}. Must be 'read', 'read_write', or 'create_table'",
+                    operation
+                )));
             }
         };
         py.detach(|| {
@@ -164,15 +151,13 @@ impl PyTemporaryCredentialClient {
             "read" => ModelVersionOperation::Read,
             "read_write" | "write" => ModelVersionOperation::ReadWrite,
             _ => {
-                return Err(PyUnityCatalogError::from(
-                    unitycatalog_common::error::Error::invalid_argument(format!(
-                        "Invalid operation: {}. Must be 'read' or 'read_write'",
-                        operation
-                    )),
-                ));
+                return Err(invalid_operation(format!(
+                    "Invalid operation: {}. Must be 'read' or 'read_write'",
+                    operation
+                )));
             }
         };
-        let runtime = get_runtime(py)?;
+        let runtime = rt();
         py.detach(|| {
             let credential = runtime.block_on(
                 self.client
@@ -181,4 +166,10 @@ impl PyTemporaryCredentialClient {
             Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(credential))
         })
     }
+}
+
+/// An invalid `operation` argument, raised as a `UnityCatalogError`.
+fn invalid_operation(message: String) -> PyUnityCatalogError {
+    unitycatalog_client::Error::from(unitycatalog_common::error::Error::invalid_argument(message))
+        .into()
 }

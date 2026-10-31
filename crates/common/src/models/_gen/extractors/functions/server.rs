@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::functions::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListFunctionsRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -39,6 +41,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListFunctionsRequest
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateFunctionRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -52,6 +55,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateFunctionRequest {
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetFunctionRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -78,6 +82,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetFunctionRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateFunctionRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -102,6 +107,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateFunctionRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteFunctionRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(

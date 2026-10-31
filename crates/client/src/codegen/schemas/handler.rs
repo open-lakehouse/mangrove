@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::SchemaServiceClient;
 use unitycatalog_common::models::schemas::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::schemas::SchemaHandler<Cx> for SchemaServiceClient {
     async fn list_schemas(
@@ -13,6 +15,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::schemas::SchemaHandler<Cx> for S
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_schema(
         &self,
         request: CreateSchemaRequest,
@@ -22,6 +25,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::schemas::SchemaHandler<Cx> for S
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_schema(
         &self,
         request: GetSchemaRequest,
@@ -31,6 +35,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::schemas::SchemaHandler<Cx> for S
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_schema(
         &self,
         request: UpdateSchemaRequest,
@@ -40,6 +45,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::schemas::SchemaHandler<Cx> for S
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_schema(
         &self,
         request: DeleteSchemaRequest,

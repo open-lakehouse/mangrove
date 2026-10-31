@@ -17,16 +17,19 @@ crate-type = ["cdylib"]
 unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client", version = "0.0.6" }
 unitycatalog-common = { package = "olai-uc-common", path = "../../crates/common", version = "0.0.6", features = ["python"] }
 
-chrono = { workspace = true }
 futures = { workspace = true }
 olai-http = { workspace = true }
-pyo3 = { workspace = true, features = ["abi3-py39"] }
+pyo3 = { workspace = true, features = ["abi3-py312", "experimental-inspect"] }
+serde_json = { workspace = true }
 url = { workspace = true }
 
-thiserror = "2"
 tokio = { version = "1", features = [
   "macros",
   "rt",
   "rt-multi-thread",
   "sync",
 ] }
+
+[dev-dependencies]
+# `examples/write_stubs.rs`: the type stubs from PyO3's introspection data.
+pyo3-introspection = "0.30"

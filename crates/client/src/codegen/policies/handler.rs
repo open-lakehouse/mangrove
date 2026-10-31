@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::PolicyServiceClient;
 use unitycatalog_common::models::policies::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::policies::PolicyHandler<Cx>
     for PolicyServiceClient
@@ -15,6 +17,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::policies::PolicyHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_policy(
         &self,
         request: CreatePolicyRequest,
@@ -24,6 +27,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::policies::PolicyHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_policy(
         &self,
         request: GetPolicyRequest,
@@ -33,6 +37,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::policies::PolicyHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_policy(
         &self,
         request: UpdatePolicyRequest,
@@ -42,6 +47,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::policies::PolicyHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_policy(
         &self,
         request: DeletePolicyRequest,

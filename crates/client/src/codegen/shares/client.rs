@@ -1,18 +1,23 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
-use crate::Result;
+
 #[cfg(not(target_arch = "wasm32"))]
 use ::olai_http::CloudClient as Transport;
+
+use super::super::encode_path_value;
+use crate::Result;
 #[cfg(target_arch = "wasm32")]
 use ::olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::models::shares::v1::*;
 use url::Url;
+
 /// HTTP client for service operations
 #[derive(Clone)]
 pub struct ShareServiceClient {
     pub(crate) client: Transport,
     pub(crate) base_url: Url,
 }
+
 impl ShareServiceClient {
     /// Create a new client instance
     pub fn new(client: Transport, mut base_url: Url) -> Self {
@@ -21,6 +26,7 @@ impl ShareServiceClient {
         }
         Self { client, base_url }
     }
+
     /// List shares.
     pub async fn list_shares(&self, request: &ListSharesRequest) -> Result<ListSharesResponse> {
         let mut url = self.base_url.join("shares")?;
@@ -39,6 +45,7 @@ impl ShareServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Create a new share.
     pub async fn create_share(&self, request: &CreateShareRequest) -> Result<Share> {
         let url = self.base_url.join("shares")?;
@@ -49,9 +56,10 @@ impl ShareServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Get a share by name.
     pub async fn get_share(&self, request: &GetShareRequest) -> Result<Share> {
-        let formatted_path = format!("shares/{}", request.name);
+        let formatted_path = format!("shares/{}", encode_path_value(&request.name, false));
         let mut url = self.base_url.join(&formatted_path)?;
         if let Some(ref value) = request.include_shared_data {
             url.query_pairs_mut()
@@ -64,20 +72,24 @@ impl ShareServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Update a share.
     pub async fn update_share(&self, request: &UpdateShareRequest) -> Result<Share> {
-        let formatted_path = format!("shares/{}", request.name);
+        let formatted_path = format!("shares/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.patch(url).json(request).send().await?;
+        let mut body = request.clone();
+        body.name = Default::default();
+        let response = self.client.patch(url).json(&body).send().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Deletes a share.
     pub async fn delete_share(&self, request: &DeleteShareRequest) -> Result<()> {
-        let formatted_path = format!("shares/{}", request.name);
+        let formatted_path = format!("shares/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
         let response = self.client.delete(url).send().await?;
         if !response.status().is_success() {
@@ -85,12 +97,16 @@ impl ShareServiceClient {
         }
         Ok(())
     }
+
     /// Gets the permissions for a data share from the metastore.
     pub async fn get_permissions(
         &self,
         request: &GetPermissionsRequest,
     ) -> Result<GetPermissionsResponse> {
-        let formatted_path = format!("shares/{}/permissions", request.name);
+        let formatted_path = format!(
+            "shares/{}/permissions",
+            encode_path_value(&request.name, false)
+        );
         let mut url = self.base_url.join(&formatted_path)?;
         if let Some(ref value) = request.max_results {
             url.query_pairs_mut()
@@ -107,14 +123,20 @@ impl ShareServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Updates the permissions for a data share in the metastore.
     pub async fn update_permissions(
         &self,
         request: &UpdatePermissionsRequest,
     ) -> Result<UpdatePermissionsResponse> {
-        let formatted_path = format!("shares/{}/permissions", request.name);
+        let formatted_path = format!(
+            "shares/{}/permissions",
+            encode_path_value(&request.name, false)
+        );
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.patch(url).json(request).send().await?;
+        let mut body = request.clone();
+        body.name = Default::default();
+        let response = self.client.patch(url).json(&body).send().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }

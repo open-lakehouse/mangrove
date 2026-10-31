@@ -1,19 +1,30 @@
 // @generated — do not edit by hand.
-use crate::codegen::runtime::{ListIterator, block_on};
-use crate::error::PyUnityCatalogError;
-use futures::stream::StreamExt;
-use pyo3::IntoPyObjectExt;
+use crate::codegen::error::{PyUnityCatalogError, PyUnityCatalogResult};
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::TableClient;
 use unitycatalog_common::models::tables::v1::*;
 use unitycatalog_common::models::*;
-#[pyclass(name = "TableClient")]
+
+/// The requests on one `Table`.
+#[pyclass(name = "TableClient", module = "unitycatalog_client._client.tables")]
 pub struct PyTableClient {
     pub(crate) client: TableClient,
 }
+
 #[pymethods]
 impl PyTableClient {
+    /// Get a table
+    ///
+    /// Args:
+    ///     include_delta_metadata: Whether delta metadata should be included in the response.
+    ///     include_browse: Whether to include tables in the response for which the principal can only
+    ///                     access selective metadata for
+    ///     include_manifest_capabilities: Whether to include a manifest containing capabilities the table
+    ///                                    has.
+    ///
+    /// Returns:
+    ///     The requested resource
     #[pyo3(
         signature = (
             include_delta_metadata = None,
@@ -23,29 +34,51 @@ impl PyTableClient {
     )]
     pub fn get(
         &self,
-        py: Python<'_>,
+        py: Python,
         include_delta_metadata: Option<bool>,
         include_browse: Option<bool>,
         include_manifest_capabilities: Option<bool>,
-    ) -> PyResult<PyTable> {
-        let mut request = self.client.get();
-        request = request.with_include_delta_metadata(include_delta_metadata);
-        request = request.with_include_browse(include_browse);
-        request = request.with_include_manifest_capabilities(include_manifest_capabilities);
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyTable::from(result))
+    ) -> PyUnityCatalogResult<PyTable> {
+        let request = self
+            .client
+            .get()
+            .with_include_delta_metadata(include_delta_metadata)
+            .with_include_browse(include_browse)
+            .with_include_manifest_capabilities(include_manifest_capabilities);
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyTable::from(result))
+        })
     }
-    pub fn get_table_exists(&self, py: Python<'_>) -> PyResult<PyGetTableExistsResponse> {
+
+    /// Get boolean reflecting if table exists
+    ///
+    /// Returns:
+    ///     The requested resource
+    pub fn get_table_exists(&self, py: Python) -> PyUnityCatalogResult<PyGetTableExistsResponse> {
         let request = self.client.get_table_exists();
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyGetTableExistsResponse::from(result))
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyGetTableExistsResponse::from(result))
+        })
     }
-    pub fn delete(&self, py: Python<'_>) -> PyResult<()> {
+
+    /// Delete a table
+    pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
-        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(())
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(result)
+        })
     }
 }
+
 impl PyTableClient {
     pub fn new(client: TableClient) -> Self {
         Self { client }

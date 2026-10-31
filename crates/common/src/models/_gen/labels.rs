@@ -22,6 +22,7 @@ pub enum Resource {
     TagPolicy(super::tags::v1::TagPolicy),
     Volume(super::volumes::v1::Volume),
 }
+
 /// Discriminant label for each resource type.
 #[derive(
     ::strum::AsRefStr,
@@ -66,6 +67,7 @@ pub enum ObjectLabel {
     TagPolicy,
     Volume,
 }
+
 impl Resource {
     /// Return the discriminant label for this resource.
     pub fn resource_label(&self) -> &ObjectLabel {
@@ -91,11 +93,13 @@ impl Resource {
         }
     }
 }
+
 impl From<super::agents::v0alpha1::Agent> for Resource {
     fn from(v: super::agents::v0alpha1::Agent) -> Self {
         Resource::Agent(v)
     }
 }
+
 impl TryFrom<Resource> for super::agents::v0alpha1::Agent {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -108,11 +112,13 @@ impl TryFrom<Resource> for super::agents::v0alpha1::Agent {
         }
     }
 }
+
 impl From<super::agent_skills::v0alpha1::AgentSkill> for Resource {
     fn from(v: super::agent_skills::v0alpha1::AgentSkill) -> Self {
         Resource::AgentSkill(v)
     }
 }
+
 impl TryFrom<Resource> for super::agent_skills::v0alpha1::AgentSkill {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -125,11 +131,13 @@ impl TryFrom<Resource> for super::agent_skills::v0alpha1::AgentSkill {
         }
     }
 }
+
 impl From<super::catalogs::v1::Catalog> for Resource {
     fn from(v: super::catalogs::v1::Catalog) -> Self {
         Resource::Catalog(v)
     }
 }
+
 impl TryFrom<Resource> for super::catalogs::v1::Catalog {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -142,11 +150,13 @@ impl TryFrom<Resource> for super::catalogs::v1::Catalog {
         }
     }
 }
+
 impl From<super::tables::v1::Column> for Resource {
     fn from(v: super::tables::v1::Column) -> Self {
         Resource::Column(v)
     }
 }
+
 impl TryFrom<Resource> for super::tables::v1::Column {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -159,11 +169,13 @@ impl TryFrom<Resource> for super::tables::v1::Column {
         }
     }
 }
+
 impl From<super::credentials::v1::Credential> for Resource {
     fn from(v: super::credentials::v1::Credential) -> Self {
         Resource::Credential(v)
     }
 }
+
 impl TryFrom<Resource> for super::credentials::v1::Credential {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -176,11 +188,13 @@ impl TryFrom<Resource> for super::credentials::v1::Credential {
         }
     }
 }
+
 impl From<super::external_locations::v1::ExternalLocation> for Resource {
     fn from(v: super::external_locations::v1::ExternalLocation) -> Self {
         Resource::ExternalLocation(v)
     }
 }
+
 impl TryFrom<Resource> for super::external_locations::v1::ExternalLocation {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -193,11 +207,13 @@ impl TryFrom<Resource> for super::external_locations::v1::ExternalLocation {
         }
     }
 }
+
 impl From<super::functions::v1::Function> for Resource {
     fn from(v: super::functions::v1::Function) -> Self {
         Resource::Function(v)
     }
 }
+
 impl TryFrom<Resource> for super::functions::v1::Function {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -210,11 +226,13 @@ impl TryFrom<Resource> for super::functions::v1::Function {
         }
     }
 }
+
 impl From<super::model_versions::v1::ModelVersion> for Resource {
     fn from(v: super::model_versions::v1::ModelVersion) -> Self {
         Resource::ModelVersion(v)
     }
 }
+
 impl TryFrom<Resource> for super::model_versions::v1::ModelVersion {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -227,11 +245,13 @@ impl TryFrom<Resource> for super::model_versions::v1::ModelVersion {
         }
     }
 }
+
 impl From<super::policies::v1::PolicyInfo> for Resource {
     fn from(v: super::policies::v1::PolicyInfo) -> Self {
         Resource::PolicyInfo(v)
     }
 }
+
 impl TryFrom<Resource> for super::policies::v1::PolicyInfo {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -244,11 +264,13 @@ impl TryFrom<Resource> for super::policies::v1::PolicyInfo {
         }
     }
 }
+
 impl From<super::providers::v1::Provider> for Resource {
     fn from(v: super::providers::v1::Provider) -> Self {
         Resource::Provider(v)
     }
 }
+
 impl TryFrom<Resource> for super::providers::v1::Provider {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -261,11 +283,13 @@ impl TryFrom<Resource> for super::providers::v1::Provider {
         }
     }
 }
+
 impl From<super::recipients::v1::Recipient> for Resource {
     fn from(v: super::recipients::v1::Recipient) -> Self {
         Resource::Recipient(v)
     }
 }
+
 impl TryFrom<Resource> for super::recipients::v1::Recipient {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -278,11 +302,13 @@ impl TryFrom<Resource> for super::recipients::v1::Recipient {
         }
     }
 }
+
 impl From<super::registered_models::v1::RegisteredModel> for Resource {
     fn from(v: super::registered_models::v1::RegisteredModel) -> Self {
         Resource::RegisteredModel(v)
     }
 }
+
 impl TryFrom<Resource> for super::registered_models::v1::RegisteredModel {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -295,11 +321,13 @@ impl TryFrom<Resource> for super::registered_models::v1::RegisteredModel {
         }
     }
 }
+
 impl From<super::schemas::v1::Schema> for Resource {
     fn from(v: super::schemas::v1::Schema) -> Self {
         Resource::Schema(v)
     }
 }
+
 impl TryFrom<Resource> for super::schemas::v1::Schema {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -312,11 +340,13 @@ impl TryFrom<Resource> for super::schemas::v1::Schema {
         }
     }
 }
+
 impl From<super::shares::v1::Share> for Resource {
     fn from(v: super::shares::v1::Share) -> Self {
         Resource::Share(v)
     }
 }
+
 impl TryFrom<Resource> for super::shares::v1::Share {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -329,11 +359,13 @@ impl TryFrom<Resource> for super::shares::v1::Share {
         }
     }
 }
+
 impl From<super::staging_tables::v1::StagingTable> for Resource {
     fn from(v: super::staging_tables::v1::StagingTable) -> Self {
         Resource::StagingTable(v)
     }
 }
+
 impl TryFrom<Resource> for super::staging_tables::v1::StagingTable {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -346,11 +378,13 @@ impl TryFrom<Resource> for super::staging_tables::v1::StagingTable {
         }
     }
 }
+
 impl From<super::tables::v1::Table> for Resource {
     fn from(v: super::tables::v1::Table) -> Self {
         Resource::Table(v)
     }
 }
+
 impl TryFrom<Resource> for super::tables::v1::Table {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -363,11 +397,13 @@ impl TryFrom<Resource> for super::tables::v1::Table {
         }
     }
 }
+
 impl From<super::tags::v1::TagPolicy> for Resource {
     fn from(v: super::tags::v1::TagPolicy) -> Self {
         Resource::TagPolicy(v)
     }
 }
+
 impl TryFrom<Resource> for super::tags::v1::TagPolicy {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -380,11 +416,13 @@ impl TryFrom<Resource> for super::tags::v1::TagPolicy {
         }
     }
 }
+
 impl From<super::volumes::v1::Volume> for Resource {
     fn from(v: super::volumes::v1::Volume) -> Self {
         Resource::Volume(v)
     }
 }
+
 impl TryFrom<Resource> for super::volumes::v1::Volume {
     type Error = crate::Error;
     fn try_from(r: Resource) -> Result<Self, Self::Error> {
@@ -397,12 +435,16 @@ impl TryFrom<Resource> for super::volumes::v1::Volume {
         }
     }
 }
+
 #[cfg(feature = "store")]
 use crate::Error;
+
 #[cfg(feature = "store")]
 use crate::models::object::Object;
+
 #[cfg(feature = "store")]
 use crate::models::resources::{ResourceExt, ResourceIdent, ResourceName, ResourceRef};
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::agents::v0alpha1::Agent {
     type Error = Error;
@@ -416,6 +458,7 @@ impl TryFrom<Object> for super::agents::v0alpha1::Agent {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::agents::v0alpha1::Agent> for Object {
     type Error = Error;
@@ -437,21 +480,25 @@ impl TryFrom<super::agents::v0alpha1::Agent> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::agents::v0alpha1::Agent {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         ::uuid::Uuid::parse_str(&self.agent_id)
             .ok()
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::Agent).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::agent_skills::v0alpha1::AgentSkill {
     type Error = Error;
@@ -465,6 +512,7 @@ impl TryFrom<Object> for super::agent_skills::v0alpha1::AgentSkill {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::agent_skills::v0alpha1::AgentSkill> for Object {
     type Error = Error;
@@ -487,21 +535,25 @@ impl TryFrom<super::agent_skills::v0alpha1::AgentSkill> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::agent_skills::v0alpha1::AgentSkill {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         ::uuid::Uuid::parse_str(&self.agent_skill_id)
             .ok()
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::AgentSkill).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::catalogs::v1::Catalog {
     type Error = Error;
@@ -514,6 +566,7 @@ impl TryFrom<Object> for super::catalogs::v1::Catalog {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::catalogs::v1::Catalog> for Object {
     type Error = Error;
@@ -537,11 +590,13 @@ impl TryFrom<super::catalogs::v1::Catalog> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::catalogs::v1::Catalog {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.id
             .as_ref()
@@ -549,10 +604,12 @@ impl ResourceExt for super::catalogs::v1::Catalog {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::Catalog).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::tables::v1::Column {
     type Error = Error;
@@ -565,6 +622,7 @@ impl TryFrom<Object> for super::tables::v1::Column {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::tables::v1::Column> for Object {
     type Error = Error;
@@ -588,11 +646,13 @@ impl TryFrom<super::tables::v1::Column> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::tables::v1::Column {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.column_id
             .as_ref()
@@ -600,10 +660,12 @@ impl ResourceExt for super::tables::v1::Column {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::Column).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::credentials::v1::Credential {
     type Error = Error;
@@ -617,6 +679,7 @@ impl TryFrom<Object> for super::credentials::v1::Credential {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::credentials::v1::Credential> for Object {
     type Error = Error;
@@ -643,11 +706,13 @@ impl TryFrom<super::credentials::v1::Credential> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::credentials::v1::Credential {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.id
             .as_ref()
@@ -655,10 +720,12 @@ impl ResourceExt for super::credentials::v1::Credential {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::Credential).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::external_locations::v1::ExternalLocation {
     type Error = Error;
@@ -672,6 +739,7 @@ impl TryFrom<Object> for super::external_locations::v1::ExternalLocation {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::external_locations::v1::ExternalLocation> for Object {
     type Error = Error;
@@ -695,11 +763,13 @@ impl TryFrom<super::external_locations::v1::ExternalLocation> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::external_locations::v1::ExternalLocation {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.external_location_id
             .as_ref()
@@ -707,10 +777,12 @@ impl ResourceExt for super::external_locations::v1::ExternalLocation {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::ExternalLocation).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::functions::v1::Function {
     type Error = Error;
@@ -724,6 +796,7 @@ impl TryFrom<Object> for super::functions::v1::Function {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::functions::v1::Function> for Object {
     type Error = Error;
@@ -750,11 +823,13 @@ impl TryFrom<super::functions::v1::Function> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::functions::v1::Function {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.function_id
             .as_ref()
@@ -762,10 +837,12 @@ impl ResourceExt for super::functions::v1::Function {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::Function).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::model_versions::v1::ModelVersion {
     type Error = Error;
@@ -778,6 +855,7 @@ impl TryFrom<Object> for super::model_versions::v1::ModelVersion {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::model_versions::v1::ModelVersion> for Object {
     type Error = Error;
@@ -801,6 +879,7 @@ impl TryFrom<super::model_versions::v1::ModelVersion> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::model_versions::v1::ModelVersion {
     fn resource_name(&self) -> ResourceName {
@@ -811,6 +890,7 @@ impl ResourceExt for super::model_versions::v1::ModelVersion {
             &self.version.to_string(),
         ])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.id
             .as_ref()
@@ -818,10 +898,12 @@ impl ResourceExt for super::model_versions::v1::ModelVersion {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::ModelVersion).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::policies::v1::PolicyInfo {
     type Error = Error;
@@ -834,6 +916,7 @@ impl TryFrom<Object> for super::policies::v1::PolicyInfo {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::policies::v1::PolicyInfo> for Object {
     type Error = Error;
@@ -857,11 +940,13 @@ impl TryFrom<super::policies::v1::PolicyInfo> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::policies::v1::PolicyInfo {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.id
             .as_ref()
@@ -869,10 +954,12 @@ impl ResourceExt for super::policies::v1::PolicyInfo {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::PolicyInfo).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::providers::v1::Provider {
     type Error = Error;
@@ -885,6 +972,7 @@ impl TryFrom<Object> for super::providers::v1::Provider {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::providers::v1::Provider> for Object {
     type Error = Error;
@@ -908,11 +996,13 @@ impl TryFrom<super::providers::v1::Provider> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::providers::v1::Provider {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.id
             .as_ref()
@@ -920,10 +1010,12 @@ impl ResourceExt for super::providers::v1::Provider {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::Provider).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::recipients::v1::Recipient {
     type Error = Error;
@@ -936,6 +1028,7 @@ impl TryFrom<Object> for super::recipients::v1::Recipient {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::recipients::v1::Recipient> for Object {
     type Error = Error;
@@ -959,11 +1052,13 @@ impl TryFrom<super::recipients::v1::Recipient> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::recipients::v1::Recipient {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.id
             .as_ref()
@@ -971,10 +1066,12 @@ impl ResourceExt for super::recipients::v1::Recipient {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::Recipient).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::registered_models::v1::RegisteredModel {
     type Error = Error;
@@ -989,6 +1086,7 @@ impl TryFrom<Object> for super::registered_models::v1::RegisteredModel {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::registered_models::v1::RegisteredModel> for Object {
     type Error = Error;
@@ -1015,11 +1113,13 @@ impl TryFrom<super::registered_models::v1::RegisteredModel> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::registered_models::v1::RegisteredModel {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.id
             .as_ref()
@@ -1027,10 +1127,12 @@ impl ResourceExt for super::registered_models::v1::RegisteredModel {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::RegisteredModel).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::schemas::v1::Schema {
     type Error = Error;
@@ -1044,6 +1146,7 @@ impl TryFrom<Object> for super::schemas::v1::Schema {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::schemas::v1::Schema> for Object {
     type Error = Error;
@@ -1070,11 +1173,13 @@ impl TryFrom<super::schemas::v1::Schema> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::schemas::v1::Schema {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.schema_id
             .as_ref()
@@ -1082,10 +1187,12 @@ impl ResourceExt for super::schemas::v1::Schema {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::Schema).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::shares::v1::Share {
     type Error = Error;
@@ -1098,6 +1205,7 @@ impl TryFrom<Object> for super::shares::v1::Share {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::shares::v1::Share> for Object {
     type Error = Error;
@@ -1121,11 +1229,13 @@ impl TryFrom<super::shares::v1::Share> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::shares::v1::Share {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.id
             .as_ref()
@@ -1133,10 +1243,12 @@ impl ResourceExt for super::shares::v1::Share {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::Share).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::staging_tables::v1::StagingTable {
     type Error = Error;
@@ -1149,6 +1261,7 @@ impl TryFrom<Object> for super::staging_tables::v1::StagingTable {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::staging_tables::v1::StagingTable> for Object {
     type Error = Error;
@@ -1167,21 +1280,25 @@ impl TryFrom<super::staging_tables::v1::StagingTable> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::staging_tables::v1::StagingTable {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         ::uuid::Uuid::parse_str(&self.id)
             .ok()
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::StagingTable).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::tables::v1::Table {
     type Error = Error;
@@ -1195,6 +1312,7 @@ impl TryFrom<Object> for super::tables::v1::Table {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::tables::v1::Table> for Object {
     type Error = Error;
@@ -1221,11 +1339,13 @@ impl TryFrom<super::tables::v1::Table> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::tables::v1::Table {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.table_id
             .as_ref()
@@ -1233,10 +1353,12 @@ impl ResourceExt for super::tables::v1::Table {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::Table).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::tags::v1::TagPolicy {
     type Error = Error;
@@ -1249,6 +1371,7 @@ impl TryFrom<Object> for super::tags::v1::TagPolicy {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::tags::v1::TagPolicy> for Object {
     type Error = Error;
@@ -1272,11 +1395,13 @@ impl TryFrom<super::tags::v1::TagPolicy> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::tags::v1::TagPolicy {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.tag_key])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         self.id
             .as_ref()
@@ -1284,10 +1409,12 @@ impl ResourceExt for super::tags::v1::TagPolicy {
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::TagPolicy).to_ident(self.resource_ref())
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<Object> for super::volumes::v1::Volume {
     type Error = Error;
@@ -1301,6 +1428,7 @@ impl TryFrom<Object> for super::volumes::v1::Volume {
         Ok(res)
     }
 }
+
 #[cfg(feature = "store")]
 impl TryFrom<super::volumes::v1::Volume> for Object {
     type Error = Error;
@@ -1322,63 +1450,74 @@ impl TryFrom<super::volumes::v1::Volume> for Object {
         })
     }
 }
+
 #[cfg(feature = "store")]
 impl ResourceExt for super::volumes::v1::Volume {
     fn resource_name(&self) -> ResourceName {
         ResourceName::new([&self.catalog_name, &self.schema_name, &self.name])
     }
+
     fn resource_ref(&self) -> ResourceRef {
         ::uuid::Uuid::parse_str(&self.volume_id)
             .ok()
             .map(ResourceRef::Uuid)
             .unwrap_or_else(|| ResourceRef::Name(self.resource_name()))
     }
+
     fn resource_ident(&self) -> ResourceIdent {
         (ObjectLabel::Volume).to_ident(self.resource_ref())
     }
 }
+
 impl super::agents::v0alpha1::Agent {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
     }
 }
+
 impl super::agent_skills::v0alpha1::AgentSkill {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
     }
 }
+
 impl super::catalogs::v1::Catalog {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         self.name.clone()
     }
 }
+
 impl super::tables::v1::Column {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         self.name.clone()
     }
 }
+
 impl super::credentials::v1::Credential {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         self.name.clone()
     }
 }
+
 impl super::external_locations::v1::ExternalLocation {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         self.name.clone()
     }
 }
+
 impl super::functions::v1::Function {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
     }
 }
+
 impl super::model_versions::v1::ModelVersion {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
@@ -1388,72 +1527,84 @@ impl super::model_versions::v1::ModelVersion {
         )
     }
 }
+
 impl super::policies::v1::PolicyInfo {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         self.name.clone()
     }
 }
+
 impl super::providers::v1::Provider {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         self.name.clone()
     }
 }
+
 impl super::recipients::v1::Recipient {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         self.name.clone()
     }
 }
+
 impl super::registered_models::v1::RegisteredModel {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
     }
 }
+
 impl super::schemas::v1::Schema {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         format!("{}.{}", self.catalog_name, self.name)
     }
 }
+
 impl super::shares::v1::Share {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         self.name.clone()
     }
 }
+
 impl super::staging_tables::v1::StagingTable {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         self.name.clone()
     }
 }
+
 impl super::tables::v1::Table {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
     }
 }
+
 impl super::tags::v1::TagPolicy {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         self.tag_key.clone()
     }
 }
+
 impl super::volumes::v1::Volume {
     /// Returns the fully-qualified dot-separated name computed from component fields.
     pub fn qualified_name(&self) -> String {
         format!("{}.{}.{}", self.catalog_name, self.schema_name, self.name)
     }
 }
+
 #[cfg(feature = "store")]
 impl ::olai_store::Label for ObjectLabel {
     fn as_str(&self) -> &str {
         self.as_ref()
     }
 }
+
 #[cfg(feature = "store")]
 /// Static resource type descriptors derived from proto annotations.
 ///

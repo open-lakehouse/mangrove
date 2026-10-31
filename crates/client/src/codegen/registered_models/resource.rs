@@ -1,8 +1,10 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::builders::*;
 use super::client::RegisteredModelServiceClient;
 use unitycatalog_common::models::registered_models::v1::*;
+
 /// A client scoped to a single `registered_model`.
 #[derive(Clone)]
 pub struct RegisteredModelClient {
@@ -11,6 +13,7 @@ pub struct RegisteredModelClient {
     pub(crate) registered_model_name: String,
     pub(crate) client: RegisteredModelServiceClient,
 }
+
 impl RegisteredModelClient {
     /// Create a client bound to the resource's name components.
     pub fn new(
@@ -26,6 +29,7 @@ impl RegisteredModelClient {
             client,
         }
     }
+
     /// Create a `registered_model` client from its dot-joined full name (e.g. `"catalog_name.schema_name.registered_model_name"`).
     pub fn from_full_name(
         full_name: impl Into<String>,
@@ -38,18 +42,22 @@ impl RegisteredModelClient {
         let registered_model_name = parts.next().unwrap_or_default();
         Self::new(catalog_name, schema_name, registered_model_name, client)
     }
+
     /// The `catalog_name` component of this resource's name.
     pub fn catalog_name(&self) -> &str {
         &self.catalog_name
     }
+
     /// The `schema_name` component of this resource's name.
     pub fn schema_name(&self) -> &str {
         &self.schema_name
     }
+
     /// This resource's own name (the leaf component).
     pub fn name(&self) -> &str {
         &self.registered_model_name
     }
+
     /// The fully-qualified name of this resource (its dot-joined name components).
     pub fn full_name(&self) -> String {
         format!(
@@ -57,6 +65,7 @@ impl RegisteredModelClient {
             self.catalog_name, self.schema_name, self.registered_model_name
         )
     }
+
     /// Get a registered model
     ///
     /// Gets a registered model from within a parent catalog and schema. For the
@@ -71,6 +80,7 @@ impl RegisteredModelClient {
             ),
         )
     }
+
     /// Update a registered model
     ///
     /// Updates the registered model that matches the supplied name.
@@ -83,6 +93,7 @@ impl RegisteredModelClient {
             ),
         )
     }
+
     /// Delete a registered model
     ///
     /// Deletes the registered model that matches the supplied name. For the deletion

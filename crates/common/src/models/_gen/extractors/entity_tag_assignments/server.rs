@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::tags::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListEntityTagAssignmentsRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -35,6 +37,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListEntityTagAssignm
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateEntityTagAssignmentRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -48,6 +51,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateEntityTagAssignment
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetEntityTagAssignmentRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -66,6 +70,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetEntityTagAssignme
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateEntityTagAssignmentRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -93,6 +98,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateEntityTagAssignment
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteEntityTagAssignmentRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(

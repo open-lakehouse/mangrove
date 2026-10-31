@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::TagPolicyServiceClient;
 use unitycatalog_common::models::tags::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::tag_policies::TagPolicyHandler<Cx>
     for TagPolicyServiceClient
@@ -15,6 +17,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::tag_policies::TagPolicyHandler<C
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_tag_policy(
         &self,
         request: CreateTagPolicyRequest,
@@ -24,6 +27,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::tag_policies::TagPolicyHandler<C
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_tag_policy(
         &self,
         request: GetTagPolicyRequest,
@@ -33,6 +37,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::tag_policies::TagPolicyHandler<C
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_tag_policy(
         &self,
         request: UpdateTagPolicyRequest,
@@ -42,6 +47,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::tag_policies::TagPolicyHandler<C
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_tag_policy(
         &self,
         request: DeleteTagPolicyRequest,

@@ -18,6 +18,7 @@
 use crate::Result;
 use async_trait::async_trait;
 use unitycatalog_common::models::agent_skills::v0alpha1::*;
+
 #[async_trait]
 pub trait AgentSkillHandler<Cx = crate::RequestContext>: Send + Sync + 'static {
     /// Lists agent skills.

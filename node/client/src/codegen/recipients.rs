@@ -1,5 +1,6 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports, dead_code, clippy::all)]
+
 use crate::error::NapiErrorExt;
 use buffa::Message;
 use napi::bindgen_prelude::Buffer;
@@ -7,20 +8,23 @@ use napi_derive::napi;
 use std::collections::HashMap;
 use unitycatalog_client::RecipientClient;
 use unitycatalog_common::models::recipients::v1::*;
+
 #[napi]
 pub struct NapiRecipientClient {
     pub(crate) client: RecipientClient,
 }
+
 #[napi]
 impl NapiRecipientClient {
     #[napi(catch_unwind)]
     pub async fn get(&self) -> napi::Result<Buffer> {
-        let mut request = self.client.get();
+        let request = self.client.get();
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn update(
         &self,
@@ -29,34 +33,41 @@ impl NapiRecipientClient {
         comment: Option<String>,
         expiration_time: Option<i64>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.update();
-        request = request.with_new_name(new_name);
-        request = request.with_owner(owner);
-        request = request.with_comment(comment);
-        request = request.with_expiration_time(expiration_time);
+        let request = self
+            .client
+            .update()
+            .with_new_name(new_name)
+            .with_owner(owner)
+            .with_comment(comment)
+            .with_expiration_time(expiration_time);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn delete(&self) -> napi::Result<()> {
-        let mut request = self.client.delete();
+        let request = self.client.delete();
         request.await.default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn rotate_recipient_token(
         &self,
         existing_token_expire_in_seconds: Option<i64>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.rotate_recipient_token();
-        request = request.with_existing_token_expire_in_seconds(existing_token_expire_in_seconds);
+        let request = self
+            .client
+            .rotate_recipient_token()
+            .with_existing_token_expire_in_seconds(existing_token_expire_in_seconds);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
 }
+
 impl NapiRecipientClient {
     pub fn new(client: RecipientClient) -> Self {
         Self { client }

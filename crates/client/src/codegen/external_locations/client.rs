@@ -1,18 +1,23 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
-use crate::Result;
+
 #[cfg(not(target_arch = "wasm32"))]
 use ::olai_http::CloudClient as Transport;
+
+use super::super::encode_path_value;
+use crate::Result;
 #[cfg(target_arch = "wasm32")]
 use ::olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::models::external_locations::v1::*;
 use url::Url;
+
 /// HTTP client for service operations
 #[derive(Clone)]
 pub struct ExternalLocationServiceClient {
     pub(crate) client: Transport,
     pub(crate) base_url: Url,
 }
+
 impl ExternalLocationServiceClient {
     /// Create a new client instance
     pub fn new(client: Transport, mut base_url: Url) -> Self {
@@ -21,6 +26,7 @@ impl ExternalLocationServiceClient {
         }
         Self { client, base_url }
     }
+
     /// List external locations
     pub async fn list_external_locations(
         &self,
@@ -46,6 +52,7 @@ impl ExternalLocationServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Create a new external location
     pub async fn create_external_location(
         &self,
@@ -59,12 +66,16 @@ impl ExternalLocationServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Get an external location
     pub async fn get_external_location(
         &self,
         request: &GetExternalLocationRequest,
     ) -> Result<ExternalLocation> {
-        let formatted_path = format!("external-locations/{}", request.name);
+        let formatted_path = format!(
+            "external-locations/{}",
+            encode_path_value(&request.name, false)
+        );
         let mut url = self.base_url.join(&formatted_path)?;
         if let Some(ref value) = request.include_browse {
             url.query_pairs_mut()
@@ -77,26 +88,36 @@ impl ExternalLocationServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Update an external location
     pub async fn update_external_location(
         &self,
         request: &UpdateExternalLocationRequest,
     ) -> Result<ExternalLocation> {
-        let formatted_path = format!("external-locations/{}", request.name);
+        let formatted_path = format!(
+            "external-locations/{}",
+            encode_path_value(&request.name, false)
+        );
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.patch(url).json(request).send().await?;
+        let mut body = request.clone();
+        body.name = Default::default();
+        let response = self.client.patch(url).json(&body).send().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Delete an external location
     pub async fn delete_external_location(
         &self,
         request: &DeleteExternalLocationRequest,
     ) -> Result<()> {
-        let formatted_path = format!("external-locations/{}", request.name);
+        let formatted_path = format!(
+            "external-locations/{}",
+            encode_path_value(&request.name, false)
+        );
         let mut url = self.base_url.join(&formatted_path)?;
         if let Some(ref value) = request.force {
             url.query_pairs_mut()

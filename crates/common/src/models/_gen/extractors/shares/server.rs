@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::shares::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListSharesRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -29,6 +31,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListSharesRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateShareRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -42,6 +45,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateShareRequest {
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetShareRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -70,6 +74,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetShareRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateShareRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -98,6 +103,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateShareRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteShareRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -114,6 +120,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteShareRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetPermissionsRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -146,6 +153,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetPermissionsReques
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdatePermissionsRequest {
     type Rejection = axum::response::Response;
     async fn from_request(

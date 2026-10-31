@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::volumes::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListVolumesRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -39,6 +41,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListVolumesRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateVolumeRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -52,6 +55,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateVolumeRequest {
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetVolumeRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -78,6 +82,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetVolumeRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateVolumeRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -104,6 +109,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateVolumeRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteVolumeRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(

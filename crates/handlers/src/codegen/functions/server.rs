@@ -1,9 +1,11 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, clippy::too_many_arguments)]
+
 use super::handler::FunctionHandler;
 use crate::Result;
 use axum::extract::State;
 use unitycatalog_common::models::functions::v1::*;
+
 pub async fn list_functions<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -16,6 +18,7 @@ where
     let result = handler.list_functions(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn create_function<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -28,6 +31,7 @@ where
     let result = handler.create_function(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn get_function<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -40,6 +44,7 @@ where
     let result = handler.get_function(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn update_function<T, Cx>(
     State(handler): State<T>,
     context: Cx,
@@ -52,6 +57,7 @@ where
     let result = handler.update_function(request, context).await?;
     Ok(axum::Json(result))
 }
+
 pub async fn delete_function<T, Cx>(
     State(handler): State<T>,
     context: Cx,

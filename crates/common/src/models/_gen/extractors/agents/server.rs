@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::agents::v0alpha1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListAgentsRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -39,6 +41,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListAgentsRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateAgentRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -52,6 +55,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateAgentRequest {
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetAgentRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -78,6 +82,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetAgentRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateAgentRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -127,6 +132,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateAgentRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteAgentRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(

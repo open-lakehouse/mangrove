@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::policies::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListPoliciesRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -39,6 +41,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListPoliciesRequest 
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreatePolicyRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -52,6 +55,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreatePolicyRequest {
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetPolicyRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -70,6 +74,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetPolicyRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdatePolicyRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -133,6 +138,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdatePolicyRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeletePolicyRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(

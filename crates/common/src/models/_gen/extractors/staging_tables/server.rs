@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::staging_tables::v1::*;
 use axum::RequestExt;
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateStagingTableRequest {
     type Rejection = axum::response::Response;
     async fn from_request(

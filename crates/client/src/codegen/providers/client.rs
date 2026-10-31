@@ -1,18 +1,23 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
-use crate::Result;
+
 #[cfg(not(target_arch = "wasm32"))]
 use ::olai_http::CloudClient as Transport;
+
+use super::super::encode_path_value;
+use crate::Result;
 #[cfg(target_arch = "wasm32")]
 use ::olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::models::providers::v1::*;
 use url::Url;
+
 /// HTTP client for service operations
 #[derive(Clone)]
 pub struct ProviderServiceClient {
     pub(crate) client: Transport,
     pub(crate) base_url: Url,
 }
+
 impl ProviderServiceClient {
     /// Create a new client instance
     pub fn new(client: Transport, mut base_url: Url) -> Self {
@@ -21,6 +26,7 @@ impl ProviderServiceClient {
         }
         Self { client, base_url }
     }
+
     /// List providers.
     pub async fn list_providers(
         &self,
@@ -42,6 +48,7 @@ impl ProviderServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Create a new provider.
     pub async fn create_provider(&self, request: &CreateProviderRequest) -> Result<Provider> {
         let url = self.base_url.join("providers")?;
@@ -52,9 +59,10 @@ impl ProviderServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Get a provider by name.
     pub async fn get_provider(&self, request: &GetProviderRequest) -> Result<Provider> {
-        let formatted_path = format!("providers/{}", request.name);
+        let formatted_path = format!("providers/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
         let response = self.client.get(url).send().await?;
         if !response.status().is_success() {
@@ -63,20 +71,24 @@ impl ProviderServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Update a provider.
     pub async fn update_provider(&self, request: &UpdateProviderRequest) -> Result<Provider> {
-        let formatted_path = format!("providers/{}", request.name);
+        let formatted_path = format!("providers/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.patch(url).json(request).send().await?;
+        let mut body = request.clone();
+        body.name = Default::default();
+        let response = self.client.patch(url).json(&body).send().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Delete a provider.
     pub async fn delete_provider(&self, request: &DeleteProviderRequest) -> Result<()> {
-        let formatted_path = format!("providers/{}", request.name);
+        let formatted_path = format!("providers/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
         let response = self.client.delete(url).send().await?;
         if !response.status().is_success() {

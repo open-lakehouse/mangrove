@@ -15,6 +15,7 @@
 use crate::Result;
 use async_trait::async_trait;
 use unitycatalog_common::models::credentials::v1::*;
+
 #[async_trait]
 pub trait CredentialHandler<Cx = crate::RequestContext>: Send + Sync + 'static {
     async fn list_credentials(

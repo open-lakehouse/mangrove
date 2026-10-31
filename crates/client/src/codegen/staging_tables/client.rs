@@ -1,18 +1,22 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
-use crate::Result;
+
 #[cfg(not(target_arch = "wasm32"))]
 use ::olai_http::CloudClient as Transport;
+
+use crate::Result;
 #[cfg(target_arch = "wasm32")]
 use ::olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::models::staging_tables::v1::*;
 use url::Url;
+
 /// HTTP client for service operations
 #[derive(Clone)]
 pub struct StagingTableServiceClient {
     pub(crate) client: Transport,
     pub(crate) base_url: Url,
 }
+
 impl StagingTableServiceClient {
     /// Create a new client instance
     pub fn new(client: Transport, mut base_url: Url) -> Self {
@@ -21,6 +25,7 @@ impl StagingTableServiceClient {
         }
         Self { client, base_url }
     }
+
     /// Creates a new staging table, allocating an immutable table id and a storage
     /// location under the parent schema/catalog managed storage root. The caller
     /// must have the CREATE privilege on the parent schema.

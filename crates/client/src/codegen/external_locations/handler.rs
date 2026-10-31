@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::ExternalLocationServiceClient;
 use unitycatalog_common::models::external_locations::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::external_locations::ExternalLocationHandler<Cx>
     for ExternalLocationServiceClient
@@ -15,6 +17,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::external_locations::ExternalLoca
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_external_location(
         &self,
         request: CreateExternalLocationRequest,
@@ -24,6 +27,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::external_locations::ExternalLoca
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_external_location(
         &self,
         request: GetExternalLocationRequest,
@@ -33,6 +37,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::external_locations::ExternalLoca
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_external_location(
         &self,
         request: UpdateExternalLocationRequest,
@@ -42,6 +47,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::external_locations::ExternalLoca
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_external_location(
         &self,
         request: DeleteExternalLocationRequest,

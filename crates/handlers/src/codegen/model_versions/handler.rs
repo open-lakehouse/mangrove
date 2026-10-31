@@ -18,6 +18,7 @@
 use crate::Result;
 use async_trait::async_trait;
 use unitycatalog_common::models::model_versions::v1::*;
+
 #[async_trait]
 pub trait ModelVersionHandler<Cx = crate::RequestContext>: Send + Sync + 'static {
     /// List model versions

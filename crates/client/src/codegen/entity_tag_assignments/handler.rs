@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::EntityTagAssignmentClient;
 use unitycatalog_common::models::tags::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static>
     unitycatalog_handlers::entity_tag_assignments::EntityTagAssignmentHandler<Cx>
@@ -16,6 +18,7 @@ impl<Cx: Send + 'static>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_entity_tag_assignment(
         &self,
         request: CreateEntityTagAssignmentRequest,
@@ -25,6 +28,7 @@ impl<Cx: Send + 'static>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_entity_tag_assignment(
         &self,
         request: GetEntityTagAssignmentRequest,
@@ -34,6 +38,7 @@ impl<Cx: Send + 'static>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_entity_tag_assignment(
         &self,
         request: UpdateEntityTagAssignmentRequest,
@@ -43,6 +48,7 @@ impl<Cx: Send + 'static>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_entity_tag_assignment(
         &self,
         request: DeleteEntityTagAssignmentRequest,

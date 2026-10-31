@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::AgentSkillServiceClient;
 use unitycatalog_common::models::agent_skills::v0alpha1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::agent_skills::AgentSkillHandler<Cx>
     for AgentSkillServiceClient
@@ -15,6 +17,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::agent_skills::AgentSkillHandler<
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_agent_skill(
         &self,
         request: CreateAgentSkillRequest,
@@ -24,6 +27,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::agent_skills::AgentSkillHandler<
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_agent_skill(
         &self,
         request: GetAgentSkillRequest,
@@ -33,6 +37,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::agent_skills::AgentSkillHandler<
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_agent_skill(
         &self,
         request: UpdateAgentSkillRequest,
@@ -42,6 +47,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::agent_skills::AgentSkillHandler<
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_agent_skill(
         &self,
         request: DeleteAgentSkillRequest,

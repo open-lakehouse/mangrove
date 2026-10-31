@@ -13,8 +13,8 @@ name: Release Python wheels
 # MANUAL: push a `unitycatalog-client-py-v<version>` tag and this workflow fires,
 # creates the GitHub Release if absent, builds the wheels, and attaches them.
 #
-# abi3: `pyo3/abi3-py39` (python/client/Cargo.toml) means ONE wheel per platform
-# covers every CPython >= 3.9 — the matrix is platform-only, no per-Python fan-out.
+# abi3: `pyo3/abi3-py312` (python/client/Cargo.toml) means ONE wheel per platform
+# covers every CPython >= 3.12 — the matrix is platform-only, no per-Python fan-out.
 #
 # sdist is intentionally NOT built: `maturin sdist` cannot package this crate's
 # workspace path-dependencies (`olai-uc-client` / `olai-uc-common` pull the

@@ -1,18 +1,23 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
-use crate::Result;
+
 #[cfg(not(target_arch = "wasm32"))]
 use ::olai_http::CloudClient as Transport;
+
+use super::super::encode_path_value;
+use crate::Result;
 #[cfg(target_arch = "wasm32")]
 use ::olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::models::tags::v1::*;
 use url::Url;
+
 /// HTTP client for service operations
 #[derive(Clone)]
 pub struct EntityTagAssignmentClient {
     pub(crate) client: Transport,
     pub(crate) base_url: Url,
 }
+
 impl EntityTagAssignmentClient {
     /// Create a new client instance
     pub fn new(client: Transport, mut base_url: Url) -> Self {
@@ -21,6 +26,7 @@ impl EntityTagAssignmentClient {
         }
         Self { client, base_url }
     }
+
     /// List entity tag assignments
     ///
     /// Gets the tag assignments for the specified entity.
@@ -30,7 +36,8 @@ impl EntityTagAssignmentClient {
     ) -> Result<ListEntityTagAssignmentsResponse> {
         let formatted_path = format!(
             "entity-tag-assignments/{}/{}/tags",
-            request.entity_type, request.entity_name
+            encode_path_value(&request.entity_type, false),
+            encode_path_value(&request.entity_name, false)
         );
         let mut url = self.base_url.join(&formatted_path)?;
         if let Some(ref value) = request.max_results {
@@ -48,6 +55,7 @@ impl EntityTagAssignmentClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Create an entity tag assignment
     ///
     /// Assigns a tag to a Unity Catalog entity.
@@ -63,6 +71,7 @@ impl EntityTagAssignmentClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Get an entity tag assignment
     ///
     /// Gets the tag assignment for the specified entity and tag key.
@@ -72,7 +81,9 @@ impl EntityTagAssignmentClient {
     ) -> Result<EntityTagAssignment> {
         let formatted_path = format!(
             "entity-tag-assignments/{}/{}/tags/{}",
-            request.entity_type, request.entity_name, request.tag_key
+            encode_path_value(&request.entity_type, false),
+            encode_path_value(&request.entity_name, false),
+            encode_path_value(&request.tag_key, false)
         );
         let url = self.base_url.join(&formatted_path)?;
         let response = self.client.get(url).send().await?;
@@ -82,6 +93,7 @@ impl EntityTagAssignmentClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Update an entity tag assignment
     ///
     /// Updates the tag assignment for the specified entity and tag key.
@@ -91,16 +103,23 @@ impl EntityTagAssignmentClient {
     ) -> Result<EntityTagAssignment> {
         let formatted_path = format!(
             "entity-tag-assignments/{}/{}/tags/{}",
-            request.entity_type, request.entity_name, request.tag_key
+            encode_path_value(&request.entity_type, false),
+            encode_path_value(&request.entity_name, false),
+            encode_path_value(&request.tag_key, false)
         );
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.patch(url).json(request).send().await?;
+        let mut body = request.clone();
+        body.entity_type = Default::default();
+        body.entity_name = Default::default();
+        body.tag_key = Default::default();
+        let response = self.client.patch(url).json(&body).send().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Delete an entity tag assignment
     ///
     /// Deletes the tag assignment for the specified entity and tag key.
@@ -110,7 +129,9 @@ impl EntityTagAssignmentClient {
     ) -> Result<()> {
         let formatted_path = format!(
             "entity-tag-assignments/{}/{}/tags/{}",
-            request.entity_type, request.entity_name, request.tag_key
+            encode_path_value(&request.entity_type, false),
+            encode_path_value(&request.entity_name, false),
+            encode_path_value(&request.tag_key, false)
         );
         let url = self.base_url.join(&formatted_path)?;
         let response = self.client.delete(url).send().await?;

@@ -17,6 +17,7 @@
 use crate::Result;
 use async_trait::async_trait;
 use unitycatalog_common::models::schemas::v1::*;
+
 #[async_trait]
 pub trait SchemaHandler<Cx = crate::RequestContext>: Send + Sync + 'static {
     /// Gets an array of schemas for a catalog in the metastore. If the caller is the metastore

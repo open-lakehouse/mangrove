@@ -1,8 +1,10 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::builders::*;
 use super::client::FunctionServiceClient;
 use unitycatalog_common::models::functions::v1::*;
+
 /// A client scoped to a single `function`.
 #[derive(Clone)]
 pub struct FunctionClient {
@@ -11,6 +13,7 @@ pub struct FunctionClient {
     pub(crate) function_name: String,
     pub(crate) client: FunctionServiceClient,
 }
+
 impl FunctionClient {
     /// Create a client bound to the resource's name components.
     pub fn new(
@@ -26,6 +29,7 @@ impl FunctionClient {
             client,
         }
     }
+
     /// Create a `function` client from its dot-joined full name (e.g. `"catalog_name.schema_name.function_name"`).
     pub fn from_full_name(full_name: impl Into<String>, client: FunctionServiceClient) -> Self {
         let full_name = full_name.into();
@@ -35,18 +39,22 @@ impl FunctionClient {
         let function_name = parts.next().unwrap_or_default();
         Self::new(catalog_name, schema_name, function_name, client)
     }
+
     /// The `catalog_name` component of this resource's name.
     pub fn catalog_name(&self) -> &str {
         &self.catalog_name
     }
+
     /// The `schema_name` component of this resource's name.
     pub fn schema_name(&self) -> &str {
         &self.schema_name
     }
+
     /// This resource's own name (the leaf component).
     pub fn name(&self) -> &str {
         &self.function_name
     }
+
     /// The fully-qualified name of this resource (its dot-joined name components).
     pub fn full_name(&self) -> String {
         format!(
@@ -54,6 +62,7 @@ impl FunctionClient {
             self.catalog_name, self.schema_name, self.function_name
         )
     }
+
     /// Get a function
     ///
     /// Gets a function from within a parent catalog and schema. For the fetch to succeed,
@@ -68,6 +77,7 @@ impl FunctionClient {
             ),
         )
     }
+
     /// Update a function
     ///
     /// Updates the function that matches the supplied name. Only the owner of the function
@@ -81,6 +91,7 @@ impl FunctionClient {
             ),
         )
     }
+
     /// Delete a function
     ///
     /// Deletes the function that matches the supplied name. For the deletion to succeed,

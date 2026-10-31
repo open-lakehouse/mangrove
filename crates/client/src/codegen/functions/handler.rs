@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::FunctionServiceClient;
 use unitycatalog_common::models::functions::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::functions::FunctionHandler<Cx>
     for FunctionServiceClient
@@ -15,6 +17,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::functions::FunctionHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_function(
         &self,
         request: CreateFunctionRequest,
@@ -24,6 +27,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::functions::FunctionHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_function(
         &self,
         request: GetFunctionRequest,
@@ -33,6 +37,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::functions::FunctionHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_function(
         &self,
         request: UpdateFunctionRequest,
@@ -42,6 +47,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::functions::FunctionHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_function(
         &self,
         request: DeleteFunctionRequest,

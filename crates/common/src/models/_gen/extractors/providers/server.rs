@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::providers::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListProvidersRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -29,6 +31,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListProvidersRequest
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateProviderRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -42,6 +45,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateProviderRequest {
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetProviderRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -58,6 +62,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetProviderRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateProviderRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -92,6 +97,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateProviderRequest {
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteProviderRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(

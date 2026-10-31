@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::ProviderServiceClient;
 use unitycatalog_common::models::providers::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::providers::ProviderHandler<Cx>
     for ProviderServiceClient
@@ -15,6 +17,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::providers::ProviderHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_provider(
         &self,
         request: CreateProviderRequest,
@@ -24,6 +27,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::providers::ProviderHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_provider(
         &self,
         request: GetProviderRequest,
@@ -33,6 +37,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::providers::ProviderHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_provider(
         &self,
         request: UpdateProviderRequest,
@@ -42,6 +47,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::providers::ProviderHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_provider(
         &self,
         request: DeleteProviderRequest,

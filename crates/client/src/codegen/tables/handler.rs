@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::TableServiceClient;
 use unitycatalog_common::models::tables::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::tables::TableHandler<Cx> for TableServiceClient {
     async fn list_table_summaries(
@@ -13,6 +15,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::tables::TableHandler<Cx> for Tab
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn list_tables(
         &self,
         request: ListTablesRequest,
@@ -22,6 +25,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::tables::TableHandler<Cx> for Tab
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_table(
         &self,
         request: CreateTableRequest,
@@ -31,6 +35,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::tables::TableHandler<Cx> for Tab
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_table(
         &self,
         request: GetTableRequest,
@@ -40,6 +45,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::tables::TableHandler<Cx> for Tab
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_table_exists(
         &self,
         request: GetTableExistsRequest,
@@ -49,6 +55,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::tables::TableHandler<Cx> for Tab
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_table(
         &self,
         request: DeleteTableRequest,

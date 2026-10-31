@@ -15,6 +15,7 @@
 use crate::Result;
 use async_trait::async_trait;
 use unitycatalog_common::models::tables::v1::*;
+
 #[async_trait]
 pub trait TableHandler<Cx = crate::RequestContext>: Send + Sync + 'static {
     /// Gets an array of summaries for tables for a schema and catalog within the metastore. The table summaries returned are either:

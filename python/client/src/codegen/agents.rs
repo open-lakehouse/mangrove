@@ -1,26 +1,48 @@
 // @generated — do not edit by hand.
-use crate::codegen::runtime::{ListIterator, block_on};
-use crate::error::PyUnityCatalogError;
-use futures::stream::StreamExt;
-use pyo3::IntoPyObjectExt;
+use crate::codegen::error::{PyUnityCatalogError, PyUnityCatalogResult};
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::AgentClient;
 use unitycatalog_common::models::agents::v0alpha1::*;
 use unitycatalog_common::models::*;
-#[pyclass(name = "AgentClient")]
+
+/// The requests on one `Agent`.
+#[pyclass(name = "AgentClient", module = "unitycatalog_client._client.agents")]
 pub struct PyAgentClient {
     pub(crate) client: AgentClient,
 }
+
 #[pymethods]
 impl PyAgentClient {
+    /// Args:
+    ///     include_browse: Whether to include agents in the response for which the principal can only
+    ///                     access selective metadata for.
+    ///
+    /// Returns:
+    ///     An agent registered in Unity Catalog.
     #[pyo3(signature = (include_browse = None))]
-    pub fn get(&self, py: Python<'_>, include_browse: Option<bool>) -> PyResult<PyAgent> {
-        let mut request = self.client.get();
-        request = request.with_include_browse(include_browse);
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyAgent::from(result))
+    pub fn get(&self, py: Python, include_browse: Option<bool>) -> PyUnityCatalogResult<PyAgent> {
+        let request = self.client.get().with_include_browse(include_browse);
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyAgent::from(result))
+        })
     }
+
+    /// Args:
+    ///     new_name: New name for the agent.
+    ///     invocation_protocol: The protocol a recipient uses to invoke the agent.
+    ///     endpoint: The agent's invocation endpoint URL.
+    ///     description: Updated LLM-readable description.
+    ///     capabilities: Updated capability identifiers advertised by the agent.
+    ///     input_schema: Updated JSON Schema (encoded as a JSON string) describing the expected input.
+    ///     comment: The comment attached to the agent.
+    ///     owner: The identifier of the user who owns the agent.
+    ///
+    /// Returns:
+    ///     An agent registered in Unity Catalog.
     #[pyo3(
         signature = (
             new_name = None,
@@ -35,7 +57,7 @@ impl PyAgentClient {
     )]
     pub fn update(
         &self,
-        py: Python<'_>,
+        py: Python,
         new_name: Option<String>,
         invocation_protocol: ::core::option::Option<PyInvocationProtocol>,
         endpoint: Option<String>,
@@ -44,28 +66,37 @@ impl PyAgentClient {
         input_schema: Option<String>,
         comment: Option<String>,
         owner: Option<String>,
-    ) -> PyResult<PyAgent> {
-        let mut request = self.client.update();
-        request = request.with_new_name(new_name);
-        request =
-            request.with_invocation_protocol(invocation_protocol.map(::core::convert::Into::into));
-        request = request.with_endpoint(endpoint);
-        request = request.with_description(description);
-        if let Some(capabilities) = capabilities {
-            request = request.with_capabilities(capabilities);
-        }
-        request = request.with_input_schema(input_schema);
-        request = request.with_comment(comment);
-        request = request.with_owner(owner);
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyAgent::from(result))
+    ) -> PyUnityCatalogResult<PyAgent> {
+        let request = self
+            .client
+            .update()
+            .with_new_name(new_name)
+            .with_invocation_protocol(invocation_protocol.map(::core::convert::Into::into))
+            .with_endpoint(endpoint)
+            .with_description(description)
+            .with_capabilities(capabilities.unwrap_or_default())
+            .with_input_schema(input_schema)
+            .with_comment(comment)
+            .with_owner(owner);
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyAgent::from(result))
+        })
     }
-    pub fn delete(&self, py: Python<'_>) -> PyResult<()> {
+
+    pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
-        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(())
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(result)
+        })
     }
 }
+
 impl PyAgentClient {
     pub fn new(client: AgentClient) -> Self {
         Self { client }

@@ -1,24 +1,52 @@
 // @generated — do not edit by hand.
-use crate::codegen::runtime::{ListIterator, block_on};
-use crate::error::PyUnityCatalogError;
-use futures::stream::StreamExt;
-use pyo3::IntoPyObjectExt;
+use crate::codegen::error::{PyUnityCatalogError, PyUnityCatalogResult};
 use pyo3::prelude::*;
 use std::collections::HashMap;
 use unitycatalog_client::CredentialClient;
 use unitycatalog_common::models::credentials::v1::*;
 use unitycatalog_common::models::*;
-#[pyclass(name = "CredentialClient")]
+
+/// The requests on one `Credential`.
+#[pyclass(
+    name = "CredentialClient",
+    module = "unitycatalog_client._client.credentials"
+)]
 pub struct PyCredentialClient {
     pub(crate) client: CredentialClient,
 }
+
 #[pymethods]
 impl PyCredentialClient {
-    pub fn get(&self, py: Python<'_>) -> PyResult<PyCredential> {
+    /// Returns:
+    ///     A credential used to access external data sources or services.
+    pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyCredential> {
         let request = self.client.get();
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyCredential::from(result))
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyCredential::from(result))
+        })
     }
+
+    /// Args:
+    ///     new_name: New name of the credential.
+    ///     comment: Comment associated with the credential.
+    ///     read_only: Whether the credential is usable only for read operations. Only applicable when
+    ///                purpose is STORAGE.
+    ///     owner: Username of current owner of credential.
+    ///     skip_validation: Supply true to this argument to skip validation of the updated credential.
+    ///                      Defaults to false.
+    ///     force: Force an update even if there are dependent services (when purpose is SERVICE) or
+    ///            dependent external locations and external tables (when purpose is STORAGE).
+    ///     azure_service_principal: The Azure service principal configuration.
+    ///     azure_managed_identity: The Azure managed identity configuration.
+    ///     azure_storage_key: The Azure storage key configuration.
+    ///     aws_iam_role: The AWS IAM role configuration.
+    ///     databricks_gcp_service_account: The Databricks managed GCP service account configuration.
+    ///
+    /// Returns:
+    ///     A credential used to access external data sources or services.
     #[pyo3(
         signature = (
             new_name = None,
@@ -36,7 +64,7 @@ impl PyCredentialClient {
     )]
     pub fn update(
         &self,
-        py: Python<'_>,
+        py: Python,
         new_name: Option<String>,
         comment: Option<String>,
         read_only: Option<bool>,
@@ -48,33 +76,42 @@ impl PyCredentialClient {
         azure_storage_key: ::core::option::Option<PyAzureStorageKey>,
         aws_iam_role: ::core::option::Option<PyAwsIamRoleConfig>,
         databricks_gcp_service_account: ::core::option::Option<PyDatabricksGcpServiceAccount>,
-    ) -> PyResult<PyCredential> {
-        let mut request = self.client.update();
-        request = request.with_new_name(new_name);
-        request = request.with_comment(comment);
-        request = request.with_read_only(read_only);
-        request = request.with_owner(owner);
-        request = request.with_skip_validation(skip_validation);
-        request = request.with_force(force);
-        request = request
-            .with_azure_service_principal(azure_service_principal.map(::core::convert::Into::into));
-        request = request
-            .with_azure_managed_identity(azure_managed_identity.map(::core::convert::Into::into));
-        request =
-            request.with_azure_storage_key(azure_storage_key.map(::core::convert::Into::into));
-        request = request.with_aws_iam_role(aws_iam_role.map(::core::convert::Into::into));
-        request = request.with_databricks_gcp_service_account(
-            databricks_gcp_service_account.map(::core::convert::Into::into),
-        );
-        let result = block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(PyCredential::from(result))
+    ) -> PyUnityCatalogResult<PyCredential> {
+        let request = self
+            .client
+            .update()
+            .with_new_name(new_name)
+            .with_comment(comment)
+            .with_read_only(read_only)
+            .with_owner(owner)
+            .with_skip_validation(skip_validation)
+            .with_force(force)
+            .with_azure_service_principal(azure_service_principal.map(::core::convert::Into::into))
+            .with_azure_managed_identity(azure_managed_identity.map(::core::convert::Into::into))
+            .with_azure_storage_key(azure_storage_key.map(::core::convert::Into::into))
+            .with_aws_iam_role(aws_iam_role.map(::core::convert::Into::into))
+            .with_databricks_gcp_service_account(
+                databricks_gcp_service_account.map(::core::convert::Into::into),
+            );
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(PyCredential::from(result))
+        })
     }
-    pub fn delete(&self, py: Python<'_>) -> PyResult<()> {
+
+    pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
-        block_on(py, request.into_future())?.map_err(PyUnityCatalogError::from)?;
-        Ok(())
+        let runtime = crate::codegen::runtime::rt();
+        py.detach(|| {
+            #[allow(clippy::let_unit_value)]
+            let result = runtime.block_on(request.into_future())?;
+            Ok::<_, PyUnityCatalogError>(result)
+        })
     }
 }
+
 impl PyCredentialClient {
     pub fn new(client: CredentialClient) -> Self {
         Self { client }

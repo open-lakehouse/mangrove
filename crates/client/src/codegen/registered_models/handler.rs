@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::RegisteredModelServiceClient;
 use unitycatalog_common::models::registered_models::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::registered_models::RegisteredModelHandler<Cx>
     for RegisteredModelServiceClient
@@ -15,6 +17,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::registered_models::RegisteredMod
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_registered_model(
         &self,
         request: CreateRegisteredModelRequest,
@@ -24,6 +27,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::registered_models::RegisteredMod
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_registered_model(
         &self,
         request: GetRegisteredModelRequest,
@@ -33,6 +37,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::registered_models::RegisteredMod
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_registered_model(
         &self,
         request: UpdateRegisteredModelRequest,
@@ -42,6 +47,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::registered_models::RegisteredMod
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_registered_model(
         &self,
         request: DeleteRegisteredModelRequest,

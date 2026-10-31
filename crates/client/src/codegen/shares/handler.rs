@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::ShareServiceClient;
 use unitycatalog_common::models::shares::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::shares::ShareHandler<Cx> for ShareServiceClient {
     async fn list_shares(
@@ -13,6 +15,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::shares::ShareHandler<Cx> for Sha
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_share(
         &self,
         request: CreateShareRequest,
@@ -22,6 +25,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::shares::ShareHandler<Cx> for Sha
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_share(
         &self,
         request: GetShareRequest,
@@ -31,6 +35,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::shares::ShareHandler<Cx> for Sha
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_share(
         &self,
         request: UpdateShareRequest,
@@ -40,6 +45,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::shares::ShareHandler<Cx> for Sha
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_share(
         &self,
         request: DeleteShareRequest,
@@ -49,6 +55,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::shares::ShareHandler<Cx> for Sha
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_permissions(
         &self,
         request: GetPermissionsRequest,
@@ -58,6 +65,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::shares::ShareHandler<Cx> for Sha
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_permissions(
         &self,
         request: UpdatePermissionsRequest,

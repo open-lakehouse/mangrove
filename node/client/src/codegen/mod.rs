@@ -1,5 +1,6 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports, dead_code, clippy::all)]
+
 pub mod agent_skills;
 pub mod agents;
 pub mod catalogs;
@@ -60,10 +61,12 @@ use unitycatalog_common::models::tags::v1::*;
 use unitycatalog_common::models::tags::v1::*;
 use unitycatalog_common::models::temporary_credentials::v1::*;
 use unitycatalog_common::models::volumes::v1::*;
+
 #[napi]
 pub struct NapiUnityCatalogClient {
     client: UnityCatalogClient,
 }
+
 #[napi]
 impl NapiUnityCatalogClient {
     #[napi(factory)]
@@ -80,6 +83,7 @@ impl NapiUnityCatalogClient {
             client: UnityCatalogClient::new(client, base_url),
         })
     }
+
     #[napi(catch_unwind)]
     pub async fn list_agent_skills(
         &self,
@@ -88,9 +92,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_agent_skills(catalog_name, schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_agent_skills(catalog_name, schema_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -98,6 +104,7 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_agent_skills_stream(
         &self,
@@ -107,9 +114,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_agent_skills(catalog_name, schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_agent_skills(catalog_name, schema_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -118,6 +127,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_agent_skill(
         &self,
@@ -132,29 +142,28 @@ impl NapiUnityCatalogClient {
         metadata: Option<HashMap<String, String>>,
         comment: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_agent_skill(
-            catalog_name,
-            schema_name,
-            name,
-            <AgentSkillType as buffa::Enumeration>::from_i32(agent_skill_type).ok_or_else(
-                || napi::Error::new(napi::Status::GenericFailure, "invalid enum value"),
-            )?,
-        );
-        request = request.with_storage_location(storage_location);
-        request = request.with_description(description);
-        request = request.with_license(license);
-        if let Some(allowed_tools) = allowed_tools {
-            request = request.with_allowed_tools(allowed_tools);
-        }
-        if let Some(metadata) = metadata {
-            request = request.with_metadata(metadata);
-        }
-        request = request.with_comment(comment);
+        let request = self
+            .client
+            .create_agent_skill(
+                catalog_name,
+                schema_name,
+                name,
+                <AgentSkillType as buffa::Enumeration>::from_i32(agent_skill_type).ok_or_else(
+                    || napi::Error::new(napi::Status::GenericFailure, "invalid enum value"),
+                )?,
+            )
+            .with_storage_location(storage_location)
+            .with_description(description)
+            .with_license(license)
+            .with_allowed_tools(allowed_tools.unwrap_or_default())
+            .with_metadata(metadata.unwrap_or_default())
+            .with_comment(comment);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_agents(
         &self,
@@ -163,9 +172,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_agents(catalog_name, schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_agents(catalog_name, schema_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -173,6 +184,7 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_agents_stream(
         &self,
@@ -182,9 +194,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_agents(catalog_name, schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_agents(catalog_name, schema_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -193,6 +207,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_agent(
         &self,
@@ -206,30 +221,31 @@ impl NapiUnityCatalogClient {
         input_schema: Option<String>,
         comment: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_agent(
-            catalog_name,
-            schema_name,
-            name,
-            <InvocationProtocol as buffa::Enumeration>::from_i32(invocation_protocol).ok_or_else(
-                || napi::Error::new(napi::Status::GenericFailure, "invalid enum value"),
-            )?,
-            endpoint,
-        );
-        request = request.with_description(description);
-        if let Some(capabilities) = capabilities {
-            request = request.with_capabilities(capabilities);
-        }
-        request = request.with_input_schema(input_schema);
-        request = request.with_comment(comment);
+        let request = self
+            .client
+            .create_agent(
+                catalog_name,
+                schema_name,
+                name,
+                <InvocationProtocol as buffa::Enumeration>::from_i32(invocation_protocol)
+                    .ok_or_else(|| {
+                        napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
+                    })?,
+                endpoint,
+            )
+            .with_description(description)
+            .with_capabilities(capabilities.unwrap_or_default())
+            .with_input_schema(input_schema)
+            .with_comment(comment);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_catalogs(&self, max_results: Option<i32>) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_catalogs();
-        request = request.with_max_results(max_results);
+        let request = self.client.list_catalogs().with_max_results(max_results);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -237,14 +253,14 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_catalogs_stream(
         &self,
         env: Env,
         max_results: Option<i32>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_catalogs();
-        request = request.with_max_results(max_results);
+        let request = self.client.list_catalogs().with_max_results(max_results);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -253,6 +269,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_catalog(
         &self,
@@ -263,28 +280,31 @@ impl NapiUnityCatalogClient {
         provider_name: Option<String>,
         share_name: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_catalog(name);
-        request = request.with_comment(comment);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
-        request = request.with_storage_root(storage_root);
-        request = request.with_provider_name(provider_name);
-        request = request.with_share_name(share_name);
+        let request = self
+            .client
+            .create_catalog(name)
+            .with_comment(comment)
+            .with_properties(properties.unwrap_or_default())
+            .with_storage_root(storage_root)
+            .with_provider_name(provider_name)
+            .with_share_name(share_name);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_credentials(
         &self,
         purpose: Option<i32>,
         max_results: Option<i32>,
     ) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_credentials();
-        request = request.with_purpose(purpose.and_then(<Purpose as buffa::Enumeration>::from_i32));
-        request = request.with_max_results(max_results);
+        let request = self
+            .client
+            .list_credentials()
+            .with_purpose(purpose.and_then(<Purpose as buffa::Enumeration>::from_i32))
+            .with_max_results(max_results);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -292,6 +312,7 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_credentials_stream(
         &self,
@@ -299,9 +320,11 @@ impl NapiUnityCatalogClient {
         purpose: Option<i32>,
         max_results: Option<i32>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_credentials();
-        request = request.with_purpose(purpose.and_then(<Purpose as buffa::Enumeration>::from_i32));
-        request = request.with_max_results(max_results);
+        let request = self
+            .client
+            .list_credentials()
+            .with_purpose(purpose.and_then(<Purpose as buffa::Enumeration>::from_i32))
+            .with_max_results(max_results);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -310,6 +333,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_credential(
         &self,
@@ -319,20 +343,23 @@ impl NapiUnityCatalogClient {
         read_only: Option<bool>,
         skip_validation: Option<bool>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_credential(
-            name,
-            <Purpose as buffa::Enumeration>::from_i32(purpose).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-        );
-        request = request.with_comment(comment);
-        request = request.with_read_only(read_only);
-        request = request.with_skip_validation(skip_validation);
+        let request = self
+            .client
+            .create_credential(
+                name,
+                <Purpose as buffa::Enumeration>::from_i32(purpose).ok_or_else(|| {
+                    napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
+                })?,
+            )
+            .with_comment(comment)
+            .with_read_only(read_only)
+            .with_skip_validation(skip_validation);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_entity_tag_assignments(
         &self,
@@ -341,16 +368,17 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         page_token: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self
+        let request = self
             .client
-            .list_entity_tag_assignments(entity_type, entity_name);
-        request = request.with_max_results(max_results);
-        request = request.with_page_token(page_token);
+            .list_entity_tag_assignments(entity_type, entity_name)
+            .with_max_results(max_results)
+            .with_page_token(page_token);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn create_entity_tag_assignment(
         &self,
@@ -359,15 +387,16 @@ impl NapiUnityCatalogClient {
         tag_key: String,
         tag_value: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request =
-            self.client
-                .create_entity_tag_assignment(entity_type, entity_name, tag_key);
-        request = request.with_tag_value(tag_value);
+        let request = self
+            .client
+            .create_entity_tag_assignment(entity_type, entity_name, tag_key)
+            .with_tag_value(tag_value);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn get_entity_tag_assignment(
         &self,
@@ -375,7 +404,7 @@ impl NapiUnityCatalogClient {
         entity_name: String,
         tag_key: String,
     ) -> napi::Result<Buffer> {
-        let mut request = self
+        let request = self
             .client
             .get_entity_tag_assignment(entity_type, entity_name, tag_key);
         request
@@ -383,6 +412,7 @@ impl NapiUnityCatalogClient {
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn update_entity_tag_assignment(
         &self,
@@ -392,16 +422,17 @@ impl NapiUnityCatalogClient {
         tag_value: Option<String>,
         update_mask: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request =
-            self.client
-                .update_entity_tag_assignment(entity_type, entity_name, tag_key);
-        request = request.with_tag_value(tag_value);
-        request = request.with_update_mask(update_mask);
+        let request = self
+            .client
+            .update_entity_tag_assignment(entity_type, entity_name, tag_key)
+            .with_tag_value(tag_value)
+            .with_update_mask(update_mask);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn delete_entity_tag_assignment(
         &self,
@@ -409,20 +440,23 @@ impl NapiUnityCatalogClient {
         entity_name: String,
         tag_key: String,
     ) -> napi::Result<()> {
-        let mut request =
-            self.client
-                .delete_entity_tag_assignment(entity_type, entity_name, tag_key);
+        let request = self
+            .client
+            .delete_entity_tag_assignment(entity_type, entity_name, tag_key);
         request.await.default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_external_locations(
         &self,
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_external_locations();
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_external_locations()
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -430,6 +464,7 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_external_locations_stream(
         &self,
@@ -437,9 +472,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_external_locations();
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_external_locations()
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -448,6 +485,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_external_location(
         &self,
@@ -458,17 +496,18 @@ impl NapiUnityCatalogClient {
         comment: Option<String>,
         skip_validation: Option<bool>,
     ) -> napi::Result<Buffer> {
-        let mut request = self
+        let request = self
             .client
-            .create_external_location(name, url, credential_name);
-        request = request.with_read_only(read_only);
-        request = request.with_comment(comment);
-        request = request.with_skip_validation(skip_validation);
+            .create_external_location(name, url, credential_name)
+            .with_read_only(read_only)
+            .with_comment(comment)
+            .with_skip_validation(skip_validation);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_functions(
         &self,
@@ -477,9 +516,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_functions(catalog_name, schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_functions(catalog_name, schema_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -487,6 +528,7 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_functions_stream(
         &self,
@@ -496,9 +538,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_functions(catalog_name, schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_functions(catalog_name, schema_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -507,12 +551,13 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_function(
         &self,
         function_info: napi::bindgen_prelude::Buffer,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_function(
+        let request = self.client.create_function(
             <CreateFunction as buffa::Message>::decode_from_slice(function_info.as_ref()).map_err(
                 |e| {
                     napi::Error::new(
@@ -527,6 +572,7 @@ impl NapiUnityCatalogClient {
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_model_versions(
         &self,
@@ -534,9 +580,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_model_versions(full_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_model_versions(full_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -544,6 +592,7 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_model_versions_stream(
         &self,
@@ -552,9 +601,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_model_versions(full_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_model_versions(full_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -563,6 +614,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_model_version(
         &self,
@@ -573,16 +625,17 @@ impl NapiUnityCatalogClient {
         run_id: Option<String>,
         comment: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request =
-            self.client
-                .create_model_version(model_name, catalog_name, schema_name, source);
-        request = request.with_run_id(run_id);
-        request = request.with_comment(comment);
+        let request = self
+            .client
+            .create_model_version(model_name, catalog_name, schema_name, source)
+            .with_run_id(run_id)
+            .with_comment(comment);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn get_model_version(
         &self,
@@ -590,13 +643,16 @@ impl NapiUnityCatalogClient {
         version: i64,
         include_browse: Option<bool>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.get_model_version(full_name, version);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .get_model_version(full_name, version)
+            .with_include_browse(include_browse);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn update_model_version(
         &self,
@@ -604,30 +660,35 @@ impl NapiUnityCatalogClient {
         version: i64,
         comment: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.update_model_version(full_name, version);
-        request = request.with_comment(comment);
+        let request = self
+            .client
+            .update_model_version(full_name, version)
+            .with_comment(comment);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn delete_model_version(&self, full_name: String, version: i64) -> napi::Result<()> {
-        let mut request = self.client.delete_model_version(full_name, version);
+        let request = self.client.delete_model_version(full_name, version);
         request.await.default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn finalize_model_version(
         &self,
         full_name: String,
         version: i64,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.finalize_model_version(full_name, version);
+        let request = self.client.finalize_model_version(full_name, version);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn create_policy(
         &self,
@@ -641,32 +702,30 @@ impl NapiUnityCatalogClient {
         for_securable_type: Option<String>,
         when_condition: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_policy(
-            name,
-            on_securable_type,
-            on_securable_fullname,
-            <PolicyType as buffa::Enumeration>::from_i32(policy_type).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-        );
-        request = request.with_comment(comment);
-        if let Some(to_principals) = to_principals {
-            request = request.with_to_principals(to_principals);
-        }
-        if let Some(except_principals) = except_principals {
-            request = request.with_except_principals(except_principals);
-        }
-        request = request.with_for_securable_type(for_securable_type);
-        request = request.with_when_condition(when_condition);
+        let request = self
+            .client
+            .create_policy(
+                name,
+                on_securable_type,
+                on_securable_fullname,
+                <PolicyType as buffa::Enumeration>::from_i32(policy_type).ok_or_else(|| {
+                    napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
+                })?,
+            )
+            .with_comment(comment)
+            .with_to_principals(to_principals.unwrap_or_default())
+            .with_except_principals(except_principals.unwrap_or_default())
+            .with_for_securable_type(for_securable_type)
+            .with_when_condition(when_condition);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_providers(&self, max_results: Option<i32>) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_providers();
-        request = request.with_max_results(max_results);
+        let request = self.client.list_providers().with_max_results(max_results);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -674,14 +733,14 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_providers_stream(
         &self,
         env: Env,
         max_results: Option<i32>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_providers();
-        request = request.with_max_results(max_results);
+        let request = self.client.list_providers().with_max_results(max_results);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -690,6 +749,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_provider(
         &self,
@@ -700,28 +760,28 @@ impl NapiUnityCatalogClient {
         recipient_profile_str: Option<String>,
         properties: Option<HashMap<String, String>>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_provider(
-            name,
-            <ProviderAuthenticationType as buffa::Enumeration>::from_i32(authentication_type)
-                .ok_or_else(|| {
+        let request = self
+            .client
+            .create_provider(
+                name,
+                <ProviderAuthenticationType as buffa::Enumeration>::from_i32(authentication_type)
+                    .ok_or_else(|| {
                     napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
                 })?,
-        );
-        request = request.with_owner(owner);
-        request = request.with_comment(comment);
-        request = request.with_recipient_profile_str(recipient_profile_str);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
+            )
+            .with_owner(owner)
+            .with_comment(comment)
+            .with_recipient_profile_str(recipient_profile_str)
+            .with_properties(properties.unwrap_or_default());
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_recipients(&self, max_results: Option<i32>) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_recipients();
-        request = request.with_max_results(max_results);
+        let request = self.client.list_recipients().with_max_results(max_results);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -729,14 +789,14 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_recipients_stream(
         &self,
         env: Env,
         max_results: Option<i32>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_recipients();
-        request = request.with_max_results(max_results);
+        let request = self.client.list_recipients().with_max_results(max_results);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -745,6 +805,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_recipient(
         &self,
@@ -754,20 +815,24 @@ impl NapiUnityCatalogClient {
         comment: Option<String>,
         expiration_time: Option<i64>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_recipient(
-            name,
-            <AuthenticationType as buffa::Enumeration>::from_i32(authentication_type).ok_or_else(
-                || napi::Error::new(napi::Status::GenericFailure, "invalid enum value"),
-            )?,
-            owner,
-        );
-        request = request.with_comment(comment);
-        request = request.with_expiration_time(expiration_time);
+        let request = self
+            .client
+            .create_recipient(
+                name,
+                <AuthenticationType as buffa::Enumeration>::from_i32(authentication_type)
+                    .ok_or_else(|| {
+                        napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
+                    })?,
+                owner,
+            )
+            .with_comment(comment)
+            .with_expiration_time(expiration_time);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_registered_models(
         &self,
@@ -776,11 +841,13 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_registered_models();
-        request = request.with_catalog_name(catalog_name);
-        request = request.with_schema_name(schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_registered_models()
+            .with_catalog_name(catalog_name)
+            .with_schema_name(schema_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -788,6 +855,7 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_registered_models_stream(
         &self,
@@ -797,11 +865,13 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_registered_models();
-        request = request.with_catalog_name(catalog_name);
-        request = request.with_schema_name(schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_registered_models()
+            .with_catalog_name(catalog_name)
+            .with_schema_name(schema_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -810,6 +880,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_registered_model(
         &self,
@@ -818,15 +889,16 @@ impl NapiUnityCatalogClient {
         schema_name: String,
         comment: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self
+        let request = self
             .client
-            .create_registered_model(name, catalog_name, schema_name);
-        request = request.with_comment(comment);
+            .create_registered_model(name, catalog_name, schema_name)
+            .with_comment(comment);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_schemas(
         &self,
@@ -834,9 +906,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_schemas(catalog_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_schemas(catalog_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -844,6 +918,7 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_schemas_stream(
         &self,
@@ -852,9 +927,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_schemas(catalog_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_schemas(catalog_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -863,6 +940,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_schema(
         &self,
@@ -872,21 +950,21 @@ impl NapiUnityCatalogClient {
         properties: Option<HashMap<String, String>>,
         storage_root: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_schema(name, catalog_name);
-        request = request.with_comment(comment);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
-        request = request.with_storage_root(storage_root);
+        let request = self
+            .client
+            .create_schema(name, catalog_name)
+            .with_comment(comment)
+            .with_properties(properties.unwrap_or_default())
+            .with_storage_root(storage_root);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_shares(&self, max_results: Option<i32>) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_shares();
-        request = request.with_max_results(max_results);
+        let request = self.client.list_shares().with_max_results(max_results);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -894,14 +972,14 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_shares_stream(
         &self,
         env: Env,
         max_results: Option<i32>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_shares();
-        request = request.with_max_results(max_results);
+        let request = self.client.list_shares().with_max_results(max_results);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -910,6 +988,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_share(
         &self,
@@ -917,14 +996,17 @@ impl NapiUnityCatalogClient {
         comment: Option<String>,
         storage_root: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_share(name);
-        request = request.with_comment(comment);
-        request = request.with_storage_root(storage_root);
+        let request = self
+            .client
+            .create_share(name)
+            .with_comment(comment)
+            .with_storage_root(storage_root);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn create_staging_table(
         &self,
@@ -932,7 +1014,7 @@ impl NapiUnityCatalogClient {
         catalog_name: String,
         schema_name: String,
     ) -> napi::Result<Buffer> {
-        let mut request = self
+        let request = self
             .client
             .create_staging_table(name, catalog_name, schema_name);
         request
@@ -940,6 +1022,7 @@ impl NapiUnityCatalogClient {
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_tables(
         &self,
@@ -953,14 +1036,16 @@ impl NapiUnityCatalogClient {
         include_browse: Option<bool>,
         include_manifest_capabilities: Option<bool>,
     ) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_tables(catalog_name, schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_delta_metadata(include_delta_metadata);
-        request = request.with_omit_columns(omit_columns);
-        request = request.with_omit_properties(omit_properties);
-        request = request.with_omit_username(omit_username);
-        request = request.with_include_browse(include_browse);
-        request = request.with_include_manifest_capabilities(include_manifest_capabilities);
+        let request = self
+            .client
+            .list_tables(catalog_name, schema_name)
+            .with_max_results(max_results)
+            .with_include_delta_metadata(include_delta_metadata)
+            .with_omit_columns(omit_columns)
+            .with_omit_properties(omit_properties)
+            .with_omit_username(omit_username)
+            .with_include_browse(include_browse)
+            .with_include_manifest_capabilities(include_manifest_capabilities);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -968,6 +1053,7 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_tables_stream(
         &self,
@@ -982,14 +1068,16 @@ impl NapiUnityCatalogClient {
         include_browse: Option<bool>,
         include_manifest_capabilities: Option<bool>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_tables(catalog_name, schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_delta_metadata(include_delta_metadata);
-        request = request.with_omit_columns(omit_columns);
-        request = request.with_omit_properties(omit_properties);
-        request = request.with_omit_username(omit_username);
-        request = request.with_include_browse(include_browse);
-        request = request.with_include_manifest_capabilities(include_manifest_capabilities);
+        let request = self
+            .client
+            .list_tables(catalog_name, schema_name)
+            .with_max_results(max_results)
+            .with_include_delta_metadata(include_delta_metadata)
+            .with_omit_columns(omit_columns)
+            .with_omit_properties(omit_properties)
+            .with_omit_username(omit_username)
+            .with_include_browse(include_browse)
+            .with_include_manifest_capabilities(include_manifest_capabilities);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -998,6 +1086,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_table(
         &self,
@@ -1011,32 +1100,35 @@ impl NapiUnityCatalogClient {
         properties: Option<HashMap<String, String>>,
         view_definition: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_table(
-            name,
-            schema_name,
-            catalog_name,
-            <TableType as buffa::Enumeration>::from_i32(table_type).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-            <DataSourceFormat as buffa::Enumeration>::from_i32(data_source_format).ok_or_else(
-                || napi::Error::new(napi::Status::GenericFailure, "invalid enum value"),
-            )?,
-        );
-        request = request.with_storage_location(storage_location);
-        request = request.with_comment(comment);
-        if let Some(properties) = properties {
-            request = request.with_properties(properties);
-        }
-        request = request.with_view_definition(view_definition);
+        let request = self
+            .client
+            .create_table(
+                name,
+                schema_name,
+                catalog_name,
+                <TableType as buffa::Enumeration>::from_i32(table_type).ok_or_else(|| {
+                    napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
+                })?,
+                <DataSourceFormat as buffa::Enumeration>::from_i32(data_source_format).ok_or_else(
+                    || napi::Error::new(napi::Status::GenericFailure, "invalid enum value"),
+                )?,
+            )
+            .with_storage_location(storage_location)
+            .with_comment(comment)
+            .with_properties(properties.unwrap_or_default())
+            .with_view_definition(view_definition);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_tag_policies(&self, max_results: Option<i32>) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_tag_policies();
-        request = request.with_max_results(max_results);
+        let request = self
+            .client
+            .list_tag_policies()
+            .with_max_results(max_results);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -1044,14 +1136,17 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_tag_policies_stream(
         &self,
         env: Env,
         max_results: Option<i32>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_tag_policies();
-        request = request.with_max_results(max_results);
+        let request = self
+            .client
+            .list_tag_policies()
+            .with_max_results(max_results);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -1060,26 +1155,30 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_tag_policy(
         &self,
         tag_key: String,
         description: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_tag_policy(tag_key);
-        request = request.with_description(description);
+        let request = self
+            .client
+            .create_tag_policy(tag_key)
+            .with_description(description);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn generate_temporary_table_credentials(
         &self,
         table_id: String,
         operation: i32,
     ) -> napi::Result<Buffer> {
-        let mut request = self
+        let request = self
             .client
             .generate_temporary_table_credentials(
                 table_id,
@@ -1096,6 +1195,7 @@ impl NapiUnityCatalogClient {
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn generate_temporary_path_credentials(
         &self,
@@ -1103,7 +1203,7 @@ impl NapiUnityCatalogClient {
         operation: i32,
         dry_run: Option<bool>,
     ) -> napi::Result<Buffer> {
-        let mut request = self
+        let request = self
             .client
             .generate_temporary_path_credentials(
                 url,
@@ -1114,20 +1214,21 @@ impl NapiUnityCatalogClient {
                         napi::Status::GenericFailure,
                         "invalid enum value",
                     ))?,
-            );
-        request = request.with_dry_run(dry_run);
+            )
+            .with_dry_run(dry_run);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn generate_temporary_volume_credentials(
         &self,
         volume_id: String,
         operation: i32,
     ) -> napi::Result<Buffer> {
-        let mut request = self
+        let request = self
             .client
             .generate_temporary_volume_credentials(
                 volume_id,
@@ -1144,6 +1245,7 @@ impl NapiUnityCatalogClient {
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn generate_temporary_model_version_credentials(
         &self,
@@ -1153,7 +1255,7 @@ impl NapiUnityCatalogClient {
         version: i64,
         operation: i32,
     ) -> napi::Result<Buffer> {
-        let mut request = self
+        let request = self
             .client
             .generate_temporary_model_version_credentials(
                 catalog_name,
@@ -1173,6 +1275,7 @@ impl NapiUnityCatalogClient {
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub async fn list_volumes(
         &self,
@@ -1181,9 +1284,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<Vec<Buffer>> {
-        let mut request = self.client.list_volumes(catalog_name, schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_volumes(catalog_name, schema_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         request
             .into_stream()
             .map_ok(|item| Buffer::from(item.encode_to_vec()))
@@ -1191,6 +1296,7 @@ impl NapiUnityCatalogClient {
             .await
             .default_error()
     }
+
     #[napi(catch_unwind)]
     pub fn list_volumes_stream(
         &self,
@@ -1200,9 +1306,11 @@ impl NapiUnityCatalogClient {
         max_results: Option<i32>,
         include_browse: Option<bool>,
     ) -> napi::Result<ReadableStream<'_, Buffer>> {
-        let mut request = self.client.list_volumes(catalog_name, schema_name);
-        request = request.with_max_results(max_results);
-        request = request.with_include_browse(include_browse);
+        let request = self
+            .client
+            .list_volumes(catalog_name, schema_name)
+            .with_max_results(max_results)
+            .with_include_browse(include_browse);
         ReadableStream::new(
             &env,
             request.into_stream().map(|item| {
@@ -1211,6 +1319,7 @@ impl NapiUnityCatalogClient {
             }),
         )
     }
+
     #[napi(catch_unwind)]
     pub async fn create_volume(
         &self,
@@ -1221,21 +1330,24 @@ impl NapiUnityCatalogClient {
         storage_location: Option<String>,
         comment: Option<String>,
     ) -> napi::Result<Buffer> {
-        let mut request = self.client.create_volume(
-            catalog_name,
-            schema_name,
-            name,
-            <VolumeType as buffa::Enumeration>::from_i32(volume_type).ok_or_else(|| {
-                napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
-            })?,
-        );
-        request = request.with_storage_location(storage_location);
-        request = request.with_comment(comment);
+        let request = self
+            .client
+            .create_volume(
+                catalog_name,
+                schema_name,
+                name,
+                <VolumeType as buffa::Enumeration>::from_i32(volume_type).ok_or_else(|| {
+                    napi::Error::new(napi::Status::GenericFailure, "invalid enum value")
+                })?,
+            )
+            .with_storage_location(storage_location)
+            .with_comment(comment);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))
             .default_error()
     }
+
     #[napi]
     pub fn agent_skill(
         &self,
@@ -1248,6 +1360,7 @@ impl NapiUnityCatalogClient {
             client: self.client.agent_skill_from_full_name(full_name),
         }
     }
+
     #[napi]
     pub fn agent(
         &self,
@@ -1260,24 +1373,28 @@ impl NapiUnityCatalogClient {
             client: self.client.agent_from_full_name(full_name),
         }
     }
+
     #[napi]
     pub fn catalog(&self, catalog_name: String) -> NapiCatalogClient {
         NapiCatalogClient {
             client: self.client.catalog(catalog_name),
         }
     }
+
     #[napi]
     pub fn credential(&self, credential_name: String) -> NapiCredentialClient {
         NapiCredentialClient {
             client: self.client.credential(credential_name),
         }
     }
+
     #[napi]
     pub fn external_location(&self, external_location_name: String) -> NapiExternalLocationClient {
         NapiExternalLocationClient {
             client: self.client.external_location(external_location_name),
         }
     }
+
     #[napi]
     pub fn function(
         &self,
@@ -1290,24 +1407,28 @@ impl NapiUnityCatalogClient {
             client: self.client.function_from_full_name(full_name),
         }
     }
+
     #[napi]
     pub fn policy(&self, policy_name: String) -> NapiPolicyClient {
         NapiPolicyClient {
             client: self.client.policy(policy_name),
         }
     }
+
     #[napi]
     pub fn provider(&self, provider_name: String) -> NapiProviderClient {
         NapiProviderClient {
             client: self.client.provider(provider_name),
         }
     }
+
     #[napi]
     pub fn recipient(&self, recipient_name: String) -> NapiRecipientClient {
         NapiRecipientClient {
             client: self.client.recipient(recipient_name),
         }
     }
+
     #[napi]
     pub fn registered_model(
         &self,
@@ -1320,6 +1441,7 @@ impl NapiUnityCatalogClient {
             client: self.client.registered_model_from_full_name(full_name),
         }
     }
+
     #[napi]
     pub fn schema(&self, catalog_name: String, schema_name: String) -> NapiSchemaClient {
         let full_name = format!("{}.{}", catalog_name, schema_name);
@@ -1327,18 +1449,21 @@ impl NapiUnityCatalogClient {
             client: self.client.schema_from_full_name(full_name),
         }
     }
+
     #[napi]
     pub fn share(&self, share_name: String) -> NapiShareClient {
         NapiShareClient {
             client: self.client.share(share_name),
         }
     }
+
     #[napi]
     pub fn staging_table(&self, staging_table_name: String) -> NapiStagingTableClient {
         NapiStagingTableClient {
             client: self.client.staging_table(staging_table_name),
         }
     }
+
     #[napi]
     pub fn table(
         &self,
@@ -1351,12 +1476,14 @@ impl NapiUnityCatalogClient {
             client: self.client.table_from_full_name(full_name),
         }
     }
+
     #[napi]
     pub fn tag_policy(&self, tag_policy_name: String) -> NapiTagPolicyClient {
         NapiTagPolicyClient {
             client: self.client.tag_policy(tag_policy_name),
         }
     }
+
     #[napi]
     pub fn volume(
         &self,

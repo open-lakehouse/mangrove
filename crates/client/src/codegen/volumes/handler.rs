@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::VolumeServiceClient;
 use unitycatalog_common::models::volumes::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::volumes::VolumeHandler<Cx> for VolumeServiceClient {
     async fn list_volumes(
@@ -13,6 +15,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::volumes::VolumeHandler<Cx> for V
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_volume(
         &self,
         request: CreateVolumeRequest,
@@ -22,6 +25,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::volumes::VolumeHandler<Cx> for V
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_volume(
         &self,
         request: GetVolumeRequest,
@@ -31,6 +35,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::volumes::VolumeHandler<Cx> for V
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_volume(
         &self,
         request: UpdateVolumeRequest,
@@ -40,6 +45,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::volumes::VolumeHandler<Cx> for V
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_volume(
         &self,
         request: DeleteVolumeRequest,

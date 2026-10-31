@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_mut, unused_imports)]
+
 use crate::models::external_locations::v1::*;
 use axum::{RequestExt, RequestPartsExt};
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListExternalLocationsRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -33,6 +35,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for ListExternalLocation
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateExternalLocationRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -46,6 +49,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for CreateExternalLocationReq
         Ok(request)
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetExternalLocationRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(
@@ -72,6 +76,7 @@ impl<S: Send + Sync> axum::extract::FromRequestParts<S> for GetExternalLocationR
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateExternalLocationRequest {
     type Rejection = axum::response::Response;
     async fn from_request(
@@ -113,6 +118,7 @@ impl<S: Send + Sync> axum::extract::FromRequest<S> for UpdateExternalLocationReq
         })
     }
 }
+
 impl<S: Send + Sync> axum::extract::FromRequestParts<S> for DeleteExternalLocationRequest {
     type Rejection = axum::response::Response;
     async fn from_request_parts(

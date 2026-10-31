@@ -1,7 +1,9 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
+
 use super::client::RecipientServiceClient;
 use unitycatalog_common::models::recipients::v1::*;
+
 #[::async_trait::async_trait]
 impl<Cx: Send + 'static> unitycatalog_handlers::recipients::RecipientHandler<Cx>
     for RecipientServiceClient
@@ -15,6 +17,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::recipients::RecipientHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn create_recipient(
         &self,
         request: CreateRecipientRequest,
@@ -24,6 +27,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::recipients::RecipientHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn get_recipient(
         &self,
         request: GetRecipientRequest,
@@ -33,6 +37,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::recipients::RecipientHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn update_recipient(
         &self,
         request: UpdateRecipientRequest,
@@ -42,6 +47,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::recipients::RecipientHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn delete_recipient(
         &self,
         request: DeleteRecipientRequest,
@@ -51,6 +57,7 @@ impl<Cx: Send + 'static> unitycatalog_handlers::recipients::RecipientHandler<Cx>
             .await
             .map_err(::core::convert::Into::into)
     }
+
     async fn rotate_recipient_token(
         &self,
         request: RotateRecipientTokenRequest,

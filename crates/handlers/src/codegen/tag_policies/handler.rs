@@ -14,6 +14,7 @@
 use crate::Result;
 use async_trait::async_trait;
 use unitycatalog_common::models::tags::v1::*;
+
 #[async_trait]
 pub trait TagPolicyHandler<Cx = crate::RequestContext>: Send + Sync + 'static {
     /// List tag policies

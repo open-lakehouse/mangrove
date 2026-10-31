@@ -1,18 +1,23 @@
 // @generated — do not edit by hand.
 #![allow(unused_imports)]
-use crate::Result;
+
 #[cfg(not(target_arch = "wasm32"))]
 use ::olai_http::CloudClient as Transport;
+
+use super::super::encode_path_value;
+use crate::Result;
 #[cfg(target_arch = "wasm32")]
 use ::olai_http_wasm::WasmClient as Transport;
 use unitycatalog_common::models::registered_models::v1::*;
 use url::Url;
+
 /// HTTP client for service operations
 #[derive(Clone)]
 pub struct RegisteredModelServiceClient {
     pub(crate) client: Transport,
     pub(crate) base_url: Url,
 }
+
 impl RegisteredModelServiceClient {
     /// Create a new client instance
     pub fn new(client: Transport, mut base_url: Url) -> Self {
@@ -21,6 +26,7 @@ impl RegisteredModelServiceClient {
         }
         Self { client, base_url }
     }
+
     /// List registered models
     ///
     /// List registered models within the specified parent catalog and schema. If
@@ -60,6 +66,7 @@ impl RegisteredModelServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Create a registered model
     ///
     /// Creates a new registered model. The caller must be a metastore admin or have
@@ -76,6 +83,7 @@ impl RegisteredModelServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Get a registered model
     ///
     /// Gets a registered model from within a parent catalog and schema. For the
@@ -85,7 +93,7 @@ impl RegisteredModelServiceClient {
         &self,
         request: &GetRegisteredModelRequest,
     ) -> Result<RegisteredModel> {
-        let formatted_path = format!("models/{}", request.full_name);
+        let formatted_path = format!("models/{}", encode_path_value(&request.full_name, false));
         let mut url = self.base_url.join(&formatted_path)?;
         if let Some(ref value) = request.include_browse {
             url.query_pairs_mut()
@@ -98,6 +106,7 @@ impl RegisteredModelServiceClient {
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Update a registered model
     ///
     /// Updates the registered model that matches the supplied name.
@@ -105,15 +114,18 @@ impl RegisteredModelServiceClient {
         &self,
         request: &UpdateRegisteredModelRequest,
     ) -> Result<RegisteredModel> {
-        let formatted_path = format!("models/{}", request.full_name);
+        let formatted_path = format!("models/{}", encode_path_value(&request.full_name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.patch(url).json(request).send().await?;
+        let mut body = request.clone();
+        body.full_name = Default::default();
+        let response = self.client.patch(url).json(&body).send().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
         let result = response.bytes().await?;
         Ok(serde_json::from_slice(&result)?)
     }
+
     /// Delete a registered model
     ///
     /// Deletes the registered model that matches the supplied name. For the deletion
@@ -122,7 +134,7 @@ impl RegisteredModelServiceClient {
         &self,
         request: &DeleteRegisteredModelRequest,
     ) -> Result<()> {
-        let formatted_path = format!("models/{}", request.full_name);
+        let formatted_path = format!("models/{}", encode_path_value(&request.full_name, false));
         let mut url = self.base_url.join(&formatted_path)?;
         if let Some(ref value) = request.force {
             url.query_pairs_mut()

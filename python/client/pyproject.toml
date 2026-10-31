@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "unitycatalog-client"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dynamic = ["version"]
 classifiers = [
   "Programming Language :: Rust",
