@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-server"
-version = "0.0.10"
+version = "0.0.11"
 description = "Unity Catalog REST server with pluggable storage backends."
 edition.workspace = true
 license.workspace = true
@@ -47,7 +47,7 @@ unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", ve
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.6" }
 # Credentials and external locations, with location resolution. The in-memory
 # store backs handlers built without a durable backend.
-unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.1", features = [
+unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.2", features = [
   "memory",
 ] }
 unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.7", features = [
@@ -95,8 +95,8 @@ uuid = { workspace = true, optional = true, features = ["v4", "v7"] }
 
 # `bin` (deployable `uc-server` binary) dependencies — all optional so a library
 # build of this crate doesn't pull the CLI / storage-backend / serve stack.
-unitycatalog-postgres = { package = "olai-uc-postgres", path = "../postgres", version = "0.0.7", optional = true }
-unitycatalog-sqlite = { package = "olai-uc-sqlite", path = "../sqlite", version = "0.0.7", optional = true }
+unitycatalog-postgres = { package = "olai-uc-postgres", path = "../postgres", version = "0.0.8", optional = true }
+unitycatalog-sqlite = { package = "olai-uc-sqlite", path = "../sqlite", version = "0.0.8", optional = true }
 base64 = { version = "0.22", optional = true }
 clap = { version = "4.5", features = ["derive", "env", "wrap_help"], optional = true }
 # `healthcheck` subcommand probes /health with a blocking client off the tokio

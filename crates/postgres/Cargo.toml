@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-postgres"
-version = "0.0.7"
+version = "0.0.8"
 description = "PostgreSQL-backed resource and secret store for the Unity Catalog server."
 edition.workspace = true
 homepage.workspace = true
@@ -20,7 +20,7 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
   "store",
 ] }
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.6" }
-unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.1", features = [
+unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.2", features = [
   "postgres",
 ] }
 
