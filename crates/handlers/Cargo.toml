@@ -4,7 +4,7 @@
 # `unitycatalog(_)handlers` via each dependent's `package =` alias, so no source
 # changes. See release-plz.toml / CONTRIBUTING.md.
 name = "olai-uc-handlers"
-version = "0.0.1"
+version = "0.0.2"
 description = "Resource-gated Unity Catalog handler traits and axum route functions, with the error and request-context types they need."
 edition.workspace = true
 homepage.workspace = true
@@ -23,7 +23,7 @@ name = "unitycatalog_handlers"
 
 [dependencies]
 # Only the wire models are needed; resources are switched on per feature below.
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.7", default-features = false }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.8", default-features = false }
 
 # workspace dependencies in alphabetical order
 async-trait = { workspace = true }

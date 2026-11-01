@@ -4003,7 +4003,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-client"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "async-trait",
  "buffa",
@@ -4037,7 +4037,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-common"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -4110,7 +4110,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-delta-api"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "async-trait",
  "axum",
@@ -4127,7 +4127,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-files-api"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "async-trait",
  "axum",
@@ -4167,7 +4167,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-handlers"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "axum",
@@ -4183,7 +4183,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-object-store"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "async-trait",
  "chrono",
@@ -4210,7 +4210,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-postgres"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4231,7 +4231,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-server"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "async-trait",
  "axum",
@@ -4281,7 +4281,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-sharing"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -4299,7 +4299,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-sqlite"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4320,7 +4320,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-storage-access"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "async-trait",
  "chrono",
@@ -4336,7 +4336,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-storage-proxy"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "async-trait",
  "axum",
@@ -6803,7 +6803,7 @@ version = "0.0.3"
 
 [[package]]
 name = "unity-catalog-node"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "buffa",
  "env_logger 0.11.11",
