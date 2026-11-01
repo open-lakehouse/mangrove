@@ -3,7 +3,7 @@
 # settles; the in-workspace dependency key + crate identifier stay
 # `unitycatalog(_)storage_access` via each dependent's `package =` alias.
 name = "olai-uc-storage-access"
-version = "0.0.1"
+version = "0.0.2"
 description = "Storage access store for the Unity Catalog server: credentials and the external locations they govern, with location resolution."
 edition.workspace = true
 homepage.workspace = true

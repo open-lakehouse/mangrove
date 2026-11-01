@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8](https://github.com/open-lakehouse/mangrove/compare/olai-uc-postgres-v0.0.7...olai-uc-postgres-v0.0.8) - 2026-11-01
+
+### Added
+
+- *(storage-access)* [**breaking**] own the Postgres and SQLite backends (#277)
+
 ## [0.0.7](https://github.com/open-lakehouse/mangrove/compare/olai-uc-postgres-v0.0.6...olai-uc-postgres-v0.0.7) - 2026-10-31
 
 ### Performance
