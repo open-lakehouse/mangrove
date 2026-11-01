@@ -128,7 +128,7 @@ impl TryFrom<Resource> for Object {
 
 /// The [`LocationKey`] stored with `resource`, for the resources looked up by location.
 ///
-/// A missing or unparseable location gets no key, so it never matches a location query.
+/// A missing or unparsable location gets no key, so it never matches a location query.
 fn location_key(resource: &Resource) -> Option<LocationKey> {
     let location = match resource {
         Resource::Table(table) => table.storage_location.as_deref()?,
@@ -211,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn skips_missing_and_unparseable_locations() {
+    fn skips_missing_and_unparsable_locations() {
         let table = Table {
             name: "t".into(),
             ..Default::default()
