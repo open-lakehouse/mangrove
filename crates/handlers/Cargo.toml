@@ -23,7 +23,7 @@ name = "unitycatalog_handlers"
 
 [dependencies]
 # Only the wire models are needed; resources are switched on per feature below.
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.6", default-features = false }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.7", default-features = false }
 
 # workspace dependencies in alphabetical order
 async-trait = { workspace = true }

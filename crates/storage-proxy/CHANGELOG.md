@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7](https://github.com/open-lakehouse/mangrove/compare/olai-uc-storage-proxy-v0.0.6...olai-uc-storage-proxy-v0.0.7) - 2026-10-31
+
+### Changed
+
+- [**breaking**] extract handler traits into olai-uc-handlers (#262) (#265)
+
 ## [0.0.5](https://github.com/open-lakehouse/mangrove/compare/olai-uc-storage-proxy-v0.0.4...olai-uc-storage-proxy-v0.0.5) - 2026-10-30
 
 ### Changed
