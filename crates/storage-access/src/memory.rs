@@ -352,6 +352,11 @@ impl StorageAccessStore for InMemoryStorageAccess {
         let state = self.state.read().unwrap_or_else(PoisonError::into_inner);
         Ok(state.covering(location).map(|l| state.read_location(l)))
     }
+
+    /// Secrets are held in the clear, so there is nothing to re-wrap.
+    async fn rewrap_secrets(&self) -> Result<usize> {
+        Ok(0)
+    }
 }
 
 #[cfg(all(test, feature = "testing"))]

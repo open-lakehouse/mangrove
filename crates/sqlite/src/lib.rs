@@ -11,7 +11,8 @@
 //! fields (credentials, tokens) are sealed inline on the object rows by the
 //! `ManagedObjectStore` layer, and [`SqliteCommitCoordinator`] provides durable
 //! Delta catalog-managed commits. Credentials and external locations live in
-//! tables of their own, behind [`SqliteStorageAccess`].
+//! tables of their own, behind [`SqliteStorageAccess`] (re-exported from
+//! `olai-uc-storage-access`).
 //!
 //! ## Known gaps relative to the Postgres backend
 //!
@@ -22,10 +23,9 @@
 
 pub use crate::commit_coordinator::SqliteCommitCoordinator;
 pub use crate::error::{Error, Result};
-pub use crate::storage_access::SqliteStorageAccess;
 pub use crate::store::{SqliteGraphStore, connect_graph, connect_pool, unified_migrator};
+pub use unitycatalog_storage_access::SqliteStorageAccess;
 
 mod commit_coordinator;
 mod error;
-mod storage_access;
 mod store;

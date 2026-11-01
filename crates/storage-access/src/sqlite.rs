@@ -1,65 +1,69 @@
-//! Postgres-backed [`StorageAccessStore`] over the `uc_credentials` and
+//! SQLite-backed [`StorageAccessStore`] over the `uc_credentials` and
 //! `uc_external_locations` tables.
 //!
-//! Every write that checks a rule before writing (overlap, credential existence,
-//! credential in use) runs in a transaction holding the bundle's advisory lock,
-//! so concurrent checks serialize. Locations are matched on their indexed
-//! `url_key` ([`LocationKey`]): the locations covering a path are an `= ANY`
-//! lookup over the path's ancestors, the locations under it a range scan.
+//! Every multi-statement write runs in a `BEGIN IMMEDIATE` transaction, so the rule checks
+//! (overlap, credential existence, credential in use) and the write are atomic
+//! against other writers. Locations are matched on their indexed `url_key`
+//! ([`LocationKey`]): the locations covering a path are an `IN` lookup over the
+//! path's ancestors, the locations under it a range scan.
+//!
+//! # Migrations
+//!
+//! The tables come from [`MIGRATOR`]. It is versioned in the 02xx range and meant
+//! to be merged into the host's own migrator, so the database keeps one ordered
+//! `_sqlx_migrations` ledger:
+//!
+//! ```ignore
+//! let host = sqlx::migrate!("./migrations");
+//! let mut migrations: Vec<_> = host.migrations.iter().cloned().collect();
+//! migrations.extend(unitycatalog_storage_access::sqlite::MIGRATOR.iter().cloned());
+//! migrations.sort_by_key(|m| m.version);
+//! ```
+//!
+//! Hosts number their own migrations outside 02xx.
 
-use async_trait::async_trait;
-use olai_storage_credentials::StorageLocation;
-use sqlx::{PgConnection, PgPool, Postgres, QueryBuilder};
-use unitycatalog_common::models::credentials::v1::{Credential, Purpose};
-use unitycatalog_common::models::external_locations::v1::ExternalLocation;
-use unitycatalog_common::services::encryption::EnvelopeEncryptor;
-use unitycatalog_storage_access::rules::{
-    credential_in_use_error, new_id, now_millis, overlap_error,
-};
-use unitycatalog_storage_access::{
+use crate::rules::{credential_in_use_error, new_id, now_millis, overlap_error};
+use crate::sql::{db, paginate, rewrap};
+use crate::{
     CredentialSecrets, CredentialUpdate, Error, ExternalLocationUpdate, Governed, LocationKey,
     Page, Result, StorageAccessStore,
 };
+use async_trait::async_trait;
+use olai_storage_credentials::StorageLocation;
+use olai_store::encryption::EnvelopeEncryptor;
+use sqlx::migrate::Migrator;
+use sqlx::{QueryBuilder, Sqlite, SqliteConnection, SqlitePool};
+use unitycatalog_common::models::credentials::v1::{Credential, Purpose};
+use unitycatalog_common::models::external_locations::v1::ExternalLocation;
 
-use crate::Error as PgError;
+/// The migrations creating the `uc_credentials` and `uc_external_locations`
+/// tables (version 0201), for the host to merge into its own migrator.
+pub static MIGRATOR: Migrator = sqlx::migrate!("./migrations/sqlite");
 
-/// Postgres-backed [`StorageAccessStore`].
+/// SQLite-backed [`StorageAccessStore`].
 ///
-/// Holds its own clone of the shared [`PgPool`]; credential secrets are sealed
+/// Holds its own clone of the shared [`SqlitePool`]; credential secrets are sealed
 /// with `encryptor`, bound to the credential id.
 #[derive(Clone, Debug)]
-pub struct PgStorageAccess {
-    pool: PgPool,
+pub struct SqliteStorageAccess {
+    pool: SqlitePool,
     encryptor: EnvelopeEncryptor,
 }
 
-impl PgStorageAccess {
+impl SqliteStorageAccess {
     /// A store over `pool`, sealing secrets with `encryptor`.
-    pub fn new(pool: PgPool, encryptor: EnvelopeEncryptor) -> Self {
+    pub fn new(pool: SqlitePool, encryptor: EnvelopeEncryptor) -> Self {
         Self { pool, encryptor }
     }
 }
 
-fn db(e: sqlx::Error) -> Error {
-    PgError::from(e).into()
-}
-
-/// The envelope AAD of a credential's secrets.
-fn secret_aad(id: &str) -> String {
-    format!("credential/{id}")
-}
-
-/// The advisory lock serializing the bundle's checked writes ("UCSTACCS").
-const ADVISORY_LOCK: i64 = 0x5543_5354_4143_4353;
-
-// Ids are `uuid` columns, read back as their hyphenated text.
-const CREDENTIAL_COLUMNS: &str = "c.id::text AS id, c.name, c.purpose, c.read_only, \
+const CREDENTIAL_COLUMNS: &str = "c.id, c.name, c.purpose, c.read_only, \
     c.used_for_managed_storage, c.comment, c.owner, c.created_at, c.created_by, \
     c.updated_at, c.updated_by";
 
-const LOCATION_COLUMNS: &str = "l.id::text AS id, l.name, l.url, \
-    l.credential_id::text AS credential_id, c.name AS credential_name, l.read_only, \
-    l.comment, l.owner, l.created_at, l.created_by, l.updated_at, l.updated_by";
+const LOCATION_COLUMNS: &str = "l.id, l.name, l.url, l.credential_id, \
+    c.name AS credential_name, l.read_only, l.comment, l.owner, l.created_at, \
+    l.created_by, l.updated_at, l.updated_by";
 
 #[derive(sqlx::FromRow)]
 struct CredentialRow {
@@ -139,21 +143,15 @@ impl From<LocationRow> for ExternalLocation {
     }
 }
 
-/// Opens a transaction holding the bundle's advisory lock, so its rule checks and
-/// writes are atomic against other writers. Dropping it uncommitted rolls back.
-async fn write_txn(pool: &PgPool) -> Result<sqlx::Transaction<'static, Postgres>> {
-    let mut txn = pool.begin().await.map_err(db)?;
-    sqlx::query("SELECT pg_advisory_xact_lock($1)")
-        .bind(ADVISORY_LOCK)
-        .execute(&mut *txn)
-        .await
-        .map_err(db)?;
-    Ok(txn)
+/// Opens a transaction holding SQLite's write lock from the start, so its reads
+/// and writes are atomic against other writers. Dropping it uncommitted rolls back.
+async fn write_txn(pool: &SqlitePool) -> Result<sqlx::Transaction<'static, Sqlite>> {
+    pool.begin_with("BEGIN IMMEDIATE").await.map_err(db)
 }
 
-async fn credential_by_name(conn: &mut PgConnection, name: &str) -> Result<CredentialRow> {
+async fn credential_by_name(conn: &mut SqliteConnection, name: &str) -> Result<CredentialRow> {
     sqlx::query_as(&format!(
-        "SELECT {CREDENTIAL_COLUMNS} FROM uc_credentials c WHERE c.name = $1"
+        "SELECT {CREDENTIAL_COLUMNS} FROM uc_credentials c WHERE c.name = ?"
     ))
     .bind(name)
     .fetch_optional(conn)
@@ -162,10 +160,10 @@ async fn credential_by_name(conn: &mut PgConnection, name: &str) -> Result<Crede
     .ok_or(Error::NotFound)
 }
 
-async fn location_by_name(conn: &mut PgConnection, name: &str) -> Result<LocationRow> {
+async fn location_by_name(conn: &mut SqliteConnection, name: &str) -> Result<LocationRow> {
     sqlx::query_as(&format!(
         "SELECT {LOCATION_COLUMNS} FROM uc_external_locations l \
-         JOIN uc_credentials c ON c.id = l.credential_id WHERE l.name = $1"
+         JOIN uc_credentials c ON c.id = l.credential_id WHERE l.name = ?"
     ))
     .bind(name)
     .fetch_optional(conn)
@@ -175,26 +173,26 @@ async fn location_by_name(conn: &mut PgConnection, name: &str) -> Result<Locatio
 }
 
 /// The location whose key is among `key`'s ancestors: the one covering it.
-async fn covering(conn: &mut PgConnection, key: &LocationKey) -> Result<Option<LocationRow>> {
-    let ancestors: Vec<String> = key
-        .ancestors()
-        .iter()
-        .map(|k| k.as_str().to_owned())
-        .collect();
-    sqlx::query_as(&format!(
+async fn covering(conn: &mut SqliteConnection, key: &LocationKey) -> Result<Option<LocationRow>> {
+    let mut query = QueryBuilder::<Sqlite>::new(format!(
         "SELECT {LOCATION_COLUMNS} FROM uc_external_locations l \
-         JOIN uc_credentials c ON c.id = l.credential_id WHERE l.url_key = ANY($1) \
-         ORDER BY length(l.url_key) DESC LIMIT 1"
-    ))
-    .bind(ancestors)
-    .fetch_optional(conn)
-    .await
-    .map_err(db)
+         JOIN uc_credentials c ON c.id = l.credential_id WHERE l.url_key IN ("
+    ));
+    let mut keys = query.separated(", ");
+    for ancestor in key.ancestors() {
+        keys.push_bind(ancestor.as_str().to_owned());
+    }
+    query.push(") ORDER BY length(l.url_key) DESC LIMIT 1");
+    query
+        .build_query_as()
+        .fetch_optional(conn)
+        .await
+        .map_err(db)
 }
 
 /// Refuses `url` (with key `key`) if it overlaps a location other than `except_id`.
 async fn check_no_overlap(
-    conn: &mut PgConnection,
+    conn: &mut SqliteConnection,
     url: &str,
     key: &LocationKey,
     except_id: Option<&str>,
@@ -205,8 +203,7 @@ async fn check_no_overlap(
             let (lower, upper) = key.descendants();
             sqlx::query_as::<_, (String, String)>(
                 "SELECT name, url FROM uc_external_locations \
-                 WHERE url_key >= $1 AND url_key < $2 AND id IS DISTINCT FROM $3::uuid \
-                 LIMIT 1",
+                 WHERE url_key >= ? AND url_key < ? AND id IS NOT ? LIMIT 1",
             )
             .bind(lower)
             .bind(upper)
@@ -222,22 +219,18 @@ async fn check_no_overlap(
     }
 }
 
-impl PgStorageAccess {
+impl SqliteStorageAccess {
     async fn seal(&self, id: &str, secrets: &CredentialSecrets) -> Result<Vec<u8>> {
-        Ok(self
-            .encryptor
-            .seal(&secret_aad(id), &secrets.to_bytes()?)
-            .await?)
+        crate::sql::seal(&self.encryptor, id, secrets).await
     }
 
     async fn open(&self, id: &str, sealed: &[u8]) -> Result<CredentialSecrets> {
-        let plaintext = self.encryptor.open(&secret_aad(id), sealed).await?;
-        CredentialSecrets::from_bytes(&plaintext)
+        crate::sql::open(&self.encryptor, id, sealed).await
     }
 }
 
 #[async_trait]
-impl StorageAccessStore for PgStorageAccess {
+impl StorageAccessStore for SqliteStorageAccess {
     async fn create_credential(&self, mut credential: Credential) -> Result<Credential> {
         let secrets = CredentialSecrets::take(&mut credential);
         let id = new_id();
@@ -247,8 +240,7 @@ impl StorageAccessStore for PgStorageAccess {
         sqlx::query(
             "INSERT INTO uc_credentials (id, name, purpose, read_only, \
              used_for_managed_storage, comment, owner, sealed, created_at, created_by, \
-             updated_at, updated_by) \
-             VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $9, $10)",
+             updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(&id)
         .bind(&credential.name)
@@ -258,6 +250,8 @@ impl StorageAccessStore for PgStorageAccess {
         .bind(&credential.comment)
         .bind(&credential.owner)
         .bind(&sealed)
+        .bind(now)
+        .bind(&credential.created_by)
         .bind(now)
         .bind(&credential.created_by)
         .execute(&mut *conn)
@@ -278,8 +272,8 @@ impl StorageAccessStore for PgStorageAccess {
         purpose: Option<Purpose>,
         page: Page,
     ) -> Result<(Vec<Credential>, Option<String>)> {
-        let mut query = QueryBuilder::<Postgres>::new(format!(
-            "SELECT {CREDENTIAL_COLUMNS} FROM uc_credentials c WHERE true"
+        let mut query = QueryBuilder::<Sqlite>::new(format!(
+            "SELECT {CREDENTIAL_COLUMNS} FROM uc_credentials c WHERE 1 = 1"
         ));
         if let Some(purpose) = purpose {
             query.push(" AND c.purpose = ").push_bind(purpose as i32);
@@ -308,10 +302,10 @@ impl StorageAccessStore for PgStorageAccess {
         };
         let mut txn = write_txn(&self.pool).await?;
         let result = sqlx::query(
-            "UPDATE uc_credentials SET name = coalesce($1, name), \
-             comment = coalesce($2, comment), read_only = coalesce($3, read_only), \
-             owner = coalesce($4, owner), sealed = coalesce($5, sealed), updated_at = $6 \
-             WHERE id = $7::uuid",
+            "UPDATE uc_credentials SET name = coalesce(?, name), \
+                 comment = coalesce(?, comment), read_only = coalesce(?, read_only), \
+                 owner = coalesce(?, owner), sealed = coalesce(?, sealed), updated_at = ? \
+                 WHERE id = ?",
         )
         .bind(&update.new_name)
         .bind(&update.comment)
@@ -336,8 +330,7 @@ impl StorageAccessStore for PgStorageAccess {
         let mut txn = write_txn(&self.pool).await?;
         let credential = credential_by_name(&mut txn, name).await?;
         let users: Vec<String> = sqlx::query_scalar(
-            "SELECT name FROM uc_external_locations WHERE credential_id = $1::uuid \
-             ORDER BY name",
+            "SELECT name FROM uc_external_locations WHERE credential_id = ? ORDER BY name",
         )
         .bind(&credential.id)
         .fetch_all(&mut *txn)
@@ -346,7 +339,7 @@ impl StorageAccessStore for PgStorageAccess {
         if !users.is_empty() {
             return Err(credential_in_use_error(&credential.name, &users));
         }
-        sqlx::query("DELETE FROM uc_credentials WHERE id = $1::uuid")
+        sqlx::query("DELETE FROM uc_credentials WHERE id = ?")
             .bind(&credential.id)
             .execute(&mut *txn)
             .await
@@ -365,8 +358,8 @@ impl StorageAccessStore for PgStorageAccess {
         let now = now_millis();
         sqlx::query(
             "INSERT INTO uc_external_locations (id, name, url, url_key, credential_id, \
-             read_only, comment, owner, created_at, created_by, updated_at, updated_by) \
-             VALUES ($1::uuid, $2, $3, $4, $5::uuid, $6, $7, $8, $9, $10, $9, $10)",
+                 read_only, comment, owner, created_at, created_by, updated_at, updated_by) \
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(new_id())
         .bind(&location.name)
@@ -376,6 +369,8 @@ impl StorageAccessStore for PgStorageAccess {
         .bind(location.read_only)
         .bind(&location.comment)
         .bind(&location.owner)
+        .bind(now)
+        .bind(&location.created_by)
         .bind(now)
         .bind(&location.created_by)
         .execute(&mut *txn)
@@ -395,9 +390,9 @@ impl StorageAccessStore for PgStorageAccess {
         &self,
         page: Page,
     ) -> Result<(Vec<ExternalLocation>, Option<String>)> {
-        let mut query = QueryBuilder::<Postgres>::new(format!(
+        let mut query = QueryBuilder::<Sqlite>::new(format!(
             "SELECT {LOCATION_COLUMNS} FROM uc_external_locations l \
-             JOIN uc_credentials c ON c.id = l.credential_id WHERE true"
+             JOIN uc_credentials c ON c.id = l.credential_id WHERE 1 = 1"
         ));
         if let Some(token) = page.token {
             query.push(" AND l.name > ").push_bind(token);
@@ -430,11 +425,11 @@ impl StorageAccessStore for PgStorageAccess {
             None => None,
         };
         sqlx::query(
-            "UPDATE uc_external_locations SET name = coalesce($1, name), \
-             url = coalesce($2, url), url_key = coalesce($3, url_key), \
-             credential_id = coalesce($4::uuid, credential_id), \
-             read_only = coalesce($5, read_only), comment = coalesce($6, comment), \
-             owner = coalesce($7, owner), updated_at = $8 WHERE id = $9::uuid",
+            "UPDATE uc_external_locations SET name = coalesce(?, name), \
+                 url = coalesce(?, url), url_key = coalesce(?, url_key), \
+                 credential_id = coalesce(?, credential_id), \
+                 read_only = coalesce(?, read_only), comment = coalesce(?, comment), \
+                 owner = coalesce(?, owner), updated_at = ? WHERE id = ?",
         )
         .bind(&update.new_name)
         .bind(&update.url)
@@ -455,7 +450,7 @@ impl StorageAccessStore for PgStorageAccess {
     }
 
     async fn delete_external_location(&self, name: &str) -> Result<()> {
-        let result = sqlx::query("DELETE FROM uc_external_locations WHERE name = $1")
+        let result = sqlx::query("DELETE FROM uc_external_locations WHERE name = ?")
             .bind(name)
             .execute(&self.pool)
             .await
@@ -472,8 +467,7 @@ impl StorageAccessStore for PgStorageAccess {
             .await?
             .ok_or(Error::NotFound)?;
         let SealedCredentialRow { credential, sealed } = sqlx::query_as(&format!(
-            "SELECT {CREDENTIAL_COLUMNS}, c.sealed FROM uc_credentials c \
-             WHERE c.id = $1::uuid"
+            "SELECT {CREDENTIAL_COLUMNS}, c.sealed FROM uc_credentials c WHERE c.id = ?"
         ))
         .bind(&row.credential_id)
         .fetch_one(&mut *conn)
@@ -497,20 +491,73 @@ impl StorageAccessStore for PgStorageAccess {
             .await?
             .map(Into::into))
     }
+
+    async fn rewrap_secrets(&self) -> Result<usize> {
+        let rows: Vec<(String, Vec<u8>)> = sqlx::query_as("SELECT id, sealed FROM uc_credentials")
+            .fetch_all(&self.pool)
+            .await
+            .map_err(db)?;
+        let mut rewrapped = 0;
+        for (id, sealed) in rows {
+            let Some(fresh) = rewrap(&self.encryptor, &sealed).await? else {
+                continue;
+            };
+            // Only replace the blob read above: a concurrent update has already
+            // sealed its secrets under the active key.
+            let result =
+                sqlx::query("UPDATE uc_credentials SET sealed = ?1 WHERE id = ?2 AND sealed = ?3")
+                    .bind(&fresh)
+                    .bind(&id)
+                    .bind(&sealed)
+                    .execute(&self.pool)
+                    .await
+                    .map_err(db)?;
+            rewrapped += result.rows_affected() as usize;
+        }
+        Ok(rewrapped)
+    }
 }
 
-/// Splits the extra row fetched past `max` off `rows`, returning its token.
-fn paginate<R, T: From<R>>(
-    mut rows: Vec<R>,
-    max: Option<usize>,
-    token: impl Fn(&R) -> String,
-) -> (Vec<T>, Option<String>) {
-    let next = match max {
-        Some(max) if rows.len() > max => {
-            rows.truncate(max);
-            rows.last().map(token)
-        }
-        _ => None,
-    };
-    (rows.into_iter().map(Into::into).collect(), next)
+#[cfg(all(test, feature = "testing"))]
+mod tests {
+    use olai_store::encryption::LocalKeyProvider;
+    use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+
+    use super::*;
+
+    /// A fresh in-memory database; one connection, since each `:memory:`
+    /// connection is its own database.
+    async fn pool() -> SqlitePool {
+        let options: SqliteConnectOptions = "sqlite::memory:".parse().unwrap();
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(options.foreign_keys(true))
+            .await
+            .unwrap();
+        MIGRATOR.run(&pool).await.unwrap();
+        pool
+    }
+
+    fn encryptor(active: &str, keys: &[&str]) -> EnvelopeEncryptor {
+        let keys = keys
+            .iter()
+            .map(|k| ((*k).into(), vec![k.as_bytes()[0]; 32]));
+        EnvelopeEncryptor::local(LocalKeyProvider::new(active, keys).unwrap())
+    }
+
+    #[tokio::test]
+    async fn conformance() {
+        crate::testing::conformance(|| async {
+            SqliteStorageAccess::new(pool().await, encryptor("a", &["a"]))
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn key_rotation() {
+        let pool = pool().await;
+        let before = SqliteStorageAccess::new(pool.clone(), encryptor("a", &["a"]));
+        let after = SqliteStorageAccess::new(pool, encryptor("b", &["a", "b"]));
+        crate::testing::key_rotation(&before, &after).await;
+    }
 }

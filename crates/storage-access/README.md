@@ -20,9 +20,16 @@ serve them from an index.
 Implementations:
 
 - `InMemoryStorageAccess` (feature `memory`), for tests and ephemeral servers;
-- the Postgres store in `olai-uc-postgres` and the SQLite store in
-  `olai-uc-sqlite`, each with its own tables.
+- `PgStorageAccess` (feature `postgres`) and `SqliteStorageAccess` (feature
+  `sqlite`), over a pool the host provides, each with tables of its own. Their
+  `MIGRATOR` (versioned 0201) is meant to be merged into the host's migrator so
+  the database keeps one `_sqlx_migrations` ledger. `olai-uc-postgres` and
+  `olai-uc-sqlite` do exactly that.
+
+`rewrap_secrets` re-wraps sealed secrets under the active key after a KEK
+rotation.
 
 With the `vending` feature, `dyn StorageAccessStore` implements
 `olai_credential_vending::CredentialResolver`. The `testing` feature exposes the
-conformance suite every backend runs.
+conformance suite every backend runs (`testing::conformance`), and
+`testing::key_rotation` for backends that seal secrets.

@@ -32,3 +32,22 @@ async fn conformance(pool: sqlx::PgPool) {
     })
     .await;
 }
+
+fn encryptor(active: &str, keys: &[&str]) -> EnvelopeEncryptor {
+    let keys = keys
+        .iter()
+        .map(|k| ((*k).into(), vec![k.as_bytes()[0]; 32]));
+    EnvelopeEncryptor::local(LocalKeyProvider::new(active, keys).unwrap())
+}
+
+/// Secrets sealed under a retired key are re-wrapped under the active one.
+#[sqlx::test(migrations = false)]
+async fn key_rotation(pool: sqlx::PgPool) {
+    unitycatalog_postgres::unified_migrator()
+        .run(&pool)
+        .await
+        .unwrap();
+    let before = PgStorageAccess::new(pool.clone(), encryptor("a", &["a"]));
+    let after = PgStorageAccess::new(pool, encryptor("b", &["a", "b"]));
+    unitycatalog_storage_access::testing::key_rotation(&before, &after).await;
+}

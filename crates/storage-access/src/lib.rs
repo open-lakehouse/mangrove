@@ -43,6 +43,19 @@ mod memory;
 #[cfg(feature = "memory")]
 pub use crate::memory::InMemoryStorageAccess;
 
+#[cfg(feature = "postgres")]
+pub mod postgres;
+#[cfg(feature = "postgres")]
+pub use crate::postgres::PgStorageAccess;
+
+#[cfg(feature = "sqlite")]
+pub mod sqlite;
+#[cfg(feature = "sqlite")]
+pub use crate::sqlite::SqliteStorageAccess;
+
+#[cfg(any(feature = "postgres", feature = "sqlite"))]
+mod sql;
+
 #[cfg(feature = "testing")]
 pub mod testing;
 
@@ -176,6 +189,13 @@ pub trait StorageAccessStore: Send + Sync + 'static {
         &self,
         location: &StorageLocation,
     ) -> Result<Option<ExternalLocation>>;
+
+    /// Re-wraps every sealed secret under the active key-encryption key, after a
+    /// key rotation. Returns how many were re-wrapped.
+    ///
+    /// Secrets already under the active key are left alone, so running it again
+    /// returns 0. Backends that keep no sealed secrets return 0.
+    async fn rewrap_secrets(&self) -> Result<usize>;
 }
 
 /// Access to a [`StorageAccessStore`].
