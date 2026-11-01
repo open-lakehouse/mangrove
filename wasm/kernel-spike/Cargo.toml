@@ -1,0 +1,50 @@
+# B0 spike for #198: can the wasm engine run the PUBLISHED `buoyant_kernel` 0.28
+# (whose snapshot / scan-metadata APIs are synchronous) without ever blocking on IO?
+#
+# Approach under test — a record/replay `Engine`: every kernel IO request is served
+# from an in-memory cache; a miss is recorded and fails fast (never blocks). An async
+# driver fetches the recorded misses through `object_store` and re-runs the kernel call
+# until a pass completes with zero misses. Throwaway crate: `publish = false`, not
+# consumed by `query-wasm`.
+#
+# buoyant is depended on under its own name, so it coexists with the roeap
+# `delta_kernel` fork that `olai-delta-df` still uses. `arrow-58` keeps it on the
+# workspace's patched arrow 58.3 (the fork's wasm zstd codecs).
+[package]
+name = "kernel-spike"
+version = "0.0.0"
+edition = "2024"
+license = "Apache-2.0"
+rust-version = "1.91"
+publish = false
+
+[dependencies]
+buoyant_kernel = { version = "0.28.1", default-features = false, features = [
+  "arrow-58",
+  "internal-api",
+  "default-engine-base",
+  "declarative-plans",
+] }
+bytes = "1.10"
+futures = "0.3"
+object_store = "0.13"
+url = "2"
+
+# Both getrandom majors need their JS backend selected by crate feature on wasm32:
+# 0.4 via object_store -> rand 0.10, and 0.3 via buoyant -> rand 0.9 (the roeap fork kernel
+# enabled these itself; the published buoyant does not).
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+getrandom = { version = "0.4", features = ["wasm_js"] }
+getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
+# buoyant mints `uuid::Uuid::new_v4()` ids; uuid needs a randomness source on wasm32.
+uuid = { version = "1", features = ["js"] }
+
+[target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
+# Native-only reference: the stock DefaultEngine builds the same snapshots/checkpoints
+# we compare the replay engine against. Not wasm-capable (tokio rt-multi-thread).
+buoyant_kernel_engine = { version = "0.28.0", default-features = false, features = ["arrow-58"] }
+
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
+wasm-bindgen-test = "0.3"
+wasm-bindgen-futures = "0.4"
