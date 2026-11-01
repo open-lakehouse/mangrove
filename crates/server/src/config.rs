@@ -488,23 +488,6 @@ impl RoutingConfig {
             .collect()
     }
 
-    /// Surfaces that are routed upstream but do not yet have a proxy adapter
-    /// implemented. Setting any of these to [`RoutingMode::Upstream`] is a
-    /// configuration error and the server should refuse to start.
-    ///
-    /// v1 implements adapters for catalogs, schemas, and tables only.
-    pub fn unsupported_upstream(&self) -> Vec<&'static str> {
-        [
-            ("credentials", self.credentials),
-            ("external-locations", self.external_locations),
-            ("functions", self.functions),
-        ]
-        .into_iter()
-        .filter(|(_, mode)| *mode == RoutingMode::Upstream)
-        .map(|(name, _)| name)
-        .collect()
-    }
-
     fn surfaces(&self) -> [(&'static str, RoutingMode); 6] {
         [
             ("catalogs", self.catalogs),
@@ -906,7 +889,6 @@ mod tests {
         let routing = RoutingConfig::default();
         assert_eq!(routing.catalogs, RoutingMode::Local);
         assert!(!routing.any_upstream());
-        assert!(routing.unsupported_upstream().is_empty());
     }
 
     #[test]
@@ -933,7 +915,6 @@ mod tests {
         assert_eq!(config.routing.schemas, RoutingMode::Local);
         assert_eq!(config.routing.tables, RoutingMode::Upstream);
         assert!(config.routing.any_upstream());
-        assert!(config.routing.unsupported_upstream().is_empty());
 
         // round-trips back to YAML and re-parses identically
         let serialized = serde_yml::to_string(&config).unwrap();
@@ -1080,18 +1061,27 @@ mod tests {
     }
 
     #[test]
-    fn test_unsupported_upstream_surfaces_detected() {
+    fn test_every_surface_routes_upstream() {
         let yaml = r#"
             routing:
               catalogs: upstream
+              schemas: upstream
+              tables: upstream
               credentials: upstream
+              external-locations: upstream
               functions: upstream
         "#;
         let config: Config = serde_yml::from_str(yaml).unwrap();
-        assert!(config.routing.any_upstream());
         assert_eq!(
-            config.routing.unsupported_upstream(),
-            vec!["credentials", "functions"]
+            config.routing.upstream_surfaces(),
+            vec![
+                "catalogs",
+                "schemas",
+                "tables",
+                "credentials",
+                "external-locations",
+                "functions"
+            ]
         );
     }
 }

@@ -3,15 +3,14 @@
 //! Implementations of the per-resource handler traits that compose with or
 //! delegate to other backends, rather than serving from the local store:
 //!
-//! - `upstream` — **proxy leaves** that forward requests to an upstream Unity
-//!   Catalog instance via `unitycatalog-client`, enforcing this server's
-//!   [`Policy`](crate::policy::Policy) locally before delegating. Gated behind
-//!   the `proxy` feature (pulls the client dependency), so the module and its
-//!   links are only present in a build with that feature enabled.
+//! - [`Authorized`] — a **decorator** that enforces this server's
+//!   [`Policy`](crate::policy::Policy) in front of any inner handler. With the
+//!   `proxy` feature the `unitycatalog-client` service clients implement the
+//!   handler traits too, so wrapping one yields a policy-checked proxy to an
+//!   upstream Unity Catalog instance.
 //!
-//! Future patterns (decorators that wrap an inner handler — audit, cache,
-//! guard, federation) will live alongside and stay ungated where they need only
-//! `server` + `common`.
+//! Future patterns (audit, cache, guard, federation) will live alongside and
+//! stay ungated where they need only `server` + `common`.
 //!
 //! # Genericity
 //!
@@ -19,5 +18,6 @@
 //! [`RequestContext`](crate::api::RequestContext) directly, so they remain
 //! portable if these modules are later lifted into a dedicated crate.
 
-#[cfg(feature = "proxy")]
-pub mod upstream;
+mod authorized;
+
+pub use authorized::Authorized;
