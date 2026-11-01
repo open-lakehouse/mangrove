@@ -6,7 +6,8 @@
 //!     the bundled web UI when enabled, and runs until shutdown. It does **not**
 //!     apply migrations.
 //!   - [`migrate`] connects the configured backend and applies any pending
-//!     database migrations, then returns. This is the only schema-mutating path,
+//!     database migrations and creates the declared property indexes, then
+//!     returns. This is the only schema-mutating path,
 //!     kept off the `serve` hot path so concurrent replicas don't race to migrate.
 //!
 //! The REST router itself (and the `/health` + `/version` operational endpoints)
@@ -294,8 +295,9 @@ async fn build_files_router(config: &Config) -> Result<Router> {
     Ok(AppState::new(files).into_axum_router())
 }
 
-/// Connect the configured backend and apply any pending migrations, then return.
-/// The only schema-mutating path (see the module docs).
+/// Connect the configured backend, apply any pending migrations and create the
+/// declared property indexes, then return. The only schema-mutating path (see the
+/// module docs).
 pub async fn migrate(config: Config) -> Result<()> {
     match &config.backend {
         Backend::Postgres(pg) => {
@@ -309,6 +311,9 @@ pub async fn migrate(config: Config) -> Result<()> {
                 .run(&pool)
                 .await
                 .map_err(|e| Error::Generic(format!("running migrations: {e}")))?;
+            unitycatalog_postgres::ensure_property_indexes(&pool)
+                .await
+                .map_err(|e| Error::Generic(format!("creating property indexes: {e}")))?;
         }
         Backend::Sqlite(cfg) => {
             let path = cfg
@@ -321,6 +326,9 @@ pub async fn migrate(config: Config) -> Result<()> {
                 .run(&pool)
                 .await
                 .map_err(|e| Error::Generic(format!("running migrations: {e}")))?;
+            unitycatalog_sqlite::ensure_property_indexes(&pool)
+                .await
+                .map_err(|e| Error::Generic(format!("creating property indexes: {e}")))?;
         }
     }
     tracing::info!("migrations applied");
@@ -502,6 +510,9 @@ async fn connect_postgres(
             .run(&pool)
             .await
             .map_err(|e| Error::Generic(format!("running migrations: {e}")))?;
+        unitycatalog_postgres::ensure_property_indexes(&pool)
+            .await
+            .map_err(|e| Error::Generic(format!("creating property indexes: {e}")))?;
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
     // The object/association graph store (lifted to `ResourceStore` by
@@ -544,6 +555,9 @@ async fn connect_sqlite(
             .run(&pool)
             .await
             .map_err(|e| Error::Generic(format!("running migrations: {e}")))?;
+        unitycatalog_sqlite::ensure_property_indexes(&pool)
+            .await
+            .map_err(|e| Error::Generic(format!("creating property indexes: {e}")))?;
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
     // The object/association graph store (lifted to `ResourceStore` by

@@ -17,11 +17,12 @@ pub(crate) async fn find_overlapping_location(
     handler: &(impl ResourceStore + ?Sized),
     location: &StorageLocationUrl,
 ) -> Result<Option<String>> {
-    let filter = LocationKey::new(location.location()).overlapping();
-    for label in [ObjectLabel::Table, ObjectLabel::Volume] {
-        let (found, _) = handler.search(&label, None, &filter, Some(1), None).await?;
-        if let Some(resource) = found.into_iter().next() {
-            return Ok(Some(storage_location(resource)));
+    for filter in LocationKey::new(location.location()).overlapping() {
+        for label in [ObjectLabel::Table, ObjectLabel::Volume] {
+            let (found, _) = handler.search(&label, None, &filter, Some(1), None).await?;
+            if let Some(resource) = found.into_iter().next() {
+                return Ok(Some(storage_location(resource)));
+            }
         }
     }
     Ok(None)

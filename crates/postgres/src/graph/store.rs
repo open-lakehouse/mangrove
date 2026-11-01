@@ -19,13 +19,14 @@ use std::str::FromStr;
 use sqlx::PgPool;
 use sqlx::migrate::Migrator;
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use unitycatalog_common::location_key::location_key_indexes;
 use unitycatalog_common::services::encryption::EnvelopeEncryptor;
 use unitycatalog_common::{AssociationLabel, ObjectLabel};
 
 use olai_store::{ManagedObjectStore, PgStore, ResourceRegistry};
 use unitycatalog_common::models::labels::RESOURCE_DESCRIPTORS;
 
-use crate::error::Result;
+use crate::error::{Error, Result};
 
 /// The composed Postgres object/association graph store: the generic
 /// [`PgStore`] wrapped in a registry-aware, sensitive-field-sealing
@@ -80,7 +81,24 @@ pub async fn connect_pool(url: impl AsRef<str>) -> Result<PgPool> {
 /// redacting them from ordinary reads. The registry is generated from the proto
 /// `debug_redact` annotations (see `RESOURCE_DESCRIPTORS`).
 pub fn connect_graph(pool: PgPool, encryptor: EnvelopeEncryptor) -> PgGraphStore {
-    let inner = PgStore::<ObjectLabel>::connect(pool).with_inverse(inverse_resolver);
+    let inner = PgStore::<ObjectLabel>::connect(pool)
+        .with_inverse(inverse_resolver)
+        .with_property_indexes(location_key_indexes());
     let registry = ResourceRegistry::from_static(RESOURCE_DESCRIPTORS);
     ManagedObjectStore::with_encryptor(inner, encryptor, registry)
+}
+
+/// Create the expression indexes that serve location searches, if missing.
+///
+/// DDL, so run it with the migrations: [`connect_graph`] declares the indexes but
+/// never creates them, and searches stay correct (just unindexed) without them.
+/// Idempotent. The plain `CREATE INDEX` blocks writes to `objects` while it builds;
+/// on a large live table, pre-create the index with `CREATE INDEX CONCURRENTLY`
+/// (see `olai_store::PgStore::ensure_property_indexes`).
+pub async fn ensure_property_indexes(pool: &PgPool) -> Result<()> {
+    PgStore::<ObjectLabel>::connect(pool.clone())
+        .with_property_indexes(location_key_indexes())
+        .ensure_property_indexes()
+        .await
+        .map_err(|e| Error::Generic(e.to_string()))
 }

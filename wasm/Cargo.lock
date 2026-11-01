@@ -2723,9 +2723,9 @@ dependencies = [
 
 [[package]]
 name = "olai-http"
-version = "0.0.9"
+version = "0.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43fc52fd03215dba64cd00246ed37411c3217d8e92d1027e7b654c62e9e565b2"
+checksum = "feaffe8c073bce67b3a272508870e69fccc6050afb6da9797faa6ee135dc40c8"
 dependencies = [
  "async-trait",
  "base64",
@@ -2752,9 +2752,9 @@ dependencies = [
 
 [[package]]
 name = "olai-http-wasm"
-version = "0.0.5"
+version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "348e03daaf902c4271eef1b733ce00825b549cb1e3ce329d80d351efd873b71c"
+checksum = "980de22f1f3471e13a589cdb2f61a2d572a52a4722276d813f1724df7a5a8ad1"
 dependencies = [
  "futures",
  "reqwest 0.12.28",
@@ -2766,9 +2766,9 @@ dependencies = [
 
 [[package]]
 name = "olai-storage-credentials"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "205aeac96dcaa8a5a2c35af1fb0629aa7d2ba1475a7da74c827e5dc7c6655895"
+checksum = "1752f8d7e0d45e03077ae7c8a761aa7a9b92f520ec774a1d1fbbbab47a3d864c"
 dependencies = [
  "chrono",
  "object_store",
@@ -2932,9 +2932,9 @@ dependencies = [
 
 [[package]]
 name = "olai-vended-store"
-version = "0.0.1"
+version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1716dd62fc04e585e2c2028927cd20fe54d69bd8468bdb097c9c3ececb1a7006"
+checksum = "809b396eec4245c60f1a22fa1ad86beb1d379753d7d5880ceb0b2a1107f5b7c5"
 dependencies = [
  "async-trait",
  "bytes",

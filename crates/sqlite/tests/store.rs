@@ -14,7 +14,9 @@ use olai_store::{
 };
 use unitycatalog_common::models::ObjectLabel;
 use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
-use unitycatalog_sqlite::{SqliteGraphStore, connect_graph, connect_pool, unified_migrator};
+use unitycatalog_sqlite::{
+    SqliteGraphStore, connect_graph, connect_pool, ensure_property_indexes, unified_migrator,
+};
 
 /// A temp-file SQLite path that cleans up its files on drop.
 struct TempDb {
@@ -57,6 +59,7 @@ fn encryptor() -> EnvelopeEncryptor {
 async fn store(temp: &TempDb) -> SqliteGraphStore {
     let pool = connect_pool(temp.path()).await.expect("connect");
     unified_migrator().run(&pool).await.expect("migrate");
+    ensure_property_indexes(&pool).await.expect("indexes");
     connect_graph(pool, encryptor())
 }
 
@@ -404,7 +407,7 @@ async fn search_tables_by_location() {
         .search(
             &ObjectLabel::Table,
             None,
-            &key("s3://b/data/t2/x").overlapping(),
+            &key("s3://b/data/t2/x").covering(),
             None,
             None,
         )
@@ -442,4 +445,23 @@ async fn search_tables_by_location() {
         .await
         .unwrap();
     assert_eq!(names(found), ["t2"]);
+}
+
+/// `ensure_property_indexes` creates the `location_key` expression index once and
+/// is safe to run again.
+#[tokio::test]
+async fn ensures_the_location_key_index() {
+    let temp = TempDb::new("index");
+    let pool = connect_pool(temp.path()).await.expect("connect");
+    unified_migrator().run(&pool).await.expect("migrate");
+    for _ in 0..2 {
+        ensure_property_indexes(&pool).await.expect("indexes");
+    }
+    let names: Vec<(String,)> = sqlx::query_as(
+        "SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'objects\\_prop\\_%' ESCAPE '\\'",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(names, [("objects_prop_location_key".to_string(),)]);
 }
