@@ -2766,9 +2766,9 @@ dependencies = [
 
 [[package]]
 name = "olai-storage-credentials"
-version = "0.0.2"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1752f8d7e0d45e03077ae7c8a761aa7a9b92f520ec774a1d1fbbbab47a3d864c"
+checksum = "0482bcd16c51565dfe4911338fa60d0a5d986ca6032f6b2d7c024f1d6cc90dd2"
 dependencies = [
  "chrono",
  "object_store",
@@ -2932,9 +2932,9 @@ dependencies = [
 
 [[package]]
 name = "olai-vended-store"
-version = "0.0.2"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "809b396eec4245c60f1a22fa1ad86beb1d379753d7d5880ceb0b2a1107f5b7c5"
+checksum = "843e3f2e21f76fad870848bcc0d1358ba270c47305a2260eee764dd5b27e318d"
 dependencies = [
  "async-trait",
  "bytes",

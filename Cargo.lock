@@ -3884,9 +3884,9 @@ dependencies = [
 
 [[package]]
 name = "olai-credential-vending"
-version = "0.0.3"
+version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5aa371ce67092d67ccd4178e0c56ed09e91bb155f6ac1eb79c2b1e2953e4c57"
+checksum = "7a4061cc0c32ea46d001f66cc3dee4aaf45e66460670b5aed6a5c198d0736dd3"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3943,9 +3943,9 @@ dependencies = [
 
 [[package]]
 name = "olai-storage-credentials"
-version = "0.0.2"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1752f8d7e0d45e03077ae7c8a761aa7a9b92f520ec774a1d1fbbbab47a3d864c"
+checksum = "0482bcd16c51565dfe4911338fa60d0a5d986ca6032f6b2d7c024f1d6cc90dd2"
 dependencies = [
  "chrono",
  "object_store",
@@ -3958,9 +3958,9 @@ dependencies = [
 
 [[package]]
 name = "olai-store"
-version = "0.0.7"
+version = "0.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34e7be81750d0374d8b78e727bacfdf5e82c9088f358e55ea62566b2a34a728a"
+checksum = "a6685e24548e57c0093cba3b6b816e71b7b82b143b104c9e928f407b6ba9f929"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -4361,9 +4361,9 @@ dependencies = [
 
 [[package]]
 name = "olai-vended-store"
-version = "0.0.2"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "809b396eec4245c60f1a22fa1ad86beb1d379753d7d5880ceb0b2a1107f5b7c5"
+checksum = "843e3f2e21f76fad870848bcc0d1358ba270c47305a2260eee764dd5b27e318d"
 dependencies = [
  "async-trait",
  "bytes",

@@ -96,12 +96,12 @@ buffa-types = { version = "0.7", features = ["json"] }
 connectrpc = { version = "0.7", default-features = false }
 http-body = { version = "1" }
 object_store = { version = "0.13.2", features = ["azure", "aws", "gcp"] }
-olai-credential-vending = { version = "0.0.3" }
+olai-credential-vending = { version = "0.0.4" }
 olai-http = { version = "0.0.10" }
 olai-http-wasm = { version = "0.0.6" }
-olai-storage-credentials = { version = "0.0.2" }
-olai-store = { version = "0.0.7" }
-olai-vended-store = { version = "0.0.2", default-features = false }
+olai-storage-credentials = { version = "0.0.3" }
+olai-store = { version = "0.0.8" }
+olai-vended-store = { version = "0.0.3", default-features = false }
 pbjson = { version = "0.9" }
 pbjson-types = "0.9"
 prost = { version = "0.14.1" }
