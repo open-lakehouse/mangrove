@@ -16,6 +16,11 @@ use crate::{Object, ResourceIdent, ResourceName, ResourceRef, Result};
 /// [`Conflict`](crate::Error::Conflict). [`Precondition::Any`] is an unconditional write.
 pub use olai_store::Precondition;
 
+/// A filter over stored resource payloads, re-exported from `olai-store` for
+/// [`ResourceStoreReader::search`]. [`LocationKey`](crate::LocationKey) builds the
+/// location filters.
+pub use olai_store::Filter;
+
 /// Convert a stored association `properties` JSON value into a [`PropertyMap`].
 ///
 /// Association properties are persisted as a JSON object (see `add_association`), so a
@@ -88,6 +93,21 @@ pub trait ResourceStoreReader: Send + Sync + 'static {
         &self,
         label: &ObjectLabel,
         namespace: Option<&ResourceName>,
+        max_results: Option<usize>,
+        page_token: Option<String>,
+    ) -> Result<(Vec<Resource>, Option<String>)>;
+
+    /// Search resources of `label` whose stored payload matches `filter`.
+    ///
+    /// Like [`list`](Self::list), optionally scoped to `namespace` and paginated. The
+    /// payload includes store-derived properties such as the
+    /// [`LOCATION_KEY_PROPERTY`](crate::location_key::LOCATION_KEY_PROPERTY), which the
+    /// backend can filter on without loading every resource.
+    async fn search(
+        &self,
+        label: &ObjectLabel,
+        namespace: Option<&ResourceName>,
+        filter: &Filter,
         max_results: Option<usize>,
         page_token: Option<String>,
     ) -> Result<(Vec<Resource>, Option<String>)>;
@@ -407,6 +427,27 @@ where
         ))
     }
 
+    async fn search(
+        &self,
+        label: &ObjectLabel,
+        namespace: Option<&ResourceName>,
+        filter: &Filter,
+        max_results: Option<usize>,
+        page_token: Option<String>,
+    ) -> Result<(Vec<Resource>, Option<String>)> {
+        let (objects, token) = self
+            .store
+            .search(*label, namespace, filter, max_results, page_token)
+            .await?;
+        Ok((
+            objects
+                .into_iter()
+                .map(|object| object.try_into())
+                .try_collect()?,
+            token,
+        ))
+    }
+
     /// Override the redacting default: read the object with its sensitive fields decrypted
     /// (via the inner store's [`SecretObjectReader`]) so the typed model is fully hydrated.
     async fn get_with_secrets(&self, id: &ResourceIdent) -> Result<(Resource, ResourceRef)> {
@@ -690,6 +731,17 @@ impl<T: ResourceStoreReader> ResourceStoreReader for Arc<T> {
     ) -> Result<(Vec<Resource>, Option<String>)> {
         T::list(self, label, namespace, max_results, page_token).await
     }
+
+    async fn search(
+        &self,
+        label: &ObjectLabel,
+        namespace: Option<&ResourceName>,
+        filter: &Filter,
+        max_results: Option<usize>,
+        page_token: Option<String>,
+    ) -> Result<(Vec<Resource>, Option<String>)> {
+        T::search(self, label, namespace, filter, max_results, page_token).await
+    }
 }
 
 #[async_trait::async_trait]
@@ -805,6 +857,19 @@ impl<T: ProvidesResourceStore> ResourceStoreReader for T {
     ) -> Result<(Vec<Resource>, Option<String>)> {
         self.store()
             .list(label, namespace, max_results, page_token)
+            .await
+    }
+
+    async fn search(
+        &self,
+        label: &ObjectLabel,
+        namespace: Option<&ResourceName>,
+        filter: &Filter,
+        max_results: Option<usize>,
+        page_token: Option<String>,
+    ) -> Result<(Vec<Resource>, Option<String>)> {
+        self.store()
+            .search(label, namespace, filter, max_results, page_token)
             .await
     }
 }

@@ -27,12 +27,16 @@
 //! `all-resources`. See the crate README for the full table.
 
 pub use error::{Error, Result};
+#[cfg(feature = "storage-credentials")]
+pub use location_key::LocationKey;
 pub use models::*;
 pub use reference::UCReference;
 
 #[cfg(feature = "storage-credentials")]
 pub mod credentials_ext;
 pub mod error;
+#[cfg(feature = "storage-credentials")]
+pub mod location_key;
 #[cfg(feature = "metric-view")]
 pub mod metric_view;
 pub mod models;

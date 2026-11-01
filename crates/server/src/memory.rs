@@ -375,4 +375,33 @@ mod tests {
         assert_eq!(edges.len(), 1, "association must survive the rename");
         Ok(())
     }
+
+    #[tokio::test]
+    async fn search_by_location_key() -> Result<()> {
+        use unitycatalog_common::LocationKey;
+        use unitycatalog_common::models::volumes::v1::Volume;
+
+        let store = test_store();
+        for (name, location) in [("v1", "gs://b/vol/v1"), ("v2", "gs://b/volume/v2")] {
+            store
+                .create(
+                    Volume {
+                        name: name.into(),
+                        catalog_name: "c".into(),
+                        schema_name: "s".into(),
+                        storage_location: location.into(),
+                        ..Default::default()
+                    }
+                    .into(),
+                )
+                .await?;
+        }
+        let key = LocationKey::parse("gs://b/vol").unwrap();
+        let (found, _) = store
+            .search(&ObjectLabel::Volume, None, &key.covered_by(), None, None)
+            .await?;
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].resource_name().to_string(), "c.s.v1");
+        Ok(())
+    }
 }
