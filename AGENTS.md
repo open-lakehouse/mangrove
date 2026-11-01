@@ -13,6 +13,7 @@ Multi-crate Rust workspace with language bindings:
   per resource), `handlers` (generated per-resource handler traits + axum routes),
   `client`, `server`, `cli`, `delta-api`, `files-api` / `files-proto`,
   `storage-proxy`, `storage-access` (credentials + external-locations store port),
+  `sharing` (shares, recipients, tokens + grants store port),
   `object-store`, `datafusion`, `postgres`, `sqlite`, `acceptance`
 - `wasm/` — a **separate** Cargo workspace (own `Cargo.lock`) for the in-browser
   query engine
