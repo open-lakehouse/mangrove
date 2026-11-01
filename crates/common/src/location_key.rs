@@ -2,8 +2,10 @@ use std::fmt;
 
 use olai_storage_credentials::StorageLocation;
 #[cfg(feature = "store")]
-use olai_store::Filter;
+use olai_store::{Filter, PropertyIndex};
 
+#[cfg(feature = "store")]
+use crate::models::ObjectLabel;
 use crate::{Error, Result};
 
 /// The canonical form of a storage location, used to match locations as strings.
@@ -95,6 +97,31 @@ impl LocationKey {
 #[cfg(feature = "store")]
 pub const LOCATION_KEY_PROPERTY: &str = "location_key";
 
+/// The labels stored with a [`LOCATION_KEY_PROPERTY`].
+#[cfg(feature = "store")]
+pub const LOCATION_KEYED_LABELS: [ObjectLabel; 4] = [
+    ObjectLabel::Table,
+    ObjectLabel::Volume,
+    ObjectLabel::AgentSkill,
+    ObjectLabel::StagingTable,
+];
+
+/// The [`PropertyIndex`]es serving location searches: one per
+/// [`LOCATION_KEYED_LABELS`] entry, on [`LOCATION_KEY_PROPERTY`].
+///
+/// Pass them to the SQL stores' `with_property_indexes`, and create them with
+/// `ensure_property_indexes` alongside the migrations.
+#[cfg(feature = "store")]
+pub fn location_key_indexes() -> Vec<PropertyIndex> {
+    LOCATION_KEYED_LABELS
+        .into_iter()
+        .map(|label| {
+            PropertyIndex::new(label, LOCATION_KEY_PROPERTY)
+                .expect("`location_key` is a valid property index path")
+        })
+        .collect()
+}
+
 #[cfg(feature = "store")]
 impl LocationKey {
     /// Matches resources stored at exactly this location.
@@ -111,14 +138,20 @@ impl LocationKey {
         ])
     }
 
-    /// Matches resources whose location overlaps this one, in either direction.
-    pub fn overlapping(&self) -> Filter {
-        Filter::any(
-            self.ancestors()
-                .iter()
-                .map(LocationKey::at)
-                .chain([self.covered_by()]),
-        )
+    /// Matches resources at or above this location: an IN-list over its
+    /// [`ancestors`](Self::ancestors).
+    pub fn covering(&self) -> Filter {
+        Filter::any(self.ancestors().iter().map(LocationKey::at))
+    }
+
+    /// The filters matching resources whose location overlaps this one, in either
+    /// direction: [`covering`](Self::covering) and [`covered_by`](Self::covered_by).
+    ///
+    /// A resource overlaps when it matches either one. They stay two filters to
+    /// search one after the other, because a store's property index serves an
+    /// IN-list or a range, but not an `Or` of both.
+    pub fn overlapping(&self) -> [Filter; 2] {
+        [self.covering(), self.covered_by()]
     }
 }
 
@@ -238,7 +271,7 @@ mod tests {
                 "{url}"
             );
             assert_eq!(
-                k.overlapping().matches(&stored(url)),
+                k.overlapping().iter().any(|f| f.matches(&stored(url))),
                 k.overlaps(&key(url)),
                 "{url}"
             );
@@ -249,10 +282,26 @@ mod tests {
             "s3://bb/data/x",
             "gs://b/data/x",
         ] {
-            assert!(!k.overlapping().matches(&stored(url)), "{url}");
+            assert!(
+                !k.overlapping().iter().any(|f| f.matches(&stored(url))),
+                "{url}"
+            );
         }
         // A resource without a key matches nothing.
-        assert!(!k.overlapping().matches(&serde_json::json!({})));
+        for filter in k.overlapping() {
+            assert!(!filter.matches(&serde_json::json!({})));
+        }
+    }
+
+    #[cfg(feature = "store")]
+    #[test]
+    fn indexes_cover_every_keyed_label() {
+        let indexes = location_key_indexes();
+        assert_eq!(indexes.len(), LOCATION_KEYED_LABELS.len());
+        for (index, label) in indexes.iter().zip(LOCATION_KEYED_LABELS) {
+            assert_eq!(index.label(), olai_store::Label::as_str(&label));
+            assert_eq!(index.path().segments(), [LOCATION_KEY_PROPERTY]);
+        }
     }
 
     #[test]

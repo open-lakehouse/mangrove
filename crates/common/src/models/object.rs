@@ -227,4 +227,56 @@ mod tests {
         let object = Object::try_from(Resource::Volume(volume)).unwrap();
         assert_eq!(stored_key(&object), None);
     }
+
+    /// `location_key` is derived for exactly the labels that get an index.
+    #[test]
+    fn keyed_labels_match_the_derivation() {
+        use crate::location_key::LOCATION_KEYED_LABELS;
+        use crate::models::agent_skills::v0alpha1::AgentSkill;
+        use crate::models::catalogs::v1::Catalog;
+        use crate::models::staging_tables::v1::StagingTable;
+
+        let location = "s3://bucket/x";
+        let resources: Vec<Resource> = vec![
+            Table {
+                name: "t".into(),
+                storage_location: Some(location.into()),
+                ..Default::default()
+            }
+            .into(),
+            Volume {
+                name: "v".into(),
+                storage_location: location.into(),
+                ..Default::default()
+            }
+            .into(),
+            AgentSkill {
+                name: "a".into(),
+                storage_location: location.into(),
+                ..Default::default()
+            }
+            .into(),
+            StagingTable {
+                name: "s".into(),
+                staging_location: location.into(),
+                ..Default::default()
+            }
+            .into(),
+            Catalog {
+                name: "c".into(),
+                storage_root: Some(location.into()),
+                ..Default::default()
+            }
+            .into(),
+        ];
+        for resource in resources {
+            let object = Object::try_from(resource).unwrap();
+            assert_eq!(
+                stored_key(&object).is_some(),
+                LOCATION_KEYED_LABELS.contains(&object.label),
+                "{:?}",
+                object.label
+            );
+        }
+    }
 }

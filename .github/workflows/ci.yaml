@@ -187,7 +187,7 @@ jobs:
       # (fail-fast = false) so the report is complete even on failure.
       #
       # --all-features turns on `integration-pg`, whose #[sqlx::test] commit-
-      # coordinator and storage-access tests provision a live database from
+      # coordinator, storage-access and graph-store tests provision a live database from
       # DATABASE_URL — there is no Postgres here, so exclude those binaries. Those tests run (with a service
       # container) in the dedicated integration_postgres job below. Scope the
       # exclusion to the postgres package: the sqlite crate has an identically
@@ -197,7 +197,7 @@ jobs:
         env:
           # Use the committed .sqlx cache so macros don't probe a live DB at build.
           SQLX_OFFLINE: "true"
-        run: cargo nextest run --workspace --all-features --profile ci -E 'not (package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access)))'
+        run: cargo nextest run --workspace --all-features --profile ci -E 'not (package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access) or binary(graph_store)))'
 
       # nextest does not run doctests; the old `cargo test` did, so run them here
       # to keep doctest coverage. Runs even if nextest failed above.
@@ -268,14 +268,14 @@ jobs:
       # under a separate flag — splitting them keeps each job's single
       # instrumented workspace build within the runner's disk budget (running
       # both in one job overran it: "No space left on device"). Exclude only the
-      # postgres commit_coordinator and storage_access binaries (live-DB
+      # postgres commit_coordinator, storage_access and graph_store binaries (live-DB
       # #[sqlx::test]s, covered by integration_postgres); the sqlite crate's identically named
       # commit_coordinator tests use temp files and are covered here.
       - name: Collect coverage
         env:
           SQLX_OFFLINE: "true"
         run: |
-          cargo llvm-cov nextest --workspace --all-features --locked -E 'not (package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access)))' --codecov --output-path codecov.json
+          cargo llvm-cov nextest --workspace --all-features --locked -E 'not (package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access) or binary(graph_store)))' --codecov --output-path codecov.json
 
       # Upload under the `unit` flag. codecov.yml keeps the status informational
       # so it can't block a PR, and fail_ci_if_error stays false so a flaky

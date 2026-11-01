@@ -23,7 +23,9 @@
 
 pub use crate::commit_coordinator::SqliteCommitCoordinator;
 pub use crate::error::{Error, Result};
-pub use crate::store::{SqliteGraphStore, connect_graph, connect_pool, unified_migrator};
+pub use crate::store::{
+    SqliteGraphStore, connect_graph, connect_pool, ensure_property_indexes, unified_migrator,
+};
 pub use unitycatalog_storage_access::SqliteStorageAccess;
 
 mod commit_coordinator;

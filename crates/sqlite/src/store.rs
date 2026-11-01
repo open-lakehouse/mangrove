@@ -20,6 +20,7 @@ use std::str::FromStr;
 use sqlx::SqlitePool;
 use sqlx::migrate::Migrator;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions};
+use unitycatalog_common::location_key::location_key_indexes;
 use unitycatalog_common::services::encryption::EnvelopeEncryptor;
 use unitycatalog_common::{AssociationLabel, ObjectLabel};
 
@@ -103,7 +104,22 @@ pub async fn connect_pool(path: impl AsRef<str>) -> Result<SqlitePool> {
 /// redacting them from ordinary reads. The registry is generated from the proto
 /// `debug_redact` annotations (see `RESOURCE_DESCRIPTORS`).
 pub fn connect_graph(pool: SqlitePool, encryptor: EnvelopeEncryptor) -> SqliteGraphStore {
-    let inner = SqlStore::<ObjectLabel>::connect(pool).with_inverse(inverse_resolver);
+    let inner = SqlStore::<ObjectLabel>::connect(pool)
+        .with_inverse(inverse_resolver)
+        .with_property_indexes(location_key_indexes());
     let registry = ResourceRegistry::from_static(RESOURCE_DESCRIPTORS);
     ManagedObjectStore::with_encryptor(inner, encryptor, registry)
+}
+
+/// Create the expression indexes that serve location searches, if missing.
+///
+/// DDL, so run it with the migrations: [`connect_graph`] declares the indexes but
+/// never creates them, and searches stay correct (just unindexed) without them.
+/// Idempotent.
+pub async fn ensure_property_indexes(pool: &SqlitePool) -> Result<()> {
+    SqlStore::<ObjectLabel>::connect(pool.clone())
+        .with_property_indexes(location_key_indexes())
+        .ensure_property_indexes()
+        .await?;
+    Ok(())
 }
