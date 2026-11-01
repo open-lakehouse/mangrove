@@ -525,6 +525,11 @@ jobs:
           SQLX_OFFLINE: "true"
         run: |
           cargo llvm-cov --no-report --locked nextest -p olai-uc-postgres --features integration-pg --profile ci
+          # The sharing store's conformance suite migrates the database it is
+          # given, so it gets an empty one of its own.
+          psql "$DATABASE_URL" -c 'CREATE DATABASE sharing'
+          SHARING_TEST_DATABASE_URL="${DATABASE_URL%/*}/sharing" \
+            cargo llvm-cov --no-report --locked nextest -p olai-uc-sharing --all-features --test postgres
           cargo llvm-cov report --codecov --output-path codecov.json
 
       - name: Upload to Codecov
