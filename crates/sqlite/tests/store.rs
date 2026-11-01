@@ -345,3 +345,101 @@ async fn name_matching_is_ascii_case_insensitive() {
         .unwrap();
     assert_eq!(found.name, name(&["main"]));
 }
+
+/// Location lookups run through `search` on the stored `location_key`, matching
+/// every spelling of a location and only whole path segments.
+#[tokio::test]
+async fn search_tables_by_location() {
+    use unitycatalog_common::LocationKey;
+    use unitycatalog_common::models::Resource;
+    use unitycatalog_common::models::tables::v1::Table;
+    use unitycatalog_common::store::{ObjectStoreAdapter, ResourceStore, ResourceStoreReader};
+
+    let temp = TempDb::new("search");
+    let s = ObjectStoreAdapter::new(store(&temp).await);
+    let table = |name: &str, location: &str| -> Resource {
+        Table {
+            name: name.into(),
+            catalog_name: "c".into(),
+            schema_name: "s".into(),
+            storage_location: Some(location.into()),
+            ..Default::default()
+        }
+        .into()
+    };
+    for (n, loc) in [
+        ("t1", "s3://b/data/t1"),
+        ("t2", "s3a://b/data/t2/"),
+        ("t3", "s3://b/database/t3"),
+    ] {
+        s.create(table(n, loc)).await.unwrap();
+    }
+
+    let names = |found: Vec<Resource>| {
+        let mut names: Vec<_> = found
+            .into_iter()
+            .map(|r| match r {
+                Resource::Table(t) => t.name,
+                other => panic!("expected a table, got {other:?}"),
+            })
+            .collect();
+        names.sort();
+        names
+    };
+    let key = |url: &str| LocationKey::parse(url).unwrap();
+
+    let (found, _) = s
+        .search(
+            &ObjectLabel::Table,
+            None,
+            &key("s3://b/data").covered_by(),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+    assert_eq!(names(found), ["t1", "t2"]);
+
+    let (found, _) = s
+        .search(
+            &ObjectLabel::Table,
+            None,
+            &key("s3://b/data/t2/x").overlapping(),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+    assert_eq!(names(found), ["t2"]);
+
+    let (found, _) = s
+        .search(
+            &ObjectLabel::Table,
+            None,
+            &key("s3://b/data/t1/").at(),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+    assert_eq!(names(found), ["t1"]);
+
+    // An update re-derives the key.
+    let ident = ObjectLabel::Table.to_ident(unitycatalog_common::ResourceRef::Name(name(&[
+        "c", "s", "t1",
+    ])));
+    s.update(&ident, table("t1", "s3://b/moved/t1"))
+        .await
+        .unwrap();
+    let (found, _) = s
+        .search(
+            &ObjectLabel::Table,
+            None,
+            &key("s3://b/data").covered_by(),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+    assert_eq!(names(found), ["t2"]);
+}

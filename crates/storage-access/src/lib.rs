@@ -31,10 +31,9 @@ use unitycatalog_common::models::external_locations::v1::ExternalLocation;
 
 pub use unitycatalog_common::{Error, Result};
 
-pub use crate::key::LocationKey;
 pub use crate::secrets::CredentialSecrets;
+pub use unitycatalog_common::LocationKey;
 
-mod key;
 pub mod rules;
 mod secrets;
 

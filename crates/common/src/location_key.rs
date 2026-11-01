@@ -1,6 +1,8 @@
 use std::fmt;
 
 use olai_storage_credentials::StorageLocation;
+#[cfg(feature = "store")]
+use olai_store::Filter;
 
 use crate::{Error, Result};
 
@@ -81,6 +83,42 @@ impl LocationKey {
         let mut upper = self.0[..self.0.len() - 1].to_owned();
         upper.push('0');
         (&self.0, upper)
+    }
+}
+
+/// The stored property holding a resource's [`LocationKey`].
+///
+/// The store writes it next to the payload of every table, volume, agent skill and
+/// staging table whose location parses (see `TryFrom<Resource> for Object`), so
+/// location lookups can be pushed into the store as [`Filter`]s. The API models
+/// don't declare it and ignore it on read.
+#[cfg(feature = "store")]
+pub const LOCATION_KEY_PROPERTY: &str = "location_key";
+
+#[cfg(feature = "store")]
+impl LocationKey {
+    /// Matches resources stored at exactly this location.
+    pub fn at(&self) -> Filter {
+        Filter::eq(LOCATION_KEY_PROPERTY, self.as_str())
+    }
+
+    /// Matches resources at or below this location.
+    pub fn covered_by(&self) -> Filter {
+        let (lower, upper) = self.descendants();
+        Filter::all([
+            Filter::ge(LOCATION_KEY_PROPERTY, lower),
+            Filter::lt(LOCATION_KEY_PROPERTY, upper),
+        ])
+    }
+
+    /// Matches resources whose location overlaps this one, in either direction.
+    pub fn overlapping(&self) -> Filter {
+        Filter::any(
+            self.ancestors()
+                .iter()
+                .map(LocationKey::at)
+                .chain([self.covered_by()]),
+        )
     }
 }
 
@@ -183,6 +221,38 @@ mod tests {
             assert!(!within(url), "{url}");
             assert!(!k.covers(&key(url)));
         }
+    }
+
+    #[cfg(feature = "store")]
+    #[test]
+    fn filters_agree_with_covers() {
+        let stored = |url: &str| serde_json::json!({ LOCATION_KEY_PROPERTY: key(url).as_str() });
+        let k = key("s3://b/data/x");
+        for url in ["s3://b/data/x", "s3://b/data/x/", "s3a://b/data/x"] {
+            assert!(k.at().matches(&stored(url)), "{url}");
+        }
+        for url in ["s3://b/data/x/y", "s3://b/data/xy", "s3://b/data", "s3://b"] {
+            assert_eq!(
+                k.covered_by().matches(&stored(url)),
+                k.covers(&key(url)),
+                "{url}"
+            );
+            assert_eq!(
+                k.overlapping().matches(&stored(url)),
+                k.overlaps(&key(url)),
+                "{url}"
+            );
+        }
+        for url in [
+            "s3://b/data/xy",
+            "s3://b/dat",
+            "s3://bb/data/x",
+            "gs://b/data/x",
+        ] {
+            assert!(!k.overlapping().matches(&stored(url)), "{url}");
+        }
+        // A resource without a key matches nothing.
+        assert!(!k.overlapping().matches(&serde_json::json!({})));
     }
 
     #[test]

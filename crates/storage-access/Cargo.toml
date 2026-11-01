@@ -26,6 +26,7 @@ name = "unitycatalog_storage_access"
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.7", default-features = false, features = [
   "credentials",
   "external_locations",
+  "storage-credentials",
 ] }
 
 # workspace dependencies in alphabetical order

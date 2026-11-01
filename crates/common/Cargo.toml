@@ -158,8 +158,9 @@ storage-credentials = ["temporary_credentials", "dep:olai-storage-credentials"]
 credential-vending = ["credentials", "storage-credentials", "dep:olai-credential-vending"]
 
 # storage abstraction trait (ResourceStore) implemented by backends; the
-# `Resource` enum it stores spans every resource.
-store = ["all-resources", "dep:futures", "dep:olai-store"]
+# `Resource` enum it stores spans every resource. Stored tables and volumes carry
+# their `LocationKey`, which needs the storage-location model.
+store = ["all-resources", "storage-credentials", "dep:futures", "dep:olai-store"]
 
 # enable client implementation to interact with Unity REST APIs
 rest-client = ["dep:futures", "olai-http"]

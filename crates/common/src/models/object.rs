@@ -1,4 +1,5 @@
 use crate::Error;
+use crate::location_key::{LOCATION_KEY_PROPERTY, LocationKey};
 use crate::models::{
     ObjectLabel, Resource, ResourceExt, ResourceIdent, ResourceName, ResourceRef, Table,
 };
@@ -97,7 +98,8 @@ impl TryFrom<Resource> for Object {
     type Error = Error;
 
     fn try_from(resource: Resource) -> Result<Self, Self::Error> {
-        match resource {
+        let key = location_key(&resource);
+        let mut object: Object = match resource {
             Resource::Agent(obj) => obj.try_into(),
             Resource::AgentSkill(obj) => obj.try_into(),
             Resource::Share(obj) => obj.try_into(),
@@ -116,8 +118,26 @@ impl TryFrom<Resource> for Object {
             Resource::PolicyInfo(obj) => obj.try_into(),
             Resource::RegisteredModel(obj) => obj.try_into(),
             Resource::ModelVersion(obj) => obj.try_into(),
+        }?;
+        if let (Some(key), Some(serde_json::Value::Object(map))) = (key, &mut object.properties) {
+            map.insert(LOCATION_KEY_PROPERTY.to_owned(), key.as_str().into());
         }
+        Ok(object)
     }
+}
+
+/// The [`LocationKey`] stored with `resource`, for the resources looked up by location.
+///
+/// A missing or unparseable location gets no key, so it never matches a location query.
+fn location_key(resource: &Resource) -> Option<LocationKey> {
+    let location = match resource {
+        Resource::Table(table) => table.storage_location.as_deref()?,
+        Resource::Volume(volume) => &volume.storage_location,
+        Resource::AgentSkill(skill) => &skill.storage_location,
+        Resource::StagingTable(staging) => &staging.staging_location,
+        _ => return None,
+    };
+    LocationKey::parse(location).ok()
 }
 
 impl TryFrom<Object> for Resource {
@@ -154,5 +174,57 @@ impl From<Table> for TableSummary {
             full_name: table.full_name,
             ..Default::default()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::volumes::v1::Volume;
+
+    fn stored_key(object: &Object) -> Option<&str> {
+        object
+            .properties
+            .as_ref()?
+            .get(LOCATION_KEY_PROPERTY)?
+            .as_str()
+    }
+
+    #[test]
+    fn stores_the_location_key_beside_the_payload() {
+        let table = Table {
+            name: "t".into(),
+            catalog_name: "c".into(),
+            schema_name: "s".into(),
+            storage_location: Some("s3a://bucket/data/t".into()),
+            ..Default::default()
+        };
+        let object = Object::try_from(Resource::Table(table.clone())).unwrap();
+        assert_eq!(stored_key(&object), Some("s3://bucket/data/t/"));
+
+        // The key stays out of the model read back.
+        let Resource::Table(read) = Resource::try_from(object).unwrap() else {
+            panic!("expected a table");
+        };
+        assert_eq!(read.storage_location, table.storage_location);
+        assert_eq!(read.name, table.name);
+    }
+
+    #[test]
+    fn skips_missing_and_unparseable_locations() {
+        let table = Table {
+            name: "t".into(),
+            ..Default::default()
+        };
+        let object = Object::try_from(Resource::Table(table)).unwrap();
+        assert_eq!(stored_key(&object), None);
+
+        let volume = Volume {
+            name: "v".into(),
+            storage_location: "not a url".into(),
+            ..Default::default()
+        };
+        let object = Object::try_from(Resource::Volume(volume)).unwrap();
+        assert_eq!(stored_key(&object), None);
     }
 }
