@@ -5,7 +5,6 @@ _default:
 
 # basic setup
 setup:
-    {{ source_directory() }}/dev/scripts/configure-trestle-deps.sh
     uvx pre-commit install
 
 # Update pre-commit hooks
@@ -53,16 +52,33 @@ _stop_profile profile:
 # `[no-cd]` so their bare relative paths (dev/scripts, dev/config-*) resolve from
 # the repo root regardless of this module file living in dev/.
 
-# Patch the trestle olai-* crates from the local trestle checkout (.cargo/config.toml,
-# gitignored). Run once per clone when crates.io or a corporate proxy cannot
-# resolve the published versions. Requires `trestle` on PATH and a source checkout
-# (../trestle or TRESTLE_ROOT).
+# The crates.io proxy hides releases for 7 days. These wrap trestle's
+# scripts/crates-proxy/ (see its docs/crates-proxy.md); they need a trestle source
+# checkout next to the main mangrove checkout, or TRESTLE_ROOT.
 #
-# patch the trestle olai-* crates from the local trestle checkout
+# patch the trestle olai-* crates from the local trestle checkout (gitignored .cargo/config.toml)
 [group('dev')]
 [no-cd]
 configure-trestle-deps:
-    {{ justfile_directory() }}/dev/scripts/configure-trestle-deps.sh
+    {{ justfile_directory() }}/dev/scripts/crates-proxy.sh patch trestle
+
+# drop the local trestle patch again
+[group('dev')]
+[no-cd]
+unpatch-trestle-deps:
+    {{ justfile_directory() }}/dev/scripts/crates-proxy.sh patch --remove trestle
+
+# restore crates.io source/checksum entries in Cargo.lock files resolved under the patch
+[group('dev')]
+[no-cd]
+lock-registry:
+    {{ justfile_directory() }}/dev/scripts/crates-proxy.sh lock-registry
+
+# check that no Cargo.lock still resolves a crate from a local patch (the pre-commit hook runs this)
+[group('dev')]
+[no-cd]
+check-lock:
+    {{ justfile_directory() }}/dev/scripts/crates-proxy.sh check-lock
 
 # run the development REST server (ephemeral in-memory SQLite; auto-migrated)
 [group('dev')]

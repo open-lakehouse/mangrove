@@ -23,7 +23,7 @@
     "setup-hooks": "git config core.hooksPath .githooks",
     "strip-lock-proxy": "bun run scripts/strip-bun-lock-proxy.ts",
     "strip-lock-proxy:check": "bun run scripts/strip-bun-lock-proxy.ts --check",
-    "cargo-lock-trestle:check": "bash scripts/check-cargo-lock-trestle.sh",
+    "cargo-lock:check": "bash dev/scripts/crates-proxy.sh check-lock",
     "test:coverage": "bun test --coverage --coverage-reporter=lcov",
     "typecheck": "bun run --filter \"./node/*\" typecheck",
     "lint:node": "biome check node",
