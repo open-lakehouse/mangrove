@@ -40,8 +40,13 @@ olai-storage-credentials = { workspace = true }
 # `CredentialResolver` over the store (feature `vending`)
 olai-credential-vending = { workspace = true, optional = true }
 
+# The SQL backends (features `postgres`, `sqlite`)
+olai-store = { workspace = true, optional = true, features = ["encryption"] }
+sqlx = { workspace = true, optional = true, features = ["macros", "migrate"] }
+
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+sqlx = { workspace = true, features = ["runtime-tokio"] }
 
 [features]
 default = []
@@ -49,7 +54,11 @@ default = []
 memory = []
 # `olai_credential_vending::CredentialResolver` for `dyn StorageAccessStore`.
 vending = ["dep:olai-credential-vending", "unitycatalog-common/credential-vending"]
-# The backend conformance suite (`testing::conformance`).
+# `PgStorageAccess` and its migrations, over a host-provided pool.
+postgres = ["dep:olai-store", "dep:sqlx", "sqlx/postgres"]
+# `SqliteStorageAccess` and its migrations, over a host-provided pool.
+sqlite = ["dep:olai-store", "dep:sqlx", "sqlx/sqlite"]
+# The backend conformance suite (`testing::conformance`, `testing::key_rotation`).
 testing = []
 
 [package.metadata.docs.rs]

@@ -32,19 +32,26 @@ use crate::error::Result;
 /// [`ManagedObjectStore`]. `ObjectStoreAdapter` lifts this to `ResourceStore`.
 pub type PgGraphStore = ManagedObjectStore<ObjectLabel, PgStore<ObjectLabel>>;
 
-/// The mangrove-local migrations (`delta_commits`, storage access) that ride the same database
+/// The mangrove-local migrations (`delta_commits`) that ride the same database
 /// as the generic object/association schema.
 ///
 /// These are versioned in a high range (0100+) so they never collide with
 /// `olai_store`'s object-graph migrations (0001+); [`unified_migrator`] merges
-/// the two sets into one ordered ledger. Each concern owns a range: 01xx for
-/// `delta_commits`, 02xx for the storage-access tables.
+/// them with the storage-access tables into one ordered ledger. Each concern owns
+/// a range: 01xx for `delta_commits`, 02xx for the storage-access tables (from
+/// `olai-uc-storage-access`).
 static LOCAL_MIGRATOR: Migrator = sqlx::migrate!();
 
 /// One [`Migrator`] over `olai_store`'s object-graph schema **and** the
-/// mangrove-local schema, sharing a single `_sqlx_migrations` ledger.
+/// mangrove-local and storage-access schemas, sharing a single
+/// `_sqlx_migrations` ledger.
 pub fn unified_migrator() -> Migrator {
-    olai_store::pg_migrator_with(LOCAL_MIGRATOR.migrations.iter().cloned())
+    olai_store::pg_migrator_with(
+        LOCAL_MIGRATOR
+            .iter()
+            .chain(unitycatalog_storage_access::postgres::MIGRATOR.iter())
+            .cloned(),
+    )
 }
 
 /// Map an [`AssociationLabel`] string to its inverse label string, for the

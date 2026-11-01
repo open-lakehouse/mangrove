@@ -39,6 +39,36 @@ where
     credential_in_use_cannot_be_deleted(&make().await).await;
     resolves_the_covering_location(&make().await).await;
     secrets_round_trip(&make().await).await;
+    rewrap_under_the_active_key_is_a_no_op(&make().await).await;
+}
+
+/// Checks KEK rotation: `before` seals under the old key; `after` reads the same
+/// data with a new active key and the old one retired.
+///
+/// Only for backends that seal secrets; the in-memory store has nothing to
+/// re-wrap.
+pub async fn key_rotation(before: &dyn StorageAccessStore, after: &dyn StorageAccessStore) {
+    let mut request = credential("cred", "arn:1");
+    request.aws_iam_role = AwsIamRoleConfig {
+        role_arn: "arn:1".into(),
+        secret_access_key: Some("secret".into()),
+        ..Default::default()
+    }
+    .into();
+    let expected = request.aws_iam_role.clone();
+    before.create_credential(request).await.unwrap();
+    before
+        .create_external_location(location("loc", "s3://bucket/data", "cred"))
+        .await
+        .unwrap();
+
+    assert_eq!(after.rewrap_secrets().await.unwrap(), 1);
+    assert_eq!(after.rewrap_secrets().await.unwrap(), 0);
+    let governed = after
+        .governing_location(&storage("s3://bucket/data/x"))
+        .await
+        .unwrap();
+    assert_eq!(governed.credential.aws_iam_role, expected);
 }
 
 /// A storage credential named `name`, carrying an IAM role ARN.
@@ -594,4 +624,28 @@ async fn secrets_round_trip(store: &dyn StorageAccessStore) {
         Some("key")
     );
     assert_redacted(&store.get_credential("cred").await.unwrap());
+}
+
+async fn rewrap_under_the_active_key_is_a_no_op(store: &dyn StorageAccessStore) {
+    store
+        .create_credential(credential("cred", "arn:1"))
+        .await
+        .unwrap();
+    assert_eq!(store.rewrap_secrets().await.unwrap(), 0);
+    assert_eq!(
+        role_arn(&governed_credential(store, "cred").await),
+        Some("arn:1")
+    );
+}
+
+async fn governed_credential(store: &dyn StorageAccessStore, name: &str) -> Credential {
+    store
+        .create_external_location(location("rewrap", "s3://rewrap/", name))
+        .await
+        .unwrap();
+    store
+        .governing_location(&storage("s3://rewrap/x"))
+        .await
+        .unwrap()
+        .credential
 }
