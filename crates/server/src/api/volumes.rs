@@ -610,4 +610,39 @@ mod tests {
             .await;
         assert!(matches!(res, Err(Error::InvalidArgument(_))), "{res:?}");
     }
+
+    /// Overlap compares canonical locations, so another spelling of an existing
+    /// volume's path (or its parent) is still caught, while a sibling sharing only
+    /// a name prefix is not.
+    #[tokio::test]
+    async fn overlap_matches_across_spellings_on_whole_segments() {
+        let h = handler();
+        setup_external_location(&h).await;
+        h.create_volume(
+            create_external_volume("v1", Some("s3a://bucket/ext/vol/")),
+            ctx(),
+        )
+        .await
+        .unwrap();
+
+        for (name, location) in [
+            ("v2", "https://bucket.s3.amazonaws.com/ext/vol/inner"),
+            ("v3", "s3://bucket/ext"),
+        ] {
+            let res = h
+                .create_volume(create_external_volume(name, Some(location)), ctx())
+                .await;
+            assert!(
+                matches!(&res, Err(Error::InvalidArgument(msg)) if msg.contains("overlaps")),
+                "{location}: {res:?}"
+            );
+        }
+
+        h.create_volume(
+            create_external_volume("v4", Some("s3://bucket/ext/volume")),
+            ctx(),
+        )
+        .await
+        .expect("a sibling path does not overlap");
+    }
 }

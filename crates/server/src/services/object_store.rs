@@ -1,7 +1,5 @@
-use unitycatalog_common::models::tables::v1::Table;
-use unitycatalog_common::models::volumes::v1::Volume;
-
-use unitycatalog_storage_access::ProvidesStorageAccessStore;
+use unitycatalog_common::models::{ObjectLabel, Resource};
+use unitycatalog_storage_access::{LocationKey, ProvidesStorageAccessStore};
 
 use super::ProvidesLocalStoragePolicy;
 use crate::api::staging_tables::MANAGED_STORAGE_PREFIX;
@@ -10,45 +8,33 @@ use crate::services::location::StorageLocationUrl;
 use crate::store::ResourceStore;
 use crate::{Error, Result};
 
-/// All non-empty `storage_location`s currently registered for tables and
-/// volumes, parsed into [`StorageLocationUrl`]s.
+/// The location of a table or volume overlapping `location`, if there is one.
 ///
 /// Used to enforce that external tables/volumes do not overlap any existing
-/// table or volume. Entries without a storage location, or whose location fails
-/// to parse, are skipped — matching the tolerance of the other helpers here.
-///
-/// TODO(roeap): just listing all tables and volumes could be very inefficient; this
-/// needs an indexed property/prefix query on the resource store.
-pub(crate) async fn list_table_volume_locations(
+/// table or volume. The store matches the canonical [`LocationKey`] it keeps with
+/// each resource, so every spelling of a location is caught.
+pub(crate) async fn find_overlapping_location(
     handler: &(impl ResourceStore + ?Sized),
-) -> Result<Vec<StorageLocationUrl>> {
-    let mut out = Vec::new();
-
-    let (tables, _) = handler
-        .list(&unitycatalog_common::ObjectLabel::Table, None, None, None)
-        .await?;
-    for resource in tables {
-        let table: Table = resource.try_into()?;
-        if let Some(loc) = table.storage_location.filter(|s| !s.is_empty())
-            && let Ok(url) = StorageLocationUrl::parse(&loc)
-        {
-            out.push(url);
+    location: &StorageLocationUrl,
+) -> Result<Option<String>> {
+    let filter = LocationKey::new(location.location()).overlapping();
+    for label in [ObjectLabel::Table, ObjectLabel::Volume] {
+        let (found, _) = handler.search(&label, None, &filter, Some(1), None).await?;
+        if let Some(resource) = found.into_iter().next() {
+            return Ok(Some(storage_location(resource)));
         }
     }
+    Ok(None)
+}
 
-    let (volumes, _) = handler
-        .list(&unitycatalog_common::ObjectLabel::Volume, None, None, None)
-        .await?;
-    for resource in volumes {
-        let volume: Volume = resource.try_into()?;
-        if !volume.storage_location.is_empty()
-            && let Ok(url) = StorageLocationUrl::parse(&volume.storage_location)
-        {
-            out.push(url);
-        }
+/// The `storage_location` of a stored table, volume or agent skill.
+fn storage_location(resource: Resource) -> String {
+    match resource {
+        Resource::Table(table) => table.storage_location.unwrap_or_default(),
+        Resource::Volume(volume) => volume.storage_location,
+        Resource::AgentSkill(skill) => skill.storage_location,
+        _ => String::new(),
     }
-
-    Ok(out)
 }
 
 /// Validate the `storage_location` of an external table or volume.
@@ -91,14 +77,11 @@ pub(crate) async fn validate_external_storage_location(
     }
 
     // 3. Must not overlap any existing table or volume.
-    for existing in list_table_volume_locations(handler).await? {
-        if locations_overlap(location, &existing) {
-            return Err(Error::invalid_argument(format!(
-                "storage location '{}' overlaps existing table or volume location '{}'",
-                location.raw(),
-                existing.raw()
-            )));
-        }
+    if let Some(existing) = find_overlapping_location(handler, location).await? {
+        return Err(Error::invalid_argument(format!(
+            "storage location '{}' overlaps existing table or volume location '{existing}'",
+            location.raw(),
+        )));
     }
 
     Ok(())
@@ -180,47 +163,9 @@ pub(crate) fn path_contains_managed_segment(location: &StorageLocationUrl) -> bo
         .any(|part| part.as_ref() == MANAGED_STORAGE_PREFIX)
 }
 
-/// Whether two storage locations overlap: one is equal to, or nested within,
-/// the other. Unity Catalog forbids overlapping governed storage regions
-/// (external locations, tables, volumes), so this is the core guard used when
-/// registering them. The check is symmetric, respects path-segment boundaries
-/// and compares canonical locations, so that, e.g., `abfss://` and `https://`
-/// spellings of the same Azure location are caught.
-pub(crate) fn locations_overlap(a: &StorageLocationUrl, b: &StorageLocationUrl) -> bool {
-    a.overlaps(b)
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{StorageLocationUrl, locations_overlap};
-
-    #[test]
-    fn locations_overlap_is_symmetric_on_nesting() {
-        let parse = |s| StorageLocationUrl::parse(s).unwrap();
-        // Descendant overlaps ancestor, in both argument orders.
-        assert!(locations_overlap(
-            &parse("s3://b/data"),
-            &parse("s3://b/data/sub")
-        ));
-        assert!(locations_overlap(
-            &parse("s3://b/data/sub"),
-            &parse("s3://b/data")
-        ));
-        // Exact-equal paths overlap.
-        assert!(locations_overlap(
-            &parse("s3://b/data"),
-            &parse("s3://b/data")
-        ));
-        // Disjoint paths and different buckets do not overlap.
-        assert!(!locations_overlap(
-            &parse("s3://b/data"),
-            &parse("s3://b/other")
-        ));
-        assert!(!locations_overlap(
-            &parse("s3://b/data"),
-            &parse("s3://c/data")
-        ));
-    }
+    use super::StorageLocationUrl;
 
     #[test]
     fn managed_segment_is_detected_segment_aware() {
@@ -240,18 +185,5 @@ mod tests {
         assert!(!path_contains_managed_segment(&parse(
             "s3://b/uc/external/x"
         )));
-    }
-
-    #[test]
-    fn locations_overlap_via_storage_location_url() {
-        let parse = |s| StorageLocationUrl::parse(s).unwrap();
-        assert!(locations_overlap(
-            &parse("s3://b/data"),
-            &parse("s3://b/data/sub")
-        ));
-        assert!(!locations_overlap(
-            &parse("s3://b/data"),
-            &parse("s3://b/data-secret")
-        ));
     }
 }
