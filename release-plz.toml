@@ -109,7 +109,6 @@ changelog_path = "crates/storage-access/CHANGELOG.md"
 [[package]]
 name = "olai-uc-sharing"
 changelog_path = "crates/sharing/CHANGELOG.md"
-release = false
 
 [[package]]
 name = "olai-uc-client"
