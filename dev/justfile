@@ -52,21 +52,27 @@ _stop_profile profile:
 # `[no-cd]` so their bare relative paths (dev/scripts, dev/config-*) resolve from
 # the repo root regardless of this module file living in dev/.
 
-# The crates.io proxy hides releases for 7 days. These wrap trestle's
-# scripts/crates-proxy/ (see its docs/crates-proxy.md); they need a trestle source
-# checkout next to the main mangrove checkout, or TRESTLE_ROOT.
+# The crates.io proxy hides releases for 7 days, for every crate a sibling repo
+# publishes. These wrap trestle's scripts/crates-proxy/ (see its
+# docs/crates-proxy.md); they need a trestle checkout (the tooling) next to the main
+# mangrove checkout, or TRESTLE_ROOT, plus a checkout of the upstream you patch.
 #
-# patch the trestle olai-* crates from the local trestle checkout (gitignored .cargo/config.toml)
+# patch a sibling's crates from its local checkout, e.g. `just dev patch-deps trestle` (gitignored .cargo/config.toml)
 [group('dev')]
 [no-cd]
-configure-trestle-deps:
-    {{ justfile_directory() }}/dev/scripts/crates-proxy.sh patch trestle
+patch-deps upstream:
+    {{ justfile_directory() }}/dev/scripts/crates-proxy.sh patch {{ upstream }}
 
-# drop the local trestle patch again
+# drop a sibling's local patch again
 [group('dev')]
 [no-cd]
-unpatch-trestle-deps:
-    {{ justfile_directory() }}/dev/scripts/crates-proxy.sh patch --remove trestle
+unpatch-deps upstream:
+    {{ justfile_directory() }}/dev/scripts/crates-proxy.sh patch --remove {{ upstream }}
+
+# shortcut for `patch-deps trestle`, mangrove's main upstream
+[group('dev')]
+[no-cd]
+configure-trestle-deps: (patch-deps "trestle")
 
 # restore crates.io source/checksum entries in Cargo.lock files resolved under the patch
 [group('dev')]

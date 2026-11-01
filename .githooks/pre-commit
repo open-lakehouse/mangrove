@@ -31,7 +31,7 @@ if git diff --cached --name-only | grep -qx 'bun.lock'; then
   fi
 fi
 
-# --- 3) Staged Cargo.lock files must resolve trestle crates from crates.io ----
+# --- 3) Staged Cargo.lock files must resolve sibling crates from crates.io ----
 # See trestle's docs/crates-proxy.md; skipped (CI's --locked build is the backstop)
 # when there is no trestle checkout.
 if git diff --cached --name-only | grep -qE '(^|/)Cargo\.lock$'; then

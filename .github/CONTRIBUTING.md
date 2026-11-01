@@ -225,9 +225,14 @@ run `just dev lock-registry`: it restores those entries, computing each checksum
 crate's tarball on the `static.crates.io` CDN, which the proxy doesn't filter. The
 pre-commit hook (`just dev check-lock`) rejects a lock that still points at the patch.
 Do **not** commit a patch (CI has no `../trestle`, so it would fail). Remove it with
-`just dev unpatch-trestle-deps` once the proxy catches up. When you need an unreleased
+`just dev unpatch-deps trestle` once the proxy catches up. When you need an unreleased
 trestle change, commit a git pin (`{ version, git, rev }`) or release trestle first.
-The scripts behind these recipes live in trestle; see its
+
+None of this is trestle-specific. The same delay hits every crate a sibling repo
+publishes. `just dev patch-deps <upstream>` patches any of them from its checkout, and
+patching several upstreams for chained releases works too. mangrove's own releases put
+its consumers (distributary, hydrofoil) in the same position, and they use the same
+tooling. The scripts behind these recipes live in trestle; see its
 [`docs/crates-proxy.md`](https://github.com/open-lakehouse/trestle/blob/main/docs/crates-proxy.md).
 
 **How a release happens:**
