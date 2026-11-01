@@ -309,9 +309,12 @@ jobs:
             /opt/hostedtoolcache/CodeQL /usr/local/share/boost
           df -h /
 
+      # Pinned: nightly-2026-11-01 (rustc 2026-10-31) hits an E0391 "needs
+      # async drop" query cycle compiling sqlx-core. Bump once upstream fixes
+      # it; keep the `cargo +nightly-…` below in sync.
       - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
-          toolchain: nightly
+          toolchain: nightly-2026-10-30
           components: llvm-tools-preview
 
       # Distinct cache key: doctest coverage builds under nightly with its own
@@ -331,7 +334,7 @@ jobs:
         env:
           SQLX_OFFLINE: "true"
         run: |
-          cargo +nightly llvm-cov --doc --workspace --all-features --locked --codecov --output-path codecov-doc.json
+          cargo +nightly-2026-10-30 llvm-cov --doc --workspace --all-features --locked --codecov --output-path codecov-doc.json
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
