@@ -134,13 +134,6 @@ pub async fn serve(config: Config) -> Result<()> {
 
     // Build the API surface — locally, or with selected surfaces proxied upstream.
     let api_router = if config.routing.any_upstream() {
-        let unsupported = config.routing.unsupported_upstream();
-        if !unsupported.is_empty() {
-            return Err(Error::Generic(format!(
-                "upstream routing is not yet implemented for: {}",
-                unsupported.join(", ")
-            )));
-        }
         let upstream = config.upstream.as_ref().ok_or_else(|| {
             Error::Generic(
                 "routing marks surfaces as upstream but no `upstream` config is set".to_string(),

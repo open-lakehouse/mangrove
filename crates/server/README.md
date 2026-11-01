@@ -67,7 +67,7 @@ CLI / UI-serving dependencies stay out unless you opt in.
 | --------- | :-----: | ---------------------------------------------------------------------------------------- |
 | `axum`    |   yes   | The axum router, extractors, and served HTTP surface.                                    |
 | `memory`  |   yes   | The in-memory handler backend (random/time-ordered IDs).                                 |
-| `proxy`   |         | Reusable proxy leaves + a Unity Catalog client connector.                                |
+| `proxy`   |         | Unity Catalog client handlers to wrap in `handlers::Authorized` as proxy leaves.         |
 | `federation` |      | Federation over the proxy connector (implies `proxy`).                                   |
 | `bin`     |         | The deployable `uc-server` binary: SQLite/Postgres backends, the hybrid proxy, swagger UI, the CLI parser, and the healthcheck client. |
 
