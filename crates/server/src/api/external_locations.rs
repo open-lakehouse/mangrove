@@ -3,12 +3,13 @@ use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 use unitycatalog_storage_access::{ExternalLocationUpdate, Page, ProvidesStorageAccessStore};
 
 use super::{RequestContext, SecuredAction};
-use crate::Result;
 use crate::error::from_store;
 use crate::policy::{Permission, Policy, process_resources};
 use crate::services::ProvidesLocalStoragePolicy;
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
+use crate::services::object_store::find_location_dependents;
+use crate::{Error, Result};
 pub use unitycatalog_handlers::external_locations::ExternalLocationHandler;
 
 #[async_trait::async_trait]
@@ -57,7 +58,29 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<()> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
-        // TODO: check if the location is used by any resources
+        // Tables, volumes and agent skills under the location need it to vend
+        // credentials, so it stays until they are gone unless `force` is set. The
+        // check and the delete span two stores and are not atomic, like the
+        // overlap check when those securables are created.
+        if !request.force.unwrap_or(false) {
+            let location = self
+                .storage_access()
+                .get_external_location(&request.name)
+                .await
+                .map_err(from_store)?;
+            let dependents = find_location_dependents(self, &location.url, 5).await?;
+            if !dependents.is_empty() {
+                return Err(Error::invalid_argument(format!(
+                    "external location '{}' is used by {}; delete them first or pass force",
+                    request.name,
+                    dependents
+                        .iter()
+                        .map(|name| format!("'{name}'"))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )));
+            }
+        }
         self.storage_access()
             .delete_external_location(&request.name)
             .await
@@ -189,7 +212,6 @@ mod tests {
     use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 
     use super::*;
-    use crate::Error;
     use crate::api::CredentialHandler;
     use crate::memory::InMemoryResourceStore;
     use crate::policy::ConstantPolicy;
@@ -359,5 +381,84 @@ mod tests {
         )
         .await
         .unwrap();
+    }
+
+    async fn delete_location(
+        h: &ServerHandler<RequestContext>,
+        name: &str,
+        force: Option<bool>,
+    ) -> Result<()> {
+        h.delete_external_location(
+            DeleteExternalLocationRequest {
+                name: name.to_string(),
+                force,
+                ..Default::default()
+            },
+            ctx(),
+        )
+        .await
+    }
+
+    async fn create_external_table(h: &ServerHandler<RequestContext>, name: &str, url: &str) {
+        use crate::api::TableHandler;
+        use unitycatalog_common::models::tables::v1::{
+            CreateTableRequest, DataSourceFormat, TableType,
+        };
+        h.create_table(
+            CreateTableRequest {
+                name: name.to_string(),
+                schema_name: "sch".to_string(),
+                catalog_name: "cat".to_string(),
+                table_type: TableType::External.into(),
+                data_source_format: DataSourceFormat::Delta.into(),
+                storage_location: Some(url.to_string()),
+                ..Default::default()
+            },
+            ctx(),
+        )
+        .await
+        .unwrap();
+    }
+
+    /// A location governing a table can't be deleted until the table is gone,
+    /// unless `force` is set; a table under a sibling path doesn't block it.
+    #[tokio::test]
+    async fn delete_refuses_location_in_use() {
+        use crate::api::TableHandler;
+        use unitycatalog_common::models::tables::v1::DeleteTableRequest;
+
+        let h = handler();
+        create_credential(&h, "cred").await;
+        create_location(&h, "loc", "s3://bucket/loc").await.unwrap();
+        create_location(&h, "loc2", "s3://bucket/loc2")
+            .await
+            .unwrap();
+        create_external_table(&h, "t", "s3://bucket/loc/t").await;
+        create_external_table(&h, "t2", "s3://bucket/loc2/t2").await;
+
+        let res = delete_location(&h, "loc", None).await;
+        assert!(
+            matches!(&res, Err(Error::InvalidArgument(msg)) if msg.contains("'cat.sch.t'")),
+            "{res:?}"
+        );
+        let res = delete_location(&h, "loc", Some(false)).await;
+        assert!(matches!(res, Err(Error::InvalidArgument(_))), "{res:?}");
+
+        h.delete_table(
+            DeleteTableRequest {
+                full_name: "cat.sch.t".to_string(),
+                ..Default::default()
+            },
+            ctx(),
+        )
+        .await
+        .unwrap();
+        delete_location(&h, "loc", None)
+            .await
+            .expect("no dependents left");
+
+        delete_location(&h, "loc2", Some(true))
+            .await
+            .expect("force bypasses the check");
     }
 }

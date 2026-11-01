@@ -1,4 +1,4 @@
-use unitycatalog_common::models::{ObjectLabel, Resource};
+use unitycatalog_common::models::{ObjectLabel, Resource, ResourceExt};
 use unitycatalog_storage_access::{LocationKey, ProvidesStorageAccessStore};
 
 use super::ProvidesLocalStoragePolicy;
@@ -25,6 +25,34 @@ pub(crate) async fn find_overlapping_location(
         }
     }
     Ok(None)
+}
+
+/// The names of up to `limit` tables, volumes and agent skills stored at or below
+/// the external location URL `url`.
+///
+/// Used to refuse deleting an external location that still governs securables.
+pub(crate) async fn find_location_dependents(
+    handler: &(impl ResourceStore + ?Sized),
+    url: &str,
+    limit: usize,
+) -> Result<Vec<String>> {
+    let filter = LocationKey::parse(url)?.covered_by();
+    let mut names = Vec::new();
+    for label in [
+        ObjectLabel::Table,
+        ObjectLabel::Volume,
+        ObjectLabel::AgentSkill,
+    ] {
+        let remaining = limit - names.len();
+        if remaining == 0 {
+            break;
+        }
+        let (found, _) = handler
+            .search(&label, None, &filter, Some(remaining), None)
+            .await?;
+        names.extend(found.iter().map(|r| r.resource_name().to_string()));
+    }
+    Ok(names)
 }
 
 /// The `storage_location` of a stored table, volume or agent skill.
