@@ -6,7 +6,7 @@
 #    secret scanner). A repo-local core.hooksPath overrides the global one, so
 #    we re-invoke the global hook here to avoid disabling it for this repo.
 # 2. Strips npm registry proxy URLs out of bun.lock so they never get committed.
-# 3. Verifies Cargo.lock trestle crates still list crates.io registry entries.
+# 3. Verifies staged Cargo.lock files carry no local [patch] (crates-proxy check-lock).
 #
 set -e
 
@@ -31,9 +31,11 @@ if git diff --cached --name-only | grep -qx 'bun.lock'; then
   fi
 fi
 
-# --- 3) Cargo.lock must list olai-http/olai-store from crates.io when staged ----
-if git diff --cached --name-only | grep -qx 'Cargo.lock'; then
-  if ! bash scripts/check-cargo-lock-trestle.sh; then
+# --- 3) Staged Cargo.lock files must resolve sibling crates from crates.io ----
+# See trestle's docs/crates-proxy.md; skipped (CI's --locked build is the backstop)
+# when there is no trestle checkout.
+if git diff --cached --name-only | grep -qE '(^|/)Cargo\.lock$'; then
+  if ! bash dev/scripts/crates-proxy.sh --if-available check-lock; then
     exit 1
   fi
 fi

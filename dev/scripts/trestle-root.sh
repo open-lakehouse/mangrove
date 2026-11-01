@@ -5,11 +5,14 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# Resolve ../trestle next to the *main* checkout, so this also works from a linked
+# worktree (e.g. ~/code/mangrove-worktrees/<branch>, which has no ../trestle).
+main_root="$(dirname "$(git -C "$repo_root" rev-parse --path-format=absolute --git-common-dir)")"
 
 if [[ -n "${TRESTLE_ROOT:-}" ]]; then
     root="$TRESTLE_ROOT"
-elif [[ -d "$repo_root/../trestle/crates/olai-http" ]]; then
-    root="$(cd "$repo_root/../trestle" && pwd)"
+elif [[ -d "$main_root/../trestle/crates/olai-http" ]]; then
+    root="$(cd "$main_root/../trestle" && pwd)"
 else
     echo "error: could not locate a trestle source checkout." >&2
     echo "  Clone https://github.com/open-lakehouse/trestle adjacent to mangrove (../trestle)," >&2

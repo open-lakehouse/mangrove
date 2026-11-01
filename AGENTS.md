@@ -38,7 +38,7 @@ Multi-crate Rust workspace with language bindings:
 | `just meta lint-node` | Lint + typecheck the `node/` workspace |
 | `just build build-py` / `just build build-node` | Build Python / Node bindings |
 | `just test test-node` / `just test test-node-integration` | Node tests |
-| `just dev configure-trestle-deps` | Patch trestle crates from `../trestle` (gitignored) |
+| `just dev patch-deps <upstream>` / `just dev lock-registry` | Patch a sibling's crates (e.g. `trestle`) from its local checkout / restore crates.io lock entries (see below) |
 
 The fast edit/check loop (`cargo check`, `cargo test`) needs none of the codegen
 tooling.
@@ -51,10 +51,10 @@ tooling.
   generated output in the same commit as its source change. Python stubs
   (`python/client/python/unitycatalog_client/_client/*.pyi`) are generated too, by
   `just codegen generate-py-stubs` (see CONTRIBUTING).
-- **Never commit `Cargo.lock` built under a local trestle path patch.** CI resolves
-  the trestle crates from crates.io. Check with `bun run cargo-lock-trestle:check`;
-  if it fails, `git checkout main -- Cargo.lock`. Never commit a
-  `[patch.crates-io]`.
+- **Never commit a `Cargo.lock` that still resolves a sibling's crates from a
+  local patch.** CI resolves them from crates.io. Run `just dev lock-registry` to
+  restore the crates.io entries (`just dev check-lock` and the pre-commit hook
+  check it). Never commit a `[patch.crates-io]` or `.cargo/config.toml`.
 - **Never bump versions or edit changelogs by hand** (crates or `package.json`);
   release-plz does it from the Release PR.
 - **Never commit to `main`.** Stage files by name — never `git add -A` / `git add .`.
@@ -119,6 +119,32 @@ cargo fmt --all --check \
        -E 'not (package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access)))' \
   && cargo test --workspace --all-features --doc
 ```
+
+## Builds and disk
+
+Dev builds keep line tables for workspace crates and no debug info for
+dependencies (`[profile.dev]` in both workspaces). Panic locations and backtrace
+file:line for workspace code are kept. For a debugger, use
+`cargo build --profile debugging` (full debug info, separate `target/debugging/`).
+Run `cargo clean` in a worktree before removing it.
+
+## Sibling crates and the crates.io proxy
+
+The local crates.io proxy hides releases for 7 days. That applies to every crate
+our repos publish to each other: today mangrove consumes trestle's `olai-*`, and
+distributary and hydrofoil consume mangrove's `olai-uc-*`. So a fresh sibling
+release won't resolve locally at first. Patch from the upstream's checkout
+(`just dev patch-deps trestle`, or `configure-trestle-deps`), build, then run
+`just dev lock-registry` before committing. If a fresh release chains (it needs
+another fresh release), patch both upstreams. An unreleased upstream change gets a
+committed git pin (`{ version, git, rev }`) instead. Both strategies are
+described in trestle's
+[`docs/crates-proxy.md`](https://github.com/open-lakehouse/trestle/blob/main/docs/crates-proxy.md).
+The recipes find the checkouts next to the main mangrove checkout (worktrees too)
+or via `<REPO>_ROOT` (e.g. `TRESTLE_ROOT`).
+
+When mangrove releases, its consumers face the same delay; that's handled from
+their side with the same tooling.
 
 ## Environment
 

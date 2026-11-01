@@ -18,7 +18,7 @@ lockfiles. Because `core.hooksPath` is then set, the `pre-commit` framework
 (`.pre-commit-config.yaml`: Biome, typos, Ruff, cargo fmt/check) can't install as a
 hook alongside it; run `pre-commit run` by hand, or skip `setup-hooks` and use
 `pre-commit install` instead (then run the lockfile checks yourself:
-`bun run strip-lock-proxy:check`, `bun run cargo-lock-trestle:check`).
+`bun run strip-lock-proxy:check`, `bun run cargo-lock:check`).
 
 Behind the Databricks corporate network, point your user-level `~/.npmrc` at the
 internal npm mirror (`registry=https://npm-proxy.cloud.databricks.com/`); a direct
@@ -208,22 +208,32 @@ crates.io natively.
 
 To build against **local trestle source** — e.g. before a change is published, or while
 the crates.io proxy's 7-day age filter still hides a freshly published version — run
-`just configure-trestle-deps`. It writes a gitignored `.cargo/config.toml` with a
-`[patch.crates-io]` pointing every trestle crate at the local checkout:
+`just configure-trestle-deps`. It writes a gitignored `.cargo/config.toml` that patches
+every trestle crate the locks use to the local checkout (found next to the main mangrove
+checkout, so worktrees work too, or via `TRESTLE_ROOT`):
 
 ```toml
-[patch.crates-io]
-olai-http  = { path = "/path/to/trestle/crates/olai-http" }
-olai-vended-store = { path = "/path/to/trestle/crates/olai-vended-store" }
+# >>> crates-proxy:trestle (written by trestle/scripts/crates-proxy/patch.sh; never commit)
+patch.crates-io.olai-http = { path = "/path/to/trestle/crates/olai-http" }
 # ...
+# <<< crates-proxy:trestle
 ```
 
-Cargo also reads it when building from `wasm/`. A build under the patch rewrites
-`Cargo.lock` without the crates' registry `source`/`checksum`; restore the committed lock
-before committing (`scripts/check-cargo-lock-trestle.sh` catches it). Do **not** commit
-a patch (CI has no `../trestle`, so it would fail). When you need a
-trestle change permanently, release trestle to crates.io *first*, then bump the `version`
-here.
+Cargo also reads it when building from `wasm/`. A build under the patch rewrites the
+`Cargo.lock` files without the crates' registry `source`/`checksum`. Before committing,
+run `just dev lock-registry`: it restores those entries, computing each checksum from the
+crate's tarball on the `static.crates.io` CDN, which the proxy doesn't filter. The
+pre-commit hook (`just dev check-lock`) rejects a lock that still points at the patch.
+Do **not** commit a patch (CI has no `../trestle`, so it would fail). Remove it with
+`just dev unpatch-deps trestle` once the proxy catches up. When you need an unreleased
+trestle change, commit a git pin (`{ version, git, rev }`) or release trestle first.
+
+None of this is trestle-specific. The same delay hits every crate a sibling repo
+publishes. `just dev patch-deps <upstream>` patches any of them from its checkout, and
+patching several upstreams for chained releases works too. mangrove's own releases put
+its consumers (distributary, hydrofoil) in the same position, and they use the same
+tooling. The scripts behind these recipes live in trestle; see its
+[`docs/crates-proxy.md`](https://github.com/open-lakehouse/trestle/blob/main/docs/crates-proxy.md).
 
 **How a release happens:**
 
