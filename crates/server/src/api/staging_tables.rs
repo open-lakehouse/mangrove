@@ -1,9 +1,9 @@
-use itertools::Itertools;
 use unitycatalog_common::models::ResourceName;
 use unitycatalog_common::models::catalogs::v1::Catalog;
 use unitycatalog_common::models::schemas::v1::Schema;
 use unitycatalog_common::models::staging_tables::v1::*;
 use unitycatalog_common::models::{ObjectLabel, ResourceIdent};
+use unitycatalog_storage_access::LocationKey;
 
 use super::{RequestContext, SecuredAction};
 use crate::policy::{Permission, Policy, Principal};
@@ -166,30 +166,22 @@ pub(crate) async fn resolve_managed_parent_location(
 /// Find the staging table reserved at `staging_location`, if any.
 ///
 /// Staging rows are keyed by their (immutable) location; `CreateStagingTable`
-/// guarantees uniqueness via a fresh UUID per location. Returns `NotFound` if no
-/// staging table was allocated there.
-///
-/// TODO(perf): this lists all staging tables; once the store supports property
-/// filters, query by `staging_location` directly (mirrors the TODO on
-/// `list_table_volume_locations`).
+/// guarantees uniqueness via a fresh UUID per location. The store matches the
+/// canonical [`LocationKey`] it keeps with each reservation, so the lookup ignores
+/// spelling differences such as the trailing slash the createTable client adds
+/// (kernel/Url normalization in create_managed_table). Returns `NotFound` if no
+/// staging table was allocated there, or if `staging_location` names no storage
+/// location.
 pub(crate) async fn find_staging_table_by_location(
     handler: &(impl ResourceStore + ?Sized),
     staging_location: &str,
 ) -> Result<StagingTable> {
+    let key = LocationKey::parse(staging_location).map_err(|_| Error::NotFound)?;
     let (resources, _) = handler
-        .list(&ObjectLabel::StagingTable, None, None, None)
+        .search(&ObjectLabel::StagingTable, None, &key.at(), Some(1), None)
         .await?;
-    // Match slash-insensitively: the createTable client sends the location with
-    // a trailing slash (kernel/Url normalization in create_managed_table) while
-    // the staging reservation stored it without one.
-    let needle = staging_location.trim_end_matches('/');
-    resources
-        .into_iter()
-        .map(StagingTable::try_from)
-        .filter_ok(|st| st.staging_location.trim_end_matches('/') == needle)
-        .next()
-        .ok_or(Error::NotFound)?
-        .map_err(Error::from)
+    let resource = resources.into_iter().next().ok_or(Error::NotFound)?;
+    Ok(StagingTable::try_from(resource)?)
 }
 
 /// Append the managed-storage prefix to `root` unless it already ends with it.
