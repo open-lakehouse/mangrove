@@ -3,7 +3,7 @@
 # settles; the in-workspace dependency key + crate identifier stay
 # `unitycatalog(_)sharing` via each dependent's `package =` alias.
 name = "olai-uc-sharing"
-version = "0.0.1"
+version = "0.0.2"
 description = "Sharing state for a Delta Sharing provider: shares, recipients, their bearer tokens and the grants between them, with activation codes and key rotation."
 edition.workspace = true
 homepage.workspace = true
@@ -23,7 +23,7 @@ name = "unitycatalog_sharing"
 [dependencies]
 # Only the shared error: the port speaks its own catalog-independent records, so
 # no resource models.
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.7", default-features = false }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.8", default-features = false }
 
 # workspace dependencies in alphabetical order
 async-trait = { workspace = true }
