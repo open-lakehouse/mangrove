@@ -29,7 +29,9 @@ path = "src/main.rs"
 required-features = ["bin"]
 
 [dependencies]
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.7", optional = true }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.7", features = [
+  "handlers",
+], optional = true }
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.7", features = [
   "axum",
   "store",
@@ -107,6 +109,7 @@ serde_yml = { workspace = true, optional = true }
 swagger-ui-dist = { version = "5.18.3", optional = true }
 
 [dev-dependencies]
+mockito = "1.4"
 tempfile = "3.1"
 tokio = { version = "1", features = ["full"] }
 
@@ -118,7 +121,7 @@ axum = ["dep:axum", "dep:axum-extra", "http", "tower", "unitycatalog-handlers/ax
 # in-memory handler features
 memory = ["uuid"]
 
-# reusable handler patterns: proxy leaves + UC-client connector
+# the UC client, whose service clients serve as proxy leaves (wrapped in `handlers::Authorized`)
 proxy = ["dep:unitycatalog-client"]
 federation = ["proxy"]
 

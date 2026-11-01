@@ -29,14 +29,14 @@
 //! - [`rest`] — the `axum` routers that expose the handlers over HTTP.
 //! - [`services`] — [`ServerHandler`](services::ServerHandler) and the
 //!   `Provides*` dependency-injection traits.
-//! - [`handlers`] — reusable handler patterns (e.g. proxy leaves that forward to
-//!   an upstream catalog).
+//! - [`handlers`] — reusable handler patterns (e.g. the policy-checking
+//!   decorator the upstream proxy is built on).
 //!
 //! # Feature flags
 //!
-//! `memory` enables the in-memory store; `proxy` pulls in the upstream-forwarding
-//! handlers; `bin` adds the config/CLI/serve wiring used by the `uc-server`
-//! binary. See the crate README for the full table.
+//! `memory` enables the in-memory store; `proxy` pulls in the client handlers the
+//! upstream proxy forwards through; `bin` adds the config/CLI/serve wiring used
+//! by the `uc-server` binary. See the crate README for the full table.
 
 pub mod api;
 pub mod error;
