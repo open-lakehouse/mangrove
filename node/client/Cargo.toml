@@ -18,7 +18,7 @@
 
 [package]
 name = "unity-catalog-node"
-version = "0.0.3"
+version = "0.0.4"
 description = "NAPI extension for the @open-lakehouse/unity-catalog-node npm package"
 publish = false
 readme = "README.md"
@@ -40,8 +40,8 @@ include = [
 crate-type = ["cdylib"]
 
 [dependencies]
-unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client", version = "0.0.7" }
-unitycatalog-common = { package = "olai-uc-common", path = "../../crates/common", version = "0.0.7", features = ["node"] }
+unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client", version = "0.0.8" }
+unitycatalog-common = { package = "olai-uc-common", path = "../../crates/common", version = "0.0.8", features = ["node"] }
 
 # Generated bindings encode models across the napi boundary via `buffa::Message`.
 buffa = { workspace = true }
