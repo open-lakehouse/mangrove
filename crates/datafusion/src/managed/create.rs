@@ -23,14 +23,16 @@ use delta_kernel::transaction::CommitResult;
 use delta_kernel::transaction::create_table::create_table;
 use delta_kernel::transaction::data_layout::DataLayout;
 use delta_kernel_default_engine::DefaultEngineBuilder;
-use object_store::ObjectStore;
-use object_store::aws::AmazonS3Builder;
 use object_store::local::LocalFileSystem;
-use olai_storage_credentials::wire::delta_api;
+use object_store::{ClientOptions, ObjectStore};
+use olai_storage_credentials::wire::{VendContext, select_covering};
+use olai_storage_credentials::{AccessLevel, StorageLocation, StorageScope, VendedCredential};
+use olai_vended_store::{CredentialSource, StoreOptions, build_store};
 use unitycatalog_client::DeltaV1Client;
 use unitycatalog_delta_api::models::{
     DeltaCreateStagingTableRequest, DeltaCreateTableRequest, DeltaDataSourceFormat, DeltaDataType,
-    DeltaStagingTableResponse, DeltaStructField, DeltaStructType, DeltaTableType,
+    DeltaStagingTableResponse, DeltaStorageCredential, DeltaStructField, DeltaStructType,
+    DeltaTableType,
 };
 use url::Url;
 
@@ -122,7 +124,7 @@ pub async fn create_managed_table(
         .map_err(|e| CreateManagedTableError::other(format!("invalid staging location: {e}")))?;
 
     // 2. Credentialed object store (from the staging response) + a kernel engine over it.
-    let store = build_staging_store(&staging, &location)?;
+    let store = build_staging_store(&staging, &location).await?;
     let engine = DefaultEngineBuilder::new(store).build();
 
     // 3. Write `0.json` via kernel create_table + our catalog committer.
@@ -329,22 +331,39 @@ fn snapshot_protocol(snapshot: &Snapshot) -> unitycatalog_delta_api::models::Del
     }
 }
 
-/// Build a credentialed object store from the credentials the `createStagingTable` response
-/// returned. (Vending by table name 404s during staging — the table isn't real yet — so we use
-/// the staging response's own `storage_credentials`.)
+/// Builds the credentialed object store a staged managed table is written through, from the
+/// credentials the `createStagingTable` response returned.
 ///
-/// Dispatches on the credential the response carried: an `azure.sas-token` builds an Azure Blob
-/// store (Azurite emulator when the location is `azurite://…`), otherwise an S3 store.
-pub(crate) fn build_staging_store(
+/// Vending by table name 404s during staging (the table isn't real yet), so the staging
+/// response's own `storage_credentials` are used. The credential with the most specific
+/// prefix that grants `READ_WRITE` on `location` wins; the store is rooted at the bucket (or
+/// container), so paths are full object keys. `AWS_ENDPOINT_URL` points S3 at an
+/// S3-compatible store and `AWS_REGION` sets the signing region.
+///
+/// A `file://` location needs no credential: its directory is created and an unrooted
+/// [`LocalFileSystem`] returned.
+pub async fn build_staging_store(
     staging: &DeltaStagingTableResponse,
     location: &Url,
+) -> Result<Arc<dyn ObjectStore>, CreateManagedTableError> {
+    build_staging_store_with(
+        &staging.storage_credentials,
+        location,
+        &staging_store_options(),
+    )
+    .await
+}
+
+async fn build_staging_store_with(
+    credentials: &[DeltaStorageCredential],
+    location: &Url,
+    options: &StoreOptions,
 ) -> Result<Arc<dyn ObjectStore>, CreateManagedTableError> {
     // Local (`file://`) staging needs no credential: the server vends a
     // credential-less response for local managed storage, and the kernel engine
     // addresses objects by full path, so an unrooted `LocalFileSystem` resolves
     // them. Mirrors the server's `get_local_store` and the `unitycatalog-object-store`
-    // local branch. Short-circuit before the credential lookup, which would
-    // otherwise fail ("staging response carried no storage_credentials").
+    // local branch.
     if location.scheme() == "file" {
         // The table's managed directory does not exist yet (cloud stores create
         // prefixes implicitly on first write, but a local filesystem does not, and
@@ -360,106 +379,181 @@ pub(crate) fn build_staging_store(
         return Ok(Arc::new(LocalFileSystem::new()));
     }
 
-    let cred = staging
-        .storage_credentials
+    let (storage, hints) = StorageLocation::parse_with_hints(location).map_err(|e| {
+        CreateManagedTableError::other(format!("invalid staging location {location}: {e}"))
+    })?;
+    let ctx = VendContext::new(StorageScope::new(storage), AccessLevel::ReadWrite);
+
+    // Prefixes this crate cannot parse name storage it cannot address; skip them.
+    let offered: Vec<_> = credentials
         .iter()
-        .find(|c| {
-            location
-                .as_str()
-                .starts_with(c.prefix.trim_end_matches('/'))
-        })
-        .or_else(|| staging.storage_credentials.first())
+        .filter_map(|c| Some((c.prefix.parse::<StorageScope>().ok()?, c)))
+        .collect();
+    let chosen = select_covering(
+        offered
+            .iter()
+            .map(|(prefix, c)| (prefix, AccessLevel::from(c.operation), *c)),
+        &ctx,
+    )
+    .ok_or_else(|| {
+        CreateManagedTableError::other(format!(
+            "no staging credential covers {location} with READ_WRITE access"
+        ))
+    })?;
+    // A prefix covering the location always relates to it, so this is `Some`.
+    let mut seed = chosen
+        .to_vended(&ctx)
+        .map_err(|e| CreateManagedTableError::other(format!("invalid staging credential: {e}")))?
         .ok_or_else(|| {
-            CreateManagedTableError::other("staging response carried no storage_credentials")
+            CreateManagedTableError::other(format!(
+                "staging credential for `{}` does not relate to {location}",
+                chosen.prefix
+            ))
         })?;
-    let cfg = |key: &str| cred.config.get(key).filter(|v| !v.is_empty()).cloned();
+    // The Delta API carries no store hints; what the location implies (an Azurite
+    // endpoint) fills them in.
+    seed.hints.fill_from(&hints);
 
-    // Azure: the staging credential carries a SAS token.
-    if let Some(sas) = cfg(delta_api::AZURE_SAS_TOKEN) {
-        return build_staging_store_azure(location, sas);
-    }
-
-    let bucket = location
-        .host_str()
-        .ok_or_else(|| CreateManagedTableError::other("staging location has no bucket/host"))?;
-
-    let mut builder = AmazonS3Builder::new()
-        .with_bucket_name(bucket)
-        .with_access_key_id(cfg(delta_api::S3_ACCESS_KEY_ID).ok_or_else(|| {
-            CreateManagedTableError::other("staging credential missing s3.access-key-id")
-        })?)
-        .with_secret_access_key(cfg(delta_api::S3_SECRET_ACCESS_KEY).ok_or_else(|| {
-            CreateManagedTableError::other("staging credential missing s3.secret-access-key")
-        })?);
-    if let Some(token) = cfg(delta_api::S3_SESSION_TOKEN) {
-        builder = builder.with_token(token);
-    }
-    if let Ok(endpoint) = std::env::var("AWS_ENDPOINT_URL") {
-        builder = builder.with_endpoint(endpoint).with_allow_http(true);
-    }
-    builder =
-        builder.with_region(std::env::var("AWS_REGION").unwrap_or_else(|_| "us-east-1".into()));
-    Ok(Arc::new(builder.build()?))
+    let store = build_store(&seed, Arc::new(StagingSource), options)
+        .await
+        .map_err(|e| {
+            CreateManagedTableError::other(format!("failed to build staging store: {e}"))
+        })?;
+    Ok(store.root())
 }
 
-/// Build an Azure Blob staging store from a vended SAS token.
-///
-/// For the Azurite emulator (`azurite://<container>/…`, or path-style localhost:10000) the
-/// container is the URL host/first path segment and the store runs in emulator mode (http,
-/// well-known account). Mirrors `unitycatalog-object-store`'s `to_store` Azurite branch: the
-/// builder cannot parse `azurite://` via `with_url`, and in emulator mode it ignores a
-/// credential provider — so the SAS is passed via `SasKey` and account/container set explicitly.
-fn build_staging_store_azure(
-    location: &Url,
-    sas: String,
-) -> Result<Arc<dyn ObjectStore>, CreateManagedTableError> {
-    use object_store::azure::{AzureConfigKey, MicrosoftAzureBuilder};
+/// Store options for staging writes: `AWS_ENDPOINT_URL` targets an S3-compatible store
+/// (SeaweedFS, MinIO), over plain `http` if the endpoint says so.
+fn staging_store_options() -> StoreOptions {
+    let mut options = StoreOptions::new();
+    if let Ok(endpoint) = std::env::var("AWS_ENDPOINT_URL") {
+        if endpoint.starts_with("http://") {
+            options = options.with_client_options(ClientOptions::new().with_allow_http(true));
+        }
+        options = options.with_s3_endpoint(endpoint);
+    }
+    options
+}
 
-    const EMULATOR_ACCOUNT: &str = "devstoreaccount1";
+/// The source behind a staging store. Staging credentials cannot be re-vended (the table
+/// is not real yet), so the store serves the staging credential until it expires.
+#[derive(Debug)]
+struct StagingSource;
 
-    let is_azurite_localhost = location.scheme() == "http"
-        && matches!(location.host_str(), Some("localhost") | Some("127.0.0.1"))
-        && location.port() == Some(10000);
+#[async_trait::async_trait]
+impl CredentialSource for StagingSource {
+    async fn fetch(&self) -> olai_vended_store::Result<VendedCredential> {
+        Err(olai_vended_store::Error::vend(
+            "staging credentials cannot be re-vended",
+        ))
+    }
+}
 
-    if location.scheme() == "azurite" || is_azurite_localhost {
-        // azurite://<container>/…  → container is the host
-        // http://localhost:10000/<account>/<container>/…  → container is the 2nd path segment
-        let (account, container) = if location.scheme() == "azurite" {
-            (
-                EMULATOR_ACCOUNT.to_owned(),
-                location
-                    .host_str()
-                    .ok_or_else(|| {
-                        CreateManagedTableError::other("azurite location has no container")
-                    })?
-                    .to_owned(),
-            )
-        } else {
-            let mut segs = location
-                .path_segments()
-                .ok_or_else(|| CreateManagedTableError::other("azurite location has no path"))?;
-            let account = segs.next().unwrap_or("").to_owned();
-            let container = segs
-                .next()
-                .filter(|s| !s.is_empty())
-                .ok_or_else(|| {
-                    CreateManagedTableError::other("azurite location missing container")
-                })?
-                .to_owned();
-            (account, container)
-        };
-        let builder = MicrosoftAzureBuilder::new()
-            .with_use_emulator(true)
-            .with_account(account)
-            .with_container_name(container)
-            .with_config(AzureConfigKey::SasKey, sas);
-        return Ok(Arc::new(builder.build()?));
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use olai_storage_credentials::wire::delta_api::Operation;
+
+    use super::*;
+
+    fn credential(
+        prefix: &str,
+        operation: Operation,
+        config: &[(&str, &str)],
+    ) -> DeltaStorageCredential {
+        DeltaStorageCredential {
+            prefix: prefix.to_owned(),
+            operation,
+            config: config
+                .iter()
+                .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
+                .collect::<BTreeMap<_, _>>(),
+            expiration_time_ms: None,
+        }
     }
 
-    // Real Azure: container is the first path segment of
-    // https://<account>.blob.core.windows.net/<container>/…
-    let builder = MicrosoftAzureBuilder::new()
-        .with_url(location.as_str())
-        .with_config(AzureConfigKey::SasKey, sas);
-    Ok(Arc::new(builder.build()?))
+    fn s3(prefix: &str, operation: Operation, key: &str) -> DeltaStorageCredential {
+        credential(
+            prefix,
+            operation,
+            &[
+                ("s3.access-key-id", key),
+                ("s3.secret-access-key", "secret"),
+            ],
+        )
+    }
+
+    /// Options that never probe AWS for a bucket region.
+    fn offline() -> StoreOptions {
+        StoreOptions::new()
+            .with_s3_endpoint("http://127.0.0.1:9000")
+            .with_client_options(ClientOptions::new().with_allow_http(true))
+            .with_aws_region("us-east-1")
+    }
+
+    async fn build(
+        credentials: &[DeltaStorageCredential],
+        location: &str,
+    ) -> Result<Arc<dyn ObjectStore>, CreateManagedTableError> {
+        build_staging_store_with(credentials, &Url::parse(location).unwrap(), &offline()).await
+    }
+
+    #[tokio::test]
+    async fn azurite_builds_a_bucket_rooted_azure_store() {
+        let creds = [credential(
+            "azurite://ctr/tables/t/",
+            Operation::ReadWrite,
+            &[("azure.sas-token", "sv=2022-11-02&sig=abc")],
+        )];
+        let store = build(&creds, "azurite://ctr/tables/t/").await.unwrap();
+        assert!(store.to_string().contains("ctr"), "{store}");
+    }
+
+    #[tokio::test]
+    async fn the_most_specific_write_credential_wins() {
+        // The table-level credential is read-only, so the broader read-write one serves.
+        let creds = [
+            s3("s3://bucket/tables/t/", Operation::Read, "read"),
+            s3("s3://bucket/", Operation::ReadWrite, "write"),
+        ];
+        let store = build(&creds, "s3://bucket/tables/t/").await.unwrap();
+        assert!(store.to_string().contains("bucket"), "{store}");
+    }
+
+    #[rstest::rstest]
+    #[case::unrelated(vec![s3("s3://other/", Operation::ReadWrite, "k")])]
+    #[case::read_only(vec![s3("s3://bucket/tables/t/", Operation::Read, "k")])]
+    #[case::narrower(vec![s3("s3://bucket/tables/t/part/", Operation::ReadWrite, "k")])]
+    #[case::unparsable(vec![s3("not a url", Operation::ReadWrite, "k")])]
+    #[case::none(vec![])]
+    #[tokio::test]
+    async fn refuses_credentials_that_do_not_cover_a_write(
+        #[case] creds: Vec<DeltaStorageCredential>,
+    ) {
+        let err = build(&creds, "s3://bucket/tables/t/").await.unwrap_err();
+        assert!(
+            err.to_string().contains("no staging credential covers"),
+            "{err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_covering_credential_missing_its_keys_is_rejected() {
+        let creds = [credential("s3://bucket/", Operation::ReadWrite, &[])];
+        let err = build(&creds, "s3://bucket/tables/t/").await.unwrap_err();
+        assert!(
+            err.to_string().contains("invalid staging credential"),
+            "{err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn local_staging_creates_the_table_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("managed/tbl");
+        let location = Url::from_directory_path(&dir).unwrap();
+        build(&[], location.as_str()).await.unwrap();
+        assert!(dir.is_dir());
+    }
 }
