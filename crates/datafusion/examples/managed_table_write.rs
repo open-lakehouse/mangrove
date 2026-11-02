@@ -66,17 +66,17 @@ use datafusion_unitycatalog::catalog::{
     ManagedReadState, build_catalog_managed_snapshot, ensure_trailing_slash,
     resolve_managed_read_state,
 };
+use datafusion_unitycatalog::managed::build_staging_store;
 use deltalake_core::delta_datafusion::DeltaScanNext;
 use deltalake_core::delta_datafusion::engine::DataFusionEngine;
 use deltalake_core::logstore::{StorageConfig, default_logstore};
 use deltalake_core::parquet::arrow::ArrowWriter;
-use object_store::aws::AmazonS3Builder;
 use object_store::{ObjectStore, ObjectStoreExt, PutPayload, path::Path};
 use serde_json::json;
 use unitycatalog_delta_api::models::{
     DeltaCommit, DeltaCreateStagingTableRequest, DeltaCreateTableRequest, DeltaDataSourceFormat,
-    DeltaDataType, DeltaProtocol, DeltaStagingTableResponse, DeltaStructField, DeltaStructType,
-    DeltaTableRequirement, DeltaTableType, DeltaTableUpdate, DeltaUpdateTableRequest,
+    DeltaDataType, DeltaProtocol, DeltaStructField, DeltaStructType, DeltaTableRequirement,
+    DeltaTableType, DeltaTableUpdate, DeltaUpdateTableRequest,
 };
 use unitycatalog_object_store::UnityObjectStoreFactory;
 use url::Url;
@@ -145,7 +145,7 @@ async fn main() -> Result<(), BoxError> {
     // They cover the whole table directory, so this one store serves the data
     // file, the `_delta_log` writes, and the later read-back.
     let ctx = SessionContext::new();
-    let root = build_staging_store(&staging, &location)?;
+    let root = build_staging_store(&staging, &location).await?;
     register_routing_store(&ctx, &location, root.clone())?;
 
     // The table schema we'll create + write: (id BIGINT, name STRING).
@@ -480,52 +480,6 @@ fn props_as_json(table_id: &str, created_ts: i64) -> serde_json::Value {
 // =======================================================================
 // Helpers — paths, parquet, store registration.
 // =======================================================================
-
-/// Build a bucket-rooted S3 [`ObjectStore`] from the credentials the
-/// `createStagingTable` response handed us. Picks a `READ_WRITE` credential whose
-/// `prefix` covers the staging `location` and feeds its static S3 keys
-/// (access-key / secret / session-token) into an [`AmazonS3Builder`]. Region comes
-/// from `AWS_REGION` if set (the live SeaweedFS/MinIO-style backend tolerates any).
-fn build_staging_store(
-    staging: &DeltaStagingTableResponse,
-    location: &Url,
-) -> Result<Arc<dyn ObjectStore>, BoxError> {
-    let cred = staging
-        .storage_credentials
-        .iter()
-        .find(|c| {
-            location
-                .as_str()
-                .starts_with(c.prefix.trim_end_matches('/'))
-        })
-        .or_else(|| staging.storage_credentials.first())
-        .ok_or("staging response carried no storage_credentials")?;
-
-    let cfg = |key: &str| cred.config.get(key).filter(|v| !v.is_empty()).cloned();
-    let bucket = location
-        .host_str()
-        .ok_or("staging location has no bucket/host")?;
-
-    let mut builder = AmazonS3Builder::new()
-        .with_bucket_name(bucket)
-        .with_access_key_id(
-            cfg("s3.access-key-id").ok_or("staging credential missing s3.access-key-id")?,
-        )
-        .with_secret_access_key(
-            cfg("s3.secret-access-key").ok_or("staging credential missing s3.secret-access-key")?,
-        );
-    if let Some(token) = cfg("s3.session-token") {
-        builder = builder.with_token(token);
-    }
-    // Honor an explicit endpoint/region for non-AWS S3 backends (SeaweedFS/MinIO).
-    if let Ok(endpoint) = std::env::var("AWS_ENDPOINT_URL") {
-        builder = builder.with_endpoint(endpoint).with_allow_http(true);
-    }
-    builder =
-        builder.with_region(std::env::var("AWS_REGION").unwrap_or_else(|_| "us-east-1".into()));
-
-    Ok(Arc::new(builder.build()?))
-}
 
 /// `object_store::Path` for `<table>/_delta_log/<name>` (root store is bucket-rooted).
 fn log_path(location: &Url, name: &str) -> Path {

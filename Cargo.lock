@@ -4098,6 +4098,8 @@ dependencies = [
  "olai-uc-common",
  "olai-uc-delta-api",
  "olai-uc-object-store",
+ "olai-vended-store",
+ "rstest",
  "serde",
  "serde_json",
  "tempfile",

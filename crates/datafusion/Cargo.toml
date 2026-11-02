@@ -45,6 +45,10 @@ delta_kernel = { workspace = true, optional = true }
 # its own crate in kernel v0.25; the managed-table commit path builds one.
 delta_kernel_default_engine = { workspace = true, optional = true }
 
+# Build the managed-table staging store from the staging response's vended
+# credentials (`file://` is handled locally, so no `fs`).
+olai-vended-store = { workspace = true, features = ["aws", "azure", "gcp"], optional = true }
+
 # Serialize UC DDL responses into result batches (the `sql` module, `delta`
 # feature) and deserialize metric-view YAML (`metric-view` feature).
 serde = { workspace = true, optional = true }
@@ -55,7 +59,7 @@ default = ["delta", "metric-view"]
 # Expose a Delta-backed `TableProviderBuilder` (pulls in delta-rs) and the Unity
 # Catalog DDL statements + planner (the `sql` module), whose managed
 # `CREATE TABLE` path serializes responses with serde/serde_json.
-delta = ["dep:deltalake-core", "dep:delta_kernel", "dep:delta_kernel_default_engine", "dep:serde", "dep:serde_json"]
+delta = ["dep:deltalake-core", "dep:delta_kernel", "dep:delta_kernel_default_engine", "dep:olai-vended-store", "dep:serde", "dep:serde_json"]
 # Lower Unity Catalog metric-view YAML into a DataFusion `LogicalPlan`. The YAML
 # model + dependency extraction live in `unitycatalog-common` (single source of
 # truth); this crate re-exports them and adds the DataFusion lowering.
@@ -71,6 +75,7 @@ olai-http = { workspace = true }
 # the correctness oracle.
 deltalake-core = { workspace = true }
 tempfile = "3.1"
+rstest = "0.18"
 
 [[example]]
 name = "unity_catalog"
