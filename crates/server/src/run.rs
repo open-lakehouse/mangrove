@@ -1,51 +1,48 @@
-//! Server-launch wiring for the `uc-server` binary.
+//! Server-launch wiring, shared by the `uc-server` binary and socket-less hosts.
 //!
 //! Two entry points, one per schema-affecting concern:
-//!   - [`serve`] resolves the backend from [`Config`], builds the REST router
-//!     (optionally with upstream-proxied surfaces — see [`crate::hybrid`]), mounts
-//!     the bundled web UI when enabled, and runs until shutdown. It does **not**
-//!     apply migrations.
+//!   - [`serve`] builds the service from [`Config`] and runs it until shutdown.
+//!     It does **not** apply migrations to a durable backend, and refuses to
+//!     start unless the backend's schema is current.
 //!   - [`migrate`] connects the configured backend and applies any pending
 //!     database migrations and creates the declared property indexes, then
 //!     returns. This is the only schema-mutating path,
 //!     kept off the `serve` hot path so concurrent replicas don't race to migrate.
 //!
-//! The REST router itself (and the `/health` + `/version` operational endpoints)
-//! is built by [`build_rest_router`], shared by the local and hybrid paths.
+//! The service itself is assembled by [`build_app`] without binding a socket;
+//! [`crate::embed::start`] hands that router to hosts that drive it themselves.
+//! The REST router (and the `/health` + `/version` operational endpoints) is
+//! built by [`build_rest_router`], shared by the local and hybrid paths.
+//!
+//! Backends and optional surfaces are feature-gated (`postgres`, `sqlite`,
+//! `proxy`, `storage-proxy`, `files`, `swagger`, `ui`). A config that asks for
+//! one this build doesn't include fails at startup.
 
-use std::path::Path;
 use std::sync::Arc;
 
 use axum::Router;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
-use swagger_ui_dist::{ApiDefinition, OpenApiSource};
 use tokio::net::TcpListener;
 use tokio::signal;
 use tower_http::LatencyUnit;
-use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::Level;
-use unitycatalog_client::UnityCatalogClient;
-use unitycatalog_common::services::encryption::EnvelopeEncryptor;
-use unitycatalog_common::store::ObjectStoreAdapter;
 use unitycatalog_common::{Error, Result};
-use unitycatalog_postgres::PgCommitCoordinator;
-use unitycatalog_sqlite::SqliteCommitCoordinator;
 
 use crate::api::RequestContext;
-use crate::config::PostgresBackendConfig;
-use crate::config::{AuthMode, Backend, Config, SqliteBackendConfig, StorageProxyConfig, UiConfig};
-use crate::policy::{ConstantPolicy, Policy};
+use crate::config::{AuthMode, Backend, Config, StorageProxyConfig, UiConfig};
+use crate::policy::Policy;
 use crate::rest::{
-    AnonymousAuthenticator, AuthenticationLayer, OnMissingIdentity, ReverseProxyAuthenticator,
-    create_agent_skills_router, create_agents_router, create_catalogs_router,
-    create_credentials_router, create_delta_router, create_entity_tag_assignments_router,
-    create_external_locations_router, create_functions_router, create_model_versions_router,
-    create_policies_router, create_registered_models_router, create_schemas_router,
-    create_staging_tables_router, create_tables_router, create_tag_policies_router,
-    create_temporary_credentials_router, create_volumes_router,
+    AnonymousAuthenticator, AuthenticationLayer, BearerAuthenticator, OnMissingIdentity,
+    ReverseProxyAuthenticator, create_agent_skills_router, create_agents_router,
+    create_catalogs_router, create_credentials_router, create_delta_router,
+    create_entity_tag_assignments_router, create_external_locations_router,
+    create_functions_router, create_model_versions_router, create_policies_router,
+    create_registered_models_router, create_schemas_router, create_staging_tables_router,
+    create_tables_router, create_tag_policies_router, create_temporary_credentials_router,
+    create_volumes_router,
 };
 use crate::services::{LocalStoragePolicy, ServerHandler, location::StorageLocationUrl};
 
@@ -53,6 +50,7 @@ use crate::services::{LocalStoragePolicy, ServerHandler, location::StorageLocati
 /// working directory. The Docker image places the built bundle here (see
 /// `crates/server/Dockerfile`); when it's absent — e.g. local API-only runs where the UI
 /// is served by the Vite dev server instead — the SPA routes simply 404.
+#[cfg(feature = "ui")]
 const UI_DIR: &str = "web";
 
 /// A local server handler paired with the policy it was built with.
@@ -64,32 +62,35 @@ pub(crate) type LocalHandler = (
     Arc<dyn Policy<RequestContext>>,
 );
 
-/// Resolve the backend from `config`, build the router, mount the bundled UI when
-/// enabled, and run the REST server until shutdown. Does not apply migrations.
+/// Build the service from `config` (see [`build_app`]), bind the configured
+/// address, and serve until shutdown. Does not apply migrations.
 pub async fn serve(config: Config) -> Result<()> {
-    let host = config.resolved_host().to_string();
-    let port = config.resolved_port();
+    let app = build_app(&config).await?;
 
-    // A configured KEK is required for durable backends (secrets must survive a
-    // restart). For an ephemeral `:memory:` backend, secrets never persist, so
-    // fall back to the dev KEK when none is configured — this keeps a UI-only or
-    // otherwise minimal config file usable against the dev backend, matching the
-    // config-less default (which also ships the dev KEK). See
-    // [`crate::config::EncryptionConfig::dev_default`].
-    let encryptor = match config.encryption.as_ref() {
-        Some(enc) => enc.build_encryptor().map_err(Error::Generic)?,
-        None if config.backend.is_ephemeral() => crate::config::EncryptionConfig::dev_default()
-            .build_encryptor()
-            .map_err(Error::Generic)?,
-        None => {
-            return Err(Error::Generic(
-                "missing `encryption` configuration: an active KEK is required to store secrets \
-                 with a durable backend"
-                    .into(),
-            ));
-        }
-    };
+    let addr = format!("{}:{}", config.resolved_host(), config.resolved_port());
+    let listener = TcpListener::bind(addr)
+        .await
+        .map_err(|e| Error::Generic(e.to_string()))?;
+    let addr = listener
+        .local_addr()
+        .map_err(|e| Error::Generic(e.to_string()))?;
+    tracing::info!("Listening on: {addr}");
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .map_err(|e| Error::Generic(e.to_string()))?;
 
+    Ok(())
+}
+
+/// Assemble the whole service from `config` without binding a socket.
+///
+/// Connects the backend (checking that a durable one's schema is current),
+/// builds the API router (locally, or with selected surfaces proxied upstream)
+/// with the optional surfaces and the configured authenticator, then mounts
+/// Swagger UI, the SPA, the base path, the operational endpoints and the trace
+/// layer. Shared by [`serve`] and [`crate::embed::start`].
+pub(crate) async fn build_app(config: &Config) -> Result<Router> {
     // Build the local-storage allowlist from config. Empty ⇒ deny all file://.
     // A configured root that does not exist is a hard startup error.
     let local_storage_policy = LocalStoragePolicy::new(&config.local_storage.allowed_roots)
@@ -111,70 +112,55 @@ pub async fn serve(config: Config) -> Result<()> {
             .map_err(|e| Error::Generic(format!("invalid managed_storage_root '{root}': {e}")))?;
     }
 
-    // `serve` does not migrate durable backends — the operator runs `migrate`
-    // first. The exception is an ephemeral `:memory:` SQLite database: it is
-    // created fresh in this process, so a prior `migrate` step could not have
-    // reached it; auto-migrate it here so a config-less `serve` works out of the
-    // box. See [`Backend::is_ephemeral`].
-    let migrate_on_connect = config.backend.is_ephemeral();
-    if migrate_on_connect {
-        tracing::info!("ephemeral in-memory backend: applying migrations at startup");
+    // Refuse to start on an incoherent config (client arm with no client block,
+    // unity files backend with no client block) before connecting anything.
+    if let Some(err) = config.storage_proxy.startup_error() {
+        return Err(Error::Generic(format!("storage-proxy config: {err}")));
     }
-    let (handler, policy) = match &config.backend {
-        Backend::Postgres(pg) => connect_postgres(pg, encryptor, migrate_on_connect).await?,
-        Backend::Sqlite(cfg) => connect_sqlite(cfg, encryptor, migrate_on_connect).await?,
-    };
+    if let Some(err) = config.files.startup_error() {
+        return Err(Error::Generic(format!("files config: {err}")));
+    }
+
+    let (handler, policy) = connect(config).await?;
     let handler = handler
         .with_local_storage_policy(local_storage_policy)
         .with_managed_storage_root(config.managed_storage_root.clone());
 
     // Keep a handle for the (optional) storage-proxy local arm, which is a
     // separate surface from the hybrid-routed UC API below.
+    #[cfg(feature = "storage-proxy")]
     let proxy_handler = handler.clone();
 
     // Build the API surface — locally, or with selected surfaces proxied upstream.
     let api_router = if config.routing.any_upstream() {
-        let upstream = config.upstream.as_ref().ok_or_else(|| {
-            Error::Generic(
-                "routing marks surfaces as upstream but no `upstream` config is set".to_string(),
-            )
-        })?;
-        let upstream_url = upstream
-            .url
-            .parse()
-            .map_err(|e| Error::Generic(format!("invalid upstream url: {e}")))?;
-        // Upstream needs no auth; authorization is enforced locally via `policy`.
-        let client = UnityCatalogClient::new_unauthenticated(upstream_url);
-        crate::hybrid::build_hybrid_router(handler, policy, client, &config.routing)
+        build_upstream_router(config, handler, policy)?
     } else {
         build_rest_router(handler)
     };
 
     // Optionally mount the same-origin storage byte-proxy at the server root
     // (`/storage-proxy/...`) — its own surface, not under `/api/2.1/unity-catalog`.
-    // Refuse to start on an incoherent config (client arm with no client block).
-    if let Some(err) = config.storage_proxy.startup_error() {
-        return Err(Error::Generic(format!("storage-proxy config: {err}")));
-    }
+    #[cfg(feature = "storage-proxy")]
     let api_router = if config.storage_proxy.enabled {
-        let proxy = build_storage_proxy_router(&config, proxy_handler).await?;
+        let proxy = build_storage_proxy_router(config, proxy_handler).await?;
         api_router.merge(proxy)
     } else {
         api_router
     };
+    #[cfg(not(feature = "storage-proxy"))]
+    if config.storage_proxy.enabled {
+        return Err(not_compiled("`storage_proxy.enabled`", "storage-proxy"));
+    }
 
     // Optionally mount the embedded Files API (portal.files.v1.FilesService).
     // It is a ConnectRPC service exposed as a self-contained axum fallback
     // service, so it is `nest_service`-d under its own base path — never `merge`-d
     // (two fallback-carrying routers cannot be merged, and it must not shadow the
     // REST routes or the SPA fallback). An empty configured base path falls back
-    // to `/files` for exactly that reason. Refuse to start on an incoherent config
-    // (unity backend with no client block).
-    if let Some(err) = config.files.startup_error() {
-        return Err(Error::Generic(format!("files config: {err}")));
-    }
+    // to `/files` for exactly that reason.
+    #[cfg(feature = "files")]
     let api_router = if config.files.enabled {
-        let files = build_files_router(&config).await?;
+        let files = build_files_router(config).await?;
         let base_path = config.files.resolved_base_path();
         let mount = if base_path.is_empty() {
             "/files".to_string()
@@ -185,6 +171,10 @@ pub async fn serve(config: Config) -> Result<()> {
     } else {
         api_router
     };
+    #[cfg(not(feature = "files"))]
+    if config.files.enabled {
+        return Err(not_compiled("`files.enabled`", "files"));
+    }
 
     // Apply the configured authenticator. Each arm yields the same erased
     // `Router` type, so they can share one binding despite distinct authenticator
@@ -201,9 +191,110 @@ pub async fn serve(config: Config) -> Result<()> {
             }
             api_router.layer(AuthenticationLayer::new(authenticator))
         }
+        AuthMode::Bearer => {
+            let tokens = config
+                .auth
+                .bearer_tokens()
+                .map_err(|e| Error::Generic(format!("auth config: {e}")))?;
+            api_router.layer(AuthenticationLayer::new(BearerAuthenticator::new(tokens)))
+        }
     };
 
-    run(app, &config.ui, &config.storage_proxy, &host, port).await
+    Ok(assemble(app, &config.ui, &config.storage_proxy))
+}
+
+/// The startup error for a config that asks for `what`, which needs the cargo
+/// feature `feature` this build was compiled without.
+#[allow(dead_code)] // unused when every feature is on
+fn not_compiled(what: &str, feature: &str) -> Error {
+    Error::Generic(format!(
+        "{what} needs the `{feature}` feature, which this build of the server doesn't include"
+    ))
+}
+
+/// Connect the configured backend.
+///
+/// An ephemeral `:memory:` SQLite database is created fresh in this process, so
+/// a prior `migrate` step could not have reached it; it is migrated here so a
+/// config-less `serve` works out of the box (see [`Backend::is_ephemeral`]). A
+/// durable backend is never migrated here — the operator runs `migrate` first —
+/// and must already hold this build's schema.
+async fn connect(config: &Config) -> Result<LocalHandler> {
+    let migrate = config.backend.is_ephemeral();
+    if migrate {
+        tracing::info!("ephemeral in-memory backend: applying migrations at startup");
+    }
+    match &config.backend {
+        #[cfg(feature = "postgres")]
+        Backend::Postgres(pg) => connect_postgres(pg, encryptor(config)?, migrate).await,
+        #[cfg(not(feature = "postgres"))]
+        Backend::Postgres(_) => Err(not_compiled("the postgres backend", "postgres")),
+        #[cfg(feature = "sqlite")]
+        Backend::Sqlite(cfg) => connect_sqlite(cfg, encryptor(config)?, migrate).await,
+        #[cfg(not(feature = "sqlite"))]
+        Backend::Sqlite(_) => Err(not_compiled("the sqlite backend", "sqlite")),
+    }
+}
+
+/// The envelope encryptor for secrets at rest.
+///
+/// A configured KEK is required for durable backends (secrets must survive a
+/// restart). For an ephemeral `:memory:` backend, secrets never persist, so
+/// fall back to the dev KEK when none is configured — this keeps a UI-only or
+/// otherwise minimal config file usable against the dev backend, matching the
+/// config-less default (which also ships the dev KEK). See
+/// [`crate::config::EncryptionConfig::dev_default`].
+#[cfg(any(feature = "postgres", feature = "sqlite"))]
+fn encryptor(
+    config: &Config,
+) -> Result<unitycatalog_common::services::encryption::EnvelopeEncryptor> {
+    match config.encryption.as_ref() {
+        Some(enc) => enc.build_encryptor().map_err(Error::Generic),
+        None if config.backend.is_ephemeral() => crate::config::EncryptionConfig::dev_default()
+            .build_encryptor()
+            .map_err(Error::Generic),
+        None => Err(Error::Generic(
+            "missing `encryption` configuration: an active KEK is required to store secrets \
+             with a durable backend"
+                .into(),
+        )),
+    }
+}
+
+/// The REST router with the surfaces `config.routing` marks `upstream` proxied
+/// to `config.upstream` (see [`crate::hybrid`]).
+#[cfg(feature = "proxy")]
+fn build_upstream_router(
+    config: &Config,
+    handler: ServerHandler<RequestContext>,
+    policy: Arc<dyn Policy<RequestContext>>,
+) -> Result<Router> {
+    let upstream = config.upstream.as_ref().ok_or_else(|| {
+        Error::Generic(
+            "routing marks surfaces as upstream but no `upstream` config is set".to_string(),
+        )
+    })?;
+    let upstream_url = upstream
+        .url
+        .parse()
+        .map_err(|e| Error::Generic(format!("invalid upstream url: {e}")))?;
+    // Upstream needs no auth; authorization is enforced locally via `policy`.
+    let client = unitycatalog_client::UnityCatalogClient::new_unauthenticated(upstream_url);
+    Ok(crate::hybrid::build_hybrid_router(
+        handler,
+        policy,
+        client,
+        &config.routing,
+    ))
+}
+
+#[cfg(not(feature = "proxy"))]
+fn build_upstream_router(
+    _: &Config,
+    _: ServerHandler<RequestContext>,
+    _: Arc<dyn Policy<RequestContext>>,
+) -> Result<Router> {
+    Err(not_compiled("upstream `routing`", "proxy"))
 }
 
 /// Build the storage byte-proxy router for the configured arm.
@@ -212,6 +303,7 @@ pub async fn serve(config: Config) -> Result<()> {
 ///   `ServerHandler` (authorize + vend + stream locally).
 /// - [`ProxyArm::Client`](crate::config::ProxyArm::Client): a portable backend
 ///   pointed at any UC server via `{base_url, token}`.
+#[cfg(feature = "storage-proxy")]
 async fn build_storage_proxy_router(
     config: &Config,
     handler: ServerHandler<RequestContext>,
@@ -255,6 +347,7 @@ async fn build_storage_proxy_router(
 ///   `UnityVolumeStore` over a factory pointed at the configured upstream UC.
 /// - [`FilesBackend::Memory`](crate::config::FilesBackend::Memory): a
 ///   process-local in-memory store (non-durable; demos/tests).
+#[cfg(feature = "files")]
 async fn build_files_router(config: &Config) -> Result<Router> {
     use crate::config::FilesBackend;
     use unitycatalog_files_api::service::AppState;
@@ -293,8 +386,11 @@ async fn build_files_router(config: &Config) -> Result<Router> {
 /// module docs).
 pub async fn migrate(config: Config) -> Result<()> {
     match &config.backend {
+        #[cfg(feature = "postgres")]
         Backend::Postgres(pg) => {
-            let db_url = pg.connection_string().ok_or_else(|| {
+            // Over the direct connection: the migrator holds a session-level
+            // advisory lock, which a transaction-mode pooler can't.
+            let db_url = pg.migration_connection_string().ok_or_else(|| {
                 Error::Generic("incomplete postgres backend configuration".into())
             })?;
             let pool = unitycatalog_postgres::connect_pool(&db_url)
@@ -308,6 +404,9 @@ pub async fn migrate(config: Config) -> Result<()> {
                 .await
                 .map_err(|e| Error::Generic(format!("creating property indexes: {e}")))?;
         }
+        #[cfg(not(feature = "postgres"))]
+        Backend::Postgres(_) => Err::<(), _>(not_compiled("the postgres backend", "postgres"))?,
+        #[cfg(feature = "sqlite")]
         Backend::Sqlite(cfg) => {
             let path = cfg
                 .database_path()
@@ -323,6 +422,8 @@ pub async fn migrate(config: Config) -> Result<()> {
                 .await
                 .map_err(|e| Error::Generic(format!("creating property indexes: {e}")))?;
         }
+        #[cfg(not(feature = "sqlite"))]
+        Backend::Sqlite(_) => Err::<(), _>(not_compiled("the sqlite backend", "sqlite"))?,
     }
     tracing::info!("migrations applied");
     Ok(())
@@ -330,7 +431,10 @@ pub async fn migrate(config: Config) -> Result<()> {
 
 /// The OpenAPI definitions mounted as Swagger UI, shared by the local and hybrid
 /// paths. Kept as a free function so both router builders stay in sync.
-pub(crate) fn swagger_api_defs() -> Vec<ApiDefinition<&'static str>> {
+#[cfg(feature = "swagger")]
+pub(crate) fn swagger_api_defs() -> Vec<swagger_ui_dist::ApiDefinition<&'static str>> {
+    use swagger_ui_dist::{ApiDefinition, OpenApiSource};
+
     vec![
         ApiDefinition {
             uri_prefix: "/api/2.1/unity-catalog",
@@ -424,21 +528,16 @@ fn capabilities_body(storage_proxy: &StorageProxyConfig) -> String {
 }
 
 /// Assemble the final service — API + operational + Swagger UI + (optional) SPA —
-/// mount it under the configured base path, add the trace layer, bind, and serve
-/// until shutdown.
-pub(crate) async fn run(
-    api_router: Router,
-    ui: &UiConfig,
-    storage_proxy: &StorageProxyConfig,
-    host: &str,
-    port: u16,
-) -> Result<()> {
+/// mounted under the configured base path, with the trace layer.
+fn assemble(api_router: Router, ui: &UiConfig, storage_proxy: &StorageProxyConfig) -> Router {
     // Swagger UI asset routes are merged onto the API router.
-    let mut router = swagger_api_defs()
+    #[cfg(feature = "swagger")]
+    let api_router = swagger_api_defs()
         .into_iter()
         .fold(api_router, |router, api| {
             router.merge(swagger_ui_dist::generate_routes(api))
         });
+    let mut router = api_router;
 
     // Optionally mount the bundled SPA: real (hashed) asset files come off disk,
     // and any non-file path falls back to `index.html` with a 200 so the SPA's
@@ -460,7 +559,7 @@ pub(crate) async fn run(
     // routing. Merged last so nothing (including the SPA fallback) can shadow them.
     let router = operational_router(storage_proxy).merge(router);
 
-    let router = router.layer(
+    router.layer(
         TraceLayer::new_for_http()
             .make_span_with(DefaultMakeSpan::new().include_headers(true))
             .on_request(DefaultOnRequest::new().level(Level::INFO))
@@ -469,28 +568,20 @@ pub(crate) async fn run(
                     .level(Level::INFO)
                     .latency_unit(LatencyUnit::Micros),
             ),
-    );
-
-    let listener = TcpListener::bind(format!("{host}:{port}"))
-        .await
-        .map_err(|e| Error::Generic(e.to_string()))?;
-    let addr = listener
-        .local_addr()
-        .map_err(|e| Error::Generic(e.to_string()))?;
-    tracing::info!("Listening on: {addr}");
-    axum::serve(listener, router)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .map_err(|e| Error::Generic(e.to_string()))?;
-
-    Ok(())
+    )
 }
 
+#[cfg(feature = "postgres")]
 async fn connect_postgres(
-    pg: &PostgresBackendConfig,
-    encryptor: EnvelopeEncryptor,
+    pg: &crate::config::PostgresBackendConfig,
+    encryptor: unitycatalog_common::services::encryption::EnvelopeEncryptor,
     migrate: bool,
 ) -> Result<LocalHandler> {
+    use unitycatalog_common::store::ObjectStoreAdapter;
+    use unitycatalog_postgres::PgCommitCoordinator;
+
+    use crate::policy::ConstantPolicy;
+
     let db_url = pg
         .connection_string()
         .ok_or_else(|| Error::Generic("incomplete postgres backend configuration".into()))?;
@@ -506,6 +597,8 @@ async fn connect_postgres(
         unitycatalog_postgres::ensure_property_indexes(&pool)
             .await
             .map_err(|e| Error::Generic(format!("creating property indexes: {e}")))?;
+    } else {
+        check_postgres_schema(pg, &pool).await?;
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
     // The object/association graph store (lifted to `ResourceStore` by
@@ -531,11 +624,43 @@ async fn connect_postgres(
     Ok((handler, policy))
 }
 
+/// Fail unless the Postgres schema is current, checked over the migration URL
+/// when one is configured (see
+/// [`migration_url`](crate::config::PostgresBackendConfig::migration_url)),
+/// else over the request pool.
+#[cfg(feature = "postgres")]
+async fn check_postgres_schema(
+    pg: &crate::config::PostgresBackendConfig,
+    pool: &sqlx::PgPool,
+) -> Result<()> {
+    let migrator = unitycatalog_postgres::unified_migrator();
+    if pg.migration_url.is_none() {
+        return crate::schema::ensure_current_postgres(&migrator, pool).await;
+    }
+    let url = pg
+        .migration_connection_string()
+        .ok_or_else(|| Error::Generic("postgres `migration_url` could not be resolved".into()))?;
+    let direct = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(1)
+        .connect(&url)
+        .await
+        .map_err(|e| Error::Generic(format!("connecting to database (migration url): {e}")))?;
+    let result = crate::schema::ensure_current_postgres(&migrator, &direct).await;
+    direct.close().await;
+    result
+}
+
+#[cfg(feature = "sqlite")]
 async fn connect_sqlite(
-    cfg: &SqliteBackendConfig,
-    encryptor: EnvelopeEncryptor,
+    cfg: &crate::config::SqliteBackendConfig,
+    encryptor: unitycatalog_common::services::encryption::EnvelopeEncryptor,
     migrate: bool,
 ) -> Result<LocalHandler> {
+    use unitycatalog_common::store::ObjectStoreAdapter;
+    use unitycatalog_sqlite::SqliteCommitCoordinator;
+
+    use crate::policy::ConstantPolicy;
+
     let path = cfg
         .database_path()
         .ok_or_else(|| Error::Generic("incomplete sqlite backend configuration".into()))?;
@@ -551,6 +676,9 @@ async fn connect_sqlite(
         unitycatalog_sqlite::ensure_property_indexes(&pool)
             .await
             .map_err(|e| Error::Generic(format!("creating property indexes: {e}")))?;
+    } else {
+        crate::schema::ensure_current_sqlite(&unitycatalog_sqlite::unified_migrator(), &pool)
+            .await?;
     }
     let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
     // The object/association graph store (lifted to `ResourceStore` by
@@ -583,8 +711,11 @@ async fn connect_sqlite(
 /// 404s and the server still runs. `ServeDir` serves only the real hashed assets;
 /// `append_index_html_on_directories(false)` keeps it from serving the raw
 /// `index.html` off disk (all index serving goes through the 200 handler).
+#[cfg(feature = "ui")]
 fn mount_spa(app: Router) -> Router {
-    let index_path = Path::new(UI_DIR).join("index.html");
+    use tower_http::services::ServeDir;
+
+    let index_path = std::path::Path::new(UI_DIR).join("index.html");
     let index_html: Arc<Option<String>> = Arc::new(std::fs::read_to_string(&index_path).ok());
     if index_html.is_none() {
         tracing::warn!(
@@ -617,6 +748,16 @@ fn mount_spa(app: Router) -> Router {
         .route("/index.html", index_handler())
         // Everything else: real asset files off disk, else the SPA entry (200).
         .fallback_service(serve_assets)
+}
+
+/// Without the `ui` feature there is no bundle to serve: the API is served alone.
+#[cfg(not(feature = "ui"))]
+fn mount_spa(app: Router) -> Router {
+    tracing::warn!(
+        "`ui.serve` is set but this build doesn't include the bundled UI (feature `ui`); \
+         serving the API only. Set `ui.serve: false` to silence this."
+    );
+    app
 }
 
 /// Mount `app` under `base_path`, or return it unchanged when the prefix is empty

@@ -35,8 +35,11 @@
 //! # Feature flags
 //!
 //! `memory` enables the in-memory store; `proxy` pulls in the client handlers the
-//! upstream proxy forwards through; `bin` adds the config/CLI/serve wiring used
-//! by the `uc-server` binary. See the crate README for the full table.
+//! upstream proxy forwards through; `embed` assembles the server from a config
+//! without binding a socket ([`embed::start`]), with `postgres` / `sqlite`
+//! selecting the backends and `swagger`, `ui`, `storage-proxy` and `files` the
+//! optional surfaces; `bin` turns all of them on and adds the CLI used by the
+//! `uc-server` binary. See the crate README for the full table.
 
 pub mod api;
 pub mod error;
@@ -49,16 +52,22 @@ pub mod services;
 pub mod store;
 pub mod telemetry;
 
-// Deployable-binary support: config loading, the CLI/subcommand surface, and the
-// server-launch wiring used by the `uc-server` binary (see `src/main.rs`). Gated
-// behind `bin` so a plain library build doesn't pull the CLI/serve/store stack.
+// Server assembly: config loading and the launch wiring shared by the
+// `uc-server` binary and socket-less hosts (`embed`). Gated behind `embed` so a
+// plain library build doesn't pull the config/serve/store stack.
+#[cfg(feature = "embed")]
+pub mod config;
+#[cfg(feature = "embed")]
+pub mod embed;
+#[cfg(all(feature = "embed", feature = "proxy"))]
+pub mod hybrid;
+#[cfg(feature = "embed")]
+pub mod run;
+#[cfg(any(feature = "postgres", feature = "sqlite"))]
+mod schema;
+
+// The CLI/subcommand surface of the `uc-server` binary (see `src/main.rs`).
 #[cfg(feature = "bin")]
 pub mod cli;
-#[cfg(feature = "bin")]
-pub mod config;
-#[cfg(feature = "bin")]
-pub mod hybrid;
-#[cfg(feature = "bin")]
-pub mod run;
 
 pub use crate::error::{Error, Result};

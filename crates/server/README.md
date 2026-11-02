@@ -61,15 +61,64 @@ A bare library build brings in only the handler/routing surface (default
 features `axum` + `memory`); the `bin` feature and its storage-backend /
 CLI / UI-serving dependencies stay out unless you opt in.
 
+## Embed without a socket
+
+`embed::start` builds the same service `uc-server serve` runs, but returns the
+axum `Router` instead of binding an address. That suits hosts that receive
+requests some other way, like a Node-API addon behind a Neon Function's fetch
+handler:
+
+```toml
+unitycatalog-server = { package = "olai-uc-server", version = "…", default-features = false, features = ["embed", "postgres"] }
+```
+
+```rust,ignore
+use unitycatalog_server::{config::Config, embed};
+
+let service = embed::start(&Config::from_env()?).await?;
+// per request: service.router.clone().oneshot(request).await
+```
+
+`Config::from_env` reads the configuration from `UC_SERVER_CONFIG_YAML` (inline
+YAML) or the file named by `UC_SERVER_CONFIG`. When `DATABASE_URL` is set it
+switches the backend to Postgres at that URL, and `DATABASE_URL_UNPOOLED`, if
+set, becomes the migration URL. Those are the variables Neon sets for a branch.
+
+Like `serve`, `start` never migrates a durable backend, and it fails unless the
+schema matches this build's migrations. Run `embed::migrate` (or
+`uc-server migrate`) out of band first.
+
+For a server that's reachable directly, use bearer authentication:
+
+```yaml
+ui:
+  serve: false
+auth:
+  mode: bearer
+  tokens:
+    - principal: admin
+      token: { env: UC_ADMIN_TOKEN }
+```
+
 ## Feature flags
 
 | Feature   | Default | What it enables                                                                          |
 | --------- | :-----: | ---------------------------------------------------------------------------------------- |
 | `axum`    |   yes   | The axum router, extractors, and served HTTP surface.                                    |
-| `memory`  |   yes   | The in-memory handler backend (random/time-ordered IDs).                                 |
-| `proxy`   |         | Unity Catalog client handlers to wrap in `handlers::Authorized` as proxy leaves.         |
+| `memory`  |   yes   | The in-memory handler backend.                                                           |
+| `proxy`   |         | Unity Catalog client handlers to wrap in `handlers::Authorized` as proxy leaves, and upstream `routing`. |
 | `federation` |      | Federation over the proxy connector (implies `proxy`).                                   |
-| `bin`     |         | The deployable `uc-server` binary: SQLite/Postgres backends, the hybrid proxy, swagger UI, the CLI parser, and the healthcheck client. |
+| `embed`   |         | Config loading and the socket-less server (`embed::start`, `run::serve`, `run::migrate`). Needs a backend feature to serve anything. |
+| `postgres` |        | The Postgres backend (implies `embed`).                                                  |
+| `sqlite`  |         | The SQLite backend, including the default ephemeral `:memory:` one (implies `embed`).    |
+| `swagger` |         | Swagger UI for the bundled OpenAPI specs.                                                |
+| `ui`      |         | Serving the bundled single-page app from `./web` (`ui.serve`).                           |
+| `storage-proxy` |   | The same-origin storage byte-proxy (`storage_proxy.enabled`).                            |
+| `files`   |         | The embedded Files API (`files.enabled`).                                                |
+| `bin`     |         | The deployable `uc-server` binary: all of the above, plus the CLI parser and the healthcheck client. |
+
+A config that asks for a backend or surface the build doesn't include fails at
+startup.
 
 ## Status
 

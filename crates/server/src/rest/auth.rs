@@ -1,10 +1,13 @@
-//! Authentication middleware for Delta Sharing server.
+//! Authentication middleware for the Unity Catalog server.
 use std::marker::PhantomData;
+use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use axum::extract::Request;
+use axum::http::header::AUTHORIZATION;
 use axum::response::{IntoResponse, Response};
 use futures_util::{FutureExt, future::BoxFuture};
+use subtle::ConstantTimeEq as _;
 use tower::{Layer, Service};
 use unitycatalog_common::{Error, Result};
 
@@ -130,6 +133,59 @@ impl Authenticator<Principal> for ReverseProxyAuthenticator {
                 ))),
             },
         }
+    }
+}
+
+/// Authenticator that accepts `Authorization: Bearer <token>` for a fixed set of
+/// tokens, each mapped to the principal it acts as.
+///
+/// For a server that is reachable directly, with no authenticating gateway in
+/// front. Tokens are compared in constant time. A request without a bearer
+/// token, or with one that isn't configured, is rejected (`401`).
+#[derive(Clone)]
+pub struct BearerAuthenticator {
+    tokens: Arc<[(Vec<u8>, Principal)]>,
+}
+
+impl BearerAuthenticator {
+    /// Accept each `(token, principal)` pair: a request presenting `token` is
+    /// authenticated as [`Principal::user`]`(principal)`.
+    pub fn new(tokens: impl IntoIterator<Item = (String, String)>) -> Self {
+        Self {
+            tokens: tokens
+                .into_iter()
+                .map(|(token, principal)| (token.into_bytes(), Principal::user(principal)))
+                .collect(),
+        }
+    }
+}
+
+impl Authenticator<Principal> for BearerAuthenticator {
+    fn authenticate(&self, request: &Request) -> Result<Principal> {
+        let value = request
+            .headers()
+            .get(AUTHORIZATION)
+            .ok_or_else(|| Error::unauthenticated("missing `Authorization` header"))?;
+        let token = value
+            .to_str()
+            .ok()
+            .and_then(|v| {
+                let (scheme, token) = v.split_once(' ')?;
+                scheme.eq_ignore_ascii_case("bearer").then(|| token.trim())
+            })
+            .filter(|t| !t.is_empty())
+            .ok_or_else(|| Error::unauthenticated("expected `Authorization: Bearer <token>`"))?;
+        // Compare against every configured token, so the time taken doesn't
+        // reveal which (if any) matched.
+        let mut found = None;
+        for (candidate, principal) in self.tokens.iter() {
+            if bool::from(candidate.as_slice().ct_eq(token.as_bytes())) {
+                found = Some(principal);
+            }
+        }
+        found
+            .cloned()
+            .ok_or_else(|| Error::unauthenticated("invalid bearer token"))
     }
 }
 
@@ -298,6 +354,71 @@ mod tests {
         let auth = ReverseProxyAuthenticator::new().with_on_missing(OnMissingIdentity::Anonymous);
         let req = Request::get("/").body(Body::empty()).unwrap();
         assert_eq!(auth.authenticate(&req).unwrap(), Principal::anonymous());
+    }
+
+    fn bearer() -> BearerAuthenticator {
+        BearerAuthenticator::new([
+            ("token-a".to_string(), "alice".to_string()),
+            ("token-b".to_string(), "bob".to_string()),
+        ])
+    }
+
+    fn with_authorization(value: &str) -> Request {
+        Request::get("/")
+            .header(header::AUTHORIZATION, value)
+            .body(Body::empty())
+            .unwrap()
+    }
+
+    #[test]
+    fn bearer_maps_each_token_to_its_principal() {
+        let auth = bearer();
+        let alice = auth.authenticate(&with_authorization("Bearer token-a"));
+        assert_eq!(alice.unwrap(), Principal::user("alice"));
+        let bob = auth.authenticate(&with_authorization("bearer  token-b "));
+        assert_eq!(bob.unwrap(), Principal::user("bob"));
+    }
+
+    #[test]
+    fn bearer_rejects_unknown_malformed_and_missing_tokens() {
+        let auth = bearer();
+        for value in [
+            "Bearer token-c",
+            "Bearer token-a2",
+            "Bearer ",
+            "Basic dG9rZW4tYQ==",
+            "token-a",
+        ] {
+            assert!(
+                auth.authenticate(&with_authorization(value)).is_err(),
+                "{value}"
+            );
+        }
+        let req = Request::get("/").body(Body::empty()).unwrap();
+        assert!(auth.authenticate(&req).is_err());
+    }
+
+    #[tokio::test]
+    async fn bearer_rejection_maps_to_401() {
+        let mut service = ServiceBuilder::new()
+            .layer(AuthenticationLayer::new(bearer()))
+            .service_fn(check_recipient);
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(with_authorization("Bearer nope"))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+        let response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(with_authorization("Bearer token-a"))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]

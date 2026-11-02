@@ -108,6 +108,17 @@ pub struct Config {
     pub auth: AuthConfig,
 }
 
+/// Environment variable holding the configuration as inline YAML ([`Config::from_env`]).
+pub const CONFIG_YAML_ENV: &str = "UC_SERVER_CONFIG_YAML";
+/// Environment variable naming the configuration file.
+pub const CONFIG_PATH_ENV: &str = "UC_SERVER_CONFIG";
+/// Environment variable with a Postgres URL that overrides the configured
+/// backend in [`Config::from_env`].
+pub const DATABASE_URL_ENV: &str = "DATABASE_URL";
+/// Environment variable with the direct (unpooled) Postgres URL used for
+/// migrations and the startup schema check in [`Config::from_env`].
+pub const DATABASE_URL_UNPOOLED_ENV: &str = "DATABASE_URL_UNPOOLED";
+
 /// Default bind host used when neither the config file nor a CLI flag sets one.
 pub const DEFAULT_HOST: &str = "0.0.0.0";
 /// Default listen port used when neither the config file nor a CLI flag sets one.
@@ -132,6 +143,42 @@ impl Config {
         let contents =
             std::fs::read_to_string(p).map_err(|e| format!("reading config `{path}`: {e}"))?;
         serde_yml::from_str(&contents).map_err(|e| format!("parsing config `{path}`: {e}"))
+    }
+
+    /// Load configuration entirely from the environment, for hosts with no config
+    /// file or CLI (e.g. a Neon Function).
+    ///
+    /// - [`CONFIG_YAML_ENV`] holds the configuration as an inline YAML document;
+    ///   otherwise [`CONFIG_PATH_ENV`] names a file, read like [`Config::load`];
+    ///   otherwise [`Config::default`].
+    /// - [`DATABASE_URL_ENV`], when set, replaces the backend with Postgres at that
+    ///   URL, and [`DATABASE_URL_UNPOOLED_ENV`] (when set) becomes its
+    ///   [`migration_url`](PostgresBackendConfig::migration_url). This matches what
+    ///   Neon sets for a branch: a pooled URL for requests and a direct one for
+    ///   the schema.
+    ///
+    /// The `uc-server` binary doesn't read `DATABASE_URL`, so a local `.env` meant
+    /// for sqlx's offline tooling can't redirect its backend.
+    pub fn from_env() -> Result<Self, String> {
+        Self::from_vars(|name| std::env::var(name).ok())
+    }
+
+    fn from_vars(var: impl Fn(&str) -> Option<String>) -> Result<Self, String> {
+        let mut config = match var(CONFIG_YAML_ENV) {
+            Some(yaml) => serde_yml::from_str(&yaml)
+                .map_err(|e| format!("parsing `{CONFIG_YAML_ENV}`: {e}"))?,
+            None => Self::load(var(CONFIG_PATH_ENV).as_ref())?,
+        };
+        if let Some(url) = var(DATABASE_URL_ENV).filter(|u| !u.is_empty()) {
+            config.backend = Backend::Postgres(PostgresBackendConfig {
+                url: Some(ConfigValue::Value(url)),
+                migration_url: var(DATABASE_URL_UNPOOLED_ENV)
+                    .filter(|u| !u.is_empty())
+                    .map(ConfigValue::Value),
+                ..Default::default()
+            });
+        }
+        Ok(config)
     }
 
     /// Resolved bind host: the configured value, else [`DEFAULT_HOST`].
@@ -408,6 +455,44 @@ pub struct AuthConfig {
     /// as anonymous instead of rejecting it (`401`). Default `false` (reject).
     #[serde(default)]
     pub allow_missing_identity: bool,
+
+    /// The accepted bearer tokens, each with the principal it authenticates.
+    /// Required (non-empty) in [`AuthMode::Bearer`]; ignored otherwise.
+    #[serde(default)]
+    pub tokens: Vec<BearerTokenConfig>,
+}
+
+/// A bearer token accepted in [`AuthMode::Bearer`].
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct BearerTokenConfig {
+    /// The user a request presenting this token acts as.
+    pub principal: String,
+
+    /// The token, usually from the environment (`{ env: UC_ADMIN_TOKEN }`).
+    pub token: ConfigValue,
+}
+
+impl AuthConfig {
+    /// Resolve the configured bearer tokens into `(token, principal)` pairs.
+    ///
+    /// Fails if none is configured, or if one doesn't resolve to a non-empty
+    /// value, so a missing secret is a startup error rather than a token nobody
+    /// can present.
+    pub fn bearer_tokens(&self) -> Result<Vec<(String, String)>, String> {
+        if self.tokens.is_empty() {
+            return Err("bearer auth needs at least one entry in `auth.tokens`".into());
+        }
+        self.tokens
+            .iter()
+            .map(|t| match t.token.value().filter(|v| !v.is_empty()) {
+                Some(token) => Ok((token, t.principal.clone())),
+                None => Err(format!(
+                    "the bearer token for principal `{}` could not be resolved",
+                    t.principal
+                )),
+            })
+            .collect()
+    }
 }
 
 /// The request-authentication strategy.
@@ -422,6 +507,10 @@ pub enum AuthMode {
     /// has already authenticated the caller. Only safe when the server is not
     /// directly reachable.
     ReverseProxy,
+    /// Require `Authorization: Bearer <token>` with one of the configured
+    /// [`tokens`](AuthConfig::tokens); the request acts as that token's
+    /// principal. For a server reachable directly, without a gateway in front.
+    Bearer,
 }
 
 /// Configuration for the upstream Unity Catalog instance.
@@ -567,36 +656,70 @@ impl SqliteBackendConfig {
 }
 
 /// Postgres backend configuration.
-#[derive(Debug, Deserialize, Serialize)]
+///
+/// Either a full connection [`url`](Self::url), or the individual `host`, `port`,
+/// `user`, `password` and `database` fields; the URL wins when both are set.
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct PostgresBackendConfig {
+    /// The full connection URL, e.g. Neon's `DATABASE_URL`.
+    #[serde(default)]
+    pub url: Option<ConfigValue>,
+
+    /// A direct connection URL for `migrate` and the startup schema check, for
+    /// when [`url`](Self::url) goes through a transaction-mode pooler (PgBouncer,
+    /// Neon's pooled URL), which can't hold the migrator's session-level advisory
+    /// lock. Defaults to the request connection.
+    #[serde(default)]
+    pub migration_url: Option<ConfigValue>,
+
     /// The host of the server.
-    pub host: ConfigValue,
+    #[serde(default)]
+    pub host: Option<ConfigValue>,
 
     /// The port of the server.
-    pub port: ConfigValue,
+    #[serde(default)]
+    pub port: Option<ConfigValue>,
 
     /// The database user.
-    pub user: ConfigValue,
+    #[serde(default)]
+    pub user: Option<ConfigValue>,
 
     /// Password for the user.
-    pub password: ConfigValue,
+    #[serde(default)]
+    pub password: Option<ConfigValue>,
 
     /// The database name.
-    pub database: ConfigValue,
+    #[serde(default)]
+    pub database: Option<ConfigValue>,
 }
 
 impl PostgresBackendConfig {
-    /// Get the full connection string for the Postgres backend.
+    /// The connection string requests are served over: [`url`](Self::url), else
+    /// one assembled from the individual fields. `None` if neither resolves.
     pub fn connection_string(&self) -> Option<String> {
-        let host = self.host.value()?;
-        let port = self.port.value()?;
-        let user = self.user.value()?;
-        let password = self.password.value()?;
-        let database = self.database.value()?;
+        if let Some(url) = &self.url {
+            return url.value();
+        }
+        let value = |v: &Option<ConfigValue>| v.as_ref().and_then(ConfigValue::value);
+        let host = value(&self.host)?;
+        let port = value(&self.port)?;
+        let user = value(&self.user)?;
+        let password = value(&self.password)?;
+        let database = value(&self.database)?;
 
         Some(format!(
             "postgres://{user}:{password}@{host}:{port}/{database}"
         ))
+    }
+
+    /// The connection string for migrations and the schema check:
+    /// [`migration_url`](Self::migration_url), else
+    /// [`connection_string`](Self::connection_string).
+    pub fn migration_connection_string(&self) -> Option<String> {
+        match &self.migration_url {
+            Some(url) => url.value(),
+            None => self.connection_string(),
+        }
     }
 }
 
@@ -706,15 +829,17 @@ mod tests {
             Backend::Postgres(backend) => backend,
             _ => unreachable!(),
         };
-        assert_eq!(backend.host.value().unwrap(), "localhost");
-        assert_eq!(backend.port.value().unwrap(), "5432");
-        assert_eq!(backend.user.value().unwrap(), "user");
+        let value = |v: &Option<ConfigValue>| v.as_ref().and_then(ConfigValue::value);
+        assert_eq!(value(&backend.host).unwrap(), "localhost");
+        assert_eq!(value(&backend.port).unwrap(), "5432");
+        assert_eq!(value(&backend.user).unwrap(), "user");
         assert_eq!(
             backend.password,
-            ConfigValue::Environment(EnvValue {
+            Some(ConfigValue::Environment(EnvValue {
                 env: "PG_PASSWORD".to_string()
-            })
+            }))
         );
+        assert_eq!(backend.url, None);
     }
 
     #[test]
@@ -1083,5 +1208,142 @@ mod tests {
                 "functions"
             ]
         );
+    }
+
+    fn vars(pairs: &[(&str, &str)]) -> impl Fn(&str) -> Option<String> {
+        let pairs: Vec<(String, String)> = pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
+        move |name| {
+            pairs
+                .iter()
+                .find(|(k, _)| k == name)
+                .map(|(_, v)| v.clone())
+        }
+    }
+
+    #[test]
+    fn test_from_env_without_vars_is_default() {
+        let config = Config::from_vars(vars(&[])).unwrap();
+        assert!(config.backend.is_ephemeral());
+        assert_eq!(config.auth, AuthConfig::default());
+    }
+
+    #[test]
+    fn test_from_env_reads_inline_yaml() {
+        let yaml = "port: 9000\nui:\n  serve: false\nauth:\n  mode: bearer\n  tokens:\n    - principal: admin\n      token: { env: UC_ADMIN_TOKEN }\n";
+        let config = Config::from_vars(vars(&[(CONFIG_YAML_ENV, yaml)])).unwrap();
+        assert_eq!(config.port, Some(9000));
+        assert!(!config.ui.serve);
+        assert_eq!(config.auth.mode, AuthMode::Bearer);
+        assert_eq!(
+            config.auth.tokens,
+            vec![BearerTokenConfig {
+                principal: "admin".into(),
+                token: ConfigValue::Environment(EnvValue {
+                    env: "UC_ADMIN_TOKEN".into()
+                }),
+            }]
+        );
+    }
+
+    #[test]
+    fn test_from_env_inline_yaml_wins_over_path_and_reports_parse_errors() {
+        let config = Config::from_vars(vars(&[
+            (CONFIG_YAML_ENV, "port: 9001"),
+            (CONFIG_PATH_ENV, "/definitely/not/here.yaml"),
+        ]))
+        .unwrap();
+        assert_eq!(config.port, Some(9001));
+
+        let err = Config::from_vars(vars(&[(CONFIG_YAML_ENV, "port: [")])).unwrap_err();
+        assert!(err.contains(CONFIG_YAML_ENV), "{err}");
+    }
+
+    #[test]
+    fn test_from_env_database_url_overrides_backend() {
+        let yaml = "backend:\n  engine: sqlite\n  path: /tmp/uc.db\n";
+        let config = Config::from_vars(vars(&[
+            (CONFIG_YAML_ENV, yaml),
+            (DATABASE_URL_ENV, "postgres://pooled/db"),
+            (DATABASE_URL_UNPOOLED_ENV, "postgres://direct/db"),
+        ]))
+        .unwrap();
+        let Backend::Postgres(pg) = &config.backend else {
+            panic!("expected the postgres backend, got {:?}", config.backend);
+        };
+        assert_eq!(
+            pg.connection_string().as_deref(),
+            Some("postgres://pooled/db")
+        );
+        assert_eq!(
+            pg.migration_connection_string().as_deref(),
+            Some("postgres://direct/db")
+        );
+
+        // Without an unpooled URL, migrations use the request connection.
+        let config =
+            Config::from_vars(vars(&[(DATABASE_URL_ENV, "postgres://pooled/db")])).unwrap();
+        let Backend::Postgres(pg) = &config.backend else {
+            panic!("expected the postgres backend");
+        };
+        assert_eq!(
+            pg.migration_connection_string().as_deref(),
+            Some("postgres://pooled/db")
+        );
+    }
+
+    #[test]
+    fn test_postgres_url_or_fields() {
+        let fields: PostgresBackendConfig = serde_yml::from_str(
+            "host: db\nport: '5432'\nuser: uc\npassword: secret\ndatabase: catalog\n",
+        )
+        .unwrap();
+        assert_eq!(
+            fields.connection_string().as_deref(),
+            // Assembled so no credential-bearing URL literal sits in the source.
+            Some(format!("postgres://{}:{}@db:5432/catalog", "uc", "secret").as_str())
+        );
+        assert_eq!(
+            fields.migration_connection_string(),
+            fields.connection_string()
+        );
+
+        let url: PostgresBackendConfig =
+            serde_yml::from_str("url: postgres://a/b\nhost: ignored\n").unwrap();
+        assert_eq!(url.connection_string().as_deref(), Some("postgres://a/b"));
+
+        let incomplete: PostgresBackendConfig = serde_yml::from_str("host: db\n").unwrap();
+        assert_eq!(incomplete.connection_string(), None);
+    }
+
+    #[test]
+    fn test_bearer_tokens_resolve_or_fail() {
+        let auth: AuthConfig = serde_yml::from_str(
+            "mode: bearer\ntokens:\n  - principal: alice\n    token: secret-a\n",
+        )
+        .unwrap();
+        assert_eq!(
+            auth.bearer_tokens().unwrap(),
+            vec![("secret-a".to_string(), "alice".to_string())]
+        );
+
+        let none = AuthConfig {
+            mode: AuthMode::Bearer,
+            ..Default::default()
+        };
+        assert!(none.bearer_tokens().unwrap_err().contains("auth.tokens"));
+
+        let unresolved: AuthConfig = serde_yml::from_str(
+            "mode: bearer\ntokens:\n  - principal: bob\n    token: { env: UC_TEST_TOKEN_THAT_IS_NEVER_SET }\n",
+        )
+        .unwrap();
+        assert!(unresolved.bearer_tokens().unwrap_err().contains("`bob`"));
+
+        let empty: AuthConfig =
+            serde_yml::from_str("mode: bearer\ntokens:\n  - principal: carol\n    token: ''\n")
+                .unwrap();
+        assert!(empty.bearer_tokens().unwrap_err().contains("`carol`"));
     }
 }

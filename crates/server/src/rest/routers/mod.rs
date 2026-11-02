@@ -48,7 +48,7 @@ pub fn create_delta_router(
 /// mounted at the default `/storage-proxy` base, so it `.merge`s at the server root.
 ///
 /// [`StorageProxyBackend`]: unitycatalog_storage_proxy::StorageProxyBackend
-#[cfg(feature = "bin")]
+#[cfg(feature = "storage-proxy")]
 #[allow(clippy::result_large_err)]
 pub fn create_storage_proxy_router(
     handler: crate::services::ServerHandler<crate::api::RequestContext>,

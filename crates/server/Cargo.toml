@@ -73,11 +73,13 @@ object_store = { workspace = true }
 olai-credential-vending = { workspace = true }
 olai-http = { workspace = true }
 olai-storage-credentials = { workspace = true }
-# Stores for the storage byte-proxy local arm (feature `bin`).
+# Stores for the storage byte-proxy local arm (feature `storage-proxy`).
 olai-vended-store = { workspace = true, features = ["aws", "azure", "gcp", "fs"], optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 strum = { workspace = true }
+# Constant-time comparison of bearer tokens.
+subtle = "2.6"
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
@@ -90,13 +92,13 @@ http = { version = "1.2", optional = true }
 olai-store = { workspace = true, features = ["encryption"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "net"] }
 tower = { workspace = true, features = ["make"], optional = true }
-tower-http = { version = "0.6", features = ["trace", "fs"], optional = true }
+tower-http = { version = "0.6", features = ["trace"], optional = true }
 
-# in-memory handler dependencies (in alphabetical order)
-uuid = { workspace = true, optional = true, features = ["v4", "v7"] }
+# Resource ids (the handlers mint them, whatever the store).
+uuid = { workspace = true, features = ["v4", "v7"] }
 
-# `bin` (deployable `uc-server` binary) dependencies — all optional so a library
-# build of this crate doesn't pull the CLI / storage-backend / serve stack.
+# `embed` / `bin` dependencies — all optional so a library build of this crate
+# doesn't pull the config / storage-backend / serve stack.
 unitycatalog-postgres = { package = "olai-uc-postgres", path = "../postgres", version = "0.0.8", optional = true }
 unitycatalog-sqlite = { package = "olai-uc-sqlite", path = "../sqlite", version = "0.0.8", optional = true }
 base64 = { version = "0.22", optional = true }
@@ -106,6 +108,9 @@ clap = { version = "4.5", features = ["derive", "env", "wrap_help"], optional = 
 # additive `blocking` feature this probe path needs.
 reqwest = { workspace = true, features = ["blocking"], optional = true }
 serde_yml = { workspace = true, optional = true }
+# The startup schema check reads the applied migrations (features `postgres` /
+# `sqlite`); the backend crates enable the drivers.
+sqlx = { workspace = true, optional = true }
 swagger-ui-dist = { version = "5.18.3", optional = true }
 
 [dev-dependencies]
@@ -119,32 +124,53 @@ default = ["axum", "memory"]
 axum = ["dep:axum", "dep:axum-extra", "http", "tower", "unitycatalog-handlers/axum"]
 
 # in-memory handler features
-memory = ["uuid"]
+memory = []
 
 # the UC client, whose service clients serve as proxy leaves (wrapped in `handlers::Authorized`)
 proxy = ["dep:unitycatalog-client"]
 federation = ["proxy"]
 
-# The deployable `uc-server` binary (serve | migrate | healthcheck) and its
-# config/backend/UI-serving stack. Pulls the storage backends, the hybrid proxy
-# (`proxy`), swagger UI, the CLI parser, and the healthcheck client. `axum` +
-# `proxy` are on so the router and upstream adapters are available.
-bin = [
-  "axum",
-  "proxy",
-  "dep:unitycatalog-postgres",
-  "dep:unitycatalog-sqlite",
-  "dep:base64",
-  "dep:clap",
-  "dep:reqwest",
-  "dep:serde_yml",
-  "dep:swagger-ui-dist",
-  "dep:tower-http",
+# The server assembled from a `Config` without binding a socket: config loading,
+# the router with its auth layer, `migrate`, and the startup schema check
+# (`embed::start`). Hosts that drive the router themselves (e.g. a Neon Function's
+# Node-API addon) build on this plus one backend feature, and opt into the
+# surfaces below as needed. A config asking for a surface that isn't compiled in
+# is a startup error.
+embed = ["axum", "dep:base64", "dep:serde_yml", "dep:tower-http"]
+
+# Storage backends.
+postgres = ["embed", "dep:unitycatalog-postgres", "sqlx/postgres"]
+sqlite = ["embed", "dep:unitycatalog-sqlite", "sqlx/sqlite"]
+
+# Optional surfaces on top of `embed`.
+# Swagger UI for the bundled OpenAPI specs (embeds the swagger-ui assets).
+swagger = ["embed", "dep:swagger-ui-dist"]
+# The bundled single-page app, served off disk (`ui.serve`).
+ui = ["embed", "tower-http/fs"]
+# The same-origin storage byte-proxy (`storage_proxy.enabled`).
+storage-proxy = [
+  "embed",
   "dep:unitycatalog-storage-proxy",
   "unitycatalog-storage-proxy/handlers",
-  "dep:unitycatalog-object-store",
-  "dep:unitycatalog-files-api",
   "dep:olai-vended-store",
+]
+# The embedded Files API (`files.enabled`).
+files = ["embed", "dep:unitycatalog-files-api", "dep:unitycatalog-object-store"]
+
+# The deployable `uc-server` binary (serve | migrate | healthcheck): every
+# backend and surface, the hybrid proxy (`proxy`), the CLI parser and the
+# healthcheck client.
+bin = [
+  "embed",
+  "postgres",
+  "sqlite",
+  "swagger",
+  "ui",
+  "storage-proxy",
+  "files",
+  "proxy",
+  "dep:clap",
+  "dep:reqwest",
 ]
 
 # Gates the Azurite credential-vending integration test
