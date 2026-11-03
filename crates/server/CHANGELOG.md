@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.11...olai-uc-server-v0.0.12) - 2026-11-02
+
+### Added
+
+- embed the server without a socket (#293)
+- refuse deleting an external location in use (#285)
+- search resources and index storage locations (#283)
+
+### Changed
+
+- [**breaking**] build the upstream proxy on the client handler impls (#291)
+
+### Performance
+
+- index stored location keys (#290)
+- look up overlapping and staging locations by key (#284)
+
 ## [0.0.10](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.9...olai-uc-server-v0.0.10) - 2026-10-31
 
 ### Added

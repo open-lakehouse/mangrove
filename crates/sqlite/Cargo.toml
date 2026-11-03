@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-sqlite"
-version = "0.0.8"
+version = "0.0.9"
 description = "SQLite-backed resource and secret store for the Unity Catalog server."
 edition.workspace = true
 homepage.workspace = true
@@ -16,11 +16,11 @@ name = "unitycatalog_sqlite"
 
 [dependencies]
 # path dependencies (in alphabetical order)
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.7", default-features = false, features = [
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.8", default-features = false, features = [
   "store",
 ] }
-unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.6" }
-unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.2", features = [
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.7" }
+unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.3", features = [
   "sqlite",
 ] }
 
