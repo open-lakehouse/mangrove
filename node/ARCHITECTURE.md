@@ -140,7 +140,7 @@ registers both. Biome `noRestrictedImports` rules keep `lineage-ui` and the
 `unity-catalog-*` packages from importing each other.
 
 The same goes for headwaters' primitives: it adopts `ui-kit` and the token
-contract in [`ui-kit/DESIGN.md`](ui-kit/DESIGN.md) instead of its own button
+contract in [ui-kit's `DESIGN.md`](https://github.com/open-lakehouse/trestle/blob/ui-kit-v0.0.1/node/ui-kit/DESIGN.md) instead of its own button
 and raw CSS variables.
 
 ## Open question: dataset identity

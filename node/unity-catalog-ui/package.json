@@ -17,7 +17,6 @@
     "@open-lakehouse/files": "^0.1.0",
     "@open-lakehouse/log-query": "^0.1.0",
     "@open-lakehouse/query": "^0.1.0",
-    "@open-lakehouse/ui-kit": "^0.1.0",
     "@open-lakehouse/unity-catalog-client": "workspace:*",
     "@rjsf/core": "^5.24.13",
     "@rjsf/utils": "^5.24.13",
@@ -27,12 +26,14 @@
     "sonner": "^2.0.8"
   },
   "peerDependencies": {
+    "@open-lakehouse/ui-kit": "0.0.1",
     "@tanstack/react-query": "^5.100.14",
     "@tanstack/react-router": "^1.170.10",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@open-lakehouse/ui-kit": "https://github.com/open-lakehouse/trestle/releases/download/ui-kit-v0.0.1/open-lakehouse-ui-kit-0.0.1.tgz",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.42",
     "@types/react": "^19.3.0",

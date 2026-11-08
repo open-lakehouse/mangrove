@@ -17,7 +17,7 @@
     "@open-lakehouse/log-query": "^0.1.0",
     "@open-lakehouse/query": "^0.1.0",
     "@open-lakehouse/query-wasm": "^0.1.0",
-    "@open-lakehouse/ui-kit": "^0.1.0",
+    "@open-lakehouse/ui-kit": "https://github.com/open-lakehouse/trestle/releases/download/ui-kit-v0.0.1/open-lakehouse-ui-kit-0.0.1.tgz",
     "@open-lakehouse/unity-catalog-ui": "^0.1.0",
     "@open-lakehouse/unity-catalog-client": "workspace:*",
     "@tanstack/react-query": "^5.104.1",
