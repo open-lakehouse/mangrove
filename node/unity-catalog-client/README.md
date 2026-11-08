@@ -135,19 +135,22 @@ them.
 
 ## Install
 
-Published to **GitHub Packages**. Point the `@open-lakehouse` scope at it in
-`.npmrc`:
-
-```ini
-@open-lakehouse:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
+Published to **npmjs.com** (with npm provenance), and mirrored to GitHub
+Packages. From npmjs no configuration is needed:
 
 ```bash
 # framework-free client (browsers, Node ≥ 18, Bun, Deno), plus the host contract
 bun add @open-lakehouse/unity-catalog-client @open-lakehouse/host
 # React hosts using ./react also need its peers
 bun add @open-lakehouse/unity-catalog-client @open-lakehouse/host @tanstack/react-query openapi-react-query react react-dom
+```
+
+To install from GitHub Packages instead, point the `@open-lakehouse` scope at
+it in `.npmrc`:
+
+```ini
+@open-lakehouse:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
 GitHub Packages needs a token even to read. In GitHub Actions, the job's

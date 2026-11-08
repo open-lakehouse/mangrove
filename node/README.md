@@ -8,17 +8,17 @@ this page is the map.
 
 | Package | Dir | Kind | Distribution |
 |---|---|---|---|
-| `@open-lakehouse/unity-catalog-node` | `client/` | Native (NAPI) Unity Catalog client for Node.js | published (GitHub Packages) |
-| `@open-lakehouse/unity-catalog-client` | `unity-catalog-client/` | Typed REST client (`openapi-fetch`, framework-free) + React-Query hooks (`./react`) | published (GitHub Packages) |
-| `@open-lakehouse/arrow-grid` | `arrow-grid/` | Arrow-backed virtualized result grid | published (GitHub Packages), [`DESIGN.md`](arrow-grid/DESIGN.md) |
-| `@open-lakehouse/editor` | `editor/` | Multi-language Monaco editor (SQL diagnostics + catalog-aware completion, markdown) and a multi-tab file-editing shell | published (GitHub Packages), [`DESIGN.md`](editor/DESIGN.md) |
-| `@open-lakehouse/query-runner` | `query-runner/` | Query-preview seam (`QueryRunner`) | published (GitHub Packages), [`DESIGN.md`](query-runner/DESIGN.md) |
-| `@open-lakehouse/volume-files` | `volume-files/` | Volume-files seam (`FilesRunner`) | published (GitHub Packages), [`DESIGN.md`](volume-files/DESIGN.md) |
+| `@open-lakehouse/unity-catalog-node` | `client/` | Native (NAPI) Unity Catalog client for Node.js | published (npmjs + GitHub Packages) |
+| `@open-lakehouse/unity-catalog-client` | `unity-catalog-client/` | Typed REST client (`openapi-fetch`, framework-free) + React-Query hooks (`./react`) | published (npmjs + GitHub Packages) |
+| `@open-lakehouse/arrow-grid` | `arrow-grid/` | Arrow-backed virtualized result grid | published (npmjs + GitHub Packages), [`DESIGN.md`](arrow-grid/DESIGN.md) |
+| `@open-lakehouse/editor` | `editor/` | Multi-language Monaco editor (SQL diagnostics + catalog-aware completion, markdown) and a multi-tab file-editing shell | published (npmjs + GitHub Packages), [`DESIGN.md`](editor/DESIGN.md) |
+| `@open-lakehouse/query-runner` | `query-runner/` | Query-preview seam (`QueryRunner`) | published (npmjs + GitHub Packages), [`DESIGN.md`](query-runner/DESIGN.md) |
+| `@open-lakehouse/volume-files` | `volume-files/` | Volume-files seam (`FilesRunner`) | published (npmjs + GitHub Packages), [`DESIGN.md`](volume-files/DESIGN.md) |
 | `@open-lakehouse/files-connect` | `files-connect/` | ConnectRPC bindings for the files service | publish-ready, [`DESIGN.md`](files-connect/DESIGN.md) (private) |
-| `@open-lakehouse/delta-log` | `delta-log/` | Delta-log views + log-query seam | published (GitHub Packages), [`DESIGN.md`](delta-log/DESIGN.md) |
+| `@open-lakehouse/delta-log` | `delta-log/` | Delta-log views + log-query seam | published (npmjs + GitHub Packages), [`DESIGN.md`](delta-log/DESIGN.md) |
 | `@open-lakehouse/query-wasm` | `query-wasm/` | In-browser (wasm) `QueryRunner` | workspace-internal |
 | `@open-lakehouse/files-wasm` | `files-wasm/` | In-browser (wasm) `FilesRunner` | workspace-internal |
-| `@open-lakehouse/unity-catalog-ui` | `unity-catalog-ui/` | Unity Catalog browser components (presentation only) | published (GitHub Packages), [`DESIGN.md`](unity-catalog-ui/DESIGN.md) |
+| `@open-lakehouse/unity-catalog-ui` | `unity-catalog-ui/` | Unity Catalog browser components (presentation only) | published (npmjs + GitHub Packages), [`DESIGN.md`](unity-catalog-ui/DESIGN.md) |
 | `@open-lakehouse/uc-app` | `app/` | The bundled SPA served by `olai-uc-server`; composes everything | never published |
 
 The primitives and the design-token contract come from trestle's

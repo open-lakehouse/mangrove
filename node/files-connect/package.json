@@ -10,9 +10,6 @@
     "url": "git+https://github.com/open-lakehouse/mangrove.git",
     "directory": "node/files-connect"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "files": [
     "dist",
     "src",

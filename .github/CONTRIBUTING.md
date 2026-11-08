@@ -253,7 +253,7 @@ tooling. The scripts behind these recipes live in trestle; see its
 |------------------------|----------------------------------------------------|-----------------------------------|
 | every `olai-uc-*-v*`   | GitHub Release (changelog); crates.io publish for publishable crates | release-plz.yml   |
 | `olai-uc-server-v*`    | + `ghcr.io/open-lakehouse/mangrove` image (once the server is un-paused) | release-plz.yml → docker-release.yml |
-| `unity-catalog-node-v*` / `unity-catalog-client-v*` | npm package on GitHub Packages + attested tarball on the Release | release-plz.yml → js-release.yaml |
+| `<npm-package>-v*` (`unity-catalog-node`, `unity-catalog-client`, `unity-catalog-ui`, …) | npm package on npmjs.com (staged, approve with 2FA) and GitHub Packages + attested tarball on the Release | release-plz.yml → js-release.yaml |
 
 **The server is a deployable — currently paused.** `olai-uc-server` is `git_only = true` in
 `release-plz.toml` (and `publish = false` in its `Cargo.toml`): release-plz versions,
@@ -269,33 +269,51 @@ in `releases` and re-activates the Docker build automatically — no workflow ed
 image then builds only on an actual server release or a manual `workflow_dispatch` rebuild
 (there is no per-push/edge build). The server's bundled web UI lives in `node/` — outside the
 crate's packaged fileset. A placeholder crate at `node/Cargo.toml` (`uc-app`, `git_only`,
-never published) owns every tracked file under `node/`, and the server lists it (with
-`unity-catalog-client`) in `changelog_include` in `release-plz.toml`. A UI change therefore
+never published) owns every tracked file under `node/` outside the npm packages' own
+placeholder crates, and the server lists it, and every npm package the app bundles, in
+`changelog_include` in `release-plz.toml`. A UI change therefore
 releases `uc-app` and the server (at most a patch bump), and the server tag rebuilds the
 image. Nothing needs regenerating by hand.
 
 The Python binding (`python/client`) is `publish = false` and released by hand (see
 `python-wheels.yml`); so are `unitycatalog-acceptance` and the doc `examples`.
 
-**npm packages (GitHub Packages).** The publishable npm packages are versioned by
+**npm packages (npmjs.com and GitHub Packages).** The publishable npm packages are versioned by
 release-plz through crates, the same way trestle releases `trestle-diagram`:
 
 | npm package | Crate | Manifest |
 |---|---|---|
 | `@open-lakehouse/unity-catalog-node` | `unity-catalog-node` | `node/client/Cargo.toml` (the NAPI extension itself) |
 | `@open-lakehouse/unity-catalog-client` | `unity-catalog-client` | `node/unity-catalog-client/Cargo.toml` (placeholder, no Rust) |
+| `@open-lakehouse/unity-catalog-ui`, `arrow-grid`, `editor`, `query-runner`, `volume-files`, `delta-log` | same as the package dir | `node/<dir>/Cargo.toml` (placeholders) |
 
-Both are `git_only = true` + `publish = false`. The crate `version` is the npm version
+All are `git_only = true` + `publish = false`. The crate `version` is the npm version
 (`package.json` stays `0.0.0` in git), and each crate's `include` list is exactly the
 files that feed its npm package, so release-plz bumps it when those change.
 `unity-catalog-node` also bumps whenever `olai-uc-client` / `olai-uc-common` release,
 through its path dependencies. When a run releases one of them, release-plz.yml's `npm`
-job calls `js-release.yaml`. That job stamps the version into `package.json`, builds
-(NAPI: one binary per target, plus the per-platform packages), publishes to
-`npm.pkg.github.com`, attests the tarballs, and attaches them to the GitHub Release. Nothing
-is published unless the `JS_PUBLISH_ENABLED` repo variable is `"true"`. A release tagged
-while it was off can be published later via `workflow_dispatch` on `js-release.yaml`
-with its tag. No npmjs publishing yet.
+job calls `js-release.yaml`. That workflow stamps the versions into `package.json`, builds
+(NAPI: one binary per target, plus the per-platform packages) and packs once, then
+publishes the same tarballs to `npm.pkg.github.com` and npmjs.com, attests them, and
+attaches them to the GitHub Release. Publishing skips versions a registry already has. No
+`package.json` sets `publishConfig.registry`; the registry is each job's choice.
+Nothing is published unless the `JS_PUBLISH_ENABLED` repo variable is `"true"`. A release
+tagged while it was off can be published later via `workflow_dispatch` on
+`js-release.yaml` with its tag.
+
+npmjs.com uses trusted publishing (OIDC) with npm provenance, and only *staged*
+publishing: CI runs `npm stage publish`, and a version goes live once a maintainer
+approves it on npmjs.com (or `npm stage approve`) with 2FA. The npmjs job only runs when
+the `NPMJS_PUBLISH_ENABLED` repo variable is `"true"`. **One-time bootstrap per new
+package name** (OIDC can't create a package): store an npm token that can stage to the
+`@open-lakehouse` scope as `NPM_TOKEN` in the `release` environment, run
+`gh workflow run js-release.yaml -f tag=<package>-v<version> -f npm_bootstrap=true` from
+`main`, approve the staged versions on npmjs.com, then register each package's trusted
+publisher (workflow `release-plz.yml`, environment `release`, stage publish only) and
+delete the token. The NAPI package brings its six `unity-catalog-node-<platform>`
+packages, which need the same bootstrap. npm expires a trusted publisher that hasn't
+published within 2 days of being registered, so register it shortly before the
+package's next release.
 
 - When a published package gains source files outside its crate's `include` list, add
   them, or changes to them won't release the package
@@ -311,7 +329,7 @@ with its tag. No npmjs publishing yet.
 - Published: `unity-catalog-node`, `unity-catalog-client`, `unity-catalog-ui` and
   the UI packages it builds on (`arrow-grid`, `editor`, `volume-files`, `delta-log`,
   `query-runner`). `files-connect`, the wasm packages and `uc-app` stay `private: true`.
-  Don't add npmjs publishing or un-private one without a maintainer asking for it.
+  Don't un-private one without a maintainer asking for it.
 
 **First-publish bootstrap.** crates.io OIDC trusted publishing cannot create a crate name
 that has never existed. Each `olai-uc-*` crate therefore needs a one-time token bootstrap

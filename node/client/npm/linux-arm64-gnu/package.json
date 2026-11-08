@@ -22,8 +22,5 @@
     "type": "git",
     "url": "git+https://github.com/open-lakehouse/mangrove.git",
     "directory": "node/client/npm/linux-arm64-gnu"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
   }
 }

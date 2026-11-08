@@ -10,16 +10,19 @@ instead.
 
 ## Install
 
-Published to **GitHub Packages**. Point the `@open-lakehouse` scope at it in
-`.npmrc`:
+Published to **npmjs.com** (with npm provenance), and mirrored to GitHub
+Packages. From npmjs no configuration is needed:
+
+```bash
+bun add @open-lakehouse/unity-catalog-node   # or npm install / pnpm add
+```
+
+To install from GitHub Packages instead, point the `@open-lakehouse` scope at
+it in `.npmrc`:
 
 ```ini
 @open-lakehouse:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
-
-```bash
-bun add @open-lakehouse/unity-catalog-node   # or npm install / pnpm add
 ```
 
 GitHub Packages needs a token even to read. In GitHub Actions, the job's
