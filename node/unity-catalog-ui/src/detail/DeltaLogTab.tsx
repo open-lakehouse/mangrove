@@ -1,6 +1,6 @@
 // The Delta-log explorer surface of TableDetail. Additive and gated: it renders
 // nothing unless (1) a log-query runner has been registered (the standalone
-// build registers none — see @open-lakehouse/log-query) and (2) the service
+// build registers none — see @open-lakehouse/delta-log) and (2) the service
 // supports this table (Delta only). So the standalone website shows no Delta-log
 // tab, and a host / the future wasm engine lights it up by registering a runner.
 //
@@ -13,7 +13,7 @@
 // The `useLogPreview` hook must run unconditionally, so the gate lives in
 // `DeltaLogTab` and the hook lives in the inner `DeltaLogGrid`.
 
-import { DataGrid } from "@open-lakehouse/data-grid";
+import { DataGrid } from "@open-lakehouse/arrow-grid";
 import {
   ActionsLog,
   hasLogQueryRunner,
@@ -22,7 +22,7 @@ import {
   MinMaxView,
   useLogPreview,
   useLogQueryService,
-} from "@open-lakehouse/log-query";
+} from "@open-lakehouse/delta-log";
 import { Tabs, TabsList, TabsTrigger } from "@open-lakehouse/ui-kit";
 import { ScrollText } from "lucide-react";
 import { useState } from "react";

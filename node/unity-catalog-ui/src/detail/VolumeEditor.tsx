@@ -1,7 +1,7 @@
 // The volume file editor — the "Files" tab of VolumeDetail.
 //
 // Composes two seam packages the app wires up, keeping UC decoupled from both:
-//   - @open-lakehouse/files — browse the volume (useDirectory) and read file
+//   - @open-lakehouse/volume-files — browse the volume (useDirectory) and read file
 //     bytes (FilesService.readFile). Read-only in v1 (canWrite() is false).
 //   - @open-lakehouse/editor — the Monaco editor + tab session. SQL highlighting,
 //     catalog-aware completion (via the UC-backed CatalogProvider registered in
@@ -15,7 +15,7 @@
 // The editor's FileStore seam is satisfied by a thin read-only adapter over the
 // FilesService — no writeFile, so the session is read-only by construction.
 
-import { ArrowResultStore, DataGrid } from "@open-lakehouse/data-grid";
+import { ArrowResultStore, DataGrid } from "@open-lakehouse/arrow-grid";
 import { MonacoHost } from "@open-lakehouse/editor";
 import {
   EditorSessionProvider,
@@ -25,6 +25,8 @@ import {
   TabStrip,
   useEditorSession,
 } from "@open-lakehouse/editor/session";
+import { hasQueryRunner, queryRunner } from "@open-lakehouse/query-runner";
+import { cn } from "@open-lakehouse/ui-kit";
 import {
   type DirectoryEntry,
   type FilesService,
@@ -34,9 +36,7 @@ import {
   parseVolumePath,
   useDirectory,
   useFilesService,
-} from "@open-lakehouse/files";
-import { hasQueryRunner, queryRunner } from "@open-lakehouse/query";
-import { cn } from "@open-lakehouse/ui-kit";
+} from "@open-lakehouse/volume-files";
 import {
   ChevronRight,
   Download,

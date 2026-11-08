@@ -1,9 +1,9 @@
-import { FilesServiceProvider } from "@open-lakehouse/files";
-import { registerStubFiles } from "@open-lakehouse/files/testing";
+import { FilesServiceProvider } from "@open-lakehouse/volume-files";
+import { registerStubFiles } from "@open-lakehouse/volume-files/testing";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { VolumeEditor } from "./VolumeEditor.js";
 
-// The Files tab is hook-driven off the @open-lakehouse/files seam. Register the
+// The Files tab is hook-driven off the @open-lakehouse/volume-files seam. Register the
 // dev stub runner (the rich nested fixture tree under /Volumes/demo/raw/events)
 // once at module load — the same wiring the app does in non-wasm builds — and
 // register NO query runner, so the SQL results pane stays hidden and the story

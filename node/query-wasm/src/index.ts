@@ -1,5 +1,5 @@
 // Public surface of `@open-lakehouse/query-wasm`: the in-browser wasm query
-// engine packaged as a `QueryRunner` for the `@open-lakehouse/query` seam
+// engine packaged as a `QueryRunner` for the `@open-lakehouse/query-runner` seam
 // (WASM_QUERY_PREVIEW.md Phase B).
 //
 // `registerWasmPreview` is the one-call app wiring: it registers a runner that
@@ -14,13 +14,13 @@ import {
   type LogQueryRunner,
   type LogSupportsInput,
   registerLogQueryRunner,
-} from "@open-lakehouse/log-query";
+} from "@open-lakehouse/delta-log";
 import {
   type QueryChunk,
   type QueryRunner,
   registerQueryRunner,
   type SupportsInput,
-} from "@open-lakehouse/query";
+} from "@open-lakehouse/query-runner";
 import type { LogRunMessage, RunMessage, WorkerResponse } from "./protocol";
 
 export interface WasmQueryOptions {

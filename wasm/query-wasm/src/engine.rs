@@ -1,7 +1,7 @@
 //! Query execution over an opened Delta table: SQL table-reference extraction,
 //! qualified-name registration, and the `open_lakehouse.query.v1` chunk framing.
 //!
-//! The runner contract hands us raw SQL (built by `@open-lakehouse/query` as
+//! The runner contract hands us raw SQL (built by `@open-lakehouse/query-runner` as
 //! ``SELECT … FROM `catalog`.`schema`.`table` LIMIT n``). The engine extracts
 //! the single table reference, resolves it against the request's optional
 //! default catalog/schema (the Unity Catalog address), registers an async-native

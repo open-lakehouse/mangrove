@@ -19,7 +19,7 @@
   "dependencies": {
     "@bufbuild/protobuf": "^2.16.0",
     "@connectrpc/connect": "^2.2.0",
-    "@open-lakehouse/files": "workspace:*",
+    "@open-lakehouse/volume-files": "workspace:*",
     "@open-lakehouse/files-connect": "workspace:*"
   },
   "devDependencies": {

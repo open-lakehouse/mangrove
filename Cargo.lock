@@ -306,6 +306,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrow-grid"
+version = "0.0.1"
+
+[[package]]
 name = "arrow-ipc"
 version = "59.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1427,10 +1431,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "data-grid"
-version = "0.0.1"
-
-[[package]]
 name = "datafusion"
 version = "55.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2192,6 +2192,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "delta-log"
+version = "0.0.1"
+
+[[package]]
 name = "deltalake-core"
 version = "2.0.0"
 source = "git+https://github.com/roeap/delta-rs?rev=4b2af2d34409649ccf762312160405acdeaafea0#4b2af2d34409649ccf762312160405acdeaafea0"
@@ -2493,10 +2497,6 @@ name = "fastrand"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
-
-[[package]]
-name = "files"
-version = "0.0.1"
 
 [[package]]
 name = "find-msvc-tools"
@@ -3533,10 +3533,6 @@ name = "log"
 version = "0.4.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
-
-[[package]]
-name = "log-query"
-version = "0.0.1"
 
 [[package]]
 name = "lru"
@@ -5008,7 +5004,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "query"
+name = "query-runner"
 version = "0.0.1"
 
 [[package]]
@@ -6982,6 +6978,10 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
+
+[[package]]
+name = "volume-files"
+version = "0.0.1"
 
 [[package]]
 name = "walkdir"

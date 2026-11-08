@@ -1,0 +1,63 @@
+{
+  "name": "@open-lakehouse/delta-log",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Delta-log views and the log-query seam for React.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-lakehouse/mangrove.git",
+    "directory": "node/delta-log"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
+    "!src/**/*.stories.tsx",
+    "README.md",
+    "DESIGN.md",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./testing": {
+      "source": "./src/testing/stubRunner.ts",
+      "types": "./dist/testing/stubRunner.d.ts",
+      "import": "./dist/testing/stubRunner.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@open-lakehouse/arrow-grid": "workspace:*",
+    "@tanstack/react-virtual": "^3.14.14",
+    "apache-arrow": "^21.2.0",
+    "lucide-react": "^1.55.0"
+  },
+  "peerDependencies": {
+    "@open-lakehouse/ui-kit": "0.0.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@open-lakehouse/ui-kit": "https://github.com/open-lakehouse/trestle/releases/download/ui-kit-v0.0.1/open-lakehouse-ui-kit-0.0.1.tgz",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^6.0.3"
+  },
+  "scripts": {
+    "build": "bun run ../../scripts/build-package.ts",
+    "prepack": "bun run build",
+    "typecheck": "tsc --noEmit"
+  }
+}

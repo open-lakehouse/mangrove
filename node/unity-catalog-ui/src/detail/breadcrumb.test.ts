@@ -1,10 +1,10 @@
 // Validates the breadcrumb crumb-target derivation used in VolumeEditor's
 // Breadcrumb component — the pure path math, exercised without React. The
 // component builds each crumb target with joinVolumePath(root, ...segsUpToHere),
-// so this asserts that formula against the exported @open-lakehouse/files helpers.
+// so this asserts that formula against the exported @open-lakehouse/volume-files helpers.
 
 import { expect, test } from "bun:test";
-import { joinVolumePath, parseVolumePath } from "@open-lakehouse/files";
+import { joinVolumePath, parseVolumePath } from "@open-lakehouse/volume-files";
 
 // Mirror the derivation in Breadcrumb: the volume crumb → root, then one crumb
 // per relativePath segment, each targeting the path up to and including it.

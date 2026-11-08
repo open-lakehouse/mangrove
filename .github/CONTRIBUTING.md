@@ -163,7 +163,7 @@ new deployable service or CLI, keep to this contract so the two stay aligned:
   `tower-http::ServeDir` (SPA `index.html` fallback), gated by `ui.serve` (default on) /
   `--no-ui`, and optionally mounted under `ui.base_path` for a gateway sub-path. The SPA is
   the `node/app` package (`@open-lakehouse/uc-app`), a thin Vite app consuming the shared,
-  reusable `@open-lakehouse/*` component packages (`unity-catalog`, `ui-kit`, `data-grid`,
+  reusable `@open-lakehouse/*` component packages (`unity-catalog`, `ui-kit`, `arrow-grid`,
   `unity-catalog-client`). Build it with `just ui-build`; run the server serving both API
   and UI on one origin with `just rest-ui`. The Docker image bakes `node/app/dist` into
   `./web`. *(Publishing the shared component packages to npm is deferred while names
@@ -309,8 +309,8 @@ with its tag. No npmjs publishing yet.
   its `package.json` and pins `workspace:` specs to it (`bun pm pack` would
   otherwise take `0.0.0` from `bun.lock`).
 - Published: `unity-catalog-node`, `unity-catalog-client`, `unity-catalog-ui` and
-  the UI packages it builds on (`data-grid`, `editor`, `files`, `log-query`,
-  `query`). `files-connect`, the wasm packages and `uc-app` stay `private: true`.
+  the UI packages it builds on (`arrow-grid`, `editor`, `volume-files`, `delta-log`,
+  `query-runner`). `files-connect`, the wasm packages and `uc-app` stay `private: true`.
   Don't add npmjs publishing or un-private one without a maintainer asking for it.
 
 **First-publish bootstrap.** crates.io OIDC trusted publishing cannot create a crate name

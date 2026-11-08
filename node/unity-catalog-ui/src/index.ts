@@ -16,9 +16,9 @@
 // directly from @open-lakehouse/unity-catalog-client so the two concerns stay
 // decoupled.
 //
-// Dependency direction: the package may build on @open-lakehouse/data-grid in
-// the future; data-grid never builds on it. (Today StorageTable hand-rolls its
-// own table and does not use data-grid — porting it is a separate refactor.)
+// Dependency direction: the package may build on @open-lakehouse/arrow-grid in
+// the future; arrow-grid never builds on it. (Today StorageTable hand-rolls its
+// own table and does not use arrow-grid — porting it is a separate refactor.)
 
 // ── Route-level UI ───────────────────────────────────────────────────────────
 export { CatalogExplorer } from "./CatalogExplorer.js";

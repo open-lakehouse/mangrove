@@ -73,11 +73,11 @@ rather than enforced by a lint rule.
 ## Scope notes
 
 - `StorageTable` is UC-specific — it hand-rolls its own `<table>` bound to UC
-  types/hooks/detail panes. It is **not** the reusable `@open-lakehouse/data-grid`
+  types/hooks/detail panes. It is **not** the reusable `@open-lakehouse/arrow-grid`
   primitive and does not use it. Porting it onto a generic table is a separate,
   behavior-changing refactor (see the strategy doc).
-- Dependency direction: this package may build on `@open-lakehouse/data-grid` in
-  the future; `data-grid` never builds on it.
+- Dependency direction: this package may build on `@open-lakehouse/arrow-grid` in
+  the future; `arrow-grid` never builds on it.
 - `selection.ts` / `ExpansionContext` read TanStack Router and `sessionStorage`
   directly; making them prop/callback-driven is a separate headless-ification
   tracked in the strategy doc.

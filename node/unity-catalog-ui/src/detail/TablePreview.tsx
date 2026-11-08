@@ -1,7 +1,7 @@
 // The data-preview surface of TableDetail (its own "Preview" tab). Additive and
 // dark-launched: it's shown only when (1) the preview feature flag is on, (2) a
 // query runner has been registered (the standalone build registers none — see
-// @open-lakehouse/query), and (3) the service supports this table. So the
+// @open-lakehouse/query-runner), and (3) the service supports this table. So the
 // standalone website ships with no preview, and a host / the future wasm engine
 // lights it up by registering a runner. `useTablePreviewVisible` exposes that
 // gate so TableDetail can hide the tab trigger too (no empty, inert pane).
@@ -9,12 +9,12 @@
 // The `usePreview` hook must run unconditionally, so the gate lives in
 // `TablePreview` and the hook lives in the inner `PreviewGrid`.
 
-import { DataGrid } from "@open-lakehouse/data-grid";
+import { DataGrid } from "@open-lakehouse/arrow-grid";
 import {
   hasQueryRunner,
   usePreview,
   useQueryService,
-} from "@open-lakehouse/query";
+} from "@open-lakehouse/query-runner";
 import { Table2 } from "lucide-react";
 
 // Vite statically replaces import.meta.env.*; undefined/"false" (or no

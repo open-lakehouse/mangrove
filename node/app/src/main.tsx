@@ -1,10 +1,8 @@
+import { LogQueryServiceProvider } from "@open-lakehouse/delta-log";
+import { registerStubLogPreview } from "@open-lakehouse/delta-log/testing";
 import { registerCatalogProvider } from "@open-lakehouse/editor";
-import { FilesServiceProvider } from "@open-lakehouse/files";
-import { registerStubFiles } from "@open-lakehouse/files/testing";
 import { registerWasmFiles } from "@open-lakehouse/files-wasm";
-import { LogQueryServiceProvider } from "@open-lakehouse/log-query";
-import { registerStubLogPreview } from "@open-lakehouse/log-query/testing";
-import { QueryServiceProvider } from "@open-lakehouse/query";
+import { QueryServiceProvider } from "@open-lakehouse/query-runner";
 import {
   registerWasmLogPreview,
   registerWasmPreview,
@@ -22,6 +20,8 @@ import {
   EnvironmentScopeProvider,
   ucCatalogProvider,
 } from "@open-lakehouse/unity-catalog-ui";
+import { FilesServiceProvider } from "@open-lakehouse/volume-files";
+import { registerStubFiles } from "@open-lakehouse/volume-files/testing";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
@@ -96,12 +96,12 @@ createRoot(rootElement).render(
       <UnityCatalogProvider client={ucClient}>
         {/* The preview seam. This standalone build registers NO query runner, so
             the default service's runner throws and TableDetail keeps its preview
-            gated off (see @open-lakehouse/query). A host or the future wasm engine
+            gated off (see @open-lakehouse/query-runner). A host or the future wasm engine
             registers a runner via registerQueryRunner to light it up. */}
         <QueryServiceProvider>
           {/* The Delta-log seam, beside the preview seam. The stub runner above
               backs it in this build; a host / the future wasm engine swaps in a
-              real runner via registerLogQueryRunner (see @open-lakehouse/log-query). */}
+              real runner via registerLogQueryRunner (see @open-lakehouse/delta-log). */}
           <LogQueryServiceProvider>
             {/* The volume-files seam, backing the VolumeDetail Files tab. The
                 stub (or wasm) runner registered above serves it; the editor reads

@@ -2,7 +2,7 @@
 
 An embeddable Monaco editor for SQL and text files: highlighting, live SQL
 diagnostics, catalog-aware completion, markdown preview and a run affordance. A
-**leaf**: it never imports Unity Catalog, query or data-grid. The host pushes in
+**leaf**: it never imports Unity Catalog, query-runner or arrow-grid. The host pushes in
 catalog metadata (`CatalogProvider`), persistence (`FileStore`) and execution
 (`onRun`). [`README.md`](./README.md) has the integration details; this page is
 the short contract.
@@ -65,5 +65,5 @@ has a `fixtureCatalogProvider` for stories and tests.
   falls back to the main thread).
 - **Do** keep one `MonacoHost` and swap models on tab change; don't mount an
   editor per tab.
-- **Don't** import Unity Catalog, query or data-grid here; provide them through
+- **Don't** import Unity Catalog, query-runner or arrow-grid here; provide them through
   the seams.

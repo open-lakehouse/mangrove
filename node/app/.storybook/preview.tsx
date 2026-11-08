@@ -1,10 +1,8 @@
-import { FilesServiceProvider } from "@open-lakehouse/files";
-import { registerStubFiles } from "@open-lakehouse/files/testing";
+import { LogQueryServiceProvider } from "@open-lakehouse/delta-log";
+import { registerStubLogPreview } from "@open-lakehouse/delta-log/testing";
 import { HostProvider } from "@open-lakehouse/host/react";
 import { createFakeHost } from "@open-lakehouse/host/testing";
-import { LogQueryServiceProvider } from "@open-lakehouse/log-query";
-import { registerStubLogPreview } from "@open-lakehouse/log-query/testing";
-import { QueryServiceProvider } from "@open-lakehouse/query";
+import { QueryServiceProvider } from "@open-lakehouse/query-runner";
 import {
   ThemeProvider,
   Toaster,
@@ -16,6 +14,8 @@ import {
 } from "@open-lakehouse/unity-catalog-client/react";
 import { ucFixtureHandler } from "@open-lakehouse/unity-catalog-client/testing";
 import { EnvironmentScopeProvider } from "@open-lakehouse/unity-catalog-ui";
+import { FilesServiceProvider } from "@open-lakehouse/volume-files";
+import { registerStubFiles } from "@open-lakehouse/volume-files/testing";
 import type { Preview } from "@storybook/react-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";

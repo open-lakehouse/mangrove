@@ -14,8 +14,8 @@
     }
   },
   "dependencies": {
-    "@open-lakehouse/log-query": "workspace:*",
-    "@open-lakehouse/query": "workspace:*"
+    "@open-lakehouse/delta-log": "workspace:*",
+    "@open-lakehouse/query-runner": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

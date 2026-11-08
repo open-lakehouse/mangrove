@@ -1,5 +1,5 @@
 // Public surface of `@open-lakehouse/files-wasm`: the in-browser wasm volume-
-// files engine packaged as a `FilesRunner` for the `@open-lakehouse/files` seam.
+// files engine packaged as a `FilesRunner` for the `@open-lakehouse/volume-files` seam.
 //
 // `registerWasmFiles` is the one-call wiring: it registers a runner that spawns a
 // Web Worker per operation (wasm/query-wasm's `UcFilesEngine` inside), with an
@@ -24,19 +24,6 @@
 import { create } from "@bufbuild/protobuf";
 import type { Transport } from "@connectrpc/connect";
 import {
-  type DirectoryMetadata,
-  type DirectoryPage,
-  type FileChunk,
-  type FileMetadata,
-  type FilesRunner,
-  type FilesSupportsInput,
-  type ListDirectoryRequest,
-  type ReadFileRequest,
-  registerFilesRunner,
-  type WriteFileRequest,
-  type WriteFileResult,
-} from "@open-lakehouse/files";
-import {
   CreateDirectoryRequestSchema,
   createFilesClient,
   createWasmFilesTransport,
@@ -48,6 +35,19 @@ import {
   ListDirectoryContentsRequestSchema,
   registerFilesTransport,
 } from "@open-lakehouse/files-connect";
+import {
+  type DirectoryMetadata,
+  type DirectoryPage,
+  type FileChunk,
+  type FileMetadata,
+  type FilesRunner,
+  type FilesSupportsInput,
+  type ListDirectoryRequest,
+  type ReadFileRequest,
+  registerFilesRunner,
+  type WriteFileRequest,
+  type WriteFileResult,
+} from "@open-lakehouse/volume-files";
 import type {
   WorkerRequest,
   WorkerResponse,

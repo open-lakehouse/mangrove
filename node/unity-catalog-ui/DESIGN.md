@@ -5,15 +5,15 @@ schemas, tables, volumes, functions, models), create/edit/delete dialogs,
 storage credentials and external locations, the volume file browser and editor,
 the table preview, and the Delta-log tab. **Presentation only**: all data access
 comes from `@open-lakehouse/unity-catalog-client/react`. This is the composed
-package; it builds on every leaf (ui-kit, data-grid, editor, query, files,
-log-query), and nothing builds on it.
+package; it builds on every leaf (ui-kit, arrow-grid, editor, query-runner,
+volume-files, delta-log), and nothing builds on it.
 
 ## Distribution
 
 An npm package on GitHub Packages, like the leaves it builds on, so a host such
 as the luminescent-lakehouse desktop shell installs it and mounts the explorer
-as is. It takes the leaves that carry a seam (`unity-catalog-client`, `query`,
-`files`, `log-query`, `editor`) as peers: their providers and registries are
+as is. It takes the leaves that carry a seam (`unity-catalog-client`, `query-runner`,
+`volume-files`, `delta-log`, `editor`) as peers: their providers and registries are
 module state, so the host and this package must share one copy. Inside this
 workspace it is consumed from `src/` through the `source` export condition.
 
@@ -51,9 +51,9 @@ bundler).
 
    ```css
    @source "../node_modules/@open-lakehouse/ui-kit/dist";
-   @source "../node_modules/@open-lakehouse/data-grid/dist";
+   @source "../node_modules/@open-lakehouse/arrow-grid/dist";
    @source "../node_modules/@open-lakehouse/editor/dist";
-   @source "../node_modules/@open-lakehouse/log-query/dist";
+   @source "../node_modules/@open-lakehouse/delta-log/dist";
    ```
 
    [`node/app`](../app/) is the reference host for all of the above

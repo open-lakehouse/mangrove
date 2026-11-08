@@ -66,7 +66,7 @@ jobs:
         run: |
           set -euo pipefail
           # Crate -> workspace dir. Keep in sync with release-plz.toml.
-          dirs='{"unity-catalog-node":"node/client","unity-catalog-client":"node/unity-catalog-client","data-grid":"node/data-grid","editor":"node/editor","files":"node/files","log-query":"node/log-query","query":"node/query","unity-catalog-ui":"node/unity-catalog-ui"}'
+          dirs='{"unity-catalog-node":"node/client","unity-catalog-client":"node/unity-catalog-client","arrow-grid":"node/arrow-grid","editor":"node/editor","volume-files":"node/volume-files","delta-log":"node/delta-log","query-runner":"node/query-runner","unity-catalog-ui":"node/unity-catalog-ui"}'
           if [ -n "${TAG:-}" ]; then
             # workflow_dispatch: one existing `<crate>-v<version>` tag.
             crate="${TAG%-v*}"

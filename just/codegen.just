@@ -105,7 +105,7 @@ generate-node: generate-query-contract
     just node_client generate
 
 # Generate TypeScript message types for the in-browser query contract
-# (proto/query) into the @open-lakehouse/query package. Types only — no
+# (proto/query) into the @open-lakehouse/query-runner package. Types only — no
 # transport client; the runner is registered at runtime. See buf.gen.query.yaml.
 #
 # generate TypeScript message types for the in-browser query contract

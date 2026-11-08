@@ -2,7 +2,7 @@
 
 The in-browser query engine (`wasm/query-wasm`: DataFusion + Delta on
 `wasm32`, reading cloud storage directly with UC-vended credentials) packaged
-as a `QueryRunner` for the [`@open-lakehouse/query`](../query) seam. See
+as a `QueryRunner` for the [`@open-lakehouse/query-runner`](../query) seam. See
 `WASM_QUERY_PREVIEW.md` at the repo root for the full design.
 
 ## How it plugs in
@@ -22,7 +22,7 @@ Failures carry a machine-readable `code`:
 | `FAILED`      | a real error                                         | surface          |
 
 Pair `isFallbackWorthy` with `createFallbackQueryRunner` (from
-`@open-lakehouse/query`) to compose the wasm engine with a host's
+`@open-lakehouse/query-runner`) to compose the wasm engine with a host's
 server-backed runner.
 
 ## Build gating

@@ -10,7 +10,7 @@
       "!**/node_modules/**/*",
       "!**/unity-catalog-client/src/uc-api.d.ts",
       "!**/unity-catalog-ui/src/forms/schemas/**/*",
-      "!**/query/src/gen/**/*",
+      "!**/query-runner/src/gen/**/*",
       "!**/files-connect/src/gen/**/*"
     ]
   },
@@ -42,7 +42,7 @@
       }
     },
     {
-      "includes": ["data-grid/src/**"],
+      "includes": ["arrow-grid/src/**"],
       "linter": {
         "rules": {
           "style": {
@@ -52,7 +52,7 @@
                 "patterns": [
                   {
                     "group": ["@open-lakehouse/unity-catalog-ui"],
-                    "message": "data-grid is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on data-grid, never the reverse."
+                    "message": "arrow-grid is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on arrow-grid, never the reverse."
                   }
                 ]
               }
@@ -62,7 +62,7 @@
       }
     },
     {
-      "includes": ["query/src/**"],
+      "includes": ["query-runner/src/**"],
       "linter": {
         "rules": {
           "style": {
@@ -72,7 +72,7 @@
                 "patterns": [
                   {
                     "group": ["@open-lakehouse/unity-catalog-ui"],
-                    "message": "query is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on query, never the reverse."
+                    "message": "query-runner is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on query-runner, never the reverse."
                   }
                 ]
               }
@@ -92,7 +92,7 @@
                 "patterns": [
                   {
                     "group": ["@open-lakehouse/unity-catalog-ui"],
-                    "message": "query-wasm implements the @open-lakehouse/query runner contract and must not import Unity Catalog UI: the app composes them, never the packages themselves."
+                    "message": "query-wasm implements the @open-lakehouse/query-runner runner contract and must not import Unity Catalog UI: the app composes them, never the packages themselves."
                   }
                 ]
               }
@@ -112,7 +112,7 @@
                 "patterns": [
                   {
                     "group": ["@open-lakehouse/unity-catalog-ui"],
-                    "message": "files-wasm implements the @open-lakehouse/files runner contract and must not import Unity Catalog UI: the app composes them, never the packages themselves."
+                    "message": "files-wasm implements the @open-lakehouse/volume-files runner contract and must not import Unity Catalog UI: the app composes them, never the packages themselves."
                   }
                 ]
               }
@@ -132,7 +132,7 @@
                 "patterns": [
                   {
                     "group": ["@open-lakehouse/unity-catalog-ui"],
-                    "message": "files-connect is the write-capable ConnectRPC surface for the @open-lakehouse/files seam and must not import Unity Catalog UI: the app composes them, never the packages themselves."
+                    "message": "files-connect is the write-capable ConnectRPC surface for the @open-lakehouse/volume-files seam and must not import Unity Catalog UI: the app composes them, never the packages themselves."
                   }
                 ]
               }
@@ -142,7 +142,7 @@
       }
     },
     {
-      "includes": ["log-query/src/**"],
+      "includes": ["delta-log/src/**"],
       "linter": {
         "rules": {
           "style": {
@@ -152,7 +152,7 @@
                 "patterns": [
                   {
                     "group": ["@open-lakehouse/unity-catalog-ui"],
-                    "message": "log-query is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on log-query (renders a Delta-log tab), never the reverse."
+                    "message": "delta-log is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on delta-log (renders a Delta-log tab), never the reverse."
                   }
                 ]
               }
@@ -162,7 +162,7 @@
       }
     },
     {
-      "includes": ["files/src/**"],
+      "includes": ["volume-files/src/**"],
       "linter": {
         "rules": {
           "style": {
@@ -172,7 +172,7 @@
                 "patterns": [
                   {
                     "group": ["@open-lakehouse/unity-catalog-ui"],
-                    "message": "files is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on files (renders a volume Files tab), never the reverse."
+                    "message": "volume-files is a leaf: it must not import Unity Catalog. The Unity Catalog package may build on volume-files (renders a volume Files tab), never the reverse."
                   }
                 ]
               }
@@ -193,10 +193,10 @@
                   {
                     "group": [
                       "@open-lakehouse/unity-catalog-ui",
-                      "@open-lakehouse/query",
-                      "@open-lakehouse/data-grid"
+                      "@open-lakehouse/query-runner",
+                      "@open-lakehouse/arrow-grid"
                     ],
-                    "message": "editor is a leaf: it must not import Unity Catalog, query, or data-grid. The Unity Catalog package builds on the editor and pushes catalog context in via registerCatalogProvider; run/results are wired by the consumer via an injected onRun callback. Never the reverse."
+                    "message": "editor is a leaf: it must not import Unity Catalog, query-runner, or arrow-grid. The Unity Catalog package builds on the editor and pushes catalog context in via registerCatalogProvider; run/results are wired by the consumer via an injected onRun callback. Never the reverse."
                   }
                 ]
               }

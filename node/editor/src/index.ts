@@ -4,7 +4,7 @@
 // `@open-lakehouse/editor/fixtures`.
 //
 // This package is a LEAF: it never imports @open-lakehouse/unity-catalog-ui (nor
-// query / data-grid). The Unity Catalog package builds on it and pushes catalog
+// query-runner / arrow-grid). The Unity Catalog package builds on it and pushes catalog
 // context in via `registerCatalogProvider`; run/results are wired by the
 // consumer via the `onRun` callback. Enforced by the Biome leaf rule in
 // node/biome.json.

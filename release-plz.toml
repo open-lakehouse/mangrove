@@ -149,11 +149,11 @@ changelog_include = [
   "uc-app",
   "unity-catalog-client",
   "unity-catalog-ui",
-  "data-grid",
+  "arrow-grid",
   "editor",
-  "files",
-  "log-query",
-  "query",
+  "volume-files",
+  "delta-log",
+  "query-runner",
 ]
 
 [[package]]
@@ -203,8 +203,8 @@ publish = false # required alongside git_only
 semver_check = false
 
 [[package]]
-name = "data-grid"
-changelog_path = "node/data-grid/CHANGELOG.md"
+name = "arrow-grid"
+changelog_path = "node/arrow-grid/CHANGELOG.md"
 git_only = true
 publish = false # required alongside git_only
 semver_check = false
@@ -217,22 +217,22 @@ publish = false # required alongside git_only
 semver_check = false
 
 [[package]]
-name = "files"
-changelog_path = "node/files/CHANGELOG.md"
+name = "volume-files"
+changelog_path = "node/volume-files/CHANGELOG.md"
 git_only = true
 publish = false # required alongside git_only
 semver_check = false
 
 [[package]]
-name = "log-query"
-changelog_path = "node/log-query/CHANGELOG.md"
+name = "delta-log"
+changelog_path = "node/delta-log/CHANGELOG.md"
 git_only = true
 publish = false # required alongside git_only
 semver_check = false
 
 [[package]]
-name = "query"
-changelog_path = "node/query/CHANGELOG.md"
+name = "query-runner"
+changelog_path = "node/query-runner/CHANGELOG.md"
 git_only = true
 publish = false # required alongside git_only
 semver_check = false
@@ -305,5 +305,5 @@ commit_parsers = [
 # is already crate-scoped. Scopes use the crate directory names / short names
 # the repo's conventional commits already use.
 commit_preprocessors = [
-  { pattern = '\((delta-api|common|client|object-store|postgres|sqlite|datafusion|server|storage-proxy|cli|unity-catalog-node|unity-catalog-client|unity-catalog-ui|data-grid|editor|files|log-query|query|uc-app|app|ui)\)', replace = "" },
+  { pattern = '\((delta-api|common|client|object-store|postgres|sqlite|datafusion|server|storage-proxy|cli|unity-catalog-node|unity-catalog-client|unity-catalog-ui|arrow-grid|editor|volume-files|delta-log|query-runner|uc-app|app|ui)\)', replace = "" },
 ]
