@@ -8,20 +8,21 @@ comes from `@open-lakehouse/unity-catalog-client/react`. This is the composed
 package; it builds on every leaf (ui-kit, data-grid, editor, query, files,
 log-query), and nothing builds on it.
 
-## Distribution: shadcn blocks, not an npm package
+## Distribution
 
-This is app-level composition that each host will want to arrange, label and
-restyle, so it is distributed the shadcn way, as `registry:block` items from
-mangrove's self-hosted registry (#210). `shadcn add` copies the block's files
-into the host, which then owns them. The blocks depend on the npm packages that
-carry the logic (`unity-catalog-client`, `ui-kit`, `data-grid`, `editor`,
-`query`, `files`, `log-query`), so fixes to those still arrive centrally.
-Inside this workspace it remains a source package that `node/app` imports.
+An npm package on GitHub Packages, like the leaves it builds on, so a host such
+as the luminescent-lakehouse desktop shell installs it and mounts the explorer
+as is. It takes the leaves that carry a seam (`unity-catalog-client`, `query`,
+`files`, `log-query`, `editor`) as peers: their providers and registries are
+module state, so the host and this package must share one copy. Inside this
+workspace it is consumed from `src/` through the `source` export condition.
 
 ## Peers
 
 `react` / `react-dom` 19, `@tanstack/react-query` 5, `@tanstack/react-router`
-1. The host must provide exactly one copy of each (dedupe in the bundler).
+1, `@open-lakehouse/host` and `@open-lakehouse/ui-kit` (trestle), and the seam
+packages above. The host must provide exactly one copy of each (dedupe in the
+bundler).
 
 ## Host setup
 

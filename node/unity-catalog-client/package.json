@@ -76,6 +76,7 @@
     "dist",
     "src",
     "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
     "README.md",
     "CHANGELOG.md"
   ],

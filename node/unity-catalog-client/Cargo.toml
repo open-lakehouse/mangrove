@@ -40,6 +40,7 @@ include = [
   "/tsconfig.build.json",
   "/src/**",
   "!/src/**/*.test.ts",
+  "!/src/**/*.test.tsx",
 ]
 
 [lib]

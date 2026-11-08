@@ -17,8 +17,9 @@ import {
 } from "@open-lakehouse/query";
 import { Table2 } from "lucide-react";
 
-// Vite statically replaces import.meta.env.*; undefined/"false" → off.
-const PREVIEW_ENABLED = import.meta.env.VITE_ENABLE_PREVIEW === "true";
+// Vite statically replaces import.meta.env.*; undefined/"false" (or no
+// import.meta.env at all, outside Vite) → off.
+const PREVIEW_ENABLED = import.meta.env?.VITE_ENABLE_PREVIEW === "true";
 
 /** Whether the preview tab should be offered for this table: feature flag +
  *  a registered runner + the runner's capability probe. A hook because the

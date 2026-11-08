@@ -74,7 +74,7 @@
     },
     "node/data-grid": {
       "name": "@open-lakehouse/data-grid",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@tanstack/react-table": "^8.21.3",
         "@tanstack/react-virtual": "^3.14.14",
@@ -97,7 +97,7 @@
     },
     "node/editor": {
       "name": "@open-lakehouse/editor",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@monaco-editor/react": "^4.7.0",
         "dompurify": "^3.4.16",
@@ -123,7 +123,7 @@
     },
     "node/files": {
       "name": "@open-lakehouse/files",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "devDependencies": {
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
@@ -163,9 +163,9 @@
     },
     "node/log-query": {
       "name": "@open-lakehouse/log-query",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
-        "@open-lakehouse/data-grid": "^0.1.0",
+        "@open-lakehouse/data-grid": "workspace:*",
         "@tanstack/react-virtual": "^3.14.14",
         "apache-arrow": "^21.2.0",
         "lucide-react": "^1.55.0",
@@ -186,10 +186,10 @@
     },
     "node/query": {
       "name": "@open-lakehouse/query",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@bufbuild/protobuf": "^2.16.0",
-        "@open-lakehouse/data-grid": "^0.1.0",
+        "@open-lakehouse/data-grid": "workspace:*",
       },
       "devDependencies": {
         "@types/react": "^19.3.0",
@@ -250,14 +250,9 @@
     },
     "node/unity-catalog-ui": {
       "name": "@open-lakehouse/unity-catalog-ui",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
-        "@open-lakehouse/data-grid": "^0.1.0",
-        "@open-lakehouse/editor": "^0.1.0",
-        "@open-lakehouse/files": "^0.1.0",
-        "@open-lakehouse/log-query": "^0.1.0",
-        "@open-lakehouse/query": "^0.1.0",
-        "@open-lakehouse/unity-catalog-client": "workspace:*",
+        "@open-lakehouse/data-grid": "workspace:*",
         "@rjsf/core": "^5.24.13",
         "@rjsf/utils": "^5.24.13",
         "@rjsf/validator-ajv8": "^5.24.13",
@@ -266,8 +261,13 @@
         "sonner": "^2.0.8",
       },
       "devDependencies": {
+        "@open-lakehouse/editor": "workspace:*",
+        "@open-lakehouse/files": "workspace:*",
         "@open-lakehouse/host": "https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.1/open-lakehouse-host-0.0.1.tgz",
+        "@open-lakehouse/log-query": "workspace:*",
+        "@open-lakehouse/query": "workspace:*",
         "@open-lakehouse/ui-kit": "https://github.com/open-lakehouse/trestle/releases/download/ui-kit-v0.0.1/open-lakehouse-ui-kit-0.0.1.tgz",
+        "@open-lakehouse/unity-catalog-client": "workspace:*",
         "@tanstack/react-query": "^5.104.1",
         "@tanstack/react-router": "^1.170.42",
         "@types/react": "^19.3.0",
@@ -278,8 +278,13 @@
         "vite": "^8.3.4",
       },
       "peerDependencies": {
+        "@open-lakehouse/editor": "workspace:*",
+        "@open-lakehouse/files": "workspace:*",
         "@open-lakehouse/host": "0.0.1",
+        "@open-lakehouse/log-query": "workspace:*",
+        "@open-lakehouse/query": "workspace:*",
         "@open-lakehouse/ui-kit": "0.0.1",
+        "@open-lakehouse/unity-catalog-client": "workspace:*",
         "@tanstack/react-query": "^5.100.14",
         "@tanstack/react-router": "^1.170.10",
         "react": "^19.2.6",

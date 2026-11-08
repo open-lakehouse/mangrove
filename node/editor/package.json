@@ -1,7 +1,6 @@
 {
   "name": "@open-lakehouse/editor",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0",
   "type": "module",
   "description": "Monaco SQL editor with catalog-aware completion for React.",
   "license": "Apache-2.0",

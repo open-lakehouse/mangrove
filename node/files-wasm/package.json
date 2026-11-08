@@ -19,8 +19,8 @@
   "dependencies": {
     "@bufbuild/protobuf": "^2.16.0",
     "@connectrpc/connect": "^2.2.0",
-    "@open-lakehouse/files": "^0.1.0",
-    "@open-lakehouse/files-connect": "^0.1.0"
+    "@open-lakehouse/files": "workspace:*",
+    "@open-lakehouse/files-connect": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

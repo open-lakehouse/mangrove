@@ -1,7 +1,6 @@
 {
   "name": "@open-lakehouse/query",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0",
   "type": "module",
   "description": "Query-preview seam (QueryRunner) and the usePreview hook that streams results into a data-grid store.",
   "license": "Apache-2.0",
@@ -40,7 +39,7 @@
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.16.0",
-    "@open-lakehouse/data-grid": "^0.1.0"
+    "@open-lakehouse/data-grid": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.2.6",

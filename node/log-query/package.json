@@ -1,7 +1,6 @@
 {
   "name": "@open-lakehouse/log-query",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0",
   "type": "module",
   "description": "Delta-log views and the log-query seam for React.",
   "license": "Apache-2.0",
@@ -38,7 +37,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@open-lakehouse/data-grid": "^0.1.0",
+    "@open-lakehouse/data-grid": "workspace:*",
     "@tanstack/react-virtual": "^3.14.14",
     "apache-arrow": "^21.2.0",
     "lucide-react": "^1.55.0"

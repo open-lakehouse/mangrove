@@ -1,23 +1,38 @@
 {
   "name": "@open-lakehouse/unity-catalog-ui",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0",
   "type": "module",
   "description": "Unity Catalog browser components (catalog explorer, entity details, dialogs) for React.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-lakehouse/mangrove.git",
+    "directory": "node/unity-catalog-ui"
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
+    "!src/**/*.stories.tsx",
+    "README.md",
+    "DESIGN.md",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
-    }
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "dependencies": {
-    "@open-lakehouse/data-grid": "^0.1.0",
-    "@open-lakehouse/editor": "^0.1.0",
-    "@open-lakehouse/files": "^0.1.0",
-    "@open-lakehouse/log-query": "^0.1.0",
-    "@open-lakehouse/query": "^0.1.0",
-    "@open-lakehouse/unity-catalog-client": "workspace:*",
+    "@open-lakehouse/data-grid": "workspace:*",
     "@rjsf/core": "^5.24.13",
     "@rjsf/utils": "^5.24.13",
     "@rjsf/validator-ajv8": "^5.24.13",
@@ -26,16 +41,26 @@
     "sonner": "^2.0.8"
   },
   "peerDependencies": {
+    "@open-lakehouse/editor": "workspace:*",
+    "@open-lakehouse/files": "workspace:*",
     "@open-lakehouse/host": "0.0.1",
+    "@open-lakehouse/log-query": "workspace:*",
+    "@open-lakehouse/query": "workspace:*",
     "@open-lakehouse/ui-kit": "0.0.1",
+    "@open-lakehouse/unity-catalog-client": "workspace:*",
     "@tanstack/react-query": "^5.100.14",
     "@tanstack/react-router": "^1.170.10",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@open-lakehouse/editor": "workspace:*",
+    "@open-lakehouse/files": "workspace:*",
     "@open-lakehouse/host": "https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.1/open-lakehouse-host-0.0.1.tgz",
+    "@open-lakehouse/log-query": "workspace:*",
+    "@open-lakehouse/query": "workspace:*",
     "@open-lakehouse/ui-kit": "https://github.com/open-lakehouse/trestle/releases/download/ui-kit-v0.0.1/open-lakehouse-ui-kit-0.0.1.tgz",
+    "@open-lakehouse/unity-catalog-client": "workspace:*",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.42",
     "@types/react": "^19.3.0",
@@ -47,6 +72,8 @@
   },
   "scripts": {
     "gen:form-schemas": "node scripts/gen-form-schemas.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "bun run ../../scripts/build-package.ts",
+    "prepack": "bun run build"
   }
 }
