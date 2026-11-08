@@ -20,22 +20,54 @@ ConnectRPC `Transport`, one layer down at the `fetch`).
 
 ## The seam
 
-The default client issues `openapi-fetch` requests over the platform `fetch`. A
-host redirects every request without rebuilding anything:
+The client follows the `@open-lakehouse/host` contract (trestle's
+[`node/host`](https://github.com/open-lakehouse/trestle/tree/main/node/host)). A
+host binds Unity Catalog under the module id `"unity-catalog"`
+(`UNITY_CATALOG_MODULE_ID`), and every request resolves its transport on the
+spot, in this order:
+
+1. an explicit `fetch` passed to `createUnityCatalogFetchClient` /
+   `createUnityCatalogClient`, or an explicit `client` passed to
+   `<UnityCatalogProvider>`;
+2. the override set by `setDefaultUnityCatalogFetch` (pass `null` to clear it);
+3. the `unity-catalog` binding of the host: for `<UnityCatalogProvider>`, the
+   nearest `<HostProvider>` (over the registered one); for the default client,
+   the one passed to `registerHost`;
+4. the platform `fetch`, so the UI still runs standalone on its own origin.
+
+Because the lookup happens on every request, a host can register before or after
+the client is built, and an environment switch reroutes the next request without
+a new client.
+
+```tsx
+import { registerHost } from "@open-lakehouse/host";
+import { UnityCatalogProvider } from "@open-lakehouse/unity-catalog-client/react";
+
+registerHost(desktopHost); // binds "unity-catalog" to the desktop's proxy fetch
+// …
+<UnityCatalogProvider>{/* UC UI */}</UnityCatalogProvider>;
+```
+
+Hosts that don't implement the contract can still route UC calls through their
+own fetch (auth, an IPC bridge, or an in-process wasm UC client that answers
+`/api/2.1/unity-catalog/*` directly):
 
 ```ts
 import { setDefaultUnityCatalogFetch } from "@open-lakehouse/unity-catalog-client";
 
-// Route UC calls through a host-supplied fetch (auth, an IPC bridge, or an
-// in-process wasm UC client that answers /api/2.1/unity-catalog/* directly).
-setDefaultUnityCatalogFetch(hostFetch);
+setDefaultUnityCatalogFetch(myFetch);
 ```
 
 or build a client with a fixed transport and inject it:
 
 ```tsx
-<UnityCatalogProvider client={createUnityCatalogClient({ fetch: hostFetch })}>
+<UnityCatalogProvider client={createUnityCatalogClient({ fetch: myFetch })}>
 ```
+
+When the environment switches, key the UC subtree on
+`useOptionalEnvironmentKey()` (or the host's `useEnvironmentKey()`) and clear the
+query cache on the same key, so nothing cached for the old environment shows in
+the new one.
 
 A future **wasm UC client** is exactly this: a `fetch`-shaped adapter that
 serves UC requests in-process. It requires **no change to the hooks or the
@@ -55,8 +87,8 @@ Two entry points:
 `fetch`, no React needed):
 
 - **Client:** `createUnityCatalogFetchClient`, `fetchClient` (the default
-  instance), `setDefaultUnityCatalogFetch`, `UnityCatalogFetchClient`,
-  `CreateUnityCatalogClientOptions`.
+  instance), `setDefaultUnityCatalogFetch`, `UNITY_CATALOG_MODULE_ID`,
+  `UnityCatalogFetchClient`, `CreateUnityCatalogClientOptions`.
 - **Helpers:** `parseUcError`, `objectFullName`.
 - **UC OpenAPI types:** `CatalogInfo`, `SchemaInfo`, `TableInfo`, `Create*`,
   `List*`, `components`, `paths`, … (re-exported from `uc-types`).
@@ -74,6 +106,8 @@ re-exports everything above):
 - **Client:** `createUnityCatalogClient`, `defaultUnityCatalogClient`,
   `UnityCatalogClient`, `$api`.
 - **Provider:** `UnityCatalogProvider`, `useUnityCatalog`.
+- **Host helpers:** `useOptionalEnvironmentKey` (the host's environment key, or
+  `null` without a host; unlike the host's own hook, it doesn't throw).
 - **Read hooks / query helpers:** `useCatalogs`, `useSchemas`, `useTables`,
   `useVolumes`, `useFunctions`, `useModels`, `useCredentials`,
   `useExternalLocations`, the `*Detail` hooks, `prefetch*`, `*DetailQuery`,
@@ -81,8 +115,10 @@ re-exports everything above):
 - **Mutations / invalidators:** the `useCreate*` / `useUpdate*` / `useDelete*`
   hooks and the `invalidate*` / `remove*` helpers.
 
-`react`, `react-dom` and `@tanstack/react-query` are **optional** peers: only the
-`./react` entry needs them.
+`@open-lakehouse/host` is a **required** peer: the host app supplies the one
+copy, so the client sees the host it registers. `react`, `react-dom` and
+`@tanstack/react-query` are **optional** peers: only the `./react` entry needs
+them.
 
 ## Codegen
 
@@ -108,10 +144,10 @@ Published to **GitHub Packages**. Point the `@open-lakehouse` scope at it in
 ```
 
 ```bash
-# framework-free client (browsers, Node ≥ 18, Bun, Deno)
-bun add @open-lakehouse/unity-catalog-client
+# framework-free client (browsers, Node ≥ 18, Bun, Deno), plus the host contract
+bun add @open-lakehouse/unity-catalog-client @open-lakehouse/host
 # React hosts using ./react also need its peers
-bun add @open-lakehouse/unity-catalog-client @tanstack/react-query openapi-react-query react react-dom
+bun add @open-lakehouse/unity-catalog-client @open-lakehouse/host @tanstack/react-query openapi-react-query react react-dom
 ```
 
 GitHub Packages needs a token even to read. In GitHub Actions, the job's
