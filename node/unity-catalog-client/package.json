@@ -13,6 +13,11 @@
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
     },
+    "./testing": {
+      "source": "./src/testing.ts",
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
