@@ -94,6 +94,12 @@ jobs:
         run: bun run build
         working-directory: node/app
 
+      # Every story renders on the fake host (@open-lakehouse/host/testing) with
+      # the UC fixture catalog, so a build break here means a story no longer
+      # compiles against the packages.
+      - name: Build Storybook
+        run: bun run build:storybook
+
       # Build every publishable TS package (dist/) and lint the packed tarballs
       # (publint + attw), the published TS client as well as the publish-ready,
       # still-private UI packages.

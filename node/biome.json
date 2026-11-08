@@ -6,6 +6,7 @@
     "includes": [
       "**",
       "!**/dist/**/*",
+      "!**/storybook-static/**/*",
       "!**/node_modules/**/*",
       "!**/unity-catalog-client/src/uc-api.d.ts",
       "!**/unity-catalog-ui/src/forms/schemas/**/*",

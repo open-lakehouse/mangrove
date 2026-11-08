@@ -56,20 +56,38 @@ function persist(envId: string, ids: Set<string>) {
   }
 }
 
+/** The expanded node ids, and the scope they were loaded for. */
+interface ScopedExpansion {
+  envId: string;
+  ids: Set<string>;
+}
+
+/** `state` if it belongs to `envId`, else `envId`'s persisted expansion. */
+function forScope(state: ScopedExpansion, envId: string): ScopedExpansion {
+  return state.envId === envId ? state : { envId, ids: loadInitial(envId) };
+}
+
 export function ExpansionProvider({ children }: { children: ReactNode }) {
   const envId = useEnvironmentScopeId();
-  const [expanded, setExpanded] = useState<Set<string>>(() =>
-    loadInitial(envId),
-  );
+  const [state, setState] = useState<ScopedExpansion>(() => ({
+    envId,
+    ids: loadInitial(envId),
+  }));
+  // When the scope changes (an environment switch), drop the old scope's
+  // expansion and load the new one's during this render, so the tree never
+  // shows another environment's expanded nodes, not even for one frame.
+  const scoped = forScope(state, envId);
+  if (scoped !== state) setState(scoped);
+  const expanded = scoped.ids;
 
   const toggle = useCallback(
     (id: string) => {
-      setExpanded((prev) => {
-        const next = new Set(prev);
+      setState((prev) => {
+        const next = new Set(forScope(prev, envId).ids);
         if (next.has(id)) next.delete(id);
         else next.add(id);
         persist(envId, next);
-        return next;
+        return { envId, ids: next };
       });
     },
     [envId],
@@ -77,12 +95,13 @@ export function ExpansionProvider({ children }: { children: ReactNode }) {
 
   const expand = useCallback(
     (ids: string[]) => {
-      setExpanded((prev) => {
-        if (ids.every((id) => prev.has(id))) return prev;
-        const next = new Set(prev);
+      setState((prev) => {
+        const current = forScope(prev, envId);
+        if (ids.every((id) => current.ids.has(id))) return current;
+        const next = new Set(current.ids);
         for (const id of ids) next.add(id);
         persist(envId, next);
-        return next;
+        return { envId, ids: next };
       });
     },
     [envId],

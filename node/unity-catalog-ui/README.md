@@ -51,13 +51,18 @@ and how a future in-process (wasm) UC client plugs in.
 - `@rjsf/*` — the JSON-schema form renderer backing `forms/SchemaForm`. The UC
   entity/storage form schemas live in `forms/schemas/`, generated from the UC proto by this
   package's `bun run gen:form-schemas` (`scripts/gen-form-schemas.mjs`).
-- **`./env-seam` — the single host edge.** `ExpansionContext` namespaces its
-  persisted tree-expansion state per active environment, so it needs the current
-  environment id. The package owns an `EnvironmentScopeProvider`; the host mounts
-  it with its active-environment id. Absent a provider, the scope falls back to a
-  stable constant (single namespace), so tests and stories render unwrapped. To
-  embed the package elsewhere, mount `EnvironmentScopeProvider` with whatever id
-  represents the embedder's current scope — nothing in core changes.
+- **`@open-lakehouse/host` (peer)** — the shared host contract. The client takes
+  its transport from it, and the environment scope below defaults to it.
+- **`./env-seam` — the environment scope.** `ExpansionContext` namespaces its
+  persisted tree-expansion state per environment, so it needs the current scope.
+  It resolves to the `scopeId` of the nearest `EnvironmentScopeProvider`, else
+  the environment key of the nearest `@open-lakehouse/host` host
+  (`<HostProvider>`, else `registerHost`), else a stable constant. A host that
+  implements the contract needs no wiring: on an environment switch the key
+  changes, and the tree drops the old environment's expansion in the same
+  render. An embedder without one mounts `EnvironmentScopeProvider` with its own
+  id (the standalone app passes `"uc"`); tests and stories without either share
+  one namespace.
 
 ## Boundary guarantee
 

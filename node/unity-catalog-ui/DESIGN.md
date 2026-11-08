@@ -27,14 +27,17 @@ Inside this workspace it remains a source package that `node/app` imports.
 
 1. **Providers.** Mount, outside the routes that render these components:
    - `QueryClientProvider` (TanStack Query);
-   - `UnityCatalogProvider` from `@open-lakehouse/unity-catalog-client/react`,
-     with a client built by `createUnityCatalogClient({ baseUrl })`;
+   - `UnityCatalogProvider` from `@open-lakehouse/unity-catalog-client/react`:
+     without a `client`, it takes the transport from the `@open-lakehouse/host`
+     host's `unity-catalog` binding; a host without the contract passes a client
+     built by `createUnityCatalogClient({ baseUrl })`;
    - `QueryServiceProvider`, `LogQueryServiceProvider` and `FilesServiceProvider`
      (optional: each falls back to its package's default service);
    - ui-kit's `ThemeProvider` and `TooltipProvider`, and a `Toaster` for the
      dialogs' success/error notifications;
-   - `EnvironmentScopeProvider scopeId=…`, which namespaces persisted tree state
-     per environment (optional; defaults to one namespace).
+   - `EnvironmentScopeProvider`, which namespaces persisted tree state per
+     environment (optional: without `scopeId` it uses the host's environment
+     key, and without a host one shared namespace).
 2. **Router.** `CatalogExplorer` reads and writes the selection through TanStack
    Router search params, so render it inside a route of a `RouterProvider`.
 3. **Optional capabilities.** Previews, the Delta-log tab and the volume file
