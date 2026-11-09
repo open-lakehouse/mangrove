@@ -61,9 +61,6 @@
     "url": "git+https://github.com/open-lakehouse/mangrove.git",
     "directory": "node/client"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "files": [
     "dist",
     "!dist/**/*.node",

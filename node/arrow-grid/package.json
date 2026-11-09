@@ -9,9 +9,6 @@
     "url": "git+https://github.com/open-lakehouse/mangrove.git",
     "directory": "node/arrow-grid"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "files": [
     "dist",
     "src",

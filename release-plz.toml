@@ -175,7 +175,7 @@ changelog_path = "crates/cli/CHANGELOG.md"
 # held out of crates.io for now. Remove this line to release the `uc` CLI crate.
 release = false
 
-# --- npm packages, released to GitHub Packages ---
+# --- npm packages, released to npmjs.com and GitHub Packages ---
 # Each npm package is versioned through a crate: the NAPI extension itself
 # (node/client) and a placeholder for each pure-TS package
 # (node/unity-catalog-client, node/unity-catalog-ui and the UI leaves it builds
@@ -183,7 +183,7 @@ release = false
 # takes the previous version from the `<name>-v*` tags instead of crates.io, and
 # `publish = false` (which git_only requires) skips `cargo publish`. When one is
 # released, release-plz.yml's `npm` job (js-release.yaml) stamps the version
-# into package.json and publishes to GitHub Packages. None has a Rust API
+# into package.json and publishes to npmjs.com and GitHub Packages. None has a Rust API
 # that cargo-semver-checks could compare. Their `cargo package` pass (run once a
 # tag exists) is safe: none reaches a git dependency (unity-catalog-node's
 # path deps are crates.io-published olai-uc-client/common; the placeholders

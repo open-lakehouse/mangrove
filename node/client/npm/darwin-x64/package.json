@@ -19,8 +19,5 @@
     "type": "git",
     "url": "git+https://github.com/open-lakehouse/mangrove.git",
     "directory": "node/client/npm/darwin-x64"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
   }
 }

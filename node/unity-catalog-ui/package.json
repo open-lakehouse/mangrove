@@ -20,9 +20,6 @@
     "CHANGELOG.md"
   ],
   "sideEffects": false,
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "exports": {
     ".": {
       "source": "./src/index.ts",

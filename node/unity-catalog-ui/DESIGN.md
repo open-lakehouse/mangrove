@@ -10,7 +10,7 @@ volume-files, delta-log), and nothing builds on it.
 
 ## Distribution
 
-An npm package on GitHub Packages, like the leaves it builds on, so a host such
+An npm package (npmjs and GitHub Packages), like the leaves it builds on, so a host such
 as the luminescent-lakehouse desktop shell installs it and mounts the explorer
 as is. It takes the leaves that carry a seam (`unity-catalog-client`, `query-runner`,
 `volume-files`, `delta-log`, `editor`) as peers: their providers and registries are

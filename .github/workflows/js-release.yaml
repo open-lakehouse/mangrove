@@ -1,21 +1,24 @@
 name: js-release
 
-# Publishes the npm packages to GitHub Packages (npm.pkg.github.com). Only
-# GitHub Packages for now (no npmjs) while downstream projects validate the
-# packages.
+# Publishes the npm packages to GitHub Packages (npm.pkg.github.com) and
+# npmjs.com, and attaches each tarball to its GitHub Release.
 #
 # release-plz owns versioning: each npm package is a crate in release-plz.toml
-# (`unity-catalog-node` = the NAPI extension in node/client, `unity-catalog-client`
-# = a placeholder crate in node/unity-catalog-client). release-plz bumps the
+# (`unity-catalog-node` = the NAPI extension in node/client; every pure-TS
+# package = a placeholder crate next to its package.json). release-plz bumps the
 # crate version from conventional commits, writes the CHANGELOG, tags
 # `<crate>-v<version>` and creates the GitHub Release. release-plz.yml then calls
 # this workflow with the npm packages it released this run. package.json
 # versions stay 0.0.0 in git; the released version is stamped in here.
 #
-# Per package: stamp the version, build, (NAPI) build each target binary and
-# publish the per-platform packages, pack, attest the tarballs + binaries
-# (GitHub Packages has no npm provenance), publish, and attach the tarball to the
-# package's GitHub Release.
+# `pack` builds every released package (and, for the NAPI extension, each
+# target binary and its per-platform package) and packs the tarballs once.
+# Three jobs then ship those exact tarballs, each with only the permissions it
+# needs: `github-packages`, `npmjs` (staged trusted publishing, gated on the
+# NPMJS_PUBLISH_ENABLED repo variable) and `github-release` (provenance
+# attestation + release assets). Publishing skips versions a registry already
+# has, so re-runs are safe. No package.json sets publishConfig.registry: the
+# registry is each job's choice.
 #
 # Kill switch: nothing is built or published unless the `JS_PUBLISH_ENABLED`
 # repo variable is "true". A release cut while it was off (or a failed publish)
@@ -36,6 +39,12 @@ on:
         description: Existing release tag to publish, e.g. unity-catalog-node-v0.2.0
         type: string
         required: true
+      npm_bootstrap:
+        description: >-
+          First npmjs.com release of a package only: stage it with the NPM_TOKEN
+          secret, to approve on npmjs.com (see the npmjs job).
+        type: boolean
+        default: false
 
 # Least privilege: grant per job, nothing at the top level.
 permissions: {}
@@ -179,25 +188,21 @@ jobs:
           path: node/client/unitycatalog/codegen/*.node
           if-no-files-found: error
 
-  # --- Publish to GitHub Packages --------------------------------------------
-  # `always()` lets it run when `napi-build` was skipped because only the TS
-  # client was released; it still refuses to run if that build failed.
-  publish:
-    name: Publish (GitHub Packages)
+  # --- Build and pack every released package once ---------------------------
+  # `always()` lets it run when `napi-build` was skipped because no NAPI package
+  # was released; it still refuses to run if that build failed. The registry
+  # jobs below all ship these exact tarballs.
+  pack:
+    name: Build and pack
     needs: [plan, napi-build]
     if: ${{ always() && needs.plan.result == 'success' && (needs.napi-build.result == 'success' || needs.napi-build.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: release # protected env, mirrors release-plz
     permissions:
-      contents: write # attach the tarballs to the GitHub Releases
-      packages: write # publish to GitHub Packages
-      id-token: write # build-provenance attestation
-      attestations: write # build-provenance attestation
+      contents: read
     env:
       PACKAGES: ${{ needs.plan.outputs.packages }}
-      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NAPI: ${{ needs.plan.outputs.napi }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -207,14 +212,6 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.3.14
-
-      # Writes an .npmrc mapping @open-lakehouse to GitHub Packages with
-      # NODE_AUTH_TOKEN.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@open-lakehouse"
 
       - name: Install dependencies
         run: |
@@ -250,70 +247,230 @@ jobs:
 
       # `napi version` syncs the per-platform packages under npm/ to the stamped
       # version, `napi artifacts` copies each downloaded binary into its platform
-      # package, and `napi pre-publish` publishes those platform packages
-      # (registry from their publishConfig) and pins them as optionalDependencies
-      # of the main package, which is packed and published below.
-      - name: Publish NAPI platform packages
+      # package, and `napi pre-publish --skip-optional-publish` pins them as
+      # optionalDependencies of the main package without publishing them: they
+      # are packed below and published by the registry jobs like every other
+      # package, so they reach both registries.
+      - name: Prepare NAPI platform packages
         if: ${{ needs.plan.outputs.napi == 'true' }}
         working-directory: node/client
         run: |
           set -euo pipefail
           bunx napi version
           bunx napi artifacts --output-dir artifacts
-          bunx napi pre-publish -t npm
+          bunx napi pre-publish -t npm --skip-optional-publish
 
+      # Platform packages go into `platform/`, which the registry jobs publish
+      # first, so the main package never points at a binary that isn't there.
       - name: Pack
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/tarballs"
-          for dir in $(jq -r '.[].dir' <<<"$PACKAGES"); do
+          mkdir -p "$RUNNER_TEMP/tarballs/platform"
+          echo '[]' > "$RUNNER_TEMP/tarballs/attach.json"
+          jq -c '.[]' <<<"$PACKAGES" | while read -r p; do
+            dir=$(jq -r .dir <<<"$p")
             (cd "$dir" && bun pm pack --ignore-scripts --destination "$RUNNER_TEMP/tarballs")
+            # Which tarball goes on which GitHub Release (see github-release).
+            tgz="$(jq -r '.name | ltrimstr("@") | gsub("/"; "-")' "$dir/package.json")-$(jq -r .version <<<"$p").tgz"
+            jq --arg tag "$(jq -r .tag <<<"$p")" --arg tgz "$tgz" '. + [{tag: $tag, tgz: $tgz}]' \
+              "$RUNNER_TEMP/tarballs/attach.json" > "$RUNNER_TEMP/attach.json"
+            mv "$RUNNER_TEMP/attach.json" "$RUNNER_TEMP/tarballs/attach.json"
           done
-          ls -l "$RUNNER_TEMP/tarballs"
+          if [ "$NAPI" = true ]; then
+            for dir in node/client/npm/*/; do
+              (cd "$dir" && bun pm pack --ignore-scripts --destination "$RUNNER_TEMP/tarballs/platform")
+            done
+          fi
+          ls -lR "$RUNNER_TEMP/tarballs"
 
       # A packed manifest must not depend on a workspace protocol or on a
-      # sibling's unstamped 0.0.0.
-      - name: Check packed dependency specs
+      # sibling's unstamped 0.0.0, and must not carry a publishConfig registry
+      # (it would override the registry each job publishes to).
+      - name: Check packed manifests
         run: |
           set -euo pipefail
-          for tgz in "$RUNNER_TEMP"/tarballs/*.tgz; do
-            bad=$(tar -xOzf "$tgz" package/package.json | jq -r '
+          for tgz in "$RUNNER_TEMP"/tarballs/*.tgz "$RUNNER_TEMP"/tarballs/platform/*.tgz; do
+            [ -e "$tgz" ] || continue
+            manifest=$(tar -xOzf "$tgz" package/package.json)
+            bad=$(jq -r '
               [.dependencies, .peerDependencies, .optionalDependencies]
               | map(select(. != null) | to_entries[]) | .[]
               | select((.value | startswith("workspace:"))
                   or (.key | startswith("@open-lakehouse/")) and (.value | test("(^|[^0-9.])0\\.0\\.0$")))
-              | "\(.key)@\(.value)"')
+              | "\(.key)@\(.value)"' <<<"$manifest")
             if [ -n "$bad" ]; then
               echo "::error::$(basename "$tgz") has unpublishable dependency specs: $bad"
               exit 1
             fi
+            if [ "$(jq -r '.publishConfig.registry // empty' <<<"$manifest")" != "" ]; then
+              echo "::error::$(basename "$tgz") sets publishConfig.registry"
+              exit 1
+            fi
           done
 
-      # GitHub Packages doesn't support npm provenance, so attest the exact
-      # tarballs (and the platform binaries) instead; consumers verify with
-      # `gh attestation verify <file> -R open-lakehouse/mangrove`.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: npm-tarballs
+          path: ${{ runner.temp }}/tarballs
+          if-no-files-found: error
+          retention-days: 7
+
+  # --- Publish to GitHub Packages --------------------------------------------
+  # No OIDC exchange there, so the job's own short-lived GITHUB_TOKEN publishes.
+  # A version the registry already has is skipped, so re-runs are safe.
+  github-packages:
+    name: Publish to GitHub Packages
+    needs: [plan, pack]
+    if: ${{ always() && needs.pack.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release # protected env, mirrors release-plz
+    permissions:
+      packages: write
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-tarballs
+          path: ${{ runner.temp }}/tarballs
+
+      # Writes an .npmrc mapping @open-lakehouse to GitHub Packages with
+      # NODE_AUTH_TOKEN.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@open-lakehouse"
+          package-manager-cache: false
+
+      - name: Publish
+        # zizmor: ignore[use-trusted-publishing] — npm trusted publishing (OIDC)
+        # exists only for registry.npmjs.org; GitHub Packages authenticates the
+        # job's own ephemeral GITHUB_TOKEN, so no long-lived credential exists.
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for tgz in "$RUNNER_TEMP"/tarballs/platform/*.tgz "$RUNNER_TEMP"/tarballs/*.tgz; do
+            spec=$(tar -xOzf "$tgz" package/package.json | jq -r '"\(.name)@\(.version)"')
+            if npm view "$spec" version >/dev/null 2>&1; then
+              echo "$spec is already on GitHub Packages; skipping."
+              continue
+            fi
+            npm publish "$tgz"
+          done
+
+  # --- Publish to npmjs.com --------------------------------------------------
+  # Trusted publishing (OIDC) with npm provenance. The trusted publisher only
+  # allows *staged* publishing: this job runs `npm stage publish`, and a version
+  # goes live once a maintainer approves it on npmjs.com (or `npm stage
+  # approve`) with 2FA. npm checks the *calling* workflow, so each package's
+  # trusted publisher is registered for `release-plz.yml` with the `release`
+  # environment.
+  #
+  # Gated on the `NPMJS_PUBLISH_ENABLED` repo variable, so releases keep going
+  # to GitHub Packages until every package is bootstrapped. The one-time
+  # bootstrap of a new package name (OIDC cannot create a package): store an npm
+  # token that can stage to @open-lakehouse as NPM_TOKEN in the `release`
+  # environment, run this workflow from `main` with the package's tag and
+  # `npm_bootstrap=true`, approve the staged versions on npmjs.com, register the
+  # trusted publisher (release-plz.yml, environment `release`, stage publish
+  # only) and delete the token. npm expires a trusted publisher that hasn't
+  # published within 2 days of being registered, so register it shortly before
+  # the package's next release.
+  npmjs:
+    name: Publish to npmjs.com
+    needs: [plan, pack]
+    if: ${{ always() && needs.pack.result == 'success' && (vars.NPMJS_PUBLISH_ENABLED == 'true' || inputs.npm_bootstrap) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The trusted publisher on npmjs.com is bound to this environment.
+    environment: release
+    permissions:
+      id-token: write # npm trusted publishing (OIDC) + provenance
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-tarballs
+          path: ${{ runner.temp }}/tarballs
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      # `npm stage publish` needs npm >= 11.15.0, newer than Node 24 may bundle.
+      - name: Install an npm that can stage
+        # zizmor: ignore[adhoc-packages] — the npm CLI itself, pinned to an
+        # exact release.
+        run: npm install --global npm@11.21.0
+
+      # `npm view` only sees approved versions: a re-run before a staged
+      # version is approved stages it again, which npm rejects. Approve the
+      # pending version instead.
+      - name: Stage
+        env:
+          BOOTSTRAP: ${{ inputs.npm_bootstrap }}
+          # npm prefers the OIDC exchange and only falls back to NODE_AUTH_TOKEN
+          # when it fails, which is the case before a trusted publisher exists.
+          # Outside the bootstrap the token is empty, so only OIDC can stage.
+          # zizmor: ignore[use-trusted-publishing] — creating a package is the
+          # one thing OIDC cannot do. The token only stages; a maintainer
+          # promotes the version on npmjs.com with 2FA.
+          NODE_AUTH_TOKEN: ${{ inputs.npm_bootstrap && secrets.NPM_TOKEN || '' }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for tgz in "$RUNNER_TEMP"/tarballs/platform/*.tgz "$RUNNER_TEMP"/tarballs/*.tgz; do
+            spec=$(tar -xOzf "$tgz" package/package.json | jq -r '"\(.name)@\(.version)"')
+            if npm view "$spec" version >/dev/null 2>&1; then
+              echo "$spec is already on npmjs.com; skipping."
+              continue
+            fi
+            npm stage publish "$tgz" --access public --provenance
+            echo "::notice::Staged $spec. Approve it on npmjs.com (or \`npm stage approve\`) with 2FA to publish it."
+          done
+          if [ "$BOOTSTRAP" = true ]; then
+            echo "::notice::Bootstrap: after approving, register each package's trusted publisher and delete NPM_TOKEN."
+          fi
+
+  # --- Attest and attach to the GitHub Releases -------------------------------
+  # Key-free SLSA build provenance over the exact bytes both registries receive
+  # (GitHub Packages can't carry npm provenance); verify with
+  # `gh attestation verify <file> -R open-lakehouse/mangrove`. release-plz
+  # already created each package's GitHub Release (with its changelog); the
+  # main tarball is attached to it.
+  github-release:
+    name: Attest and attach to the GitHub Releases
+    needs: [plan, pack]
+    if: ${{ always() && needs.pack.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: write # attach the tarballs to the GitHub Releases
+      id-token: write # OIDC for build-provenance attestations
+      attestations: write # write the attestation to the attestations store
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-tarballs
+          path: ${{ runner.temp }}/tarballs
+
       - name: Attest build provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
             ${{ runner.temp }}/tarballs/*.tgz
-            node/client/npm/*/*.node
+            ${{ runner.temp }}/tarballs/platform/*.tgz
 
-      - name: Publish tarballs
-        run: |
-          set -euo pipefail
-          for tgz in "$RUNNER_TEMP"/tarballs/*.tgz; do
-            npm publish "$tgz"
-          done
-
-      # release-plz already created each package's GitHub Release (with its
-      # changelog); attach the published tarball to it.
       - name: Attach tarballs to the GitHub Releases
         run: |
           set -euo pipefail
-          jq -c '.[]' <<<"$PACKAGES" | while read -r p; do
-            dir=$(jq -r .dir <<<"$p")
-            tag=$(jq -r .tag <<<"$p")
-            tgz="$RUNNER_TEMP/tarballs/$(jq -r '.name | ltrimstr("@") | gsub("/"; "-")' "$dir/package.json")-$(jq -r .version <<<"$p").tgz"
-            gh release upload "$tag" "$tgz" --clobber -R "$GITHUB_REPOSITORY"
+          jq -c '.[]' "$RUNNER_TEMP/tarballs/attach.json" | while read -r a; do
+            gh release upload "$(jq -r .tag <<<"$a")" "$RUNNER_TEMP/tarballs/$(jq -r .tgz <<<"$a")" \
+              --clobber -R "$GITHUB_REPOSITORY"
           done
