@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-client-v0.0.3...unity-catalog-client-v0.0.4) - 2026-11-09
+
+### Added
+
+- *(node)* publish the Unity Catalog UI packages (#298)
+- fall back to the @open-lakehouse/host binding (#296)
+
 ## [0.0.3](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-client-v0.0.2...unity-catalog-client-v0.0.3) - 2026-10-31
 
 ### Added

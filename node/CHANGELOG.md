@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.3](https://github.com/open-lakehouse/mangrove/compare/uc-app-v0.0.2...uc-app-v0.0.3) - 2026-11-09
+
+### Added
+
+- *(node)* publish the Unity Catalog UI packages (#298)
+- default the environment scope to the host (#297)
+- fall back to the @open-lakehouse/host binding (#296)
+
+### Changed
+
+- *(node)* replace node/ui-kit with trestle's @open-lakehouse/ui-kit (#295)
+
 ## [0.0.2](https://github.com/open-lakehouse/mangrove/compare/uc-app-v0.0.1...uc-app-v0.0.2) - 2026-10-31
 
 ### Added
