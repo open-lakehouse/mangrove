@@ -23,6 +23,7 @@
     "dist",
     "**/*.stories.tsx",
     "**/*.stories.ts",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ]
 }

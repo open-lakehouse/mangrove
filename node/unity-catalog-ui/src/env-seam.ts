@@ -7,13 +7,14 @@
 // shared primitive (@open-lakehouse/ui-kit) or the generic client factory
 // (./api).
 //
-// Rather than reach into the host's context, the package OWNS a small scope
-// context here and the host feeds it: mount `<EnvironmentScopeProvider
-// scopeId={activeEnvironmentId}>` (see the app's UC wiring). When no provider is
-// mounted the scope falls back to a stable constant, so tests and Storybook
-// stories render without a wrapper and behave exactly as before. To embed the
-// package elsewhere, supply whatever id represents the embedder's "current
-// scope" (or nothing, to share one namespace). See ../README.md.
+// The scope is, in order: the `scopeId` of the nearest
+// `<EnvironmentScopeProvider>`, else the environment key of the nearest
+// `@open-lakehouse/host` host (`<HostProvider>`, else `registerHost`), else a
+// stable constant. So a host that implements the contract needs no wiring, an
+// embedder without one can still pass its own id (the standalone app passes
+// "uc"), and tests and stories without either share one namespace. See
+// ../README.md.
+import { useOptionalEnvironmentKey } from "@open-lakehouse/unity-catalog-client/react";
 import {
   createContext,
   createElement,
@@ -21,34 +22,38 @@ import {
   useContext,
 } from "react";
 
-/** Namespace used when no host scope is provided (single shared namespace). */
+/** Namespace used when neither a scope nor a host is provided. */
 const DEFAULT_SCOPE_ID = "default";
 
-const EnvironmentScopeContext = createContext<string>(DEFAULT_SCOPE_ID);
+const EnvironmentScopeContext = createContext<string | null>(null);
 
 /**
  * Provide the id that namespaces per-environment UC UI state (currently tree
- * expansion). The host mounts this with its active-environment id.
+ * expansion). Without `scopeId`, the scope is the host's environment key, so it
+ * changes on every environment switch.
  */
 export function EnvironmentScopeProvider({
   scopeId,
   children,
 }: {
-  scopeId: string;
+  scopeId?: string;
   children: ReactNode;
 }) {
+  const hostKey = useOptionalEnvironmentKey();
   return createElement(
     EnvironmentScopeContext.Provider,
-    { value: scopeId },
+    { value: scopeId ?? hostKey ?? DEFAULT_SCOPE_ID },
     children,
   );
 }
 
 /**
- * The id used to namespace per-environment UI state (currently tree expansion).
- * Falls back to a stable constant when no {@link EnvironmentScopeProvider} is
- * mounted.
+ * The id used to namespace per-environment UI state (currently tree
+ * expansion): the nearest {@link EnvironmentScopeProvider}'s scope, else the
+ * host's environment key, else a stable constant.
  */
 export function useEnvironmentScopeId(): string {
-  return useContext(EnvironmentScopeContext);
+  const provided = useContext(EnvironmentScopeContext);
+  const hostKey = useOptionalEnvironmentKey();
+  return provided ?? hostKey ?? DEFAULT_SCOPE_ID;
 }
