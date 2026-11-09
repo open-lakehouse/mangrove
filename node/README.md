@@ -10,15 +10,15 @@ this page is the map.
 |---|---|---|---|
 | `@open-lakehouse/unity-catalog-node` | `client/` | Native (NAPI) Unity Catalog client for Node.js | published (GitHub Packages) |
 | `@open-lakehouse/unity-catalog-client` | `unity-catalog-client/` | Typed REST client (`openapi-fetch`, framework-free) + React-Query hooks (`./react`) | published (GitHub Packages) |
-| `@open-lakehouse/data-grid` | `data-grid/` | Arrow-backed virtualized result grid | publish-ready, [`DESIGN.md`](data-grid/DESIGN.md) (private) |
-| `@open-lakehouse/editor` | `editor/` | Monaco SQL editor with catalog-aware completion | publish-ready, [`DESIGN.md`](editor/DESIGN.md) (private) |
-| `@open-lakehouse/query` | `query/` | Query-preview seam (`QueryRunner`) | publish-ready, [`DESIGN.md`](query/DESIGN.md) (private) |
-| `@open-lakehouse/files` | `files/` | Volume-files seam (`FilesRunner`) | publish-ready, [`DESIGN.md`](files/DESIGN.md) (private) |
+| `@open-lakehouse/arrow-grid` | `arrow-grid/` | Arrow-backed virtualized result grid | published (GitHub Packages), [`DESIGN.md`](arrow-grid/DESIGN.md) |
+| `@open-lakehouse/editor` | `editor/` | Multi-language Monaco editor (SQL diagnostics + catalog-aware completion, markdown) and a multi-tab file-editing shell | published (GitHub Packages), [`DESIGN.md`](editor/DESIGN.md) |
+| `@open-lakehouse/query-runner` | `query-runner/` | Query-preview seam (`QueryRunner`) | published (GitHub Packages), [`DESIGN.md`](query-runner/DESIGN.md) |
+| `@open-lakehouse/volume-files` | `volume-files/` | Volume-files seam (`FilesRunner`) | published (GitHub Packages), [`DESIGN.md`](volume-files/DESIGN.md) |
 | `@open-lakehouse/files-connect` | `files-connect/` | ConnectRPC bindings for the files service | publish-ready, [`DESIGN.md`](files-connect/DESIGN.md) (private) |
-| `@open-lakehouse/log-query` | `log-query/` | Delta-log views + log-query seam | publish-ready, [`DESIGN.md`](log-query/DESIGN.md) (private) |
+| `@open-lakehouse/delta-log` | `delta-log/` | Delta-log views + log-query seam | published (GitHub Packages), [`DESIGN.md`](delta-log/DESIGN.md) |
 | `@open-lakehouse/query-wasm` | `query-wasm/` | In-browser (wasm) `QueryRunner` | workspace-internal |
 | `@open-lakehouse/files-wasm` | `files-wasm/` | In-browser (wasm) `FilesRunner` | workspace-internal |
-| `@open-lakehouse/unity-catalog-ui` | `unity-catalog-ui/` | Unity Catalog browser components (presentation only) | shadcn registry blocks (#210), [`DESIGN.md`](unity-catalog-ui/DESIGN.md); workspace source package |
+| `@open-lakehouse/unity-catalog-ui` | `unity-catalog-ui/` | Unity Catalog browser components (presentation only) | published (GitHub Packages), [`DESIGN.md`](unity-catalog-ui/DESIGN.md) |
 | `@open-lakehouse/uc-app` | `app/` | The bundled SPA served by `olai-uc-server`; composes everything | never published |
 
 The primitives and the design-token contract come from trestle's
@@ -29,24 +29,25 @@ the host app supplies the one copy.
 ## Dependency direction
 
 ```
-ui-kit ◄── data-grid ◄── query ◄──────── query-wasm
-   ▲           ▲                              │
-   │           └──── log-query ◄──────────────┘
+ui-kit ◄── arrow-grid ◄── query-runner ◄──── query-wasm
+   ▲           ▲                                   │
+   │           └──── delta-log ◄───────────────────┘
    ├── editor
    │
-files ◄── files-wasm ──► files-connect
+volume-files ◄── files-wasm ──► files-connect
    ▲
 unity-catalog-client
    ▲
-unity-catalog-ui ──► (ui-kit, data-grid, editor, files, log-query, query)
+unity-catalog-ui ──► (ui-kit, arrow-grid, editor, volume-files, delta-log, query-runner)
    ▲
 uc-app ──► everything
 ```
 
 Leaves never import composed packages. The rules are enforced by
-`noRestrictedImports` overrides in [`biome.json`](biome.json): data-grid, query,
-files, log-query, editor and the wasm/connect packages must not import
-`unity-catalog-ui` (and the editor must not import query or data-grid). Swappable
+`noRestrictedImports` overrides in [`biome.json`](biome.json): arrow-grid,
+query-runner, volume-files, delta-log, editor and the wasm/connect packages
+must not import `unity-catalog-ui` (and the editor must not import query-runner
+or arrow-grid). Swappable
 behavior crosses package boundaries only through seams: `QueryRunner`,
 `FilesRunner`, `CatalogProvider`, and the UC client's fetch transport.
 
@@ -79,9 +80,6 @@ pointing at `src/`:
   `customConditions`) to consume the TypeScript sources, or run
   `bun run build:packages` here first. Without either, the link resolves to a
   `dist/` that doesn't exist.
-
-`unity-catalog-ui` is the exception: it isn't built or packaged, because hosts get
-it as shadcn blocks that copy its files in (see its `DESIGN.md`).
 
 Every UI package's `DESIGN.md` is its consumer contract: peers, the host setup
 (tokens + Tailwind `@source`), its seams, a usage example, and do/don't rules.

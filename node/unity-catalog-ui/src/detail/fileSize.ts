@@ -1,7 +1,7 @@
 // Human-readable byte-size formatting for the volume Files explorer's rows.
 //
 // A UI presentation concern local to unity-catalog — NOT part of the
-// @open-lakehouse/files seam contract (that ships raw `fileSize: number` bytes).
+// @open-lakehouse/volume-files seam contract (that ships raw `fileSize: number` bytes).
 // Kept in its own module (rather than inline in VolumeEditor.tsx) so it's
 // unit-testable without a DOM. Promote it to the seam only if a second consumer
 // appears.

@@ -1,4 +1,4 @@
-import { hasLogQueryRunner } from "@open-lakehouse/log-query";
+import { hasLogQueryRunner } from "@open-lakehouse/delta-log";
 import {
   Tabs,
   TabsContent,

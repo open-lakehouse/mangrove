@@ -1,9 +1,8 @@
 {
   "name": "@open-lakehouse/editor",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0",
   "type": "module",
-  "description": "Monaco SQL editor with catalog-aware completion for React.",
+  "description": "Embeddable Monaco editor for React: SQL with live diagnostics and catalog-aware completion, markdown and plain text, plus a multi-tab file-editing shell (./session) with autosave and a host-wired run command.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

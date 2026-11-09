@@ -17,12 +17,12 @@ map and dependency rules stay in [`README.md`](README.md).
 | Server state | TanStack Query through `openapi-react-query`; keys derive from shared init builders in [`unity-catalog-client/src/uc/queries.ts`](unity-catalog-client/src/uc/queries.ts), mutations invalidate by predicate | TanStack Query with tuned defaults (`lib/query-client.ts`) | TanStack Query, root key `"headwaters-read"` |
 | `QueryClient` config | bare `new QueryClient()` in [`app/src/main.tsx`](app/src/main.tsx) — `staleTime: 0`, refetch on mount and focus | `staleTime` 60s, `gcTime` 5m, no focus refetch, `keepPreviousData` | `staleTime` 10s |
 | Polling | none | none (environment health only) | none |
-| Arrow results | `ArrowResultStore` (data-grid) driven by `PreviewRun` / `LogQueryRun` over `useSyncExternalStore` | its own `RunController` (per tab, rAF-coalesced) over the same `ArrowResultStore` | — |
+| Arrow results | `ArrowResultStore` (arrow-grid) driven by `PreviewRun` / `LogQueryRun` over `useSyncExternalStore` | its own `RunController` (per tab, rAF-coalesced) over the same `ArrowResultStore` | — |
 | Seams | module-level `register*` / `has*` singletons: `QueryRunner`, `LogQueryRunner`, `FilesRunner`, `CatalogProvider` | its own copies of the query seam, catalog completion, Monaco setup and files store, plus host seams (environment, notebook, file picker) | one transport seam |
-| UI primitives | `ui-kit` | `ui-kit`, `data-grid`, `unity-catalog-client` | own button, raw `hsl(var(--…))` |
+| UI primitives | `ui-kit` | `ui-kit`, `arrow-grid`, `unity-catalog-client` | own button, raw `hsl(var(--…))` |
 | Cross-service | none; detail tabs hard-coded in [`detail/TableDetail.tsx`](unity-catalog-ui/src/detail/TableDetail.tsx), [`DetailPane.tsx`](unity-catalog-ui/src/DetailPane.tsx) is an if-chain per kind | iframes (MLflow, marimo) | none; datasets keyed by OpenLineage `{namespace, name}` |
 
-The leaf packages (`data-grid`, `query`, `log-query`, `files`, `editor`) are in
+The leaf packages (`arrow-grid`, `query-runner`, `delta-log`, `volume-files`, `editor`) are in
 good shape: UC-agnostic, abort-aware, with streaming stores behind
 `useSyncExternalStore`. The problems sit at the edges: global seams,
 hydrofoil's parallel copies, and logic shipped inside copy-in blocks.
@@ -91,12 +91,12 @@ context, so current hosts keep working unchanged and migrate when they want.
 
 Hydrofoil's `RunController` (abort on rerun, one render per animation frame,
 lives as long as its tab, disposed with its environment through a session
-registry) is the general version of what `query`'s `PreviewRun` and
-`log-query`'s `LogQueryRun` do for previews. It moves into `@open-lakehouse/query`
+registry) is the general version of what `query-runner`'s `PreviewRun` and
+`delta-log`'s `LogQueryRun` do for previews. It moves into `@open-lakehouse/query-runner`
 as the run primitive; `usePreview` and `useLogPreview` are rebuilt on it.
 
-With that in place hydrofoil drops its parallel copies and consumes `query`,
-`editor` and `files` directly. That also brings it onto the editor's pinned
+With that in place hydrofoil drops its parallel copies and consumes `query-runner`,
+`editor` and `volume-files` directly. That also brings it onto the editor's pinned
 Monaco pair (see [`editor/DESIGN.md`](editor/DESIGN.md)) and off the old
 `@open-lakehouse/unity-catalog` package name.
 
@@ -169,8 +169,8 @@ duplication.
    namespaced keys, `initialData`-based list→detail seeding.
 2. **`LakehouseServices` context** (#218) — service map + capabilities, `register*`
    kept as the fallback layer.
-3. **Upstream the run controller** (#219) — move it into `query`, rebuild the preview
-   hooks on it, migrate hydrofoil onto `query` / `editor` / `files`.
+3. **Upstream the run controller** (#219) — move it into `query-runner`, rebuild the preview
+   hooks on it, migrate hydrofoil onto `query-runner` / `editor` / `volume-files`.
 4. **Headless UC hooks** (#220) — extract `unity-catalog-react`, slim the blocks.
 5. **Detail extensions and lineage** (#221) — extension slots, then the lineage
    contribution once dataset identity is settled.

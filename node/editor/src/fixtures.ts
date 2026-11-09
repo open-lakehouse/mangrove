@@ -1,6 +1,6 @@
 // A hardcoded `CatalogProvider` for stories, tests, and dev — shipped behind the
 // `./fixtures` subexport so it never lands in a production consumer's bundle
-// (mirrors log-query's `./testing` and query-wasm's `./stub` conventions).
+// (mirrors delta-log's `./testing` and query-wasm's `./stub` conventions).
 //
 // Register it with `registerCatalogProvider(fixtureCatalogProvider)` to get
 // catalog-aware completion without a live backend.

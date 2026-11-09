@@ -66,7 +66,7 @@ jobs:
         run: |
           set -euo pipefail
           # Crate -> workspace dir. Keep in sync with release-plz.toml.
-          dirs='{"unity-catalog-node":"node/client","unity-catalog-client":"node/unity-catalog-client"}'
+          dirs='{"unity-catalog-node":"node/client","unity-catalog-client":"node/unity-catalog-client","arrow-grid":"node/arrow-grid","editor":"node/editor","volume-files":"node/volume-files","delta-log":"node/delta-log","query-runner":"node/query-runner","unity-catalog-ui":"node/unity-catalog-ui"}'
           if [ -n "${TAG:-}" ]; then
             # workflow_dispatch: one existing `<crate>-v<version>` tag.
             crate="${TAG%-v*}"
@@ -221,18 +221,12 @@ jobs:
           bun run scripts/strip-bun-lock-proxy.ts --check
           bun install --frozen-lockfile
 
-      # package.json carries 0.0.0 in git; the crate version release-plz just
-      # released is the npm version.
+      # package.json carries 0.0.0 in git; each package's crate version is its npm
+      # version. Stamp every package, not only the released ones, so a
+      # `workspace:` dependency on an unreleased sibling packs as that sibling's
+      # published version instead of 0.0.0.
       - name: Stamp versions
-        run: |
-          set -euo pipefail
-          jq -c '.[]' <<<"$PACKAGES" | while read -r p; do
-            dir=$(jq -r .dir <<<"$p")
-            version=$(jq -r .version <<<"$p")
-            jq --arg v "$version" '.version = $v' "$dir/package.json" > "$RUNNER_TEMP/package.json"
-            mv "$RUNNER_TEMP/package.json" "$dir/package.json"
-            echo "$(jq -r .name "$dir/package.json")@$version"
-          done
+        run: bun run scripts/stamp-npm-versions.ts --expect "$PACKAGES"
 
       # node/client's `build` script compiles a debug binary; its JS/declaration
       # build is `tsc` (the release binaries come from `napi-build`).
@@ -276,6 +270,24 @@ jobs:
             (cd "$dir" && bun pm pack --ignore-scripts --destination "$RUNNER_TEMP/tarballs")
           done
           ls -l "$RUNNER_TEMP/tarballs"
+
+      # A packed manifest must not depend on a workspace protocol or on a
+      # sibling's unstamped 0.0.0.
+      - name: Check packed dependency specs
+        run: |
+          set -euo pipefail
+          for tgz in "$RUNNER_TEMP"/tarballs/*.tgz; do
+            bad=$(tar -xOzf "$tgz" package/package.json | jq -r '
+              [.dependencies, .peerDependencies, .optionalDependencies]
+              | map(select(. != null) | to_entries[]) | .[]
+              | select((.value | startswith("workspace:"))
+                  or (.key | startswith("@open-lakehouse/")) and (.value | test("(^|[^0-9.])0\\.0\\.0$")))
+              | "\(.key)@\(.value)"')
+            if [ -n "$bad" ]; then
+              echo "::error::$(basename "$tgz") has unpublishable dependency specs: $bad"
+              exit 1
+            fi
+          done
 
       # GitHub Packages doesn't support npm provenance, so attest the exact
       # tarballs (and the platform binaries) instead; consumers verify with

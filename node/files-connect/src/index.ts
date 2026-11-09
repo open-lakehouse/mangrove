@@ -8,7 +8,7 @@
 // backend split: unary metadata RPCs go through the in-wasm connect dispatcher as
 // binary proto, and file bytes bypass it via native calls. `@open-lakehouse/
 // files-wasm` wires this to a Web Worker and adapts the client to the
-// `@open-lakehouse/files` seam; the (separately-updated) editor consumes the
+// `@open-lakehouse/volume-files` seam; the (separately-updated) editor consumes the
 // client later.
 
 export { createFilesClient, type FilesClient } from "./client.js";

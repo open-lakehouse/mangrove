@@ -8,10 +8,10 @@ const config: StorybookConfig = {
   framework: "@storybook/react-vite",
   stories: [
     "../../unity-catalog-ui/src/**/*.stories.tsx",
-    "../../data-grid/src/**/*.stories.tsx",
+    "../../arrow-grid/src/**/*.stories.tsx",
     "../../editor/src/**/*.stories.tsx",
-    "../../log-query/src/**/*.stories.tsx",
-    "../../query/src/**/*.stories.tsx",
+    "../../delta-log/src/**/*.stories.tsx",
+    "../../query-runner/src/**/*.stories.tsx",
   ],
   core: { disableTelemetry: true },
 };

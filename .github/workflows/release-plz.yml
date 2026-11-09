@@ -197,7 +197,7 @@ jobs:
           RELEASES: ${{ steps.release.outputs.releases }}
         run: |
           releases=$(printf '%s' "${RELEASES:-[]}" \
-            | jq -c '[.[] | select(.package_name == "unity-catalog-node" or .package_name == "unity-catalog-client")]')
+            | jq -c '[.[] | select(.package_name | IN("unity-catalog-node", "unity-catalog-client", "arrow-grid", "editor", "volume-files", "delta-log", "query-runner", "unity-catalog-ui"))]')
           echo "npm packages released this run: $releases"
           echo "releases=$releases" >> "$GITHUB_OUTPUT"
 

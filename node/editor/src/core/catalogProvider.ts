@@ -3,7 +3,7 @@
 // depending on where those names come from (a Unity Catalog REST client, a
 // fixture, a downstream service).
 //
-// This mirrors the query-runner seam in `@open-lakehouse/query`: a module
+// This mirrors the query-runner seam in `@open-lakehouse/query-runner`: a module
 // singleton `current`, a `registerCatalogProvider` swap point, a `has*` gate,
 // and a late-binding `getCatalogProvider` the completion layer always calls.
 //

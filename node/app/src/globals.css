@@ -10,9 +10,9 @@
    `@open-lakehouse/ui-kit` comes from trestle as a built package, linked into
    this app's node_modules, so scan its build output. */
 @source "../node_modules/@open-lakehouse/ui-kit/dist";
-@source "../../data-grid/src";
+@source "../../arrow-grid/src";
 @source "../../editor/src";
-@source "../../log-query/src";
+@source "../../delta-log/src";
 @source "../../unity-catalog-ui/src";
 
 @theme inline {
@@ -45,7 +45,7 @@
   --color-status-done: hsl(var(--status-done));
   --color-status-in-progress: hsl(var(--status-in-progress));
   --color-status-blocked: hsl(var(--status-blocked));
-  /* Delta-log action-slot hues (data-grid ActionsLog). add/remove reuse the
+  /* Delta-log action-slot hues (delta-log ActionsLog). add/remove reuse the
      reserved good/critical status hues; the four neutral slots take distinct
      categorical hues. Validated (adjacent CVD ΔE ≥ 8, contrast, chroma) via the
      dataviz palette validator; always paired with an icon + slot label so hue

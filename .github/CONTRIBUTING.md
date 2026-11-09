@@ -163,7 +163,7 @@ new deployable service or CLI, keep to this contract so the two stay aligned:
   `tower-http::ServeDir` (SPA `index.html` fallback), gated by `ui.serve` (default on) /
   `--no-ui`, and optionally mounted under `ui.base_path` for a gateway sub-path. The SPA is
   the `node/app` package (`@open-lakehouse/uc-app`), a thin Vite app consuming the shared,
-  reusable `@open-lakehouse/*` component packages (`unity-catalog`, `ui-kit`, `data-grid`,
+  reusable `@open-lakehouse/*` component packages (`unity-catalog`, `ui-kit`, `arrow-grid`,
   `unity-catalog-client`). Build it with `just ui-build`; run the server serving both API
   and UI on one origin with `just rest-ui`. The Docker image bakes `node/app/dist` into
   `./web`. *(Publishing the shared component packages to npm is deferred while names
@@ -302,10 +302,16 @@ with its tag. No npmjs publishing yet.
   (`cargo package -p <crate> --list --allow-dirty` shows the set).
 - A new publishable npm package needs a crate (placeholder if it has no Rust), a
   `[[package]]` entry in `release-plz.toml`, its dir in `js-release.yaml`'s crate → dir
-  map, and the crate name in `release-plz.yml`'s npm detect step. Workspace packages
-  depend on it with `workspace:*`.
-- The UI packages stay `private: true`; don't add npmjs publishing or un-private one
-  without a maintainer asking for it.
+  map, the crate name in `release-plz.yml`'s npm detect step, and, if the server
+  image bundles it, the crate name in the server's `changelog_include`. Workspace
+  packages depend on it with `workspace:*`. Before packing, js-release runs
+  `scripts/stamp-npm-versions.ts`, which stamps every package's crate version into
+  its `package.json` and pins `workspace:` specs to it (`bun pm pack` would
+  otherwise take `0.0.0` from `bun.lock`).
+- Published: `unity-catalog-node`, `unity-catalog-client`, `unity-catalog-ui` and
+  the UI packages it builds on (`arrow-grid`, `editor`, `volume-files`, `delta-log`,
+  `query-runner`). `files-connect`, the wasm packages and `uc-app` stay `private: true`.
+  Don't add npmjs publishing or un-private one without a maintainer asking for it.
 
 **First-publish bootstrap.** crates.io OIDC trusted publishing cannot create a crate name
 that has never existed. Each `olai-uc-*` crate therefore needs a one-time token bootstrap

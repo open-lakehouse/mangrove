@@ -17,8 +17,8 @@ type VolumeView = "overview" | "files";
 
 // The volume file editor is additive and dark-launched behind a flag (mirrors
 // the preview/delta-log gating on TableDetail). Vite statically replaces
-// import.meta.env.*; undefined/"false" → off.
-const FILES_ENABLED = import.meta.env.VITE_ENABLE_VOLUME_FILES === "true";
+// import.meta.env.*; outside Vite it is undefined, so the flag reads off.
+const FILES_ENABLED = import.meta.env?.VITE_ENABLE_VOLUME_FILES === "true";
 
 export function VolumeDetail({ fullName }: { fullName: string }) {
   const { data: volume, isLoading, error } = useVolumeDetail(fullName);

@@ -306,6 +306,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrow-grid"
+version = "0.0.1"
+
+[[package]]
 name = "arrow-ipc"
 version = "59.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2188,6 +2192,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "delta-log"
+version = "0.0.1"
+
+[[package]]
 name = "deltalake-core"
 version = "2.0.0"
 source = "git+https://github.com/roeap/delta-rs?rev=4b2af2d34409649ccf762312160405acdeaafea0#4b2af2d34409649ccf762312160405acdeaafea0"
@@ -2381,6 +2389,10 @@ checksum = "78e4f79b296fbaab6ce2e22d52cb4c7f010fe0ebe7a32e34fa25885fd797bd02"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "editor"
+version = "0.0.1"
 
 [[package]]
 name = "either"
@@ -4992,6 +5004,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "query-runner"
+version = "0.0.1"
+
+[[package]]
 name = "quick-xml"
 version = "0.37.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6824,6 +6840,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "unity-catalog-ui"
+version = "0.0.1"
+
+[[package]]
 name = "unitycatalog-acceptance"
 version = "0.0.1"
 dependencies = [
@@ -6958,6 +6978,10 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
+
+[[package]]
+name = "volume-files"
+version = "0.0.1"
 
 [[package]]
 name = "walkdir"
