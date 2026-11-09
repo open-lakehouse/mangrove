@@ -6,8 +6,10 @@
    package's `exports` map), so Tailwind's automatic source detection does not
    scan them from this app. Register their source so the utility classes they
    use are generated. Paths are relative to this stylesheet (node/app/src/) and
-   reach across to the sibling workspace packages under node/. */
-@source "../../ui-kit/src";
+   reach across to the sibling workspace packages under node/.
+   `@open-lakehouse/ui-kit` comes from trestle as a built package, linked into
+   this app's node_modules, so scan its build output. */
+@source "../node_modules/@open-lakehouse/ui-kit/dist";
 @source "../../data-grid/src";
 @source "../../editor/src";
 @source "../../log-query/src";

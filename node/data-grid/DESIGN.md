@@ -15,7 +15,7 @@ deduped copy in the host).
 The grid is styled with Tailwind utilities over the ui-kit token contract and
 ships no CSS of its own. The host must:
 
-1. Define the design tokens from [`ui-kit/DESIGN.md`](../ui-kit/DESIGN.md) on
+1. Define the design tokens from [ui-kit's `DESIGN.md`](https://github.com/open-lakehouse/trestle/blob/ui-kit-v0.0.1/node/ui-kit/DESIGN.md) on
    `:root` and `.dark`, and map them with `@theme inline`.
 2. Let Tailwind generate this package's classes, plus ui-kit's:
 

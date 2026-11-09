@@ -22,7 +22,7 @@ Dependencies include **exact pins** `monaco-editor@0.54.0` +
    monaco-sql-languages' docs instead.
 2. **Theme.** Render inside ui-kit's `ThemeProvider`; the editor follows its
    light/dark mode.
-3. **Tailwind.** Define the ui-kit tokens ([`ui-kit/DESIGN.md`](../ui-kit/DESIGN.md))
+3. **Tailwind.** Define the ui-kit tokens ([ui-kit's `DESIGN.md`](https://github.com/open-lakehouse/trestle/blob/ui-kit-v0.0.1/node/ui-kit/DESIGN.md))
    and scan the package:
 
    ```css

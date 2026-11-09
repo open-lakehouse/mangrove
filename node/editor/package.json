@@ -44,7 +44,6 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
-    "@open-lakehouse/ui-kit": "^0.1.0",
     "dompurify": "^3.4.16",
     "dt-sql-parser": "^4.5.1",
     "lucide-react": "^1.55.0",
@@ -53,10 +52,12 @@
     "monaco-sql-languages": "1.2.1"
   },
   "peerDependencies": {
+    "@open-lakehouse/ui-kit": "0.0.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@open-lakehouse/ui-kit": "https://github.com/open-lakehouse/trestle/releases/download/ui-kit-v0.0.1/open-lakehouse-ui-kit-0.0.1.tgz",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "react": "^19.3.0",

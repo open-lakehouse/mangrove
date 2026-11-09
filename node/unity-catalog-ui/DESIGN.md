@@ -41,7 +41,7 @@ Inside this workspace it remains a source package that `node/app` imports.
    browser only light up once the host registers their runners
    (`registerQueryRunner`, `registerLogQueryRunner`, `registerFilesRunner`). SQL
    completion in the volume editor needs `registerCatalogProvider(ucCatalogProvider)`.
-4. **Tailwind.** Define the ui-kit tokens ([`ui-kit/DESIGN.md`](../ui-kit/DESIGN.md))
+4. **Tailwind.** Define the ui-kit tokens ([ui-kit's `DESIGN.md`](https://github.com/open-lakehouse/trestle/blob/ui-kit-v0.0.1/node/ui-kit/DESIGN.md))
    plus the `--action-*` palette. The copied block files live in the host, so its
    Tailwind build scans them already; scan **every npm package they render**:
 

@@ -14,7 +14,7 @@ Dependencies: `@open-lakehouse/data-grid`, `@open-lakehouse/ui-kit`, `apache-arr
 ## Host setup
 
 Styled with Tailwind utilities over the ui-kit tokens (see
-[`ui-kit/DESIGN.md`](../ui-kit/DESIGN.md)), and it uses the categorical
+[ui-kit's `DESIGN.md`](https://github.com/open-lakehouse/trestle/blob/ui-kit-v0.0.1/node/ui-kit/DESIGN.md)), and it uses the categorical
 `--action-*` palette the reference host defines (`node/app/src/globals.css`).
 Scan this package and the packages it renders:
 

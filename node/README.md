@@ -10,7 +10,6 @@ this page is the map.
 |---|---|---|---|
 | `@open-lakehouse/unity-catalog-node` | `client/` | Native (NAPI) Unity Catalog client for Node.js | published (GitHub Packages) |
 | `@open-lakehouse/unity-catalog-client` | `unity-catalog-client/` | Typed REST client (`openapi-fetch`, framework-free) + React-Query hooks (`./react`) | published (GitHub Packages) |
-| `@open-lakehouse/ui-kit` | `ui-kit/` | Headless, theme-agnostic primitives (Radix + CVA + Tailwind) and the design-token contract | publish-ready, [`DESIGN.md`](ui-kit/DESIGN.md) (private) |
 | `@open-lakehouse/data-grid` | `data-grid/` | Arrow-backed virtualized result grid | publish-ready, [`DESIGN.md`](data-grid/DESIGN.md) (private) |
 | `@open-lakehouse/editor` | `editor/` | Monaco SQL editor with catalog-aware completion | publish-ready, [`DESIGN.md`](editor/DESIGN.md) (private) |
 | `@open-lakehouse/query` | `query/` | Query-preview seam (`QueryRunner`) | publish-ready, [`DESIGN.md`](query/DESIGN.md) (private) |
@@ -21,6 +20,11 @@ this page is the map.
 | `@open-lakehouse/files-wasm` | `files-wasm/` | In-browser (wasm) `FilesRunner` | workspace-internal |
 | `@open-lakehouse/unity-catalog-ui` | `unity-catalog-ui/` | Unity Catalog browser components (presentation only) | shadcn registry blocks (#210), [`DESIGN.md`](unity-catalog-ui/DESIGN.md); workspace source package |
 | `@open-lakehouse/uc-app` | `app/` | The bundled SPA served by `olai-uc-server`; composes everything | never published |
+
+The primitives and the design-token contract come from trestle's
+[`@open-lakehouse/ui-kit`](https://github.com/open-lakehouse/trestle/tree/main/node/ui-kit),
+installed from its GitHub release tarball. The UI packages take it as a peer, so
+the host app supplies the one copy.
 
 ## Dependency direction
 
@@ -87,6 +91,6 @@ How the packages compose across services (state, seams, extensions) is in
 ## Theming
 
 UI packages are headless with respect to theme: the host app defines the CSS
-variables listed in [`ui-kit/DESIGN.md`](ui-kit/DESIGN.md) and points Tailwind
+variables listed in [ui-kit's `DESIGN.md`](https://github.com/open-lakehouse/trestle/blob/ui-kit-v0.0.1/node/ui-kit/DESIGN.md) and points Tailwind
 at the package sources. [`app/src/globals.css`](app/src/globals.css) is the
 reference host.
