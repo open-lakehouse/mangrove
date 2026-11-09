@@ -15,6 +15,8 @@ export {
 export * from "./index.js";
 // Client injection context.
 export { UnityCatalogProvider, useUnityCatalog } from "./uc/context.js";
+// Host-contract helpers.
+export { useOptionalEnvironmentKey } from "./uc/host.js";
 // Mutations + cache invalidators.
 export * from "./uc/mutations.js";
 // Read hooks + query helpers + list keys.

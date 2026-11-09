@@ -11,9 +11,10 @@
 //
 // Pluggability: UC *coverage* is fixed — the hooks encode the UC API surface the
 // components are written against — so the swappable seam is the transport
-// UNDERNEATH the client, not the client API. A host redirects every request by
-// registering a fetch via `setDefaultUnityCatalogFetch` (or by passing a custom
-// `fetch` when constructing a client). A future in-process (wasm) UC client
+// UNDERNEATH the client, not the client API. A host that implements the
+// `@open-lakehouse/host` contract binds `unity-catalog` and the default client
+// follows it; `setDefaultUnityCatalogFetch` stays as the explicit override, and
+// a custom `fetch` can be passed when constructing a client. A future in-process (wasm) UC client
 // plugs in as a fetch-shaped adapter here, with no change to the hooks or the
 // components. See ../README.md.
 
@@ -23,6 +24,7 @@ export {
   createUnityCatalogFetchClient,
   fetchClient,
   setDefaultUnityCatalogFetch,
+  UNITY_CATALOG_MODULE_ID,
   type UnityCatalogFetchClient,
 } from "./fetch.js";
 // Name helpers.
