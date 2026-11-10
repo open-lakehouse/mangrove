@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4](https://github.com/open-lakehouse/mangrove/compare/uc-app-v0.0.3...uc-app-v0.0.4) - 2026-11-10
+
+### Build
+
+- build on @open-lakehouse/host 0.0.2 (#304)
+
 ## [0.0.3](https://github.com/open-lakehouse/mangrove/compare/uc-app-v0.0.2...uc-app-v0.0.3) - 2026-11-09
 
 ### Added

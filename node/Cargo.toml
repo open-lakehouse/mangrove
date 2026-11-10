@@ -19,7 +19,7 @@
 
 [package]
 name = "uc-app"
-version = "0.0.3"
+version = "0.0.4"
 description = "Release placeholder for the Unity Catalog web UI bundled into the server image"
 publish = false
 readme = "README.md"

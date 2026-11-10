@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.14](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.13...olai-uc-server-v0.0.14) - 2026-11-10
+
+### Added
+
+- read-only file and diff viewers (#303)
+
+### Build
+
+- build on @open-lakehouse/host 0.0.2 (#304)
+
 ## [0.0.13](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.12...olai-uc-server-v0.0.13) - 2026-11-09
 
 ### Added
