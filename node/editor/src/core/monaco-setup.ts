@@ -10,7 +10,8 @@
 //
 //  2. Install `self.MonacoEnvironment.getWorker`, returning the right worker per
 //     language `label`: the `monaco-sql-languages` pgsql worker for `pgsql`,
-//     otherwise the base editor worker (diff/links/etc.). Both are wired via
+//     Monaco's JSON language worker for `json` (the read-only viewers show
+//     JSON files), otherwise the base editor worker (diff/links/etc.). Both are wired via
 //     Vite's `?worker` import so each bundles as its own worker chunk.
 //
 //  3. Register the pgsql language contribution and enable its features:
@@ -31,6 +32,9 @@ import * as monaco from "monaco-editor";
 // Base Monaco editor worker (the editorWorkerService — diff/links/etc.). Wired
 // via Vite's `?worker` import, which bundles it as a separate worker chunk.
 import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+// Monaco's JSON language service (validation, folding, outline). Its features
+// call into this worker by name, so the base worker can't stand in for it.
+import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 // The monaco-sql-languages pgsql worker (ANTLR PostgreSQL parser: diagnostics +
 // the completion parse context). `?worker` bundles it into its own chunk.
 import PgSqlWorker from "monaco-sql-languages/esm/languages/pgsql/pgsql.worker.js?worker";
@@ -57,6 +61,9 @@ export function ensureMonacoSetup(): void {
     getWorker(_workerId: string, label: string) {
       if (label === LanguageIdEnum.PG) {
         return new PgSqlWorker();
+      }
+      if (label === "json") {
+        return new JsonWorker();
       }
       return new EditorWorker();
     },

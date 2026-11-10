@@ -15,7 +15,8 @@ Biome `noRestrictedImports` rule (`node/biome.json`).
 
 - **`.` (core)** — the Monaco lifecycle, owned cleanly in one place: run-once
   setup + worker wiring (`ensureMonacoSetup`), the model registry, the persistent
-  `MonacoHost` editor surface, the theme bridge, the SQL language (highlight +
+  `MonacoHost` editor surface, the read-only `ReadOnlyFile` / `DiffHost` viewers,
+  the theme bridge, the SQL language (highlight +
   diagnostics worker + catalog completion), and the `CatalogProvider` seam.
   Import this alone if you only need an editor surface.
 - **`./session`** — a multi-tab file-editing shell built strictly on top of core:
@@ -77,6 +78,18 @@ Render inside `@open-lakehouse/ui-kit`'s `ThemeProvider` so the editor's
 
 React is a peer dependency. The app must resolve a single copy (dedupe) or hooks
 break with "Invalid hook call".
+
+### 6. Read-only viewers
+
+`ReadOnlyFile` (`path`, `value`) shows one file, and `DiffHost` (`path`,
+`original?`, `modified?`) one file's change side by side (inline when narrow;
+an absent side is empty). Both are read-only and take their language from the
+path's extension (`monacoLanguageOfPath`: YAML, JSON, TOML and dotenv as INI,
+shell, Dockerfile, SQL highlighting without the pgsql worker, markdown) and
+their theme from `useMonacoTheme`. They own their models, apart from the
+session's model registry. JSON gets Monaco's JSON worker (a third `?worker`
+chunk); a CSP must allow same-origin workers (`worker-src`, or `script-src`
+when it is absent), and none of the workers needs `blob:`.
 
 ### Known failure modes
 

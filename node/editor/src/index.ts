@@ -1,6 +1,7 @@
 // Public surface of `@open-lakehouse/editor` — the CORE layer (Monaco lifecycle,
-// SQL language, theme, and the catalog seam). The multi-tab session shell is a
-// separate subexport, `@open-lakehouse/editor/session`; dev fixtures live at
+// SQL language, theme, the catalog seam, and read-only file and diff viewers).
+// The multi-tab session shell is a separate subexport,
+// `@open-lakehouse/editor/session`; dev fixtures live at
 // `@open-lakehouse/editor/fixtures`.
 //
 // This package is a LEAF: it never imports @open-lakehouse/unity-catalog-ui (nor
@@ -21,12 +22,15 @@ export {
 // The catalog-aware SQL completion service (already wired by ensureMonacoSetup;
 // exported for hosts that build their own setup).
 export { catalogCompletionService } from "./core/completionService.js";
+// Read-only viewers: one file, and one file's change.
+export { DiffHost, type DiffHostProps } from "./core/DiffHost.js";
 // Path → language classification.
 export {
   type EditorLanguage,
   extensionOf,
   languageOf,
   MONACO_LANGUAGE_ID,
+  monacoLanguageOfPath,
 } from "./core/language.js";
 // The persistent editor surface.
 export { MonacoHost, type MonacoHostProps } from "./core/MonacoHost.js";
@@ -45,6 +49,11 @@ export {
 } from "./core/models.js";
 // Run-once Monaco bootstrap (loader + workers + SQL features).
 export { ensureMonacoSetup } from "./core/monaco-setup.js";
+export {
+  READ_ONLY_OPTIONS,
+  ReadOnlyFile,
+  type ReadOnlyFileProps,
+} from "./core/ReadOnlyFile.js";
 // Theme bridge to ui-kit's useTheme.
 export { type MonacoThemeId, useMonacoTheme } from "./core/useMonacoTheme.js";
 
