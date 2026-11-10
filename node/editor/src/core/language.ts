@@ -33,3 +33,33 @@ export function languageOf(path: string): EditorLanguage {
   const ext = extensionOf(path);
   return BY_EXTENSION[ext] ?? "plaintext";
 }
+
+/** Monaco language ids for read-only viewing (`ReadOnlyFile`, `DiffHost`), by
+ *  extension. Broader than {@link languageOf}, which only classifies what the
+ *  session can edit. Monaco has no TOML, so it and dotenv files read as INI. SQL
+ *  is Monaco's own `sql` (Monarch highlighting only), not `pgsql`, so viewing
+ *  generated SQL starts no worker and shows no diagnostics. */
+const VIEW_BY_EXTENSION: Record<string, string> = {
+  yaml: "yaml",
+  yml: "yaml",
+  json: "json",
+  toml: "ini",
+  ini: "ini",
+  env: "ini",
+  sh: "shell",
+  bash: "shell",
+  zsh: "shell",
+  dockerfile: "dockerfile",
+  sql: "sql",
+  md: "markdown",
+  markdown: "markdown",
+};
+
+/** The Monaco language id to view `path` in (`plaintext` for unknown types). */
+export function monacoLanguageOfPath(path: string): string {
+  const name = path.replace(/\/+$/, "").split("/").pop() ?? "";
+  if (name === "Dockerfile" || name.startsWith("Dockerfile."))
+    return "dockerfile";
+  if (name === ".env" || name.startsWith(".env.")) return "ini";
+  return VIEW_BY_EXTENSION[extensionOf(path)] ?? "plaintext";
+}
