@@ -40,7 +40,7 @@
   "peerDependencies": {
     "@open-lakehouse/delta-log": "workspace:*",
     "@open-lakehouse/editor": "workspace:*",
-    "@open-lakehouse/host": "0.0.1",
+    "@open-lakehouse/host": "0.0.2",
     "@open-lakehouse/query-runner": "workspace:*",
     "@open-lakehouse/ui-kit": "0.0.1",
     "@open-lakehouse/unity-catalog-client": "workspace:*",
@@ -51,7 +51,7 @@
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
-    "@open-lakehouse/host": "https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.1/open-lakehouse-host-0.0.1.tgz",
+    "@open-lakehouse/host": "https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.2/open-lakehouse-host-0.0.2.tgz",
     "@open-lakehouse/ui-kit": "https://github.com/open-lakehouse/trestle/releases/download/ui-kit-v0.0.1/open-lakehouse-ui-kit-0.0.1.tgz",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-router": "^1.170.42",
