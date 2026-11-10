@@ -22,7 +22,7 @@
         "@open-lakehouse/delta-log": "workspace:*",
         "@open-lakehouse/editor": "workspace:*",
         "@open-lakehouse/files-wasm": "workspace:*",
-        "@open-lakehouse/host": "https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.1/open-lakehouse-host-0.0.1.tgz",
+        "@open-lakehouse/host": "https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.2/open-lakehouse-host-0.0.2.tgz",
         "@open-lakehouse/query-runner": "workspace:*",
         "@open-lakehouse/query-wasm": "workspace:*",
         "@open-lakehouse/ui-kit": "https://github.com/open-lakehouse/trestle/releases/download/ui-kit-v0.0.1/open-lakehouse-ui-kit-0.0.1.tgz",
@@ -208,7 +208,7 @@
         "openapi-fetch": "^0.17.0",
       },
       "devDependencies": {
-        "@open-lakehouse/host": "https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.1/open-lakehouse-host-0.0.1.tgz",
+        "@open-lakehouse/host": "https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.2/open-lakehouse-host-0.0.2.tgz",
         "@tanstack/react-query": "^5.104.1",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
@@ -220,7 +220,7 @@
         "vite": "^8.3.4",
       },
       "peerDependencies": {
-        "@open-lakehouse/host": "0.0.1",
+        "@open-lakehouse/host": "0.0.2",
         "@tanstack/react-query": "^5.100.14",
         "openapi-react-query": "^0.5.4",
         "react": "^19.2.6",
@@ -246,7 +246,7 @@
         "sonner": "^2.0.8",
       },
       "devDependencies": {
-        "@open-lakehouse/host": "https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.1/open-lakehouse-host-0.0.1.tgz",
+        "@open-lakehouse/host": "https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.2/open-lakehouse-host-0.0.2.tgz",
         "@open-lakehouse/ui-kit": "https://github.com/open-lakehouse/trestle/releases/download/ui-kit-v0.0.1/open-lakehouse-ui-kit-0.0.1.tgz",
         "@tanstack/react-query": "^5.104.1",
         "@tanstack/react-router": "^1.170.42",
@@ -260,7 +260,7 @@
       "peerDependencies": {
         "@open-lakehouse/delta-log": "workspace:*",
         "@open-lakehouse/editor": "workspace:*",
-        "@open-lakehouse/host": "0.0.1",
+        "@open-lakehouse/host": "0.0.2",
         "@open-lakehouse/query-runner": "workspace:*",
         "@open-lakehouse/ui-kit": "0.0.1",
         "@open-lakehouse/unity-catalog-client": "workspace:*",
@@ -736,7 +736,7 @@
 
     "@open-lakehouse/files-wasm": ["@open-lakehouse/files-wasm@workspace:node/files-wasm"],
 
-    "@open-lakehouse/host": ["@open-lakehouse/host@https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.1/open-lakehouse-host-0.0.1.tgz", { "peerDependencies": { "react": "^19.0.0" }, "optionalPeers": ["react"] }, "sha512-K4YsO8MfWcrNcvR0349IdC3ctbwP/YEPvuavbSD6PO5WkD5nQgrsI8ChSIcze/OeqL25l5aHexgq4outJuAmkw=="],
+    "@open-lakehouse/host": ["@open-lakehouse/host@https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.2/open-lakehouse-host-0.0.2.tgz", { "peerDependencies": { "react": "^19.0.0" }, "optionalPeers": ["react"] }, "sha512-+c5XzbnxAR6UynI1lpDGmQNWnFlRw6UzLl/25wTMY8VKxrUOLZWC6Pr7bhjql3PMQW7ttU/eW1vd71bk44YDQQ=="],
 
     "@open-lakehouse/query-runner": ["@open-lakehouse/query-runner@workspace:node/query-runner"],
 
@@ -2355,10 +2355,6 @@
     "@open-lakehouse/delta-log/@open-lakehouse/ui-kit": ["@open-lakehouse/ui-kit@0.0.1", "", { "dependencies": { "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "lucide-react": "^1.55.0", "radix-ui": "^1.7.0", "sonner": "^2.0.8", "tailwind-merge": "^3.6.0" }, "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }, "sha512-tmUvHAH7a6Hi2wYXhUH9dhrRIYgFOQWSWx3RpLImpD4Jgb26jXLAgt4/Btv3umOOsP/Q85jofIe6b8aER6STOg=="],
 
     "@open-lakehouse/editor/@open-lakehouse/ui-kit": ["@open-lakehouse/ui-kit@0.0.1", "", { "dependencies": { "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "lucide-react": "^1.55.0", "radix-ui": "^1.7.0", "sonner": "^2.0.8", "tailwind-merge": "^3.6.0" }, "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }, "sha512-tmUvHAH7a6Hi2wYXhUH9dhrRIYgFOQWSWx3RpLImpD4Jgb26jXLAgt4/Btv3umOOsP/Q85jofIe6b8aER6STOg=="],
-
-    "@open-lakehouse/unity-catalog-client/@open-lakehouse/host": ["@open-lakehouse/host@0.0.1", "", { "peerDependencies": { "react": "^19.0.0" }, "optionalPeers": ["react"] }, "sha512-K4YsO8MfWcrNcvR0349IdC3ctbwP/YEPvuavbSD6PO5WkD5nQgrsI8ChSIcze/OeqL25l5aHexgq4outJuAmkw=="],
-
-    "@open-lakehouse/unity-catalog-ui/@open-lakehouse/host": ["@open-lakehouse/host@0.0.1", "", { "peerDependencies": { "react": "^19.0.0" }, "optionalPeers": ["react"] }, "sha512-K4YsO8MfWcrNcvR0349IdC3ctbwP/YEPvuavbSD6PO5WkD5nQgrsI8ChSIcze/OeqL25l5aHexgq4outJuAmkw=="],
 
     "@open-lakehouse/unity-catalog-ui/@open-lakehouse/ui-kit": ["@open-lakehouse/ui-kit@0.0.1", "", { "dependencies": { "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "lucide-react": "^1.55.0", "radix-ui": "^1.7.0", "sonner": "^2.0.8", "tailwind-merge": "^3.6.0" }, "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }, "sha512-tmUvHAH7a6Hi2wYXhUH9dhrRIYgFOQWSWx3RpLImpD4Jgb26jXLAgt4/Btv3umOOsP/Q85jofIe6b8aER6STOg=="],
 
