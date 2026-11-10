@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2](https://github.com/open-lakehouse/mangrove/compare/editor-v0.0.1...editor-v0.0.2) - 2026-11-10
+
+### Added
+
+- read-only file and diff viewers (#303)
+
 ## [0.0.1](https://github.com/open-lakehouse/mangrove/releases/tag/editor-v0.0.1) - 2026-11-09
 
 ### Added
