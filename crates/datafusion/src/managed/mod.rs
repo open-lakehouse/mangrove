@@ -15,8 +15,8 @@
 //! - **delta-rs read path**: upstream delta-rs `main` (2.0, delta-rs#4809) reads catalog-managed
 //!   tables — `Snapshot::try_new_with_engine_and_catalog` takes our UC log tail as a
 //!   `CatalogLogTail`, and `CatalogManaged` / `VacuumProtocolCheck` are supported reader
-//!   features. The `roeap/delta-rs` `olai/catalog-managed` pin adds only a public
-//!   `to_delta_predicate` (log explorer pushdown); drop the fork once 2.0 ships with it.
+//!   features. The `roeap/delta-rs` `olai/catalog-managed-2f01b956` pin only re-exports
+//!   `to_delta_predicate` publicly (log explorer pushdown); drop the fork once 2.0 ships with it.
 //! - **delta-rs write path**: delta-rs can't write catalog-managed tables yet (no ICT writes,
 //!   `CatalogManaged` is not a writer feature, no catalog implementation of its
 //!   `logstore::Committer` trait — delta-rs#4549). Until it does, creates and appends go

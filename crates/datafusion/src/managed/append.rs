@@ -5,7 +5,7 @@
 //! 1. `loadTable` → the catalog's ratified commit tail + latest version.
 //! 2. Build a kernel snapshot from that tail (catalog is source of truth), over a
 //!    credentialed object store + engine.
-//! 3. `snapshot.transaction(committer, engine)` → write parquet via
+//! 3. `snapshot.update_table(Write, ..).build(engine, committer)` → write parquet via
 //!    `DefaultEngine::write_parquet` → `add_files` → `commit`. The committer stages the
 //!    commit and ratifies it via UC `updateTable add-commit`.
 //!
@@ -43,7 +43,7 @@ use std::time::Duration;
 use datafusion::arrow::array::RecordBatch;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
 use delta_kernel::snapshot::{Snapshot as KernelSnapshot, SnapshotRef};
-use delta_kernel::transaction::CommitResult;
+use delta_kernel::transaction::{CommitResult, UpdateTableOperation};
 use delta_kernel::{Engine, Version};
 use delta_kernel_default_engine::DefaultEngineBuilder;
 use tracing::{debug, info, warn};
@@ -107,13 +107,13 @@ pub async fn append_to_managed_table(
         let committer =
             UnityCatalogCommitter::new(client.clone(), catalog, schema, table, table_id.clone());
         let mut txn = snapshot
-            .transaction(Box::new(committer.clone()), &engine)
-            .map_err(CreateManagedTableError::Kernel)?
-            .with_engine_info(engine_info);
+            .update_table(UpdateTableOperation::Write, engine_info, true)
+            .build(&engine, Box::new(committer.clone()))
+            .map_err(CreateManagedTableError::Kernel)?;
 
         let write_context = txn
             .write_state()
-            .and_then(|state| state.unpartitioned_write_context())
+            .and_then(|state| state.write_context_builder().build())
             .map_err(CreateManagedTableError::Kernel)?;
         let add_metadata = engine
             .write_parquet(&ArrowEngineData::new(batch.clone()), &write_context)
@@ -122,7 +122,7 @@ pub async fn append_to_managed_table(
         txn.add_files(add_metadata);
 
         let outcome = match txn.commit(&engine) {
-            Ok(CommitResult::CommittedTransaction(c)) => {
+            Ok(CommitResult::Committed(c)) => {
                 let version = c.commit_version();
                 info!(version, attempt, "committed managed-table append");
                 let post = c.post_commit_snapshot().cloned();
@@ -133,7 +133,7 @@ pub async fn append_to_managed_table(
                 return Ok(version);
             }
             // 409: a concurrent writer ratified our version first. Reload + rebuild + retry.
-            Ok(CommitResult::ConflictedTransaction(c)) => {
+            Ok(CommitResult::Conflicted(c)) => {
                 warn!(
                     conflict_version = c.conflict_version(),
                     attempt, "commit conflict; reloading and retrying"
@@ -141,7 +141,7 @@ pub async fn append_to_managed_table(
                 RetryOutcome::Retry
             }
             // Retryable (kernel IO error): recover the typed UC error and dispatch on it.
-            Ok(CommitResult::RetryableTransaction(rt)) => {
+            Ok(CommitResult::Retryable(rt)) => {
                 handle_typed_retry(
                     &client, catalog, schema, table, &committer, &engine, attempt, rt.error,
                 )
@@ -192,7 +192,7 @@ async fn handle_typed_retry(
     committer: &UnityCatalogCommitter,
     engine: &dyn Engine,
     attempt: u32,
-    kernel_err: delta_kernel::Error,
+    kernel_err: delta_kernel::KernelError,
 ) -> Result<RetryOutcome, CreateManagedTableError> {
     let Some(uc_err) = committer.take_last_error() else {
         // No typed UC error → a kernel-side / IO failure. Retry while attempts remain.

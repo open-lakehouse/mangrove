@@ -73,7 +73,7 @@ pub enum CreateManagedTableError {
     #[error("unity catalog client error: {0}")]
     Client(#[from] unitycatalog_client::Error),
     #[error("delta kernel error: {0}")]
-    Kernel(#[from] delta_kernel::Error),
+    Kernel(#[from] delta_kernel::KernelError),
     #[error("object store error: {0}")]
     ObjectStore(#[from] object_store::Error),
     #[error("{0}")]
@@ -137,7 +137,7 @@ pub async fn create_managed_table(
         table_id.clone(),
     );
 
-    let mut builder = create_table(location.as_str(), kernel_schema, engine_info)
+    let mut builder = create_table(location.as_str(), kernel_schema, engine_info, true)
         .with_table_properties(get_required_properties_for_disk(&table_id));
     if !partition_columns.is_empty() {
         builder = builder.with_data_layout(DataLayout::partitioned(partition_columns.clone()));
@@ -146,13 +146,13 @@ pub async fn create_managed_table(
         .build(&engine, Box::new(committer))?
         .commit(&engine)?
     {
-        CommitResult::CommittedTransaction(c) => c,
-        CommitResult::ConflictedTransaction(_) => {
+        CommitResult::Committed(c) => c,
+        CommitResult::Conflicted(_) => {
             return Err(CreateManagedTableError::other(
                 "version 0 already exists at the staging location",
             ));
         }
-        CommitResult::RetryableTransaction(_) => {
+        CommitResult::Retryable(_) => {
             return Err(CreateManagedTableError::other(
                 "retryable error writing version 0 commit",
             ));

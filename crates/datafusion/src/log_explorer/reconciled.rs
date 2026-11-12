@@ -46,7 +46,7 @@ use delta_kernel::engine::arrow_conversion::TryIntoArrow as _;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
 use delta_kernel::scan::{Scan, ScanMetadata, scan_row_schema};
 use delta_kernel::snapshot::Snapshot;
-use delta_kernel::{DeltaResult, Engine};
+use delta_kernel::{Engine, KernelResult};
 use futures::Stream;
 use url::Url;
 
@@ -253,14 +253,14 @@ impl ExecutionPlan for ReconciledLogExec {
 
 struct ReconciledLogStream {
     schema: SchemaRef,
-    input: Box<dyn Iterator<Item = DeltaResult<ScanMetadata>> + Send>,
+    input: Box<dyn Iterator<Item = KernelResult<ScanMetadata>> + Send>,
     projection: Option<Vec<usize>>,
 }
 
 impl ReconciledLogStream {
     fn new(
         schema: SchemaRef,
-        input: Box<dyn Iterator<Item = DeltaResult<ScanMetadata>> + Send>,
+        input: Box<dyn Iterator<Item = KernelResult<ScanMetadata>> + Send>,
         projection: Option<Vec<usize>>,
     ) -> Self {
         Self {

@@ -15,7 +15,7 @@ license = "Apache-2.0"
 repository = "https://github.com/open-lakehouse/mangrove"
 readme = "README.md"
 # Floor set by the dependency tree: deltalake-core 2.0 (delta-rs main) requires
-# rustc 1.95.0 (buoyant_kernel 0.28 needs 1.88). Keep CI's toolchain pin >= this.
+# rustc 1.95.0 (buoyant_kernel 0.30 needs 1.88). Keep CI's toolchain pin >= this.
 rust-version = "1.95.0"
 # Crates are versioned independently in each crate's own `[package].version`
 # (the release-plz convention), so there is intentionally no workspace-wide
@@ -31,31 +31,33 @@ keywords = [
 
 [workspace.dependencies]
 # The Delta stack: the published `buoyant_kernel` (the Buoyant Data distribution of
-# delta-kernel-rs) plus delta-rs. `deltalake-core` 1.1 depends on `buoyant_kernel`
+# delta-kernel-rs) plus delta-rs. `deltalake-core` 2.0 depends on `buoyant_kernel`
 # from crates.io, so depending on the same published crate here makes the kernel
 # `Snapshot` / `Engine` / `Committer` types unify between our crates and delta-rs.
 # The `package` aliases keep every `delta_kernel::` / `delta_kernel_default_engine::`
 # path unchanged. `default-features = false` + an explicit `arrow-59` keeps the
-# kernel on the same arrow major as datafusion 55 / deltalake-core 1.1.
-delta_kernel = { package = "buoyant_kernel", version = "0.28.1", default-features = false, features = [
+# kernel on the same arrow major as datafusion 55 / deltalake-core 2.0.
+delta_kernel = { package = "buoyant_kernel", version = "0.30.1", default-features = false, features = [
   "internal-api",
   "default-engine-base",
   "arrow-59",
 ] }
-delta_kernel_default_engine = { package = "buoyant_kernel_engine", version = "0.28.0", default-features = false, features = [
+delta_kernel_default_engine = { package = "buoyant_kernel_engine", version = "0.30.1", default-features = false, features = [
   "arrow-59",
   "rustls",
 ] }
 # deltalake-core is the ONE remaining git dep: the roeap fork's
-# `olai/catalog-managed` branch = upstream delta-rs `main` @807b9c03 (2.0.0-dev,
-# which has the catalog-managed read path: `Snapshot::try_new_with_engine_and_catalog`
-# + `CatalogManaged` / `VacuumProtocolCheck` reader support, delta-rs#4809) plus
-# one commit making `to_delta_predicate` public. Switch to the crates.io release once
+# `olai/catalog-managed-2f01b956` branch = upstream delta-rs `main` @2f01b956 (2.0.0-dev,
+# on buoyant_kernel 0.30, with the catalog-managed read path:
+# `Snapshot::try_new_with_engine_and_catalog` + `CatalogManaged` / `VacuumProtocolCheck`
+# reader support, delta-rs#4809) plus one commit re-exporting
+# `deltalake_kernel_executor::expressions::to_delta_predicate` from
+# `deltalake_core::delta_datafusion`. Switch to the crates.io release once
 # 2.0 ships with that export. Pinned by immutable `rev`. `version =` matches the
 # fork (release-plz#2595); 2.0.0 is not on crates.io yet, which is fine while
 # every dependent (datafusion, acceptance, py client) is
 # `release = false`.
-deltalake-core = { version = "2.0.0", git = "https://github.com/roeap/delta-rs", rev = "4b2af2d34409649ccf762312160405acdeaafea0", features = [
+deltalake-core = { version = "2.0.0", git = "https://github.com/roeap/delta-rs", rev = "fa1dff783053bf7fbc3df6b09a776d9b3f2b80f0", features = [
   "datafusion",
   "cloud",
 ] }
