@@ -22,7 +22,7 @@ use delta_kernel::committer::{
     CommitMetadata, CommitResponse, CommitType, Committer, PublishMetadata,
 };
 use delta_kernel::{
-    DeltaResult, DeltaResultIterator, Engine, Error as DeltaError, FilteredEngineData,
+    Engine, FilteredEngineData, KernelError as DeltaError, KernelResult, KernelResultIterator,
 };
 use tracing::{debug, info};
 use unitycatalog_client::DeltaV1Client;
@@ -135,7 +135,7 @@ impl UnityCatalogCommitter {
     }
 
     /// Validate protocol features + metadata properties for a UC catalog-managed table.
-    fn validate_catalog_managed_state(&self, commit_metadata: &CommitMetadata) -> DeltaResult<()> {
+    fn validate_catalog_managed_state(&self, commit_metadata: &CommitMetadata) -> KernelResult<()> {
         require!(
             commit_metadata.commit_type() != CommitType::UpgradeToCatalogManaged,
             "upgrade to catalog-managed is not supported"
@@ -192,7 +192,7 @@ impl UnityCatalogCommitter {
     /// To lift this limitation, derive the metadata/protocol/domain update actions from
     /// `commit_metadata` and append them to the `DeltaUpdateTableRequest.updates` next to the
     /// `add-commit` in [`commit_version_non_zero`](Self::commit_version_non_zero).
-    fn validate_no_alter_table_changes(commit_metadata: &CommitMetadata) -> DeltaResult<()> {
+    fn validate_no_alter_table_changes(commit_metadata: &CommitMetadata) -> KernelResult<()> {
         require!(
             !commit_metadata.has_protocol_change(),
             "schema/protocol evolution on a catalog-managed table is not yet supported: this \
@@ -220,9 +220,9 @@ impl UnityCatalogCommitter {
     fn commit_version_0(
         &self,
         engine: &dyn Engine,
-        actions: DeltaResultIterator<'_, FilteredEngineData>,
+        actions: KernelResultIterator<'_, FilteredEngineData>,
         commit_metadata: &CommitMetadata,
-    ) -> DeltaResult<CommitResponse> {
+    ) -> KernelResult<CommitResponse> {
         self.validate_catalog_managed_state(commit_metadata)?;
         let published = commit_metadata.published_commit_path()?;
         match engine
@@ -243,9 +243,9 @@ impl UnityCatalogCommitter {
     fn commit_version_non_zero(
         &self,
         engine: &dyn Engine,
-        actions: DeltaResultIterator<'_, FilteredEngineData>,
+        actions: KernelResultIterator<'_, FilteredEngineData>,
         commit_metadata: CommitMetadata,
-    ) -> DeltaResult<CommitResponse> {
+    ) -> KernelResult<CommitResponse> {
         self.validate_catalog_managed_state(&commit_metadata)?;
         Self::validate_no_alter_table_changes(&commit_metadata)?;
 
@@ -340,9 +340,9 @@ impl Committer for UnityCatalogCommitter {
     fn commit(
         &self,
         engine: &dyn Engine,
-        actions: DeltaResultIterator<'_, FilteredEngineData>,
+        actions: KernelResultIterator<'_, FilteredEngineData>,
         commit_metadata: CommitMetadata,
-    ) -> DeltaResult<CommitResponse> {
+    ) -> KernelResult<CommitResponse> {
         if commit_metadata.version() == 0 {
             return self.commit_version_0(engine, actions, &commit_metadata);
         }
@@ -353,7 +353,7 @@ impl Committer for UnityCatalogCommitter {
         true
     }
 
-    fn publish(&self, engine: &dyn Engine, publish_metadata: PublishMetadata) -> DeltaResult<()> {
+    fn publish(&self, engine: &dyn Engine, publish_metadata: PublishMetadata) -> KernelResult<()> {
         // Publish = copy each ratified staged commit to its published `_delta_log/<v>.json`
         // path (atomic / put-if-absent). An already-published version is not an error.
         for catalog_commit in publish_metadata.commits_to_publish() {

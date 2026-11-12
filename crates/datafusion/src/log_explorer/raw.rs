@@ -49,7 +49,7 @@ use delta_kernel::engine::arrow_conversion::TryIntoArrow as _;
 use delta_kernel::engine::arrow_data::ArrowEngineData;
 use delta_kernel::log_replay::ActionsBatch;
 use delta_kernel::snapshot::Snapshot;
-use delta_kernel::{DeltaResult, Engine, Predicate, PredicateRef};
+use delta_kernel::{Engine, KernelResult, Predicate, PredicateRef};
 use deltalake_core::delta_datafusion::to_delta_predicate;
 use futures::Stream;
 use url::Url;
@@ -192,7 +192,7 @@ impl RawProjection {
 
     /// The projected kernel action schema to hand to `read_actions` — the
     /// pushdown that prunes checkpoint parquet columns and row groups.
-    fn read_schema(&self) -> DeltaResult<delta_kernel::schema::SchemaRef> {
+    fn read_schema(&self) -> KernelResult<delta_kernel::schema::SchemaRef> {
         get_all_actions_schema().project(&self.read_actions)
     }
 }
@@ -361,7 +361,7 @@ fn read_raw_actions(
     table: &Url,
     plan: &RawProjection,
     meta_predicate: Option<PredicateRef>,
-) -> DeltaResult<Vec<RecordBatch>> {
+) -> KernelResult<Vec<RecordBatch>> {
     let snapshot = Snapshot::builder_for(table.as_str()).build(engine)?;
     let read_schema = plan.read_schema()?;
     // Same schema for commits and checkpoints; the kernel derives the
@@ -406,7 +406,7 @@ fn read_raw_actions(
         let options = RecordBatchOptions::new().with_row_count(Some(num_rows));
         let batch =
             RecordBatch::try_new_with_options(plan.output_schema.clone(), projected, &options)
-                .map_err(|e| delta_kernel::Error::generic(e.to_string()))?;
+                .map_err(|e| delta_kernel::KernelError::generic(e.to_string()))?;
         out.push(batch);
     }
     Ok(out)
