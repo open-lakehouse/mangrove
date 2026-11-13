@@ -937,3 +937,48 @@ async fn temporary_path_credentials_reject_unparsable_location() {
         "{err:?}"
     );
 }
+
+#[tokio::test]
+async fn staging_credentials_are_bound_to_the_reservation_creator() {
+    // Clones share state, so "bob" sees alice's reservation.
+    let alice = InMemoryDeltaBackend::new().with_principal("alice");
+    let bob = alice.clone().with_principal("bob");
+    let staging = alice
+        .create_staging_table(
+            schema_path(),
+            DeltaCreateStagingTableRequest { name: "t".into() },
+            (),
+        )
+        .await
+        .unwrap();
+
+    assert!(
+        alice
+            .get_staging_table_credentials(staging.table_id.clone(), ())
+            .await
+            .is_ok()
+    );
+    let err = bob
+        .get_staging_table_credentials(staging.table_id.clone(), ())
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err.0, DeltaBackendError::PermissionDenied(_)),
+        "{err:?}"
+    );
+}
+
+#[tokio::test]
+async fn credentials_report_the_granted_operation_and_catalog_prefix() {
+    let b = backend();
+    let (table_id, location) = create_managed(&b, "t").await;
+    let _ = table_id;
+    let resp = b
+        .get_table_credentials(table_path("t"), DeltaCredentialOperation::ReadWrite, ())
+        .await
+        .unwrap();
+    let cred = &resp.storage_credentials[0];
+    assert_eq!(cred.operation, DeltaCredentialOperation::ReadWrite);
+    // The catalog's spelling of the table location, as in the spec examples.
+    assert_eq!(cred.prefix, location);
+}

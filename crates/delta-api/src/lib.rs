@@ -9,9 +9,16 @@
 //! all the Delta business logic is shared here, so the behavior is identical by
 //! construction.
 //!
-//! It depends only on `axum`, `async-trait`, `serde`, `uuid`, and `thiserror` — it
-//! does **not** depend on any server crate, so a downstream server (mangrove,
-//! lakekeeper, …) takes this single dependency and nothing else.
+//! It does **not** depend on any server crate, so a downstream server (mangrove,
+//! lakekeeper, …) takes this single dependency. Beyond the usual serde / thiserror
+//! / uuid / tracing / async-trait it pulls `axum` (behind the default `server`
+//! feature) and trestle's `olai-storage-credentials`, whose credential model and
+//! Delta wire shape the credential endpoints use.
+//!
+//! Before implementing the port, read the contracts on [`DeltaBackend`]:
+//! authorization runs before resolution (see [`authz`]), `apply_update` must
+//! persist one `updateTable` atomically, and commit retries are deduplicated by
+//! file name (see [`coordinator`]).
 //!
 //! # Examples
 //!

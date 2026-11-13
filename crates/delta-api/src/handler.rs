@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use crate::authz::DeltaAction;
 use crate::backend::{
     CreateTableSpec, CredentialAccess, DeltaBackend, ResolvedTable, SchemaRef, TableRef,
-    UpdateTableSpec, VendedCredential, etag_of,
+    TableUpdate, UpdateTableSpec, VendedCredential, etag_of,
 };
 use crate::column::Column;
 use crate::contract;
@@ -118,7 +118,7 @@ pub trait DeltaApiHandler<Cx>: Send + Sync + 'static {
 impl<B, Cx> DeltaApiHandler<Cx> for B
 where
     B: DeltaBackend<Cx>,
-    Cx: Send + 'static,
+    Cx: Send + Sync + 'static,
 {
     async fn get_config(&self, query: GetConfigQuery, context: Cx) -> Result<DeltaCatalogConfig> {
         if query.catalog.is_empty() {
@@ -129,6 +129,13 @@ where
         // Negotiate before the catalog lookup so an unsupported client fails fast
         // with 400 without incurring a catalog resolve.
         let protocol_version = crate::config::negotiate_version(&query.protocol_versions)?;
+        self.authorize(
+            DeltaAction::ReadCatalog {
+                catalog: &query.catalog,
+            },
+            &context,
+        )
+        .await?;
         self.catalog_exists(&query.catalog, &context)
             .await
             .map_err(|e| match e {
@@ -172,11 +179,7 @@ where
             table_id: staging.table_id.clone(),
             table_type: DeltaTableType::Managed,
             location: staging.location.clone(),
-            storage_credentials: vec![to_storage_credential(
-                &staging.location,
-                &creds,
-                DeltaCredentialOperation::ReadWrite,
-            )?],
+            storage_credentials: vec![to_storage_credential(&staging.location, &creds)?],
             required_protocol: DeltaProtocol {
                 min_reader_version: contract::REQUIRED_MIN_READER_VERSION,
                 min_writer_version: contract::REQUIRED_MIN_WRITER_VERSION,
@@ -204,6 +207,14 @@ where
         if request.location.is_empty() {
             return Err(DeltaApiError::invalid_argument(
                 "Table location is required.",
+            ));
+        }
+        if !matches!(
+            request.table_type,
+            DeltaTableType::Managed | DeltaTableType::External
+        ) {
+            return Err(DeltaApiError::invalid_argument(
+                "table-type must be MANAGED or EXTERNAL.",
             ));
         }
 
@@ -346,22 +357,22 @@ where
         operation: DeltaCredentialOperation,
         context: Cx,
     ) -> Result<DeltaCredentialsResponse> {
-        let table = self.resolve_table(&path, &context).await?;
-        let table_id = table_id_of(&table)?;
         let access = to_access(operation);
         self.authorize(
             DeltaAction::VendTableCredential {
-                table_id: &table_id,
+                table: &path,
                 access,
             },
             &context,
         )
         .await?;
+        let table = self.resolve_table(&path, &context).await?;
+        let table_id = table_id_of(&table)?;
         let creds = self
             .vend_table_credential(&table_id, access, &context)
             .await?;
         Ok(DeltaCredentialsResponse {
-            storage_credentials: vec![to_storage_credential(&creds.url, &creds, operation)?],
+            storage_credentials: vec![to_storage_credential(&creds.url, &creds)?],
         })
     }
 
@@ -371,20 +382,14 @@ where
         request: DeltaReportMetricsRequest,
         context: Cx,
     ) -> Result<()> {
-        let table = self.resolve_table(&path, &context).await?;
-        let table_id = table_id_of(&table)?;
         // Metrics reports feed table maintenance (compaction/checkpointing) and are
         // an assertion by a writer about commits it has made, so we gate them on
         // WRITE. This is deliberately stricter than the pre-crate behavior, which
         // required no permission on this endpoint at all.
-        self.authorize(
-            DeltaAction::WriteTable {
-                table: &path,
-                table_id: &table_id,
-            },
-            &context,
-        )
-        .await?;
+        self.authorize(DeltaAction::WriteTable { table: &path }, &context)
+            .await?;
+        let table = self.resolve_table(&path, &context).await?;
+        let table_id = table_id_of(&table)?;
         require_delta(&table, &path.full_name())?;
         if table_id != request.table_id {
             return Err(DeltaApiError::invalid_argument(
@@ -413,6 +418,23 @@ where
         context: Cx,
     ) -> Result<DeltaCredentialsResponse> {
         let staging = self.resolve_staging_by_id(&table_id, &context).await?;
+        // Staging credentials are READ_WRITE on the table's future location, so
+        // they belong to the reservation's creator and only until the table is
+        // created; afterwards the table's own credential endpoint (with its table
+        // permissions) applies.
+        self.authorize(
+            DeltaAction::AdoptStaging {
+                reservation: &staging,
+            },
+            &context,
+        )
+        .await?;
+        if staging.stage_committed {
+            return Err(DeltaApiError::invalid_argument(format!(
+                "staging table '{table_id}' has already been committed; use the table's \
+                 credentials endpoint"
+            )));
+        }
         self.authorize(
             DeltaAction::VendPathCredential {
                 location: &staging.location,
@@ -425,11 +447,7 @@ where
             .vend_path_credential(&staging.location, CredentialAccess::ReadWrite, &context)
             .await?;
         Ok(DeltaCredentialsResponse {
-            storage_credentials: vec![to_storage_credential(
-                &staging.location,
-                &creds,
-                DeltaCredentialOperation::ReadWrite,
-            )?],
+            storage_credentials: vec![to_storage_credential(&staging.location, &creds)?],
         })
     }
 
@@ -452,7 +470,7 @@ where
             .vend_path_credential(&location, access, &context)
             .await?;
         Ok(DeltaCredentialsResponse {
-            storage_credentials: vec![to_storage_credential(&creds.url, &creds, operation)?],
+            storage_credentials: vec![to_storage_credential(&creds.url, &creds)?],
         })
     }
 }
@@ -630,24 +648,18 @@ async fn update_table_impl<B, Cx>(
 ) -> Result<DeltaLoadTableResponse>
 where
     B: DeltaBackend<Cx> + ?Sized,
-    Cx: Send + 'static,
+    Cx: Send + Sync + 'static,
 {
     // Pure shape checks first: a malformed request is a 400 regardless of the
     // table's state.
     let requirements = collect_requirements(&request.requirements)?;
     let updates = collect_updates(&request.updates)?;
 
-    let mut table = backend.resolve_table(&path, &context).await?;
-    let table_uuid = table_id_of(&table)?;
     backend
-        .authorize(
-            DeltaAction::WriteTable {
-                table: &path,
-                table_id: &table_uuid,
-            },
-            &context,
-        )
+        .authorize(DeltaAction::WriteTable { table: &path }, &context)
         .await?;
+    let table = backend.resolve_table(&path, &context).await?;
+    let table_uuid = table_id_of(&table)?;
     require_delta(&table, &path.full_name())?;
 
     // --- Requirements ---
@@ -666,6 +678,21 @@ where
             ),
         )));
     }
+    // A retried `add-commit` that already landed is answered with the current
+    // table state before anything else is checked: the original attempt moved
+    // the etag, so the retry's `assert-etag` no longer matches, and the spec
+    // requires a recognized retry to return 200 (never a 409 that would make the
+    // client rebase and duplicate its write).
+    if let Some(commit) = updates.add_commit
+        && backend
+            .commit_coordinator()
+            .find_commit(&table_uuid, commit.version)
+            .await?
+            .is_some_and(|stored| stored.file_name == commit.file_name)
+    {
+        return build_load_table_response(backend, &path.full_name(), table).await;
+    }
+
     if let Some(etag) = requirements.etag
         && etag != etag_of(&table)
     {
@@ -675,10 +702,9 @@ where
     }
     let expected_etag = requirements.etag.map(str::to_string);
 
-    // Work on the fields directly (taken, not cloned); the untouched `table` is
-    // reassembled below when no metadata change needs persisting.
-    let mut properties: BTreeMap<String, String> = std::mem::take(&mut table.properties);
-    let mut columns: Vec<Column> = std::mem::take(&mut table.columns);
+    // Apply onto copies: `table` stays the pre-update snapshot (`TableUpdate::base`).
+    let mut properties: BTreeMap<String, String> = table.properties.clone();
+    let mut columns: Vec<Column> = table.columns.clone();
     let mut comment: Option<String> = None;
     let is_managed = table.table_type == Some(DeltaTableType::Managed);
     let mut metadata_changed = false;
@@ -769,49 +795,48 @@ where
     }
 
     // 9. add-commit + set-latest-backfilled-version → commit coordinator
-    let backfill = updates.set_latest_backfilled_version;
-    if updates.add_commit.is_some() || backfill.is_some() {
-        if !is_managed {
-            return Err(DeltaApiError::invalid_argument(
-                "add-commit / set-latest-backfilled-version require a MANAGED table",
-            ));
-        }
-        let commit_info = updates.add_commit.map(|c| CommitInfo {
-            version: c.version,
-            timestamp: c.timestamp,
-            file_name: c.file_name.clone(),
-            file_size: c.file_size,
-            file_modification_timestamp: c.file_modification_timestamp,
-        });
-        backend
-            .commit_coordinator()
-            .commit(&table_uuid, commit_info, backfill)
-            .await
-            .map_err(commit_error)?;
+    let latest_backfilled_version = updates.set_latest_backfilled_version;
+    if (updates.add_commit.is_some() || latest_backfilled_version.is_some()) && !is_managed {
+        return Err(DeltaApiError::invalid_argument(
+            "add-commit / set-latest-backfilled-version require a MANAGED table",
+        ));
+    }
+    let commit = updates.add_commit.map(|c| CommitInfo {
+        version: c.version,
+        timestamp: c.timestamp,
+        file_name: c.file_name.clone(),
+        file_size: c.file_size,
+        file_modification_timestamp: c.file_modification_timestamp,
+    });
+    if commit.is_none() && latest_backfilled_version.is_none() && !metadata_changed {
+        // Unreachable for a well-formed request (every action either changes
+        // metadata or the commit log), kept as a guard.
+        return build_load_table_response(backend, &path.full_name(), table).await;
     }
 
-    // Persist metadata changes; `update_table_row` returns the refreshed table
-    // (and enforces the assert-etag CAS at write time). The pure add-commit path
-    // never touches the table row, so the in-hand table is still current there.
-    let refreshed = if metadata_changed {
-        backend
-            .update_table_row(
-                UpdateTableSpec {
-                    table_id: table_uuid,
-                    columns,
-                    properties,
-                    comment,
-                    expected_etag,
-                },
-                &context,
-            )
-            .await?
-    } else {
-        // No metadata write to delegate the CAS to; any asserted etag was already
-        // fast-failed against this snapshot above.
-        table.properties = properties;
-        table.columns = columns;
-        table
+    // Hand the whole request to the backend to persist atomically: the metadata
+    // write (with its assert-etag CAS) and the commit ratification succeed or
+    // fail together (see `DeltaBackend::apply_update`).
+    let metadata = metadata_changed.then(|| {
+        let mut spec = UpdateTableSpec::new(&table_uuid, columns, properties);
+        spec.comment = comment;
+        spec.expected_etag = expected_etag;
+        spec
+    });
+    let update = TableUpdate {
+        base: table,
+        metadata,
+        commit,
+        latest_backfilled_version,
+    };
+    let refreshed = match backend.apply_update(update, &context).await {
+        Ok(t) => t,
+        // A concurrent retry of the same commit won the race after our
+        // pre-check: the work is done, answer with the current table.
+        Err(DeltaBackendError::CommitAlreadyAccepted) => {
+            backend.resolve_table(&path, &context).await?
+        }
+        Err(e) => return Err(e.into()),
     };
     build_load_table_response(backend, &path.full_name(), refreshed).await
 }
@@ -872,7 +897,10 @@ fn table_id_of(table: &ResolvedTable) -> Result<String> {
 /// `UnsupportedTableFormatException`. A backend that does not report a format
 /// (`None`) is trusted to serve only Delta tables.
 fn require_delta(table: &ResolvedTable, full_name: &str) -> Result<DeltaTableType> {
-    let Some(table_type) = table.table_type else {
+    let Some(table_type) = table
+        .table_type
+        .filter(|t| matches!(t, DeltaTableType::Managed | DeltaTableType::External))
+    else {
         return Err(DeltaApiError(DeltaBackendError::UnsupportedTableFormat(
             format!(
                 "table '{full_name}' is not a Delta table and cannot be served via the Delta API"
@@ -905,6 +933,7 @@ async fn build_load_table_response<B, Cx>(
 ) -> Result<DeltaLoadTableResponse>
 where
     B: DeltaBackend<Cx> + ?Sized,
+    Cx: Send + Sync,
 {
     let table_type = require_delta(&table, full_name)?;
 
@@ -916,7 +945,7 @@ where
             .commit_coordinator()
             .get_commits(id, 0, None)
             .await
-            .map_err(commit_error)?;
+            .map_err(DeltaApiError::from)?;
         (
             Some(commits.into_iter().map(to_delta_commit).collect()),
             Some(latest),
@@ -996,29 +1025,17 @@ fn to_delta_commit(c: CommitInfo) -> DeltaCommit {
     }
 }
 
-/// Map a coordinator [`CommitError`](crate::coordinator::CommitError) into a
-/// [`DeltaApiError`].
-fn commit_error(err: crate::coordinator::CommitError) -> DeltaApiError {
-    use crate::coordinator::CommitError;
-    DeltaApiError(match err {
-        CommitError::VersionConflict(m) => DeltaBackendError::CommitVersionConflict(m),
-        CommitError::InvalidArgument(m) => DeltaBackendError::InvalidArgument(m),
-        CommitError::ResourceExhausted(m) => DeltaBackendError::ResourceExhausted(m),
-        CommitError::Backend(m) => DeltaBackendError::Internal(m),
-    })
-}
-
-/// Map a vended [`VendedCredential`] onto the wire `DeltaStorageCredential`,
-/// covering `prefix` (as the catalog spells it) at `operation`.
-fn to_storage_credential(
-    prefix: &str,
-    creds: &VendedCredential,
-    operation: DeltaCredentialOperation,
-) -> Result<DeltaStorageCredential> {
+/// Map a vended [`VendedCredential`] onto the wire `DeltaStorageCredential`.
+///
+/// The `operation` is the access the credential was actually granted. The
+/// `prefix` is overridden with `prefix`, the location as the catalog spells it
+/// (no trailing slash), which is what the UC spec examples and the Java reference
+/// (`DeltaCredentialsMapper`: `prefix = credentials.getUrl()`) return; the trestle
+/// conversion would emit the scope's canonical directory form (`…/`).
+fn to_storage_credential(prefix: &str, creds: &VendedCredential) -> Result<DeltaStorageCredential> {
     let mut wire = DeltaStorageCredential::try_from(&creds.credential)
-        .map_err(|e| DeltaApiError(DeltaBackendError::Internal(e.to_string())))?;
+        .map_err(|e| DeltaApiError(DeltaBackendError::backend(e)))?;
     wire.prefix = prefix.to_string();
-    wire.operation = operation;
     Ok(wire)
 }
 
@@ -1037,6 +1054,7 @@ mod tests {
             data_source_format: format,
             columns: vec![],
             properties: BTreeMap::new(),
+            comment: None,
             created_at_ms: None,
             updated_at_ms: None,
             version: 0,
