@@ -153,6 +153,14 @@ impl StorageAccessStore for InMemoryStorageAccess {
             .ok_or(Error::NotFound)
     }
 
+    async fn credential_with_secrets(&self, name: &str) -> Result<Credential> {
+        let state = self.state.read().unwrap_or_else(PoisonError::into_inner);
+        let stored = state.credentials.get(&fold(name)).ok_or(Error::NotFound)?;
+        let mut with_secrets = stored.credential.clone();
+        stored.secrets.clone().apply(&mut with_secrets);
+        Ok(with_secrets)
+    }
+
     async fn list_credentials(
         &self,
         purpose: Option<Purpose>,

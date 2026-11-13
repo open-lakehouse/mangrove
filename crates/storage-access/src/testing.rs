@@ -588,6 +588,21 @@ async fn secrets_round_trip(store: &dyn StorageAccessStore) {
         .await
         .unwrap();
     assert_eq!(governed.credential.aws_iam_role, expected);
+    let by_name = store.credential_with_secrets("cred").await.unwrap();
+    assert_eq!(by_name.aws_iam_role, expected);
+    assert_eq!(
+        by_name, governed.credential,
+        "same credential by name or location"
+    );
+    assert_eq!(
+        store.credential_with_secrets("CRED").await.unwrap().name,
+        "cred",
+        "case-insensitive like every name lookup"
+    );
+    assert!(matches!(
+        store.credential_with_secrets("missing").await,
+        Err(Error::NotFound)
+    ));
 
     // Replacing the secrets replaces the whole configuration.
     let replacement = CredentialSecrets::take(&mut Credential {

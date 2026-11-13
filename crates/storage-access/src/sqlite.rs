@@ -267,6 +267,22 @@ impl StorageAccessStore for SqliteStorageAccess {
         Ok(credential_by_name(&mut conn, name).await?.into())
     }
 
+    async fn credential_with_secrets(&self, name: &str) -> Result<Credential> {
+        let mut conn = self.pool.acquire().await.map_err(db)?;
+        let SealedCredentialRow { credential, sealed } = sqlx::query_as(&format!(
+            "SELECT {CREDENTIAL_COLUMNS}, c.sealed FROM uc_credentials c WHERE c.name = ?"
+        ))
+        .bind(name)
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(db)?
+        .ok_or(Error::NotFound)?;
+        let secrets = self.open(&credential.id, &sealed).await?;
+        let mut credential = Credential::from(credential);
+        secrets.apply(&mut credential);
+        Ok(credential)
+    }
+
     async fn list_credentials(
         &self,
         purpose: Option<Purpose>,

@@ -134,6 +134,13 @@ pub trait StorageAccessStore: Send + Sync + 'static {
     /// The credential named `name`, without secrets.
     async fn get_credential(&self, name: &str) -> Result<Credential>;
 
+    /// The credential named `name`, **with** its secrets, for minting.
+    ///
+    /// For server-side vending from a credential configured by name rather than
+    /// reached through an external location (e.g. the credential governing the
+    /// metastore's managed storage root). Never return it to a caller.
+    async fn credential_with_secrets(&self, name: &str) -> Result<Credential>;
+
     /// Credentials in name order, optionally only those with `purpose`.
     async fn list_credentials(
         &self,
