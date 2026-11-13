@@ -1,5 +1,5 @@
-# Build recipes: the UI/SPA, Python & Node bindings, the wasm query engine, the
-# Docker image, and the offline sqlx query caches.
+# Build recipes: the UI/SPA, Python & Node bindings, the Docker image, and the
+# offline sqlx query caches.
 #
 # Recipes anchor paths on `{{ justfile_directory() }}` (repo root) and carry
 # `[no-cd]` where they use bare relative paths, so they behave as they did at the
@@ -17,47 +17,6 @@ PG_LOCAL_DB := "postgres"
 [group('build')]
 ui-build:
     bun run --filter @open-lakehouse/uc-app build
-
-# Built from inside the crate so its own workspace, lockfile, and
-# .cargo/config.toml (wasm getrandom rustflags) apply.
-#
-# build the in-browser query engine into wasm/query-wasm/pkg (gitignored)
-[group('build')]
-[no-cd]
-build-query-wasm:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    # macOS: ring's C sources are compiled for wasm32 by cc-rs, but Apple's
-    # system clang has no wasm backend ("No available targets are compatible
-    # with triple wasm32-unknown-unknown"). Point cc-rs at a Homebrew LLVM
-    # clang that can. Only set when unset (respect an explicit override) and
-    # only on macOS with an llvm present — Linux/CI clang already targets wasm.
-    if [[ "$(uname)" == "Darwin" ]]; then
-        llvm="$(brew --prefix llvm@21 2>/dev/null || brew --prefix llvm 2>/dev/null || true)"
-        if [[ -n "$llvm" && -x "$llvm/bin/clang" ]]; then
-            : "${CC_wasm32_unknown_unknown:=$llvm/bin/clang}"
-            : "${AR_wasm32_unknown_unknown:=$llvm/bin/llvm-ar}"
-            export CC_wasm32_unknown_unknown AR_wasm32_unknown_unknown
-        fi
-    fi
-    # Anchor on the repo root (this recipe is [no-cd] and may be invoked from a
-    # sibling module like `just dev ui-dev-wasm`, so relative paths aren't safe).
-    # Build from the wasm WORKSPACE ROOT (`wasm/`) so its own lockfile and
-    # `.cargo/config.toml` (wasm getrandom rustflags) apply; -p selects the crate.
-    # The target dir is the shared workspace target at `wasm/target/`.
-    root="{{ justfile_directory() }}"
-    cd "$root/wasm" && cargo build -p olai-uc-query-wasm --target wasm32-unknown-unknown --release --locked
-    wasm-bindgen --target web --typescript \
-      --out-dir "$root/wasm/query-wasm/pkg" \
-      "$root/wasm/target/wasm32-unknown-unknown/release/query_wasm.wasm"
-
-# default `ui-build` ships neither the wasm engine nor the preview UI; see
-# node/app/vite.config.ts.
-#
-# build the SPA with the in-browser wasm query engine + preview UI enabled
-[group('build')]
-ui-build-wasm: build-query-wasm
-    VITE_ENABLE_WASM_QUERY=true VITE_ENABLE_PREVIEW=true bun run --filter @open-lakehouse/uc-app build
 
 # build python bindings
 [group('build')]
@@ -161,14 +120,6 @@ build-sqlx-sqlite:
     # Prepare only the sqlite crate's queries (run from its directory).
     cd crates/sqlite && cargo sqlx prepare -- --tests
     rm -f "$DB" "$DB"-wal "$DB"-shm
-
-# one-time toolchain setup for the in-browser query engine (wasm/query-wasm)
-[group('build')]
-setup-wasm:
-    rustup target add wasm32-unknown-unknown
-    # The CLI's bindgen schema must exactly match the wasm-bindgen crate version
-    # in wasm/Cargo.lock — keep the two pins in sync.
-    cargo install -f wasm-bindgen-cli --version 0.2.126 --locked
 
 _start_pg_sqlx:
     docker run -d \

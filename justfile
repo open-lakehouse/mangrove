@@ -9,7 +9,7 @@ set dotenv-load
 
 # proto/openapi/client code generation
 mod codegen 'just/codegen.just'
-# UI, bindings, wasm engine, Docker image, sqlx caches
+# UI, bindings, Docker image, sqlx caches
 mod build 'just/build.just'
 # unit / integration / conformance tests + CI drift guards
 mod test 'just/test.just'

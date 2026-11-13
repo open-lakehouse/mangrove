@@ -19,7 +19,7 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
 # Drives the managed-table Delta staging flow (createStagingTable -> commit ->
 # loadTable) and builds a catalog-managed kernel snapshot for the read-back, so
 # the managed_table_lifecycle check exercises the real /delta/v1 write+read path
-# rather than a bare create_table. Delta feature pulls in deltalake-core.
+# rather than a bare create_table.
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.8" }
 # The in-process server (`server::TestServer`, the `uc-test-server` binary): the
 # same service `uc-server serve` builds, over an in-memory SQLite backend.
@@ -27,15 +27,14 @@ unitycatalog-server = { package = "olai-uc-server", path = "../server", version 
   "embed",
   "sqlite",
 ] }
-datafusion-unitycatalog = { package = "olai-uc-datafusion", path = "../datafusion", version = "0.1.0", features = [
-  "delta",
-] }
 
 # workspace dependencies
 axum = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
-datafusion = { workspace = true }
-deltalake-core = { workspace = true }
+# The managed-table read-back: a catalog-managed snapshot scanned with the
+# kernel's default engine (arrow + parquet come from its re-exports).
+delta_kernel = { workspace = true }
+delta_kernel_default_engine = { workspace = true }
 futures = { workspace = true }
 object_store = { workspace = true }
 olai-http = { workspace = true }

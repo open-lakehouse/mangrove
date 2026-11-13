@@ -1,12 +1,7 @@
 import { LogQueryServiceProvider } from "@open-lakehouse/delta-log";
 import { registerStubLogPreview } from "@open-lakehouse/delta-log/testing";
 import { registerCatalogProvider } from "@open-lakehouse/editor";
-import { registerWasmFiles } from "@open-lakehouse/files-wasm";
 import { QueryServiceProvider } from "@open-lakehouse/query-runner";
-import {
-  registerWasmLogPreview,
-  registerWasmPreview,
-} from "@open-lakehouse/query-wasm";
 import {
   ThemeProvider,
   Toaster,
@@ -38,29 +33,12 @@ const ucClient = createUnityCatalogClient({
   baseUrl: `${window.location.origin}/api/2.1/unity-catalog`,
 });
 
-// In wasm-enabled builds (VITE_ENABLE_WASM_QUERY=true + `just build-query-wasm`)
-// this registers the in-browser engine as the app's query runner; default
-// builds alias @open-lakehouse/query-wasm to a no-op stub (vite.config.ts), so
-// no runner is registered and the preview UI stays gated off. The preview
-// section itself is additionally flag-gated via VITE_ENABLE_PREVIEW.
-registerWasmPreview({
-  baseUrl: `${window.location.origin}/api/2.1/unity-catalog`,
-});
-
-// The Delta-log tab (in TableDetail) is gated on hasLogQueryRunner(); registering
-// a runner here lights it up for Delta tables. In wasm-enabled builds we register
-// the REAL in-browser log runner (reconciled files + reconciled action stream,
-// backed by wasm/query-wasm) — resolving through the same @open-lakehouse/query-wasm
-// package the table preview uses. In default builds that package is aliased to a
-// no-op stub, so we fall back to the dev fixture stub runner, which renders a
-// canned reconciled-log dataset end-to-end without wasm.
-if (import.meta.env.VITE_ENABLE_WASM_QUERY === "true") {
-  registerWasmLogPreview({
-    baseUrl: `${window.location.origin}/api/2.1/unity-catalog`,
-  });
-} else {
-  registerStubLogPreview();
-}
+// The Delta-log tab (in TableDetail) is gated on hasLogQueryRunner(). This build
+// registers the dev fixture stub runner, which renders a canned reconciled-log
+// dataset end-to-end. A host lights up real data by registering a runner via
+// registerLogQueryRunner (see @open-lakehouse/delta-log); the in-browser wasm
+// engine that did so lives in open-lakehouse/hydrofoil (@open-lakehouse/query-wasm).
+registerStubLogPreview();
 
 // The volume file editor's SQL completion sources catalog/schema/table/column
 // names from Unity Catalog. Register the UC-backed provider (the editor package
@@ -69,20 +47,12 @@ if (import.meta.env.VITE_ENABLE_WASM_QUERY === "true") {
 // the editor's own bootstrap doesn't matter.
 registerCatalogProvider(ucCatalogProvider);
 
-// The volume Files tab (in VolumeDetail) is gated on hasFilesRunner(). In
-// wasm-enabled builds we register the REAL in-browser files backend (direct-to-
-// cloud listing over CORS, backed by wasm/query-wasm); in default builds
-// @open-lakehouse/files-wasm is aliased to a no-op stub (vite.config.ts), so we
-// fall back to the dev fixture stub runner, which renders a canned volume file
-// tree end-to-end without wasm. The backend is read-only (canWrite() is false),
-// so the editor session opens files read-only until write verbs land.
-if (import.meta.env.VITE_ENABLE_WASM_QUERY === "true") {
-  registerWasmFiles({
-    baseUrl: `${window.location.origin}/api/2.1/unity-catalog`,
-  });
-} else {
-  registerStubFiles();
-}
+// The volume Files tab (in VolumeDetail) is gated on hasFilesRunner(). This build
+// registers the dev fixture stub runner, which renders a canned volume file tree
+// end-to-end; a host registers a real runner via registerFilesRunner (see
+// @open-lakehouse/volume-files). The stub is read-only (canWrite() is false), so
+// the editor session opens files read-only.
+registerStubFiles();
 
 const queryClient = new QueryClient();
 const router = createAppRouter(queryClient);
@@ -96,15 +66,15 @@ createRoot(rootElement).render(
       <UnityCatalogProvider client={ucClient}>
         {/* The preview seam. This standalone build registers NO query runner, so
             the default service's runner throws and TableDetail keeps its preview
-            gated off (see @open-lakehouse/query-runner). A host or the future wasm engine
-            registers a runner via registerQueryRunner to light it up. */}
+            gated off (see @open-lakehouse/query-runner). A host registers a runner
+            via registerQueryRunner to light it up. */}
         <QueryServiceProvider>
           {/* The Delta-log seam, beside the preview seam. The stub runner above
-              backs it in this build; a host / the future wasm engine swaps in a
-              real runner via registerLogQueryRunner (see @open-lakehouse/delta-log). */}
+              backs it in this build; a host swaps in a real runner via
+              registerLogQueryRunner (see @open-lakehouse/delta-log). */}
           <LogQueryServiceProvider>
             {/* The volume-files seam, backing the VolumeDetail Files tab. The
-                stub (or wasm) runner registered above serves it; the editor reads
+                stub runner registered above serves it; the editor reads
                 files through this service. */}
             <FilesServiceProvider>
               {/* Single-environment app: one stable scope namespace for the UC tree. */}

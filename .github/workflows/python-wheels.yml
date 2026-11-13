@@ -7,10 +7,10 @@ name: Release Python wheels
 # `gh release download`) without a PyPI account.
 #
 # The `unitycatalog-client-py` crate is `release = false` in release-plz.toml —
-# release-plz does NOT tag or release it (a `cargo package` diff on it walks the
-# workspace path-dep graph into `olai-uc-datafusion`'s git deps, which have no
-# registry version and `cargo package` rejects). So this crate's release is
-# MANUAL: push a `unitycatalog-client-py-v<version>` tag and this workflow fires,
+# release-plz does NOT tag or release it (a `cargo package` diff on it used to walk
+# the workspace path-dep graph into `olai-uc-datafusion`'s git deps, which
+# `cargo package` rejects; that crate has since moved to hydrofoil). So this
+# crate's release is MANUAL: push a `unitycatalog-client-py-v<version>` tag and this workflow fires,
 # creates the GitHub Release if absent, builds the wheels, and attaches them.
 #
 # abi3: `pyo3/abi3-py312` (python/client/Cargo.toml) means ONE wheel per platform

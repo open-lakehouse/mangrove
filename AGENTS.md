@@ -14,9 +14,7 @@ Multi-crate Rust workspace with language bindings:
   `client`, `server`, `cli`, `delta-api`, `files-api` / `files-proto`,
   `storage-proxy`, `storage-access` (credentials + external-locations store port),
   `sharing` (shares, recipients, tokens + grants store port),
-  `object-store`, `datafusion`, `postgres`, `sqlite`, `acceptance`
-- `wasm/` — a **separate** Cargo workspace (own `Cargo.lock`) for the in-browser
-  query engine
+  `object-store`, `postgres`, `sqlite`, `acceptance`
 - `python/client/` — PyO3 bindings · `node/` — NAPI client, TS client, UI packages
   (see [`node/README.md`](node/README.md))
 - `proto/` — API definitions (source of truth) · `openapi/` — generated specs ·
@@ -24,7 +22,9 @@ Multi-crate Rust workspace with language bindings:
 - Open Sharing / Delta Sharing serving lives in
   [`distributary`](https://github.com/open-lakehouse/distributary); the
   shares/recipients/providers models stay here. Cloud auth/HTTP and storage come
-  from the external trestle crates (`olai-http`, `olai-store`, …).
+  from the external trestle crates (`olai-http`, `olai-store`, …). The DataFusion
+  integration (`olai-uc-datafusion`) and the in-browser wasm query/files engine
+  live in [`hydrofoil`](https://github.com/open-lakehouse/hydrofoil).
 
 ## Commands
 

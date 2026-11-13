@@ -16,8 +16,6 @@ this page is the map.
 | `@open-lakehouse/volume-files` | `volume-files/` | Volume-files seam (`FilesRunner`) | published (npmjs + GitHub Packages), [`DESIGN.md`](volume-files/DESIGN.md) |
 | `@open-lakehouse/files-connect` | `files-connect/` | ConnectRPC bindings for the files service | publish-ready, [`DESIGN.md`](files-connect/DESIGN.md) (private) |
 | `@open-lakehouse/delta-log` | `delta-log/` | Delta-log views + log-query seam | published (npmjs + GitHub Packages), [`DESIGN.md`](delta-log/DESIGN.md) |
-| `@open-lakehouse/query-wasm` | `query-wasm/` | In-browser (wasm) `QueryRunner` | workspace-internal |
-| `@open-lakehouse/files-wasm` | `files-wasm/` | In-browser (wasm) `FilesRunner` | workspace-internal |
 | `@open-lakehouse/unity-catalog-ui` | `unity-catalog-ui/` | Unity Catalog browser components (presentation only) | published (npmjs + GitHub Packages), [`DESIGN.md`](unity-catalog-ui/DESIGN.md) |
 | `@open-lakehouse/uc-app` | `app/` | The bundled SPA served by `olai-uc-server`; composes everything | never published |
 
@@ -29,12 +27,12 @@ the host app supplies the one copy.
 ## Dependency direction
 
 ```
-ui-kit ◄── arrow-grid ◄── query-runner ◄──── query-wasm
-   ▲           ▲                                   │
-   │           └──── delta-log ◄───────────────────┘
+ui-kit ◄── arrow-grid ◄── query-runner
+   ▲           ▲
+   │           └──── delta-log
    ├── editor
    │
-volume-files ◄── files-wasm ──► files-connect
+volume-files        files-connect
    ▲
 unity-catalog-client
    ▲
@@ -45,11 +43,14 @@ uc-app ──► everything
 
 Leaves never import composed packages. The rules are enforced by
 `noRestrictedImports` overrides in [`biome.json`](biome.json): arrow-grid,
-query-runner, volume-files, delta-log, editor and the wasm/connect packages
+query-runner, volume-files, delta-log, editor and files-connect
 must not import `unity-catalog-ui` (and the editor must not import query-runner
 or arrow-grid). Swappable
 behavior crosses package boundaries only through seams: `QueryRunner`,
-`FilesRunner`, `CatalogProvider`, and the UC client's fetch transport.
+`FilesRunner`, `CatalogProvider`, and the UC client's fetch transport. The
+in-browser wasm implementations of `QueryRunner` / `FilesRunner`
+(`@open-lakehouse/query-wasm`, `@open-lakehouse/files-wasm`) live in
+[hydrofoil](https://github.com/open-lakehouse/hydrofoil) with the engine.
 
 ## Naming
 
