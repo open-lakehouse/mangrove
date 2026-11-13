@@ -132,9 +132,17 @@ jobs:
         run: bun run gen:api
         working-directory: node/unity-catalog-client
 
+      - name: Regenerate the UI's request field specs from the canonical spec
+        run: bun run gen:request-fields
+        working-directory: node/unity-catalog-ui
+
       - name: Fail if uc-api.d.ts is stale
         run: |
           if ! git diff --exit-code -- node/unity-catalog-client/src/uc-api.d.ts; then
             echo "::error::node/unity-catalog-client/src/uc-api.d.ts is out of sync with openapi/openapi.yaml — run \`just codegen generate-node-openapi\` (or \`bun run gen:api\` in the package) and commit the result." >&2
+            exit 1
+          fi
+          if ! git diff --exit-code -- node/unity-catalog-ui/src/forms/request-fields.gen.ts; then
+            echo "::error::node/unity-catalog-ui/src/forms/request-fields.gen.ts is out of sync with openapi/openapi.yaml — run \`just codegen generate-node-openapi\` (or \`bun run gen:request-fields\` in node/unity-catalog-ui) and commit the result." >&2
             exit 1
           fi

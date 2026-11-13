@@ -1,43 +1,160 @@
-// Create / edit a Unity Catalog storage credential (AWS IAM role).
+// Create / edit a Unity Catalog credential.
 //
-// The form is generated from the protobuf-derived JSON Schema; we tailor it at
-// runtime to the AWS-only scope (hide the Azure/GCP credential configs and the
-// purpose/advanced fields). After creation we surface the IAM trust details
-// (`unity_catalog_iam_arn` + `external_id`) the user needs to finish wiring up
-// the role, mirroring the Databricks Catalog Explorer flow.
+// The fields come from the generated request specs (see
+// forms/request-fields.gen.ts). A credential holds exactly one cloud
+// configuration, so the form picks the type first and shows only that type's
+// fields; on edit the type is fixed. After creating an AWS credential we show
+// the IAM trust details (`unity_catalog_iam_arn` + `external_id`) the user
+// needs to finish wiring up the role, as Databricks Catalog Explorer does.
 
 import {
   Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@open-lakehouse/ui-kit";
-import type { CredentialInfo } from "@open-lakehouse/unity-catalog-client";
+import type {
+  CredentialInfo,
+  components,
+} from "@open-lakehouse/unity-catalog-client";
 import {
-  parseUcError,
   useCreateCredential,
   useCredentialDetail,
   useUpdateCredential,
 } from "@open-lakehouse/unity-catalog-client/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import {
-  CREDENTIAL_CREATE_SEED,
-  type CredentialFormData,
-  commentPatch,
-  credentialEditSeed,
-  credentialSchema,
-  credentialUiSchema,
-} from "../forms/dialog-forms.js";
-import { SchemaForm } from "../forms/SchemaForm.js";
+  CommentField,
+  EnumField,
+  NameField,
+  ObjectFields,
+  SwitchField,
+} from "../forms/fields.js";
+import { ResourceFormDialog } from "../forms/ResourceFormDialog.js";
+import {
+  createCredential,
+  updateCredential,
+} from "../forms/request-fields.gen.js";
+import {
+  createBody,
+  loadErrorOf,
+  requireNewName,
+} from "../forms/resources/shared.js";
+import { useResourceForm } from "../forms/useResourceForm.js";
 import { awsIamRoleTrust } from "../types.js";
-
 import { CopyField } from "./CopyField.js";
 
-const FORM_ID = "credential-form";
+type CreateCredential = components["schemas"]["CreateCredentialRequest"];
+type UpdateCredential = components["schemas"]["UpdateCredentialRequest"];
+
+/** The mutually exclusive cloud configurations a credential can hold. */
+export const CREDENTIAL_TYPES = [
+  "aws_iam_role",
+  "azure_managed_identity",
+  "azure_service_principal",
+  "azure_storage_key",
+  "databricks_gcp_service_account",
+] as const;
+
+export type CredentialType = (typeof CREDENTIAL_TYPES)[number];
+
+const TYPE_LABELS: Record<CredentialType, string> = {
+  aws_iam_role: "AWS IAM role",
+  azure_managed_identity: "Azure managed identity",
+  azure_service_principal: "Azure service principal",
+  azure_storage_key: "Azure storage account key",
+  databricks_gcp_service_account: "GCP service account (Databricks-managed)",
+};
+
+/** Per-type presentation: which fields are advanced, masked, how labelled. */
+const TYPE_FIELDS: Record<
+  CredentialType,
+  {
+    labels?: Record<string, string>;
+    placeholders?: Record<string, string>;
+    advanced?: string[];
+    secret?: string[];
+  }
+> = {
+  aws_iam_role: {
+    labels: { role_arn: "IAM role ARN" },
+    placeholders: { role_arn: "arn:aws:iam::<account-id>:role/<role-name>" },
+    advanced: ["region", "access_key_id", "secret_access_key", "session_token"],
+    secret: ["secret_access_key", "session_token"],
+  },
+  azure_managed_identity: {
+    placeholders: {
+      access_connector_id:
+        "/subscriptions/<guid>/resourceGroups/<rg>/providers/Microsoft.Databricks/accessConnectors/<name>",
+    },
+  },
+  azure_service_principal: {
+    advanced: ["federated_token_file"],
+    secret: ["client_secret"],
+  },
+  azure_storage_key: { secret: ["account_key"] },
+  databricks_gcp_service_account: {},
+};
+
+/** The configuration type a stored credential holds. */
+export function credentialType(
+  credential: Partial<Record<CredentialType, unknown>>,
+): CredentialType | undefined {
+  return CREDENTIAL_TYPES.find((type) => credential[type] != null);
+}
+
+const PURPOSE_LABELS: Record<string, string> = {
+  STORAGE: "Storage: access cloud storage",
+  SERVICE: "Service: call cloud services",
+};
+
+/** The editable part of a stored type configuration (no output-only fields). */
+function editableConfig(
+  type: CredentialType,
+  credential: CredentialInfo,
+): Record<string, unknown> {
+  const spec = updateCredential[type];
+  const stored = (credential[type] ?? {}) as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const key of Object.keys(spec.fields)) {
+    if (stored[key] !== undefined) out[key] = stored[key];
+  }
+  return out;
+}
+
+function TypePicker({
+  value,
+  onChange,
+}: {
+  value: CredentialType;
+  onChange: (type: CredentialType) => void;
+}) {
+  const id = useId();
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>Credential type</Label>
+      <Select
+        value={value}
+        onValueChange={(next) => onChange(next as CredentialType)}
+      >
+        <SelectTrigger id={id}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {CREDENTIAL_TYPES.map((type) => (
+            <SelectItem key={type} value={type}>
+              {TYPE_LABELS[type]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 export function CredentialDialog({
   mode,
@@ -52,163 +169,204 @@ export function CredentialDialog({
   /** Fired after a successful create with the new credential's name. */
   onCreated?: (name: string) => void;
 }) {
-  const createCredential = useCreateCredential();
-  const updateCredential = useUpdateCredential();
-  const existing = useCredentialDetail(name ?? "", {
-    enabled: mode === "edit" && !!name,
+  return mode === "create" ? (
+    <CredentialCreate onClose={onClose} onCreated={onCreated} />
+  ) : (
+    <CredentialEdit name={name ?? ""} onClose={onClose} />
+  );
+}
+
+function CredentialCreate({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated?: (name: string) => void;
+}) {
+  const create = useCreateCredential();
+  const [type, setType] = useState<CredentialType>("aws_iam_role");
+  const [created, setCreated] = useState<CredentialInfo>();
+  const form = useResourceForm<CreateCredential>(createCredential, {
+    purpose: "STORAGE",
+    aws_iam_role: {} as CreateCredential["aws_iam_role"],
   });
 
-  const [created, setCreated] = useState<CredentialInfo>();
-  const [formData, setFormData] = useState<CredentialFormData>(() =>
-    mode === "create" ? CREDENTIAL_CREATE_SEED : {},
-  );
+  function chooseType(next: CredentialType) {
+    // Only the chosen configuration is sent; start it empty so its required
+    // fields validate.
+    for (const other of CREDENTIAL_TYPES) form.set(other, undefined);
+    form.set(next, {} as never);
+    setType(next);
+  }
 
-  const schema = useMemo(() => credentialSchema(mode), [mode]);
-  const uiSchema = useMemo(() => credentialUiSchema(mode, name), [mode, name]);
-
-  // Seed the edit form once the current credential loads.
-  const loaded = existing.data;
-  useEffect(() => {
-    if (mode === "edit" && loaded) setFormData(credentialEditSeed(loaded));
-  }, [mode, loaded]);
-
-  const pending = createCredential.isPending || updateCredential.isPending;
-
-  function submit(data: CredentialFormData) {
-    const roleArn = data.aws_iam_role?.role_arn?.trim();
-
-    if (mode === "create") {
-      if (!roleArn) {
-        toast.error("An IAM role ARN is required.");
-        return;
-      }
-      createCredential.mutate(
-        {
-          body: {
-            name: data.name ?? "",
-            comment: data.comment || undefined,
-            purpose: "STORAGE",
-            aws_iam_role: { role_arn: roleArn },
-          },
-        },
-        {
-          onSuccess: (result) => {
-            const createdName = result?.name ?? data.name ?? "";
-            toast.success(`Created credential "${createdName}"`);
-            onCreated?.(createdName);
-            // Show trust details if the server returned them; otherwise close.
-            const trust = awsIamRoleTrust(result);
-            if (trust.external_id || trust.unity_catalog_iam_arn) {
-              setCreated(result);
-            } else {
-              onClose();
-            }
-          },
-          onError: (error) => toast.error(parseUcError(error)),
-        },
-      );
-      return;
+  const submit = form.submit((values) => {
+    const body = createBody<CreateCredential>(values);
+    for (const other of CREDENTIAL_TYPES) {
+      if (other !== type) delete body[other];
     }
+    create.mutate(
+      { body },
+      {
+        onSuccess: (result) => {
+          const createdName = result?.name ?? body.name;
+          toast.success(`Created credential "${createdName}"`);
+          onCreated?.(createdName);
+          // Show trust details if the server returned them; otherwise close.
+          const trust = awsIamRoleTrust(result);
+          if (trust.external_id || trust.unity_catalog_iam_arn) {
+            setCreated(result);
+          } else {
+            onClose();
+          }
+        },
+        onError: form.fail,
+      },
+    );
+  });
 
-    const newName = data.new_name?.trim();
-    // Send the role only when it changed, so editing a credential of another
-    // cloud never turns it into an AWS one.
-    const roleChanged =
-      !!roleArn && roleArn !== (loaded?.aws_iam_role?.role_arn ?? "");
-    updateCredential.mutate(
-      {
-        params: { path: { name: name ?? "" } },
-        body: {
-          comment: commentPatch(data.comment, loaded?.comment),
-          new_name: newName && newName !== name ? newName : undefined,
-          aws_iam_role: roleChanged ? { role_arn: roleArn } : undefined,
-        },
-      },
-      {
-        onSuccess: () => {
-          toast.success(`Updated credential "${name}"`);
-          onClose();
-        },
-        onError: (error) => toast.error(parseUcError(error)),
-      },
+  if (created) {
+    const trust = awsIamRoleTrust(created);
+    return (
+      <ResourceFormDialog
+        title="Credential created"
+        submitLabel="Done"
+        onSubmit={onClose}
+        onClose={onClose}
+        footer={
+          <Button type="button" size="sm" onClick={onClose}>
+            Done
+          </Button>
+        }
+      >
+        <p className="text-sm text-muted-foreground">
+          Update your IAM role's trust policy with the following so Unity
+          Catalog can assume it:
+        </p>
+        <CopyField
+          label="Unity Catalog IAM ARN"
+          value={trust.unity_catalog_iam_arn}
+        />
+        <CopyField label="External ID" value={trust.external_id} />
+      </ResourceFormDialog>
     );
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {created
-              ? "Credential created"
-              : mode === "create"
-                ? "Create a storage credential"
-                : "Edit credential"}
-          </DialogTitle>
-          {!created && (
-            <DialogDescription>
-              A storage credential holds the long-term cloud credential (an AWS
-              IAM role) that grants access to cloud storage.
-            </DialogDescription>
-          )}
-        </DialogHeader>
+    <ResourceFormDialog
+      title="New credential"
+      description="A credential holds the long-term cloud identity that grants access to storage or services."
+      submitLabel="Create"
+      pendingLabel="Creating…"
+      pending={create.isPending}
+      formError={form.formError}
+      onSubmit={submit}
+      onClose={onClose}
+    >
+      <NameField
+        form={form}
+        name="name"
+        placeholder="my_credential"
+        autoFocus
+      />
+      <EnumField
+        form={form}
+        name="purpose"
+        help={null}
+        labels={PURPOSE_LABELS}
+      />
+      <TypePicker value={type} onChange={chooseType} />
+      <div className="rounded-md border bg-muted/30 p-3">
+        <ObjectFields form={form} name={type} {...TYPE_FIELDS[type]} />
+      </div>
+      <CommentField form={form} />
+      <SwitchField form={form} name="read_only" label="Read only" />
+      <SwitchField form={form} name="skip_validation" label="Skip validation" />
+    </ResourceFormDialog>
+  );
+}
 
-        {created ? (
-          <div className="space-y-4 px-5 py-4">
-            <p className="text-sm text-muted-foreground">
-              Update your IAM role's trust policy with the following so Unity
-              Catalog can assume it:
-            </p>
-            <CopyField
-              label="Unity Catalog IAM ARN"
-              value={awsIamRoleTrust(created).unity_catalog_iam_arn}
-            />
-            <CopyField
-              label="External ID"
-              value={awsIamRoleTrust(created).external_id}
-            />
-          </div>
-        ) : (
-          <div className="px-5 py-4">
-            {mode === "edit" && existing.isError ? (
-              <p role="alert" className="mb-3 text-xs text-destructive">
-                {parseUcError(existing.error, "Could not load the credential.")}
-              </p>
-            ) : null}
-            <SchemaForm<CredentialFormData>
-              id={FORM_ID}
-              schema={schema}
-              uiSchema={uiSchema}
-              formData={formData}
-              disabled={pending || (mode === "edit" && !loaded)}
-              onChange={setFormData}
-              onSubmit={submit}
-            />
-          </div>
-        )}
+function CredentialEdit({
+  name,
+  onClose,
+}: {
+  name: string;
+  onClose: () => void;
+}) {
+  const update = useUpdateCredential();
+  const detail = useCredentialDetail(name);
+  const form = useResourceForm<UpdateCredential>(
+    updateCredential,
+    {},
+    { validate: requireNewName, patch: true },
+  );
 
-        <DialogFooter>
-          {created ? (
-            <Button type="button" size="sm" onClick={onClose}>
-              Done
-            </Button>
-          ) : (
-            <>
-              <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                form={FORM_ID}
-                size="sm"
-                disabled={pending || (mode === "edit" && !loaded)}
-              >
-                {pending ? "Saving…" : mode === "create" ? "Create" : "Save"}
-              </Button>
-            </>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+  const loaded = detail.data;
+  const type = loaded ? credentialType(loaded) : undefined;
+  const { seed } = form;
+  useEffect(() => {
+    if (!loaded) return;
+    const current = credentialType(loaded);
+    seed({
+      new_name: loaded.name,
+      comment: loaded.comment,
+      read_only: loaded.read_only,
+      ...(current ? { [current]: editableConfig(current, loaded) } : {}),
+    });
+  }, [loaded, seed]);
+
+  const submit = form.submit(() => {
+    const body = form.changes([
+      "new_name",
+      "comment",
+      "read_only",
+      ...(type ? [type] : []),
+    ]);
+    if (Object.keys(body).length === 0) return onClose();
+    if (body.new_name) body.new_name = body.new_name.trim();
+    update.mutate(
+      { params: { path: { name } }, body },
+      {
+        onSuccess: () => {
+          toast.success(`Updated credential "${body.new_name ?? name}"`);
+          onClose();
+        },
+        onError: form.fail,
+      },
+    );
+  });
+
+  return (
+    <ResourceFormDialog
+      title="Edit credential"
+      description={<span className="font-mono">{name}</span>}
+      submitLabel="Save"
+      pending={update.isPending}
+      canSubmit={!!loaded}
+      loadError={loadErrorOf(detail)}
+      formError={form.formError}
+      onSubmit={submit}
+      onClose={onClose}
+    >
+      <NameField
+        form={form}
+        name="new_name"
+        label="Name"
+        disabled={!loaded}
+        autoFocus
+      />
+      {type && (
+        <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+          <p className="text-xs font-medium">{TYPE_LABELS[type]}</p>
+          <ObjectFields form={form} name={type} {...TYPE_FIELDS[type]} />
+        </div>
+      )}
+      <CommentField form={form} disabled={!loaded} />
+      <SwitchField
+        form={form}
+        name="read_only"
+        label="Read only"
+        disabled={!loaded}
+      />
+    </ResourceFormDialog>
   );
 }

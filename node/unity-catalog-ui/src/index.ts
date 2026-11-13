@@ -5,7 +5,7 @@
 // reaches only this barrel.
 //
 // This package owns the catalog browser, the per-entity detail panes, the
-// create/edit/delete + storage dialogs, and the schema-driven form renderer. It
+// create/edit/delete + storage dialogs and their spec-driven forms. It
 // depends on shared primitives (@open-lakehouse/ui-kit) and the UC data layer
 // (@open-lakehouse/unity-catalog-client) for all fetching/hooks/types, and has
 // exactly one host edge — the environment scope id, fed via
