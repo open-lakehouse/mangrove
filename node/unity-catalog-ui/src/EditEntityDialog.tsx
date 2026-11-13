@@ -18,7 +18,8 @@ import {
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import type { EditRequest } from "./dialog-types.js";
-import { useCatalogSelection } from "./selection.js";
+import { commentPatch } from "./forms/dialog-forms.js";
+import { renamedSelection, useCatalogSelection } from "./selection.js";
 
 const TITLES: Record<EditRequest["kind"], string> = {
   catalog: "Edit catalog",
@@ -26,12 +27,6 @@ const TITLES: Record<EditRequest["kind"], string> = {
   volume: "Edit volume",
   model: "Edit registered model",
 };
-
-function renameFullName(fullName: string, newName: string) {
-  const parts = fullName.split(".");
-  parts[parts.length - 1] = newName;
-  return parts.join(".");
-}
 
 export function EditEntityDialog({
   request,
@@ -59,29 +54,30 @@ export function EditEntityDialog({
     updateVolume.isPending ||
     updateModel.isPending;
 
-  function finish(renamed: boolean) {
+  function finish(trimmed: string, renamed: boolean) {
     toast.success(`Updated ${request.kind} "${currentName}"`);
-    // Keep the URL selection valid if the renamed node was the selected one.
-    if (renamed && selection?.fullName === request.name) {
-      select({
-        kind: request.kind,
-        fullName: renameFullName(request.name, newName),
-      });
-    }
+    // Keep the URL selection valid if the renamed node, or anything under it,
+    // was selected.
+    const next =
+      renamed && selection
+        ? renamedSelection(selection, request.kind, request.name, trimmed)
+        : undefined;
+    if (next) select(next);
     onClose();
   }
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!newName.trim()) return;
+    const trimmed = newName.trim();
+    if (!trimmed) return;
 
-    const renamed = newName !== currentName;
+    const renamed = trimmed !== currentName;
     const body = {
-      comment: comment || undefined,
-      new_name: renamed ? newName : undefined,
+      comment: commentPatch(comment, request.comment),
+      new_name: renamed ? trimmed : undefined,
     };
     const handlers = {
-      onSuccess: () => finish(renamed),
+      onSuccess: () => finish(trimmed, renamed),
       onError: (error: unknown) => toast.error(parseUcError(error)),
     };
 

@@ -21,13 +21,15 @@ import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { DeleteRequest } from "./dialog-types.js";
-import { useCatalogSelection } from "./selection.js";
+import { isSelfOrDescendant, useCatalogSelection } from "./selection.js";
 
-// Catalogs / schemas / models accept a `force` flag to delete when non-empty.
+// Catalogs / schemas / models accept a `force` flag to delete when non-empty;
+// external locations to delete while still referenced.
 const FORCEABLE = new Set<DeleteRequest["kind"]>([
   "catalog",
   "schema",
   "model",
+  "external_location",
 ]);
 
 export function DeleteEntityDialog({
@@ -63,7 +65,11 @@ export function DeleteEntityDialog({
     const handlers = {
       onSuccess: () => {
         toast.success(`Deleted ${request.kind} "${request.name}"`);
-        if (selection && selection.fullName === request.name) {
+        // Clear the selection if it was the deleted object or lived under it.
+        if (
+          selection &&
+          isSelfOrDescendant(selection, request.kind, request.name)
+        ) {
           select(undefined);
         }
         onClose();
@@ -116,7 +122,7 @@ export function DeleteEntityDialog({
         break;
       case "external_location":
         deleteExternalLocation.mutate(
-          { params: { path: { name: request.name } } },
+          { params: { path: { name: request.name }, query: { force } } },
           handlers,
         );
         break;
@@ -146,7 +152,9 @@ export function DeleteEntityDialog({
                 checked={force}
                 onChange={(e) => setForce(e.target.checked)}
               />
-              Force delete even if not empty
+              {request.kind === "external_location"
+                ? "Force delete even if still in use"
+                : "Force delete even if not empty"}
             </label>
           )}
         </div>
