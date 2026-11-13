@@ -14,7 +14,7 @@ name = "unitycatalog_client"
 crate-type = ["cdylib"]
 
 [dependencies]
-unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client", version = "0.0.8" }
+unitycatalog-client = { package = "olai-uc-client", path = "../../crates/client", version = "0.0.9" }
 unitycatalog-common = { package = "olai-uc-common", path = "../../crates/common", version = "0.0.8", features = ["python"] }
 
 futures = { workspace = true }
