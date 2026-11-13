@@ -34,10 +34,13 @@ class UcServer:
     storage_root: str
     log: Path
 
+    def responses(self) -> list[str]:
+        """Requests served so far, as `<METHOD> <path> -> <status>`."""
+        return [line for line in self.log.read_text().splitlines() if " -> " in line]
+
     def requests(self) -> list[str]:
         """Requests served so far, as `<METHOD> <path>` (no status)."""
-        lines = self.log.read_text().splitlines()
-        return [line.rsplit(" -> ", 1)[0] for line in lines if " -> " in line]
+        return [line.rsplit(" -> ", 1)[0] for line in self.responses()]
 
     def delta(self, path: str) -> dict:
         """GET a /delta/v1 path and return the JSON body."""
