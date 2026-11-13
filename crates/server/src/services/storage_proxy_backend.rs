@@ -4,8 +4,8 @@
 //! [`ServerHandler<RequestContext>`], expressing the narrow proxy port over the
 //! server's existing surfaces: name → resource resolution
 //! ([`TableHandler::get_table`] / [`VolumeHandler::get_volume`]),
-//! [`Policy::authorize_checked`], the credential-vending pipeline
-//! ([`governing_location`] → a minter), and
+//! [`Policy::authorize_checked`], the credential-vending pipeline (the handler's
+//! trestle `Vendor`, resolving the [`governing_location`]), and
 //! object-store construction from the minted credential ([`build_store`]).
 //!
 //! All the *proxy* semantics (streaming, `Range`/`If-Match`, the confused-deputy
@@ -210,17 +210,10 @@ async fn open_store(
     write: bool,
 ) -> ProxyResult<Arc<DynObjectStore>> {
     let storage_url = StorageLocationUrl::parse(location).map_err(to_proxy_err_location)?;
-    let credential = if storage_url.is_local() {
-        None
-    } else {
-        let governed = handler
-            .storage_access()
-            .governing_location(storage_url.location())
-            .await
-            .map_err(|e| to_proxy_err(from_store(e)))?;
-        Some(governed.credential)
-    };
-    let minter = minter_for_location(credential.as_ref(), &storage_url).map_err(to_proxy_err)?;
+    // Mint through the handler's vendor (cached per registered credential, and
+    // cleared when credentials change); the refreshing store re-mints through the
+    // same minter.
+    let minter = minter_for_location(handler.vendor(), &storage_url);
     let source = Arc::new(MintSource {
         minter,
         request: MintRequest::new(storage_url.scope(), access_level(write)),

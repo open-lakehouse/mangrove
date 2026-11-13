@@ -11,9 +11,10 @@
 #      blobs from Azurite cross-origin — Azurite has no `--cors` flag, so this
 #      is set at runtime via the Blob service properties.
 #   4. Seed the UC storage credential + external location that credential
-#      vending requires: `managed_storage_root` config places managed tables
-#      but does NOT vend for them; vending needs an external location covering
-#      the root, bound to an `azure_storage_key` credential.
+#      vending requires: `managed_storage_root` config places managed tables,
+#      but vending for them needs either an external location covering the root
+#      (what this script registers, bound to an `azure_storage_key` credential)
+#      or `managed_storage_root_credential` naming the credential.
 #   5. Create the demo catalog + schema (managed root inherited from config).
 #
 # Idempotent: re-running is safe (already-exists responses are tolerated).

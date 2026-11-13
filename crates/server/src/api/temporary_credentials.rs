@@ -7,50 +7,107 @@ use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 use super::RequestContext;
 use crate::error::from_store;
 use crate::policy::{Permission, Policy};
-use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::vending::{mint, to_temporary_credential};
+use crate::services::{ProvidesManagedStorageRoot, ServerHandler};
 use crate::store::ResourceStoreReader;
 use crate::{Error, Result};
 pub use unitycatalog_handlers::temporary_credentials::TemporaryCredentialHandler;
 
 use buffa::Enumeration;
-use olai_storage_credentials::AccessLevel;
+use olai_storage_credentials::{AccessLevel, VendedCredential};
 use unitycatalog_storage_access::ProvidesStorageAccessStore;
 
-/// Vend a temporary credential for a securable stored at `location`.
+/// Mint a credential for a securable stored at `location`, through the handler's
+/// vendor.
 ///
 /// Local (`file://`) storage needs neither an external location nor a cloud
 /// credential: the client builds a `LocalFileSystem` addressed by full path. Any
-/// other location is minted from the credential of the external location governing
-/// it.
-pub(crate) async fn vend_for_location<T>(
-    handler: &T,
+/// other location is minted from the credential of the external location
+/// governing it, or from the metastore root's credential for managed storage
+/// under the root. The caller has authorized the securable.
+pub(crate) async fn vend_location<Cx: Send + Sync + 'static>(
+    handler: &ServerHandler<Cx>,
     location: &StorageLocationUrl,
     access: AccessLevel,
-) -> Result<TemporaryCredential>
-where
-    T: ProvidesStorageAccessStore + ?Sized,
-{
-    let credential = if location.is_local() {
-        None
-    } else {
-        let governed = handler
-            .storage_access()
-            .governing_location(location.location())
-            .await
-            .map_err(from_store)?;
-        Some(governed.credential)
-    };
-    let vended = mint(credential.as_ref(), location, access).await?;
+) -> Result<VendedCredential> {
+    mint(handler.vendor(), location, access).await
+}
+
+/// [`vend_location`] as the UC REST response.
+pub(crate) async fn vend_for_location<Cx: Send + Sync + 'static>(
+    handler: &ServerHandler<Cx>,
+    location: &StorageLocationUrl,
+    access: AccessLevel,
+) -> Result<TemporaryCredential> {
+    let vended = vend_location(handler, location, access).await?;
     Ok(to_temporary_credential(&vended, location))
+}
+
+/// Authorize a temporary *path* credential for `storage_url` at `access`.
+///
+/// Local storage is governed by no external location, so there is nothing to
+/// authorize against. Otherwise the caller needs the access on the concrete
+/// external location covering the path. Paths in the metastore's managed storage
+/// that no external location covers are denied: managed storage is reached
+/// through table and staging-table credentials, never by path.
+pub(crate) async fn authorize_path_vend(
+    handler: &ServerHandler<RequestContext>,
+    storage_url: &StorageLocationUrl,
+    access: AccessLevel,
+    context: &RequestContext,
+) -> Result<()> {
+    if storage_url.is_local() {
+        return Ok(());
+    }
+    let covering = handler
+        .storage_access()
+        .covering_location(storage_url.location())
+        .await
+        .map_err(from_store)?;
+    match covering {
+        Some(location) => {
+            handler
+                .authorize_checked(&(&location).into(), &required_permission(access), context)
+                .await
+        }
+        None if in_managed_root(handler, storage_url) => Err(Error::NotAllowed),
+        None => Err(Error::NotFound),
+    }
+}
+
+/// Whether `storage_url` lies under the metastore's managed storage root.
+fn in_managed_root(
+    handler: &ServerHandler<RequestContext>,
+    storage_url: &StorageLocationUrl,
+) -> bool {
+    handler
+        .managed_storage_root()
+        .and_then(|root| StorageLocationUrl::parse(root).ok())
+        .is_some_and(|root| root.scope().covers(storage_url.location()))
+}
+
+/// Mint a credential for the table at `table_ident` (already authorized).
+pub(crate) async fn vend_table(
+    handler: &ServerHandler<RequestContext>,
+    table_ident: &ResourceIdent,
+    access: AccessLevel,
+) -> Result<(VendedCredential, StorageLocationUrl)> {
+    let (resource, _) = handler.get(table_ident).await?;
+    let table: Table = resource.try_into()?;
+    let location = table
+        .storage_location
+        .ok_or_else(|| Error::invalid_argument("table does not have a storage location"))?;
+    let storage_url = StorageLocationUrl::parse(&location)?;
+    let vended = vend_location(handler, &storage_url, access).await?;
+    Ok((vended, storage_url))
 }
 
 /// The permission a vend operation requires from the policy.
 ///
 /// Read-only vending requires [`Permission::Read`]; read-write vending requires
 /// [`Permission::Write`] so the policy can deny write access independently.
-fn required_permission(access: AccessLevel) -> Permission {
+pub(crate) fn required_permission(access: AccessLevel) -> Permission {
     match access {
         AccessLevel::ReadWrite => Permission::Write,
         _ => Permission::Read,
@@ -99,29 +156,10 @@ impl TemporaryCredentialHandler<RequestContext> for ServerHandler<RequestContext
     ) -> Result<TemporaryCredential> {
         let operation = to_access_level(request.operation.to_i32());
         let storage_url = StorageLocationUrl::parse(&request.url)?;
-
-        // Local (`file://`) storage is governed by no external location, so there is
-        // nothing to authorize against; vending it is what lets managed tables be
-        // created on a purely-local dev server.
-        if storage_url.is_local() {
-            return vend_for_location(self, &storage_url, operation).await;
-        }
-
-        let governed = self
-            .storage_access()
-            .governing_location(storage_url.location())
-            .await
-            .map_err(from_store)?;
         // Authorize against the concrete external location and the operation
         // actually requested, rather than the unscoped `SecuredAction` default.
-        self.authorize_checked(
-            &(&governed.location).into(),
-            &required_permission(operation),
-            &context,
-        )
-        .await?;
-        let vended = mint(Some(&governed.credential), &storage_url, operation).await?;
-        Ok(to_temporary_credential(&vended, &storage_url))
+        authorize_path_vend(self, &storage_url, operation, &context).await?;
+        vend_for_location(self, &storage_url, operation).await
     }
 
     /// Generate temporary credentials for a volume.
@@ -203,13 +241,8 @@ impl TemporaryCredentialHandler<RequestContext> for ServerHandler<RequestContext
         let table_ident = ResourceIdent::Table(ResourceRef::Uuid(table_id));
         self.authorize_checked(&table_ident, &required_permission(operation), &context)
             .await?;
-        let (resource, _) = self.get(&table_ident).await?;
-        let table: Table = resource.try_into()?;
-        let location = table
-            .storage_location
-            .ok_or_else(|| Error::invalid_argument("table does not have a storage location"))?;
-        let storage_url = StorageLocationUrl::parse(&location)?;
-        vend_for_location(self, &storage_url, operation).await
+        let (vended, storage_url) = vend_table(self, &table_ident, operation).await?;
+        Ok(to_temporary_credential(&vended, &storage_url))
     }
 }
 // NOTE: These request types intentionally do not implement `SecuredAction`.
@@ -294,9 +327,157 @@ mod tests {
 
         // Cloud storage still needs a governing external location.
         let location = StorageLocationUrl::parse("s3://bucket/tables/t1").unwrap();
-        assert!(matches!(
-            vend_for_location(&handler, &location, AccessLevel::Read).await,
-            Err(Error::NotFound)
-        ));
+        let result = vend_for_location(&handler, &location, AccessLevel::Read).await;
+        assert!(matches!(result, Err(Error::NotFound)), "{result:?}");
+    }
+
+    #[cfg(feature = "memory")]
+    fn memory_handler(
+        decision: crate::policy::Decision,
+    ) -> crate::services::ServerHandler<RequestContext> {
+        use std::sync::Arc;
+
+        use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
+
+        use crate::memory::InMemoryResourceStore;
+        use crate::policy::ConstantPolicy;
+        use crate::services::ServerHandler;
+
+        let encryptor =
+            EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap());
+        let store = Arc::new(InMemoryResourceStore::new(encryptor));
+        let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::new(decision));
+        ServerHandler::try_new_tokio(policy, store).unwrap()
+    }
+
+    #[cfg(feature = "memory")]
+    fn ctx() -> RequestContext {
+        RequestContext {
+            recipient: crate::policy::Principal::anonymous(),
+        }
+    }
+
+    #[cfg(feature = "memory")]
+    async fn register(
+        handler: &crate::services::ServerHandler<RequestContext>,
+        credential: &str,
+        location: Option<&str>,
+    ) {
+        use unitycatalog_common::models::credentials::v1::{
+            AwsIamRoleConfig, CreateCredentialRequest, Purpose,
+        };
+        use unitycatalog_common::models::external_locations::v1::CreateExternalLocationRequest;
+
+        use crate::api::{CredentialHandler, ExternalLocationHandler};
+
+        handler
+            .create_credential(
+                CreateCredentialRequest {
+                    name: credential.to_string(),
+                    purpose: Purpose::Storage.into(),
+                    aws_iam_role: Some(AwsIamRoleConfig {
+                        role_arn: format!("arn:aws:iam::123456789012:role/{credential}"),
+                        ..Default::default()
+                    })
+                    .into(),
+                    ..Default::default()
+                },
+                ctx(),
+            )
+            .await
+            .unwrap();
+        if let Some(url) = location {
+            handler
+                .create_external_location(
+                    CreateExternalLocationRequest {
+                        name: format!("{credential}-location"),
+                        url: url.to_string(),
+                        credential_name: credential.to_string(),
+                        ..Default::default()
+                    },
+                    ctx(),
+                )
+                .await
+                .unwrap();
+        }
+    }
+
+    /// The role ARN the resolver picks for `location`, or `None` when nothing
+    /// governs it. Resolution only: no credential is minted (no STS call).
+    #[cfg(feature = "memory")]
+    async fn resolved_role(
+        handler: &crate::services::ServerHandler<RequestContext>,
+        location: &str,
+    ) -> Option<String> {
+        use olai_credential_vending::{CredentialResolver, RegisteredCredential};
+
+        let url = StorageLocationUrl::parse(location).unwrap();
+        let resolver = crate::services::vending::CatalogResolver::new(
+            handler.storage_access_arc(),
+            handler.managed_root_credential(),
+        );
+        match resolver.resolve(url.location()).await {
+            Ok(RegisteredCredential::AwsIamRole(role)) => Some(role.role_arn),
+            Ok(other) => panic!("unexpected credential {other:?}"),
+            Err(olai_credential_vending::Error::NotFound { .. }) => None,
+            Err(e) => panic!("{e}"),
+        }
+    }
+
+    #[cfg(feature = "memory")]
+    #[tokio::test]
+    async fn managed_root_credential_governs_uncovered_managed_storage() {
+        let handler = memory_handler(crate::policy::Decision::Allow)
+            .with_managed_storage_root(Some("s3://bucket/meta"))
+            .with_managed_storage_root_credential(Some("root"));
+        register(&handler, "root", None).await;
+        register(&handler, "ext", Some("s3://bucket/ext")).await;
+
+        let root_role = Some("arn:aws:iam::123456789012:role/root".to_string());
+        assert_eq!(
+            resolved_role(&handler, "s3://bucket/meta/__unitystorage/tables/t1").await,
+            root_role,
+            "managed storage under the root resolves to the root credential"
+        );
+        assert_eq!(
+            resolved_role(&handler, "s3://bucket/ext/data").await,
+            Some("arn:aws:iam::123456789012:role/ext".to_string()),
+            "external locations still govern their paths"
+        );
+        assert_eq!(
+            resolved_role(&handler, "s3://bucket/metadata/x").await,
+            None,
+            "segment-aware: a sibling of the root is not under it"
+        );
+    }
+
+    #[cfg(feature = "memory")]
+    #[tokio::test]
+    async fn managed_root_without_credential_is_not_governed() {
+        let handler = memory_handler(crate::policy::Decision::Allow)
+            .with_managed_storage_root(Some("s3://bucket/meta"));
+        assert_eq!(
+            resolved_role(&handler, "s3://bucket/meta/__unitystorage/tables/t1").await,
+            None
+        );
+    }
+
+    /// Managed storage is reached through table / staging credentials, never by
+    /// path: a temporary path credential inside the managed root is refused even
+    /// though the root has a credential.
+    #[cfg(feature = "memory")]
+    #[tokio::test]
+    async fn path_credentials_inside_managed_storage_are_refused() {
+        let handler = memory_handler(crate::policy::Decision::Allow)
+            .with_managed_storage_root(Some("s3://bucket/meta"))
+            .with_managed_storage_root_credential(Some("root"));
+        register(&handler, "root", None).await;
+        let url = StorageLocationUrl::parse("s3://bucket/meta/__unitystorage/tables/t1").unwrap();
+        let result = authorize_path_vend(&handler, &url, AccessLevel::Read, &ctx()).await;
+        assert!(matches!(result, Err(Error::NotAllowed)), "{result:?}");
+
+        let outside = StorageLocationUrl::parse("s3://elsewhere/x").unwrap();
+        let result = authorize_path_vend(&handler, &outside, AccessLevel::Read, &ctx()).await;
+        assert!(matches!(result, Err(Error::NotFound)), "{result:?}");
     }
 }

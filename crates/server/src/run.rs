@@ -110,6 +110,10 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
         local_storage_policy
             .check(&url)
             .map_err(|e| Error::Generic(format!("invalid managed_storage_root '{root}': {e}")))?;
+    } else if config.managed_storage_root_credential.is_some() {
+        return Err(Error::Generic(
+            "managed_storage_root_credential is set but managed_storage_root is not".into(),
+        ));
     }
 
     // Refuse to start on an incoherent config (client arm with no client block,
@@ -124,7 +128,8 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
     let (handler, policy) = connect(config).await?;
     let handler = handler
         .with_local_storage_policy(local_storage_policy)
-        .with_managed_storage_root(config.managed_storage_root.clone());
+        .with_managed_storage_root(config.managed_storage_root.clone())
+        .with_managed_storage_root_credential(config.managed_storage_root_credential.clone());
 
     // Keep a handle for the (optional) storage-proxy local arm, which is a
     // separate surface from the hybrid-routed UC API below.

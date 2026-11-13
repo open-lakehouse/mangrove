@@ -78,6 +78,18 @@ pub struct Config {
     #[serde(default)]
     pub managed_storage_root: Option<String>,
 
+    /// Name of the registered storage credential governing
+    /// [`managed_storage_root`](Config::managed_storage_root).
+    ///
+    /// Managed tables created under the metastore root are vended from this
+    /// credential when no external location covers their path, so a managed
+    /// catalog without its own `storage_root` works without registering an
+    /// external location over the root. When unset, such paths must be covered by
+    /// an external location. The credential is looked up when vending, so it may
+    /// be registered after startup.
+    #[serde(default)]
+    pub managed_storage_root_credential: Option<String>,
+
     /// Bundled web-UI serving settings (see [`UiConfig`]).
     #[serde(default)]
     pub ui: UiConfig,
@@ -281,6 +293,7 @@ impl Default for Config {
             routing: RoutingConfig::default(),
             local_storage: LocalStorageConfig::default(),
             managed_storage_root: None,
+            managed_storage_root_credential: None,
             ui: UiConfig::default(),
             storage_proxy: StorageProxyConfig::default(),
             files: FilesConfig::default(),

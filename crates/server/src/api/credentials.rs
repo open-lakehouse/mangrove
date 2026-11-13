@@ -110,10 +110,15 @@ impl CredentialHandler<RequestContext> for ServerHandler<RequestContext> {
             owner: request.owner,
             secrets: (!secrets.is_empty()).then_some(secrets),
         };
-        self.storage_access()
+        let updated = self
+            .storage_access()
             .update_credential(&request.name, update)
             .await
-            .map_err(from_store)
+            .map_err(from_store)?;
+        // Rotated secrets must not keep minting: drop every cached minter and
+        // vended credential (rare admin operation, so a full flush is fine).
+        self.forget_vended_credentials();
+        Ok(updated)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -128,7 +133,10 @@ impl CredentialHandler<RequestContext> for ServerHandler<RequestContext> {
         self.storage_access()
             .delete_credential(&request.name)
             .await
-            .map_err(from_store)
+            .map_err(from_store)?;
+        // A deleted credential's secrets and vended credentials must not be reused.
+        self.forget_vended_credentials();
+        Ok(())
     }
 }
 

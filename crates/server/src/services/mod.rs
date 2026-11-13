@@ -91,19 +91,11 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
     /// time, before the handler is cloned/shared. When unset, all local storage
     /// is denied.
     pub fn with_local_storage_policy(mut self, policy: impl Into<Arc<LocalStoragePolicy>>) -> Self {
-        // Rebuild the inner handler with the policy attached. All inner fields
-        // are `Arc`s, so this is a cheap reconstruction (the derived `Clone`
-        // would require `Cx: Clone`, which we don't impose).
-        let prev = &self.handler;
-        let inner = ServerHandlerInner {
-            policy: prev.policy.clone(),
-            store: prev.store.clone(),
-            storage_access: prev.storage_access.clone(),
-            commit_coordinator: prev.commit_coordinator.clone(),
-            local_storage_policy: policy.into(),
-            managed_storage_root: prev.managed_storage_root.clone(),
-        };
-        self.handler = Arc::new(inner);
+        let policy = policy.into();
+        self.handler = Arc::new(
+            self.handler
+                .rebuild(|inner| inner.local_storage_policy = policy),
+        );
         self
     }
 
@@ -113,17 +105,55 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
     /// time, before the handler is cloned/shared. When unset, managed catalogs
     /// must each supply their own `storage_root`.
     pub fn with_managed_storage_root(mut self, root: Option<impl Into<Arc<str>>>) -> Self {
-        let prev = &self.handler;
-        let inner = ServerHandlerInner {
-            policy: prev.policy.clone(),
-            store: prev.store.clone(),
-            storage_access: prev.storage_access.clone(),
-            commit_coordinator: prev.commit_coordinator.clone(),
-            local_storage_policy: prev.local_storage_policy.clone(),
-            managed_storage_root: root.map(Into::into),
-        };
-        self.handler = Arc::new(inner);
+        let root = root.map(Into::into);
+        self.handler = Arc::new(
+            self.handler
+                .rebuild(|inner| inner.managed_storage_root = root),
+        );
         self
+    }
+
+    /// Name the registered storage credential that governs the metastore's managed
+    /// storage root.
+    ///
+    /// Managed tables created under the root (a managed catalog without its own
+    /// `storage_root`) are vended from this credential when no external location
+    /// covers them. When unset, such paths must be covered by an external
+    /// location. Call at construction time, before the handler is shared.
+    pub fn with_managed_storage_root_credential(
+        mut self,
+        credential_name: Option<impl Into<Arc<str>>>,
+    ) -> Self {
+        let name = credential_name.map(Into::into);
+        self.handler = Arc::new(
+            self.handler
+                .rebuild(|inner| inner.managed_storage_root_credential = name),
+        );
+        self
+    }
+
+    /// The vendor every temporary credential is minted through.
+    pub(crate) fn vendor(&self) -> &Arc<vending::CatalogVendor> {
+        &self.handler.vendor
+    }
+
+    /// The storage-access store, shared.
+    #[cfg(test)]
+    pub(crate) fn storage_access_arc(&self) -> Arc<dyn StorageAccessStore> {
+        self.handler.storage_access.clone()
+    }
+
+    /// The configured managed root and its credential, if both are set.
+    #[cfg(test)]
+    pub(crate) fn managed_root_credential(&self) -> Option<vending::ManagedRootCredential> {
+        self.handler.managed_root()
+    }
+
+    /// Drop every cached minter and vended credential, so that a changed or
+    /// deleted storage credential's secrets and credentials are not reused. Call
+    /// after any storage-credential update or delete.
+    pub(crate) fn forget_vended_credentials(&self) {
+        self.handler.vendor.clear();
     }
 }
 
@@ -142,6 +172,11 @@ pub struct ServerHandlerInner<Cx> {
     /// omit `storage_root`. `None` ⇒ no metastore default (see
     /// [`ProvidesManagedStorageRoot`]).
     managed_storage_root: Option<Arc<str>>,
+    /// The registered storage credential governing `managed_storage_root`.
+    managed_storage_root_credential: Option<Arc<str>>,
+    /// The vendor temporary credentials are minted through; derived from
+    /// `storage_access` and the managed-root settings (see [`Self::rebuild`]).
+    vendor: Arc<vending::CatalogVendor>,
 }
 
 impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
@@ -151,6 +186,7 @@ impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
         storage_access: Arc<dyn StorageAccessStore>,
     ) -> Self {
         Self {
+            vendor: vending::catalog_vendor(storage_access.clone(), None),
             policy,
             store,
             storage_access,
@@ -159,7 +195,42 @@ impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
             local_storage_policy: Arc::new(LocalStoragePolicy::deny_all()),
             // No metastore-level managed storage root by default.
             managed_storage_root: None,
+            managed_storage_root_credential: None,
         }
+    }
+
+    /// A copy with `change` applied and the vendor rebuilt for the result. All
+    /// fields are `Arc`s, so this is cheap; it is meant for construction time
+    /// (the rebuilt vendor starts with empty caches).
+    fn rebuild(&self, change: impl FnOnce(&mut Self)) -> Self {
+        let mut inner = Self {
+            policy: self.policy.clone(),
+            store: self.store.clone(),
+            storage_access: self.storage_access.clone(),
+            commit_coordinator: self.commit_coordinator.clone(),
+            local_storage_policy: self.local_storage_policy.clone(),
+            managed_storage_root: self.managed_storage_root.clone(),
+            managed_storage_root_credential: self.managed_storage_root_credential.clone(),
+            vendor: self.vendor.clone(),
+        };
+        change(&mut inner);
+        inner.vendor = vending::catalog_vendor(inner.storage_access.clone(), inner.managed_root());
+        inner
+    }
+
+    /// The managed root and its credential, when both are configured and the
+    /// root parses (it is validated at startup).
+    fn managed_root(&self) -> Option<vending::ManagedRootCredential> {
+        let root = self
+            .managed_storage_root
+            .as_deref()
+            .filter(|r| !r.is_empty())?;
+        let credential_name = self.managed_storage_root_credential.as_deref()?;
+        let url = location::StorageLocationUrl::parse(root).ok()?;
+        Some(vending::ManagedRootCredential {
+            scope: url.scope(),
+            credential_name: credential_name.to_string(),
+        })
     }
 
     /// Set the allowlist governing `file://` storage locations.
@@ -173,9 +244,9 @@ impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
     /// Set the metastore-level managed storage root.
     ///
     /// When unset, managed catalogs must each supply their own `storage_root`.
-    pub fn with_managed_storage_root(mut self, root: Option<impl Into<Arc<str>>>) -> Self {
-        self.managed_storage_root = root.map(Into::into);
-        self
+    pub fn with_managed_storage_root(self, root: Option<impl Into<Arc<str>>>) -> Self {
+        let root = root.map(Into::into);
+        self.rebuild(|inner| inner.managed_storage_root = root)
     }
 
     /// Override the Delta commit coordinator (e.g. a Postgres-backed one, or a
