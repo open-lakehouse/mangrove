@@ -35,6 +35,10 @@ pub enum DeltaBackendError {
     #[error("{0}")]
     NotFound(String),
 
+    /// The requested catalog does not exist. → 404 `NoSuchCatalogException`.
+    #[error("{0}")]
+    NoSuchCatalog(String),
+
     /// A backend failure with no recognized semantics, surfaced as a generic
     /// not-found. → 404 `NotFoundException`.
     #[error("{0}")]
@@ -118,6 +122,7 @@ impl DeltaApiError {
         use DeltaErrorType::*;
         match &self.0 {
             DeltaBackendError::NotFound(_) => (StatusCode::NOT_FOUND, NoSuchTableException),
+            DeltaBackendError::NoSuchCatalog(_) => (StatusCode::NOT_FOUND, NoSuchCatalogException),
             DeltaBackendError::NotFoundGeneric(_) => (StatusCode::NOT_FOUND, NotFoundException),
             DeltaBackendError::AlreadyExists(_) => (StatusCode::CONFLICT, AlreadyExistsException),
             DeltaBackendError::PermissionDenied(_) => {

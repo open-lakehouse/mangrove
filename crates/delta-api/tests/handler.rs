@@ -197,7 +197,10 @@ async fn get_config_unknown_catalog_is_not_found() {
         )
         .await
         .unwrap_err();
-    assert!(matches!(err.0, DeltaBackendError::NotFound(_)), "{err:?}");
+    assert!(
+        matches!(err.0, DeltaBackendError::NoSuchCatalog(_)),
+        "{err:?}"
+    );
 }
 
 #[tokio::test]
@@ -686,4 +689,48 @@ async fn temporary_path_credentials() {
         .unwrap();
     assert_eq!(creds.storage_credentials.len(), 1);
     assert_eq!(creds.storage_credentials[0].prefix, "s3://bucket/some/path");
+}
+
+#[tokio::test]
+async fn managed_create_stores_the_reserved_location() {
+    // A client may echo the staging location back with a trailing slash. The
+    // reservation still resolves, but the table keeps the server's spelling:
+    // engines join `_delta_log/...` onto it and a doubled `//` breaks them.
+    let b = backend();
+    let staging = b
+        .create_staging_table(
+            schema_path(),
+            DeltaCreateStagingTableRequest {
+                name: "slashed".to_string(),
+            },
+            (),
+        )
+        .await
+        .unwrap();
+    let reserved = staging.location.trim_end_matches('/').to_string();
+    let resp = b
+        .create_table(
+            schema_path(),
+            DeltaCreateTableRequest {
+                name: "slashed".to_string(),
+                location: format!("{reserved}/"),
+                table_type: DeltaTableType::Managed,
+                data_source_format: None,
+                comment: None,
+                columns: simple_columns(),
+                partition_columns: None,
+                protocol: compliant_protocol(),
+                properties: managed_properties(&staging.table_id),
+                domain_metadata: None,
+                last_commit_timestamp_ms: 1700,
+                uniform: None,
+            },
+            (),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.metadata.location, staging.location);
+
+    let loaded = b.load_table(table_path("slashed"), ()).await.unwrap();
+    assert_eq!(loaded.metadata.location, staging.location);
 }

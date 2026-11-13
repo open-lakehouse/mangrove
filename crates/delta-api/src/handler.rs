@@ -129,7 +129,16 @@ where
         // Negotiate before the catalog lookup so an unsupported client fails fast
         // with 400 without incurring a catalog resolve.
         let protocol_version = crate::config::negotiate_version(&query.protocol_versions)?;
-        self.catalog_exists(&query.catalog, &context).await?;
+        self.catalog_exists(&query.catalog, &context)
+            .await
+            .map_err(|e| match e {
+                // The only thing getConfig looks up is the catalog, so any
+                // not-found is the catalog's.
+                DeltaBackendError::NotFound(m) | DeltaBackendError::NotFoundGeneric(m) => {
+                    DeltaBackendError::NoSuchCatalog(m)
+                }
+                other => other,
+            })?;
         Ok(DeltaCatalogConfig {
             endpoints: crate::config::endpoints_for(self.capabilities()),
             protocol_version,
@@ -252,6 +261,15 @@ where
             (None, None)
         };
 
+        // A managed table lives where the server reserved it. The client may spell
+        // that location differently (a trailing slash, say), and the reservation
+        // lookup tolerates that, but the stored location is the reservation's own,
+        // so readers that join paths onto it (`<location>/_delta_log/...`) get the
+        // canonical spelling back from loadTable.
+        let location = match &adopt_staging {
+            Some(staging) => staging.location.clone(),
+            None => request.location,
+        };
         let full_name = format!("{}.{}.{}", path.catalog, path.schema, request.name);
         let stored = self
             .create_table_row(
@@ -259,7 +277,7 @@ where
                     at: path,
                     name: request.name,
                     table_type: request.table_type,
-                    location: request.location,
+                    location,
                     comment: request.comment,
                     columns,
                     properties: stored_properties,

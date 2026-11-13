@@ -229,7 +229,9 @@ pub trait DeltaBackend<Cx = ()>: Send + Sync + 'static {
     /// [`DeltaBackendError::Unauthenticated`] (→ 401).
     async fn authorize(&self, action: DeltaAction<'_>, cx: &Cx) -> BackendResult<()>;
 
-    /// Confirm the catalog exists (for `getConfig`). Missing → [`DeltaBackendError::NotFound`].
+    /// Confirm the catalog exists (for `getConfig`). Missing →
+    /// [`DeltaBackendError::NotFound`] (reported as
+    /// [`NoSuchCatalog`](DeltaBackendError::NoSuchCatalog)).
     async fn catalog_exists(&self, catalog: &str, cx: &Cx) -> BackendResult<()>;
 
     /// Resolve a table by 3-part name. Missing → [`DeltaBackendError::NotFound`].
