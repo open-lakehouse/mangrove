@@ -47,44 +47,53 @@ impl StagingTableHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<StagingTable> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
-
-        // A managed table cannot share a name with an existing table in the schema.
-        let table_ident = ResourceIdent::table(ResourceName::new([
-            request.catalog_name.as_str(),
-            request.schema_name.as_str(),
-            request.name.as_str(),
-        ]));
-        if self.get(&table_ident).await.is_ok() {
-            return Err(Error::AlreadyExists);
-        }
-
-        // Allocate the immutable id and location. The id is the future managed
-        // table's id; the store persists the row under this same id.
-        let id = uuid::Uuid::new_v4();
-        let parent =
-            resolve_managed_parent_location(self, &request.catalog_name, &request.schema_name)
-                .await?;
-        let staging_location = child_location(&parent, "tables", &id.to_string());
-
         let created_by = match context.recipient() {
             Principal::User(name) => Some(name.clone()),
             Principal::Anonymous => None,
         };
-
-        let staging_table = StagingTable {
-            id: id.hyphenated().to_string(),
-            name: request.name,
-            catalog_name: request.catalog_name,
-            schema_name: request.schema_name,
-            staging_location,
-            created_by,
-            stage_committed: false,
-            created_at: None,
-            ..Default::default()
-        };
-
-        Ok(self.create(staging_table.into()).await?.0.try_into()?)
+        allocate_staging_table(self, request, created_by).await
     }
+}
+
+/// Allocate a staging reservation (id + managed location) for `request`, recording
+/// `created_by` for the adoption creator-match. Pure data access: the caller has
+/// authorized CREATE on the parent schema.
+pub(crate) async fn allocate_staging_table(
+    handler: &ServerHandler<RequestContext>,
+    request: CreateStagingTableRequest,
+    created_by: Option<String>,
+) -> Result<StagingTable> {
+    // A managed table cannot share a name with an existing table in the schema.
+    let table_ident = ResourceIdent::table(ResourceName::new([
+        request.catalog_name.as_str(),
+        request.schema_name.as_str(),
+        request.name.as_str(),
+    ]));
+    if handler.get(&table_ident).await.is_ok() {
+        return Err(Error::AlreadyExists);
+    }
+
+    // Allocate the immutable id and location. The id is the future managed
+    // table's id; the store persists the row under this same id.
+    let id = uuid::Uuid::new_v4();
+    let parent =
+        resolve_managed_parent_location(handler, &request.catalog_name, &request.schema_name)
+            .await?;
+    let staging_location = child_location(&parent, "tables", &id.to_string());
+
+    let staging_table = StagingTable {
+        id: id.hyphenated().to_string(),
+        name: request.name,
+        catalog_name: request.catalog_name,
+        schema_name: request.schema_name,
+        staging_location,
+        created_by,
+        stage_committed: false,
+        created_at: None,
+        ..Default::default()
+    };
+
+    Ok(handler.create(staging_table.into()).await?.0.try_into()?)
 }
 
 /// Resolve the managed *parent* location that a managed table/volume created in

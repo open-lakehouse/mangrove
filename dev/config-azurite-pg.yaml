@@ -36,3 +36,7 @@ encryption:
 # table location browser-reachable (see hydrofoil's wasm/query-wasm/src/creds.rs). Do not
 # use a host-style URL here.
 managed_storage_root: "azurite://lakehouse"
+# Optionally name the registered storage credential that governs the root, so
+# managed tables under it vend without an external location over the root. The
+# seed script registers such an external location instead, so this stays unset.
+# managed_storage_root_credential: "azurite-key"

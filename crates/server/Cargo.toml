@@ -51,6 +51,7 @@ unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api",
 # store backs handlers built without a durable backend.
 unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.3", features = [
   "memory",
+  "vending",
 ] }
 unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.9", features = [
   "client-arm",
@@ -72,7 +73,8 @@ itertools = { workspace = true }
 object_store = { workspace = true }
 olai-credential-vending = { workspace = true }
 olai-http = { workspace = true }
-olai-storage-credentials = { workspace = true }
+# `wire::unity` backs the Delta adapter's UC REST credential conversions.
+olai-storage-credentials = { workspace = true, features = ["unity"] }
 # Stores for the storage byte-proxy local arm (feature `storage-proxy`).
 olai-vended-store = { workspace = true, features = ["aws", "azure", "gcp", "fs"], optional = true }
 serde = { workspace = true }

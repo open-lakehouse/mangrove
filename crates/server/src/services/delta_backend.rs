@@ -2,11 +2,15 @@
 //!
 //! Implements [`unitycatalog_delta_api::DeltaBackend`] for
 //! [`ServerHandler<RequestContext>`], expressing the narrow backend port over the
-//! server's existing handler traits (`TableHandler`, `StagingTableHandler`,
-//! `TemporaryCredentialHandler`), the `Policy` authorization surface, the resource
-//! store, and the commit coordinator. All Delta *semantics* — the managed-table
+//! server's `Policy` authorization surface, the resource store, the credential
+//! vendor, and the commit coordinator. All Delta *semantics* — the managed-table
 //! contract, the `updateTable` action dispatcher, `loadTable` construction — live
 //! in [`unitycatalog_delta_api`]; this adapter only maps types and errors.
+//!
+//! It honours the port's authorization contract: every permission check is in
+//! [`DeltaBackend::authorize`] (by table name, before resolution), and the data
+//! methods are pure data access, sharing the non-authorizing cores of the UC REST
+//! handlers (`allocate_staging_table`, `vend_location`, `vend_table`).
 //!
 //! The impl is on `ServerHandler<RequestContext>` directly (not a wrapper) so the
 //! router's `RequestContext: FromRequestParts<ServerHandler>` extraction is
@@ -17,18 +21,11 @@ use buffa::Enumeration;
 
 use unitycatalog_common::models::staging_tables::v1::{CreateStagingTableRequest, StagingTable};
 use unitycatalog_common::models::tables::v1::{
-    Column as UcColumn, CreateTableRequest, DataSourceFormat, DeleteTableRequest, GetTableRequest,
-    Table, TableType,
-};
-use unitycatalog_common::models::temporary_credentials::v1::{
-    GenerateTemporaryPathCredentialsRequest, GenerateTemporaryTableCredentialsRequest,
-    TemporaryCredential, generate_temporary_path_credentials_request::Operation as PathOp,
-    generate_temporary_table_credentials_request::Operation as TableOp,
+    Column as UcColumn, CreateTableRequest, DataSourceFormat, Table, TableType,
 };
 use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 use unitycatalog_common::store::Precondition;
 
-use olai_storage_credentials::wire::{VendContext, unity};
 use unitycatalog_delta_api::authz::DeltaAction;
 use unitycatalog_delta_api::backend::{
     BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, DeltaCapabilities,
@@ -42,16 +39,16 @@ use unitycatalog_delta_api::error::DeltaBackendError;
 use unitycatalog_delta_api::models::DeltaTableType;
 
 use crate::api::RequestContext;
-use crate::api::staging_tables::find_staging_table_by_location;
-use crate::api::tables::TableHandler;
+use crate::api::staging_tables::{allocate_staging_table, find_staging_table_by_location};
+use crate::api::temporary_credentials::{
+    authorize_path_vend, required_permission, vend_location, vend_table,
+};
 use crate::policy::{Permission, Policy, Principal};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::validate_external_storage_location;
 use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
-use unitycatalog_handlers::staging_tables::StagingTableHandler;
-use unitycatalog_handlers::temporary_credentials::TemporaryCredentialHandler;
 
 // ===================================================================
 // Error mapping
@@ -215,33 +212,13 @@ fn staging_to_reservation(st: StagingTable) -> StagingReservation {
     reservation
 }
 
-/// Read a UC REST [`TemporaryCredential`] vended at `access` as the crate's
-/// [`VendedCredential`].
-fn to_vended_credential(
-    creds: TemporaryCredential,
-    access: CredentialAccess,
-) -> BackendResult<VendedCredential> {
-    let url = creds.url.clone();
-    let location = StorageLocationUrl::parse(&url).map_err(to_backend_err)?;
-    let context = VendContext::new(location.scope(), access);
-    let credential = unity::TemporaryCredential::from(creds)
-        .to_vended(&context)
-        .map_err(|e| to_backend_err(unitycatalog_common::Error::from(e).into()))?;
-    Ok(VendedCredential::new(url, credential))
-}
-
-fn to_table_op(access: CredentialAccess) -> i32 {
-    match access {
-        CredentialAccess::Read => TableOp::Read as i32,
-        CredentialAccess::ReadWrite => TableOp::ReadWrite as i32,
-    }
-}
-
-fn to_path_op(access: CredentialAccess) -> i32 {
-    match access {
-        CredentialAccess::Read => PathOp::PathRead as i32,
-        CredentialAccess::ReadWrite => PathOp::PathReadWrite as i32,
-    }
+/// The store identity of a three-part table name.
+fn table_ident(table: &TableRef) -> ResourceIdent {
+    ResourceIdent::table(ResourceName::new([
+        table.catalog.as_str(),
+        table.schema.as_str(),
+        table.table.as_str(),
+    ]))
 }
 
 // ===================================================================
@@ -278,49 +255,40 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
     async fn resolve_table(
         &self,
         table: &TableRef,
-        cx: &RequestContext,
+        _cx: &RequestContext,
     ) -> BackendResult<ResolvedTable> {
-        let t = TableHandler::get_table(
-            self,
-            GetTableRequest {
-                full_name: table.full_name(),
-                include_delta_metadata: None,
-                include_browse: None,
-                include_manifest_capabilities: None,
-                ..Default::default()
-            },
-            cx.clone(),
-        )
-        .await
-        .map_err(to_backend_err)?;
-        // Read the store version behind the table's id so the etag reflects the
-        // current row (the `assert-etag` CAS keys on this same version).
-        let version = match t.table_id.as_deref() {
-            Some(id) => match uuid::Uuid::parse_str(id) {
-                Ok(uuid) => {
-                    let ident = ResourceIdent::Table(ResourceRef::Uuid(uuid));
-                    self.get_versioned(&ident)
-                        .await
-                        .map(|(_, _, v)| v)
-                        .map_err(Error::from)
-                        .map_err(to_backend_err)?
-                }
-                Err(_) => 0,
-            },
-            None => 0,
-        };
+        // Pure data access (the handler authorized the action already): one
+        // versioned read by name, so the etag reflects exactly the row returned
+        // (the `assert-etag` CAS keys on this same version).
+        let (resource, _, version) = self
+            .get_versioned(&table_ident(table))
+            .await
+            .map_err(Error::from)
+            .map_err(to_backend_err)?;
+        let t: Table = resource
+            .try_into()
+            .map_err(Error::from)
+            .map_err(to_backend_err)?;
         Ok(table_to_resolved(t, version))
     }
 
     async fn authorize(&self, action: DeltaAction<'_>, cx: &RequestContext) -> BackendResult<()> {
-        match action {
+        // The single authorization seam: every check happens here, and the data
+        // methods below are pure data access. Table actions arrive before the
+        // table is resolved and are checked by name, like the UC REST table
+        // endpoints, so a missing table is denied rather than reported missing.
+        let result = match action {
+            DeltaAction::ReadCatalog { catalog } => {
+                let ident = ResourceIdent::catalog(ResourceName::new([catalog]));
+                self.authorize_checked(&ident, &Permission::Read, cx).await
+            }
             DeltaAction::CreateTable {
                 at,
                 name,
                 table_type,
             } => {
-                // Authorize CREATE on the target table via the same SecuredAction
-                // the UC-REST createTable uses.
+                // CREATE on the target table via the same SecuredAction the
+                // UC-REST createTable uses.
                 let create_action = CreateTableRequest {
                     name: name.to_string(),
                     catalog_name: at.catalog.clone(),
@@ -329,25 +297,43 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
                     data_source_format: DataSourceFormat::Delta.into(),
                     ..Default::default()
                 };
-                self.check_required(&create_action, cx)
+                self.check_required(&create_action, cx).await
+            }
+            DeltaAction::ReadTable { table } => {
+                self.authorize_checked(&table_ident(table), &Permission::Read, cx)
                     .await
-                    .map_err(to_backend_err)
             }
             DeltaAction::WriteTable { table } => {
-                // Name-keyed, like the UC REST table actions: authorized before
-                // the table is resolved, so a missing table is denied rather than
-                // reported missing.
-                let ident = ResourceIdent::table(ResourceName::from_naive_str_split(
-                    table.full_name().as_str(),
-                ));
-                self.authorize_checked(&ident, &Permission::Write, cx)
+                self.authorize_checked(&table_ident(table), &Permission::Write, cx)
                     .await
-                    .map_err(to_backend_err)
+            }
+            // Delete and rename change the securable itself: MANAGE, as the UC
+            // REST deleteTable requires.
+            DeltaAction::DeleteTable { table } | DeltaAction::RenameTable { from: table, .. } => {
+                self.authorize_checked(&table_ident(table), &Permission::Manage, cx)
+                    .await
+            }
+            DeltaAction::VendTableCredential { table, access } => {
+                self.authorize_checked(&table_ident(table), &required_permission(access), cx)
+                    .await
+            }
+            DeltaAction::VendPathCredential { location, access } => {
+                let url = StorageLocationUrl::parse(location).map_err(to_backend_err)?;
+                authorize_path_vend(self, &url, access, cx).await
+            }
+            DeltaAction::CreateStaging { at, name } => {
+                let request = CreateStagingTableRequest {
+                    name: name.to_string(),
+                    catalog_name: at.catalog.clone(),
+                    schema_name: at.schema.clone(),
+                    ..Default::default()
+                };
+                self.check_required(&request, cx).await
             }
             DeltaAction::AdoptStaging { reservation } => {
                 // The creator-match, in mangrove's identity terms: the caller's
                 // principal name must equal the reservation's `created_by`
-                // (anonymous reservations, `created_by == None`, are adoptable by
+                // (anonymous reservations, `created_by == None`, are usable by
                 // any anonymous caller — the pre-crate behavior).
                 let principal = match cx.recipient() {
                     Principal::User(name) => Some(name.clone()),
@@ -360,28 +346,16 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
                 }
                 Ok(())
             }
-            // Read / delete / rename / credential vending / staging creation are
-            // authorized by the downstream handler traits these operations
-            // delegate to (`TableHandler`, `StagingTableHandler`,
-            // `TemporaryCredentialHandler`), each of which runs `check_required`
-            // itself. Authorizing again here would double-check; matching the
-            // pre-crate behavior, the handler-level hook is a no-op for them.
-            // getConfig reveals only that a catalog exists; `catalog_exists` reads
-            // it through the store, matching the pre-crate behavior.
-            DeltaAction::ReadCatalog { .. }
-            | DeltaAction::ReadTable { .. }
-            | DeltaAction::DeleteTable { .. }
-            | DeltaAction::RenameTable { .. }
-            | DeltaAction::VendTableCredential { .. }
-            | DeltaAction::VendPathCredential { .. }
-            | DeltaAction::CreateStaging { .. } => Ok(()),
             // `DeltaAction` is `#[non_exhaustive]`. Fail closed on an action this
             // adapter has not been taught: a newly added operation must not slip
             // through unauthorized until its arm is written.
-            _ => Err(DeltaBackendError::PermissionDenied(
-                "unrecognized Delta action".to_string(),
-            )),
-        }
+            _ => {
+                return Err(DeltaBackendError::PermissionDenied(
+                    "unrecognized Delta action".to_string(),
+                ));
+            }
+        };
+        result.map_err(to_backend_err)
     }
 
     async fn validate_external_location(
@@ -503,17 +477,11 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         Ok(table_to_resolved(updated, new_version))
     }
 
-    async fn delete_table(&self, table: &TableRef, cx: &RequestContext) -> BackendResult<()> {
-        TableHandler::delete_table(
-            self,
-            DeleteTableRequest {
-                full_name: table.full_name(),
-                ..Default::default()
-            },
-            cx.clone(),
-        )
-        .await
-        .map_err(to_backend_err)
+    async fn delete_table(&self, table: &TableRef, _cx: &RequestContext) -> BackendResult<()> {
+        self.delete(&table_ident(table))
+            .await
+            .map_err(Error::from)
+            .map_err(to_backend_err)
     }
 
     async fn rename_table(
@@ -526,11 +494,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         // the leaf, keeping catalog+schema. `ResourceStore::rename` re-keys the
         // object and rewrites the leaf name inside its properties in one transaction,
         // preserving the id, associations, and any secrets.
-        let from_ident = ResourceIdent::table(ResourceName::new([
-            from.catalog.as_str(),
-            from.schema.as_str(),
-            from.table.as_str(),
-        ]));
+        let from_ident = table_ident(from);
         let new_name = ResourceName::new([from.catalog.as_str(), from.schema.as_str(), to_name]);
         self.rename(&from_ident, &new_name, Precondition::Any)
             .await
@@ -545,7 +509,11 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         name: &str,
         cx: &RequestContext,
     ) -> BackendResult<StagingReservation> {
-        let staging = StagingTableHandler::create_staging_table(
+        let created_by = match cx.recipient() {
+            Principal::User(name) => Some(name.clone()),
+            Principal::Anonymous => None,
+        };
+        let staging = allocate_staging_table(
             self,
             CreateStagingTableRequest {
                 name: name.to_string(),
@@ -553,7 +521,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
                 schema_name: at.schema.clone(),
                 ..Default::default()
             },
-            cx.clone(),
+            created_by,
         )
         .await
         .map_err(to_backend_err)?;
@@ -587,41 +555,29 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         &self,
         table_id: &str,
         access: CredentialAccess,
-        cx: &RequestContext,
+        _cx: &RequestContext,
     ) -> BackendResult<VendedCredential> {
-        let creds = self
-            .generate_temporary_table_credentials(
-                GenerateTemporaryTableCredentialsRequest {
-                    table_id: table_id.to_string(),
-                    operation: to_table_op(access).into(),
-                    ..Default::default()
-                },
-                cx.clone(),
-            )
-            .await
-            .map_err(to_backend_err)?;
-        to_vended_credential(creds, access)
+        let uuid = uuid::Uuid::parse_str(table_id).map_err(|_| {
+            DeltaBackendError::InvalidArgument("table id is not a valid UUID".into())
+        })?;
+        let (credential, url) =
+            vend_table(self, &ResourceIdent::Table(ResourceRef::Uuid(uuid)), access)
+                .await
+                .map_err(to_backend_err)?;
+        Ok(VendedCredential::new(url.raw().to_string(), credential))
     }
 
     async fn vend_path_credential(
         &self,
         location: &str,
         access: CredentialAccess,
-        cx: &RequestContext,
+        _cx: &RequestContext,
     ) -> BackendResult<VendedCredential> {
-        let creds = self
-            .generate_temporary_path_credentials(
-                GenerateTemporaryPathCredentialsRequest {
-                    url: location.to_string(),
-                    operation: to_path_op(access).into(),
-                    dry_run: Some(false),
-                    ..Default::default()
-                },
-                cx.clone(),
-            )
+        let url = StorageLocationUrl::parse(location).map_err(to_backend_err)?;
+        let credential = vend_location(self, &url, access)
             .await
             .map_err(to_backend_err)?;
-        to_vended_credential(creds, access)
+        Ok(VendedCredential::new(url.raw().to_string(), credential))
     }
 
     fn commit_coordinator(&self) -> &dyn CommitCoordinator {
@@ -641,5 +597,161 @@ mod tests {
         assert!(matches!(err, DeltaBackendError::NotFound(_)), "{err:?}");
         let err = to_backend_err(Error::NotFound);
         assert!(matches!(err, DeltaBackendError::NotFound(_)), "{err:?}");
+    }
+
+    #[cfg(feature = "memory")]
+    fn handler(decision: crate::policy::Decision) -> ServerHandler<RequestContext> {
+        use std::sync::Arc;
+
+        use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
+
+        use crate::memory::InMemoryResourceStore;
+        use crate::policy::ConstantPolicy;
+
+        let encryptor =
+            EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap());
+        let store = Arc::new(InMemoryResourceStore::new(encryptor));
+        let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::new(decision));
+        ServerHandler::try_new_tokio(policy, store).unwrap()
+    }
+
+    #[cfg(feature = "memory")]
+    fn ctx() -> RequestContext {
+        RequestContext {
+            recipient: Principal::anonymous(),
+        }
+    }
+
+    /// Every action is checked in `authorize` (the data methods do not
+    /// authorize), so a deny-all policy denies all of them, including rename,
+    /// which used to reach the store unchecked.
+    #[cfg(feature = "memory")]
+    #[tokio::test]
+    async fn deny_all_policy_denies_every_action() {
+        let h = handler(crate::policy::Decision::Deny);
+        let table = TableRef {
+            catalog: "c".into(),
+            schema: "s".into(),
+            table: "t".into(),
+        };
+        let schema = SchemaRef {
+            catalog: "c".into(),
+            schema: "s".into(),
+        };
+        let actions = [
+            DeltaAction::ReadCatalog { catalog: "c" },
+            DeltaAction::CreateTable {
+                at: &schema,
+                name: "t",
+                table_type: DeltaTableType::External,
+            },
+            DeltaAction::ReadTable { table: &table },
+            DeltaAction::WriteTable { table: &table },
+            DeltaAction::DeleteTable { table: &table },
+            DeltaAction::RenameTable {
+                from: &table,
+                to: "t2",
+            },
+            DeltaAction::VendTableCredential {
+                table: &table,
+                access: CredentialAccess::Read,
+            },
+            DeltaAction::CreateStaging {
+                at: &schema,
+                name: "t",
+            },
+        ];
+        for action in actions {
+            let label = format!("{action:?}");
+            let result = DeltaBackend::authorize(&h, action, &ctx()).await;
+            assert!(
+                matches!(result, Err(DeltaBackendError::PermissionDenied(_))),
+                "{label}: {result:?}"
+            );
+        }
+    }
+
+    /// A managed catalog on the metastore root (no own `storage_root`, no
+    /// external location over the root) gets staging credentials from the root's
+    /// configured credential. An Azure storage key signs SAS tokens locally, so
+    /// no network is involved.
+    #[cfg(feature = "memory")]
+    #[tokio::test]
+    async fn managed_catalog_on_metastore_root_vends_staging_credentials() {
+        use unitycatalog_common::models::catalogs::v1::CreateCatalogRequest;
+        use unitycatalog_common::models::credentials::v1::{
+            AzureStorageKey, CreateCredentialRequest, Purpose,
+        };
+        use unitycatalog_common::models::schemas::v1::CreateSchemaRequest;
+        use unitycatalog_delta_api::DeltaApiHandler;
+        use unitycatalog_delta_api::models::DeltaCreateStagingTableRequest;
+
+        use crate::api::{CatalogHandler, CredentialHandler, SchemaHandler};
+
+        let root = "abfss://meta@acct.dfs.core.windows.net/root";
+        let h = handler(crate::policy::Decision::Allow)
+            .with_managed_storage_root(Some(root))
+            .with_managed_storage_root_credential(Some("root-cred"));
+        h.create_credential(
+            CreateCredentialRequest {
+                name: "root-cred".into(),
+                purpose: Purpose::Storage.into(),
+                azure_storage_key: Some(AzureStorageKey {
+                    account_name: "acct".into(),
+                    // base64 of a dummy key: SAS signing needs valid base64.
+                    account_key: "a2V5a2V5a2V5a2V5a2V5a2V5".into(),
+                    ..Default::default()
+                })
+                .into(),
+                ..Default::default()
+            },
+            ctx(),
+        )
+        .await
+        .unwrap();
+        h.create_catalog(
+            CreateCatalogRequest {
+                name: "cat".into(),
+                ..Default::default()
+            },
+            ctx(),
+        )
+        .await
+        .unwrap();
+        h.create_schema(
+            CreateSchemaRequest {
+                name: "sch".into(),
+                catalog_name: "cat".into(),
+                ..Default::default()
+            },
+            ctx(),
+        )
+        .await
+        .unwrap();
+
+        let staging = DeltaApiHandler::create_staging_table(
+            &h,
+            SchemaRef {
+                catalog: "cat".into(),
+                schema: "sch".into(),
+            },
+            DeltaCreateStagingTableRequest { name: "t".into() },
+            ctx(),
+        )
+        .await
+        .unwrap();
+        assert!(staging.location.starts_with(root), "{}", staging.location);
+        assert!(!staging.storage_credentials.is_empty());
+
+        let creds = DeltaApiHandler::get_staging_table_credentials(&h, staging.table_id, ctx())
+            .await
+            .unwrap();
+        let cred = &creds.storage_credentials[0];
+        assert_eq!(cred.prefix, staging.location);
+        assert!(
+            cred.config.keys().any(|k| k.starts_with("azure.")),
+            "{:?}",
+            cred.config.keys().collect::<Vec<_>>()
+        );
     }
 }
