@@ -90,7 +90,74 @@ async fn missing_query_param_is_a_400() {
         .await
         .unwrap();
 
+    assert_delta_bad_request(response).await;
+}
+
+/// Assert a 400 carrying the Delta error envelope with `BadRequestException`.
+async fn assert_delta_bad_request(response: axum::response::Response) {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap_or_else(|e| {
+        panic!(
+            "not a JSON envelope ({e}): {}",
+            String::from_utf8_lossy(&body)
+        )
+    });
+    assert_eq!(json["error"]["type"], "BadRequestException", "{json}");
+    assert_eq!(json["error"]["code"], 400, "{json}");
+    assert!(
+        json["error"]["message"]
+            .as_str()
+            .is_some_and(|m| !m.is_empty()),
+        "{json}"
+    );
+}
+
+#[tokio::test]
+async fn invalid_query_value_is_a_delta_envelope() {
+    let response = app()
+        .oneshot(
+            Request::builder()
+                .uri("/delta/v1/temporary-path-credentials?location=s3://b/p&operation=DELETE")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_delta_bad_request(response).await;
+}
+
+#[tokio::test]
+async fn malformed_json_body_is_a_delta_envelope() {
+    let response = app()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/delta/v1/catalogs/c/schemas/s/tables/t")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    r#"{"requirements": [], "updates": [{"action": "explode"}]}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_delta_bad_request(response).await;
+}
+
+#[tokio::test]
+async fn missing_content_type_is_a_delta_envelope() {
+    let response = app()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/delta/v1/catalogs/c/schemas/s/tables")
+                .body(Body::from("{}"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_delta_bad_request(response).await;
 }
 
 #[tokio::test]

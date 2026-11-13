@@ -2980,6 +2980,7 @@ dependencies = [
  "axum",
  "chrono",
  "olai-storage-credentials",
+ "rstest",
  "serde",
  "serde_json",
  "thiserror",

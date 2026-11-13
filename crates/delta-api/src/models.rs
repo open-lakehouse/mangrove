@@ -554,6 +554,7 @@ pub enum DeltaErrorType {
     CommitStateUnknownException,
     InternalServerErrorException,
     NotImplementedException,
+    ServiceUnavailableException,
 }
 
 impl DeltaErrorType {

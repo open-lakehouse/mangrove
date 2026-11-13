@@ -437,9 +437,18 @@ fn effective_backfilled_version(
     state: &TableCommitState,
     latest_backfilled_version: Option<i64>,
 ) -> i64 {
-    // The oldest retained row marks the watermark: everything below it is already
-    // backfilled. `first - 1` is the highest backfilled version implied by state.
-    let from_state = state.first_version().map(|f| f - 1).unwrap_or(-1);
+    // The table's backfilled version: the retained backfilled-latest marker if
+    // there is one (it *is* backfilled, so it must not count against the cap),
+    // else the oldest retained row minus one, since everything below it was
+    // pruned by backfill. Port of UC OSS `backfilledVersionOf`.
+    let from_state = state
+        .commits
+        .iter()
+        .rev()
+        .find(|(_, c)| c.is_backfilled_latest)
+        .map(|(v, _)| *v)
+        .or_else(|| state.first_version().map(|f| f - 1))
+        .unwrap_or(-1);
     match latest_backfilled_version {
         Some(lbv) => from_state.max(lbv),
         None => from_state,
@@ -589,6 +598,23 @@ mod tests {
         cc.commit("t", Some(commit_info(4)), None).await.unwrap();
         let (_, latest) = cc.get_commits("t", 0, None).await.unwrap();
         assert_eq!(latest, 4);
+    }
+
+    #[tokio::test]
+    async fn fully_backfilled_marker_does_not_count_against_the_cap() {
+        // After a full backfill the retained marker row is backfilled, so a
+        // whole fresh window of `max` commits fits above it.
+        let cc = InMemoryCommitCoordinator::new(3);
+        cc.commit("t", Some(commit_info(1)), None).await.unwrap();
+        cc.commit("t", None, Some(1)).await.unwrap();
+        for v in 2..=4 {
+            cc.commit("t", Some(commit_info(v)), None).await.unwrap();
+        }
+        let err = cc
+            .commit("t", Some(commit_info(5)), None)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, CommitError::ResourceExhausted(_)));
     }
 
     #[tokio::test]

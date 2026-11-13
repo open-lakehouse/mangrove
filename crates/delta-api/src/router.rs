@@ -272,27 +272,36 @@ where
 
 // ----- Extraction helpers ----------------------------------------------------
 
+// Extraction failures (a malformed body, an unknown `action`, a bad `operation`
+// query value, …) are answered with the Delta error envelope as a 400
+// `BadRequestException`, not axum's plain-text rejection, so clients that parse
+// `{"error": {...}}` see a uniform error shape on every response.
+
 /// Extract typed path parameters. `Path`/`Query`/`Json` ignore the state type, so
 /// we always pass `&()` regardless of the router's host state `S`.
 async fn extract_path<P: DeserializeOwned + Send>(parts: &mut Parts) -> Result<P, Response> {
     Path::<P>::from_request_parts(parts, &())
         .await
         .map(|Path(p)| p)
-        .map_err(IntoResponse::into_response)
+        .map_err(|rejection| bad_request(rejection.body_text()))
 }
 
 async fn extract_query<Q: DeserializeOwned + Send>(parts: &mut Parts) -> Result<Q, Response> {
     Query::<Q>::from_request_parts(parts, &())
         .await
         .map(|Query(q)| q)
-        .map_err(IntoResponse::into_response)
+        .map_err(|rejection| bad_request(rejection.body_text()))
 }
 
 async fn extract_json<B: DeserializeOwned>(req: Request) -> Result<B, Response> {
     axum::Json::<B>::from_request(req, &())
         .await
         .map(|axum::Json(b)| b)
-        .map_err(IntoResponse::into_response)
+        .map_err(|rejection| bad_request(rejection.body_text()))
+}
+
+fn bad_request(message: String) -> Response {
+    crate::error::DeltaApiError::bad_request(message).into_response()
 }
 
 /// Map a handler `Result` to an axum [`Response`]. `Ok(())` (void operations)

@@ -106,12 +106,14 @@ impl InMemoryDeltaBackend {
     }
 }
 
-fn fake_credential(url: &str, access: CredentialAccess) -> VendedCredential {
+fn fake_credential(url: &str, access: CredentialAccess) -> BackendResult<VendedCredential> {
     use olai_storage_credentials::StorageCredentials;
 
-    let scope = url.parse().expect("fake credential location parses");
+    let scope = url.parse().map_err(|e| {
+        DeltaBackendError::InvalidArgument(format!("invalid storage location '{url}': {e}"))
+    })?;
     let expires_at = chrono::DateTime::from_timestamp_millis(4_102_444_800_000); // 2100-01-01
-    VendedCredential {
+    Ok(VendedCredential {
         url: url.to_string(),
         credential: olai_storage_credentials::VendedCredential::new(
             StorageCredentials::aws("AKIAEXAMPLE", "secret", Some("token".to_string())),
@@ -119,7 +121,7 @@ fn fake_credential(url: &str, access: CredentialAccess) -> VendedCredential {
             access,
         )
         .with_expiry(expires_at),
-    }
+    })
 }
 
 #[async_trait]
@@ -347,7 +349,7 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             .ok_or_else(|| {
                 DeltaBackendError::NotFound(format!("table id '{table_id}' not found"))
             })?;
-        Ok(fake_credential(&location, access))
+        fake_credential(&location, access)
     }
 
     async fn vend_path_credential(
@@ -356,7 +358,7 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
         access: CredentialAccess,
         _cx: &Cx,
     ) -> BackendResult<VendedCredential> {
-        Ok(fake_credential(location, access))
+        fake_credential(location, access)
     }
 
     fn commit_coordinator(&self) -> &dyn CommitCoordinator {

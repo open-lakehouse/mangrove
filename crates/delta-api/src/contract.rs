@@ -262,6 +262,100 @@ fn validate_required_properties(properties: &BTreeMap<String, String>) -> Result
     Ok(())
 }
 
+/// Domain name of the clustering domain metadata.
+pub const DOMAIN_CLUSTERING: &str = "delta.clustering";
+/// Domain name of the row-tracking domain metadata.
+pub const DOMAIN_ROW_TRACKING: &str = "delta.rowTracking";
+
+/// The domain names a `set-domain-metadata` block sets.
+pub fn domains_set_in(dm: &DeltaDomainMetadataUpdates) -> Vec<&'static str> {
+    let mut domains = Vec::new();
+    if dm.delta_clustering.is_some() {
+        domains.push(DOMAIN_CLUSTERING);
+    }
+    if dm.delta_row_tracking.is_some() {
+        domains.push(DOMAIN_ROW_TRACKING);
+    }
+    domains
+}
+
+/// Drop the stored projection of one domain (`remove-domain-metadata`). Unknown
+/// domains are a 400.
+pub fn remove_domain_metadata(props: &mut BTreeMap<String, String>, domain: &str) -> Result<()> {
+    match domain {
+        DOMAIN_CLUSTERING => props.remove(PROP_CLUSTERING_COLUMNS),
+        DOMAIN_ROW_TRACKING => props.remove(PROP_ROW_TRACKING_HIGH_WATER_MARK),
+        other => {
+            return Err(Error::invalid_argument(format!(
+                "Unknown domain in remove-domain-metadata: {other}"
+            )));
+        }
+    };
+    Ok(())
+}
+
+/// Check the domain metadata implied by the stored properties against the writer
+/// features implied by them (`delta.feature.<name>`), the post-apply equivalent of
+/// [`validate`]'s domain-metadata-vs-protocol check.
+pub fn validate_domain_metadata_against_properties(
+    properties: &BTreeMap<String, String>,
+) -> Result<()> {
+    let has_feature = |name: &str| properties.contains_key(&format!("{FEATURE_PREFIX}{name}"));
+    if properties.contains_key(PROP_CLUSTERING_COLUMNS) && !has_feature("clustering") {
+        return Err(Error::invalid_argument(
+            "domain-metadata.delta.clustering requires the 'clustering' writer feature.",
+        ));
+    }
+    if properties.contains_key(PROP_ROW_TRACKING_HIGH_WATER_MARK)
+        && !has_feature(FEATURE_ROW_TRACKING)
+    {
+        return Err(Error::invalid_argument(
+            "domain-metadata.delta.rowTracking requires the 'rowTracking' writer feature.",
+        ));
+    }
+    Ok(())
+}
+
+/// Reject `set-properties` / `remove-properties` changes that would break the
+/// managed-table contract on a MANAGED table.
+///
+/// `keys` are the touched keys; `new_value` returns a key's value after the
+/// change (`None` for a removal). A required fixed property may only be set to its
+/// required value, `io.unitycatalog.tableId` must carry forward unchanged, and the
+/// catalog-maintained `delta.lastUpdateVersion` / `delta.lastCommitTimestamp` are
+/// not client-writable. Only touched keys are checked, so a table that predates a
+/// contract requirement is not rejected for keys the request leaves alone.
+pub fn check_managed_property_changes<'k>(
+    keys: impl IntoIterator<Item = &'k String>,
+    table_id: &str,
+    new_value: impl Fn(&str) -> Option<&'k str>,
+) -> Result<()> {
+    for key in keys {
+        let key = key.as_str();
+        let value = new_value(key);
+        if let Some((_, expected)) = REQUIRED_FIXED_PROPERTIES.iter().find(|(k, _)| *k == key)
+            && value != Some(*expected)
+        {
+            return Err(Error::invalid_argument(format!(
+                "MANAGED table required property '{key}' must be '{expected}' (got '{}').",
+                value.unwrap_or("<removed>")
+            )));
+        }
+        if key == PROP_UC_TABLE_ID && value != Some(table_id) {
+            return Err(Error::invalid_argument(format!(
+                "MANAGED table property '{PROP_UC_TABLE_ID}' must carry forward the table id \
+                 ({table_id})."
+            )));
+        }
+        if key == PROP_LAST_UPDATE_VERSION || key == PROP_LAST_COMMIT_TIMESTAMP {
+            return Err(Error::invalid_argument(format!(
+                "property '{key}' is maintained by the catalog and cannot be changed."
+            )));
+        }
+    }
+    Ok(())
+}
+
 /// Cross-check the client's `io.unitycatalog.tableId` property against the
 /// UC-allocated UUID for the table (the staging UUID at create time).
 pub fn validate_table_id_property(
@@ -407,21 +501,35 @@ pub fn delta_columns_to_uc(
 }
 
 /// Reconstruct the Delta API `columns` from stored UC [`Column`]s for `loadTable`.
-/// Uses each column's stored `type_json` (the original Delta type), falling back to
-/// the bare type name string when absent.
+///
+/// `type_json` follows the UC convention: the column's full serialized Delta
+/// struct field (`{"name", "type", "nullable", "metadata"}`), which is what
+/// [`delta_columns_to_uc`] stores. That form is parsed first, so complex types and
+/// field metadata (column-mapping ids / physical names, comments) round-trip. A
+/// bare data type (`"long"`, `{"type":"array",..}`), as written by some other
+/// producers, is accepted next, and the catalog type string is the last resort.
+/// The column's `name` and `nullable` come from the catalog row, which is the
+/// source of truth for those.
 pub fn uc_columns_to_delta(columns: &[Column]) -> DeltaStructType {
     let mut sorted: Vec<&Column> = columns.iter().collect();
     sorted.sort_by_key(|c| c.position.unwrap_or(i32::MAX));
     let fields = sorted
         .into_iter()
         .map(|c| {
-            let data_type = serde_json::from_str::<DeltaDataType>(&c.type_json)
-                .unwrap_or_else(|_| DeltaDataType::Primitive(c.type_text.clone()));
+            let (data_type, metadata) = match serde_json::from_str::<DeltaStructField>(&c.type_json)
+            {
+                Ok(field) => (field.data_type, field.metadata),
+                Err(_) => (
+                    serde_json::from_str::<DeltaDataType>(&c.type_json)
+                        .unwrap_or_else(|_| DeltaDataType::Primitive(c.type_text.clone())),
+                    Default::default(),
+                ),
+            };
             DeltaStructField {
                 name: c.name.clone(),
                 data_type,
                 nullable: c.nullable.unwrap_or(true),
-                metadata: Default::default(),
+                metadata,
             }
         })
         .collect();
@@ -675,6 +783,95 @@ mod tests {
         let back = uc_columns_to_delta(&uc);
         assert_eq!(back.fields.len(), 2);
         assert_eq!(back.fields[0].name, "id");
+    }
+
+    fn field(name: &str, data_type: DeltaDataType) -> DeltaStructField {
+        DeltaStructField {
+            name: name.into(),
+            data_type,
+            nullable: true,
+            metadata: Default::default(),
+        }
+    }
+
+    #[test]
+    fn complex_types_and_metadata_round_trip() {
+        use crate::models::{DeltaArrayType, DeltaMapType};
+
+        let mut mapped = field("id", DeltaDataType::Primitive("long".into()));
+        mapped.metadata = BTreeMap::from([
+            ("delta.columnMapping.id".to_string(), serde_json::json!(1)),
+            (
+                "delta.columnMapping.physicalName".to_string(),
+                serde_json::json!("col-5f2c"),
+            ),
+            ("comment".to_string(), serde_json::json!("primary key")),
+        ]);
+        let columns = DeltaStructType {
+            type_tag: Default::default(),
+            fields: vec![
+                mapped,
+                field(
+                    "tags",
+                    DeltaDataType::Array(Box::new(DeltaArrayType {
+                        type_tag: Default::default(),
+                        element_type: DeltaDataType::Primitive("string".into()),
+                        contains_null: true,
+                    })),
+                ),
+                field(
+                    "attrs",
+                    DeltaDataType::Map(Box::new(DeltaMapType {
+                        type_tag: Default::default(),
+                        key_type: DeltaDataType::Primitive("string".into()),
+                        value_type: DeltaDataType::Primitive("integer".into()),
+                        value_contains_null: false,
+                    })),
+                ),
+                field(
+                    "point",
+                    DeltaDataType::Struct(Box::new(DeltaStructType {
+                        type_tag: Default::default(),
+                        fields: vec![
+                            field("x", DeltaDataType::Primitive("double".into())),
+                            field("y", DeltaDataType::Primitive("double".into())),
+                        ],
+                    })),
+                ),
+                field(
+                    "amount",
+                    DeltaDataType::Decimal(DeltaDecimalType {
+                        type_tag: Default::default(),
+                        precision: 10,
+                        scale: 2,
+                    }),
+                ),
+            ],
+        };
+
+        let uc = delta_columns_to_uc(&columns, None).unwrap();
+        assert_eq!(uc_columns_to_delta(&uc), columns);
+    }
+
+    #[test]
+    fn bare_data_type_json_is_accepted() {
+        // Producers that store only the data type (not the whole field) in
+        // `type_json` still load.
+        let uc = vec![Column {
+            name: "id".into(),
+            type_text: "bigint".into(),
+            type_json: "\"long\"".into(),
+            type_name: ColumnTypeName::Long,
+            position: Some(0),
+            nullable: Some(false),
+            ..Default::default()
+        }];
+        let back = uc_columns_to_delta(&uc);
+        assert_eq!(
+            back.fields[0].data_type,
+            DeltaDataType::Primitive("long".into())
+        );
+        assert!(!back.fields[0].nullable);
     }
 
     #[test]
