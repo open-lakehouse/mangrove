@@ -68,6 +68,7 @@ fn to_backend_err(e: Error) -> DeltaBackendError {
         // The wrapped common error carries its own semantics; dispatch on its
         // machine-readable code so e.g. an "already exists" doesn't surface as 404.
         Error::Common { source } => match source.error_code() {
+            "RESOURCE_NOT_FOUND" => DeltaBackendError::NotFound(e.to_string()),
             "RESOURCE_ALREADY_EXISTS" => DeltaBackendError::AlreadyExists(e.to_string()),
             "INVALID_PARAMETER_VALUE" => DeltaBackendError::InvalidArgument(e.to_string()),
             "PERMISSION_DENIED" => DeltaBackendError::PermissionDenied(e.to_string()),
@@ -619,5 +620,20 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
 
     fn commit_coordinator(&self) -> &dyn CommitCoordinator {
         ProvidesCommitCoordinator::commit_coordinator(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn store_not_found_is_a_delta_not_found() {
+        // Stores report a missing entity as a common error; it must surface as
+        // `NotFound` (404 `NoSuchTableException`), not the generic fallback.
+        let err = to_backend_err(Error::from(unitycatalog_common::Error::NotFound));
+        assert!(matches!(err, DeltaBackendError::NotFound(_)), "{err:?}");
+        let err = to_backend_err(Error::NotFound);
+        assert!(matches!(err, DeltaBackendError::NotFound(_)), "{err:?}");
     }
 }
