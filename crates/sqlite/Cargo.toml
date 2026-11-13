@@ -48,6 +48,10 @@ sqlx = { workspace = true, features = [
 uuid = { version = "1.8", features = ["serde", "v7"] }
 
 [dev-dependencies]
+# The shared CommitCoordinator conformance suite (`testing::coordinator_conformance`).
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", features = [
+  "testing",
+] }
 unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", features = [
   "testing",
 ] }

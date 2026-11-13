@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT MIN(commit_version) AS \"first?: i64\",\n                      MAX(commit_version) AS \"last?: i64\",\n                      MAX(CASE WHEN is_backfilled_latest = 1 THEN commit_version END)\n                          AS \"highest_backfilled?: i64\"\n               FROM delta_commits WHERE table_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "first?: i64",
+        "ordinal": 0,
+        "type_info": "Null"
+      },
+      {
+        "name": "last?: i64",
+        "ordinal": 1,
+        "type_info": "Null"
+      },
+      {
+        "name": "highest_backfilled?: i64",
+        "ordinal": 2,
+        "type_info": "Null"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "3157db45f774b90b5e42688fa6c58fb938c16266c5dab52163e3d1f394440dd7"
+}

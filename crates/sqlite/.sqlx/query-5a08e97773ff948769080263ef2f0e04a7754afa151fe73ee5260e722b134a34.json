@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM delta_commits WHERE table_id = ? AND commit_version < ? AND is_backfilled_latest = 1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "5a08e97773ff948769080263ef2f0e04a7754afa151fe73ee5260e722b134a34"
+}
