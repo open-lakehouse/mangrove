@@ -1,32 +1,11 @@
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Input,
-  Label,
-} from "@open-lakehouse/ui-kit";
-import {
-  parseUcError,
-  useUpdateCatalog,
-  useUpdateRegisteredModel,
-  useUpdateSchema,
-  useUpdateVolume,
-} from "@open-lakehouse/unity-catalog-client/react";
-import { useId, useState } from "react";
-import { toast } from "sonner";
-import type { EditRequest } from "./dialog-types.js";
-import { commentPatch } from "./forms/dialog-forms.js";
-import { renamedSelection, useCatalogSelection } from "./selection.js";
+// Edit dialog for the catalog namespace: routes an edit request to the
+// resource's form. Each form loads the current object, so it edits what the
+// server has rather than what the tree row last showed.
 
-const TITLES: Record<EditRequest["kind"], string> = {
-  catalog: "Edit catalog",
-  schema: "Edit schema",
-  volume: "Edit volume",
-  model: "Edit registered model",
-};
+import type { EditRequest } from "./dialog-types.js";
+import { CatalogEditDialog } from "./forms/resources/catalog.js";
+import { ModelEditDialog, VolumeEditDialog } from "./forms/resources/leaf.js";
+import { SchemaEditDialog } from "./forms/resources/schema.js";
 
 export function EditEntityDialog({
   request,
@@ -35,123 +14,14 @@ export function EditEntityDialog({
   request: EditRequest;
   onClose: () => void;
 }) {
-  const { selection, select } = useCatalogSelection();
-  const updateCatalog = useUpdateCatalog();
-  const updateSchema = useUpdateSchema();
-  const updateVolume = useUpdateVolume();
-  const updateModel = useUpdateRegisteredModel();
-
-  const currentName = request.name.split(".").pop() ?? request.name;
-  const [newName, setNewName] = useState(currentName);
-  const [comment, setComment] = useState(request.comment ?? "");
-
-  const nameId = useId();
-  const commentId = useId();
-
-  const pending =
-    updateCatalog.isPending ||
-    updateSchema.isPending ||
-    updateVolume.isPending ||
-    updateModel.isPending;
-
-  function finish(trimmed: string, renamed: boolean) {
-    toast.success(`Updated ${request.kind} "${currentName}"`);
-    // Keep the URL selection valid if the renamed node, or anything under it,
-    // was selected.
-    const next =
-      renamed && selection
-        ? renamedSelection(selection, request.kind, request.name, trimmed)
-        : undefined;
-    if (next) select(next);
-    onClose();
+  switch (request.kind) {
+    case "catalog":
+      return <CatalogEditDialog name={request.name} onClose={onClose} />;
+    case "schema":
+      return <SchemaEditDialog fullName={request.name} onClose={onClose} />;
+    case "volume":
+      return <VolumeEditDialog fullName={request.name} onClose={onClose} />;
+    case "model":
+      return <ModelEditDialog fullName={request.name} onClose={onClose} />;
   }
-
-  function submit(event: React.FormEvent) {
-    event.preventDefault();
-    const trimmed = newName.trim();
-    if (!trimmed) return;
-
-    const renamed = trimmed !== currentName;
-    const body = {
-      comment: commentPatch(comment, request.comment),
-      new_name: renamed ? trimmed : undefined,
-    };
-    const handlers = {
-      onSuccess: () => finish(trimmed, renamed),
-      onError: (error: unknown) => toast.error(parseUcError(error)),
-    };
-
-    if (request.kind === "catalog") {
-      updateCatalog.mutate(
-        { params: { path: { name: request.name } }, body },
-        handlers,
-      );
-    } else if (request.kind === "schema") {
-      updateSchema.mutate(
-        { params: { path: { full_name: request.name } }, body },
-        handlers,
-      );
-    } else if (request.kind === "volume") {
-      updateVolume.mutate(
-        { params: { path: { name: request.name } }, body },
-        handlers,
-      );
-    } else {
-      updateModel.mutate(
-        { params: { path: { full_name: request.name } }, body },
-        handlers,
-      );
-    }
-  }
-
-  return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <form onSubmit={submit}>
-          <DialogHeader>
-            <DialogTitle>{TITLES[request.kind]}</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-3 px-5 py-4">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-mono">{request.name}</span>
-            </p>
-
-            <div className="space-y-1">
-              <Label htmlFor={nameId}>Name</Label>
-              <Input
-                id={nameId}
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                autoFocus
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor={commentId}>Comment</Label>
-              <Input
-                id={commentId}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Description"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={pending || !newName.trim()}
-            >
-              {pending ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
 }

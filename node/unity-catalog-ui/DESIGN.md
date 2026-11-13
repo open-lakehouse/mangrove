@@ -97,6 +97,37 @@ const uc = createUnityCatalogClient({ baseUrl: "/api/2.1/unity-catalog" });
 
 - **Do** fetch through the client package's hooks. Components never call
   `fetch` and never build their own UC client.
-- **Do** regenerate the form schemas (`bun run gen:form-schemas`) after UC proto
-  changes rather than editing `src/forms/schemas/*.json`.
+- **Do** regenerate the request field specs (`bun run gen:request-fields`, or
+  `just codegen generate-node-openapi`) after UC proto changes rather than
+  editing `src/forms/request-fields.gen.ts`. See "Resource forms" below.
 - **Don't** import this package from a leaf; leaves stay UC-agnostic.
+
+## Resource forms
+
+The create/edit dialogs for catalogs, schemas, volumes, registered models,
+credentials and external locations are built from **field specs generated from
+the OpenAPI spec**, not from hand-written rules.
+
+- `scripts/gen-request-fields.ts` reads `openapi/openapi.yaml` and writes
+  `src/forms/request-fields.gen.ts`: one spec map per create/update request,
+  carrying `required` (from `field_behavior = REQUIRED`), length, pattern and
+  enum constraints (from `buf.validate`), and the proto comments as help text.
+- Fields marked OUTPUT_ONLY (`readOnly` in OpenAPI) are never emitted, so no form
+  can send them. Path identifiers aren't in the request bodies either.
+- Each map is checked with `satisfies FieldSpecs<Body>` against the
+  openapi-typescript body types: a field added, removed or retyped in the spec
+  fails the typecheck until the forms are regenerated. node-ci also fails when
+  the checked-in file is stale.
+- `useResourceForm` holds the body, validates it from the specs (plus any
+  cross-field rules a form adds), and routes a server error to the field it
+  names or to a form-level alert. Update forms run in `patch` mode: they send
+  and validate only the fields the user changed, and a cleared field is sent as
+  `""` / `{}` because the API reads an omitted field as "unchanged".
+- The field components in `forms/fields.tsx` take their label, required marker,
+  help text and errors from the spec. The forms in `forms/resources/` choose
+  and arrange fields and add the composite pickers (parent catalog/schema,
+  storage location, credential type, credential).
+
+So the spec decides **what is valid**; the forms decide **what the user sees
+and in what order**. Tables are not covered: creating one needs its own
+data-driven experience.

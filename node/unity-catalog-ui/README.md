@@ -1,8 +1,8 @@
 # `@open-lakehouse/unity-catalog-ui`
 
 The Unity Catalog **presentational** package: the catalog browser, per-entity
-detail panes, the create/edit/delete and storage dialogs, the schema-driven form
-renderer, and the metastore storage admin table.
+detail panes, the create/edit/delete and storage dialogs with their spec-driven
+forms, and the metastore storage admin table.
 
 The data-fetching half — the typed client, the React-Query hooks, and the UC
 OpenAPI types — lives in the separate **`@open-lakehouse/unity-catalog-client`**
@@ -48,9 +48,6 @@ and how a future in-process (wasm) UC client plugs in.
 - `@open-lakehouse/ui-kit` — the shared shadcn primitives and `cn`.
 - `@open-lakehouse/unity-catalog-client` — the UC client, hooks, and OpenAPI
   types the components render against.
-- `@rjsf/*` — the JSON-schema form renderer backing `forms/SchemaForm`. The UC
-  entity/storage form schemas live in `forms/schemas/`, generated from the UC proto by this
-  package's `bun run gen:form-schemas` (`scripts/gen-form-schemas.mjs`).
 - **`@open-lakehouse/host` (peer)** — the shared host contract. The client takes
   its transport from it, and the environment scope below defaults to it.
 - **`./env-seam` — the environment scope.** `ExpansionContext` namespaces its

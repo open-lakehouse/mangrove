@@ -13,6 +13,7 @@
   "exclude": [
     "node_modules",
     "dist",
+    "src/testing",
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/*.stories.ts",

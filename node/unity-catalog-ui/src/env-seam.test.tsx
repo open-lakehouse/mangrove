@@ -71,11 +71,15 @@ test("without a provider the scope still follows a registered host", () => {
 });
 
 // Tree expansion reads sessionStorage, which bun doesn't have: stand one in.
+// Restore whatever `window` was there before (the DOM tests' happy-dom one,
+// when they share the process), so the stub never leaks into other files.
 let storage: Map<string, string>;
+const globals = globalThis as { window?: unknown };
 const hadWindow = "window" in globalThis;
+const realWindow = globals.window;
 beforeEach(() => {
   storage = new Map();
-  (globalThis as { window?: unknown }).window = {
+  globals.window = {
     sessionStorage: {
       getItem: (k: string) => storage.get(k) ?? null,
       setItem: (k: string, v: string) => void storage.set(k, v),
@@ -83,7 +87,8 @@ beforeEach(() => {
   };
 });
 afterEach(() => {
-  if (!hadWindow) delete (globalThis as { window?: unknown }).window;
+  if (hadWindow) globals.window = realWindow;
+  else delete globals.window;
 });
 
 test("tree expansion is persisted per environment", () => {

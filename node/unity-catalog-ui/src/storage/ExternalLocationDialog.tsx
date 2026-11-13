@@ -1,41 +1,138 @@
 // Create / edit a Unity Catalog external location: a storage path bound to a
-// storage credential. The credential is chosen from the existing credentials
-// (with an inline shortcut to create a new one), mirroring the Databricks
-// Catalog Explorer flow where you pick the storage credential that authorizes
-// the location.
+// credential. The credential is chosen from the existing credentials (with an
+// inline shortcut to create a new one), mirroring the Databricks Catalog
+// Explorer flow where you pick the credential that authorizes the location.
 
 import {
   Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@open-lakehouse/ui-kit";
+import type { components } from "@open-lakehouse/unity-catalog-client";
 import {
-  parseUcError,
   useCreateExternalLocation,
   useCredentials,
   useExternalLocationDetail,
   useUpdateExternalLocation,
 } from "@open-lakehouse/unity-catalog-client/react";
 import { Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  commentPatch,
-  EXTERNAL_LOCATION_CREATE_SEED,
-  type ExternalLocationFormData,
-  externalLocationEditSeed,
-  externalLocationSchema,
-  externalLocationUiSchema,
-} from "../forms/dialog-forms.js";
-import { SchemaForm } from "../forms/SchemaForm.js";
-
+  CommentField,
+  FieldShell,
+  NameField,
+  SwitchField,
+  TextField,
+} from "../forms/fields.js";
+import { ResourceFormDialog } from "../forms/ResourceFormDialog.js";
+import {
+  createExternalLocation,
+  updateExternalLocation,
+} from "../forms/request-fields.gen.js";
+import {
+  createBody,
+  loadErrorOf,
+  requireNewName,
+} from "../forms/resources/shared.js";
+import {
+  type ResourceForm,
+  useResourceForm,
+} from "../forms/useResourceForm.js";
 import { CredentialDialog } from "./CredentialDialog.js";
 
-const FORM_ID = "external-location-form";
+type CreateLocation = components["schemas"]["CreateExternalLocation"];
+type UpdateLocation = components["schemas"]["UpdateExternalLocationRequest"];
+
+/** Pick the credential that authorizes the location, or create one inline. */
+function CredentialPicker({
+  form,
+  disabled,
+}: {
+  form: ResourceForm<{ credential_name?: string }>;
+  disabled?: boolean;
+}) {
+  const id = useId();
+  const credentials = useCredentials();
+  const [creating, setCreating] = useState(false);
+  const value = form.values.credential_name;
+  // Always offer the current value, even before the list loads or when it is
+  // on a later page, so the select never drops it.
+  const names = useMemo(() => {
+    const listed = (credentials.data ?? [])
+      .map((c) => c.name)
+      .filter((n): n is string => !!n);
+    return value && !listed.includes(value) ? [value, ...listed] : listed;
+  }, [credentials.data, value]);
+
+  return (
+    <>
+      <FieldShell
+        id={id}
+        label="Credential"
+        required={form.specs.credential_name?.required}
+        help="The credential that authorizes access to this path."
+        error={form.error("credential_name")}
+      >
+        <Select
+          value={value || undefined}
+          onValueChange={(next) => {
+            // Radix reports "" when the value isn't among the options; that
+            // is not a user choice and must not clear the credential.
+            if (!next) return;
+            form.set("credential_name", next);
+            form.touch("credential_name");
+          }}
+          disabled={disabled}
+        >
+          <SelectTrigger id={id} aria-invalid={!!form.error("credential_name")}>
+            <SelectValue
+              placeholder={
+                credentials.isLoading
+                  ? "Loading credentials…"
+                  : names.length
+                    ? "Select a credential"
+                    : "No credentials yet"
+              }
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {names.map((n) => (
+              <SelectItem key={n} value={n}>
+                {n}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          className="h-auto p-0 text-xs"
+          disabled={disabled}
+          onClick={() => setCreating(true)}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          New credential
+        </Button>
+      </FieldShell>
+
+      {creating && (
+        <CredentialDialog
+          mode="create"
+          onClose={() => setCreating(false)}
+          onCreated={(createdName) => {
+            credentials.refetch();
+            form.set("credential_name", createdName);
+          }}
+        />
+      )}
+    </>
+  );
+}
 
 export function ExternalLocationDialog({
   mode,
@@ -47,162 +144,146 @@ export function ExternalLocationDialog({
   name?: string;
   onClose: () => void;
 }) {
-  const createLocation = useCreateExternalLocation();
-  const updateLocation = useUpdateExternalLocation();
-  const credentials = useCredentials();
-  const existing = useExternalLocationDetail(name ?? "", {
-    enabled: mode === "edit" && !!name,
-  });
-
-  const [formData, setFormData] = useState<ExternalLocationFormData>(() =>
-    mode === "create" ? EXTERNAL_LOCATION_CREATE_SEED : {},
+  return mode === "create" ? (
+    <ExternalLocationCreate onClose={onClose} />
+  ) : (
+    <ExternalLocationEdit name={name ?? ""} onClose={onClose} />
   );
-  const [showCredentialDialog, setShowCredentialDialog] = useState(false);
+}
 
-  const credentialNames = useMemo(
-    () =>
-      (credentials.data ?? [])
-        .map((c) => c.name)
-        .filter((n): n is string => !!n),
-    [credentials.data],
-  );
+function ExternalLocationCreate({ onClose }: { onClose: () => void }) {
+  const create = useCreateExternalLocation();
+  const form = useResourceForm<CreateLocation>(createExternalLocation, {});
 
-  const schema = useMemo(
-    () => externalLocationSchema(mode, credentialNames),
-    [mode, credentialNames],
-  );
-  const uiSchema = useMemo(
-    () => externalLocationUiSchema(mode, name),
-    [mode, name],
-  );
-
-  const loaded = existing.data;
-  useEffect(() => {
-    if (mode === "edit" && loaded)
-      setFormData(externalLocationEditSeed(loaded));
-  }, [mode, loaded]);
-
-  const pending = createLocation.isPending || updateLocation.isPending;
-
-  function submit(data: ExternalLocationFormData) {
-    if (mode === "create") {
-      createLocation.mutate(
-        {
-          body: {
-            name: data.name?.trim() ?? "",
-            url: data.url?.trim() ?? "",
-            credential_name: data.credential_name ?? "",
-            comment: data.comment || undefined,
-          },
-        },
-        {
-          onSuccess: () => {
-            toast.success(`Created external location "${data.name}"`);
-            onClose();
-          },
-          onError: (error) => toast.error(parseUcError(error)),
-        },
-      );
-      return;
-    }
-
-    const newName = data.new_name?.trim();
-    updateLocation.mutate(
-      {
-        params: { path: { name: name ?? "" } },
-        body: {
-          url: data.url && data.url !== loaded?.url ? data.url : undefined,
-          credential_name:
-            data.credential_name &&
-            data.credential_name !== loaded?.credential_name
-              ? data.credential_name
-              : undefined,
-          comment: commentPatch(data.comment, loaded?.comment),
-          new_name: newName && newName !== name ? newName : undefined,
-        },
-      },
+  const submit = form.submit((values) => {
+    const body = createBody<CreateLocation>(values);
+    create.mutate(
+      { body },
       {
         onSuccess: () => {
-          toast.success(`Updated external location "${name}"`);
+          toast.success(`Created external location "${body.name}"`);
           onClose();
         },
-        onError: (error) => toast.error(parseUcError(error)),
+        onError: form.fail,
       },
     );
-  }
+  });
 
   return (
-    <>
-      <Dialog open onOpenChange={(open) => !open && onClose()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {mode === "create"
-                ? "Create an external location"
-                : "Edit external location"}
-            </DialogTitle>
-            <DialogDescription>
-              An external location combines a storage path with a storage
-              credential that authorizes access to it.
-            </DialogDescription>
-          </DialogHeader>
+    <ResourceFormDialog
+      title="New external location"
+      description="An external location combines a storage path with a credential that authorizes access to it."
+      submitLabel="Create"
+      pendingLabel="Creating…"
+      pending={create.isPending}
+      formError={form.formError}
+      onSubmit={submit}
+      onClose={onClose}
+    >
+      <NameField form={form} name="name" placeholder="landing_zone" autoFocus />
+      <TextField
+        form={form}
+        name="url"
+        label="URL"
+        mono
+        placeholder="s3://bucket/path"
+        help="The storage path this location covers, including everything below it."
+      />
+      <CredentialPicker form={form} />
+      <CommentField form={form} />
+      <SwitchField form={form} name="read_only" label="Read only" />
+      <SwitchField form={form} name="skip_validation" label="Skip validation" />
+    </ResourceFormDialog>
+  );
+}
 
-          <div className="space-y-3 px-5 py-4">
-            {mode === "edit" && existing.isError ? (
-              <p role="alert" className="text-xs text-destructive">
-                {parseUcError(
-                  existing.error,
-                  "Could not load the external location.",
-                )}
-              </p>
-            ) : null}
-            <SchemaForm<ExternalLocationFormData>
-              id={FORM_ID}
-              schema={schema}
-              uiSchema={uiSchema}
-              formData={formData}
-              disabled={pending || (mode === "edit" && !loaded)}
-              onChange={setFormData}
-              onSubmit={submit}
-            />
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="h-auto p-0 text-xs"
-              onClick={() => setShowCredentialDialog(true)}
-            >
-              <Plus className="h-3.5 w-3.5" />
-              New storage credential
-            </Button>
-          </div>
+function ExternalLocationEdit({
+  name,
+  onClose,
+}: {
+  name: string;
+  onClose: () => void;
+}) {
+  const update = useUpdateExternalLocation();
+  const detail = useExternalLocationDetail(name);
+  const form = useResourceForm<UpdateLocation>(
+    updateExternalLocation,
+    {},
+    { validate: requireNewName, patch: true },
+  );
 
-          <DialogFooter>
-            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              form={FORM_ID}
-              size="sm"
-              disabled={pending || (mode === "edit" && !loaded)}
-            >
-              {pending ? "Saving…" : mode === "create" ? "Create" : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+  const loaded = detail.data;
+  const { seed } = form;
+  useEffect(() => {
+    if (loaded) {
+      seed({
+        new_name: loaded.name,
+        url: loaded.url,
+        credential_name: loaded.credential_name,
+        comment: loaded.comment,
+        read_only: loaded.read_only,
+      });
+    }
+  }, [loaded, seed]);
 
-      {showCredentialDialog && (
-        <CredentialDialog
-          mode="create"
-          onClose={() => setShowCredentialDialog(false)}
-          onCreated={(createdName) => {
-            credentials.refetch();
-            setFormData((prev) => ({ ...prev, credential_name: createdName }));
-          }}
-        />
-      )}
-    </>
+  const submit = form.submit(() => {
+    const body = form.changes([
+      "new_name",
+      "url",
+      "credential_name",
+      "comment",
+      "read_only",
+    ]);
+    if (Object.keys(body).length === 0) return onClose();
+    if (body.new_name) body.new_name = body.new_name.trim();
+    if (body.url) body.url = body.url.trim();
+    update.mutate(
+      { params: { path: { name } }, body },
+      {
+        onSuccess: () => {
+          toast.success(`Updated external location "${body.new_name ?? name}"`);
+          onClose();
+        },
+        onError: form.fail,
+      },
+    );
+  });
+
+  return (
+    <ResourceFormDialog
+      title="Edit external location"
+      description={<span className="font-mono">{name}</span>}
+      submitLabel="Save"
+      pending={update.isPending}
+      canSubmit={!!loaded}
+      loadError={loadErrorOf(detail)}
+      formError={form.formError}
+      onSubmit={submit}
+      onClose={onClose}
+    >
+      <NameField
+        form={form}
+        name="new_name"
+        label="Name"
+        disabled={!loaded}
+        autoFocus
+      />
+      <TextField
+        form={form}
+        name="url"
+        label="URL"
+        mono
+        disabled={!loaded}
+        help={null}
+      />
+      <CredentialPicker form={form} disabled={!loaded} />
+      <CommentField form={form} disabled={!loaded} />
+      <SwitchField
+        form={form}
+        name="read_only"
+        label="Read only"
+        disabled={!loaded}
+      />
+    </ResourceFormDialog>
   );
 }

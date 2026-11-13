@@ -24,9 +24,19 @@ const CUSTOM = "__custom__";
 
 export function StorageLocationPicker({
   onChange,
+  error,
 }: {
-  /** Called with the composed storage location, or undefined for managed storage. */
-  onChange: (storageLocation: string | undefined) => void;
+  /**
+   * Called with the composed storage location, or undefined for managed
+   * storage. `incomplete` is true when managed storage is off but no location
+   * is given yet, which a form should treat as invalid.
+   */
+  onChange: (
+    storageLocation: string | undefined,
+    state: { incomplete: boolean },
+  ) => void;
+  /** A validation or server error for the storage location. */
+  error?: string;
 }) {
   const locations = useExternalLocations();
   const [managed, setManaged] = useState(true);
@@ -59,24 +69,34 @@ export function StorageLocationPicker({
     return trimmedSub ? `${trimmedBase}/${trimmedSub}` : trimmedBase;
   }
 
+  function emit(
+    isManaged: boolean,
+    nextSource: string,
+    sub: string,
+    custom: string,
+  ) {
+    const location = compose(isManaged, nextSource, sub, custom);
+    onChange(location, { incomplete: !isManaged && !location });
+  }
+
   function toggleManaged(next: boolean) {
     setManaged(next);
-    onChange(compose(next, source, subpath, customUrl));
+    emit(next, source, subpath, customUrl);
   }
 
   function selectSource(next: string) {
     setSource(next);
-    onChange(compose(managed, next, subpath, customUrl));
+    emit(managed, next, subpath, customUrl);
   }
 
   function changeSubpath(sub: string) {
     setSubpath(sub);
-    onChange(compose(managed, source, sub, customUrl));
+    emit(managed, source, sub, customUrl);
   }
 
   function changeCustomUrl(url: string) {
     setCustomUrl(url);
-    onChange(compose(managed, source, subpath, url));
+    emit(managed, source, subpath, url);
   }
 
   const composed = compose(managed, source, subpath, customUrl);
@@ -154,6 +174,7 @@ export function StorageLocationPicker({
           <span className="font-mono">{composed}</span>
         </p>
       )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

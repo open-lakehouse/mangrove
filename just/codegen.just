@@ -66,6 +66,7 @@ generate-openapi:
 [no-cd]
 generate-node-openapi:
     cd {{ justfile_directory() }}/node/unity-catalog-client && bun run gen:api
+    cd {{ justfile_directory() }}/node/unity-catalog-ui && bun run gen:request-fields
 
 # copy the canonical repo-root openapi specs into the server crate
 [group('codegen')]
