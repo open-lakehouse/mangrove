@@ -305,10 +305,13 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
         location: &str,
         _cx: &Cx,
     ) -> BackendResult<StagingReservation> {
+        // Like a real backend's location index, ignore a trailing slash.
+        let wanted = location.trim_end_matches('/');
         let state = self.state.lock().unwrap();
         state
             .staging
-            .get(location)
+            .values()
+            .find(|s| s.location.trim_end_matches('/') == wanted)
             .cloned()
             .ok_or_else(|| DeltaBackendError::NotFound(format!("no staging table at '{location}'")))
     }
