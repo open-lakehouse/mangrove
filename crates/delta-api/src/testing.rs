@@ -12,6 +12,8 @@
 //! external-location validation is a no-op. The point is to exercise the *Delta*
 //! logic (contract, dispatcher, commit arbitration), not access control.
 
+pub mod coordinator_conformance;
+
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
@@ -20,8 +22,8 @@ use async_trait::async_trait;
 use crate::authz::DeltaAction;
 use crate::backend::{
     BackendResult, CreateTableSpec, CredentialAccess, DeltaBackend, DeltaCapabilities,
-    ResolvedTable, SchemaRef, StagingReservation, TableRef, UpdateTableSpec, VendedCredential,
-    etag_of,
+    ResolvedTable, SchemaRef, StagingReservation, TableRef, TableUpdate, UpdateTableSpec,
+    VendedCredential, etag_of,
 };
 use crate::coordinator::{CommitCoordinator, InMemoryCommitCoordinator};
 use crate::error::DeltaBackendError;
@@ -31,9 +33,6 @@ use crate::models::DeltaDataSourceFormat;
 #[derive(Debug, Clone)]
 struct StoredTable {
     full_name: String,
-    /// The table comment. Kept out of `resolved.properties` — no port response
-    /// carries the comment, and real backends store it outside the property map.
-    comment: Option<String>,
     resolved: ResolvedTable,
 }
 
@@ -103,6 +102,51 @@ impl InMemoryDeltaBackend {
     fn next_ts(state: &mut State) -> i64 {
         state.clock += 1;
         state.clock
+    }
+
+    fn find_by_id<'s>(state: &'s State, table_id: &str) -> BackendResult<&'s StoredTable> {
+        state
+            .tables
+            .values()
+            .find(|t| t.resolved.table_id.as_deref() == Some(table_id))
+            .ok_or_else(|| DeltaBackendError::NotFound(format!("table id '{table_id}' not found")))
+    }
+
+    /// The `assert-etag` compare-and-swap, checked under the state lock against
+    /// the current row (closing the TOCTOU race a handler-side check leaves open).
+    fn check_etag(state: &State, spec: &UpdateTableSpec) -> BackendResult<()> {
+        let stored = Self::find_by_id(state, &spec.table_id)?;
+        if let Some(expected) = &spec.expected_etag
+            && expected != &etag_of(&stored.resolved)
+        {
+            return Err(DeltaBackendError::UpdateRequirementConflict(
+                "assert-etag failed: table has been modified".to_string(),
+            ));
+        }
+        Ok(())
+    }
+
+    /// Write a metadata change to the row and bump its version (the etag).
+    fn write_row(state: &mut State, spec: UpdateTableSpec) -> BackendResult<ResolvedTable> {
+        let ts = Self::next_ts(state);
+        let stored = state
+            .tables
+            .values_mut()
+            .find(|t| t.resolved.table_id.as_deref() == Some(spec.table_id.as_str()))
+            .ok_or_else(|| {
+                DeltaBackendError::NotFound(format!("table id '{}' not found", spec.table_id))
+            })?;
+        stored.resolved.columns = spec.columns;
+        stored.resolved.properties = spec.properties;
+        // `None` means "leave the stored comment unchanged" (see `UpdateTableSpec`).
+        if let Some(comment) = spec.comment {
+            stored.resolved.comment = Some(comment);
+        }
+        stored.resolved.updated_at_ms = Some(ts);
+        // Bump the version so the etag advances — the in-memory equivalent of the
+        // store's per-object version counter (what a durable backend's CAS keys on).
+        stored.resolved.version += 1;
+        Ok(stored.resolved.clone())
     }
 }
 
@@ -203,6 +247,7 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             data_source_format: Some(DeltaDataSourceFormat::Delta),
             columns: spec.columns,
             properties: spec.properties,
+            comment: spec.comment,
             created_at_ms: Some(ts),
             updated_at_ms: Some(ts),
             // Fresh row starts at version 0; each update bumps it (the etag).
@@ -212,11 +257,37 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
             full_name.clone(),
             StoredTable {
                 full_name,
-                comment: spec.comment,
                 resolved: resolved.clone(),
             },
         );
         Ok(resolved)
+    }
+
+    async fn apply_update(&self, update: TableUpdate, _cx: &Cx) -> BackendResult<ResolvedTable> {
+        // Atomic by construction: the state lock is held across the etag CAS, the
+        // commit ratification (`commit_sync` never awaits) and the row write, and
+        // nothing is written unless all of them succeed — the in-memory
+        // equivalent of one database transaction.
+        let mut state = self.state.lock().unwrap();
+        let table_id = update
+            .base
+            .table_id
+            .clone()
+            .ok_or_else(|| DeltaBackendError::Internal("table has no id".into()))?;
+        if let Some(spec) = &update.metadata {
+            Self::check_etag(&state, spec)?;
+        }
+        if update.has_commit_log_change() {
+            self.coordinator.commit_sync(
+                &table_id,
+                update.commit,
+                update.latest_backfilled_version,
+            )?;
+        }
+        match update.metadata {
+            Some(spec) => Self::write_row(&mut state, spec),
+            None => Self::find_by_id(&state, &table_id).map(|t| t.resolved.clone()),
+        }
     }
 
     async fn update_table_row(
@@ -225,36 +296,8 @@ impl<Cx: Send + Sync + 'static> DeltaBackend<Cx> for InMemoryDeltaBackend {
         _cx: &Cx,
     ) -> BackendResult<ResolvedTable> {
         let mut state = self.state.lock().unwrap();
-        let ts = Self::next_ts(&mut state);
-        let stored = state
-            .tables
-            .values_mut()
-            .find(|t| t.resolved.table_id.as_deref() == Some(spec.table_id.as_str()))
-            .ok_or_else(|| {
-                DeltaBackendError::NotFound(format!("table id '{}' not found", spec.table_id))
-            })?;
-        // Compare-and-swap: the etag is checked *under the lock* against the
-        // current row, so a concurrent update that advanced the etag between the
-        // caller's resolve and this write is caught (closing the TOCTOU race a
-        // handler-side check would leave open).
-        if let Some(expected) = &spec.expected_etag
-            && expected != &etag_of(&stored.resolved)
-        {
-            return Err(DeltaBackendError::UpdateRequirementConflict(
-                "assert-etag failed: table has been modified".to_string(),
-            ));
-        }
-        stored.resolved.columns = spec.columns;
-        stored.resolved.properties = spec.properties;
-        // `None` means "leave the stored comment unchanged" (see `UpdateTableSpec`).
-        if let Some(comment) = spec.comment {
-            stored.comment = Some(comment);
-        }
-        stored.resolved.updated_at_ms = Some(ts);
-        // Bump the version so the etag advances — the in-memory equivalent of the
-        // store's per-object version counter (what a durable backend's CAS keys on).
-        stored.resolved.version += 1;
-        Ok(stored.resolved.clone())
+        Self::check_etag(&state, &spec)?;
+        Self::write_row(&mut state, spec)
     }
 
     async fn delete_table(&self, table: &TableRef, _cx: &Cx) -> BackendResult<()> {

@@ -21,11 +21,21 @@ use serde::{Deserialize, Serialize};
 // ===================================================================
 
 /// The type of a Delta table.
+///
+/// `#[non_exhaustive]` with a catch-all [`Unknown`](Self::Unknown) variant, so a
+/// client reading a server that reports a table type this crate does not know
+/// (e.g. a future clone type) still deserializes the response. The handler
+/// rejects `Unknown` wherever it needs a concrete type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[non_exhaustive]
 pub enum DeltaTableType {
     Managed,
     External,
+    /// Any table type this crate does not model. Deserialization only; it
+    /// serializes as `"UNKNOWN"`.
+    #[serde(other)]
+    Unknown,
 }
 
 /// The data source format of a table, as carried on `DeltaCreateTableRequest`.
@@ -35,8 +45,12 @@ pub enum DeltaTableType {
 /// server's createTable handler expects. The Delta REST API only operates on
 /// Delta tables, so in practice this is always [`Delta`](Self::Delta); the wider
 /// set is kept so the field round-trips any value the catalog might report.
+///
+/// `#[non_exhaustive]` with a catch-all [`Unknown`](Self::Unknown) variant, for
+/// the same forward-compatibility reason as [`DeltaTableType`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[non_exhaustive]
 pub enum DeltaDataSourceFormat {
     Delta,
     Iceberg,
@@ -49,6 +63,10 @@ pub enum DeltaDataSourceFormat {
     Text,
     UnityCatalog,
     Deltasharing,
+    /// Any format this crate does not model. Deserialization only; it serializes
+    /// as `"UNKNOWN"`.
+    #[serde(other)]
+    Unknown,
 }
 
 /// The permission level for a storage credential.
@@ -535,7 +553,12 @@ pub struct DeltaReportMetricsRequest {
 
 /// Error type identifier returned in Delta API error responses. Mirrors the
 /// `DeltaErrorType` enum in `delta.yaml`.
+///
+/// `#[non_exhaustive]` with a catch-all [`Unknown`](Self::Unknown) variant, so a
+/// client still parses the error envelope of a server that returns an error type
+/// newer than this crate.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum DeltaErrorType {
     BadRequestException,
     InvalidParameterValueException,
@@ -555,6 +578,9 @@ pub enum DeltaErrorType {
     InternalServerErrorException,
     NotImplementedException,
     ServiceUnavailableException,
+    /// Any error type this crate does not model. Deserialization only.
+    #[serde(other)]
+    Unknown,
 }
 
 impl DeltaErrorType {
@@ -646,6 +672,19 @@ mod tests {
     //! This is the Phase-1 parity gate: it pins our models to the vendored spec.
 
     use super::*;
+
+    #[test]
+    fn unknown_enum_values_deserialize_to_unknown() {
+        let t: DeltaTableType = serde_json::from_str("\"MANAGED_SHALLOW_CLONE\"").unwrap();
+        assert_eq!(t, DeltaTableType::Unknown);
+        let f: DeltaDataSourceFormat = serde_json::from_str("\"LANCE\"").unwrap();
+        assert_eq!(f, DeltaDataSourceFormat::Unknown);
+        let e: DeltaErrorType = serde_json::from_str("\"SomeFutureException\"").unwrap();
+        assert_eq!(e, DeltaErrorType::Unknown);
+        // Known values are unaffected.
+        let t: DeltaTableType = serde_json::from_str("\"EXTERNAL\"").unwrap();
+        assert_eq!(t, DeltaTableType::External);
+    }
     use serde_json::{Value, json};
 
     /// Deserialize `json` into `T`, re-serialize, and assert structural equality

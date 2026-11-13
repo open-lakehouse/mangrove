@@ -91,7 +91,7 @@ fn to_backend_err(e: Error) -> DeltaBackendError {
         Error::InvalidIdentifier(_) | Error::MissingRecipient => {
             DeltaBackendError::InvalidArgument(e.to_string())
         }
-        Error::NotImplemented(w) => DeltaBackendError::NotImplemented(w),
+        Error::NotImplemented(w) => DeltaBackendError::NotImplemented((*w).into()),
         _ => DeltaBackendError::Internal(e.to_string()),
     }
 }
@@ -147,10 +147,14 @@ fn crate_column_to_uc(c: CrateColumn) -> UcColumn {
 // Table / staging / credential mapping
 // ===================================================================
 
+/// The handler only ever passes `MANAGED` / `EXTERNAL` (it rejects any other
+/// `table-type` up front); anything else maps to unspecified, which the UC
+/// handlers reject.
 fn to_uc_table_type(t: DeltaTableType) -> TableType {
     match t {
         DeltaTableType::Managed => TableType::Managed,
         DeltaTableType::External => TableType::External,
+        _ => TableType::TableTypeUnspecified,
     }
 }
 
@@ -191,27 +195,24 @@ fn table_to_resolved(table: Table, version: u64) -> ResolvedTable {
         Some(TableType::EXTERNAL) => Some(DeltaTableType::External),
         _ => None,
     };
-    ResolvedTable {
-        table_id: table.table_id,
-        location: table.storage_location.unwrap_or_default(),
-        table_type,
-        data_source_format: to_delta_format(table.data_source_format.to_i32()),
-        columns: table.columns.into_iter().map(uc_column_to_crate).collect(),
-        properties: table.properties.into_iter().collect(),
-        created_at_ms: table.created_at,
-        updated_at_ms: table.updated_at,
-        version,
-    }
+    let mut resolved = ResolvedTable::new(table.storage_location.unwrap_or_default());
+    resolved.table_id = table.table_id;
+    resolved.table_type = table_type;
+    resolved.data_source_format = to_delta_format(table.data_source_format.to_i32());
+    resolved.columns = table.columns.into_iter().map(uc_column_to_crate).collect();
+    resolved.properties = table.properties.into_iter().collect();
+    resolved.comment = table.comment;
+    resolved.created_at_ms = table.created_at;
+    resolved.updated_at_ms = table.updated_at;
+    resolved.version = version;
+    resolved
 }
 
 fn staging_to_reservation(st: StagingTable) -> StagingReservation {
-    StagingReservation {
-        table_id: st.id,
-        name: st.name,
-        location: st.staging_location,
-        created_by: st.created_by,
-        stage_committed: st.stage_committed,
-    }
+    let mut reservation = StagingReservation::new(st.id, st.name, st.staging_location);
+    reservation.created_by = st.created_by;
+    reservation.stage_committed = st.stage_committed;
+    reservation
 }
 
 /// Read a UC REST [`TemporaryCredential`] vended at `access` as the crate's
@@ -226,7 +227,7 @@ fn to_vended_credential(
     let credential = unity::TemporaryCredential::from(creds)
         .to_vended(&context)
         .map_err(|e| to_backend_err(unitycatalog_common::Error::from(e).into()))?;
-    Ok(VendedCredential { url, credential })
+    Ok(VendedCredential::new(url, credential))
 }
 
 fn to_table_op(access: CredentialAccess) -> i32 {
@@ -262,7 +263,7 @@ impl ServerHandler<RequestContext> {
 impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
     fn capabilities(&self) -> DeltaCapabilities {
         // The store provides a native, versioned rename, so advertise renameTable.
-        DeltaCapabilities { rename: true }
+        DeltaCapabilities::default().with_rename(true)
     }
 
     async fn catalog_exists(&self, catalog: &str, _cx: &RequestContext) -> BackendResult<()> {
@@ -332,11 +333,13 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
                     .await
                     .map_err(to_backend_err)
             }
-            DeltaAction::WriteTable { table_id, .. } => {
-                let uuid = uuid::Uuid::parse_str(table_id).map_err(|_| {
-                    DeltaBackendError::InvalidArgument("table id is not a valid UUID".into())
-                })?;
-                let ident = ResourceIdent::Table(ResourceRef::Uuid(uuid));
+            DeltaAction::WriteTable { table } => {
+                // Name-keyed, like the UC REST table actions: authorized before
+                // the table is resolved, so a missing table is denied rather than
+                // reported missing.
+                let ident = ResourceIdent::table(ResourceName::from_naive_str_split(
+                    table.full_name().as_str(),
+                ));
                 self.authorize_checked(&ident, &Permission::Write, cx)
                     .await
                     .map_err(to_backend_err)
@@ -363,7 +366,10 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
             // `TemporaryCredentialHandler`), each of which runs `check_required`
             // itself. Authorizing again here would double-check; matching the
             // pre-crate behavior, the handler-level hook is a no-op for them.
-            DeltaAction::ReadTable { .. }
+            // getConfig reveals only that a catalog exists; `catalog_exists` reads
+            // it through the store, matching the pre-crate behavior.
+            DeltaAction::ReadCatalog { .. }
+            | DeltaAction::ReadTable { .. }
             | DeltaAction::DeleteTable { .. }
             | DeltaAction::RenameTable { .. }
             | DeltaAction::VendTableCredential { .. }

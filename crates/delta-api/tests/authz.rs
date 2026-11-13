@@ -57,6 +57,7 @@ fn label(action: &DeltaAction<'_>) -> &'static str {
         DeltaAction::VendPathCredential { .. } => "VendPathCredential",
         DeltaAction::CreateStaging { .. } => "CreateStaging",
         DeltaAction::AdoptStaging { .. } => "AdoptStaging",
+        DeltaAction::ReadCatalog { .. } => "ReadCatalog",
         _ => "Unknown",
     }
 }
@@ -359,13 +360,8 @@ async fn adopt_staging_is_a_backend_decision() {
     // A backend reporting a different principal denies adoption of an
     // "alice"-created reservation.
     let other = InMemoryDeltaBackend::new().with_principal("bob");
-    let reservation = StagingReservation {
-        table_id: "id".to_string(),
-        name: "t".to_string(),
-        location: "s3://bucket/staging/id".to_string(),
-        created_by: Some("alice".to_string()),
-        stage_committed: false,
-    };
+    let mut reservation = StagingReservation::new("id", "t", "s3://bucket/staging/id");
+    reservation.created_by = Some("alice".to_string());
     let decision = DeltaBackend::<Cx>::authorize(
         &other,
         DeltaAction::AdoptStaging {
@@ -378,4 +374,25 @@ async fn adopt_staging_is_a_backend_decision() {
         decision,
         Err(DeltaBackendError::PermissionDenied(_))
     ));
+}
+
+/// Staging credentials are authorized by the reservation (the creator match),
+/// not as an arbitrary-path vend.
+#[tokio::test]
+async fn staging_credentials_authorize_the_reservation() {
+    let b = RecordingBackend::new(InMemoryDeltaBackend::new());
+    let staging = b
+        .create_staging_table(
+            schema_path(),
+            DeltaCreateStagingTableRequest {
+                name: "t".to_string(),
+            },
+            (),
+        )
+        .await
+        .expect("create staging");
+    b.get_staging_table_credentials(staging.table_id, ())
+        .await
+        .expect("staging credentials");
+    assert_eq!(b.actions(), vec!["CreateStaging", "AdoptStaging"]);
 }

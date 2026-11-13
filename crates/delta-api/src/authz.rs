@@ -34,6 +34,12 @@ use crate::models::DeltaTableType;
 /// Passed to [`DeltaBackend::authorize`](crate::backend::DeltaBackend::authorize)
 /// before the operation runs. Each variant borrows the coordinate it targets;
 /// the backend maps it onto its own authorization model.
+///
+/// Table actions name the table by its three-part [`TableRef`] and are
+/// authorized *before* the table is resolved, so a caller without access gets the
+/// same denial whether or not the table exists. A backend whose permissions are
+/// keyed by table id resolves the name itself; a missing table should then be
+/// denied, not reported as missing.
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum DeltaAction<'a> {
@@ -45,32 +51,34 @@ pub enum DeltaAction<'a> {
     },
     /// `loadTable` / `tableExists` — read a table's metadata.
     ReadTable { table: &'a TableRef },
-    /// `updateTable` — mutate an existing table (metadata and/or commit).
-    WriteTable {
-        table: &'a TableRef,
-        table_id: &'a str,
-    },
+    /// `updateTable` / `reportMetrics` — mutate an existing table (metadata
+    /// and/or commit), or report on commits made to it.
+    WriteTable { table: &'a TableRef },
     /// `deleteTable` — drop a table.
     DeleteTable { table: &'a TableRef },
     /// `renameTable` — rename a table within its catalog + schema.
     RenameTable { from: &'a TableRef, to: &'a str },
-    /// `getTableCredentials` — vend a credential for a resolved table's location.
+    /// `getTableCredentials` — vend a credential for a table's location.
     VendTableCredential {
-        table_id: &'a str,
+        table: &'a TableRef,
         access: CredentialAccess,
     },
-    /// `getStagingTableCredentials` / `getTemporaryPathCredentials` — vend a
-    /// credential for an arbitrary path.
+    /// `getTemporaryPathCredentials` — vend a credential for an arbitrary path.
+    /// (Staging-table credentials are authorized by
+    /// [`AdoptStaging`](Self::AdoptStaging) instead.)
     VendPathCredential {
         location: &'a str,
         access: CredentialAccess,
     },
+    /// `getConfig` — read a catalog's Delta API configuration (and so learn that
+    /// it exists).
+    ReadCatalog { catalog: &'a str },
     /// `createStagingTable` — reserve a staging table under a schema.
     CreateStaging { at: &'a SchemaRef, name: &'a str },
-    /// The managed-`createTable` creator-match: may this caller adopt the
-    /// staging reservation it is committing? The backend answers in its own
-    /// identity terms (the crate no longer models principals). The crate still
-    /// enforces the genuine Delta semantics around adoption (`stage_committed`,
-    /// the `tableId` property match).
+    /// The staging creator-match: may this caller use the staging reservation —
+    /// adopt it in a managed `createTable`, or obtain its staging credentials? The
+    /// backend answers in its own identity terms (the crate does not model
+    /// principals). The crate still enforces the genuine Delta semantics around
+    /// adoption (`stage_committed`, the `tableId` property match).
     AdoptStaging { reservation: &'a StagingReservation },
 }

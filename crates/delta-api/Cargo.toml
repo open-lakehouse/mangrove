@@ -63,6 +63,12 @@ required-features = ["testing"]
 name = "router"
 required-features = ["testing"]
 
+# updateTable atomicity / commit-retry / authorize-before-resolve, over a wrapper
+# around the in-memory backend.
+[[test]]
+name = "update_semantics"
+required-features = ["testing"]
+
 [features]
 default = ["server"]
 # The server-side surface: the `DeltaBackend` port, handler, axum router, and the
