@@ -65,7 +65,19 @@ integration-oss-java:
 [no-cd]
 engines *ARGS:
     cargo build -p unitycatalog-acceptance --bin uc-test-server
-    uv run --project tests/engines pytest tests/engines {{ ARGS }}
+    uv venv -q --allow-existing tests/engines/.venv
+    uv pip sync -q --python tests/engines/.venv tests/engines/requirements.txt
+    tests/engines/.venv/bin/pytest tests/engines {{ ARGS }}
+
+# Re-pin tests/engines/requirements.txt from requirements.in. The output carries
+# versions and hashes but no index URL, so it installs from PyPI or a mirror.
+#
+# re-pin the engine interop suite's Python dependencies
+[group('test')]
+[no-cd]
+engines-lock:
+    uv pip compile tests/engines/requirements.in --universal --generate-hashes \
+        --python-version 3.12 -o tests/engines/requirements.txt
 
 # Uses dev/uc-rust-conformance.yaml. On macOS `/tmp` is a symlink, so the config
 # needs the canonical `/private/tmp/uc-test`; adjust the allowed root + storage

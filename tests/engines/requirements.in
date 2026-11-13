@@ -1,0 +1,4 @@
+# Direct dependencies of the engine interop suite. Compile into requirements.txt
+# with `just test engines-lock` (index-agnostic: pins and hashes, no index URL).
+duckdb==2.0.0
+pytest

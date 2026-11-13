@@ -505,7 +505,12 @@ jobs:
           SQLX_OFFLINE: "true"
         run: |
           cargo build --locked -p unitycatalog-acceptance --bin uc-test-server
-          uv run --locked --project tests/engines pytest tests/engines
+          # Pins + hashes, no index URL: installs from PyPI here and through the
+          # proxy locally. `uv pip sync` checks the hashes (`uv run --with-requirements`
+          # doesn't).
+          uv venv tests/engines/.venv
+          uv pip sync --python tests/engines/.venv tests/engines/requirements.txt
+          tests/engines/.venv/bin/pytest tests/engines
 
   integration_postgres:
     name: integration-postgres

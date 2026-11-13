@@ -1,17 +1,6 @@
-[project]
-name = "mangrove-engine-interop"
-version = "0.0.0"
-description = "Real query engines (DuckDB, later Spark) against mangrove's Delta v1 API."
-requires-python = ">=3.12"
-dependencies = [
-  # Pinned so the extension versions it installs stay comparable across runs.
-  "duckdb==2.0.0",
-  "pytest>=8",
-]
-
-[tool.uv]
-package = false
-
+# pytest settings only. Dependencies live in requirements.in / requirements.txt
+# rather than a uv project: a uv.lock pins the index it resolved against, and
+# local runs resolve through a PyPI proxy that CI can't reach (and vice versa).
 [tool.pytest.ini_options]
 testpaths = ["."]
 addopts = "-ra"
