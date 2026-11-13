@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT commit_version, commit_timestamp, commit_filename, commit_filesize, commit_file_modification_timestamp FROM delta_commits WHERE table_id = $1 AND commit_version = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "commit_version",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "commit_timestamp",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "commit_filename",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "commit_filesize",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "commit_file_modification_timestamp",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "97a3f51ebfa845baead448ed20eb84d5ff8b86026fd6931b081d785e458e6d82"
+}
