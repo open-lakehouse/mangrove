@@ -12,6 +12,8 @@
 //! external-location validation is a no-op. The point is to exercise the *Delta*
 //! logic (contract, dispatcher, commit arbitration), not access control.
 
+pub mod coordinator_conformance;
+
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 

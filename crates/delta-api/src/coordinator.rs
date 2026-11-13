@@ -557,6 +557,14 @@ impl InMemoryCommitCoordinator {
         }
     }
 
+    /// Create a coordinator with explicit [`CommitLimits`].
+    pub fn with_limits(limits: CommitLimits) -> Self {
+        Self {
+            tables: RwLock::new(HashMap::new()),
+            limits,
+        }
+    }
+
     /// Override how many versions below the backfilled version keep their row for
     /// retry deduplication.
     pub fn with_backfilled_commits_retained(mut self, retained: i64) -> Self {
