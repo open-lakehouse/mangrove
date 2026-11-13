@@ -39,6 +39,7 @@ tracing = { workspace = true }
 uuid = { workspace = true, features = ["v7"] }
 
 [dev-dependencies]
+rstest = "0.18"
 tokio = { version = "1", features = ["full"] }
 # The router test drives the composed router over HTTP via `ServiceExt::oneshot`.
 tower = { workspace = true }

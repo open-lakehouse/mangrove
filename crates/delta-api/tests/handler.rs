@@ -371,7 +371,11 @@ async fn update_table_wrong_uuid_conflicts() {
                 requirements: vec![DeltaTableRequirement::AssertTableUuid {
                     uuid: "not-the-real-uuid".into(),
                 }],
-                updates: vec![],
+                // A non-empty update list: an empty one is a 400 shape error,
+                // checked before the requirement.
+                updates: vec![DeltaTableUpdate::SetTableComment {
+                    comment: "c".into(),
+                }],
             },
             (),
         )
@@ -733,4 +737,203 @@ async fn managed_create_stores_the_reserved_location() {
 
     let loaded = b.load_table(table_path("slashed"), ()).await.unwrap();
     assert_eq!(loaded.metadata.location, staging.location);
+}
+
+// ----- updateTable request shape + managed-contract rules ---------------------
+
+fn uuid_req(table_id: &str) -> Vec<DeltaTableRequirement> {
+    vec![DeltaTableRequirement::AssertTableUuid {
+        uuid: table_id.to_string(),
+    }]
+}
+
+fn set_props(pairs: &[(&str, &str)]) -> DeltaTableUpdate {
+    DeltaTableUpdate::SetProperties {
+        updates: pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect(),
+    }
+}
+
+fn remove_props(keys: &[&str]) -> DeltaTableUpdate {
+    DeltaTableUpdate::RemoveProperties {
+        removals: keys.iter().map(|k| k.to_string()).collect(),
+    }
+}
+
+fn clustering_dm() -> DeltaDomainMetadataUpdates {
+    DeltaDomainMetadataUpdates {
+        delta_clustering: Some(DeltaClusteringDomainMetadata {
+            clustering_columns: vec![vec!["id".to_string()]],
+        }),
+        delta_row_tracking: None,
+    }
+}
+
+/// Requests the spec's shape rules or the managed-table contract reject with a 400,
+/// built against the created table's id.
+#[rstest::rstest]
+#[case::empty_updates(|_: &str| (vec![], vec![]))]
+#[case::duplicate_set_properties(|id: &str| (uuid_req(id), vec![set_props(&[("a", "1")]), set_props(&[("b", "2")])]))]
+#[case::duplicate_comment(|id: &str| (uuid_req(id), vec![
+    DeltaTableUpdate::SetTableComment { comment: "a".into() },
+    DeltaTableUpdate::SetTableComment { comment: "b".into() },
+]))]
+#[case::duplicate_uuid_requirement(|id: &str| {
+    let mut reqs = uuid_req(id);
+    reqs.extend(uuid_req(id));
+    (reqs, vec![set_props(&[("a", "1")])])
+})]
+#[case::duplicate_etag_requirement(|id: &str| {
+    let mut reqs = uuid_req(id);
+    reqs.push(DeltaTableRequirement::AssertEtag { etag: "etag-0".into() });
+    reqs.push(DeltaTableRequirement::AssertEtag { etag: "etag-0".into() });
+    (reqs, vec![set_props(&[("a", "1")])])
+})]
+#[case::property_overlap(|id: &str| (uuid_req(id), vec![set_props(&[("a", "1")]), remove_props(&["a"])]))]
+#[case::domain_overlap(|id: &str| (uuid_req(id), vec![
+    DeltaTableUpdate::SetDomainMetadata { updates: clustering_dm() },
+    DeltaTableUpdate::RemoveDomainMetadata { domains: vec!["delta.clustering".into()] },
+]))]
+#[case::unknown_domain_removal(|id: &str| (uuid_req(id), vec![
+    DeltaTableUpdate::RemoveDomainMetadata { domains: vec!["delta.unknown".into()] },
+]))]
+#[case::remove_table_id(|id: &str| (uuid_req(id), vec![remove_props(&[contract::PROP_UC_TABLE_ID])]))]
+#[case::change_table_id(|id: &str| (uuid_req(id), vec![set_props(&[(contract::PROP_UC_TABLE_ID, "other")])]))]
+#[case::disable_in_commit_timestamps(|id: &str| (uuid_req(id), vec![set_props(&[(contract::PROP_ENABLE_IN_COMMIT_TIMESTAMPS, "false")])]))]
+#[case::remove_checkpoint_policy(|id: &str| (uuid_req(id), vec![remove_props(&[contract::PROP_CHECKPOINT_POLICY])]))]
+#[case::write_last_update_version(|id: &str| (uuid_req(id), vec![set_props(&[(contract::PROP_LAST_UPDATE_VERSION, "9")])]))]
+#[case::clustering_without_feature(|id: &str| (uuid_req(id), vec![
+    DeltaTableUpdate::SetDomainMetadata { updates: clustering_dm() },
+]))]
+#[tokio::test]
+async fn update_table_rejects_invalid_requests(
+    #[case] build: fn(&str) -> (Vec<DeltaTableRequirement>, Vec<DeltaTableUpdate>),
+) {
+    let b = backend();
+    let (table_id, _) = create_managed(&b, "t").await;
+    let (requirements, updates) = build(&table_id);
+    let before = DeltaApiHandler::<Cx>::load_table(&b, table_path("t"), ())
+        .await
+        .unwrap();
+
+    let err = b
+        .update_table(
+            table_path("t"),
+            DeltaUpdateTableRequest {
+                requirements,
+                updates,
+            },
+            (),
+        )
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err.0, DeltaBackendError::InvalidArgument(_)),
+        "{err:?}"
+    );
+
+    // Nothing was persisted.
+    let after = DeltaApiHandler::<Cx>::load_table(&b, table_path("t"), ())
+        .await
+        .unwrap();
+    assert_eq!(after.metadata.etag, before.metadata.etag);
+    assert_eq!(after.metadata.properties, before.metadata.properties);
+}
+
+#[tokio::test]
+async fn update_table_carrying_forward_required_properties_is_allowed() {
+    // A REPLACE re-sends the required properties (tableId included) unchanged.
+    let b = backend();
+    let (table_id, _) = create_managed(&b, "t").await;
+    b.update_table(
+        table_path("t"),
+        DeltaUpdateTableRequest {
+            requirements: uuid_req(&table_id),
+            updates: vec![set_props(&[
+                (contract::PROP_UC_TABLE_ID, table_id.as_str()),
+                (contract::PROP_CHECKPOINT_POLICY, "v2"),
+                ("custom.key", "v"),
+            ])],
+        },
+        (),
+    )
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn update_table_set_protocol_revalidates_post_apply_state() {
+    // Dropping a required feature via set-protocol is rejected even though the
+    // request carries no property changes.
+    let b = backend();
+    let (table_id, _) = create_managed(&b, "t").await;
+    let mut protocol = compliant_protocol();
+    protocol
+        .writer_features
+        .as_mut()
+        .unwrap()
+        .retain(|f| f != "inCommitTimestamp");
+    let err = b
+        .update_table(
+            table_path("t"),
+            DeltaUpdateTableRequest {
+                requirements: uuid_req(&table_id),
+                updates: vec![DeltaTableUpdate::SetProtocol { protocol }],
+            },
+            (),
+        )
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err.0, DeltaBackendError::InvalidArgument(_)),
+        "{err:?}"
+    );
+}
+
+#[tokio::test]
+async fn update_table_clustering_with_feature_is_allowed() {
+    let b = backend();
+    let (table_id, _) = create_managed(&b, "t").await;
+    let mut protocol = compliant_protocol();
+    protocol
+        .writer_features
+        .as_mut()
+        .unwrap()
+        .extend(["clustering".to_string(), "domainMetadata".to_string()]);
+    let resp = b
+        .update_table(
+            table_path("t"),
+            DeltaUpdateTableRequest {
+                requirements: uuid_req(&table_id),
+                updates: vec![
+                    DeltaTableUpdate::SetProtocol { protocol },
+                    DeltaTableUpdate::SetDomainMetadata {
+                        updates: clustering_dm(),
+                    },
+                ],
+            },
+            (),
+        )
+        .await
+        .unwrap();
+    assert!(
+        resp.metadata
+            .properties
+            .contains_key("delta.clusteringColumns")
+    );
+}
+
+#[tokio::test]
+async fn temporary_path_credentials_reject_unparsable_location() {
+    let b = backend();
+    let err = b
+        .get_temporary_path_credentials("not a url".into(), DeltaCredentialOperation::Read, ())
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(err.0, DeltaBackendError::InvalidArgument(_)),
+        "{err:?}"
+    );
 }

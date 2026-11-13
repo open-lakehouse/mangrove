@@ -347,9 +347,7 @@ where
         context: Cx,
     ) -> Result<DeltaCredentialsResponse> {
         let table = self.resolve_table(&path, &context).await?;
-        let table_id = table
-            .table_id
-            .ok_or_else(|| DeltaApiError::invalid_argument("table has no id"))?;
+        let table_id = table_id_of(&table)?;
         let access = to_access(operation);
         self.authorize(
             DeltaAction::VendTableCredential {
@@ -374,10 +372,7 @@ where
         context: Cx,
     ) -> Result<()> {
         let table = self.resolve_table(&path, &context).await?;
-        let table_id = table
-            .table_id
-            .clone()
-            .ok_or_else(|| DeltaApiError::invalid_argument("table has no id"))?;
+        let table_id = table_id_of(&table)?;
         // Metrics reports feed table maintenance (compaction/checkpointing) and are
         // an assertion by a writer about commits it has made, so we gate them on
         // WRITE. This is deliberately stricter than the pre-crate behavior, which
@@ -390,7 +385,8 @@ where
             &context,
         )
         .await?;
-        if table.table_id.as_deref() != Some(request.table_id.as_str()) {
+        require_delta(&table, &path.full_name())?;
+        if table_id != request.table_id {
             return Err(DeltaApiError::invalid_argument(
                 "report table-id does not match the table identified by the path",
             ));
@@ -465,8 +461,166 @@ where
 // updateTable action dispatcher (DeltaUpdateTableMapper)
 // ===================================================================
 
-/// Apply an `updateTable` request: check requirements, apply the action list in
-/// the reference's canonical order, route commit/backfill through the coordinator,
+/// The requirements of an `updateTable` request, at most one of each type.
+struct CollectedRequirements<'a> {
+    table_uuid: &'a str,
+    etag: Option<&'a str>,
+}
+
+/// Shape-check the requirements: at most one of each type, and `assert-table-uuid`
+/// is mandatory (without it a client holding a cached three-part name could
+/// silently commit to a recreated table).
+fn collect_requirements(
+    requirements: &[DeltaTableRequirement],
+) -> Result<CollectedRequirements<'_>> {
+    let mut table_uuid = None;
+    let mut etag = None;
+    for req in requirements {
+        match req {
+            DeltaTableRequirement::AssertTableUuid { uuid } => put_once(
+                &mut table_uuid,
+                uuid.as_str(),
+                "assert-table-uuid requirement",
+            )?,
+            DeltaTableRequirement::AssertEtag { etag: e } => {
+                put_once(&mut etag, e.as_str(), "assert-etag requirement")?
+            }
+        }
+    }
+    let table_uuid = table_uuid.ok_or_else(|| {
+        DeltaApiError::invalid_argument("assert-table-uuid requirement is required.")
+    })?;
+    Ok(CollectedRequirements { table_uuid, etag })
+}
+
+/// The update actions of an `updateTable` request, at most one of each type.
+///
+/// The spec makes request order meaningless (actions apply in a fixed canonical
+/// order) and allows one action per type, so collecting into named slots is
+/// lossless.
+#[derive(Default)]
+struct CollectedUpdates<'a> {
+    set_properties: Option<&'a BTreeMap<String, String>>,
+    remove_properties: Option<&'a [String]>,
+    set_columns: Option<&'a DeltaStructType>,
+    set_table_comment: Option<&'a str>,
+    add_commit: Option<&'a DeltaCommit>,
+    set_latest_backfilled_version: Option<i64>,
+    set_protocol: Option<&'a DeltaProtocol>,
+    set_domain_metadata: Option<&'a DeltaDomainMetadataUpdates>,
+    remove_domain_metadata: Option<&'a [String]>,
+    set_partition_columns: Option<&'a [String]>,
+    update_snapshot_version: Option<(i64, i64)>,
+}
+
+/// Shape-check the update actions (`ManagedDeltaTablesSpec` "Request shape
+/// rules"): at least one action, at most one per type, and no set/remove overlap on
+/// the same property key or domain. Violations are 400s.
+fn collect_updates(updates: &[DeltaTableUpdate]) -> Result<CollectedUpdates<'_>> {
+    if updates.is_empty() {
+        return Err(DeltaApiError::invalid_argument(
+            "At least one update is required.",
+        ));
+    }
+    let mut c = CollectedUpdates::default();
+    for update in updates {
+        match update {
+            DeltaTableUpdate::SetProperties { updates } => {
+                put_once(&mut c.set_properties, updates, "set-properties action")?
+            }
+            DeltaTableUpdate::RemoveProperties { removals } => put_once(
+                &mut c.remove_properties,
+                removals,
+                "remove-properties action",
+            )?,
+            DeltaTableUpdate::SetColumns { columns } => {
+                put_once(&mut c.set_columns, columns, "set-columns action")?
+            }
+            DeltaTableUpdate::SetTableComment { comment } => put_once(
+                &mut c.set_table_comment,
+                comment,
+                "set-table-comment action",
+            )?,
+            DeltaTableUpdate::AddCommit { commit, .. } => {
+                put_once(&mut c.add_commit, commit, "add-commit action")?
+            }
+            DeltaTableUpdate::SetLatestBackfilledVersion {
+                latest_published_version,
+            } => put_once(
+                &mut c.set_latest_backfilled_version,
+                *latest_published_version,
+                "set-latest-backfilled-version action",
+            )?,
+            DeltaTableUpdate::SetProtocol { protocol } => {
+                put_once(&mut c.set_protocol, protocol, "set-protocol action")?
+            }
+            DeltaTableUpdate::SetDomainMetadata { updates } => put_once(
+                &mut c.set_domain_metadata,
+                updates,
+                "set-domain-metadata action",
+            )?,
+            DeltaTableUpdate::RemoveDomainMetadata { domains } => put_once(
+                &mut c.remove_domain_metadata,
+                domains,
+                "remove-domain-metadata action",
+            )?,
+            DeltaTableUpdate::SetPartitionColumns { partition_columns } => put_once(
+                &mut c.set_partition_columns,
+                partition_columns,
+                "set-partition-columns action",
+            )?,
+            DeltaTableUpdate::UpdateMetadataSnapshotVersion {
+                last_commit_version,
+                last_commit_timestamp_ms,
+            } => put_once(
+                &mut c.update_snapshot_version,
+                (*last_commit_version, *last_commit_timestamp_ms),
+                "update-metadata-snapshot-version action",
+            )?,
+        }
+    }
+
+    if let (Some(set), Some(removals)) = (c.set_properties, c.remove_properties) {
+        let overlap: Vec<&str> = removals
+            .iter()
+            .filter(|k| set.contains_key(*k))
+            .map(String::as_str)
+            .collect();
+        if !overlap.is_empty() {
+            return Err(DeltaApiError::invalid_argument(format!(
+                "set-properties and remove-properties overlap on keys: {overlap:?}"
+            )));
+        }
+    }
+    if let (Some(set), Some(removals)) = (c.set_domain_metadata, c.remove_domain_metadata) {
+        let set_domains = contract::domains_set_in(set);
+        let overlap: Vec<&str> = removals
+            .iter()
+            .map(String::as_str)
+            .filter(|d| set_domains.contains(d))
+            .collect();
+        if !overlap.is_empty() {
+            return Err(DeltaApiError::invalid_argument(format!(
+                "set-domain-metadata and remove-domain-metadata overlap on domains: {overlap:?}"
+            )));
+        }
+    }
+    Ok(c)
+}
+
+/// Fill a once-only slot, rejecting a second occurrence with a 400.
+fn put_once<T>(slot: &mut Option<T>, value: T, what: &str) -> Result<()> {
+    if slot.replace(value).is_some() {
+        return Err(DeltaApiError::invalid_argument(format!(
+            "a request may carry at most one {what}"
+        )));
+    }
+    Ok(())
+}
+
+/// Apply an `updateTable` request: shape-check it, check requirements, apply the
+/// actions in the reference's canonical order, re-validate the managed contract
+/// against the post-apply state, route commit/backfill through the coordinator,
 /// persist metadata, and return the refreshed table.
 async fn update_table_impl<B, Cx>(
     backend: &B,
@@ -478,11 +632,13 @@ where
     B: DeltaBackend<Cx> + ?Sized,
     Cx: Send + 'static,
 {
+    // Pure shape checks first: a malformed request is a 400 regardless of the
+    // table's state.
+    let requirements = collect_requirements(&request.requirements)?;
+    let updates = collect_updates(&request.updates)?;
+
     let mut table = backend.resolve_table(&path, &context).await?;
-    let table_uuid = table
-        .table_id
-        .clone()
-        .ok_or_else(|| DeltaApiError::invalid_argument("table has no id"))?;
+    let table_uuid = table_id_of(&table)?;
     backend
         .authorize(
             DeltaAction::WriteTable {
@@ -492,72 +648,32 @@ where
             &context,
         )
         .await?;
+    require_delta(&table, &path.full_name())?;
 
-    // --- Requirements (assert-table-uuid mandatory; assert-etag optional) ---
+    // --- Requirements ---
     //
     // `assert-table-uuid` is validated against the resolved uuid (identity never
-    // changes under an update, so no race). Each `assert-etag` is fast-failed here
-    // against the resolved snapshot so a stale etag rejects the *whole* request
-    // before the add-commit coordinator call or any write lands — and every
-    // requirement is enforced, not just the last one. The asserted etag is *also*
-    // threaded into `UpdateTableSpec::expected_etag`, where the backend re-checks
-    // it as a compare-and-swap at write time to close the read-modify-write race
-    // the snapshot check alone leaves open.
-    let has_uuid_assert = request
-        .requirements
-        .iter()
-        .any(|r| matches!(r, DeltaTableRequirement::AssertTableUuid { .. }));
-    if !has_uuid_assert {
-        return Err(DeltaApiError::invalid_argument(
-            "assert-table-uuid requirement is required.",
-        ));
+    // changes under an update, so no race). `assert-etag` is fast-failed here
+    // against the resolved snapshot so a stale etag rejects the whole request
+    // before the add-commit coordinator call or any write lands. The asserted etag
+    // is *also* threaded into `UpdateTableSpec::expected_etag`, where the backend
+    // re-checks it as a compare-and-swap at write time.
+    if requirements.table_uuid != table_uuid {
+        return Err(DeltaApiError(DeltaBackendError::UpdateRequirementConflict(
+            format!(
+                "assert-table-uuid failed: expected {} but table has {table_uuid}",
+                requirements.table_uuid
+            ),
+        )));
     }
-    let current_etag = etag_of(&table);
-    let mut expected_etag: Option<String> = None;
-    for req in &request.requirements {
-        match req {
-            DeltaTableRequirement::AssertTableUuid { uuid } => {
-                if uuid != &table_uuid {
-                    return Err(DeltaApiError(DeltaBackendError::UpdateRequirementConflict(
-                        format!(
-                            "assert-table-uuid failed: expected {uuid} but table has {table_uuid}"
-                        ),
-                    )));
-                }
-            }
-            DeltaTableRequirement::AssertEtag { etag } => {
-                if etag != &current_etag {
-                    return Err(DeltaApiError(DeltaBackendError::UpdateRequirementConflict(
-                        "assert-etag failed: table has been modified".to_string(),
-                    )));
-                }
-                expected_etag = Some(etag.clone());
-            }
-        }
+    if let Some(etag) = requirements.etag
+        && etag != etag_of(&table)
+    {
+        return Err(DeltaApiError(DeltaBackendError::UpdateRequirementConflict(
+            "assert-etag failed: table has been modified".to_string(),
+        )));
     }
-
-    // --- Overlap checks (set/remove on the same key) ---
-    let set_prop_keys: Vec<&String> = request
-        .updates
-        .iter()
-        .filter_map(|u| match u {
-            DeltaTableUpdate::SetProperties { updates } => Some(updates.keys()),
-            _ => None,
-        })
-        .flatten()
-        .collect();
-    if let Some(removals) = request.updates.iter().find_map(|u| match u {
-        DeltaTableUpdate::RemoveProperties { removals } => Some(removals),
-        _ => None,
-    }) {
-        for r in removals {
-            if set_prop_keys.contains(&r) {
-                return Err(DeltaApiError::invalid_argument(format!(
-                    "set-properties and remove-properties overlap on key: {r}"
-                )));
-            }
-        }
-    }
+    let expected_etag = requirements.etag.map(str::to_string);
 
     // Work on the fields directly (taken, not cloned); the untouched `table` is
     // reassembled below when no metadata change needs persisting.
@@ -569,86 +685,61 @@ where
 
     // Apply in canonical order (not request order).
     // 1. set-columns / set-partition-columns
-    if apply_schema_and_partitions(&mut columns, &request.updates)? {
+    if apply_schema_and_partitions(
+        &mut columns,
+        updates.set_columns,
+        updates.set_partition_columns,
+    )? {
         metadata_changed = true;
     }
 
-    // 2. set-protocol (re-derive delta.feature.* and re-validate for MANAGED)
-    if let Some(protocol) = request.updates.iter().find_map(|u| match u {
-        DeltaTableUpdate::SetProtocol { protocol } => Some(protocol),
-        _ => None,
-    }) {
+    // 2. set-protocol (a full replacement: re-derive delta.feature.*)
+    if let Some(protocol) = updates.set_protocol {
         properties.retain(|k, _| !k.starts_with("delta.feature."));
         contract::derive_from_protocol(&mut properties, protocol);
-        if is_managed {
-            contract::validate(protocol, None, &properties)?;
-        }
         metadata_changed = true;
     }
 
     // 3. set-properties / 4. remove-properties
-    for update in &request.updates {
-        match update {
-            DeltaTableUpdate::SetProperties { updates } => {
-                properties.extend(updates.clone());
-                metadata_changed = true;
-            }
-            DeltaTableUpdate::RemoveProperties { removals } => {
-                for k in removals {
-                    properties.remove(k);
-                }
-                metadata_changed = true;
-            }
-            _ => {}
+    if let Some(set) = updates.set_properties {
+        if is_managed {
+            contract::check_managed_property_changes(set.keys(), &table_uuid, |k| {
+                set.get(k).map(String::as_str)
+            })?;
         }
+        properties.extend(set.clone());
+        metadata_changed = true;
+    }
+    if let Some(removals) = updates.remove_properties {
+        if is_managed {
+            contract::check_managed_property_changes(removals.iter(), &table_uuid, |_| None)?;
+        }
+        for k in removals {
+            properties.remove(k);
+        }
+        metadata_changed = true;
     }
 
     // 5. set-domain-metadata / 6. remove-domain-metadata
-    for update in &request.updates {
-        match update {
-            DeltaTableUpdate::SetDomainMetadata { updates } => {
-                contract::derive_from_domain_metadata(&mut properties, updates);
-                metadata_changed = true;
-            }
-            DeltaTableUpdate::RemoveDomainMetadata { domains } => {
-                for d in domains {
-                    match d.as_str() {
-                        "delta.clustering" => {
-                            properties.remove("delta.clusteringColumns");
-                        }
-                        "delta.rowTracking" => {
-                            properties.remove("delta.rowTracking.rowIdHighWaterMark");
-                        }
-                        other => {
-                            return Err(DeltaApiError::invalid_argument(format!(
-                                "Unknown domain in remove-domain-metadata: {other}"
-                            )));
-                        }
-                    }
-                }
-                metadata_changed = true;
-            }
-            _ => {}
+    if let Some(dm) = updates.set_domain_metadata {
+        contract::derive_from_domain_metadata(&mut properties, dm);
+        metadata_changed = true;
+    }
+    if let Some(domains) = updates.remove_domain_metadata {
+        for d in domains {
+            contract::remove_domain_metadata(&mut properties, d)?;
         }
+        metadata_changed = true;
     }
 
     // 7. set-table-comment
-    if let Some(c) = request.updates.iter().find_map(|u| match u {
-        DeltaTableUpdate::SetTableComment { comment } => Some(comment.clone()),
-        _ => None,
-    }) {
-        comment = Some(c);
+    if let Some(c) = updates.set_table_comment {
+        comment = Some(c.to_string());
         metadata_changed = true;
     }
 
     // 8. update-metadata-snapshot-version (EXTERNAL only)
-    if let Some((v, ts)) = request.updates.iter().find_map(|u| match u {
-        DeltaTableUpdate::UpdateMetadataSnapshotVersion {
-            last_commit_version,
-            last_commit_timestamp_ms,
-        } => Some((*last_commit_version, *last_commit_timestamp_ms)),
-        _ => None,
-    }) {
+    if let Some((v, ts)) = updates.update_snapshot_version {
         if is_managed {
             return Err(DeltaApiError::invalid_argument(
                 "update-metadata-snapshot-version is only valid for EXTERNAL tables",
@@ -665,27 +756,30 @@ where
         metadata_changed = true;
     }
 
+    // Re-validate the MANAGED contract against the final post-apply state.
+    // set-protocol runs full validation; set-domain-metadata alone only needs the
+    // domain-metadata-vs-writer-features check.
+    if is_managed {
+        if let Some(protocol) = updates.set_protocol {
+            contract::validate(protocol, None, &properties)?;
+            contract::validate_domain_metadata_against_properties(&properties)?;
+        } else if updates.set_domain_metadata.is_some() {
+            contract::validate_domain_metadata_against_properties(&properties)?;
+        }
+    }
+
     // 9. add-commit + set-latest-backfilled-version → commit coordinator
-    let add_commit = request.updates.iter().find_map(|u| match u {
-        DeltaTableUpdate::AddCommit { commit, .. } => Some(commit.clone()),
-        _ => None,
-    });
-    let backfill = request.updates.iter().find_map(|u| match u {
-        DeltaTableUpdate::SetLatestBackfilledVersion {
-            latest_published_version,
-        } => Some(*latest_published_version),
-        _ => None,
-    });
-    if add_commit.is_some() || backfill.is_some() {
+    let backfill = updates.set_latest_backfilled_version;
+    if updates.add_commit.is_some() || backfill.is_some() {
         if !is_managed {
             return Err(DeltaApiError::invalid_argument(
                 "add-commit / set-latest-backfilled-version require a MANAGED table",
             ));
         }
-        let commit_info = add_commit.map(|c| CommitInfo {
+        let commit_info = updates.add_commit.map(|c| CommitInfo {
             version: c.version,
             timestamp: c.timestamp,
-            file_name: c.file_name,
+            file_name: c.file_name.clone(),
             file_size: c.file_size,
             file_modification_timestamp: c.file_modification_timestamp,
         });
@@ -714,7 +808,7 @@ where
             .await?
     } else {
         // No metadata write to delegate the CAS to; any asserted etag was already
-        // fast-failed against this snapshot in the requirements loop above.
+        // fast-failed against this snapshot above.
         table.properties = properties;
         table.columns = columns;
         table
@@ -726,16 +820,9 @@ where
 /// whether any change was made. Mirrors the reference `applySchemaAndPartitionColumns`.
 fn apply_schema_and_partitions(
     columns: &mut Vec<Column>,
-    updates: &[DeltaTableUpdate],
+    new_columns: Option<&DeltaStructType>,
+    new_partitions: Option<&[String]>,
 ) -> Result<bool> {
-    let new_columns = updates.iter().find_map(|u| match u {
-        DeltaTableUpdate::SetColumns { columns } => Some(columns),
-        _ => None,
-    });
-    let new_partitions = updates.iter().find_map(|u| match u {
-        DeltaTableUpdate::SetPartitionColumns { partition_columns } => Some(partition_columns),
-        _ => None,
-    });
     if new_columns.is_none() && new_partitions.is_none() {
         return Ok(false);
     }
@@ -744,8 +831,8 @@ fn apply_schema_and_partitions(
         Some(struct_type) => {
             // Preserve existing partitioning unless new partitions are supplied.
             let existing_partitions = partition_names(columns);
-            let partitions = new_partitions.cloned().unwrap_or(existing_partitions);
-            contract::delta_columns_to_uc(struct_type, Some(&partitions))?
+            let partitions = new_partitions.unwrap_or(&existing_partitions);
+            contract::delta_columns_to_uc(struct_type, Some(partitions))?
         }
         None => {
             let partitions = new_partitions.expect("checked above");
@@ -770,6 +857,38 @@ fn apply_schema_and_partitions(
     Ok(true)
 }
 
+/// The resolved table's id. A table the backend hands out without an id is a
+/// server-side data problem, not a client error, so this is a 500.
+fn table_id_of(table: &ResolvedTable) -> Result<String> {
+    table
+        .table_id
+        .clone()
+        .ok_or_else(|| DeltaApiError::internal("table has no id"))
+}
+
+/// Reject tables the Delta API does not serve: non-table securables (views,
+/// metric views, …; `table_type == None`) and tables whose data source format is
+/// known and not Delta. Clients fall back to the UC REST API on
+/// `UnsupportedTableFormatException`. A backend that does not report a format
+/// (`None`) is trusted to serve only Delta tables.
+fn require_delta(table: &ResolvedTable, full_name: &str) -> Result<DeltaTableType> {
+    let Some(table_type) = table.table_type else {
+        return Err(DeltaApiError(DeltaBackendError::UnsupportedTableFormat(
+            format!(
+                "table '{full_name}' is not a Delta table and cannot be served via the Delta API"
+            ),
+        )));
+    };
+    if let Some(format) = table.data_source_format
+        && format != DeltaDataSourceFormat::Delta
+    {
+        return Err(DeltaApiError(DeltaBackendError::UnsupportedTableFormat(
+            format!("table '{full_name}' has data source format {format:?}, not DELTA"),
+        )));
+    }
+    Ok(table_type)
+}
+
 // ===================================================================
 // loadTable response construction
 // ===================================================================
@@ -787,16 +906,10 @@ async fn build_load_table_response<B, Cx>(
 where
     B: DeltaBackend<Cx> + ?Sized,
 {
-    let Some(table_type) = table.table_type else {
-        return Err(DeltaApiError::invalid_argument(format!(
-            "table '{full_name}' is not a Delta table and cannot be loaded via the Delta API"
-        )));
-    };
+    let table_type = require_delta(&table, full_name)?;
 
-    // Commit-coordinator state only exists for catalog-managed *Delta* tables;
-    // a MANAGED table of another format gets no commits/version fields.
+    // Commit-coordinator state only exists for catalog-managed tables.
     let (commits, latest_table_version) = if table_type == DeltaTableType::Managed
-        && table.data_source_format == Some(DeltaDataSourceFormat::Delta)
         && let Some(id) = table.table_id.as_deref()
     {
         let (commits, latest) = backend
@@ -907,4 +1020,59 @@ fn to_storage_credential(
     wire.prefix = prefix.to_string();
     wire.operation = operation;
     Ok(wire)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn resolved(
+        table_type: Option<DeltaTableType>,
+        format: Option<DeltaDataSourceFormat>,
+    ) -> ResolvedTable {
+        ResolvedTable {
+            table_id: Some("id".into()),
+            location: "s3://b/t".into(),
+            table_type,
+            data_source_format: format,
+            columns: vec![],
+            properties: BTreeMap::new(),
+            created_at_ms: None,
+            updated_at_ms: None,
+            version: 0,
+        }
+    }
+
+    #[test]
+    fn require_delta_accepts_delta_and_unreported_formats() {
+        for format in [Some(DeltaDataSourceFormat::Delta), None] {
+            let t = resolved(Some(DeltaTableType::Managed), format);
+            assert_eq!(require_delta(&t, "c.s.t").unwrap(), DeltaTableType::Managed);
+        }
+    }
+
+    #[test]
+    fn require_delta_rejects_views_and_other_formats() {
+        for t in [
+            resolved(None, Some(DeltaDataSourceFormat::Delta)),
+            resolved(
+                Some(DeltaTableType::External),
+                Some(DeltaDataSourceFormat::Parquet),
+            ),
+        ] {
+            let err = require_delta(&t, "c.s.t").unwrap_err();
+            assert!(
+                matches!(err.0, DeltaBackendError::UnsupportedTableFormat(_)),
+                "{err:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn missing_table_id_is_internal() {
+        let mut t = resolved(Some(DeltaTableType::Managed), None);
+        t.table_id = None;
+        let err = table_id_of(&t).unwrap_err();
+        assert!(matches!(err.0, DeltaBackendError::Internal(_)), "{err:?}");
+    }
 }

@@ -35,6 +35,16 @@ pub enum DeltaBackendError {
     #[error("{0}")]
     NotFound(String),
 
+    /// The table is not a Delta table (or not one this endpoint serves); clients
+    /// should fall back to the UC REST API. → 400 `UnsupportedTableFormatException`.
+    #[error("{0}")]
+    UnsupportedTableFormat(String),
+
+    /// The request is malformed (unparsable body, bad path or query parameter).
+    /// → 400 `BadRequestException`.
+    #[error("bad request: {0}")]
+    BadRequest(String),
+
     /// The requested catalog does not exist. → 404 `NoSuchCatalogException`.
     #[error("{0}")]
     NoSuchCatalog(String),
@@ -96,6 +106,16 @@ impl DeltaApiError {
         DeltaApiError(DeltaBackendError::InvalidArgument(message.into()))
     }
 
+    /// A 400 `BadRequestException` for a malformed request.
+    pub fn bad_request(message: impl Into<String>) -> Self {
+        DeltaApiError(DeltaBackendError::BadRequest(message.into()))
+    }
+
+    /// A 500 `InternalServerErrorException` for a server-side invariant violation.
+    pub fn internal(message: impl Into<String>) -> Self {
+        DeltaApiError(DeltaBackendError::Internal(message.into()))
+    }
+
     /// A 403 `PermissionDeniedException`.
     pub fn permission_denied(message: impl Into<String>) -> Self {
         DeltaApiError(DeltaBackendError::PermissionDenied(message.into()))
@@ -133,6 +153,10 @@ impl DeltaApiError {
             }
             DeltaBackendError::InvalidArgument(_) => {
                 (StatusCode::BAD_REQUEST, InvalidParameterValueException)
+            }
+            DeltaBackendError::BadRequest(_) => (StatusCode::BAD_REQUEST, BadRequestException),
+            DeltaBackendError::UnsupportedTableFormat(_) => {
+                (StatusCode::BAD_REQUEST, UnsupportedTableFormatException)
             }
             DeltaBackendError::CommitVersionConflict(_) => {
                 (StatusCode::CONFLICT, CommitVersionConflictException)
