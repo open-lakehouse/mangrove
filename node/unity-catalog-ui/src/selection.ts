@@ -12,6 +12,7 @@ import {
   SELECTABLE_KINDS,
   type SelectableKind,
   type Selection,
+  STORAGE_KINDS,
 } from "./types.js";
 
 /** Route id the selection lives on (see routeTree.tsx `validateSearch`). */
@@ -93,4 +94,44 @@ export function useCatalogSelection() {
     selectSchemaChild,
     setSchemaTab,
   } as const;
+}
+
+function isStorageKind(kind: SelectableKind): boolean {
+  return (STORAGE_KINDS as SelectableKind[]).includes(kind);
+}
+
+/**
+ * True if `selection` is the object `kind`/`name` or, for a catalog or schema,
+ * lives under it. Storage securables have their own flat namespace, so a
+ * credential named `sales` is never under the catalog `sales`.
+ */
+export function isSelfOrDescendant(
+  selection: Selection,
+  kind: SelectableKind,
+  name: string,
+): boolean {
+  if (selection.kind === kind && selection.fullName === name) return true;
+  if (kind !== "catalog" && kind !== "schema") return false;
+  if (isStorageKind(selection.kind)) return false;
+  return selection.fullName.startsWith(`${name}.`);
+}
+
+/**
+ * The selection after `kind`/`name` was renamed to `newName` (the last name
+ * part only), or `undefined` if the rename doesn't affect it.
+ */
+export function renamedSelection(
+  selection: Selection,
+  kind: SelectableKind,
+  name: string,
+  newName: string,
+): Selection | undefined {
+  if (!isSelfOrDescendant(selection, kind, name)) return undefined;
+  const parts = name.split(".");
+  parts[parts.length - 1] = newName;
+  const renamed = parts.join(".");
+  return {
+    kind: selection.kind,
+    fullName: renamed + selection.fullName.slice(name.length),
+  };
 }

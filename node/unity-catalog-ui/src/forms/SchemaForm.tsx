@@ -26,12 +26,15 @@ import type {
   ObjectFieldTemplateProps,
   RegistryWidgetsType,
   RJSFSchema,
+  RJSFValidationError,
   TemplatesType,
   UiSchema,
   WidgetProps,
 } from "@rjsf/utils";
+import { getDefaultFormState } from "@rjsf/utils";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import Ajv2020 from "ajv/dist/2020";
+import { useState } from "react";
 
 function FieldTemplate(props: FieldTemplateProps) {
   const {
@@ -44,6 +47,8 @@ function FieldTemplate(props: FieldTemplateProps) {
     hidden,
     displayLabel,
   } = props;
+  // Hidden fields still validate. Their errors are surfaced by the form-level
+  // alert in `SchemaForm`, since the field itself is never visible.
   if (hidden) return <div className="hidden">{children}</div>;
   return (
     <div className="space-y-1.5">
@@ -207,10 +212,60 @@ const widgets: RegistryWidgetsType = {
 // (with `$defs`), so the validator must use the 2020-12 dialect. The protovalidate
 // URI patterns rely on identity escapes that are invalid under JS unicode-mode
 // regex, so disable `unicodeRegExp` to compile them.
-const validator = customizeValidator({
+export const validator = customizeValidator({
   AjvClass: Ajv2020,
   ajvOptionsOverrides: { unicodeRegExp: false },
 });
+
+/**
+ * Validate form data against a schema the way the rendered form does on submit:
+ * fill schema defaults first, then run Ajv. Returns the validation errors.
+ */
+export function validateFormData(
+  schema: RJSFSchema,
+  formData: unknown,
+): RJSFValidationError[] {
+  const filled = getDefaultFormState(
+    validator,
+    schema,
+    formData as never,
+    schema,
+  );
+  return validator.validateFormData(filled, schema).errors;
+}
+
+/**
+ * The top-level property an error belongs to, e.g. `catalog_name` for
+ * `.catalog_name`, or `aws_iam_role` for `.aws_iam_role.role_arn`.
+ */
+function errorField(error: RJSFValidationError): string | undefined {
+  const path = error.property?.replace(/^\./, "") ?? "";
+  const top = path.split(".")[0];
+  if (top) return top;
+  // Root-level errors (e.g. `required`) name the field in params.
+  const params = error.params as { missingProperty?: string } | undefined;
+  return params?.missingProperty;
+}
+
+/** True if the uiSchema hides `field` at the top level. */
+function isHidden(uiSchema: UiSchema | undefined, field: string): boolean {
+  const fieldUi = uiSchema?.[field] as { "ui:widget"?: string } | undefined;
+  return fieldUi?.["ui:widget"] === "hidden";
+}
+
+/**
+ * The errors no visible field can show: those on hidden fields and those at
+ * the root (e.g. `additionalProperties`).
+ */
+export function invisibleErrors(
+  errors: RJSFValidationError[],
+  uiSchema: UiSchema | undefined,
+): RJSFValidationError[] {
+  return errors.filter((error) => {
+    const field = errorField(error);
+    return !field || isHidden(uiSchema, field);
+  });
+}
 
 export interface SchemaFormProps<T> {
   /** DOM id of the rendered `<form>`; pair with a footer `<button form={id}>`. */
@@ -232,6 +287,11 @@ export function SchemaForm<T>({
   onChange,
   onSubmit,
 }: SchemaFormProps<T>) {
+  // Errors the user can't see next to a field: those on hidden fields and those
+  // at the root (e.g. `additionalProperties`). Without this, a submit blocked by
+  // such an error does nothing at all.
+  const [formErrors, setFormErrors] = useState<string[]>([]);
+
   // Suppress rjsf's built-in submit button; the dialog footer owns submission.
   const mergedUiSchema: UiSchema = {
     ...uiSchema,
@@ -239,19 +299,40 @@ export function SchemaForm<T>({
   };
 
   return (
-    <Form
-      id={id}
-      schema={schema}
-      uiSchema={mergedUiSchema}
-      formData={formData}
-      validator={validator}
-      disabled={disabled}
-      showErrorList={false}
-      noHtml5Validate
-      templates={templates}
-      widgets={widgets}
-      onChange={(e) => onChange?.(e.formData as T)}
-      onSubmit={(e) => onSubmit(e.formData as T)}
-    />
+    <>
+      <Form
+        id={id}
+        schema={schema}
+        uiSchema={mergedUiSchema}
+        formData={formData}
+        validator={validator}
+        disabled={disabled}
+        showErrorList={false}
+        noHtml5Validate
+        templates={templates}
+        widgets={widgets}
+        onChange={(e) => onChange?.(e.formData as T)}
+        onError={(errors) => {
+          const invisible = invisibleErrors(errors, uiSchema);
+          if (invisible.length) {
+            console.error("SchemaForm: submit blocked by", invisible);
+          }
+          setFormErrors(invisible.map((error) => error.stack));
+        }}
+        onSubmit={(e) => {
+          setFormErrors([]);
+          onSubmit(e.formData as T);
+        }}
+      />
+      {formErrors.length ? (
+        <ul role="alert" className="mt-3 space-y-0.5">
+          {formErrors.map((message) => (
+            <li key={message} className="text-xs text-destructive">
+              {message}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </>
   );
 }

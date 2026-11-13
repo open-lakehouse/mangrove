@@ -16,14 +16,18 @@ import {
   useCreateSchema,
   useCreateVolume,
 } from "@open-lakehouse/unity-catalog-client/react";
-import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CatalogSchemaPicker } from "./CatalogSchemaPicker.js";
 import { useRevealCreated } from "./create-reconcile.js";
 import type { CatalogCreateRequest } from "./dialog-types.js";
+import {
+  NAMESPACE_CREATE_UI,
+  type NamespaceFormData,
+  namespaceCreateSchema,
+  namespaceFormData,
+} from "./forms/dialog-forms.js";
 import { SchemaForm } from "./forms/SchemaForm.js";
-import { cloneSchema, formSchemas } from "./forms/schemas.js";
 import { StorageLocationPicker } from "./storage/StorageLocationPicker.js";
 
 const TITLES: Record<CatalogCreateRequest["kind"], string> = {
@@ -52,36 +56,6 @@ export function CreateEntityDialog({
 
 const NAMESPACE_FORM_ID = "namespace-create-form";
 
-type LooseSchema = Record<string, unknown>;
-
-interface NamespaceFormData {
-  name?: string;
-  catalog_name?: string;
-  comment?: string;
-}
-
-/** Reduce a catalog/schema create schema to the name + comment fields. */
-function tailorNamespaceSchema(base: RJSFSchema): RJSFSchema {
-  const schema = cloneSchema(base);
-  const props = (schema.properties ?? {}) as Record<string, LooseSchema>;
-  // The key-value `properties` map is an object field; drop it (not surfaced).
-  delete props.properties;
-  return schema;
-}
-
-// Hidden fields are still part of the schema (so injected values validate) but
-// not rendered; storage is handled by the dedicated picker below the form.
-const NAMESPACE_HIDDEN_UI: UiSchema = {
-  catalog_name: { "ui:widget": "hidden" },
-  storage_root: { "ui:widget": "hidden" },
-  storage_location: { "ui:widget": "hidden" },
-  provider_name: { "ui:widget": "hidden" },
-  share_name: { "ui:widget": "hidden" },
-  comment: { "ui:placeholder": "Description (optional)" },
-  name: { "ui:placeholder": "my_object", "ui:autofocus": true },
-  "ui:order": ["name", "comment", "*"],
-};
-
 function NamespaceCreateDialog({
   request,
   onClose,
@@ -102,12 +76,7 @@ function NamespaceCreateDialog({
   const [storageRoot, setStorageRoot] = useState<string>();
 
   const schema = useMemo(
-    () =>
-      tailorNamespaceSchema(
-        request.kind === "catalog"
-          ? formSchemas.createCatalog
-          : formSchemas.createSchema,
-      ),
+    () => namespaceCreateSchema(request.kind),
     [request.kind],
   );
 
@@ -119,7 +88,7 @@ function NamespaceCreateDialog({
 
     const handlers = {
       onSuccess: () => {
-        const createdName = data.name ?? "";
+        const createdName = data.name?.trim() ?? "";
         toast.success(`Created ${request.kind} "${createdName}"`);
         if (request.kind === "catalog") {
           reveal({ kind: "catalog", name: createdName });
@@ -135,7 +104,7 @@ function NamespaceCreateDialog({
       createCatalog.mutate(
         {
           body: {
-            name: data.name ?? "",
+            name: data.name?.trim() ?? "",
             comment: data.comment || undefined,
             storage_root: storageRoot,
           },
@@ -148,7 +117,7 @@ function NamespaceCreateDialog({
     createSchema.mutate(
       {
         body: {
-          name: data.name ?? "",
+          name: data.name?.trim() ?? "",
           catalog_name: catalog,
           comment: data.comment || undefined,
           storage_root: storageRoot,
@@ -169,8 +138,9 @@ function NamespaceCreateDialog({
           <SchemaForm<NamespaceFormData>
             id={NAMESPACE_FORM_ID}
             schema={schema}
-            uiSchema={NAMESPACE_HIDDEN_UI}
-            formData={formData}
+            uiSchema={NAMESPACE_CREATE_UI}
+            // The picked catalog is part of the validated form data.
+            formData={namespaceFormData(request.kind, formData, catalog)}
             disabled={pending}
             onChange={setFormData}
             onSubmit={submit}
@@ -232,7 +202,13 @@ function LeafCreateDialog({
   const commentId = useId();
 
   const pending = createVolume.isPending || createModel.isPending;
-  const canSubmit = !!name.trim() && !!catalog && !!schema;
+  const canSubmit =
+    !!name.trim() &&
+    !!catalog &&
+    !!schema &&
+    (request.kind !== "volume" ||
+      volumeType !== "EXTERNAL" ||
+      !!storageLocation.trim());
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
