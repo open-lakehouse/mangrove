@@ -249,6 +249,220 @@ pub fn classify_existing_version(
     }
 }
 
+// ===================================================================
+// Storage-agnostic commit planning
+// ===================================================================
+//
+// Every coordinator (in-memory, Postgres, SQLite, or a downstream backend's)
+// runs the same arbitration: read the table's commit-log bounds and the row at
+// the incoming version under its own lock / transaction, ask `plan_commit` what
+// to write, and execute the plan with its own storage. Keeping the decisions
+// here means the backends cannot drift apart on the spec's retry, cap and
+// retention rules.
+
+/// The limits a coordinator enforces.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CommitLimits {
+    /// Maximum unbackfilled commits per table (UC OSS: 10).
+    pub max_unbackfilled_commits: i64,
+    /// Versions below the backfilled version whose rows are retained for retry
+    /// deduplication (UC OSS: 100).
+    pub backfilled_commits_retained: i64,
+}
+
+impl Default for CommitLimits {
+    fn default() -> Self {
+        Self {
+            max_unbackfilled_commits: DEFAULT_MAX_UNBACKFILLED_COMMITS,
+            backfilled_commits_retained: DEFAULT_BACKFILLED_COMMITS_RETAINED,
+        }
+    }
+}
+
+/// A table's commit-log bounds, as read by a backend.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CommitLogBounds {
+    /// The lowest retained version.
+    pub first: i64,
+    /// The highest version (the table's latest version).
+    pub last: i64,
+    /// The highest backfilled-flagged version, if any row is flagged.
+    pub highest_backfilled: Option<i64>,
+}
+
+impl CommitLogBounds {
+    /// The table's backfilled version: the highest flagged row, else the oldest
+    /// row minus one (everything below it was pruned). Port of UC OSS
+    /// `backfilledVersionOf`.
+    pub fn backfilled_through(&self) -> i64 {
+        self.highest_backfilled.unwrap_or(self.first - 1)
+    }
+}
+
+/// The backfill writes for a request: flag every row with
+/// `version <= flag_through`, then delete flagged rows with
+/// `version < prune_below`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BackfillPlan {
+    pub flag_through: i64,
+    pub prune_below: i64,
+}
+
+/// The writes a [`CommitCoordinator::commit`] request needs, in order: insert
+/// the commit (if any), then apply the backfill (if any).
+#[derive(Debug, Clone, PartialEq)]
+pub struct CommitPlan {
+    pub insert: Option<CommitInfo>,
+    pub backfill: Option<BackfillPlan>,
+}
+
+/// Decide a commit / backfill request.
+///
+/// `bounds` is the table's commit-log state (`None` for a table with no commits),
+/// and `stored_at_version` the row (flagged or not) at `commit_info.version`, if
+/// the backend holds one. Both must be read under the same lock or transaction
+/// the plan is then executed in.
+///
+/// # Errors
+///
+/// Every rejection of the coordinator contract: invalid fields, a version gap, a
+/// backfill beyond the latest commit, the unbackfilled cap, and — for a version
+/// the table already holds — [`CommitError::AlreadyAccepted`] (a retry),
+/// [`CommitError::VersionConflict`] (another commit), or
+/// [`CommitError::StateUnknown`] (no longer retained).
+pub fn plan_commit(
+    bounds: Option<CommitLogBounds>,
+    commit_info: Option<CommitInfo>,
+    latest_backfilled_version: Option<i64>,
+    stored_at_version: Option<&CommitInfo>,
+    limits: CommitLimits,
+) -> CommitResult<CommitPlan> {
+    if commit_info.is_none() && latest_backfilled_version.is_none() {
+        return Err(CommitError::InvalidArgument(
+            "either commit_info or latest_backfilled_version must be provided".to_string(),
+        ));
+    }
+    if let Some(info) = &commit_info {
+        validate_commit_info(info)?;
+    }
+
+    match (bounds, commit_info) {
+        // No commits yet: an onboarding commit is accepted as-is.
+        (None, Some(info)) => Ok(CommitPlan {
+            insert: Some(info),
+            backfill: None,
+        }),
+        (None, None) => Err(CommitError::InvalidArgument(
+            "cannot backfill a table with no commits".to_string(),
+        )),
+
+        // Backfill-only notification.
+        (Some(b), None) => {
+            let lbv = latest_backfilled_version.expect("checked above");
+            check_backfill_bound(lbv, b.last)?;
+            Ok(CommitPlan {
+                insert: None,
+                backfill: Some(plan_backfill(b, b.last, lbv, limits)),
+            })
+        }
+
+        // Commit to an existing table.
+        (Some(b), Some(info)) => {
+            let version = info.version;
+            if version <= b.last {
+                return Err(classify_existing_version(&info, stored_at_version, b.first));
+            }
+            if version > b.last + 1 {
+                return Err(CommitError::InvalidArgument(format!(
+                    "commit version must be the next version after {}, but got {version}",
+                    b.last
+                )));
+            }
+            if let Some(lbv) = latest_backfilled_version {
+                check_backfill_bound(lbv, b.last)?;
+            }
+            // The cap applies to the window after this request: everything above
+            // the higher of the current backfilled version and a backfill
+            // piggy-backed on this request.
+            let effective = b
+                .backfilled_through()
+                .max(latest_backfilled_version.unwrap_or(i64::MIN));
+            if version - effective > limits.max_unbackfilled_commits {
+                return Err(CommitError::ResourceExhausted(format!(
+                    "max number of unbackfilled commits per table reached: {} (limit {})",
+                    version - effective,
+                    limits.max_unbackfilled_commits
+                )));
+            }
+            Ok(CommitPlan {
+                insert: Some(info),
+                backfill: latest_backfilled_version
+                    .map(|lbv| plan_backfill(b, version, lbv, limits)),
+            })
+        }
+    }
+}
+
+fn check_backfill_bound(lbv: i64, last: i64) -> CommitResult<()> {
+    if lbv > last {
+        return Err(CommitError::InvalidArgument(format!(
+            "latest_backfilled_version {lbv} is greater than the latest commit {last}"
+        )));
+    }
+    Ok(())
+}
+
+/// The backfill writes for moving the backfilled version to `up_to` on a log
+/// whose latest version (after this request) is `last`. The backfilled version
+/// only moves forward, and the latest row is never pruned.
+pub fn plan_backfill(
+    bounds: CommitLogBounds,
+    last: i64,
+    up_to: i64,
+    limits: CommitLimits,
+) -> BackfillPlan {
+    let flag_through = bounds.backfilled_through().max(up_to);
+    BackfillPlan {
+        flag_through,
+        prune_below: (flag_through - limits.backfilled_commits_retained).min(last),
+    }
+}
+
+/// The inclusive version range of the live window `get_commits` returns for
+/// `[start_version, end_version]`, paginated to `max_unbackfilled_commits`
+/// starting at the first live version (UC OSS semantics). `None` when the range
+/// is empty. Backends fetch the *unflagged* rows in this range.
+///
+/// # Errors
+///
+/// A negative `start_version` or an `end_version` below it.
+pub fn live_window(
+    bounds: Option<CommitLogBounds>,
+    start_version: i64,
+    end_version: Option<i64>,
+    limits: CommitLimits,
+) -> CommitResult<Option<(i64, i64)>> {
+    if start_version < 0 {
+        return Err(CommitError::InvalidArgument(
+            "start_version must be non-negative".to_string(),
+        ));
+    }
+    if let Some(end) = end_version
+        && end < start_version
+    {
+        return Err(CommitError::InvalidArgument(format!(
+            "end_version {end} must be >= start_version {start_version}"
+        )));
+    }
+    let Some(b) = bounds else {
+        return Ok(None);
+    };
+    let window_start = start_version.max(b.backfilled_through() + 1);
+    let paginated_end = window_start + limits.max_unbackfilled_commits - 1;
+    let effective_end = end_version.unwrap_or(i64::MAX).min(paginated_end);
+    Ok((window_start <= effective_end).then_some((window_start, effective_end)))
+}
+
 /// A ratified commit plus its backfill flag.
 #[derive(Debug, Clone)]
 struct StoredCommit {
@@ -274,17 +488,42 @@ impl TableCommitState {
         self.commits.keys().next_back().copied()
     }
 
-    /// The table's backfilled version: the highest flagged row, or the oldest row
-    /// minus one when none is flagged (everything below it was pruned). Port of
-    /// UC OSS `backfilledVersionOf`.
-    fn backfilled_through(&self) -> i64 {
-        self.commits
-            .iter()
-            .rev()
-            .find(|(_, c)| c.backfilled)
-            .map(|(v, _)| *v)
-            .or_else(|| self.first_version().map(|f| f - 1))
-            .unwrap_or(-1)
+    fn bounds(&self) -> Option<CommitLogBounds> {
+        Some(CommitLogBounds {
+            first: self.first_version()?,
+            last: self.last_version()?,
+            highest_backfilled: self
+                .commits
+                .iter()
+                .rev()
+                .find(|(_, c)| c.backfilled)
+                .map(|(v, _)| *v),
+        })
+    }
+
+    fn apply(&mut self, plan: CommitPlan) {
+        if let Some(info) = plan.insert {
+            self.commits.insert(
+                info.version,
+                StoredCommit {
+                    info,
+                    backfilled: false,
+                },
+            );
+        }
+        if let Some(b) = plan.backfill {
+            for (_, c) in self.commits.range_mut(..=b.flag_through) {
+                c.backfilled = true;
+            }
+            let stale: Vec<i64> = self
+                .commits
+                .range(..b.prune_below)
+                .map(|(v, _)| *v)
+                .collect();
+            for v in stale {
+                self.commits.remove(&v);
+            }
+        }
     }
 }
 
@@ -297,8 +536,7 @@ impl TableCommitState {
 #[derive(Debug)]
 pub struct InMemoryCommitCoordinator {
     tables: RwLock<HashMap<String, Arc<Mutex<TableCommitState>>>>,
-    max_unbackfilled_commits: i64,
-    backfilled_commits_retained: i64,
+    limits: CommitLimits,
 }
 
 impl Default for InMemoryCommitCoordinator {
@@ -312,15 +550,17 @@ impl InMemoryCommitCoordinator {
     pub fn new(max_unbackfilled_commits: i64) -> Self {
         Self {
             tables: RwLock::new(HashMap::new()),
-            max_unbackfilled_commits,
-            backfilled_commits_retained: DEFAULT_BACKFILLED_COMMITS_RETAINED,
+            limits: CommitLimits {
+                max_unbackfilled_commits,
+                ..CommitLimits::default()
+            },
         }
     }
 
     /// Override how many versions below the backfilled version keep their row for
     /// retry deduplication.
     pub fn with_backfilled_commits_retained(mut self, retained: i64) -> Self {
-        self.backfilled_commits_retained = retained;
+        self.limits.backfilled_commits_retained = retained;
         self
     }
 
@@ -352,116 +592,21 @@ impl InMemoryCommitCoordinator {
         commit_info: Option<CommitInfo>,
         latest_backfilled_version: Option<i64>,
     ) -> CommitResult<()> {
-        if commit_info.is_none() && latest_backfilled_version.is_none() {
-            return Err(CommitError::InvalidArgument(
-                "either commit_info or latest_backfilled_version must be provided".to_string(),
-            ));
-        }
-        if let Some(info) = &commit_info {
-            validate_commit_info(info)?;
-        }
-
         let entry = self.table_state(table_id);
         let mut state = entry.lock().expect("commit state mutex poisoned");
-
-        match (state.last_version(), commit_info) {
-            // No commits yet: an onboarding commit is accepted as-is.
-            (None, Some(info)) => {
-                state.commits.insert(
-                    info.version,
-                    StoredCommit {
-                        info,
-                        backfilled: false,
-                    },
-                );
-                Ok(())
-            }
-            (None, None) => Err(CommitError::InvalidArgument(
-                "cannot backfill a table with no commits".to_string(),
-            )),
-
-            // Backfill-only notification.
-            (Some(last), None) => {
-                let lbv = latest_backfilled_version.expect("checked above");
-                if lbv > last {
-                    return Err(CommitError::InvalidArgument(format!(
-                        "latest_backfilled_version {lbv} is greater than the latest commit {last}"
-                    )));
-                }
-                self.backfill(&mut state, lbv);
-                Ok(())
-            }
-
-            // Commit to an existing table.
-            (Some(last), Some(info)) => {
-                let version = info.version;
-                if version <= last {
-                    let stored = state.commits.get(&version).map(|c| &c.info);
-                    let oldest = state.first_version().unwrap_or(version);
-                    return Err(classify_existing_version(&info, stored, oldest));
-                }
-                if version > last + 1 {
-                    return Err(CommitError::InvalidArgument(format!(
-                        "commit version must be the next version after {last}, but got {version}"
-                    )));
-                }
-                if let Some(lbv) = latest_backfilled_version
-                    && lbv > last
-                {
-                    return Err(CommitError::InvalidArgument(format!(
-                        "latest_backfilled_version {lbv} is greater than the latest commit {last}"
-                    )));
-                }
-
-                // The unbackfilled-commit cap applies to the window after this
-                // request: everything above the higher of the current backfilled
-                // version and a backfill piggy-backed on this request.
-                let effective = state
-                    .backfilled_through()
-                    .max(latest_backfilled_version.unwrap_or(i64::MIN));
-                if version - effective > self.max_unbackfilled_commits {
-                    return Err(CommitError::ResourceExhausted(format!(
-                        "max number of unbackfilled commits per table reached: {} (limit {})",
-                        version - effective,
-                        self.max_unbackfilled_commits
-                    )));
-                }
-
-                state.commits.insert(
-                    version,
-                    StoredCommit {
-                        info,
-                        backfilled: false,
-                    },
-                );
-                if let Some(lbv) = latest_backfilled_version {
-                    self.backfill(&mut state, lbv);
-                }
-                Ok(())
-            }
-        }
-    }
-
-    /// Flag commits up to `up_to` as backfilled and prune flagged rows that have
-    /// aged out of the retention window. The backfilled version only moves
-    /// forward, and the highest row is never pruned.
-    fn backfill(&self, state: &mut TableCommitState, up_to: i64) {
-        let Some(last) = state.last_version() else {
-            return;
-        };
-        let through = state.backfilled_through().max(up_to);
-        for (_, c) in state.commits.range_mut(..=through) {
-            c.backfilled = true;
-        }
-        let prune_below = (through - self.backfilled_commits_retained).min(last);
-        let stale: Vec<i64> = state
-            .commits
-            .range(..prune_below)
-            .map(|(v, _)| *v)
-            .collect();
-        for v in stale {
-            state.commits.remove(&v);
-        }
+        let stored = commit_info
+            .as_ref()
+            .and_then(|info| state.commits.get(&info.version))
+            .map(|c| c.info.clone());
+        let plan = plan_commit(
+            state.bounds(),
+            commit_info,
+            latest_backfilled_version,
+            stored.as_ref(),
+            self.limits,
+        )?;
+        state.apply(plan);
+        Ok(())
     }
 }
 
@@ -482,61 +627,29 @@ impl CommitCoordinator for InMemoryCommitCoordinator {
         start_version: i64,
         end_version: Option<i64>,
     ) -> CommitResult<(Vec<CommitInfo>, i64)> {
-        if start_version < 0 {
-            return Err(CommitError::InvalidArgument(
-                "start_version must be non-negative".to_string(),
-            ));
-        }
-        if let Some(end) = end_version
-            && end < start_version
-        {
-            return Err(CommitError::InvalidArgument(format!(
-                "end_version {end} must be >= start_version {start_version}"
-            )));
-        }
-
-        let Some(entry) = self
+        let entry = self
             .tables
             .read()
             .expect("tables lock poisoned")
             .get(table_id)
-            .cloned()
-        else {
-            // Managed table with no commits yet.
+            .cloned();
+        let Some(entry) = entry else {
+            // Validate the range even for a table with no commits.
+            live_window(None, start_version, end_version, self.limits)?;
             return Ok((Vec::new(), 0));
         };
         let state = entry.lock().expect("commit state mutex poisoned");
-
-        let latest_table_version = state.last_version().unwrap_or(0);
-        // The live window starts just above the backfilled version.
-        let oldest_live = state.backfilled_through() + 1;
-
-        // Pagination window, matching UC OSS: keep at most `max` commits starting
-        // from `max(start, oldest live)`, intersected with `end_version`.
-        let window_start = start_version.max(oldest_live);
-        let paginated_end = window_start + self.max_unbackfilled_commits - 1;
-        let effective_end = end_version.unwrap_or(i64::MAX).min(paginated_end);
-
-        let commits: Vec<CommitInfo> = if window_start > effective_end {
-            Vec::new()
-        } else {
-            state
+        let bounds = state.bounds();
+        let latest_table_version = bounds.map_or(0, |b| b.last);
+        let commits = match live_window(bounds, start_version, end_version, self.limits)? {
+            Some((from, to)) => state
                 .commits
-                .range(window_start..=effective_end)
+                .range(from..=to)
                 .filter(|(_, c)| !c.backfilled)
                 .map(|(_, c)| c.info.clone())
-                .collect()
+                .collect(),
+            None => Vec::new(),
         };
-
-        if effective_end < latest_table_version && effective_end == paginated_end {
-            tracing::debug!(
-                table_id,
-                effective_end,
-                latest_table_version,
-                "get_commits truncated to pagination window"
-            );
-        }
-
         Ok((commits, latest_table_version))
     }
 
@@ -774,6 +887,32 @@ mod tests {
             .await
             .unwrap_err();
         assert!(matches!(err, CommitError::ResourceExhausted(_)));
+    }
+
+    #[test]
+    fn backfill_never_moves_backwards() {
+        let bounds = CommitLogBounds {
+            first: 1,
+            last: 5,
+            highest_backfilled: Some(4),
+        };
+        let plan = plan_backfill(bounds, 5, 2, CommitLimits::default());
+        assert_eq!(plan.flag_through, 4);
+    }
+
+    #[tokio::test]
+    async fn stale_backfill_keeps_live_window() {
+        let cc = InMemoryCommitCoordinator::default();
+        for v in 1..=4 {
+            cc.commit("t", Some(commit_info(v)), None).await.unwrap();
+        }
+        cc.commit("t", None, Some(3)).await.unwrap();
+        cc.commit("t", None, Some(1)).await.unwrap();
+        let (commits, _) = cc.get_commits("t", 0, None).await.unwrap();
+        assert_eq!(
+            commits.iter().map(|c| c.version).collect::<Vec<_>>(),
+            vec![4]
+        );
     }
 
     #[tokio::test]
