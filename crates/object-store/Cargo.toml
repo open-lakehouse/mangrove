@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-object-store"
-version = "0.0.8"
+version = "0.0.9"
 description = "object_store implementation backed by Unity Catalog credential vending."
 readme = "README.md"
 categories = ["filesystem"]
@@ -18,7 +18,7 @@ name = "unitycatalog_object_store"
 
 [dependencies]
 # local dependencies in alphabetical order
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.8", default-features = false, features = [
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.9", default-features = false, features = [
   "tables",
   "temporary_credentials",
   "volumes",

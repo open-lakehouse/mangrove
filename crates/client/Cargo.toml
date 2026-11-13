@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-client"
-version = "0.0.8"
+version = "0.0.9"
 description = "Async Rust client for the Unity Catalog REST API."
 edition.workspace = true
 license.workspace = true
@@ -20,7 +20,7 @@ name = "unitycatalog_client"
 # common's `rest-client`/`store`) to keep the wasm build free of axum/tokio/olai-store.
 # Resource model packages are switched on per feature below.
 unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.8", default-features = false }
-unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.7", default-features = false }
+unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.8", default-features = false }
 
 # Handler traits the clients implement (feature `handlers`); resources follow the
 # client's own resource features.

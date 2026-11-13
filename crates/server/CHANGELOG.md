@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.15](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.14...olai-uc-server-v0.0.15) - 2026-11-13
+
+### Changed
+
+- spec-driven resource forms (#315)
+
+### Fixed
+
+- report a missing table as NoSuchTableException on /delta/v1 (#312)
+- scope optimistic deletes and purge stale caches (#308)
+- unblock schema create and storage edits (#309)
+
 ## [0.0.14](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.13...olai-uc-server-v0.0.14) - 2026-11-10
 
 ### Added
