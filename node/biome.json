@@ -82,46 +82,6 @@
       }
     },
     {
-      "includes": ["query-wasm/src/**"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noRestrictedImports": {
-              "level": "error",
-              "options": {
-                "patterns": [
-                  {
-                    "group": ["@open-lakehouse/unity-catalog-ui"],
-                    "message": "query-wasm implements the @open-lakehouse/query-runner runner contract and must not import Unity Catalog UI: the app composes them, never the packages themselves."
-                  }
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "includes": ["files-wasm/src/**"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noRestrictedImports": {
-              "level": "error",
-              "options": {
-                "patterns": [
-                  {
-                    "group": ["@open-lakehouse/unity-catalog-ui"],
-                    "message": "files-wasm implements the @open-lakehouse/volume-files runner contract and must not import Unity Catalog UI: the app composes them, never the packages themselves."
-                  }
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    {
       "includes": ["files-connect/src/**"],
       "linter": {
         "rules": {

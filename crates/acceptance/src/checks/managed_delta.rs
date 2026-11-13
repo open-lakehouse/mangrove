@@ -1,10 +1,11 @@
 //! The catalog-managed Delta write+read flow, driven end-to-end through the UC
 //! `/delta/v1` API for the conformance battery.
 //!
-//! This is the acceptance-test port of the proven spike in
-//! `crates/datafusion/examples/managed_table_write.rs`. It creates a managed Delta
-//! table through the staging flow, commits one data file, then reads it back with a
-//! catalog-managed kernel snapshot — asserting `SELECT *` returns the written rows.
+//! It creates a managed Delta table through the staging flow, commits one data file,
+//! then reads it back with a catalog-managed kernel snapshot (the kernel's default
+//! engine, no query engine) — asserting the scan returns the written rows. The same
+//! round trip read through DataFusion lives in hydrofoil, next to the
+//! `olai-uc-datafusion` crate.
 //!
 //! Unlike the S3-backed example, this targets **local filesystem** storage: the OSS
 //! fixtures vend `file://` managed locations (see `dev/uc-oss.compose.yaml` /
@@ -27,30 +28,23 @@
 //! 4. Write a parquet data file + a staged commit `_staged_commits/<v>.<uuid>.json`,
 //!    then **updateTable** `add-commit` so the catalog ratifies v1.
 //! 5. **loadTable** → assemble a catalog-managed snapshot from the ratified tail and
-//!    `SELECT *`.
+//!    scan it.
 
 use std::sync::Arc;
 
-use datafusion::arrow::array::{Int64Array, RecordBatch, StringArray};
-use datafusion::arrow::datatypes::{DataType, Field, Schema};
-use datafusion::prelude::SessionContext;
-use datafusion_unitycatalog::RoutingObjectStore;
-use datafusion_unitycatalog::catalog::{
-    ManagedReadState, build_catalog_managed_snapshot, ensure_trailing_slash,
-    resolve_managed_read_state,
-};
-use deltalake_core::delta_datafusion::DeltaScanNext;
-use deltalake_core::delta_datafusion::engine::DataFusionEngine;
-use deltalake_core::logstore::{StorageConfig, default_logstore};
-use deltalake_core::parquet::arrow::ArrowWriter;
+use delta_kernel::arrow::array::{Int64Array, RecordBatch, StringArray};
+use delta_kernel::arrow::datatypes::{DataType, Field, Schema};
+use delta_kernel::parquet::arrow::ArrowWriter;
+use delta_kernel::{Engine, LogPath, Snapshot};
+use delta_kernel_default_engine::DefaultEngineBuilder;
 use object_store::local::LocalFileSystem;
 use object_store::{ObjectStore, ObjectStoreExt, PutPayload, path::Path};
 use serde_json::json;
 use unitycatalog_client::UnityCatalogClient;
 use unitycatalog_delta_api::models::{
     DeltaCommit, DeltaCreateStagingTableRequest, DeltaCreateTableRequest, DeltaDataType,
-    DeltaProtocol, DeltaStructField, DeltaStructType, DeltaTableRequirement, DeltaTableType,
-    DeltaTableUpdate, DeltaUpdateTableRequest,
+    DeltaLoadTableResponse, DeltaProtocol, DeltaStructField, DeltaStructType,
+    DeltaTableRequirement, DeltaTableType, DeltaTableUpdate, DeltaUpdateTableRequest,
 };
 use url::Url;
 
@@ -64,8 +58,8 @@ fn err(msg: impl std::fmt::Display) -> AcceptanceError {
 }
 
 /// Drive the full managed-table create+commit+read flow against `client`, writing
-/// the Delta files to the vended `file://` location. Returns the number of rows
-/// read back through the catalog-managed snapshot (expected: 3).
+/// the Delta files to the vended `file://` location. Returns the number of rows a
+/// scan of the catalog-managed kernel snapshot reads back (expected: 3).
 ///
 /// The catalog/schema must already exist; the table must not.
 pub async fn create_commit_read(
@@ -112,8 +106,6 @@ pub async fn create_commit_read(
     let local_location = canonicalize_file_location(&location)?;
     let store: Arc<dyn ObjectStore> =
         Arc::new(LocalFileSystem::new().with_automatic_cleanup(false));
-    let ctx = SessionContext::new();
-    register_routing_store(&ctx, &local_location, store.clone())?;
 
     let arrow_schema = Arc::new(Schema::new(vec![
         Field::new("id", DataType::Int64, true),
@@ -220,53 +212,106 @@ pub async fn create_commit_read(
         .load_table(catalog, schema, table)
         .await
         .map_err(err)?;
-    let (commits, latest) = match resolve_managed_read_state(&loaded).map_err(err)? {
-        ManagedReadState::Managed { commits, latest } => (commits, latest),
-        ManagedReadState::NotManaged => {
-            return Err(err("expected a catalog-managed table after createTable"));
-        }
-    };
+    let (commits, latest) = managed_tail(&loaded)?;
 
-    let config = StorageConfig::default();
-    let prefixed = config
-        .decorate_store(store.clone(), &local_location)
-        .map_err(|e| err(format!("decorate store: {e}")))?;
-    let log_store = default_logstore(Arc::from(prefixed), store.clone(), &local_location, &config);
-    let engine = DataFusionEngine::new_from_context(ctx.task_ctx());
-    // The kernel snapshot builder reads the `_delta_log` synchronously via an
-    // internal `block_on`. Against a real-IO store (LocalFileSystem here) that
-    // would panic when called directly on a runtime worker ("Cannot start a
-    // runtime from within a runtime"); `block_in_place` hands the worker's other
-    // tasks off first so the nested block_on is allowed. Requires the
-    // multi-thread runtime flavor (see the conformance test attributes).
-    let snapshot = tokio::task::block_in_place(|| {
-        build_catalog_managed_snapshot(
-            engine.clone(),
-            &local_location,
-            &commits,
-            latest as i64,
-            None,
-        )
-    })
-    .await
-    .map_err(err)?;
+    // The default engine reads the `_delta_log` and the data files through the same
+    // root-anchored LocalFileSystem the writes went through. Its snapshot build and
+    // scan are synchronous and block on the engine's background executor, so hand
+    // this runtime worker's other tasks off first (needs the multi-thread runtime
+    // flavor; see the conformance test attributes).
+    let engine: Arc<dyn Engine> = Arc::new(DefaultEngineBuilder::new(store.clone()).build());
+    tokio::task::block_in_place(|| read_rows(engine, &local_location, &commits, latest))
+}
 
-    let provider = DeltaScanNext::builder()
-        .with_snapshot(Arc::new(snapshot))
-        .with_log_store(log_store)
-        .await
-        .map_err(|e| err(format!("build DeltaScanNext: {e}")))?;
-    ctx.register_table(table, provider)
-        .map_err(|e| err(format!("register table provider: {e}")))?;
-    let df = ctx
-        .sql(&format!("SELECT * FROM {table} ORDER BY id"))
-        .await
-        .map_err(|e| err(format!("plan SELECT: {e}")))?;
-    let batches = df
-        .collect()
-        .await
-        .map_err(|e| err(format!("collect SELECT: {e}")))?;
-    Ok(batches.iter().map(|b| b.num_rows()).sum())
+/// The ratified commit tail (ascending) and the latest ratified version from a
+/// managed table's loadTable response.
+fn managed_tail(loaded: &DeltaLoadTableResponse) -> AcceptanceResult<(Vec<DeltaCommit>, u64)> {
+    if loaded.metadata.table_type != DeltaTableType::Managed {
+        return Err(err("expected a catalog-managed table after createTable"));
+    }
+    let mut commits = loaded.commits.clone().unwrap_or_default();
+    commits.sort_by_key(|c| c.version);
+    let latest = loaded
+        .latest_table_version
+        .or_else(|| commits.last().map(|c| c.version))
+        .ok_or_else(|| err("loadTable returned neither latest-table-version nor commits"))?;
+    let latest = u64::try_from(latest)
+        .map_err(|_| err(format!("negative latest-table-version {latest}")))?;
+    if let Some(last) = commits.last()
+        && last.version as u64 != latest
+    {
+        return Err(err(format!(
+            "commit tail ends at version {} but latest ratified version is {latest}",
+            last.version
+        )));
+    }
+    Ok((commits, latest))
+}
+
+/// Build the catalog-managed snapshot (the ratified tail as staged-commit log paths,
+/// capped at `latest`) and count the rows a full scan returns.
+fn read_rows(
+    engine: Arc<dyn Engine>,
+    table_root: &Url,
+    commits: &[DeltaCommit],
+    latest: u64,
+) -> AcceptanceResult<usize> {
+    let log_tail = commits
+        .iter()
+        .map(|c| {
+            let size = u64::try_from(c.file_size)
+                .map_err(|_| err(format!("negative file-size for commit {}", c.version)))?;
+            LogPath::staged_commit(
+                table_root.clone(),
+                &staged_file_name(c),
+                c.file_modification_timestamp,
+                size,
+            )
+            .map_err(|e| err(format!("staged commit log path: {e}")))
+        })
+        .collect::<AcceptanceResult<Vec<_>>>()?;
+    let snapshot = Snapshot::builder_for(table_root.as_str())
+        .with_log_tail(log_tail)
+        .with_max_catalog_version(latest)
+        .build(engine.as_ref())
+        .map_err(|e| err(format!("build catalog-managed snapshot: {e}")))?;
+    let scan = snapshot
+        .scan_builder()
+        .build()
+        .map_err(|e| err(format!("build scan: {e}")))?;
+    let mut rows = 0;
+    for data in scan
+        .execute(engine)
+        .map_err(|e| err(format!("execute scan: {e}")))?
+    {
+        rows += data
+            .map_err(|e| err(format!("read scan batch: {e}")))?
+            .len();
+    }
+    Ok(rows)
+}
+
+/// A staged commit's file name as the log expects it: `<20-digit version>.<uuid>.json`.
+/// Servers may return just `<uuid>.json`; synthesize the version prefix then.
+fn staged_file_name(commit: &DeltaCommit) -> String {
+    let prefixed = commit
+        .file_name
+        .split_once('.')
+        .is_some_and(|(v, _)| v.len() == 20 && v.bytes().all(|b| b.is_ascii_digit()));
+    if prefixed {
+        commit.file_name.clone()
+    } else {
+        format!("{:020}.{}", commit.version, commit.file_name)
+    }
+}
+
+/// `s` with a trailing `/`, so `Url::join` keeps the last path segment.
+fn ensure_trailing_slash(s: &str) -> String {
+    if s.ends_with('/') {
+        s.to_string()
+    } else {
+        format!("{s}/")
+    }
 }
 
 // ======================================================================
@@ -462,24 +507,4 @@ fn write_parquet(batch: &RecordBatch) -> AcceptanceResult<Vec<u8>> {
         .close()
         .map_err(|e| err(format!("parquet close: {e}")))?;
     Ok(buf)
-}
-
-/// Register a path-dispatching routing store under the `file://` bucket key, the
-/// way the UC resolver does (mirrors `managed_table_write.rs`).
-fn register_routing_store(
-    ctx: &SessionContext,
-    location: &Url,
-    store: Arc<dyn ObjectStore>,
-) -> AcceptanceResult<()> {
-    let router = RoutingObjectStore::new();
-    router.register(
-        Path::from_url_path(location.path()).unwrap_or_default(),
-        store,
-    );
-    // For file:// there is no host/port; register under the bare scheme root.
-    let bucket_key =
-        Url::parse("file:///").map_err(|e| err(format!("build file:// bucket key: {e}")))?;
-    ctx.runtime_env()
-        .register_object_store(&bucket_key, Arc::new(router));
-    Ok(())
 }

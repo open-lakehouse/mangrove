@@ -37,7 +37,7 @@ aliases; the recipes live in `just/*.just` (and the promoted sibling justfiles):
 | Module        | File                       | Covers                                          |
 | ------------- | -------------------------- | ----------------------------------------------- |
 | `codegen`     | `just/codegen.just`        | proto / OpenAPI / client generation             |
-| `build`       | `just/build.just`          | UI, bindings, wasm engine, Docker, sqlx caches  |
+| `build`       | `just/build.just`          | UI, bindings, Docker, sqlx caches               |
 | `test`        | `just/test.just`           | unit / integration / conformance + CI gates     |
 | `meta`        | `just/meta.just`           | `fmt`, `fix*`, `lint-node`, `run`                |
 | `dev`         | `dev/justfile`             | docker-compose env + UC server / UI dev flows   |
@@ -187,12 +187,12 @@ keeps `use unitycatalog_common::…`; only `Cargo.toml` carries the published na
 
 **Each crate versions independently.** release-plz bumps a crate from the commits that
 touch it (and bumps its dependents automatically), so e.g. `olai-uc-object-store` and
-`olai-uc-datafusion` can release on their own cadence. Config: `release-plz.toml` (the
+`olai-uc-client` can release on their own cadence. Config: `release-plz.toml` (the
 changelog/git-cliff config is embedded there — there is no separate `cliff.toml`).
 
 PRs are squash-merged, so the **PR title is the only commit release-plz sees**. Use a
 `(scope)` matching the affected crate's short name — `common`, `client`,
-`object-store`, `postgres`, `sqlite`, `datafusion`, `server`, `cli` — so the bump and
+`object-store`, `postgres`, `sqlite`, `server`, `cli` — so the bump and
 changelog land on the right crate. Commits inside a PR only matter for review. When a
 change spans several crates or change types that each deserve their own changelog
 entry, split it into a stack of PRs (one `type(scope)` per layer; see `AGENTS.md`)
@@ -219,8 +219,7 @@ patch.crates-io.olai-http = { path = "/path/to/trestle/crates/olai-http" }
 # <<< crates-proxy:trestle
 ```
 
-Cargo also reads it when building from `wasm/`. A build under the patch rewrites the
-`Cargo.lock` files without the crates' registry `source`/`checksum`. Before committing,
+A build under the patch rewrites `Cargo.lock` without the crates' registry `source`/`checksum`. Before committing,
 run `just dev lock-registry`: it restores those entries, computing each checksum from the
 crate's tarball on the `static.crates.io` CDN, which the proxy doesn't filter. The
 pre-commit hook (`just dev check-lock`) rejects a lock that still points at the patch.
@@ -328,7 +327,7 @@ package's next release.
   otherwise take `0.0.0` from `bun.lock`).
 - Published: `unity-catalog-node`, `unity-catalog-client`, `unity-catalog-ui` and
   the UI packages it builds on (`arrow-grid`, `editor`, `volume-files`, `delta-log`,
-  `query-runner`). `files-connect`, the wasm packages and `uc-app` stay `private: true`.
+  `query-runner`). `files-connect` and `uc-app` stay `private: true`.
   Don't un-private one without a maintainer asking for it.
 
 **First-publish bootstrap.** crates.io OIDC trusted publishing cannot create a crate name
@@ -344,9 +343,9 @@ bootstrap. Once every publishable crate is live, delete the bootstrap workflow a
 `CARGO_REGISTRY_TOKEN` secret. Any *new* publishable crate added later needs the same
 one-time bootstrap (re-add the workflow if so). The Open Sharing crates
 (`olai-sharing-*`) moved to their own repository,
-[distributary](https://github.com/open-lakehouse/distributary). Not published to crates.io at
-all: `olai-uc-datafusion` (standing git-dep block via the `deltalake-core` git rev) and
-`olai-uc-cli` (held out for now).
+[distributary](https://github.com/open-lakehouse/distributary). Not published to crates.io:
+`olai-uc-cli` (held out for now). The DataFusion integration (`olai-uc-datafusion`) and the
+in-browser query engine moved to [hydrofoil](https://github.com/open-lakehouse/hydrofoil).
 
 **Notes:**
 

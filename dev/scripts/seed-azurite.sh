@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Seed the Azurite-backed managed-table preview environment.
 #
-# Prepares everything the in-browser wasm query engine needs to preview a real
-# managed Delta table, then leaves the actual table write to the caller (the
-# `seed_managed_tables` example — see `just ui-dev-wasm` / `just ui-dev`):
+# Prepares everything a managed Delta table write needs (and an in-browser engine
+# needs to preview one), then leaves the actual table write to the caller
+# (hydrofoil's `seed_managed_tables` example — see `just dev ui-dev`):
 #
 #   1. Start Azurite (docker compose `azurite` profile, blob on :10000).
 #   2. Create the `lakehouse` blob container (a vended SAS cannot create it).

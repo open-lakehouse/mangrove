@@ -1,21 +1,17 @@
 [workspace]
 resolver = "2"
 members = ["crates/*", "python/client", "node", "node/client", "node/unity-catalog-client", "node/arrow-grid", "node/editor", "node/volume-files", "node/delta-log", "node/query-runner", "node/unity-catalog-ui"]
-# This is the NATIVE workspace. The in-browser query engine lives in its OWN
-# standalone workspace under `wasm/` (`wasm/query-wasm` + `wasm/olai-delta-df`),
-# NOT here — see `wasm/Cargo.toml` and #182. The wasm workspace owns the
-# wasm-specific fork stack (the arrow-rs / object_store patch); this native
-# workspace resolves arrow, parquet and object_store straight from crates.io. The
-# two workspaces have independent `Cargo.lock`s. `wasm/query-wasm` reaches back
-# into this workspace's crates via cross-workspace `path = "../../crates/*"` deps.
+# Every dependency resolves from crates.io: no git pins. The DataFusion integration
+# (`olai-uc-datafusion`) and the in-browser query engine (`wasm/`) live in
+# open-lakehouse/hydrofoil.
 
 [workspace.package]
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/open-lakehouse/mangrove"
 readme = "README.md"
-# Floor set by the dependency tree: deltalake-core 2.0 (delta-rs main) requires
-# rustc 1.95.0 (buoyant_kernel 0.30 needs 1.88). Keep CI's toolchain pin >= this.
+# Not re-verified since deltalake-core left the graph (the dependencies now declare
+# at most 1.90; buoyant_kernel 0.30 needs 1.88). Keep CI's toolchain pin >= this.
 rust-version = "1.95.0"
 # Crates are versioned independently in each crate's own `[package].version`
 # (the release-plz convention), so there is intentionally no workspace-wide
@@ -30,13 +26,11 @@ keywords = [
 ]
 
 [workspace.dependencies]
-# The Delta stack: the published `buoyant_kernel` (the Buoyant Data distribution of
-# delta-kernel-rs) plus delta-rs. `deltalake-core` 2.0 depends on `buoyant_kernel`
-# from crates.io, so depending on the same published crate here makes the kernel
-# `Snapshot` / `Engine` / `Committer` types unify between our crates and delta-rs.
-# The `package` aliases keep every `delta_kernel::` / `delta_kernel_default_engine::`
-# path unchanged. `default-features = false` + an explicit `arrow-59` keeps the
-# kernel on the same arrow major as datafusion 55 / deltalake-core 2.0.
+# The published `buoyant_kernel` (the Buoyant Data distribution of delta-kernel-rs),
+# the same one delta-rs 2.0 resolves, so consumers that combine our crates with
+# delta-rs share one kernel. The `package` aliases keep every `delta_kernel::` /
+# `delta_kernel_default_engine::` path unchanged. `default-features = false` + an
+# explicit `arrow-59` keeps the kernel on datafusion 55's arrow major.
 delta_kernel = { package = "buoyant_kernel", version = "0.30.1", default-features = false, features = [
   "internal-api",
   "default-engine-base",
@@ -46,21 +40,6 @@ delta_kernel_default_engine = { package = "buoyant_kernel_engine", version = "0.
   "arrow-59",
   "rustls",
 ] }
-# deltalake-core is the ONE remaining git dep: the roeap fork's
-# `olai/catalog-managed-2f01b956` branch = upstream delta-rs `main` @2f01b956 (2.0.0-dev,
-# on buoyant_kernel 0.30, with the catalog-managed read path:
-# `Snapshot::try_new_with_engine_and_catalog` + `CatalogManaged` / `VacuumProtocolCheck`
-# reader support, delta-rs#4809) plus one commit re-exporting
-# `deltalake_kernel_executor::expressions::to_delta_predicate` from
-# `deltalake_core::delta_datafusion`. Switch to the crates.io release once
-# 2.0 ships with that export. Pinned by immutable `rev`. `version =` matches the
-# fork (release-plz#2595); 2.0.0 is not on crates.io yet, which is fine while
-# every dependent (datafusion, acceptance, py client) is
-# `release = false`.
-deltalake-core = { version = "2.0.0", git = "https://github.com/roeap/delta-rs", rev = "fa1dff783053bf7fbc3df6b09a776d9b3f2b80f0", features = [
-  "datafusion",
-  "cloud",
-] }
 
 aes-gcm = { version = "0.10" }
 async-trait = "0.1.83"
@@ -68,8 +47,6 @@ axum = { version = "0.8" }
 axum-extra = { version = "0.10", features = ["query"] }
 bytes = { version = "1.1" }
 chrono = { version = "0.4.41", features = ["serde"] }
-dashmap = { version = "6" }
-datafusion = { version = "55" }
 env_logger = "0.11"
 futures = "0.3.32"
 itertools = { version = "0.14.0" }

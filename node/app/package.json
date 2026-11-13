@@ -15,11 +15,9 @@
   "dependencies": {
     "@open-lakehouse/editor": "workspace:*",
     "@open-lakehouse/volume-files": "workspace:*",
-    "@open-lakehouse/files-wasm": "workspace:*",
     "@open-lakehouse/host": "https://github.com/open-lakehouse/trestle/releases/download/host-v0.0.2/open-lakehouse-host-0.0.2.tgz",
     "@open-lakehouse/delta-log": "workspace:*",
     "@open-lakehouse/query-runner": "workspace:*",
-    "@open-lakehouse/query-wasm": "workspace:*",
     "@open-lakehouse/ui-kit": "https://github.com/open-lakehouse/trestle/releases/download/ui-kit-v0.0.1/open-lakehouse-ui-kit-0.0.1.tgz",
     "@open-lakehouse/unity-catalog-client": "workspace:*",
     "@open-lakehouse/unity-catalog-ui": "workspace:*",
