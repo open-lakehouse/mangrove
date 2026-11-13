@@ -68,6 +68,11 @@ tooling.
   `crates/acceptance/`; `rstest` for parameterized cases. Run
   `cargo nextest run --workspace --all-features`, plus
   `cargo test --workspace --all-features --doc` (nextest skips doctests).
+- **Delta v1 API** has three layers: the contract against `InMemoryDeltaBackend`
+  (`crates/delta-api/tests`), the real server stack over HTTP via the in-process
+  `unitycatalog_acceptance::server::TestServer` (`crates/acceptance/tests/delta_v1.rs`,
+  hermetic, in the default run), and real engines in `tests/engines` (DuckDB,
+  Python + uv, needs network for DuckDB's extensions: `just test engines`).
 - **TypeScript:** `node/client` uses Jest; the other `node/` packages use
   `bun:test` with co-located `*.test.ts`.
 - Cover error and edge paths, not just the happy path. Control non-deterministic

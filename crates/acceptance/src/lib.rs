@@ -2,11 +2,13 @@
 //!
 //! An API-coverage conformance battery run against a live Unity Catalog server.
 //! See [`conformance`] for the check machinery and batteries, [`checks`] for the
-//! per-securable checks, and `tests/conformance.rs` for the gated entry points.
+//! per-securable checks, `tests/conformance.rs` for the gated entry points, and
+//! [`server`] for the in-process server the hermetic tests run against.
 
 pub mod checks;
 pub mod conformance;
 pub mod context;
+pub mod server;
 
 pub use context::JourneyContext;
 

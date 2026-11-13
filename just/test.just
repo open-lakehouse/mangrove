@@ -56,6 +56,17 @@ integration-oss-java:
     UC_OSS_JAVA_URL="http://localhost:8080" \
     cargo test -p unitycatalog-acceptance -- conformance_oss_java --nocapture
 
+# Real query engines (DuckDB; later Spark) against an in-process server seeded
+# through the Delta v1 API. Needs `uv`; DuckDB downloads its extensions on first
+# use. Extra args go to pytest, e.g. `just test engines -k insert`.
+#
+# run the engine interop suite (tests/engines)
+[group('test')]
+[no-cd]
+engines *ARGS:
+    cargo build -p unitycatalog-acceptance --bin uc-test-server
+    uv run --project tests/engines pytest tests/engines {{ ARGS }}
+
 # Uses dev/uc-rust-conformance.yaml. On macOS `/tmp` is a symlink, so the config
 # needs the canonical `/private/tmp/uc-test`; adjust the allowed root + storage
 # root there for a local run (CI runs on Linux where `/tmp/uc-test` is fine).
