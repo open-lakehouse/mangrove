@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT commit_version, commit_timestamp, commit_filename, commit_filesize, commit_file_modification_timestamp FROM delta_commits WHERE table_id = ? AND commit_version = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "commit_version",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "commit_timestamp",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "commit_filename",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "commit_filesize",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "commit_file_modification_timestamp",
+        "ordinal": 4,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "fec6261a3ebe5f9af6db6c5ac0781779b29292649d828d79941a56731f84a748"
+}

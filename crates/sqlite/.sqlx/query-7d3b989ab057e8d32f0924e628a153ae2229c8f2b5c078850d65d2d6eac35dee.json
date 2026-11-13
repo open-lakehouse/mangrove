@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE delta_commits SET is_backfilled_latest = 1, updated_at = ? WHERE table_id = ? AND commit_version <= ? AND is_backfilled_latest = 0",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "7d3b989ab057e8d32f0924e628a153ae2229c8f2b5c078850d65d2d6eac35dee"
+}

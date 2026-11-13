@@ -1,15 +1,17 @@
 //! Integration tests for the SQLite-backed Delta commit coordinator.
 //!
-//! Ported from the Postgres backend's `commit_coordinator` tests; each test runs
-//! against an isolated temp-file SQLite database that is cleaned up on drop.
+//! Each test runs against an isolated temp-file SQLite database that is cleaned
+//! up on drop. The protocol rules are checked by the shared conformance suite;
+//! the tests here cover what depends on SQLite itself: persistence across a
+//! reopen, the `BEGIN IMMEDIATE` arbiter under racing writers, and the
+//! pre-retention row layout.
 
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
-use unitycatalog_delta_api::coordinator::CommitInfo;
-use unitycatalog_delta_api::coordinator::{CommitCoordinator, CommitError};
+use unitycatalog_delta_api::coordinator::{CommitCoordinator, CommitError, CommitInfo};
+use unitycatalog_delta_api::testing::coordinator_conformance::{self, commit_info};
 use unitycatalog_sqlite::{SqliteCommitCoordinator, connect_pool, unified_migrator};
-use uuid::Uuid;
 
 /// A temp-file SQLite path that cleans up its files on drop.
 struct TempDb {
@@ -44,136 +46,24 @@ impl Drop for TempDb {
     }
 }
 
-async fn store(temp: &TempDb) -> SqliteCommitCoordinator {
+async fn pool(temp: &TempDb) -> sqlx::SqlitePool {
     let pool = connect_pool(temp.path()).await.expect("connect");
     unified_migrator().run(&pool).await.expect("migrate");
-    SqliteCommitCoordinator::new(pool)
+    pool
 }
 
-/// A unique table id per call (the `uuid` crate's `v4` feature isn't enabled).
 fn table_id() -> String {
-    static COUNTER: AtomicU64 = AtomicU64::new(1);
-    Uuid::from_u128(COUNTER.fetch_add(1, Ordering::Relaxed) as u128).to_string()
-}
-
-fn commit_info(version: i64) -> CommitInfo {
-    CommitInfo {
-        version,
-        timestamp: 1000 + version,
-        file_name: format!("{version:020}.uuid.json"),
-        file_size: 128,
-        file_modification_timestamp: 2000 + version,
-    }
+    uuid::Uuid::now_v7().to_string()
 }
 
 #[tokio::test]
-async fn onboarding_then_get_roundtrip() {
-    let temp = TempDb::new("roundtrip");
-    let cc = store(&temp).await;
-    let t = table_id();
-    cc.commit(&t, Some(commit_info(1)), None).await.unwrap();
-    cc.commit(&t, Some(commit_info(2)), None).await.unwrap();
-
-    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
-    assert_eq!(latest, 2);
-    assert_eq!(
-        commits.iter().map(|c| c.version).collect::<Vec<_>>(),
-        vec![1, 2]
-    );
-    // round-trip preserves the commit metadata
-    assert_eq!(commits[0].file_name, commit_info(1).file_name);
-    assert_eq!(commits[0].timestamp, commit_info(1).timestamp);
-    assert_eq!(commits[0].file_size, 128);
-    assert_eq!(
-        commits[0].file_modification_timestamp,
-        commit_info(1).file_modification_timestamp
-    );
-}
-
-#[tokio::test]
-async fn replay_and_gap() {
-    let temp = TempDb::new("replay");
-    let cc = store(&temp).await;
-    let t = table_id();
-    cc.commit(&t, Some(commit_info(1)), None).await.unwrap();
-    assert!(matches!(
-        cc.commit(&t, Some(commit_info(1)), None).await.unwrap_err(),
-        CommitError::VersionConflict(_)
-    ));
-    assert!(matches!(
-        cc.commit(&t, Some(commit_info(3)), None).await.unwrap_err(),
-        CommitError::InvalidArgument(_)
-    ));
-}
-
-#[tokio::test]
-async fn backfill_keeps_highest_as_marker() {
-    let temp = TempDb::new("backfill-marker");
-    let cc = store(&temp).await;
-    let t = table_id();
-    for v in 1..=4 {
-        cc.commit(&t, Some(commit_info(v)), None).await.unwrap();
-    }
-    cc.commit(&t, None, Some(4)).await.unwrap();
-    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
-    assert_eq!(latest, 4, "latest_table_version reported from marker row");
-    assert!(commits.is_empty(), "marker row excluded from commits");
-
-    cc.commit(&t, Some(commit_info(5)), None).await.unwrap();
-    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
-    assert_eq!(latest, 5);
-    assert_eq!(
-        commits.iter().map(|c| c.version).collect::<Vec<_>>(),
-        vec![5]
-    );
-}
-
-#[tokio::test]
-async fn partial_backfill_prunes_below_watermark() {
-    let temp = TempDb::new("partial-backfill");
-    let cc = store(&temp).await;
-    let t = table_id();
-    for v in 1..=5 {
-        cc.commit(&t, Some(commit_info(v)), None).await.unwrap();
-    }
-    cc.commit(&t, None, Some(3)).await.unwrap();
-    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
-    assert_eq!(latest, 5);
-    assert_eq!(
-        commits.iter().map(|c| c.version).collect::<Vec<_>>(),
-        vec![4, 5]
-    );
-}
-
-#[tokio::test]
-async fn unbackfilled_cap_enforced() {
-    let temp = TempDb::new("cap");
-    let cc = store(&temp).await;
-    let t = table_id();
-    // Default cap is 10; 11th unbackfilled commit must be rejected.
-    for v in 1..=10 {
-        cc.commit(&t, Some(commit_info(v)), None).await.unwrap();
-    }
-    assert!(matches!(
-        cc.commit(&t, Some(commit_info(11)), None)
-            .await
-            .unwrap_err(),
-        CommitError::ResourceExhausted(_)
-    ));
-    // Backfilling re-opens room.
-    cc.commit(&t, None, Some(5)).await.unwrap();
-    cc.commit(&t, Some(commit_info(11)), None).await.unwrap();
-    let (_, latest) = cc.get_commits(&t, 0, None).await.unwrap();
-    assert_eq!(latest, 11);
-}
-
-#[tokio::test]
-async fn unknown_table_reports_zero() {
-    let temp = TempDb::new("unknown");
-    let cc = store(&temp).await;
-    let (commits, latest) = cc.get_commits(&table_id(), 0, None).await.unwrap();
-    assert!(commits.is_empty());
-    assert_eq!(latest, 0);
+async fn conformance() {
+    let temp = TempDb::new("conformance");
+    let pool = pool(&temp).await;
+    coordinator_conformance::run_all(|limits| {
+        SqliteCommitCoordinator::new(pool.clone()).with_limits(limits)
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -181,13 +71,13 @@ async fn commits_persist_across_reopen() {
     let temp = TempDb::new("persist");
     let t = table_id();
     {
-        let cc = store(&temp).await;
+        let cc = SqliteCommitCoordinator::new(pool(&temp).await);
         cc.commit(&t, Some(commit_info(1)), None).await.unwrap();
         cc.commit(&t, Some(commit_info(2)), None).await.unwrap();
     }
     // Reopen the same file: ratified commits survive the restart.
-    let cc2 = store(&temp).await;
-    let (commits, latest) = cc2.get_commits(&t, 0, None).await.unwrap();
+    let cc = SqliteCommitCoordinator::new(pool(&temp).await);
+    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
     assert_eq!(latest, 2);
     assert_eq!(
         commits.iter().map(|c| c.version).collect::<Vec<_>>(),
@@ -195,31 +85,85 @@ async fn commits_persist_across_reopen() {
     );
 }
 
-#[tokio::test]
-async fn first_writer_wins_under_concurrency() {
-    let temp = TempDb::new("concurrency");
-    let cc = std::sync::Arc::new(store(&temp).await);
+/// Race `writers` commits at version 2 (distinct files when `distinct`, else the
+/// same file) and count (wins, conflicts, replays).
+async fn race(tag: &str, writers: usize, distinct: bool) -> (usize, usize, usize) {
+    let temp = TempDb::new(tag);
+    let cc = Arc::new(SqliteCommitCoordinator::new(pool(&temp).await));
     let t = table_id();
     cc.commit(&t, Some(commit_info(1)), None).await.unwrap();
 
-    // Race many writers for version 2; the unique constraint must let exactly one win.
     let mut handles = Vec::new();
-    for _ in 0..8 {
-        let cc = cc.clone();
-        let t = t.clone();
+    for i in 0..writers {
+        let (cc, t) = (cc.clone(), t.clone());
+        let info = CommitInfo {
+            file_name: if distinct {
+                format!("00000000000000000002.{i}.json")
+            } else {
+                commit_info(2).file_name
+            },
+            ..commit_info(2)
+        };
         handles.push(tokio::spawn(async move {
-            cc.commit(&t, Some(commit_info(2)), None).await
+            cc.commit(&t, Some(info), None).await
         }));
     }
-    let mut wins = 0;
-    let mut conflicts = 0;
+    let (mut wins, mut conflicts, mut replays) = (0, 0, 0);
     for h in handles {
         match h.await.unwrap() {
             Ok(()) => wins += 1,
             Err(CommitError::VersionConflict(_)) => conflicts += 1,
+            Err(CommitError::AlreadyAccepted) => replays += 1,
             Err(e) => panic!("unexpected error: {e:?}"),
         }
     }
-    assert_eq!(wins, 1, "exactly one writer wins version 2");
-    assert_eq!(conflicts, 7);
+    (wins, conflicts, replays)
+}
+
+#[tokio::test]
+async fn first_writer_wins_under_concurrency() {
+    assert_eq!(race("race-distinct", 8, true).await, (1, 7, 0));
+}
+
+#[tokio::test]
+async fn concurrent_identical_retries_are_replays() {
+    assert_eq!(race("race-identical", 8, false).await, (1, 0, 7));
+}
+
+/// Rows written before retention (backfilled rows deleted, only a fully
+/// backfilled latest row flagged) read correctly under the new rule.
+#[tokio::test]
+async fn pre_retention_layout_reads_correctly() {
+    let temp = TempDb::new("layout");
+    let pool = pool(&temp).await;
+    let cc = SqliteCommitCoordinator::new(pool.clone());
+    let t = table_id();
+    for v in 1..=3 {
+        cc.commit(&t, Some(commit_info(v)), None).await.unwrap();
+    }
+    let id = uuid::Uuid::parse_str(&t).unwrap().as_bytes().to_vec();
+    sqlx::query("DELETE FROM delta_commits WHERE table_id = ? AND commit_version < 3")
+        .bind(&id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "UPDATE delta_commits SET is_backfilled_latest = 1 \
+         WHERE table_id = ? AND commit_version = 3",
+    )
+    .bind(&id)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
+    assert!(commits.is_empty());
+    assert_eq!(latest, 3);
+    cc.commit(&t, Some(commit_info(4)), None).await.unwrap();
+    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
+    assert_eq!(
+        commits.iter().map(|c| c.version).collect::<Vec<_>>(),
+        vec![4]
+    );
+    assert_eq!(latest, 4);
 }
