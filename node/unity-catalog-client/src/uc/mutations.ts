@@ -1,10 +1,8 @@
 // Unity Catalog invalidation map.
 //
 // The three-level namespace is a hierarchy: catalog -> schema -> table. When a
-// resource changes, the lists that contain it must be refetched. Mutations
-// (create/update/delete) are not implemented yet for the read-first navigation
-// surface, but the invalidation strategy is defined here so wiring them up later
-// is mechanical: a mutation's `onSettled` just calls the matching helper.
+// resource changes, the lists that contain it must be refetched. Every
+// create/update/delete hook below calls the matching helper from its callbacks.
 //
 // We match by PREDICATE on the canonical ["get", path, init] key rather than by
 // exact key, so a single call invalidates every page / param variant of a list
@@ -12,6 +10,15 @@
 
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  type InfiniteListSnapshot,
+  inScope,
+  isDetailUnder,
+  leafScope,
+  listQuery,
+  optimisticRemove,
+  restore,
+} from "./cache.js";
 import { useUnityCatalog } from "./context.js";
 import {
   catalogDetailQuery,
@@ -23,17 +30,6 @@ import {
   tableDetailQuery,
   volumeDetailQuery,
 } from "./queries.js";
-
-interface ListInit {
-  params?: { query?: { catalog_name?: string; schema_name?: string } };
-}
-
-function listQuery(key: QueryKey, path: string): ListInit | undefined {
-  if (!Array.isArray(key) || key[0] !== "get" || key[1] !== path) {
-    return undefined;
-  }
-  return key[2] as ListInit | undefined;
-}
 
 /** Invalidate the top-level catalog list. */
 export function invalidateCatalogs(queryClient: QueryClient) {
@@ -132,9 +128,30 @@ export function removeCatalogDetail(queryClient: QueryClient, name: string) {
 }
 
 /**
- * Remove all cached descendants of a catalog (its schema lists and any table
- * lists under it). Use after deleting a catalog so stale child data can't be
- * served from cache.
+ * Remove all cached descendants of a schema: its leaf lists and the details of
+ * anything under it. Use after deleting or renaming a schema so stale child
+ * data can't be served from cache.
+ */
+export function removeSchemaDescendants(
+  queryClient: QueryClient,
+  fullName: string,
+) {
+  const scope = leafScope(`${fullName}.`);
+  queryClient.removeQueries({
+    predicate: (q) => {
+      for (const path of ["/tables", "/volumes", "/functions", "/models"]) {
+        const init = listQuery(q.queryKey, path);
+        if (init && inScope(init, scope)) return true;
+      }
+      return isDetailUnder(q.queryKey, `${fullName}.`);
+    },
+  });
+}
+
+/**
+ * Remove all cached descendants of a catalog: its schema lists, every leaf
+ * list under it, and the details of anything under it. Use after deleting or
+ * renaming a catalog so stale child data can't be served from cache.
  */
 export function removeCatalogDescendants(
   queryClient: QueryClient,
@@ -156,7 +173,7 @@ export function removeCatalogDescendants(
           return true;
         }
       }
-      return false;
+      return isDetailUnder(q.queryKey, `${catalogName}.`);
     },
   });
 }
@@ -219,47 +236,6 @@ export function useCreateRegisteredModel() {
 // list immediately, snapshot what we removed, and restore it verbatim if the
 // request fails. `onSettled` then invalidates to reconcile with the server.
 
-interface InfiniteListSnapshot {
-  key: QueryKey;
-  data: unknown;
-}
-
-function optimisticRemove(
-  queryClient: QueryClient,
-  path: string,
-  listField: string,
-  matches: (item: { name?: string; full_name?: string }) => boolean,
-): InfiniteListSnapshot[] {
-  const entries = queryClient.getQueriesData({
-    predicate: (q) => !!listQuery(q.queryKey, path),
-  });
-  const snapshots: InfiniteListSnapshot[] = [];
-
-  for (const [key, data] of entries) {
-    if (!data) continue;
-    snapshots.push({ key, data });
-    const inf = data as { pages?: Record<string, unknown>[] };
-    if (!inf.pages) continue;
-    queryClient.setQueryData(key, {
-      ...inf,
-      pages: inf.pages.map((page) => ({
-        ...page,
-        [listField]: ((page[listField] as { name?: string }[]) ?? []).filter(
-          (item) => !matches(item),
-        ),
-      })),
-    });
-  }
-
-  return snapshots;
-}
-
-function restore(queryClient: QueryClient, snapshots: InfiniteListSnapshot[]) {
-  for (const { key, data } of snapshots) {
-    queryClient.setQueryData(key, data);
-  }
-}
-
 // ── Update (PATCH) mutations ─────────────────────────────────────────────────
 //
 // On success we write the returned info into its detail cache and invalidate the
@@ -270,7 +246,12 @@ export function useUpdateCatalog() {
   const { $api } = useUnityCatalog();
   const queryClient = useQueryClient();
   return $api.useMutation("patch", "/catalogs/{name}", {
-    onSuccess: (data) => {
+    onSuccess: (data, { params }) => {
+      const previous = params.path.name;
+      if (data?.name && data.name !== previous) {
+        removeCatalogDetail(queryClient, previous);
+        removeCatalogDescendants(queryClient, previous);
+      }
       if (data?.name) {
         queryClient.setQueryData(catalogDetailQuery(data.name).queryKey, data);
       }
@@ -284,7 +265,14 @@ export function useUpdateSchema() {
   const { $api } = useUnityCatalog();
   const queryClient = useQueryClient();
   return $api.useMutation("patch", "/schemas/{full_name}", {
-    onSuccess: (data) => {
+    onSuccess: (data, { params }) => {
+      const previous = params.path.full_name;
+      if (data?.full_name && data.full_name !== previous) {
+        queryClient.removeQueries({
+          queryKey: schemaDetailQuery(previous).queryKey,
+        });
+        removeSchemaDescendants(queryClient, previous);
+      }
       if (data?.full_name) {
         queryClient.setQueryData(
           schemaDetailQuery(data.full_name).queryKey,
@@ -301,7 +289,12 @@ export function useUpdateVolume() {
   const { $api } = useUnityCatalog();
   const queryClient = useQueryClient();
   return $api.useMutation("patch", "/volumes/{name}", {
-    onSuccess: (data) => {
+    onSuccess: (data, { params }) => {
+      if (data?.full_name && data.full_name !== params.path.name) {
+        queryClient.removeQueries({
+          queryKey: volumeDetailQuery(params.path.name).queryKey,
+        });
+      }
       if (data?.full_name) {
         queryClient.setQueryData(
           volumeDetailQuery(data.full_name).queryKey,
@@ -320,7 +313,12 @@ export function useUpdateRegisteredModel() {
   const { $api } = useUnityCatalog();
   const queryClient = useQueryClient();
   return $api.useMutation("patch", "/models/{full_name}", {
-    onSuccess: (data) => {
+    onSuccess: (data, { params }) => {
+      if (data?.full_name && data.full_name !== params.path.full_name) {
+        queryClient.removeQueries({
+          queryKey: modelDetailQuery(params.path.full_name).queryKey,
+        });
+      }
       if (data?.full_name) {
         queryClient.setQueryData(
           modelDetailQuery(data.full_name).queryKey,
@@ -347,6 +345,7 @@ export function useDeleteCatalog() {
         queryClient,
         "/catalogs",
         "catalogs",
+        {},
         (item) => item.name === name,
       );
       return { snapshots };
@@ -369,17 +368,25 @@ export function useDeleteSchema() {
   return $api.useMutation("delete", "/schemas/{full_name}", {
     onMutate: ({ params }) => {
       const fullName = params.path.full_name;
-      const name = fullName.split(".").pop();
+      const [catalog, name] = fullName.split(".");
       const snapshots = optimisticRemove(
         queryClient,
         "/schemas",
         "schemas",
-        (item) => item.name === name || item.full_name === fullName,
+        { catalog_name: catalog },
+        (item) => item.full_name === fullName || item.name === name,
       );
-      return { snapshots, catalog: fullName.split(".")[0] };
+      return { snapshots };
     },
     onError: (_err, _vars, context) => {
       if (context?.snapshots) restore(queryClient, context.snapshots);
+    },
+    onSuccess: (_data, { params }) => {
+      const fullName = params.path.full_name;
+      queryClient.removeQueries({
+        queryKey: schemaDetailQuery(fullName).queryKey,
+      });
+      removeSchemaDescendants(queryClient, fullName);
     },
     onSettled: (_data, _err, { params }) => {
       invalidateSchemas(queryClient, params.path.full_name.split(".")[0]);
@@ -404,6 +411,7 @@ function leafDeleteHandlers(
         queryClient,
         listPath,
         listField,
+        leafScope(fullName),
         (item) => item.full_name === fullName || item.name === name,
       );
       return { snapshots };
@@ -511,7 +519,12 @@ export function useUpdateCredential() {
   const { $api } = useUnityCatalog();
   const queryClient = useQueryClient();
   return $api.useMutation("patch", "/credentials/{name}", {
-    onSuccess: (data) => {
+    onSuccess: (data, { params }) => {
+      if (data?.name && data.name !== params.path.name) {
+        queryClient.removeQueries({
+          queryKey: credentialDetailQuery(params.path.name).queryKey,
+        });
+      }
       if (data?.name) {
         queryClient.setQueryData(
           credentialDetailQuery(data.name).queryKey,
@@ -534,6 +547,7 @@ export function useDeleteCredential() {
         queryClient,
         "/credentials",
         "credentials",
+        {},
         (item) => item.name === name,
       );
       return { snapshots };
@@ -564,7 +578,12 @@ export function useUpdateExternalLocation() {
   const { $api } = useUnityCatalog();
   const queryClient = useQueryClient();
   return $api.useMutation("patch", "/external-locations/{name}", {
-    onSuccess: (data) => {
+    onSuccess: (data, { params }) => {
+      if (data?.name && data.name !== params.path.name) {
+        queryClient.removeQueries({
+          queryKey: externalLocationDetailQuery(params.path.name).queryKey,
+        });
+      }
       if (data?.name) {
         queryClient.setQueryData(
           externalLocationDetailQuery(data.name).queryKey,
@@ -587,6 +606,7 @@ export function useDeleteExternalLocation() {
         queryClient,
         "/external-locations",
         "external_locations",
+        {},
         (item) => item.name === name,
       );
       return { snapshots };
