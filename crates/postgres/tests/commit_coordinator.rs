@@ -5,161 +5,109 @@
 //!
 //! ```sh
 //! DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres \
-//!   cargo test -p unitycatalog-postgres --features integration-pg
+//!   cargo test -p olai-uc-postgres --features integration-pg
 //! ```
+//!
+//! The protocol rules are checked by the shared conformance suite; the tests
+//! here cover what depends on Postgres itself: the unique-constraint arbiter
+//! under racing writers, and the pre-retention row layout.
 #![cfg(feature = "integration-pg")]
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
-use unitycatalog_delta_api::coordinator::CommitInfo;
-use unitycatalog_delta_api::coordinator::{CommitCoordinator, CommitError};
+use unitycatalog_delta_api::coordinator::{CommitCoordinator, CommitError, CommitInfo};
+use unitycatalog_delta_api::testing::coordinator_conformance::{self, commit_info};
 use unitycatalog_postgres::PgCommitCoordinator;
-use uuid::Uuid;
 
-fn store(pool: sqlx::PgPool) -> PgCommitCoordinator {
-    PgCommitCoordinator::new(pool)
-}
-
-/// A unique table id per call (the `uuid` crate's `v4` feature isn't enabled).
 fn table_id() -> String {
-    static COUNTER: AtomicU64 = AtomicU64::new(1);
-    Uuid::from_u128(COUNTER.fetch_add(1, Ordering::Relaxed) as u128).to_string()
-}
-
-fn commit_info(version: i64) -> CommitInfo {
-    CommitInfo {
-        version,
-        timestamp: 1000 + version,
-        file_name: format!("{version:020}.uuid.json"),
-        file_size: 128,
-        file_modification_timestamp: 2000 + version,
-    }
+    uuid::Uuid::now_v7().to_string()
 }
 
 #[sqlx::test]
-async fn onboarding_then_get_roundtrip(pool: sqlx::PgPool) {
-    let cc = store(pool);
-    let t = table_id();
-    cc.commit(&t, Some(commit_info(1)), None).await.unwrap();
-    cc.commit(&t, Some(commit_info(2)), None).await.unwrap();
-
-    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
-    assert_eq!(latest, 2);
-    assert_eq!(
-        commits.iter().map(|c| c.version).collect::<Vec<_>>(),
-        vec![1, 2]
-    );
-    // round-trip preserves the commit metadata
-    assert_eq!(commits[0].file_name, commit_info(1).file_name);
-    assert_eq!(commits[0].timestamp, commit_info(1).timestamp);
-    assert_eq!(commits[0].file_size, 128);
+async fn conformance(pool: sqlx::PgPool) {
+    coordinator_conformance::run_all(|limits| {
+        PgCommitCoordinator::new(pool.clone()).with_limits(limits)
+    })
+    .await;
 }
 
-#[sqlx::test]
-async fn replay_and_gap(pool: sqlx::PgPool) {
-    let cc = store(pool);
-    let t = table_id();
-    cc.commit(&t, Some(commit_info(1)), None).await.unwrap();
-    assert!(matches!(
-        cc.commit(&t, Some(commit_info(1)), None).await.unwrap_err(),
-        CommitError::VersionConflict(_)
-    ));
-    assert!(matches!(
-        cc.commit(&t, Some(commit_info(3)), None).await.unwrap_err(),
-        CommitError::InvalidArgument(_)
-    ));
-}
-
-#[sqlx::test]
-async fn backfill_keeps_highest_as_marker(pool: sqlx::PgPool) {
-    let cc = store(pool);
-    let t = table_id();
-    for v in 1..=4 {
-        cc.commit(&t, Some(commit_info(v)), None).await.unwrap();
-    }
-    cc.commit(&t, None, Some(4)).await.unwrap();
-    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
-    assert_eq!(latest, 4, "latest_table_version reported from marker row");
-    assert!(commits.is_empty(), "marker row excluded from commits");
-
-    cc.commit(&t, Some(commit_info(5)), None).await.unwrap();
-    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
-    assert_eq!(latest, 5);
-    assert_eq!(
-        commits.iter().map(|c| c.version).collect::<Vec<_>>(),
-        vec![5]
-    );
-}
-
-#[sqlx::test]
-async fn partial_backfill_prunes_below_watermark(pool: sqlx::PgPool) {
-    let cc = store(pool);
-    let t = table_id();
-    for v in 1..=5 {
-        cc.commit(&t, Some(commit_info(v)), None).await.unwrap();
-    }
-    cc.commit(&t, None, Some(3)).await.unwrap();
-    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
-    assert_eq!(latest, 5);
-    assert_eq!(
-        commits.iter().map(|c| c.version).collect::<Vec<_>>(),
-        vec![4, 5]
-    );
-}
-
-#[sqlx::test]
-async fn unbackfilled_cap_enforced(pool: sqlx::PgPool) {
-    let cc = store(pool);
-    let t = table_id();
-    // Default cap is 10; 11th unbackfilled commit must be rejected.
-    for v in 1..=10 {
-        cc.commit(&t, Some(commit_info(v)), None).await.unwrap();
-    }
-    assert!(matches!(
-        cc.commit(&t, Some(commit_info(11)), None)
-            .await
-            .unwrap_err(),
-        CommitError::ResourceExhausted(_)
-    ));
-    // Backfilling re-opens room.
-    cc.commit(&t, None, Some(5)).await.unwrap();
-    cc.commit(&t, Some(commit_info(11)), None).await.unwrap();
-    let (_, latest) = cc.get_commits(&t, 0, None).await.unwrap();
-    assert_eq!(latest, 11);
-}
-
-#[sqlx::test]
-async fn unknown_table_reports_zero(pool: sqlx::PgPool) {
-    let cc = store(pool);
-    let (commits, latest) = cc.get_commits(&table_id(), 0, None).await.unwrap();
-    assert!(commits.is_empty());
-    assert_eq!(latest, 0);
-}
-
-#[sqlx::test]
-async fn first_writer_wins_under_concurrency(pool: sqlx::PgPool) {
-    let cc = std::sync::Arc::new(store(pool));
+/// Race `writers` commits at version 2 (distinct files when `distinct`, else the
+/// same file) and count the outcomes.
+async fn race(pool: sqlx::PgPool, writers: usize, distinct: bool) -> (usize, usize, usize) {
+    let cc = Arc::new(PgCommitCoordinator::new(pool));
     let t = table_id();
     cc.commit(&t, Some(commit_info(1)), None).await.unwrap();
 
-    // Race many writers for version 2; the unique constraint must let exactly one win.
     let mut handles = Vec::new();
-    for _ in 0..8 {
-        let cc = cc.clone();
-        let t = t.clone();
+    for i in 0..writers {
+        let (cc, t) = (cc.clone(), t.clone());
+        let info = CommitInfo {
+            file_name: if distinct {
+                format!("00000000000000000002.{i}.json")
+            } else {
+                commit_info(2).file_name
+            },
+            ..commit_info(2)
+        };
         handles.push(tokio::spawn(async move {
-            cc.commit(&t, Some(commit_info(2)), None).await
+            cc.commit(&t, Some(info), None).await
         }));
     }
-    let mut wins = 0;
-    let mut conflicts = 0;
+    let (mut wins, mut conflicts, mut replays) = (0, 0, 0);
     for h in handles {
         match h.await.unwrap() {
             Ok(()) => wins += 1,
             Err(CommitError::VersionConflict(_)) => conflicts += 1,
+            Err(CommitError::AlreadyAccepted) => replays += 1,
             Err(e) => panic!("unexpected error: {e:?}"),
         }
     }
-    assert_eq!(wins, 1, "exactly one writer wins version 2");
-    assert_eq!(conflicts, 7);
+    (wins, conflicts, replays)
+}
+
+#[sqlx::test]
+async fn first_writer_wins_under_concurrency(pool: sqlx::PgPool) {
+    assert_eq!(race(pool, 8, true).await, (1, 7, 0));
+}
+
+#[sqlx::test]
+async fn concurrent_identical_retries_are_replays(pool: sqlx::PgPool) {
+    // The losers of the insert race carry the winner's file name: replays.
+    assert_eq!(race(pool, 8, false).await, (1, 0, 7));
+}
+
+/// Rows written before retention (backfilled rows deleted, only a fully
+/// backfilled latest row flagged) read correctly under the new rule.
+#[sqlx::test]
+async fn pre_retention_layout_reads_correctly(pool: sqlx::PgPool) {
+    let cc = PgCommitCoordinator::new(pool.clone());
+    let t = table_id();
+    for v in 1..=3 {
+        cc.commit(&t, Some(commit_info(v)), None).await.unwrap();
+    }
+    // Simulate the old layout: versions 1-2 deleted, 3 flagged as the marker.
+    sqlx::query("DELETE FROM delta_commits WHERE table_id = $1::uuid AND commit_version < 3")
+        .bind(&t)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "UPDATE delta_commits SET is_backfilled_latest = true \
+         WHERE table_id = $1::uuid AND commit_version = 3",
+    )
+    .bind(&t)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
+    assert!(commits.is_empty());
+    assert_eq!(latest, 3);
+    cc.commit(&t, Some(commit_info(4)), None).await.unwrap();
+    let (commits, latest) = cc.get_commits(&t, 0, None).await.unwrap();
+    assert_eq!(
+        commits.iter().map(|c| c.version).collect::<Vec<_>>(),
+        vec![4]
+    );
+    assert_eq!(latest, 4);
 }
