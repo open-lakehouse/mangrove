@@ -418,10 +418,13 @@ where
         context: Cx,
     ) -> Result<DeltaCredentialsResponse> {
         let staging = self.resolve_staging_by_id(&table_id, &context).await?;
-        // Staging credentials are READ_WRITE on the table's future location, so
-        // they belong to the reservation's creator and only until the table is
-        // created; afterwards the table's own credential endpoint (with its table
-        // permissions) applies.
+        // Staging credentials are READ_WRITE on the table's future location. They
+        // are authorized by the reservation itself: they belong to its creator
+        // (who was authorized to create it, `CreateStaging`) and only until the
+        // table is created, after which the table's own credential endpoint (with
+        // its table permissions) applies. They are deliberately *not* a
+        // `VendPathCredential`: a managed location need not lie in any external
+        // location the caller holds grants on.
         self.authorize(
             DeltaAction::AdoptStaging {
                 reservation: &staging,
@@ -435,14 +438,6 @@ where
                  credentials endpoint"
             )));
         }
-        self.authorize(
-            DeltaAction::VendPathCredential {
-                location: &staging.location,
-                access: CredentialAccess::ReadWrite,
-            },
-            &context,
-        )
-        .await?;
         let creds = self
             .vend_path_credential(&staging.location, CredentialAccess::ReadWrite, &context)
             .await?;

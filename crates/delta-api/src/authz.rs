@@ -63,8 +63,9 @@ pub enum DeltaAction<'a> {
         table: &'a TableRef,
         access: CredentialAccess,
     },
-    /// `getStagingTableCredentials` / `getTemporaryPathCredentials` — vend a
-    /// credential for an arbitrary path.
+    /// `getTemporaryPathCredentials` — vend a credential for an arbitrary path.
+    /// (Staging-table credentials are authorized by
+    /// [`AdoptStaging`](Self::AdoptStaging) instead.)
     VendPathCredential {
         location: &'a str,
         access: CredentialAccess,
