@@ -953,38 +953,44 @@ enum SecurableId {
 
 /// Unified read/write operation used by [`UnityObjectStoreFactory::for_url`].
 ///
-/// The factory translates this to the operation enum expected by each
+/// This is trestle's [`AccessLevel`], the access model the vended credentials
+/// themselves carry; the alias keeps the `Operation::Read` / `Operation::ReadWrite`
+/// spelling. The factory translates it to the operation enum expected by each
 /// vending endpoint:
 ///
 /// | `Operation`  | Volume        | Table       | Path             |
 /// |--------------|---------------|-------------|------------------|
 /// | `Read`       | `READ_VOLUME` | `READ`      | `PATH_READ`      |
 /// | `ReadWrite`  | `WRITE_VOLUME`| `READ_WRITE`| `PATH_READ_WRITE`|
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Operation {
-    Read,
-    ReadWrite,
+pub type Operation = AccessLevel;
+
+/// The per-endpoint request operations of an [`AccessLevel`].
+trait SecurableOperations {
+    fn into_volume(self) -> VolumeOperation;
+    fn into_table(self) -> TableOperation;
 }
 
-impl Operation {
+impl SecurableOperations for AccessLevel {
     fn into_volume(self) -> VolumeOperation {
         match self {
-            Operation::Read => VolumeOperation::Read,
-            Operation::ReadWrite => VolumeOperation::ReadWrite,
+            AccessLevel::Read => VolumeOperation::Read,
+            AccessLevel::ReadWrite => VolumeOperation::ReadWrite,
         }
     }
 
     fn into_table(self) -> TableOperation {
         match self {
-            Operation::Read => TableOperation::Read,
-            Operation::ReadWrite => TableOperation::ReadWrite,
+            AccessLevel::Read => TableOperation::Read,
+            AccessLevel::ReadWrite => TableOperation::ReadWrite,
         }
     }
+}
 
+impl IntoPathOperation for AccessLevel {
     fn into_path(self) -> PathOperation {
         match self {
-            Operation::Read => PathOperation::Read,
-            Operation::ReadWrite => PathOperation::ReadWrite,
+            AccessLevel::Read => PathOperation::Read,
+            AccessLevel::ReadWrite => PathOperation::ReadWrite,
         }
     }
 }
@@ -1009,24 +1015,6 @@ impl IntoPathOperation for VolumeOperation {
             VolumeOperation::Read => PathOperation::Read,
             VolumeOperation::ReadWrite => PathOperation::ReadWrite,
         }
-    }
-}
-
-impl From<Operation> for TableOperation {
-    fn from(op: Operation) -> Self {
-        op.into_table()
-    }
-}
-
-impl From<Operation> for VolumeOperation {
-    fn from(op: Operation) -> Self {
-        op.into_volume()
-    }
-}
-
-impl From<Operation> for PathOperation {
-    fn from(op: Operation) -> Self {
-        op.into_path()
     }
 }
 
