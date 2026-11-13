@@ -232,6 +232,51 @@ mod tests {
         }
     }
 
+    /// The string-index encoding must agree with trestle's segment-aware
+    /// `StorageLocation::starts_with` (what `StorageScope::covers` and the
+    /// credential resolvers use) on every pair, so the SQL lookups and the vending
+    /// rules can never disagree on which location governs a path.
+    #[test]
+    fn covers_agrees_with_trestle() {
+        let urls = [
+            "s3://b",
+            "s3://b/",
+            "s3://b/tab",
+            "s3://b/tab/",
+            "s3://b/tab/x",
+            "s3://b/table2",
+            "s3://b/ta",
+            "s3://bb/tab",
+            "s3a://b/tab/x",
+            "https://b.s3.amazonaws.com/tab",
+            "gs://b/tab",
+            "abfss://ctr@acct.dfs.core.windows.net/data",
+            "abfss://ctr@acct.dfs.core.windows.net/data/sub",
+            "abfss://ctr@acct.dfs.core.windows.net/database",
+            "https://acct.dfs.core.windows.net/ctr/data/sub",
+            "abfss://other@acct.dfs.core.windows.net/data",
+            "file:///tmp",
+            "file:///tmp/x",
+            "file:///tmpx",
+        ];
+        for a in urls {
+            let la: StorageLocation = a.parse().unwrap();
+            for b in urls {
+                let lb: StorageLocation = b.parse().unwrap();
+                assert_eq!(
+                    key(a).covers(&key(b)),
+                    lb.starts_with(&la),
+                    "covers({a}, {b})"
+                );
+                assert_eq!(
+                    key(b).ancestors().contains(&key(a)),
+                    lb.starts_with(&la),
+                    "ancestors({b}) contains {a}"
+                );
+            }
+        }
+    }
+
     #[test]
     fn descendants_bound_the_covered_keys() {
         let k = key("s3://b/data");
