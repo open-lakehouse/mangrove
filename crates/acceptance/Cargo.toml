@@ -21,11 +21,18 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
 # the managed_table_lifecycle check exercises the real /delta/v1 write+read path
 # rather than a bare create_table. Delta feature pulls in deltalake-core.
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.7" }
+# The in-process server (`server::TestServer`, the `uc-test-server` binary): the
+# same service `uc-server serve` builds, over an in-memory SQLite backend.
+unitycatalog-server = { package = "olai-uc-server", path = "../server", version = "0.0.14", default-features = false, features = [
+  "embed",
+  "sqlite",
+] }
 datafusion-unitycatalog = { package = "olai-uc-datafusion", path = "../datafusion", version = "0.1.0", features = [
   "delta",
 ] }
 
 # workspace dependencies
+axum = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 datafusion = { workspace = true }
 deltalake-core = { workspace = true }
@@ -38,4 +45,15 @@ url = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 
 # crates.io dependencies
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+tempfile = "3.1"
+tokio = { version = "1.0", features = ["io-std", "io-util", "macros", "net", "rt-multi-thread", "signal", "sync"] }
+
+[dev-dependencies]
+reqwest = { workspace = true }
+rstest = "0.18"
+
+[[bin]]
+# An in-process server for engine-interop suites (`tests/engines`): prints one
+# JSON line with its address once it is ready, then serves until killed.
+name = "uc-test-server"
+path = "src/bin/uc-test-server.rs"

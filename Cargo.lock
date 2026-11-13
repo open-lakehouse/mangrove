@@ -6878,6 +6878,7 @@ version = "0.0.2"
 name = "unitycatalog-acceptance"
 version = "0.0.1"
 dependencies = [
+ "axum",
  "chrono",
  "datafusion",
  "deltalake-core",
@@ -6888,7 +6889,11 @@ dependencies = [
  "olai-uc-common",
  "olai-uc-datafusion",
  "olai-uc-delta-api",
+ "olai-uc-server",
+ "reqwest 0.13.4",
+ "rstest",
  "serde_json",
+ "tempfile",
  "thiserror",
  "tokio",
  "url",

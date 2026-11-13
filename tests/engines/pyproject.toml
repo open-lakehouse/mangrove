@@ -1,0 +1,6 @@
+# pytest settings only. Dependencies live in requirements.in / requirements.txt
+# rather than a uv project: a uv.lock pins the index it resolved against, and
+# local runs resolve through a PyPI proxy that CI can't reach (and vice versa).
+[tool.pytest.ini_options]
+testpaths = ["."]
+addopts = "-ra"
