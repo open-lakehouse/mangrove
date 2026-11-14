@@ -234,9 +234,7 @@ mod tests {
     }
 
     fn ctx() -> RequestContext {
-        RequestContext {
-            recipient: crate::policy::Principal::anonymous(),
-        }
+        RequestContext::anonymous()
     }
 
     async fn create_credential(h: &ServerHandler<RequestContext>, name: &str) {

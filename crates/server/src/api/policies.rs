@@ -532,9 +532,7 @@ mod tests {
     }
 
     fn ctx() -> RequestContext {
-        RequestContext {
-            recipient: crate::policy::Principal::anonymous(),
-        }
+        RequestContext::anonymous()
     }
 
     fn row_filter_request(

@@ -38,7 +38,7 @@ use unitycatalog_server::api::{
     CredentialHandler, ExternalLocationHandler, RequestContext, TemporaryCredentialHandler,
 };
 use unitycatalog_server::memory::InMemoryResourceStore;
-use unitycatalog_server::policy::{ConstantPolicy, Policy, Principal};
+use unitycatalog_server::policy::{ConstantPolicy, Policy};
 use unitycatalog_server::services::ServerHandler;
 
 /// The well-known Azurite account and key (local dev only — published by
@@ -65,9 +65,7 @@ fn handler() -> ServerHandler<RequestContext> {
 }
 
 fn ctx() -> RequestContext {
-    RequestContext {
-        recipient: Principal::anonymous(),
-    }
+    RequestContext::anonymous()
 }
 
 /// Register the `azure_storage_key` credential + a covering external location at

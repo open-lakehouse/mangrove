@@ -29,7 +29,7 @@ use unitycatalog_common::models::external_locations::v1::CreateExternalLocationR
 use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 use unitycatalog_server::api::{CredentialHandler, ExternalLocationHandler, RequestContext};
 use unitycatalog_server::memory::InMemoryResourceStore;
-use unitycatalog_server::policy::{ConstantPolicy, Policy, Principal};
+use unitycatalog_server::policy::{ConstantPolicy, Policy};
 use unitycatalog_server::rest::create_storage_proxy_router;
 use unitycatalog_server::services::ServerHandler;
 
@@ -42,9 +42,7 @@ fn container() -> String {
 }
 
 fn ctx() -> RequestContext {
-    RequestContext {
-        recipient: Principal::anonymous(),
-    }
+    RequestContext::anonymous()
 }
 
 async fn seeded_handler() -> ServerHandler<RequestContext> {

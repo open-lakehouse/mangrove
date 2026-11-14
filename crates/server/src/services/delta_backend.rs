@@ -617,9 +617,7 @@ mod tests {
 
     #[cfg(feature = "memory")]
     fn ctx() -> RequestContext {
-        RequestContext {
-            recipient: Principal::anonymous(),
-        }
+        RequestContext::anonymous()
     }
 
     /// Every action is checked in `authorize` (the data methods do not

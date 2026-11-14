@@ -197,7 +197,7 @@ jobs:
         env:
           # Use the committed .sqlx cache so macros don't probe a live DB at build.
           SQLX_OFFLINE: "true"
-        run: cargo nextest run --workspace --all-features --profile ci -E 'not (package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access) or binary(graph_store)))'
+        run: cargo nextest run --workspace --all-features --profile ci -E 'not ((package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access) or binary(graph_store))) or (package(olai-uc-server) and binary(neon_user_status)))'
 
       # nextest does not run doctests; the old `cargo test` did, so run them here
       # to keep doctest coverage. Runs even if nextest failed above.
@@ -275,7 +275,7 @@ jobs:
         env:
           SQLX_OFFLINE: "true"
         run: |
-          cargo llvm-cov nextest --workspace --all-features --locked -E 'not (package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access) or binary(graph_store)))' --codecov --output-path codecov.json
+          cargo llvm-cov nextest --workspace --all-features --locked -E 'not ((package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access) or binary(graph_store))) or (package(olai-uc-server) and binary(neon_user_status)))' --codecov --output-path codecov.json
 
       # Upload under the `unit` flag. codecov.yml keeps the status informational
       # so it can't block a PR, and fail_ci_if_error stays false so a flaky
@@ -563,6 +563,7 @@ jobs:
           SQLX_OFFLINE: "true"
         run: |
           cargo llvm-cov --no-report --locked nextest -p olai-uc-postgres --features integration-pg --profile ci
+          cargo llvm-cov --no-report --locked nextest -p olai-uc-server --features integration-pg --profile ci --test neon_user_status
           # The sharing store's conformance suite migrates the database it is
           # given, so it gets an empty one of its own.
           psql "$DATABASE_URL" -c 'CREATE DATABASE sharing'

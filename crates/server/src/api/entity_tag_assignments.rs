@@ -349,9 +349,7 @@ mod tests {
     }
 
     fn ctx() -> RequestContext {
-        RequestContext {
-            recipient: crate::policy::Principal::anonymous(),
-        }
+        RequestContext::anonymous()
     }
 
     fn create_request(tag_key: &str, tag_value: Option<&str>) -> CreateEntityTagAssignmentRequest {

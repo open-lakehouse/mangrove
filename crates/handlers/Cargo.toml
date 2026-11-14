@@ -41,6 +41,10 @@ object_store = { workspace = true, optional = true }
 olai-http = { workspace = true, optional = true }
 olai-store = { workspace = true, optional = true }
 
+# The verified caller `olai-auth` authentication puts into the request extensions
+# (feature `olai-auth`), carried on `RequestContext`.
+olai-auth = { workspace = true, optional = true }
+
 [features]
 default = ["all-resources"]
 
@@ -94,6 +98,10 @@ axum = ["dep:axum", "unitycatalog-common/axum"]
 object-store = ["dep:object_store"]
 store = ["dep:olai-store"]
 cloud = ["dep:olai-http"]
+
+# `RequestContext::authenticated`: the `olai_auth::Principal` of a request
+# authenticated by `olai-auth`.
+olai-auth = ["dep:olai-auth"]
 
 [package.metadata.docs.rs]
 # The crate and generated module docs link to axum items.

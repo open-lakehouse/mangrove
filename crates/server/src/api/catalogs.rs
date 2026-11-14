@@ -261,7 +261,7 @@ mod tests {
     use super::*;
     use crate::api::{CredentialHandler, ExternalLocationHandler};
     use crate::memory::InMemoryResourceStore;
-    use crate::policy::{ConstantPolicy, Principal};
+    use crate::policy::ConstantPolicy;
     use crate::services::{LocalStoragePolicy, ServerHandler};
 
     /// Build a handler with an optional metastore managed storage root. When
@@ -282,9 +282,7 @@ mod tests {
     }
 
     fn ctx() -> RequestContext {
-        RequestContext {
-            recipient: Principal::anonymous(),
-        }
+        RequestContext::anonymous()
     }
 
     fn create_req(name: &str) -> CreateCatalogRequest {
