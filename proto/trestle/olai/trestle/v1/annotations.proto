@@ -1,0 +1,47 @@
+// Field and method options that trestle reads besides `google.api`. Copy this file next to your
+// protos as `olai/trestle/v1/annotations.proto`.
+syntax = "proto3";
+
+package olai.trestle.v1;
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.FieldOptions {
+  // Read this response field from the named HTTP response header (e.g. `Delta-Table-Version`)
+  // instead of the JSON body.
+  string response_header = 51001;
+
+  // Send this field even when unpopulated (empty, zero, `false`, or `null` for `optional`), which
+  // proto3 JSON otherwise leaves out.
+  bool emit_unpopulated = 51002;
+
+  // Send or read this `bytes` field as the raw HTTP body instead of JSON. In a request it must be
+  // the rule's `body`; in a response, the other fields must come from response headers.
+  bool raw_body = 51003;
+
+  // Send this `string` request field in the named HTTP request header (e.g. `Range`) instead of
+  // the query or the body.
+  string request_header = 51004;
+}
+
+// How to find the securable a request acts on, for the generated `Authorizable` impls. Needed only
+// when codegen can't infer it from the request's `google.api.resource_reference` fields and the
+// service's managed resource (codegen fails until the method has one).
+message AuthzRule {
+  // The `google.api.resource` type of the securable (e.g. `example.io/Table`). Empty for the
+  // service root, such as a list of top-level resources.
+  string securable_type = 1;
+
+  // The request fields whose values, in order, make up the securable's name. Each value is split
+  // on `.`, so a full-name field gives every part.
+  repeated string securable_fields = 2;
+
+  // Emit no `Authorizable` impl, because the server authorizes this request by hand. The
+  // operation and its Cedar action (on `securable_type`) are still emitted.
+  bool skip = 3;
+}
+
+extend google.protobuf.MethodOptions {
+  // The securable of this method's request. See `AuthzRule`.
+  AuthzRule authz = 51101;
+}

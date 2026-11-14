@@ -104,6 +104,7 @@ all-resources = [
   "credentials",
   "external_locations",
   "functions",
+  "grants",
   "model_versions",
   "policies",
   "providers",
@@ -124,6 +125,7 @@ credentials = []
 external_locations = []
 # function parameter and return types reference `tables.v1` column types
 functions = ["tables"]
+grants = []
 model_versions = []
 policies = []
 providers = []

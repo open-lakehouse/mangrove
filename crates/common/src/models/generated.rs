@@ -90,6 +90,13 @@ pub mod functions {
 #[cfg(feature = "functions")]
 pub use functions::v1::Function;
 
+#[cfg(feature = "grants")]
+pub mod grants {
+    pub mod v1 {
+        include!("_gen/unitycatalog.grants.v1.rs");
+    }
+}
+
 #[cfg(feature = "model_versions")]
 pub mod model_versions {
     pub mod v1 {

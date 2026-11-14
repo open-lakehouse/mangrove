@@ -31,12 +31,9 @@ impl PyShareClient {
             .client
             .get()
             .with_include_shared_data(include_shared_data);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyShare::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyShare::from(result))
     }
 
     /// Update a share.
@@ -72,23 +69,17 @@ impl PyShareClient {
             .with_new_name(new_name)
             .with_owner(owner)
             .with_comment(comment);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyShare::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyShare::from(result))
     }
 
     /// Deletes a share.
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(result)
     }
 
     /// Gets the permissions for a data share from the metastore.
@@ -112,12 +103,9 @@ impl PyShareClient {
             .get_permissions()
             .with_max_results(max_results)
             .with_page_token(page_token);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyGetPermissionsResponse::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyGetPermissionsResponse::from(result))
     }
 
     /// Updates the permissions for a data share in the metastore.
@@ -147,12 +135,9 @@ impl PyShareClient {
                     .collect::<::std::vec::Vec<_>>(),
             )
             .with_omit_permissions_list(omit_permissions_list);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyUpdatePermissionsResponse::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyUpdatePermissionsResponse::from(result))
     }
 }
 

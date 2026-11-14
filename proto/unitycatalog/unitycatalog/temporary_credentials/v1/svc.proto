@@ -6,6 +6,7 @@ import "buf/validate/validate.proto";
 import "gnostic/openapi/v3/annotations.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "olai/trestle/v1/annotations.proto";
 import "unitycatalog/temporary_credentials/v1/models.proto";
 
 // Generate a new set of credentials for a table.
@@ -141,6 +142,10 @@ service TemporaryCredentialsService {
   // (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
   // privilege on the parent schema (granted by a catalog owner).
   rpc GenerateTemporaryTableCredentials(GenerateTemporaryTableCredentialsRequest) returns (TemporaryCredential) {
+    option (olai.trestle.v1.authz) = {
+      securable_type: "unitycatalog.io/Table"
+      skip: true
+    };
     option (google.api.http) = {
       post: "/temporary-table-credentials"
       body: "*"
@@ -151,12 +156,14 @@ service TemporaryCredentialsService {
   // Generate a new set of credentials for a path.
   //
   // Only external storage paths (external locations and external tables) are
-  // supported; managed tables are not. The metastore must have the
+  // supported; managed tables are not. The server asks on the covering external
+  // location, or on the metastore for a path none covers. The metastore must have the
   // `external_access_enabled` flag set to true (default false). The caller must
   // have the `EXTERNAL_USE_LOCATION` privilege on the external location
   // (granted by its owner) and, for existing external tables, the
   // `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
   rpc GenerateTemporaryPathCredentials(GenerateTemporaryPathCredentialsRequest) returns (TemporaryCredential) {
+    option (olai.trestle.v1.authz) = {skip: true};
     option (google.api.http) = {
       post: "/temporary-path-credentials"
       body: "*"
@@ -170,6 +177,10 @@ service TemporaryCredentialsService {
   // (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
   // privilege on the parent schema (granted by a catalog owner).
   rpc GenerateTemporaryVolumeCredentials(GenerateTemporaryVolumeCredentialsRequest) returns (TemporaryCredential) {
+    option (olai.trestle.v1.authz) = {
+      securable_type: "unitycatalog.io/Volume"
+      skip: true
+    };
     option (google.api.http) = {
       post: "/temporary-volume-credentials"
       body: "*"
@@ -183,6 +194,15 @@ service TemporaryCredentialsService {
   // (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
   // privilege on the parent schema (granted by a catalog owner).
   rpc GenerateTemporaryModelVersionCredentials(GenerateTemporaryModelVersionCredentialsRequest) returns (TemporaryCredential) {
+    option (olai.trestle.v1.authz) = {
+      securable_type: "unitycatalog.io/ModelVersion"
+      securable_fields: [
+        "catalog_name",
+        "schema_name",
+        "model_name",
+        "version"
+      ]
+    };
     option (google.api.http) = {
       post: "/temporary-model-version-credentials"
       body: "*"

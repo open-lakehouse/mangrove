@@ -8,6 +8,7 @@ import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
+import "olai/trestle/v1/annotations.proto";
 import "unitycatalog/functions/v1/models.proto";
 
 // List functions in a schema
@@ -124,6 +125,14 @@ service FunctionsService {
   // Creates a new function. The caller must be a metastore admin or have the CREATE_FUNCTION
   // privilege on the parent catalog and schema.
   rpc CreateFunction(CreateFunctionRequest) returns (Function) {
+    option (olai.trestle.v1.authz) = {
+      securable_type: "unitycatalog.io/Function"
+      securable_fields: [
+        "function_info.catalog_name",
+        "function_info.schema_name",
+        "function_info.name"
+      ]
+    };
     option (google.api.http) = {
       post: "/functions"
       body: "function_info"

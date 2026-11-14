@@ -61,7 +61,7 @@ impl TableServiceClient {
             url.query_pairs_mut()
                 .append_pair("include_manifest_capabilities", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -113,7 +113,7 @@ impl TableServiceClient {
             url.query_pairs_mut()
                 .append_pair("include_manifest_capabilities", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -124,7 +124,7 @@ impl TableServiceClient {
     /// Create a table
     pub async fn create_table(&self, request: &CreateTableRequest) -> Result<Table> {
         let url = self.base_url.join("tables")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -148,7 +148,7 @@ impl TableServiceClient {
             url.query_pairs_mut()
                 .append_pair("include_manifest_capabilities", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -166,7 +166,7 @@ impl TableServiceClient {
             encode_path_value(&request.full_name, false)
         );
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -178,7 +178,7 @@ impl TableServiceClient {
     pub async fn delete_table(&self, request: &DeleteTableRequest) -> Result<()> {
         let formatted_path = format!("tables/{}", encode_path_value(&request.full_name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.delete(url).send().await?;
+        let response = self.client.delete(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }

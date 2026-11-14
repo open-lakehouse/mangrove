@@ -45,7 +45,7 @@ impl CredentialServiceClient {
             url.query_pairs_mut()
                 .append_pair("page_token", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -55,7 +55,7 @@ impl CredentialServiceClient {
 
     pub async fn create_credential(&self, request: &CreateCredentialRequest) -> Result<Credential> {
         let url = self.base_url.join("credentials")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -66,7 +66,7 @@ impl CredentialServiceClient {
     pub async fn get_credential(&self, request: &GetCredentialRequest) -> Result<Credential> {
         let formatted_path = format!("credentials/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -79,7 +79,7 @@ impl CredentialServiceClient {
         let url = self.base_url.join(&formatted_path)?;
         let mut body = request.clone();
         body.name = Default::default();
-        let response = self.client.patch(url).json(&body).send().await?;
+        let response = self.client.patch(url).json(&body).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -90,7 +90,7 @@ impl CredentialServiceClient {
     pub async fn delete_credential(&self, request: &DeleteCredentialRequest) -> Result<()> {
         let formatted_path = format!("credentials/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.delete(url).send().await?;
+        let response = self.client.delete(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }

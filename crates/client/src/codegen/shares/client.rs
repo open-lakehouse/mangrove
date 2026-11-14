@@ -38,7 +38,7 @@ impl ShareServiceClient {
             url.query_pairs_mut()
                 .append_pair("page_token", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -49,7 +49,7 @@ impl ShareServiceClient {
     /// Create a new share.
     pub async fn create_share(&self, request: &CreateShareRequest) -> Result<Share> {
         let url = self.base_url.join("shares")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -65,7 +65,7 @@ impl ShareServiceClient {
             url.query_pairs_mut()
                 .append_pair("include_shared_data", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -79,7 +79,7 @@ impl ShareServiceClient {
         let url = self.base_url.join(&formatted_path)?;
         let mut body = request.clone();
         body.name = Default::default();
-        let response = self.client.patch(url).json(&body).send().await?;
+        let response = self.client.patch(url).json(&body).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -91,7 +91,7 @@ impl ShareServiceClient {
     pub async fn delete_share(&self, request: &DeleteShareRequest) -> Result<()> {
         let formatted_path = format!("shares/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.delete(url).send().await?;
+        let response = self.client.delete(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -116,7 +116,7 @@ impl ShareServiceClient {
             url.query_pairs_mut()
                 .append_pair("page_token", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -136,7 +136,7 @@ impl ShareServiceClient {
         let url = self.base_url.join(&formatted_path)?;
         let mut body = request.clone();
         body.name = Default::default();
-        let response = self.client.patch(url).json(&body).send().await?;
+        let response = self.client.patch(url).json(&body).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }

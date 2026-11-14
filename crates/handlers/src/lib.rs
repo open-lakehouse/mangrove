@@ -18,6 +18,8 @@
 //! `tags` covers both the entity-tag-assignment and tag-policy services).
 //! `all-resources` (default) enables them all.
 //!
+//! - `authz` — the authorization vocabulary ([`authz`], [`CEDAR_ACTIONS`]). Its
+//!   securables name every resource type, so it enables `all-resources`.
 //! - `axum` — the route functions, `IntoResponse` for [`Error`] and
 //!   `FromRequestParts` for [`RequestContext`].
 //! - `object-store`, `store`, `cloud` — [`Error`] variants and `From` impls for
@@ -34,6 +36,18 @@ pub use error::{Error, Result};
 
 mod context;
 pub mod error;
+
+/// The authorization vocabulary: an [`Operation`](authz::Operation) per RPC and
+/// [`Authorizable`](authz::Authorizable) for every request, with the Cedar actions
+/// in [`CEDAR_ACTIONS`]. Behind the `authz` feature, which enables every resource.
+#[cfg(feature = "authz")]
+#[path = "codegen/authz.rs"]
+pub mod authz;
+
+/// The Cedar schema fragment of the operations: one action per [`authz::Operation`],
+/// in the `UnityCatalog` namespace, on the entity type of its securable.
+#[cfg(feature = "authz")]
+pub const CEDAR_ACTIONS: &str = include_str!("codegen/authz.cedarschema");
 
 #[cfg(feature = "agent_skills")]
 #[path = "codegen/agent_skills/mod.rs"]
@@ -56,6 +70,9 @@ pub mod external_locations;
 #[cfg(feature = "functions")]
 #[path = "codegen/functions/mod.rs"]
 pub mod functions;
+#[cfg(feature = "grants")]
+#[path = "codegen/grants/mod.rs"]
+pub mod grants;
 #[cfg(feature = "model_versions")]
 #[path = "codegen/model_versions/mod.rs"]
 pub mod model_versions;
@@ -107,7 +124,11 @@ mod tests {
         let ours: BTreeSet<String> = include_str!("lib.rs")
             .lines()
             .filter_map(|line| line.trim().strip_prefix("#[path = \"codegen/"))
-            .map(|path| path.trim_end_matches("/mod.rs\"]").to_string())
+            .map(|path| {
+                path.trim_end_matches("/mod.rs\"]")
+                    .trim_end_matches(".rs\"]")
+                    .to_string()
+            })
             .collect();
         assert!(!generated.is_empty(), "no services found in codegen/mod.rs");
         assert_eq!(

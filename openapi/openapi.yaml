@@ -31,6 +31,10 @@ tags:
        External locations define cloud storage paths accessible via storage credentials.
   - name: FunctionsService
     description: Manage User-Defined Functions (UDFs) in the service.
+  - name: GrantsService
+    description: |-
+      Grants: the privileges principals hold on securables. The Unity Catalog OSS
+       permissions API, which Databricks shares.
   - name: ModelVersionsService
     description: |-
       Manage model versions in the service.
@@ -1692,6 +1696,95 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
+  /permissions/{securable_type}/{full_name}:
+    get:
+      tags:
+        - GrantsService
+      description: Gets the privileges granted on a securable. Does not include inherited ones.
+      operationId: GetGrants
+      parameters:
+        - name: securable_type
+          in: path
+          description: The type of the securable.
+          required: true
+          schema:
+            type: string
+        - name: full_name
+          in: path
+          description: The full name of the securable.
+          required: true
+          schema:
+            type: string
+        - name: principal
+          in: query
+          description: Only return the privileges of this principal (user or group).
+          schema:
+            type: string
+        - name: max_results
+          in: query
+          description: |-
+            The maximum number of privilege assignments per page.
+
+             If unset, every assignment is returned. If 0, the server's default page size
+             is used. Negative values are rejected.
+          schema:
+            type: integer
+            format: int32
+        - name: page_token
+          in: query
+          description: Opaque pagination token to go to next page based on previous query.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetGrantsResponse"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+    patch:
+      tags:
+        - GrantsService
+      description: Grants and revokes privileges on a securable.
+      operationId: UpdateGrants
+      parameters:
+        - name: securable_type
+          in: path
+          description: The type of the securable.
+          required: true
+          schema:
+            type: string
+        - name: full_name
+          in: path
+          description: The full name of the securable.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGrantsRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateGrantsResponse"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
   /policies:
     post:
       tags:
@@ -3088,7 +3181,8 @@ paths:
         Generate a new set of credentials for a path.
 
          Only external storage paths (external locations and external tables) are
-         supported; managed tables are not. The metastore must have the
+         supported; managed tables are not. The server asks on the covering external
+         location, or on the metastore for a path none covers. The metastore must have the
          `external_access_enabled` flag set to true (default false). The caller must
          have the `EXTERNAL_USE_LOCATION` privilege on the external location
          (granted by its owner) and, for existing external tables, the
@@ -5577,6 +5671,27 @@ components:
       description: Generate a new set of credentials for a volume.
       additionalProperties: false
       title: Generate Temporary Volume Credentials Request
+    GetGrantsResponse:
+      required:
+        - privilege_assignments
+      type: object
+      properties:
+        privilege_assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/GrantAssignment"
+            additionalProperties: false
+            required:
+              - principal
+            description: The privileges granted to one principal on a securable.
+            title: Grant Assignment
+          description: The privileges granted to each principal.
+        next_page_token:
+          type: string
+          description: Opaque pagination token to go to next page based on previous query.
+      description: The privileges granted on a securable, not including inherited ones.
+      additionalProperties: false
+      title: Get Grants Response
     GetPermissionsResponse:
       type: object
       properties:
@@ -5613,6 +5728,45 @@ components:
           description: The type of the serialized message.
       additionalProperties: true
       description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+    GrantAssignment:
+      required:
+        - principal
+      type: object
+      properties:
+        principal:
+          type: string
+          description: |-
+            The principal: a user's email address, a group's name, or a service
+             account's name.
+        privileges:
+          type: array
+          items:
+            type: string
+          description: The privileges granted to the principal (see `Privilege`).
+      description: The privileges granted to one principal on a securable.
+      additionalProperties: false
+      title: Grant Assignment
+    GrantChange:
+      required:
+        - principal
+      type: object
+      properties:
+        principal:
+          type: string
+          description: The principal whose privileges change.
+        add:
+          type: array
+          items:
+            type: string
+          description: The privileges to grant (see `Privilege`).
+        remove:
+          type: array
+          items:
+            type: string
+          description: The privileges to revoke (see `Privilege`).
+      description: A change of one principal's privileges on a securable.
+      additionalProperties: false
+      title: Grant Change
     ListAgentSkillsResponse:
       type: object
       properties:
@@ -7386,6 +7540,43 @@ components:
       description: Update a function
       additionalProperties: false
       title: Update Function Request
+    UpdateGrantsRequest:
+      required: []
+      type: object
+      properties:
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/GrantChange"
+            additionalProperties: false
+            required:
+              - principal
+            description: A change of one principal's privileges on a securable.
+            title: Grant Change
+          description: |-
+            The changes to apply, together. Optional, as for share permissions: trestle's
+             node codegen can't take a required repeated message as an argument.
+      description: Grant and revoke privileges on a securable.
+      additionalProperties: false
+      title: Update Grants Request
+    UpdateGrantsResponse:
+      required:
+        - privilege_assignments
+      type: object
+      properties:
+        privilege_assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/GrantAssignment"
+            additionalProperties: false
+            required:
+              - principal
+            description: The privileges granted to one principal on a securable.
+            title: Grant Assignment
+          description: The privileges granted to each principal.
+      description: The privileges granted on a securable after an update.
+      additionalProperties: false
+      title: Update Grants Response
     UpdateModelVersionRequest:
       required: []
       type: object

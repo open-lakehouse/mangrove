@@ -7,6 +7,7 @@ import "gnostic/openapi/v3/annotations.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
+import "olai/trestle/v1/annotations.proto";
 import "unitycatalog/tags/v1/models.proto";
 
 // List tag policies
@@ -122,6 +123,10 @@ service TagPoliciesService {
   //
   // Creates a new governed tag definition.
   rpc CreateTagPolicy(CreateTagPolicyRequest) returns (TagPolicy) {
+    option (olai.trestle.v1.authz) = {
+      securable_type: "unitycatalog.io/TagPolicy"
+      securable_fields: ["tag_key"]
+    };
     option (google.api.http) = {
       post: "/tag-policies"
       body: "*"
@@ -310,6 +315,7 @@ service EntityTagAssignmentsService {
   //
   // Gets the tag assignments for the specified entity.
   rpc ListEntityTagAssignments(ListEntityTagAssignmentsRequest) returns (ListEntityTagAssignmentsResponse) {
+    option (olai.trestle.v1.authz) = {skip: true};
     option (google.api.http) = {get: "/entity-tag-assignments/{entity_type}/{entity_name}/tags"};
     option (gnostic.openapi.v3.operation) = {operation_id: "ListEntityTagAssignments"};
   }
@@ -318,6 +324,7 @@ service EntityTagAssignmentsService {
   //
   // Assigns a tag to a Unity Catalog entity.
   rpc CreateEntityTagAssignment(CreateEntityTagAssignmentRequest) returns (EntityTagAssignment) {
+    option (olai.trestle.v1.authz) = {skip: true};
     option (google.api.http) = {
       post: "/entity-tag-assignments"
       body: "*"
@@ -329,6 +336,7 @@ service EntityTagAssignmentsService {
   //
   // Gets the tag assignment for the specified entity and tag key.
   rpc GetEntityTagAssignment(GetEntityTagAssignmentRequest) returns (EntityTagAssignment) {
+    option (olai.trestle.v1.authz) = {skip: true};
     option (google.api.http) = {get: "/entity-tag-assignments/{entity_type}/{entity_name}/tags/{tag_key}"};
     option (gnostic.openapi.v3.operation) = {operation_id: "GetEntityTagAssignment"};
   }
@@ -337,6 +345,7 @@ service EntityTagAssignmentsService {
   //
   // Updates the tag assignment for the specified entity and tag key.
   rpc UpdateEntityTagAssignment(UpdateEntityTagAssignmentRequest) returns (EntityTagAssignment) {
+    option (olai.trestle.v1.authz) = {skip: true};
     option (google.api.http) = {
       patch: "/entity-tag-assignments/{entity_type}/{entity_name}/tags/{tag_key}"
       body: "*"
@@ -348,6 +357,7 @@ service EntityTagAssignmentsService {
   //
   // Deletes the tag assignment for the specified entity and tag key.
   rpc DeleteEntityTagAssignment(DeleteEntityTagAssignmentRequest) returns (google.protobuf.Empty) {
+    option (olai.trestle.v1.authz) = {skip: true};
     option (google.api.http) = {delete: "/entity-tag-assignments/{entity_type}/{entity_name}/tags/{tag_key}"};
     option (gnostic.openapi.v3.operation) = {operation_id: "DeleteEntityTagAssignment"};
   }
