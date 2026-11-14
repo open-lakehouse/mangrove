@@ -75,6 +75,8 @@ fn to_backend_err(e: Error) -> DeltaBackendError {
             // conflict; for the Delta write path that is an `assert-etag` failure.
             "RESOURCE_CONFLICT" => DeltaBackendError::UpdateRequirementConflict(e.to_string()),
             "RESOURCE_EXHAUSTED" => DeltaBackendError::ResourceExhausted(e.to_string()),
+            // The message names the missing server setup (e.g. disabled vending).
+            "FAILED_PRECONDITION" => DeltaBackendError::BadRequest(source.to_string()),
             _ => DeltaBackendError::NotFoundGeneric(e.to_string()),
         },
         Error::NotAllowed => DeltaBackendError::PermissionDenied(e.to_string()),

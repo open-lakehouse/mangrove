@@ -1,3 +1,4 @@
+use unitycatalog_common::credentials_ext::neon_arn;
 use unitycatalog_common::models::credentials::v1::{
     CreateCredentialRequest, Credential, DeleteCredentialRequest, GetCredentialRequest,
     ListCredentialsRequest, ListCredentialsResponse, Purpose, UpdateCredentialRequest,
@@ -64,6 +65,8 @@ impl CredentialHandler<RequestContext> for ServerHandler<RequestContext> {
         if CredentialSecrets::take(&mut credential.clone()).is_empty() {
             return Err(Error::invalid_argument("No credentials provided"));
         }
+        let mut credential = credential;
+        self.complete_neon_arn(&mut credential)?;
         // The store seals the secrets apart from the row; the response is redacted,
         // which matches the public API contract.
         self.storage_access()
@@ -95,14 +98,16 @@ impl CredentialHandler<RequestContext> for ServerHandler<RequestContext> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
         // `purpose` is immutable; secrets are replaced only when the request sets one.
-        let secrets = CredentialSecrets::take(&mut Credential {
+        let mut replacement = Credential {
             azure_managed_identity: request.azure_managed_identity,
             azure_service_principal: request.azure_service_principal,
             azure_storage_key: request.azure_storage_key,
             aws_iam_role: request.aws_iam_role,
             databricks_gcp_service_account: request.databricks_gcp_service_account,
             ..Default::default()
-        });
+        };
+        self.complete_neon_arn(&mut replacement)?;
+        let secrets = CredentialSecrets::take(&mut replacement);
         let update = CredentialUpdate {
             new_name: request.new_name,
             comment: request.comment,
@@ -136,6 +141,27 @@ impl CredentialHandler<RequestContext> for ServerHandler<RequestContext> {
             .map_err(from_store)?;
         // A deleted credential's secrets and vended credentials must not be reused.
         self.forget_vended_credentials();
+        Ok(())
+    }
+}
+
+impl ServerHandler<RequestContext> {
+    /// Complete a Neon storage ARN (see [`neon_arn`]) missing its project or
+    /// branch from the server's `vending.neon` defaults, so the stored credential
+    /// names both. Ids in the ARN win; other credentials are left alone.
+    fn complete_neon_arn(&self, credential: &mut Credential) -> Result<()> {
+        let Some(role) = credential.aws_iam_role.as_option_mut() else {
+            return Ok(());
+        };
+        let neon = self.neon_vending();
+        if let Some(completed) =
+            neon_arn::with_defaults(&role.role_arn, neon.project_id(), neon.branch_id())
+        {
+            role.role_arn = completed?;
+            // Fail now, not at the first vend, on what a Neon credential can't carry
+            // (static keys).
+            olai_credential_vending::RegisteredCredential::try_from(&*credential)?;
+        }
         Ok(())
     }
 }

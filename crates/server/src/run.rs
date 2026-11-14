@@ -124,9 +124,15 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
     if let Some(err) = config.files.startup_error() {
         return Err(Error::Generic(format!("files config: {err}")));
     }
+    let neon_vending = config
+        .vending
+        .neon
+        .resolve()
+        .map_err(|e| Error::Generic(format!("vending config: {e}")))?;
 
     let (handler, policy) = connect(config).await?;
     let handler = handler
+        .with_neon_vending(neon_vending)
         .with_local_storage_policy(local_storage_policy)
         .with_managed_storage_root(config.managed_storage_root.clone())
         .with_managed_storage_root_credential(config.managed_storage_root_credential.clone());

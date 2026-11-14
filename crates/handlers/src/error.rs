@@ -146,11 +146,17 @@ mod response {
             let (status, message) = match self {
                 Error::Common { source } => {
                     let (status, message) = source.response_parts();
+                    // A failed precondition names the missing server setup; it is
+                    // meant for the client, unlike the other common messages.
+                    let message = match source {
+                        unitycatalog_common::Error::FailedPrecondition(detail) => detail,
+                        _ => message.to_string(),
+                    };
                     return (
                         status,
                         Json(ErrorResponse {
                             error_code,
-                            message: message.to_string(),
+                            message,
                         }),
                     )
                         .into_response();

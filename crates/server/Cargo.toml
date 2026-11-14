@@ -172,6 +172,13 @@ olai-auth = [
   "unitycatalog-handlers/olai-auth",
 ]
 
+# Trusted vending for Neon object storage: `aws_iam_role` credentials with a Neon
+# ARN (`arn:neon:storage::<project>:branch/<branch>`) mint branch-wide, expiring
+# keys through Neon's control plane when `vending.neon.enabled`. A key reaches
+# every bucket on the branch, so this is never on by default (not in `default`
+# or `bin`); a host opts in. Without it such credentials register but don't vend.
+neon-trusted-vending = ["olai-credential-vending/neon-trusted-vending"]
+
 # Optional surfaces on top of `embed`.
 # Swagger UI for the bundled OpenAPI specs (embeds the swagger-ui assets).
 swagger = ["embed", "dep:swagger-ui-dist"]

@@ -48,6 +48,30 @@ impl TryFrom<&Credential> for native::RegisteredCredential {
                 account_key: key.account_key.clone(),
             }));
         }
+        if let Some(role) = credential.aws_iam_role.as_option()
+            && let Some(neon) = neon_arn::parse(&role.role_arn)
+        {
+            let (project_id, branch_id) = neon?;
+            if project_id.is_empty() || branch_id.is_empty() {
+                return Err(Error::invalid_argument(format!(
+                    "Neon storage credential `{}` must name its project and branch: `{}`.",
+                    credential.name,
+                    neon_arn::FORM
+                )));
+            }
+            let has = |v: &Option<String>| v.as_deref().is_some_and(|v| !v.is_empty());
+            if has(&role.access_key_id) || has(&role.secret_access_key) || has(&role.session_token)
+            {
+                return Err(Error::invalid_argument(
+                    "Neon storage credentials carry no keys: the server mints them with its own \
+                     Neon API key (`vending.neon.api-key`).",
+                ));
+            }
+            return Ok(Self::NeonStorage(native::NeonStorage {
+                project_id,
+                branch_id,
+            }));
+        }
         if let Some(role) = credential.aws_iam_role.as_option() {
             return Ok(Self::AwsIamRole(native::AwsIamRole {
                 role_arn: role.role_arn.clone(),
@@ -172,6 +196,13 @@ pub fn set_storage_credential(
             })
             .into();
         }
+        native::RegisteredCredential::NeonStorage(neon) => {
+            credential.aws_iam_role = Some(AwsIamRoleConfig {
+                role_arn: neon_arn::format(&neon.project_id, &neon.branch_id),
+                ..Default::default()
+            })
+            .into();
+        }
         other => {
             return Err(Error::invalid_argument(format!(
                 "Unsupported credential kind `{}`.",
@@ -180,6 +211,157 @@ pub fn set_storage_credential(
         }
     }
     Ok(())
+}
+
+/// Neon object storage registered as an `aws_iam_role` credential.
+///
+/// Neon storage speaks S3 but has no IAM roles or STS: keys are minted per
+/// branch through Neon's control plane (see `olai_credential_vending::neon`). The
+/// UC credentials API has no Neon kind, so a Neon credential stays within the
+/// contract as an `aws_iam_role` whose `role_arn` is a Neon ARN,
+/// `arn:neon:storage::<project_id>:branch/<branch_id>`. It carries no keys: the
+/// server mints with its own Neon API key.
+///
+/// Either id may be left empty on registration (`arn:neon:storage::` leaves both),
+/// and the server fills it from its `vending.neon` configuration before storing.
+pub mod neon_arn {
+    use crate::{Error, Result};
+
+    /// The `role_arn` prefix marking a Neon storage credential.
+    pub const PREFIX: &str = "arn:neon:storage:";
+
+    /// The expected form, for error messages.
+    pub const FORM: &str = "arn:neon:storage::<project_id>:branch/<branch_id>";
+
+    /// The Neon ARN for `project_id`'s branch `branch_id`.
+    pub fn format(project_id: &str, branch_id: &str) -> String {
+        format!("{PREFIX}:{project_id}:branch/{branch_id}")
+    }
+
+    /// The project and branch ids of a Neon ARN, either possibly empty.
+    ///
+    /// `None` when `arn` is not a Neon ARN (an ordinary AWS role); an error when
+    /// it is one but malformed.
+    pub fn parse(arn: &str) -> Option<Result<(String, String)>> {
+        let rest = arn.strip_prefix(PREFIX)?;
+        Some(parse_rest(rest).ok_or_else(|| {
+            Error::invalid_argument(format!(
+                "Malformed Neon storage ARN `{arn}`: expected `{FORM}`."
+            ))
+        }))
+    }
+
+    fn parse_rest(rest: &str) -> Option<(String, String)> {
+        // The region field is empty: a branch's storage lives in its project's region.
+        let rest = rest.strip_prefix(':')?;
+        if rest.is_empty() {
+            return Some((String::new(), String::new()));
+        }
+        let (project, resource) = rest.split_once(':')?;
+        let branch = resource.strip_prefix("branch/")?;
+        let valid = |id: &str| !id.contains([':', '/']) && !id.chars().any(char::is_whitespace);
+        (valid(project) && valid(branch)).then(|| (project.to_string(), branch.to_string()))
+    }
+
+    /// `arn` with its empty ids filled from `project_id` / `branch_id`, or `None`
+    /// when it is not a Neon ARN. Ids already in `arn` are kept.
+    pub fn with_defaults(
+        arn: &str,
+        project_id: Option<&str>,
+        branch_id: Option<&str>,
+    ) -> Option<Result<String>> {
+        let parsed = parse(arn)?;
+        Some(parsed.and_then(|(project, branch)| {
+            let fill = |own: String, default: Option<&str>, what: &str, key: &str| {
+                if !own.is_empty() {
+                    return Ok(own);
+                }
+                default
+                    .filter(|d| !d.is_empty())
+                    .map(str::to_string)
+                    .ok_or_else(|| {
+                        Error::invalid_argument(format!(
+                            "Neon storage ARN `{arn}` names no {what}, and the server has no \
+                             default (`vending.neon.{key}`): use `{FORM}`."
+                        ))
+                    })
+            };
+            let project = fill(project, project_id, "project", "project-id")?;
+            let branch = fill(branch, branch_id, "branch", "branch-id")?;
+            Ok(format(&project, &branch))
+        }))
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn round_trips() {
+            let arn = format("proj-1", "br-2");
+            assert_eq!(arn, "arn:neon:storage::proj-1:branch/br-2");
+            assert_eq!(
+                parse(&arn).unwrap().unwrap(),
+                ("proj-1".into(), "br-2".into())
+            );
+        }
+
+        #[test]
+        fn empty_ids_parse() {
+            assert_eq!(
+                parse("arn:neon:storage::").unwrap().unwrap(),
+                (String::new(), String::new())
+            );
+            assert_eq!(
+                parse("arn:neon:storage::p:branch/").unwrap().unwrap(),
+                ("p".into(), String::new())
+            );
+            assert_eq!(
+                parse("arn:neon:storage:::branch/b").unwrap().unwrap(),
+                (String::new(), "b".into())
+            );
+        }
+
+        #[test]
+        fn aws_arns_are_not_neon() {
+            assert!(parse("arn:aws:iam::123456789012:role/test").is_none());
+            assert!(parse("").is_none());
+        }
+
+        #[test]
+        fn malformed_neon_arns_fail() {
+            for arn in [
+                "arn:neon:storage:",
+                "arn:neon:storage:eu-central-1:p:branch/b",
+                "arn:neon:storage::p",
+                "arn:neon:storage::p:role/b",
+                "arn:neon:storage::p:branch/b/extra",
+                "arn:neon:storage::p:x:branch/b",
+                "arn:neon:storage::p q:branch/b",
+            ] {
+                let err = parse(arn).unwrap().unwrap_err();
+                assert!(err.to_string().contains(FORM), "{arn}: {err}");
+            }
+        }
+
+        #[test]
+        fn defaults_fill_only_empty_ids() {
+            let filled = |arn, p, b| with_defaults(arn, p, b).unwrap();
+            assert_eq!(
+                filled("arn:neon:storage::", Some("p"), Some("b")).unwrap(),
+                "arn:neon:storage::p:branch/b"
+            );
+            assert_eq!(
+                filled("arn:neon:storage::own:branch/mine", Some("p"), Some("b")).unwrap(),
+                "arn:neon:storage::own:branch/mine"
+            );
+            let err = filled("arn:neon:storage::p:branch/", Some("p"), None).unwrap_err();
+            assert!(err.to_string().contains("vending.neon.branch-id"), "{err}");
+            let err = filled("arn:neon:storage::", Some(""), Some("b")).unwrap_err();
+            assert!(err.to_string().contains("vending.neon.project-id"), "{err}");
+            assert!(with_defaults("arn:aws:iam::1:role/r", Some("p"), Some("b")).is_none());
+        }
+    }
 }
 
 impl From<TemporaryCredential> for unity::TemporaryCredential {
@@ -304,6 +486,11 @@ impl From<olai_credential_vending::Error> for Error {
             E::Credentials(source) => source.into(),
             E::NotFound { .. } => Error::NotFound,
             E::Overlapping { .. } | E::Unsupported { .. } => Error::InvalidArgument(e.to_string()),
+            // The credential kind needs server setup this host lacks (a feature not
+            // compiled in, or vending disabled in config).
+            E::NotCompiledIn { .. } | E::NeedsHostConfig { .. } => {
+                Error::FailedPrecondition(e.to_string())
+            }
             other => Error::Generic(other.to_string()),
         }
     }
@@ -341,6 +528,63 @@ mod tests {
             storage
         );
         assert!(native::RegisteredCredential::try_from(&Credential::default()).is_err());
+    }
+
+    #[cfg(feature = "credential-vending")]
+    #[test]
+    fn neon_storage_converts_both_ways_as_an_aws_role() {
+        let storage = native::RegisteredCredential::NeonStorage(native::NeonStorage {
+            project_id: "proj-1".into(),
+            branch_id: "br-2".into(),
+        });
+        let mut credential = Credential {
+            name: "neon".into(),
+            ..Default::default()
+        };
+        set_storage_credential(&mut credential, storage.clone()).unwrap();
+        let role = credential.aws_iam_role.as_option().unwrap();
+        assert_eq!(role.role_arn, "arn:neon:storage::proj-1:branch/br-2");
+        assert_eq!(
+            native::RegisteredCredential::try_from(&credential).unwrap(),
+            storage
+        );
+
+        let neon_role = |arn: &str, key: Option<&str>| Credential {
+            name: "neon".into(),
+            aws_iam_role: Some(AwsIamRoleConfig {
+                role_arn: arn.into(),
+                access_key_id: key.map(Into::into),
+                ..Default::default()
+            })
+            .into(),
+            ..Default::default()
+        };
+        // Static keys have no meaning for Neon: the server mints with its own key.
+        let err = native::RegisteredCredential::try_from(&neon_role(
+            "arn:neon:storage::p:branch/b",
+            Some("AKIA"),
+        ))
+        .unwrap_err();
+        assert!(err.to_string().contains("vending.neon.api-key"), "{err}");
+        // Registration fills empty ids; a stored ARN must be complete.
+        let err = native::RegisteredCredential::try_from(&neon_role("arn:neon:storage::", None))
+            .unwrap_err();
+        assert!(err.to_string().contains(neon_arn::FORM), "{err}");
+        // An ordinary role stays an AWS role.
+        assert!(matches!(
+            native::RegisteredCredential::try_from(&neon_role("arn:aws:iam::1:role/r", None)),
+            Ok(native::RegisteredCredential::AwsIamRole(_))
+        ));
+    }
+
+    #[cfg(feature = "credential-vending")]
+    #[test]
+    fn vending_setup_errors_are_failed_preconditions() {
+        let err = Error::from(olai_credential_vending::Error::NotCompiledIn {
+            kind: "neon_storage",
+            feature: "neon-trusted-vending",
+        });
+        assert_eq!(err.error_code(), "FAILED_PRECONDITION");
     }
 
     #[cfg(feature = "credential-vending")]

@@ -40,6 +40,33 @@ where
     resolves_the_covering_location(&make().await).await;
     secrets_round_trip(&make().await).await;
     rewrap_under_the_active_key_is_a_no_op(&make().await).await;
+    #[cfg(feature = "vending")]
+    neon_storage_resolves_from_its_arn(&make().await).await;
+}
+
+/// A Neon storage credential (an `aws_iam_role` with a Neon ARN and no keys) is
+/// stored like any role and resolves to `RegisteredCredential::NeonStorage`.
+#[cfg(feature = "vending")]
+async fn neon_storage_resolves_from_its_arn(store: &dyn StorageAccessStore) {
+    use olai_credential_vending::registered::NeonStorage;
+    use olai_credential_vending::{CredentialResolver, RegisteredCredential};
+
+    store
+        .create_credential(credential("neon", "arn:neon:storage::proj:branch/br-1"))
+        .await
+        .unwrap();
+    store
+        .create_external_location(location("branch", "s3://bucket", "neon"))
+        .await
+        .unwrap();
+    let resolved = store.resolve(&storage("s3://bucket/t/x")).await.unwrap();
+    assert_eq!(
+        resolved,
+        RegisteredCredential::NeonStorage(NeonStorage {
+            project_id: "proj".into(),
+            branch_id: "br-1".into(),
+        })
+    );
 }
 
 /// Checks KEK rotation: `before` seals under the old key; `after` reads the same
