@@ -127,6 +127,38 @@ gets a 401 with an RFC 6750 challenge; a banned user gets a 403. With `resource`
 set, `/.well-known/oauth-protected-resource` is served without authentication.
 GitHub Actions OIDC tokens aren't accepted yet.
 
+### Authorization
+
+By default every request is allowed (`policy.kind: constant`). With the
+`olai-auth` feature and `auth.mode: olai-auth`, a Cedar policy decision point
+can decide instead:
+
+```yaml
+policy:
+  kind: authorizer
+  url: https://authz.example.com      # olai-auth's PDP wire API: {url}/v1/authorize
+  token: { env: UC_PDP_TOKEN }        # this server's secret for the decision point
+  cache-ttl-secs: 5                   # reuse decisions (default 5, 0 = off)
+```
+
+Each check becomes a Cedar request in the `UnityCatalog` namespace: the
+verified caller as `Lakehouse::User` or `Lakehouse::ServiceAccount`, one action
+per permission (`read`, `write`, `manage`, `create`, `use`, `browse`, `select`,
+`external_use`), and the securable by its full name, e.g.
+`UnityCatalog::Table::"main.sales.orders"`. The securable goes along with its
+schema, catalog and the metastore as parents, so policies can grant on a
+container and the decision point never reads the catalog. Anything it can't
+decide, and any request without a verified caller, is denied. The schema
+fragment is `cedar/UnityCatalog.cedarschema`, also exported as
+`policy::CEDAR_SCHEMA`, for a host to compose with its `Lakehouse` fragment.
+
+Vending a credential needs `external_use` in addition to `read` or `write`: on
+the schema for table, volume, model-version and staging-table credentials (UC
+REST and the Delta API), and on the covering external location for path
+credentials. So a caller can read a table's metadata without getting its
+storage keys. The storage proxy, which never hands out a credential, doesn't
+need it. With the default `constant` policy everything stays allowed.
+
 ## Feature flags
 
 | Feature   | Default | What it enables                                                                          |
@@ -142,7 +174,7 @@ GitHub Actions OIDC tokens aren't accepted yet.
 | `ui`      |         | Serving the bundled single-page app from `./web` (`ui.serve`).                           |
 | `storage-proxy` |   | The same-origin storage byte-proxy (`storage_proxy.enabled`).                            |
 | `files`   |         | The embedded Files API (`files.enabled`).                                                |
-| `olai-auth` |       | `auth.mode: olai-auth`: Neon Auth JWTs over a JWKS URL and service-account API keys (implies `embed`). |
+| `olai-auth` |       | `auth.mode: olai-auth`: Neon Auth JWTs over a JWKS URL and service-account API keys, and `policy.kind: authorizer` (implies `embed`). |
 | `bin`     |         | The deployable `uc-server` binary: all of the above, plus the CLI parser and the healthcheck client. |
 
 A config that asks for a backend or surface the build doesn't include fails at

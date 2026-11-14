@@ -51,10 +51,14 @@ use std::sync::Arc;
 use strum::AsRefStr;
 use unitycatalog_common::models::{ResourceExt, ResourceIdent};
 
+#[cfg(feature = "olai-auth")]
+pub use self::authorizer::{AuthorizerPolicy, CEDAR_NAMESPACE, CEDAR_SCHEMA, METASTORE_ID};
 pub use self::constant::*;
 use crate::api::SecuredAction;
 use crate::{Error, Result};
 
+#[cfg(feature = "olai-auth")]
+mod authorizer;
 mod constant;
 
 pub use unitycatalog_handlers::Principal;
@@ -84,6 +88,14 @@ pub enum Permission {
     Browse,
     /// Query data from a table or volume (`SELECT`).
     Select,
+    /// Receive storage credentials for a securable's data, to read or write it
+    /// from outside the server (`EXTERNAL USE SCHEMA` / `EXTERNAL USE LOCATION`).
+    ///
+    /// Every credential vend requires it in addition to [`Read`](Self::Read) or
+    /// [`Write`](Self::Write): on the schema for table, volume, model-version and
+    /// staging-table credentials, and on the covering external location for path
+    /// credentials. So reading a table doesn't hand out its storage keys.
+    ExternalUse,
 }
 
 impl From<Permission> for String {
@@ -244,12 +256,25 @@ pub async fn filter_authorized<Cx: Send + Sync + 'static, R: ResourceExt + Send>
     permission: &Permission,
     resources: &mut Vec<R>,
 ) -> Result<()> {
-    let res = resources.iter().map(|r| r.into()).collect::<Vec<_>>();
+    let res = resources.iter().map(name_ident).collect::<Vec<_>>();
     let decisions = policy.authorize_many(&res, permission, context).await?;
     // `decisions[i]` corresponds to `resources[i]`; pair them in forward order.
     let mut allow = decisions.into_iter().map(|d| d == Decision::Allow);
     resources.retain(|_| allow.next().unwrap_or(false));
     Ok(())
+}
+
+/// The ident of `resource` by its name, so a policy can decide on (and inherit
+/// along) the full name without looking each listed resource up. Falls back to
+/// the resource's own ident when it has no name.
+fn name_ident<R: ResourceExt>(resource: &R) -> ResourceIdent {
+    let name = resource.resource_name();
+    let ident = resource.resource_ident();
+    if name.path().iter().all(String::is_empty) {
+        ident
+    } else {
+        ident.label().to_ident(name)
+    }
 }
 
 #[cfg(test)]

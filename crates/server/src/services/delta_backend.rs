@@ -41,7 +41,8 @@ use unitycatalog_delta_api::models::DeltaTableType;
 use crate::api::RequestContext;
 use crate::api::staging_tables::{allocate_staging_table, find_staging_table_by_location};
 use crate::api::temporary_credentials::{
-    authorize_path_vend, required_permission, vend_location, vend_table,
+    authorize_external_use, authorize_path_vend, required_permission, table_to_vend, vend_location,
+    vend_table,
 };
 use crate::policy::{Permission, Policy, Principal};
 use crate::services::ServerHandler;
@@ -313,9 +314,16 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
                 self.authorize_checked(&table_ident(table), &Permission::Manage, cx)
                     .await
             }
+            // A vend needs the access on the securable and EXTERNAL USE: on the
+            // schema for table and staging credentials, on the covering external
+            // location for path credentials (`authorize_path_vend`).
             DeltaAction::VendTableCredential { table, access } => {
-                self.authorize_checked(&table_ident(table), &required_permission(access), cx)
-                    .await
+                async {
+                    self.authorize_checked(&table_ident(table), &required_permission(access), cx)
+                        .await?;
+                    authorize_external_use(self, &table.catalog, &table.schema, cx).await
+                }
+                .await
             }
             DeltaAction::VendPathCredential { location, access } => {
                 let url = StorageLocationUrl::parse(location).map_err(to_backend_err)?;
@@ -328,7 +336,20 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
                     schema_name: at.schema.clone(),
                     ..Default::default()
                 };
-                self.check_required(&request, cx).await
+                // Creating a staging table hands out its READ_WRITE credential.
+                async {
+                    self.check_required(&request, cx).await?;
+                    authorize_external_use(self, &at.catalog, &at.schema, cx).await
+                }
+                .await
+            }
+            DeltaAction::VendStagingCredential { reservation } => {
+                async {
+                    let staging = self.get_staging_by_id(&reservation.table_id).await?;
+                    authorize_external_use(self, &staging.catalog_name, &staging.schema_name, cx)
+                        .await
+                }
+                .await
             }
             DeltaAction::AdoptStaging { reservation } => {
                 // The creator-match, in mangrove's identity terms: the caller's
@@ -560,10 +581,12 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         let uuid = uuid::Uuid::parse_str(table_id).map_err(|_| {
             DeltaBackendError::InvalidArgument("table id is not a valid UUID".into())
         })?;
-        let (credential, url) =
-            vend_table(self, &ResourceIdent::Table(ResourceRef::Uuid(uuid)), access)
-                .await
-                .map_err(to_backend_err)?;
+        let table = table_to_vend(self, &ResourceIdent::Table(ResourceRef::Uuid(uuid)))
+            .await
+            .map_err(to_backend_err)?;
+        let (credential, url) = vend_table(self, table, access)
+            .await
+            .map_err(to_backend_err)?;
         Ok(VendedCredential::new(url.raw().to_string(), credential))
     }
 

@@ -127,7 +127,9 @@ vending, and `reportMetrics`.
   without access cannot tell a missing table from a forbidden one. If your
   permissions are keyed by table id, resolve the name inside `authorize` and
   deny (not 404) a table that doesn't exist. Staging credentials are additionally
-  bound to the reservation's creator through `DeltaAction::AdoptStaging`.
+  bound to the reservation's creator through `DeltaAction::AdoptStaging`, then
+  checked once more as `DeltaAction::VendStagingCredential`, so a backend can gate
+  handing out storage credentials (an "external use" grant, say) on its own.
 - **`apply_update` is atomic.** The spec says the actions of one `updateTable`
   apply atomically, and a 409 tells the client its commit did not land. A
   transactional backend should override `DeltaBackend::apply_update` and run

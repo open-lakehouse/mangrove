@@ -198,3 +198,23 @@ async fn olai_auth_that_is_not_compiled_in_is_a_startup_error() {
     let err = embed::start(&config).await.err().unwrap();
     assert!(err.to_string().contains("`olai-auth` feature"), "{err}");
 }
+
+/// The authorizer policy denies every request without a verified caller, so it
+/// refuses to start without `auth.mode: olai-auth`.
+#[tokio::test]
+async fn the_authorizer_policy_needs_olai_auth() {
+    use unitycatalog_server::config::{AuthorizerConfig, PolicyConfig};
+
+    let mut config = config(":memory:");
+    config.policy = PolicyConfig::Authorizer(AuthorizerConfig {
+        url: ConfigValue::Value("http://127.0.0.1:1".into()),
+        token: ConfigValue::Value("secret".into()),
+        cache_ttl_secs: None,
+        timeout_ms: None,
+    });
+    let err = embed::start(&config).await.err().unwrap();
+    #[cfg(feature = "olai-auth")]
+    assert!(err.to_string().contains("auth.mode: olai-auth"), "{err}");
+    #[cfg(not(feature = "olai-auth"))]
+    assert!(err.to_string().contains("`olai-auth` feature"), "{err}");
+}

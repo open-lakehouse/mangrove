@@ -118,6 +118,65 @@ pub struct Config {
     /// [`Principal::anonymous`]: crate::policy::Principal::anonymous
     #[serde(default)]
     pub auth: AuthConfig,
+
+    /// Who decides what each caller may do. Defaults to
+    /// [`PolicyConfig::Constant`] (allow everything).
+    #[serde(default)]
+    pub policy: PolicyConfig,
+}
+
+/// The authorization policy every request is checked against.
+///
+/// ```yaml
+/// policy:
+///   kind: authorizer
+///   url: https://authz.example.com
+///   token: { env: UC_PDP_TOKEN }
+/// ```
+#[derive(Debug, Deserialize, Serialize, Default, PartialEq)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum PolicyConfig {
+    /// Allow everything. The default, for local development and deployments
+    /// guarded by something else.
+    #[default]
+    Constant,
+    /// Ask a Cedar policy decision point over HTTPS (olai-auth's PDP wire API).
+    /// Needs `auth.mode: olai-auth` and the `olai-auth` feature. Denies whatever
+    /// it can't decide.
+    Authorizer(AuthorizerConfig),
+}
+
+/// The decision point of [`PolicyConfig::Authorizer`].
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct AuthorizerConfig {
+    /// The base URL of the decision point; requests go to `{url}/v1/authorize`.
+    pub url: ConfigValue,
+    /// The server's bearer secret for the decision point.
+    pub token: ConfigValue,
+    /// How long a decision is reused, in seconds. Default 5; 0 disables the
+    /// cache.
+    #[serde(default)]
+    pub cache_ttl_secs: Option<u64>,
+    /// How long to wait for a decision, in milliseconds, before denying.
+    /// Default 2000.
+    #[serde(default)]
+    pub timeout_ms: Option<u64>,
+}
+
+/// The decision cache TTL of [`AuthorizerConfig`] when none is configured.
+pub const DEFAULT_DECISION_CACHE_TTL_SECS: u64 = 5;
+
+impl AuthorizerConfig {
+    /// The decision point's URL and token, resolved.
+    pub fn endpoint(&self) -> Result<(String, String), String> {
+        let resolve = |what: &str, v: &ConfigValue| {
+            v.value()
+                .filter(|v| !v.is_empty())
+                .ok_or_else(|| format!("`policy.{what}` could not be resolved"))
+        };
+        Ok((resolve("url", &self.url)?, resolve("token", &self.token)?))
+    }
 }
 
 /// Environment variable holding the configuration as inline YAML ([`Config::from_env`]).
@@ -298,6 +357,7 @@ impl Default for Config {
             storage_proxy: StorageProxyConfig::default(),
             files: FilesConfig::default(),
             auth: AuthConfig::default(),
+            policy: PolicyConfig::default(),
         }
     }
 }
@@ -976,6 +1036,41 @@ mod tests {
              audiences: [https://uc.example.com]\n{extra}"
         ))
         .unwrap()
+    }
+
+    #[test]
+    fn policy_defaults_to_constant() {
+        let config: Config = serde_yml::from_str("{}").unwrap();
+        assert_eq!(config.policy, PolicyConfig::Constant);
+        let config: Config = serde_yml::from_str("policy: { kind: constant }").unwrap();
+        assert_eq!(config.policy, PolicyConfig::Constant);
+    }
+
+    #[test]
+    fn policy_authorizer() {
+        let config: Config = serde_yml::from_str(
+            "policy:\n  kind: authorizer\n  url: https://authz.example.com\n  token: s3cr3t\n  cache-ttl-secs: 0\n",
+        )
+        .unwrap();
+        let PolicyConfig::Authorizer(authorizer) = &config.policy else {
+            panic!("{:?}", config.policy);
+        };
+        assert_eq!(
+            authorizer.endpoint().unwrap(),
+            (
+                "https://authz.example.com".to_string(),
+                "s3cr3t".to_string()
+            )
+        );
+        assert_eq!(authorizer.cache_ttl_secs, Some(0));
+
+        let config: Config =
+            serde_yml::from_str("policy: { kind: authorizer, url: https://a, token: '' }").unwrap();
+        let PolicyConfig::Authorizer(authorizer) = &config.policy else {
+            panic!("{:?}", config.policy);
+        };
+        let err = authorizer.endpoint().unwrap_err();
+        assert!(err.contains("policy.token"), "{err}");
     }
 
     #[test]
