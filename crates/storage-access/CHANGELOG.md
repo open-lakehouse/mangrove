@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5](https://github.com/open-lakehouse/mangrove/compare/olai-uc-storage-access-v0.0.4...olai-uc-storage-access-v0.0.5) - 2026-11-14
+
+### Added
+
+- trusted Neon vending via vending.neon config (#339)
+
 ## [0.0.4](https://github.com/open-lakehouse/mangrove/compare/olai-uc-storage-access-v0.0.3...olai-uc-storage-access-v0.0.4) - 2026-11-14
 
 ### Added
