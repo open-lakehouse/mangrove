@@ -7,6 +7,7 @@ import "gnostic/openapi/v3/annotations.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
+import "olai/trestle/v1/annotations.proto";
 import "unitycatalog/policies/v1/models.proto";
 
 // List policies defined on a securable.
@@ -267,6 +268,8 @@ service PoliciesService {
   // Gets an array of policies defined on the specified securable. There is no guarantee
   // of a specific ordering of the elements in the array.
   rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse) {
+    // Authorized on the securable the policy is defined on (`on_securable_type`).
+    option (olai.trestle.v1.authz) = {skip: true};
     option (google.api.http) = {get: "/policies/{on_securable_type}/{on_securable_fullname}"};
     option (gnostic.openapi.v3.operation) = {operation_id: "ListPolicies"};
   }
@@ -275,6 +278,8 @@ service PoliciesService {
   //
   // Creates a new row-filter or column-mask policy on the specified securable.
   rpc CreatePolicy(CreatePolicyRequest) returns (PolicyInfo) {
+    // Authorized on the securable the policy is defined on (`on_securable_type`).
+    option (olai.trestle.v1.authz) = {skip: true};
     option (google.api.http) = {
       post: "/policies"
       body: "*"
@@ -286,6 +291,8 @@ service PoliciesService {
   //
   // Gets the policy that matches the supplied name, defined on the specified securable.
   rpc GetPolicy(GetPolicyRequest) returns (PolicyInfo) {
+    // Authorized on the securable the policy is defined on (`on_securable_type`).
+    option (olai.trestle.v1.authz) = {skip: true};
     option (google.api.http) = {get: "/policies/{on_securable_type}/{on_securable_fullname}/{name}"};
     option (gnostic.openapi.v3.operation) = {operation_id: "GetPolicy"};
   }
@@ -294,6 +301,8 @@ service PoliciesService {
   //
   // Updates the policy that matches the supplied name, defined on the specified securable.
   rpc UpdatePolicy(UpdatePolicyRequest) returns (PolicyInfo) {
+    // Authorized on the securable the policy is defined on (`on_securable_type`).
+    option (olai.trestle.v1.authz) = {skip: true};
     option (google.api.http) = {
       patch: "/policies/{on_securable_type}/{on_securable_fullname}/{name}"
       body: "*"
@@ -305,6 +314,8 @@ service PoliciesService {
   //
   // Deletes the policy that matches the supplied name, defined on the specified securable.
   rpc DeletePolicy(DeletePolicyRequest) returns (google.protobuf.Empty) {
+    // Authorized on the securable the policy is defined on (`on_securable_type`).
+    option (olai.trestle.v1.authz) = {skip: true};
     option (google.api.http) = {delete: "/policies/{on_securable_type}/{on_securable_fullname}/{name}"};
     option (gnostic.openapi.v3.operation) = {operation_id: "DeletePolicy"};
   }

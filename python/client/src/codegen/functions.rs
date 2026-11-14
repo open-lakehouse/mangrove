@@ -35,12 +35,9 @@ impl PyFunctionClient {
         include_browse: Option<bool>,
     ) -> PyUnityCatalogResult<PyFunction> {
         let request = self.client.get().with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyFunction::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyFunction::from(result))
     }
 
     /// Update a function
@@ -55,12 +52,9 @@ impl PyFunctionClient {
     #[pyo3(signature = (owner = None))]
     pub fn update(&self, py: Python, owner: Option<String>) -> PyUnityCatalogResult<PyFunction> {
         let request = self.client.update().with_owner(owner);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyFunction::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyFunction::from(result))
     }
 
     /// Delete a function
@@ -73,12 +67,9 @@ impl PyFunctionClient {
     #[pyo3(signature = (force = None))]
     pub fn delete(&self, py: Python, force: Option<bool>) -> PyUnityCatalogResult<()> {
         let request = self.client.delete().with_force(force);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(result)
     }
 }
 

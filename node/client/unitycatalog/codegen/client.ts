@@ -9,6 +9,9 @@ import {
   type EntityTagAssignment,
   type ExternalLocation,
   type Function as Function$,
+  type GetGrantsResponse,
+  type GetPermissionsResponse,
+  type GetTableExistsResponse,
   type ListEntityTagAssignmentsResponse,
   type ModelVersion,
   type PolicyInfo,
@@ -21,6 +24,8 @@ import {
   type Table,
   type TagPolicy,
   type TemporaryCredential,
+  type UpdateGrantsResponse,
+  type UpdatePermissionsResponse,
   type Volume,
   AgentSchema,
   AgentSkillSchema,
@@ -30,6 +35,9 @@ import {
   EntityTagAssignmentSchema,
   ExternalLocationSchema,
   FunctionSchema,
+  GetGrantsResponseSchema,
+  GetPermissionsResponseSchema,
+  GetTableExistsResponseSchema,
   ListEntityTagAssignmentsResponseSchema,
   ModelVersionSchema,
   PolicyInfoSchema,
@@ -42,6 +50,8 @@ import {
   TableSchema,
   TagPolicySchema,
   TemporaryCredentialSchema,
+  UpdateGrantsResponseSchema,
+  UpdatePermissionsResponseSchema,
   VolumeSchema,
 } from "./models";
 import {
@@ -438,6 +448,18 @@ export interface UpdateFunctionOptions {
 export interface DeleteFunctionOptions {
   /** Force deletion even if the function is not empty. */
   force?: boolean;
+}
+
+export interface GetGrantsOptions {
+  /** Only return the privileges of this principal (user or group). */
+  principal?: string;
+  /** The maximum number of privilege assignments per page.
+   * 
+   *  If unset, every assignment is returned. If 0, the server's default page size
+   *  is used. Negative values are rejected. */
+  maxResults?: number;
+  /** Opaque pagination token to go to next page based on previous query. */
+  pageToken?: string;
 }
 
 export interface ListModelVersionsOptions {
@@ -1188,6 +1210,17 @@ export class RecipientClient {
     } catch (e) { throw parseNativeError(e); }
   }
 
+  /**
+     * Rotate a recipient's token: issue a new token (and activation link) and
+     * retire the existing one.
+     */
+  async rotateRecipientToken(options?: RotateRecipientTokenOptions): Promise<Recipient> {
+    const { existingTokenExpireInSeconds } = options || {};
+    try {
+      return fromBinary(RecipientSchema, await this.inner.rotateRecipientToken(existingTokenExpireInSeconds));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
 }
 
 export class RegisteredModelClient {
@@ -1322,6 +1355,26 @@ export class ShareClient {
     } catch (e) { throw parseNativeError(e); }
   }
 
+  /**
+     * Gets the permissions for a data share from the metastore.
+     */
+  async getPermissions(options?: GetPermissionsOptions): Promise<GetPermissionsResponse> {
+    const { maxResults, pageToken } = options || {};
+    try {
+      return fromBinary(GetPermissionsResponseSchema, await this.inner.getPermissions(maxResults, pageToken));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Updates the permissions for a data share in the metastore.
+     */
+  async updatePermissions(options?: UpdatePermissionsOptions): Promise<UpdatePermissionsResponse> {
+    const { omitPermissionsList } = options || {};
+    try {
+      return fromBinary(UpdatePermissionsResponseSchema, await this.inner.updatePermissions(omitPermissionsList));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
 }
 
 export class StagingTableClient {
@@ -1344,6 +1397,15 @@ export class TableClient {
     const { includeDeltaMetadata, includeBrowse, includeManifestCapabilities } = options || {};
     try {
       return fromBinary(TableSchema, await this.inner.get(includeDeltaMetadata, includeBrowse, includeManifestCapabilities));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Get boolean reflecting if table exists
+     */
+  async getTableExists(): Promise<GetTableExistsResponse> {
+    try {
+      return fromBinary(GetTableExistsResponseSchema, await this.inner.getTableExists());
     } catch (e) { throw parseNativeError(e); }
   }
 
@@ -1733,6 +1795,25 @@ export class UnityCatalogClient {
 
   function(catalogName: string, schemaName: string, functionName: string): FunctionClient {
     return new FunctionClient(this.inner.function(catalogName, schemaName, functionName));
+  }
+
+  /**
+     * Gets the privileges granted on a securable. Does not include inherited ones.
+     */
+  async getGrants(securableType: string, fullName: string, options?: GetGrantsOptions): Promise<GetGrantsResponse> {
+    const { principal, maxResults, pageToken } = options || {};
+    try {
+      return fromBinary(GetGrantsResponseSchema, await this.inner.getGrants(securableType, fullName, principal, maxResults, pageToken));
+    } catch (e) { throw parseNativeError(e); }
+  }
+
+  /**
+     * Grants and revokes privileges on a securable.
+     */
+  async updateGrants(securableType: string, fullName: string): Promise<UpdateGrantsResponse> {
+    try {
+      return fromBinary(UpdateGrantsResponseSchema, await this.inner.updateGrants(securableType, fullName));
+    } catch (e) { throw parseNativeError(e); }
   }
 
   /**

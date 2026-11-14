@@ -507,6 +507,24 @@ export interface paths {
         patch: operations["FinalizeModelVersion"];
         trace?: never;
     };
+    "/permissions/{securable_type}/{full_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Gets the privileges granted on a securable. Does not include inherited ones. */
+        get: operations["GetGrants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Grants and revokes privileges on a securable. */
+        patch: operations["UpdateGrants"];
+        trace?: never;
+    };
     "/policies": {
         parameters: {
             query?: never;
@@ -2463,6 +2481,16 @@ export interface components {
             operation: "READ_VOLUME" | "WRITE_VOLUME";
         };
         /**
+         * Get Grants Response
+         * @description The privileges granted on a securable, not including inherited ones.
+         */
+        GetGrantsResponse: {
+            /** @description The privileges granted to each principal. */
+            privilege_assignments: components["schemas"]["GrantAssignment"][];
+            /** @description Opaque pagination token to go to next page based on previous query. */
+            next_page_token?: string;
+        };
+        /**
          * Get Permissions Response
          * @description Response to list shares.
          */
@@ -2483,6 +2511,31 @@ export interface components {
             "@type"?: string;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * Grant Assignment
+         * @description The privileges granted to one principal on a securable.
+         */
+        GrantAssignment: {
+            /**
+             * @description The principal: a user's email address, a group's name, or a service
+             *      account's name.
+             */
+            principal: string;
+            /** @description The privileges granted to the principal (see `Privilege`). */
+            privileges?: string[];
+        };
+        /**
+         * Grant Change
+         * @description A change of one principal's privileges on a securable.
+         */
+        GrantChange: {
+            /** @description The principal whose privileges change. */
+            principal: string;
+            /** @description The privileges to grant (see `Privilege`). */
+            add?: string[];
+            /** @description The privileges to revoke (see `Privilege`). */
+            remove?: string[];
         };
         /**
          * List Agent Skills Response
@@ -3461,6 +3514,22 @@ export interface components {
         UpdateFunctionRequest: {
             /** @description Username of new owner of the function. */
             owner?: string;
+        };
+        /**
+         * Update Grants Request
+         * @description Grant and revoke privileges on a securable.
+         */
+        UpdateGrantsRequest: {
+            /** @description The changes to apply, together. */
+            changes?: components["schemas"]["GrantChange"][];
+        };
+        /**
+         * Update Grants Response
+         * @description The privileges granted on a securable after an update.
+         */
+        UpdateGrantsResponse: {
+            /** @description The privileges granted to each principal. */
+            privilege_assignments: components["schemas"]["GrantAssignment"][];
         };
         /**
          * Update Model Version Request
@@ -5388,6 +5457,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModelVersion"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    GetGrants: {
+        parameters: {
+            query?: {
+                /** @description Only return the privileges of this principal (user or group). */
+                principal?: string;
+                /**
+                 * @description The maximum number of privilege assignments per page.
+                 *
+                 *      If unset, every assignment is returned. If 0, the server's default page size
+                 *      is used. Negative values are rejected.
+                 */
+                max_results?: number;
+                /** @description Opaque pagination token to go to next page based on previous query. */
+                page_token?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The type of the securable. */
+                securable_type: string;
+                /** @description The full name of the securable. */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetGrantsResponse"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    UpdateGrants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The type of the securable. */
+                securable_type: string;
+                /** @description The full name of the securable. */
+                full_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGrantsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateGrantsResponse"];
                 };
             };
             /** @description Default error response */

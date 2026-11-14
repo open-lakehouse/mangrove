@@ -36,7 +36,7 @@ impl TemporaryCredentialClient {
         request: &GenerateTemporaryTableCredentialsRequest,
     ) -> Result<TemporaryCredential> {
         let url = self.base_url.join("temporary-table-credentials")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -57,7 +57,7 @@ impl TemporaryCredentialClient {
         request: &GenerateTemporaryPathCredentialsRequest,
     ) -> Result<TemporaryCredential> {
         let url = self.base_url.join("temporary-path-credentials")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -75,7 +75,7 @@ impl TemporaryCredentialClient {
         request: &GenerateTemporaryVolumeCredentialsRequest,
     ) -> Result<TemporaryCredential> {
         let url = self.base_url.join("temporary-volume-credentials")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -93,7 +93,7 @@ impl TemporaryCredentialClient {
         request: &GenerateTemporaryModelVersionCredentialsRequest,
     ) -> Result<TemporaryCredential> {
         let url = self.base_url.join("temporary-model-version-credentials")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }

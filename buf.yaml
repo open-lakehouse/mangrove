@@ -6,6 +6,10 @@ modules:
     name: buf.build/unitycatalog/query
   - path: proto/portal
     name: buf.build/unitycatalog/portal
+  # trestle's codegen-time annotations (`olai.trestle.v1`), vendored from
+  # ../trestle/crates/olai-codegen/proto. A module of its own so `buf generate
+  # proto/unitycatalog` doesn't emit models for them.
+  - path: proto/trestle
 deps:
   - buf.build/bufbuild/protovalidate
   - buf.build/gnostic/gnostic

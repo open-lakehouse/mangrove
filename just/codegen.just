@@ -35,7 +35,8 @@ generate-full: generate-proto generate-code generate-py-stubs
 [group('codegen')]
 [no-cd]
 generate-proto:
-    buf generate proto/unitycatalog
+    # `olai.trestle.v1` (proto/trestle) holds codegen-time annotations, not API types.
+    buf generate proto/unitycatalog --exclude-type olai.trestle.v1
     just codegen generate-openapi
 
 # update the generated openapi spec with validation extracted from generated jsonschema

@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package unitycatalog.grants.v1;
+
+import "buf/validate/validate.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "olai/trestle/v1/annotations.proto";
+import "unitycatalog/grants/v1/models.proto";
+
+// Get the privileges granted on a securable.
+message GetGrantsRequest {
+  // The type of the securable.
+  string securable_type = 1 [
+    (buf.validate.field).string.pattern = "^(metastore|catalog|schema|table|function|volume|registered_model|external_location|credential)$",
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // The full name of the securable.
+  string full_name = 2 [
+    (buf.validate.field).string.min_len = 1,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // Only return the privileges of this principal (user or group).
+  optional string principal = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of privilege assignments per page.
+  //
+  // If unset, every assignment is returned. If 0, the server's default page size
+  // is used. Negative values are rejected.
+  optional int32 max_results = 100 [
+    (buf.validate.field).int32.gte = 0,
+    (google.api.field_behavior) = OPTIONAL
+  ];
+
+  // Opaque pagination token to go to next page based on previous query.
+  optional string page_token = 101 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// The privileges granted on a securable, not including inherited ones.
+message GetGrantsResponse {
+  // The privileges granted to each principal.
+  repeated GrantAssignment privilege_assignments = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Opaque pagination token to go to next page based on previous query.
+  optional string next_page_token = 2;
+}
+
+// Grant and revoke privileges on a securable.
+message UpdateGrantsRequest {
+  // The type of the securable.
+  string securable_type = 1 [
+    (buf.validate.field).string.pattern = "^(metastore|catalog|schema|table|function|volume|registered_model|external_location|credential)$",
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // The full name of the securable.
+  string full_name = 2 [
+    (buf.validate.field).string.min_len = 1,
+    (google.api.field_behavior) = REQUIRED
+  ];
+
+  // The changes to apply, together.
+  repeated GrantChange changes = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+// The privileges granted on a securable after an update.
+message UpdateGrantsResponse {
+  // The privileges granted to each principal.
+  repeated GrantAssignment privilege_assignments = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Grants: the privileges principals hold on securables. The Unity Catalog OSS
+// permissions API, which Databricks shares.
+service GrantsService {
+  // Gets the privileges granted on a securable. Does not include inherited ones.
+  rpc GetGrants(GetGrantsRequest) returns (GetGrantsResponse) {
+    option (google.api.http) = {get: "/permissions/{securable_type}/{full_name}"};
+    option (gnostic.openapi.v3.operation) = {operation_id: "GetGrants"};
+    // The securable is dynamic (`securable_type`); the handler authorizes it.
+    option (olai.trestle.v1.authz) = {skip: true};
+  }
+
+  // Grants and revokes privileges on a securable.
+  rpc UpdateGrants(UpdateGrantsRequest) returns (UpdateGrantsResponse) {
+    option (google.api.http) = {
+      patch: "/permissions/{securable_type}/{full_name}"
+      body: "*"
+    };
+    option (gnostic.openapi.v3.operation) = {operation_id: "UpdateGrants"};
+    option (olai.trestle.v1.authz) = {skip: true};
+  }
+}

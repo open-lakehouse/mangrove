@@ -49,7 +49,7 @@ impl AgentSkillServiceClient {
             url.query_pairs_mut()
                 .append_pair("include_browse", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -62,7 +62,7 @@ impl AgentSkillServiceClient {
         request: &CreateAgentSkillRequest,
     ) -> Result<AgentSkill> {
         let url = self.base_url.join("agent-skills")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -77,7 +77,7 @@ impl AgentSkillServiceClient {
             url.query_pairs_mut()
                 .append_pair("include_browse", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -93,7 +93,7 @@ impl AgentSkillServiceClient {
         let url = self.base_url.join(&formatted_path)?;
         let mut body = request.clone();
         body.name = Default::default();
-        let response = self.client.patch(url).json(&body).send().await?;
+        let response = self.client.patch(url).json(&body).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -104,7 +104,7 @@ impl AgentSkillServiceClient {
     pub async fn delete_agent_skill(&self, request: &DeleteAgentSkillRequest) -> Result<()> {
         let formatted_path = format!("agent-skills/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.delete(url).send().await?;
+        let response = self.client.delete(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }

@@ -25,12 +25,9 @@ impl PyTagPolicyClient {
     ///     governed tag to an entity is done through the Entity Tag Assignments API.
     pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyTagPolicy> {
         let request = self.client.get();
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTagPolicy::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyTagPolicy::from(result))
     }
 
     /// Update a tag policy
@@ -69,12 +66,9 @@ impl PyTagPolicyClient {
                     .collect::<::std::vec::Vec<_>>(),
             )
             .with_update_mask(update_mask);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTagPolicy::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyTagPolicy::from(result))
     }
 
     /// Delete a tag policy
@@ -82,12 +76,9 @@ impl PyTagPolicyClient {
     /// Deletes the governed tag definition that matches the supplied tag key.
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(result)
     }
 }
 

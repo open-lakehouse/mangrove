@@ -23,12 +23,9 @@ impl PyRecipientClient {
     ///     The requested resource
     pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyRecipient> {
         let request = self.client.get();
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyRecipient::from(result))
     }
 
     /// Update a recipient.
@@ -71,23 +68,17 @@ impl PyRecipientClient {
             .with_comment(comment)
             .with_properties_kvpairs(properties_kvpairs.map(::core::convert::Into::into))
             .with_expiration_time(expiration_time);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyRecipient::from(result))
     }
 
     /// Delete a recipient.
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(result)
     }
 
     /// Rotate a recipient's token: issue a new token (and activation link) and retire the existing one.
@@ -109,12 +100,9 @@ impl PyRecipientClient {
             .client
             .rotate_recipient_token()
             .with_existing_token_expire_in_seconds(existing_token_expire_in_seconds);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyRecipient::from(result))
     }
 }
 

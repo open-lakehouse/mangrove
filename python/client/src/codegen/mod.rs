@@ -62,6 +62,7 @@ use unitycatalog_common::models::catalogs::v1::*;
 use unitycatalog_common::models::credentials::v1::*;
 use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
+use unitycatalog_common::models::grants::v1::*;
 use unitycatalog_common::models::model_versions::v1::*;
 use unitycatalog_common::models::policies::v1::*;
 use unitycatalog_common::models::providers::v1::*;
@@ -84,17 +85,56 @@ pub struct PyUnityCatalogClient {
 
 #[pymethods]
 impl PyUnityCatalogClient {
-    /// A client of the API at `base_url`. `token`, when set, goes in every
-    /// request as the bearer token.
+    /// A client of the API at `base_url`. `token`, when set, goes in every request as
+    /// the bearer token. `token_provider` is asked for the token instead: a
+    /// `TokenProvider`, or a callable that returns the token, or a pair of the token
+    /// and the time it expires, in seconds since the epoch; a token with its expiry is
+    /// kept until a minute before it, a bare token is asked for at every request.
     #[new]
-    #[pyo3(signature = (base_url, token = None))]
-    pub fn new(base_url: String, token: Option<String>) -> PyResult<Self> {
-        let base_url = base_url.parse().map_err(PyUnityCatalogError::from)?;
-        let client = match token {
-            Some(token) => UnityCatalogClient::new_with_token(base_url, token),
-            None => UnityCatalogClient::new_unauthenticated(base_url),
-        };
-        Ok(Self { client })
+    #[pyo3(signature = (base_url, token = None, token_provider = None))]
+    pub fn new(
+        py: Python<'_>,
+        base_url: String,
+        token: Option<String>,
+        token_provider: Option<::pyo3::Py<::pyo3::PyAny>>,
+    ) -> PyResult<Self> {
+        let base_url: ::url::Url = base_url.parse().map_err(PyUnityCatalogError::from)?;
+        let signer: Option<::std::sync::Arc<dyn ::olai_http::RequestSigner>> =
+            match (token, token_provider) {
+                (Some(_), Some(_)) => {
+                    return Err(::pyo3::exceptions::PyValueError::new_err(
+                        "token and token_provider cannot both be set",
+                    ));
+                }
+                (Some(token), None) => Some(::std::sync::Arc::new(
+                    ::olai_http::bearer::BearerProviderSigner(
+                        ::olai_http::bearer::BearerAuth::static_token(token),
+                    ),
+                )),
+                (None, Some(provider)) => {
+                    Some(match provider.bind(py).cast::<RustTokenProvider>() {
+                        Ok(provider) => provider.get().signer.clone(),
+                        Err(_) => ::std::sync::Arc::new(PyTokenProvider::new(provider)),
+                    })
+                }
+                (None, None) => None,
+            };
+        let options = UnityCatalogClient::client_options();
+        let retry = ::olai_http::RetryConfig::default();
+        let client = match signer {
+            Some(signer) => {
+                ::olai_http::CloudClient::new_with_request_signer(signer, &options, retry, None)
+            }
+            None => {
+                ::olai_http::CloudClient::new_unauthenticated_with_options(&options, retry, None)
+            }
+        }
+        .map_err(|e: ::olai_http::Error| {
+            PyUnityCatalogError::from(unitycatalog_client::error::Error::from(e))
+        })?;
+        Ok(Self {
+            client: UnityCatalogClient::new(client, base_url),
+        })
     }
 
     /// Lists agent skills.
@@ -129,22 +169,17 @@ impl PyUnityCatalogClient {
             .list_agent_skills(catalog_name, schema_name)
             .with_max_results(max_results)
             .with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyAgentSkill::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyAgentSkill::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Args:
@@ -199,12 +234,9 @@ impl PyUnityCatalogClient {
             .with_allowed_tools(allowed_tools.unwrap_or_default())
             .with_metadata(metadata.unwrap_or_default())
             .with_comment(comment);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyAgentSkill::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyAgentSkill::from(result))
     }
 
     /// Lists agents.
@@ -239,22 +271,17 @@ impl PyUnityCatalogClient {
             .list_agents(catalog_name, schema_name)
             .with_max_results(max_results)
             .with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyAgent::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyAgent::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Args:
@@ -309,12 +336,9 @@ impl PyUnityCatalogClient {
             .with_capabilities(capabilities.unwrap_or_default())
             .with_input_schema(input_schema)
             .with_comment(comment);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyAgent::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyAgent::from(result))
     }
 
     /// List catalogs
@@ -337,22 +361,17 @@ impl PyUnityCatalogClient {
         max_results: Option<i32>,
     ) -> PyUnityCatalogResult<::std::vec::Vec<PyCatalog>> {
         let request = self.client.list_catalogs().with_max_results(max_results);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyCatalog::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyCatalog::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Create a new catalog
@@ -399,12 +418,9 @@ impl PyUnityCatalogClient {
             .with_storage_root(storage_root)
             .with_provider_name(provider_name)
             .with_share_name(share_name);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyCatalog::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyCatalog::from(result))
     }
 
     /// Args:
@@ -426,22 +442,17 @@ impl PyUnityCatalogClient {
             .list_credentials()
             .with_purpose(purpose.map(::core::convert::Into::into))
             .with_max_results(max_results);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyCredential::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyCredential::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Args:
@@ -502,12 +513,9 @@ impl PyUnityCatalogClient {
             .with_databricks_gcp_service_account(
                 databricks_gcp_service_account.map(::core::convert::Into::into),
             );
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyCredential::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyCredential::from(result))
     }
 
     /// List entity tag assignments
@@ -537,12 +545,9 @@ impl PyUnityCatalogClient {
             .list_entity_tag_assignments(entity_type, entity_name)
             .with_max_results(max_results)
             .with_page_token(page_token);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyListEntityTagAssignmentsResponse::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyListEntityTagAssignmentsResponse::from(result))
     }
 
     /// Create an entity tag assignment
@@ -577,12 +582,9 @@ impl PyUnityCatalogClient {
             .client
             .create_entity_tag_assignment(entity_type, entity_name, tag_key)
             .with_tag_value(tag_value);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyEntityTagAssignment::from(result))
     }
 
     /// Get an entity tag assignment
@@ -608,12 +610,9 @@ impl PyUnityCatalogClient {
         let request = self
             .client
             .get_entity_tag_assignment(entity_type, entity_name, tag_key);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyEntityTagAssignment::from(result))
     }
 
     /// Update an entity tag assignment
@@ -657,12 +656,9 @@ impl PyUnityCatalogClient {
             .update_entity_tag_assignment(entity_type, entity_name, tag_key)
             .with_tag_value(tag_value)
             .with_update_mask(update_mask);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyEntityTagAssignment::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyEntityTagAssignment::from(result))
     }
 
     /// Delete an entity tag assignment
@@ -679,12 +675,9 @@ impl PyUnityCatalogClient {
         let request = self
             .client
             .delete_entity_tag_assignment(entity_type, entity_name, tag_key);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(result)
     }
 
     /// List external locations
@@ -709,22 +702,17 @@ impl PyUnityCatalogClient {
             .list_external_locations()
             .with_max_results(max_results)
             .with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyExternalLocation::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyExternalLocation::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Create a new external location
@@ -766,12 +754,9 @@ impl PyUnityCatalogClient {
             .with_read_only(read_only)
             .with_comment(comment)
             .with_skip_validation(skip_validation);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyExternalLocation::from(result))
     }
 
     /// List functions
@@ -812,22 +797,17 @@ impl PyUnityCatalogClient {
             .list_functions(catalog_name, schema_name)
             .with_max_results(max_results)
             .with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyFunction::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyFunction::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Create a function
@@ -847,12 +827,77 @@ impl PyUnityCatalogClient {
         function_info: PyCreateFunction,
     ) -> PyUnityCatalogResult<PyFunction> {
         let request = self.client.create_function(function_info.into());
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyFunction::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyFunction::from(result))
+    }
+
+    /// Gets the privileges granted on a securable. Does not include inherited ones.
+    ///
+    /// Args:
+    ///     principal: Only return the privileges of this principal (user or group).
+    ///     max_results: The maximum number of privilege assignments per page. If unset, every assignment
+    ///                  is returned. If 0, the server's default page size is used. Negative values are
+    ///                  rejected.
+    ///     page_token: Opaque pagination token to go to next page based on previous query.
+    ///
+    /// Returns:
+    ///     The privileges granted on a securable, not including inherited ones.
+    #[pyo3(
+        signature = (
+            securable_type,
+            full_name,
+            principal = None,
+            max_results = None,
+            page_token = None
+        )
+    )]
+    pub fn get_grants(
+        &self,
+        py: Python,
+        securable_type: String,
+        full_name: String,
+        principal: Option<String>,
+        max_results: Option<i32>,
+        page_token: Option<String>,
+    ) -> PyUnityCatalogResult<PyGetGrantsResponse> {
+        let request = self
+            .client
+            .get_grants(securable_type, full_name)
+            .with_principal(principal)
+            .with_max_results(max_results)
+            .with_page_token(page_token);
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyGetGrantsResponse::from(result))
+    }
+
+    /// Grants and revokes privileges on a securable.
+    ///
+    /// Args:
+    ///     changes: The changes to apply, together.
+    ///
+    /// Returns:
+    ///     The privileges granted on a securable after an update.
+    #[pyo3(signature = (securable_type, full_name, changes))]
+    pub fn update_grants(
+        &self,
+        py: Python,
+        securable_type: String,
+        full_name: String,
+        changes: ::std::vec::Vec<PyGrantChange>,
+    ) -> PyUnityCatalogResult<PyUpdateGrantsResponse> {
+        let request = self.client.update_grants(
+            securable_type,
+            full_name,
+            changes
+                .into_iter()
+                .map(::core::convert::Into::into)
+                .collect(),
+        );
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyUpdateGrantsResponse::from(result))
     }
 
     /// List model versions
@@ -882,22 +927,17 @@ impl PyUnityCatalogClient {
             .list_model_versions(full_name)
             .with_max_results(max_results)
             .with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyModelVersion::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyModelVersion::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Create a model version
@@ -948,12 +988,9 @@ impl PyUnityCatalogClient {
             .create_model_version(model_name, catalog_name, schema_name, source)
             .with_run_id(run_id)
             .with_comment(comment);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyModelVersion::from(result))
     }
 
     /// Get a model version
@@ -984,12 +1021,9 @@ impl PyUnityCatalogClient {
             .client
             .get_model_version(full_name, version)
             .with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyModelVersion::from(result))
     }
 
     /// Update a model version
@@ -1019,12 +1053,9 @@ impl PyUnityCatalogClient {
             .client
             .update_model_version(full_name, version)
             .with_comment(comment);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyModelVersion::from(result))
     }
 
     /// Delete a model version
@@ -1039,12 +1070,9 @@ impl PyUnityCatalogClient {
         version: i64,
     ) -> PyUnityCatalogResult<()> {
         let request = self.client.delete_model_version(full_name, version);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(result)
     }
 
     /// Finalize a model version
@@ -1067,12 +1095,9 @@ impl PyUnityCatalogClient {
         version: i64,
     ) -> PyUnityCatalogResult<PyModelVersion> {
         let request = self.client.finalize_model_version(full_name, version);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyModelVersion::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyModelVersion::from(result))
     }
 
     /// Create a new policy
@@ -1165,12 +1190,9 @@ impl PyUnityCatalogClient {
             .with_column_mask(column_mask.map(::core::convert::Into::into))
             .with_deny(deny.map(::core::convert::Into::into))
             .with_grant(grant.map(::core::convert::Into::into));
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyPolicyInfo::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyPolicyInfo::from(result))
     }
 
     /// List providers.
@@ -1188,22 +1210,17 @@ impl PyUnityCatalogClient {
         max_results: Option<i32>,
     ) -> PyUnityCatalogResult<::std::vec::Vec<PyProvider>> {
         let request = self.client.list_providers().with_max_results(max_results);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyProvider::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyProvider::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Create a new provider.
@@ -1250,12 +1267,9 @@ impl PyUnityCatalogClient {
             .with_comment(comment)
             .with_recipient_profile_str(recipient_profile_str)
             .with_properties(properties.unwrap_or_default());
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyProvider::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyProvider::from(result))
     }
 
     /// List recipients.
@@ -1273,22 +1287,17 @@ impl PyUnityCatalogClient {
         max_results: Option<i32>,
     ) -> PyUnityCatalogResult<::std::vec::Vec<PyRecipient>> {
         let request = self.client.list_recipients().with_max_results(max_results);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyRecipient::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyRecipient::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Create a new recipient.
@@ -1332,12 +1341,9 @@ impl PyUnityCatalogClient {
             .with_comment(comment)
             .with_properties_kvpairs(properties_kvpairs.map(::core::convert::Into::into))
             .with_expiration_time(expiration_time);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyRecipient::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyRecipient::from(result))
     }
 
     /// List registered models
@@ -1380,22 +1386,17 @@ impl PyUnityCatalogClient {
             .with_schema_name(schema_name)
             .with_max_results(max_results)
             .with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyRegisteredModel::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyRegisteredModel::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Create a registered model
@@ -1427,12 +1428,9 @@ impl PyUnityCatalogClient {
             .client
             .create_registered_model(name, catalog_name, schema_name)
             .with_comment(comment);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyRegisteredModel::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyRegisteredModel::from(result))
     }
 
     /// Gets an array of schemas for a catalog in the metastore. If the caller is the metastore admin or the
@@ -1462,22 +1460,17 @@ impl PyUnityCatalogClient {
             .list_schemas(catalog_name)
             .with_max_results(max_results)
             .with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PySchema::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PySchema::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Creates a new schema for catalog in the Metatastore. The caller must be a metastore admin, or have
@@ -1518,12 +1511,9 @@ impl PyUnityCatalogClient {
             .with_comment(comment)
             .with_properties(properties.unwrap_or_default())
             .with_storage_root(storage_root);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PySchema::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PySchema::from(result))
     }
 
     /// List shares.
@@ -1541,22 +1531,17 @@ impl PyUnityCatalogClient {
         max_results: Option<i32>,
     ) -> PyUnityCatalogResult<::std::vec::Vec<PyShare>> {
         let request = self.client.list_shares().with_max_results(max_results);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyShare::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyShare::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Create a new share.
@@ -1581,12 +1566,9 @@ impl PyUnityCatalogClient {
             .create_share(name)
             .with_comment(comment)
             .with_storage_root(storage_root);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyShare::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyShare::from(result))
     }
 
     /// Creates a new staging table, allocating an immutable table id and a storage location under the
@@ -1619,12 +1601,9 @@ impl PyUnityCatalogClient {
         let request = self
             .client
             .create_staging_table(name, catalog_name, schema_name);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyStagingTable::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyStagingTable::from(result))
     }
 
     /// Gets an array of all tables for the current metastore under the parent catalog and schema.
@@ -1687,22 +1666,17 @@ impl PyUnityCatalogClient {
             .with_omit_username(omit_username)
             .with_include_browse(include_browse)
             .with_include_manifest_capabilities(include_manifest_capabilities);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyTable::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyTable::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Create a table
@@ -1775,12 +1749,9 @@ impl PyUnityCatalogClient {
             .with_properties(properties.unwrap_or_default())
             .with_view_definition(view_definition)
             .with_view_dependencies(view_dependencies.map(::core::convert::Into::into));
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTable::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyTable::from(result))
     }
 
     /// List tag policies
@@ -1805,22 +1776,17 @@ impl PyUnityCatalogClient {
             .client
             .list_tag_policies()
             .with_max_results(max_results);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyTagPolicy::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyTagPolicy::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Create a new tag policy
@@ -1856,12 +1822,9 @@ impl PyUnityCatalogClient {
                     .map(::core::convert::Into::into)
                     .collect::<::std::vec::Vec<_>>(),
             );
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTagPolicy::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyTagPolicy::from(result))
     }
 
     /// Generate a new set of credentials for a table.
@@ -1887,12 +1850,9 @@ impl PyUnityCatalogClient {
         let request = self
             .client
             .generate_temporary_table_credentials(table_id, operation.into());
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyTemporaryCredential::from(result))
     }
 
     /// Generate a new set of credentials for a path.
@@ -1923,12 +1883,9 @@ impl PyUnityCatalogClient {
             .client
             .generate_temporary_path_credentials(url, operation.into())
             .with_dry_run(dry_run);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyTemporaryCredential::from(result))
     }
 
     /// Generate a new set of credentials for a volume.
@@ -1954,12 +1911,9 @@ impl PyUnityCatalogClient {
         let request = self
             .client
             .generate_temporary_volume_credentials(volume_id, operation.into());
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyTemporaryCredential::from(result))
     }
 
     /// Generate a new set of credentials for a model version.
@@ -1995,12 +1949,9 @@ impl PyUnityCatalogClient {
             version,
             operation.into(),
         );
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTemporaryCredential::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyTemporaryCredential::from(result))
     }
 
     /// Lists volumes.
@@ -2036,22 +1987,17 @@ impl PyUnityCatalogClient {
             .list_volumes(catalog_name, schema_name)
             .with_max_results(max_results)
             .with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(async move {
-                request
-                    .into_stream()
-                    .try_collect::<::std::vec::Vec<_>>()
-                    .await
-            })?;
-            Ok::<_, PyUnityCatalogError>(
-                result
-                    .into_iter()
-                    .map(PyVolume::from)
-                    .collect::<::std::vec::Vec<_>>(),
-            )
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, async move {
+            request
+                .into_stream()
+                .try_collect::<::std::vec::Vec<_>>()
+                .await
+        })??;
+        Ok(result
+            .into_iter()
+            .map(PyVolume::from)
+            .collect::<::std::vec::Vec<_>>())
     }
 
     /// Args:
@@ -2091,12 +2037,9 @@ impl PyUnityCatalogClient {
             .create_volume(catalog_name, schema_name, name, volume_type.into())
             .with_storage_location(storage_location)
             .with_comment(comment);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyVolume::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyVolume::from(result))
     }
 
     /// The requests on one `AgentSkill`. It sends no request itself.
@@ -2249,6 +2192,103 @@ impl PyUnityCatalogClient {
     }
 }
 
+/// A token provider made in Rust, for `token_provider=`. The binding crate makes one
+/// from any `olai_http::RequestSigner`, such as a bearer provider in a
+/// `BearerProviderSigner`.
+#[pyclass(name = "TokenProvider", frozen, module = "unitycatalog_client._client")]
+pub struct RustTokenProvider {
+    pub(crate) signer: ::std::sync::Arc<dyn ::olai_http::RequestSigner>,
+}
+
+impl RustTokenProvider {
+    pub fn new(signer: ::std::sync::Arc<dyn ::olai_http::RequestSigner>) -> Self {
+        Self { signer }
+    }
+}
+
+/// The bearer tokens of a `token_provider` callable: the token, or a
+/// `(token, expires_at)` pair with the expiry in seconds since the epoch, kept until a
+/// minute before it. The callable runs on a blocking thread, one call at a time: it may
+/// block, and call the blocking methods of this module.
+pub struct PyTokenProvider {
+    provider: ::std::sync::Arc<::pyo3::Py<::pyo3::PyAny>>,
+    kept: ::futures::lock::Mutex<Option<(String, ::std::time::Instant)>>,
+}
+
+impl PyTokenProvider {
+    fn new(provider: ::pyo3::Py<::pyo3::PyAny>) -> Self {
+        Self {
+            provider: ::std::sync::Arc::new(provider),
+            kept: ::futures::lock::Mutex::new(None),
+        }
+    }
+
+    /// Ask the callable: the token, and its expiry when it gives one.
+    fn ask(provider: &::pyo3::Py<::pyo3::PyAny>) -> PyResult<(String, Option<f64>)> {
+        ::pyo3::Python::attach(|py| {
+            let value = provider.bind(py).call0()?;
+            if let Ok(token) = value.extract::<String>() {
+                return Ok((token, None));
+            }
+            let (token, expires_at) = value.extract::<(String, f64)>().map_err(|_| {
+                ::pyo3::exceptions::PyTypeError::new_err(
+                    "token_provider must return the token, or a (token, \
+                                 expires_at) pair with the expiry in seconds since the epoch",
+                )
+            })?;
+            Ok((token, Some(expires_at)))
+        })
+    }
+
+    /// The token: the kept one, else the callable's.
+    async fn token(&self) -> ::olai_http::Result<String> {
+        let failed = |source: Box<dyn ::std::error::Error + Send + Sync>| {
+            ::olai_http::Error::Generic { source }
+        };
+        let mut kept = self.kept.lock().await;
+        if let Some((token, until)) = kept.as_ref()
+            && ::std::time::Instant::now() < *until
+        {
+            return Ok(token.clone());
+        }
+        let provider = self.provider.clone();
+        let (token, expires_at) = ::tokio::task::spawn_blocking(move || Self::ask(&provider))
+            .await
+            .map_err(|e| failed(Box::new(e)))?
+            .map_err(|e| failed(Box::new(e)))?;
+        if let Some(expires_at) = expires_at {
+            let now = ::std::time::SystemTime::now()
+                .duration_since(::std::time::UNIX_EPOCH)
+                .map_or(0.0, |d| d.as_secs_f64());
+            let left = expires_at - now - 60.0;
+            let left = if left.is_finite() {
+                left.clamp(0.0, 1e9)
+            } else {
+                0.0
+            };
+            let until = ::std::time::Instant::now() + ::std::time::Duration::from_secs_f64(left);
+            *kept = Some((token.clone(), until));
+        }
+        Ok(token)
+    }
+}
+
+impl ::std::fmt::Debug for PyTokenProvider {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        f.debug_struct("PyTokenProvider").finish_non_exhaustive()
+    }
+}
+
+impl ::olai_http::RequestSigner for PyTokenProvider {
+    fn sign<'a>(
+        &'a self,
+        request: ::olai_http::reqwest::RequestBuilder,
+    ) -> ::futures::future::BoxFuture<'a, ::olai_http::Result<::olai_http::reqwest::RequestBuilder>>
+    {
+        Box::pin(async move { Ok(request.bearer_auth(self.token().await?)) })
+    }
+}
+
 /// The extension module, as Python imports it.
 pub const CORE_MODULE: &str = "unitycatalog_client._client";
 /// The submodules of the extension module.
@@ -2259,6 +2299,7 @@ const SUBMODULES: &[&str] = &[
     "credentials",
     "external_locations",
     "functions",
+    "grants",
     "model_versions",
     "policies",
     "providers",
@@ -2284,6 +2325,9 @@ pub mod extension_module {
     const __version__: &str = env!("CARGO_PKG_VERSION");
     #[pymodule_export]
     use super::PyUnityCatalogClient;
+
+    #[pymodule_export]
+    use super::RustTokenProvider;
 
     #[pymodule_export]
     use crate::codegen::error::{
@@ -2345,6 +2389,15 @@ pub mod extension_module {
         use super::super::{
             PyCreateFunction, PyFunction, PyFunctionClient, PyFunctionParameterInfo,
             PyFunctionParameterInfos, PyListFunctionsResponse,
+        };
+    }
+
+    /// The classes of the `grants` API.
+    #[pymodule]
+    pub mod grants {
+        #[pymodule_export]
+        use super::super::{
+            PyGetGrantsResponse, PyGrantAssignment, PyGrantChange, PyUpdateGrantsResponse,
         };
     }
 

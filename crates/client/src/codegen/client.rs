@@ -29,6 +29,9 @@ use crate::codegen::external_locations::*;
 #[cfg(feature = "functions")]
 use crate::codegen::functions::*;
 
+#[cfg(feature = "grants")]
+use crate::codegen::grants::*;
+
 #[cfg(feature = "model_versions")]
 use crate::codegen::model_versions::*;
 
@@ -85,6 +88,9 @@ use unitycatalog_common::models::external_locations::v1::*;
 
 #[cfg(feature = "functions")]
 use unitycatalog_common::models::functions::v1::*;
+
+#[cfg(feature = "grants")]
+use unitycatalog_common::models::grants::v1::*;
 
 #[cfg(feature = "model_versions")]
 use unitycatalog_common::models::model_versions::v1::*;
@@ -147,6 +153,47 @@ impl UnityCatalogClient {
     /// Create a new aggregate client authenticating with a bearer token.
     pub fn new_with_token(base_url: Url, token: impl ToString) -> Self {
         Self::new(Transport::new_with_token(token), base_url)
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    /// The HTTP settings of the constructors that make the `CloudClient`: plain
+    /// `http` URLs are allowed, and no timeout ends a request.
+    pub fn client_options() -> ::olai_http::ClientOptions {
+        ::olai_http::ClientOptions::new()
+            .with_allow_http(true)
+            .with_timeout_disabled()
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    /// Create a new aggregate client whose bearer token comes from `provider`, such as
+    /// one of [`olai_http::bearer::BearerAuth`], which keeps and refreshes its tokens.
+    pub fn new_with_bearer(
+        base_url: Url,
+        provider: ::olai_http::bearer::BearerCredentialProvider,
+    ) -> ::olai_http::Result<Self> {
+        let client = Transport::new_with_bearer(
+            provider,
+            &Self::client_options(),
+            ::olai_http::RetryConfig::default(),
+            None,
+        )?;
+        Ok(Self::new(client, base_url))
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    /// Create a new aggregate client that signs its requests with `signer`, for
+    /// authentication that a bearer provider does not cover.
+    pub fn new_with_signer(
+        base_url: Url,
+        signer: ::std::sync::Arc<dyn ::olai_http::RequestSigner>,
+    ) -> ::olai_http::Result<Self> {
+        let client = Transport::new_with_request_signer(
+            signer,
+            &Self::client_options(),
+            ::olai_http::RetryConfig::default(),
+            None,
+        )?;
+        Ok(Self::new(client, base_url))
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -713,6 +760,53 @@ impl UnityCatalogClient {
                 self.client.clone(),
                 self.base_url.clone(),
             ),
+        )
+    }
+}
+
+#[cfg(feature = "grants")]
+impl UnityCatalogClient {
+    ///Low-level `grants` client exposing request/response passthrough methods.
+    pub fn grants_client(&self) -> crate::codegen::grants::GrantClient {
+        crate::codegen::grants::GrantClient::new(self.client.clone(), self.base_url.clone())
+    }
+
+    /// Gets the privileges granted on a securable. Does not include inherited ones.
+    ///
+    /// # Arguments
+    ///
+    /// * `securable_type` - The type of the securable.
+    /// * `full_name` - The full name of the securable.
+    pub fn get_grants(
+        &self,
+        securable_type: impl Into<String>,
+        full_name: impl Into<String>,
+    ) -> GetGrantsBuilder {
+        GetGrantsBuilder::new(
+            crate::codegen::grants::GrantClient::new(self.client.clone(), self.base_url.clone()),
+            securable_type,
+            full_name,
+        )
+    }
+
+    /// Grants and revokes privileges on a securable.
+    ///
+    /// # Arguments
+    ///
+    /// * `securable_type` - The type of the securable.
+    /// * `full_name` - The full name of the securable.
+    /// * `changes` - The changes to apply, together.
+    pub fn update_grants(
+        &self,
+        securable_type: impl Into<String>,
+        full_name: impl Into<String>,
+        changes: Vec<GrantChange>,
+    ) -> UpdateGrantsBuilder {
+        UpdateGrantsBuilder::new(
+            crate::codegen::grants::GrantClient::new(self.client.clone(), self.base_url.clone()),
+            securable_type,
+            full_name,
+            changes,
         )
     }
 }

@@ -34,7 +34,7 @@ impl StagingTableServiceClient {
         request: &CreateStagingTableRequest,
     ) -> Result<StagingTable> {
         let url = self.base_url.join("staging-tables")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }

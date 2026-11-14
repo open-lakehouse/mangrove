@@ -41,7 +41,7 @@ impl ProviderServiceClient {
             url.query_pairs_mut()
                 .append_pair("page_token", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -52,7 +52,7 @@ impl ProviderServiceClient {
     /// Create a new provider.
     pub async fn create_provider(&self, request: &CreateProviderRequest) -> Result<Provider> {
         let url = self.base_url.join("providers")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -64,7 +64,7 @@ impl ProviderServiceClient {
     pub async fn get_provider(&self, request: &GetProviderRequest) -> Result<Provider> {
         let formatted_path = format!("providers/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -78,7 +78,7 @@ impl ProviderServiceClient {
         let url = self.base_url.join(&formatted_path)?;
         let mut body = request.clone();
         body.name = Default::default();
-        let response = self.client.patch(url).json(&body).send().await?;
+        let response = self.client.patch(url).json(&body).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -90,7 +90,7 @@ impl ProviderServiceClient {
     pub async fn delete_provider(&self, request: &DeleteProviderRequest) -> Result<()> {
         let formatted_path = format!("providers/{}", encode_path_value(&request.name, false));
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.delete(url).send().await?;
+        let response = self.client.delete(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }

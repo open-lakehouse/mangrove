@@ -22,6 +22,9 @@ pub mod external_locations;
 #[cfg(feature = "functions")]
 #[path = "_gen/extractors/functions/mod.rs"]
 pub mod functions;
+#[cfg(feature = "grants")]
+#[path = "_gen/extractors/grants/mod.rs"]
+pub mod grants;
 #[cfg(feature = "model_versions")]
 #[path = "_gen/extractors/model_versions/mod.rs"]
 pub mod model_versions;

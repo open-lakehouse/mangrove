@@ -11,6 +11,8 @@ export * from "./gen/unitycatalog/external_locations/v1/models_pb";
 export * from "./gen/unitycatalog/external_locations/v1/svc_pb";
 export * from "./gen/unitycatalog/functions/v1/models_pb";
 export * from "./gen/unitycatalog/functions/v1/svc_pb";
+export * from "./gen/unitycatalog/grants/v1/models_pb";
+export * from "./gen/unitycatalog/grants/v1/svc_pb";
 export * from "./gen/unitycatalog/model_versions/v1/models_pb";
 export * from "./gen/unitycatalog/model_versions/v1/svc_pb";
 export * from "./gen/unitycatalog/policies/v1/models_pb";

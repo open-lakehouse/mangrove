@@ -45,12 +45,9 @@ impl PyTableClient {
             .with_include_delta_metadata(include_delta_metadata)
             .with_include_browse(include_browse)
             .with_include_manifest_capabilities(include_manifest_capabilities);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyTable::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyTable::from(result))
     }
 
     /// Get boolean reflecting if table exists
@@ -59,23 +56,17 @@ impl PyTableClient {
     ///     The requested resource
     pub fn get_table_exists(&self, py: Python) -> PyUnityCatalogResult<PyGetTableExistsResponse> {
         let request = self.client.get_table_exists();
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyGetTableExistsResponse::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyGetTableExistsResponse::from(result))
     }
 
     /// Delete a table
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(result)
     }
 }
 
