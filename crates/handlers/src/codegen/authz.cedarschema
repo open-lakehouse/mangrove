@@ -633,7 +633,7 @@ namespace UnityCatalog {
   // Generate a new set of credentials for a path.
   action "GenerateTemporaryPathCredentials" appliesTo {
     principal: [Lakehouse::User, Lakehouse::ServiceAccount],
-    resource: [ExternalLocation],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
     context: RequestContext,
   };
 

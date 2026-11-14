@@ -24,31 +24,14 @@ pub enum Operation {
     UpdateAgent,
     DeleteAgent,
     /// List catalogs
-    ///
-    /// Gets an array of catalogs in the metastore. If the caller is the metastore admin,
-    /// all catalogs will be retrieved. Otherwise, only catalogs owned by the caller
-    /// (or for which the caller has the USE_CATALOG privilege) will be retrieved.
-    /// There is no guarantee of a specific ordering of the elements in the array.
     ListCatalogs,
     /// Create a new catalog
-    ///
-    /// Creates a new catalog instance in the parent metastore if the caller
-    /// is a metastore admin or has the CREATE_CATALOG privilege.
     CreateCatalog,
     /// Get a catalog
-    ///
-    /// Gets the specified catalog in a metastore. The caller must be a metastore admin,
-    /// the owner of the catalog, or a user that has the USE_CATALOG privilege set for their account.
     GetCatalog,
     /// Update a catalog
-    ///
-    /// Updates the catalog that matches the supplied name. The caller must be either
-    /// the owner of the catalog, or a metastore admin (when changing the owner field of the catalog).
     UpdateCatalog,
     /// Delete a catalog
-    ///
-    /// Deletes the catalog that matches the supplied name. The caller must
-    /// be a metastore admin or the owner of the catalog.
     DeleteCatalog,
     ListCredentials,
     CreateCredential,
@@ -56,24 +39,14 @@ pub enum Operation {
     UpdateCredential,
     DeleteCredential,
     /// List entity tag assignments
-    ///
-    /// Gets the tag assignments for the specified entity.
     ListEntityTagAssignments,
     /// Create an entity tag assignment
-    ///
-    /// Assigns a tag to a Unity Catalog entity.
     CreateEntityTagAssignment,
     /// Get an entity tag assignment
-    ///
-    /// Gets the tag assignment for the specified entity and tag key.
     GetEntityTagAssignment,
     /// Update an entity tag assignment
-    ///
-    /// Updates the tag assignment for the specified entity and tag key.
     UpdateEntityTagAssignment,
     /// Delete an entity tag assignment
-    ///
-    /// Deletes the tag assignment for the specified entity and tag key.
     DeleteEntityTagAssignment,
     /// List external locations
     ListExternalLocations,
@@ -86,88 +59,40 @@ pub enum Operation {
     /// Delete an external location
     DeleteExternalLocation,
     /// List functions
-    ///
-    /// List functions within the specified parent catalog and schema. If the caller is the metastore
-    /// admin, all functions are returned in the response. Otherwise, the caller must have USE_CATALOG
-    /// on the parent catalog and USE_SCHEMA on the parent schema, and the function must either be
-    /// owned by the caller or have SELECT on the function.
     ListFunctions,
     /// Create a function
-    ///
-    /// Creates a new function. The caller must be a metastore admin or have the CREATE_FUNCTION
-    /// privilege on the parent catalog and schema.
     CreateFunction,
     /// Get a function
-    ///
-    /// Gets a function from within a parent catalog and schema. For the fetch to succeed,
-    /// the caller must be a metastore admin, the owner of the function, or have SELECT on
-    /// the function.
     GetFunction,
     /// Update a function
-    ///
-    /// Updates the function that matches the supplied name. Only the owner of the function
-    /// can be updated.
     UpdateFunction,
     /// Delete a function
-    ///
-    /// Deletes the function that matches the supplied name. For the deletion to succeed,
-    /// the caller must be the owner of the function.
     DeleteFunction,
     /// Gets the privileges granted on a securable. Does not include inherited ones.
     GetGrants,
     /// Grants and revokes privileges on a securable.
     UpdateGrants,
     /// List model versions
-    ///
-    /// List the model versions of the specified registered model. If the caller is
-    /// the metastore admin, all model versions are returned. Otherwise, the caller
-    /// must have the appropriate privileges on the parent model.
     ListModelVersions,
     /// Create a model version
-    ///
-    /// Creates a new model version in PENDING_REGISTRATION status. The server
-    /// assigns the version number and a storage location for the artifacts. The
-    /// caller must be a metastore admin or the owner of the parent registered model.
     CreateModelVersion,
     /// Get a model version
-    ///
-    /// Gets a model version by its parent model name and version number.
     GetModelVersion,
     /// Update a model version
-    ///
-    /// Updates the model version that matches the supplied name and version.
     UpdateModelVersion,
     /// Delete a model version
-    ///
-    /// Deletes the model version that matches the supplied name and version. For the
-    /// deletion to succeed, the caller must be the owner of the parent registered
-    /// model.
     DeleteModelVersion,
     /// Finalize a model version
-    ///
-    /// Transitions a model version to READY once all artifacts have been written to
-    /// its storage location.
     FinalizeModelVersion,
     /// List policies
-    ///
-    /// Gets an array of policies defined on the specified securable. There is no guarantee
-    /// of a specific ordering of the elements in the array.
     ListPolicies,
     /// Create a new policy
-    ///
-    /// Creates a new row-filter or column-mask policy on the specified securable.
     CreatePolicy,
     /// Get a policy
-    ///
-    /// Gets the policy that matches the supplied name, defined on the specified securable.
     GetPolicy,
     /// Update a policy
-    ///
-    /// Updates the policy that matches the supplied name, defined on the specified securable.
     UpdatePolicy,
     /// Delete a policy
-    ///
-    /// Deletes the policy that matches the supplied name, defined on the specified securable.
     DeletePolicy,
     /// List providers.
     ListProviders,
@@ -190,55 +115,26 @@ pub enum Operation {
     /// Delete a recipient.
     DeleteRecipient,
     /// Rotate a recipient's token: issue a new token (and activation link) and
-    /// retire the existing one.
     RotateRecipientToken,
     /// List registered models
-    ///
-    /// List registered models within the specified parent catalog and schema. If
-    /// the caller is the metastore admin, all registered models are returned in the
-    /// response. Otherwise, the caller must have USE_CATALOG on the parent catalog
-    /// and USE_SCHEMA on the parent schema, and the model must either be owned by
-    /// the caller or the caller must have a privilege on the model.
     ListRegisteredModels,
     /// Create a registered model
-    ///
-    /// Creates a new registered model. The caller must be a metastore admin or have
-    /// the CREATE_MODEL privilege on the parent catalog and schema.
     CreateRegisteredModel,
     /// Get a registered model
-    ///
-    /// Gets a registered model from within a parent catalog and schema. For the
-    /// fetch to succeed, the caller must be a metastore admin, the owner of the
-    /// registered model, or have a privilege on the registered model.
     GetRegisteredModel,
     /// Update a registered model
-    ///
-    /// Updates the registered model that matches the supplied name.
     UpdateRegisteredModel,
     /// Delete a registered model
-    ///
-    /// Deletes the registered model that matches the supplied name. For the deletion
-    /// to succeed, the caller must be the owner of the registered model.
     DeleteRegisteredModel,
     /// Gets an array of schemas for a catalog in the metastore. If the caller is the metastore
-    /// admin or the owner of the parent catalog, all schemas for the catalog will be retrieved.
-    /// Otherwise, only schemas owned by the caller (or for which the caller has the USE_SCHEMA privilege)
-    /// will be retrieved. There is no guarantee of a specific ordering of the elements in the array.
     ListSchemas,
     /// Creates a new schema for catalog in the Metatastore. The caller must be a metastore admin,
-    /// or have the CREATE_SCHEMA privilege in the parent catalog.
     CreateSchema,
     /// Gets the specified schema within the metastore.
-    /// The caller must be a metastore admin, the owner of the schema,
-    /// or a user that has the USE_SCHEMA privilege on the schema.
     GetSchema,
     /// Updates a schema for a catalog. The caller must be the owner of the schema or a metastore admin.
-    /// If the caller is a metastore admin, only the owner field can be changed in the update.
-    /// If the name field must be updated, the caller must be a metastore admin or have the CREATE_SCHEMA
-    /// privilege on the parent catalog.
     UpdateSchema,
     /// Deletes the specified schema from the parent catalog. The caller must be the owner
-    /// of the schema or an owner of the parent catalog.
     DeleteSchema,
     /// List shares.
     ListShares,
@@ -255,23 +151,10 @@ pub enum Operation {
     /// Updates the permissions for a data share in the metastore.
     UpdatePermissions,
     /// Creates a new staging table, allocating an immutable table id and a storage
-    /// location under the parent schema/catalog managed storage root. The caller
-    /// must have the CREATE privilege on the parent schema.
     CreateStagingTable,
     /// Gets an array of summaries for tables for a schema and catalog within the metastore. The table summaries returned are either:
-    /// - summaries for tables (within the current metastore and parent catalog and schema), when the user is a metastore admin, or:
-    /// - summaries for tables and schemas (within the current metastore and parent catalog) for which the user has ownership or the
-    /// SELECT privilege on the table and ownership or USE_SCHEMA privilege on the schema, provided that the user also has ownership
-    /// or the USE_CATALOG privilege on the parent catalog.
-    ///
-    /// There is no guarantee of a specific ordering of the elements in the array.
     ListTableSummaries,
     /// Gets an array of all tables for the current metastore under the parent catalog and schema.
-    ///
-    /// The caller must be a metastore admin or an owner of (or have the SELECT privilege on) the table.
-    /// For the latter case, the caller must also be the owner or have the USE_CATALOG privilege on the
-    /// parent catalog and the USE_SCHEMA privilege on the parent schema. There is no guarantee of a
-    /// specific ordering of the elements in the array.
     ListTables,
     /// Create a table
     CreateTable,
@@ -282,52 +165,22 @@ pub enum Operation {
     /// Delete a table
     DeleteTable,
     /// List tag policies
-    ///
-    /// Gets an array of tag policies. There is no guarantee of a specific ordering
-    /// of the elements in the array.
     ListTagPolicies,
     /// Create a new tag policy
-    ///
-    /// Creates a new governed tag definition.
     CreateTagPolicy,
     /// Get a tag policy
-    ///
-    /// Gets the governed tag definition for the specified tag key.
     GetTagPolicy,
     /// Update a tag policy
-    ///
-    /// Updates the governed tag definition that matches the supplied tag key.
     UpdateTagPolicy,
     /// Delete a tag policy
-    ///
-    /// Deletes the governed tag definition that matches the supplied tag key.
     DeleteTagPolicy,
     /// Generate a new set of credentials for a table.
-    ///
-    /// The metastore must have the `external_access_enabled` flag set to true
-    /// (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
-    /// privilege on the parent schema (granted by a catalog owner).
     GenerateTemporaryTableCredentials,
     /// Generate a new set of credentials for a path.
-    ///
-    /// Only external storage paths (external locations and external tables) are
-    /// supported; managed tables are not. The metastore must have the
-    /// `external_access_enabled` flag set to true (default false). The caller must
-    /// have the `EXTERNAL_USE_LOCATION` privilege on the external location
-    /// (granted by its owner) and, for existing external tables, the
-    /// `EXTERNAL_USE_SCHEMA` privilege on the parent schema.
     GenerateTemporaryPathCredentials,
     /// Generate a new set of credentials for a volume.
-    ///
-    /// The metastore must have the `external_access_enabled` flag set to true
-    /// (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
-    /// privilege on the parent schema (granted by a catalog owner).
     GenerateTemporaryVolumeCredentials,
     /// Generate a new set of credentials for a model version.
-    ///
-    /// The metastore must have the `external_access_enabled` flag set to true
-    /// (default false). The caller must have the `EXTERNAL_USE_SCHEMA`
-    /// privilege on the parent schema (granted by a catalog owner).
     GenerateTemporaryModelVersionCredentials,
     /// Lists volumes.
     ListVolumes,
@@ -651,9 +504,7 @@ impl Operation {
             Operation::GenerateTemporaryTableCredentials => {
                 SecurableKind::Resource(ObjectLabel::Table)
             }
-            Operation::GenerateTemporaryPathCredentials => {
-                SecurableKind::Resource(ObjectLabel::ExternalLocation)
-            }
+            Operation::GenerateTemporaryPathCredentials => SecurableKind::Any,
             Operation::GenerateTemporaryVolumeCredentials => {
                 SecurableKind::Resource(ObjectLabel::Volume)
             }

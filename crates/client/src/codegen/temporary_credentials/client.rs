@@ -47,7 +47,8 @@ impl TemporaryCredentialClient {
     /// Generate a new set of credentials for a path.
     ///
     /// Only external storage paths (external locations and external tables) are
-    /// supported; managed tables are not. The metastore must have the
+    /// supported; managed tables are not. The server asks on the covering external
+    /// location, or on the metastore for a path none covers. The metastore must have the
     /// `external_access_enabled` flag set to true (default false). The caller must
     /// have the `EXTERNAL_USE_LOCATION` privilege on the external location
     /// (granted by its owner) and, for existing external tables, the
