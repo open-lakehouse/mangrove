@@ -78,15 +78,23 @@ impl UpdateGrantsBuilder {
         client: GrantClient,
         securable_type: impl Into<String>,
         full_name: impl Into<String>,
-        changes: Vec<GrantChange>,
     ) -> Self {
         let request = UpdateGrantsRequest {
             securable_type: securable_type.into(),
             full_name: full_name.into(),
-            changes,
             ..Default::default()
         };
         Self { client, request }
+    }
+
+    /// The changes to apply, together. Optional, as for share permissions: trestle's
+    /// node codegen can't take a required repeated message as an argument.
+    pub fn with_changes<I>(mut self, changes: I) -> Self
+    where
+        I: IntoIterator<Item = GrantChange>,
+    {
+        self.request.changes = changes.into_iter().collect();
+        self
     }
 }
 

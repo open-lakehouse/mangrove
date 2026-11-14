@@ -62,8 +62,9 @@ message UpdateGrantsRequest {
     (google.api.field_behavior) = REQUIRED
   ];
 
-  // The changes to apply, together.
-  repeated GrantChange changes = 3 [(google.api.field_behavior) = REQUIRED];
+  // The changes to apply, together. Optional, as for share permissions: trestle's
+  // node codegen can't take a required repeated message as an argument.
+  repeated GrantChange changes = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // The privileges granted on a securable after an update.

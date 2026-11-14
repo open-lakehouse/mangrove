@@ -3521,7 +3521,10 @@ export interface components {
          * @description Grant and revoke privileges on a securable.
          */
         UpdateGrantsRequest: {
-            /** @description The changes to apply, together. */
+            /**
+             * @description The changes to apply, together. Optional, as for share permissions: trestle's
+             *      node codegen can't take a required repeated message as an argument.
+             */
             changes?: components["schemas"]["GrantChange"][];
         };
         /**

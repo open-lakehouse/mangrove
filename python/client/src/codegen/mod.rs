@@ -875,26 +875,29 @@ impl PyUnityCatalogClient {
     /// Grants and revokes privileges on a securable.
     ///
     /// Args:
-    ///     changes: The changes to apply, together.
+    ///     changes: The changes to apply, together. Optional, as for share permissions: trestle's node
+    ///              codegen can't take a required repeated message as an argument.
     ///
     /// Returns:
     ///     The privileges granted on a securable after an update.
-    #[pyo3(signature = (securable_type, full_name, changes))]
+    #[pyo3(signature = (securable_type, full_name, changes = None))]
     pub fn update_grants(
         &self,
         py: Python,
         securable_type: String,
         full_name: String,
-        changes: ::std::vec::Vec<PyGrantChange>,
+        changes: ::core::option::Option<::std::vec::Vec<PyGrantChange>>,
     ) -> PyUnityCatalogResult<PyUpdateGrantsResponse> {
-        let request = self.client.update_grants(
-            securable_type,
-            full_name,
-            changes
-                .into_iter()
-                .map(::core::convert::Into::into)
-                .collect(),
-        );
+        let request = self
+            .client
+            .update_grants(securable_type, full_name)
+            .with_changes(
+                changes
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(::core::convert::Into::into)
+                    .collect::<::std::vec::Vec<_>>(),
+            );
         #[allow(clippy::let_unit_value)]
         let result = crate::codegen::runtime::block_on(py, request.into_future())??;
         Ok(PyUpdateGrantsResponse::from(result))

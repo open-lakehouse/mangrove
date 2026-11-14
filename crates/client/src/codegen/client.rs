@@ -795,18 +795,15 @@ impl UnityCatalogClient {
     ///
     /// * `securable_type` - The type of the securable.
     /// * `full_name` - The full name of the securable.
-    /// * `changes` - The changes to apply, together.
     pub fn update_grants(
         &self,
         securable_type: impl Into<String>,
         full_name: impl Into<String>,
-        changes: Vec<GrantChange>,
     ) -> UpdateGrantsBuilder {
         UpdateGrantsBuilder::new(
             crate::codegen::grants::GrantClient::new(self.client.clone(), self.base_url.clone()),
             securable_type,
             full_name,
-            changes,
         )
     }
 }

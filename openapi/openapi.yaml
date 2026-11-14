@@ -7553,7 +7553,9 @@ components:
               - principal
             description: A change of one principal's privileges on a securable.
             title: Grant Change
-          description: The changes to apply, together.
+          description: |-
+            The changes to apply, together. Optional, as for share permissions: trestle's
+             node codegen can't take a required repeated message as an argument.
       description: Grant and revoke privileges on a securable.
       additionalProperties: false
       title: Update Grants Request

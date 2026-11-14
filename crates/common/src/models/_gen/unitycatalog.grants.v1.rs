@@ -1392,7 +1392,8 @@ pub struct UpdateGrantsRequest {
         skip_serializing_if = "::buffa::json_helpers::skip_if::is_empty_str"
     )]
     pub full_name: ::buffa::alloc::string::String,
-    /// The changes to apply, together.
+    /// The changes to apply, together. Optional, as for share permissions: trestle's
+    /// node codegen can't take a required repeated message as an argument.
     ///
     /// Field 3: `changes`
     #[serde(
@@ -3322,7 +3323,8 @@ pub mod __buffa {
             ///
             /// Field 2: `full_name`
             pub full_name: &'a str,
-            /// The changes to apply, together.
+            /// The changes to apply, together. Optional, as for share permissions: trestle's
+            /// node codegen can't take a required repeated message as an argument.
             ///
             /// Field 3: `changes`
             pub changes: ::buffa::RepeatedView<
@@ -3677,7 +3679,8 @@ pub mod __buffa {
             pub fn full_name(&self) -> &'_ str {
                 self.0.reborrow().full_name
             }
-            /// The changes to apply, together.
+            /// The changes to apply, together. Optional, as for share permissions: trestle's
+            /// node codegen can't take a required repeated message as an argument.
             ///
             /// Field 3: `changes`
             #[must_use]
