@@ -218,3 +218,77 @@ async fn the_authorizer_policy_needs_olai_auth() {
     #[cfg(not(feature = "olai-auth"))]
     assert!(err.to_string().contains("`olai-auth` feature"), "{err}");
 }
+
+/// Trusted Neon keys reach a whole branch: `vending.neon.enabled` refuses to
+/// start unless callers are verified (`olai-auth`) and decisions come from the
+/// authorizer. Each forbidden combination names what to set. The check runs
+/// before anything connects, so it needs neither feature.
+#[tokio::test]
+async fn trusted_neon_vending_needs_olai_auth_and_the_authorizer() {
+    use unitycatalog_server::config::{AuthorizerConfig, PolicyConfig};
+
+    let authorizer = || {
+        PolicyConfig::Authorizer(AuthorizerConfig {
+            url: ConfigValue::Value("http://127.0.0.1:1".into()),
+            token: ConfigValue::Value("secret".into()),
+            cache_ttl_secs: None,
+            timeout_ms: None,
+        })
+    };
+    let cases = [
+        (
+            AuthMode::Anonymous,
+            PolicyConfig::Constant,
+            &["auth.mode: olai-auth", "policy.kind: authorizer"][..],
+        ),
+        (
+            AuthMode::Bearer,
+            PolicyConfig::Constant,
+            &["auth.mode: olai-auth", "policy.kind: authorizer"][..],
+        ),
+        (
+            AuthMode::ReverseProxy,
+            PolicyConfig::Constant,
+            &["auth.mode: olai-auth", "policy.kind: authorizer"][..],
+        ),
+        (
+            AuthMode::OlaiAuth,
+            PolicyConfig::Constant,
+            &["policy.kind: authorizer"][..],
+        ),
+        (
+            AuthMode::Anonymous,
+            authorizer(),
+            &["auth.mode: olai-auth"][..],
+        ),
+        (
+            AuthMode::Bearer,
+            authorizer(),
+            &["auth.mode: olai-auth"][..],
+        ),
+    ];
+    for (mode, policy, fixes) in cases {
+        let mut config = config(":memory:");
+        config.auth.mode = mode;
+        config.policy = policy;
+        config.vending.neon.enabled = true;
+        config.vending.neon.project_id = Some("proj".into());
+        config.vending.neon.api_key = Some(ConfigValue::Value("key".into()));
+        let err = embed::start(&config).await.err().unwrap().to_string();
+        assert!(err.contains("vending.neon.enabled"), "{err}");
+        for fix in fixes {
+            assert!(err.contains(fix), "{mode:?}: {err}");
+        }
+        if fixes.len() == 1 {
+            let other = if fixes[0].starts_with("auth") {
+                "policy.kind"
+            } else {
+                "auth.mode"
+            };
+            assert!(
+                !err.contains(other),
+                "{mode:?}: names only the missing piece: {err}"
+            );
+        }
+    }
+}

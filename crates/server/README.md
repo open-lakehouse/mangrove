@@ -196,6 +196,10 @@ vending:
 Neon Functions get `NEON_BRANCH_ID` but not `NEON_PROJECT_ID`, so `project-id`
 is required configuration.
 
+With `enabled: true` the server refuses to start unless `auth.mode: olai-auth`
+**and** `policy.kind: authorizer` are set. Trusted keys reach a whole branch, so
+they must never be one anonymous or allow-all request away.
+
 - **The TTL and `enabled` are the controls.** Neon enforces a key's expiry to
   the second, but revocation is eventually consistent. In testing, a revoked key
   was accepted again about 13 s later and rejected for good only after about
@@ -208,6 +212,28 @@ is required configuration.
   clients set `AWS_ENDPOINT_URL_S3` to the branch's storage endpoint.
 - Without the feature, or with `enabled: false`, vending against a Neon
   credential answers `400 FAILED_PRECONDITION` with the reason.
+
+### Vend audit log
+
+Every credential vend handed to a client, on UC REST (`temporary-*-credentials`)
+and the Delta API (`/credentials`, staging tables), for every credential kind,
+emits one `tracing` event at target `unitycatalog::audit` (`event =
+"credential_vend"`). The event records:
+
+- `outcome`: `ok`, or `error` with an `error_code`
+- `surface`: `uc_rest` or `delta_api`
+- `principal`
+- `securable`: the full name, or the path for path vends
+- `location`
+- `access`: `read` or `read_write`
+- `credential_kind`: `neon_storage`, `aws_iam_role`, `local`, …
+- `credential_id`: the first 8 characters of the S3 access key id, or empty
+- `expires_at`
+- `policies`: the ids of the Cedar policies that allowed the vend's checks,
+  under `policy.kind: authorizer`
+
+Secrets are never logged. The storage proxy's internal vends, whose keys never
+leave the server, aren't audited.
 
 ## Feature flags
 

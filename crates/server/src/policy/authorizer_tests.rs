@@ -703,3 +703,37 @@ async fn a_denying_decision_point_forbids_every_route_and_vend() {
         "{status} {body}"
     );
 }
+
+#[path = "../../tests/support/audit_capture.rs"]
+mod audit_capture;
+
+/// A vend's audit event names the caller and the policies that allowed its
+/// checks: read on the table and EXTERNAL USE on its schema.
+#[tokio::test]
+async fn vend_audit_events_carry_the_determining_policies() {
+    let h = handler(cedar());
+    let (table_id, _) = seed(&h).await;
+
+    let (captured, _guard) = audit_capture::capture();
+    h.generate_temporary_table_credentials(table_vend(&table_id), user("vendor"))
+        .await
+        .unwrap();
+    let [event] = captured.events().try_into().unwrap();
+    assert_eq!(event["principal"], "vendor");
+    assert_eq!(event["securable"], "cat.sch.t");
+    assert_eq!(event["credential_kind"], "local");
+    let policies = &event["policies"];
+    assert!(policies.contains("vendor-schema"), "{policies}");
+    assert!(
+        policies.contains("vendor-schema-external-use"),
+        "{policies}"
+    );
+    assert!(!policies.contains("admin"), "{policies}");
+
+    // A denied caller never reaches the vend, so nothing is audited for it.
+    denied(
+        h.generate_temporary_table_credentials(table_vend(&table_id), user("reader"))
+            .await,
+    );
+    assert_eq!(captured.events().len(), 1);
+}

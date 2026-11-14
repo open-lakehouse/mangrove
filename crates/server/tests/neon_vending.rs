@@ -8,6 +8,9 @@
 
 use std::sync::Arc;
 
+#[path = "support/audit_capture.rs"]
+mod audit_capture;
+
 use axum::response::IntoResponse;
 use unitycatalog_common::models::catalogs::v1::CreateCatalogRequest;
 use unitycatalog_common::models::credentials::v1::{
@@ -230,11 +233,18 @@ async fn disabled_vending_is_a_failed_precondition() {
         "neon-trusted-vending"
     };
 
+    let (captured, guard) = audit_capture::capture();
     let err = h
         .generate_temporary_table_credentials(table_vend(&table_id, false), ctx())
         .await
         .unwrap_err();
+    drop(guard);
     assert_failed_precondition(err, needle).await;
+    // A refused vend is audited too.
+    let [event] = captured.events().try_into().unwrap();
+    assert_eq!(event["outcome"], "error");
+    assert_eq!(event["error_code"], "FAILED_PRECONDITION");
+    assert_eq!(event["credential_kind"], "neon_storage");
 
     let err = h
         .generate_temporary_path_credentials(
@@ -417,6 +427,102 @@ mod enabled {
         assert_eq!(config["s3.region"], "eu-central-1");
         assert_eq!(config["s3.path-style-access"], "true");
         assert_eq!(credential.expiration_time_ms, Some(EXPIRES_MS));
+    }
+
+    /// Every vend emits exactly one audit event, without the key's secret.
+    #[tokio::test]
+    async fn every_vend_emits_one_audit_event_without_secrets() {
+        let mut server = Server::new_async().await;
+        let _storage = storage(&mut server).await;
+        let _list = list(&mut server).await;
+        let _read = create(&mut server, &["storage:read"], "nak_read_0123456789").await;
+        let _write = create(
+            &mut server,
+            &["storage:read", "storage:write"],
+            "nak_write_0123456789",
+        )
+        .await;
+        let h = handler(enabled(&server));
+        let table_id = seed(&h, "arn:neon:storage::proj:branch/br-1").await;
+
+        let (captured, _guard) = audit_capture::capture();
+        h.generate_temporary_table_credentials(table_vend(&table_id, false), ctx())
+            .await
+            .unwrap();
+        h.generate_temporary_path_credentials(
+            GenerateTemporaryPathCredentialsRequest {
+                url: "s3://bucket/landing".into(),
+                operation: generate_temporary_path_credentials_request::Operation::PathReadWrite
+                    .into(),
+                ..Default::default()
+            },
+            ctx(),
+        )
+        .await
+        .unwrap();
+        DeltaApiHandler::get_table_credentials(
+            &h,
+            TableRef {
+                catalog: "cat".into(),
+                schema: "sch".into(),
+                table: "t".into(),
+            },
+            DeltaCredentialOperation::Read,
+            ctx(),
+        )
+        .await
+        .unwrap();
+
+        let events = captured.events();
+        assert_eq!(events.len(), 3, "{events:#?}");
+        let expect = |event: &audit_capture::AuditEvent, pairs: &[(&str, &str)]| {
+            for (field, value) in pairs {
+                assert_eq!(
+                    event.get(*field).map(String::as_str),
+                    Some(*value),
+                    "{field}: {event:#?}"
+                );
+            }
+        };
+        let common = [
+            ("event", "credential_vend"),
+            ("outcome", "ok"),
+            ("principal", "anonymous"),
+            ("credential_kind", "neon_storage"),
+            ("expires_at", "2030-01-01T00:00:00+00:00"),
+        ];
+        for event in &events {
+            expect(event, &common);
+            for value in event.values() {
+                assert!(!value.contains("SECRET-"), "a secret leaked: {event:#?}");
+            }
+        }
+        expect(
+            &events[0],
+            &[
+                ("surface", "uc_rest"),
+                ("securable", "cat.sch.t"),
+                ("access", "read"),
+                ("credential_id", "nak_read"),
+            ],
+        );
+        expect(
+            &events[1],
+            &[
+                ("surface", "uc_rest"),
+                ("securable", "s3://bucket/landing"),
+                ("access", "read_write"),
+                ("credential_id", "nak_writ"),
+            ],
+        );
+        expect(
+            &events[2],
+            &[
+                ("surface", "delta_api"),
+                ("securable", "cat.sch.t"),
+                ("access", "read"),
+            ],
+        );
     }
 
     /// A failing control plane is a server error, never a credential.
