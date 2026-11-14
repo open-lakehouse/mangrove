@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.9](https://github.com/open-lakehouse/mangrove/compare/olai-uc-delta-api-v0.0.8...olai-uc-delta-api-v0.0.9) - 2026-11-14
+
+### Added
+
+- Cedar policy over olai-auth's Authorizer and EXTERNAL USE (#336)
+- [**breaking**] atomic apply_update, commit retries, authz order (#321)
+
+### Fixed
+
+- spec-conformant updateTable and loadTable schema round-trip (#320)
+
 ## [0.0.8](https://github.com/open-lakehouse/mangrove/compare/olai-uc-delta-api-v0.0.7...olai-uc-delta-api-v0.0.8) - 2026-11-13
 
 ### Fixed

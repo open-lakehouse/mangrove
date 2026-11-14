@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5](https://github.com/open-lakehouse/mangrove/compare/uc-app-v0.0.4...uc-app-v0.0.5) - 2026-11-14
+
+### Changed
+
+- move olai-uc-datafusion and the wasm engine to hydrofoil (#317)
+
 ## [0.0.4](https://github.com/open-lakehouse/mangrove/compare/uc-app-v0.0.3...uc-app-v0.0.4) - 2026-11-10
 
 ### Build
