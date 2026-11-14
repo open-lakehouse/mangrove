@@ -47,8 +47,9 @@ pub(crate) async fn vend_for_location<Cx: Send + Sync + 'static>(
 /// Authorize a temporary *path* credential for `storage_url` at `access`.
 ///
 /// Local storage is governed by no external location, so there is nothing to
-/// authorize against. Otherwise the caller needs the access on the concrete
-/// external location covering the path. Paths in the metastore's managed storage
+/// authorize against. Otherwise the caller needs the access, and
+/// [`Permission::ExternalUse`], on the concrete external location covering the
+/// path. Paths in the metastore's managed storage
 /// that no external location covers are denied: managed storage is reached
 /// through table and staging-table credentials, never by path.
 pub(crate) async fn authorize_path_vend(
@@ -67,8 +68,13 @@ pub(crate) async fn authorize_path_vend(
         .map_err(from_store)?;
     match covering {
         Some(location) => {
+            // By name, as policies key external locations.
+            let ident = ResourceIdent::external_location(ResourceName::new([&location.name]));
             handler
-                .authorize_checked(&(&location).into(), &required_permission(access), context)
+                .authorize_checked(&ident, &required_permission(access), context)
+                .await?;
+            handler
+                .authorize_checked(&ident, &Permission::ExternalUse, context)
                 .await
         }
         None if in_managed_root(handler, storage_url) => Err(Error::NotAllowed),
@@ -87,14 +93,36 @@ fn in_managed_root(
         .is_some_and(|root| root.scope().covers(storage_url.location()))
 }
 
-/// Mint a credential for the table at `table_ident` (already authorized).
-pub(crate) async fn vend_table(
+/// Require [`Permission::ExternalUse`] on schema `catalog.schema`: the grant
+/// that lets a caller receive storage credentials for the data of the tables,
+/// volumes and models in it.
+pub(crate) async fn authorize_external_use(
+    handler: &ServerHandler<RequestContext>,
+    catalog: &str,
+    schema: &str,
+    context: &RequestContext,
+) -> Result<()> {
+    let ident = ResourceIdent::schema(ResourceName::new([catalog, schema]));
+    handler
+        .authorize_checked(&ident, &Permission::ExternalUse, context)
+        .await
+}
+
+/// The table at `table_ident`, for vending a credential to it.
+pub(crate) async fn table_to_vend(
     handler: &ServerHandler<RequestContext>,
     table_ident: &ResourceIdent,
+) -> Result<Table> {
+    let (resource, _) = handler.get(table_ident).await?;
+    Ok(resource.try_into()?)
+}
+
+/// Mint a credential for `table` (already authorized).
+pub(crate) async fn vend_table(
+    handler: &ServerHandler<RequestContext>,
+    table: Table,
     access: AccessLevel,
 ) -> Result<(VendedCredential, StorageLocationUrl)> {
-    let (resource, _) = handler.get(table_ident).await?;
-    let table: Table = resource.try_into()?;
     let location = table
         .storage_location
         .ok_or_else(|| Error::invalid_argument("table does not have a storage location"))?;
@@ -186,6 +214,7 @@ impl TemporaryCredentialHandler<RequestContext> for ServerHandler<RequestContext
             .await?;
         let (resource, _) = self.get(&volume_ident).await?;
         let volume: Volume = resource.try_into()?;
+        authorize_external_use(self, &volume.catalog_name, &volume.schema_name, &context).await?;
         let location = volume.storage_location;
         let storage_url = StorageLocationUrl::parse(&location)?;
         vend_for_location(self, &storage_url, operation).await
@@ -218,6 +247,7 @@ impl TemporaryCredentialHandler<RequestContext> for ServerHandler<RequestContext
         // requested, rather than the unscoped `SecuredAction` default.
         self.authorize_checked(&ident, &required_permission(operation), &context)
             .await?;
+        authorize_external_use(self, &request.catalog_name, &request.schema_name, &context).await?;
         let (resource, _) = self.get(&ident).await?;
         let model_version: ModelVersion = resource.try_into()?;
         let location = model_version.storage_location.ok_or_else(|| {
@@ -241,7 +271,9 @@ impl TemporaryCredentialHandler<RequestContext> for ServerHandler<RequestContext
         let table_ident = ResourceIdent::Table(ResourceRef::Uuid(table_id));
         self.authorize_checked(&table_ident, &required_permission(operation), &context)
             .await?;
-        let (vended, storage_url) = vend_table(self, &table_ident, operation).await?;
+        let table = table_to_vend(self, &table_ident).await?;
+        authorize_external_use(self, &table.catalog_name, &table.schema_name, &context).await?;
+        let (vended, storage_url) = vend_table(self, table, operation).await?;
         Ok(to_temporary_credential(&vended, &storage_url))
     }
 }

@@ -1,0 +1,56 @@
+// The Unity Catalog server's Cedar vocabulary, for hosts to compose with their
+// own fragments. olai-uc-server publishes it as `policy::CEDAR_SCHEMA`.
+//
+// Principals are the host's `Lakehouse::User` and `Lakehouse::ServiceAccount`,
+// declared in the `Lakehouse` fragment.
+//
+// Entity ids are full names: `main` (catalog), `main.sales` (schema),
+// `main.sales.orders` (table), `main.sales.model.3` (model version), and
+// `metastore` for the root. A grant on a container covers what is in it,
+// because the server passes every ancestor as a parent of the resource (with
+// `resource_entity`), so a policy can write `resource in UnityCatalog::Schema::"main.sales"`.
+// Grants are keyed by name, so they don't follow a rename.
+//
+// Each action is one `Permission` of the server, asked on any securable. List
+// and create requests ask on the container (a schema for listing its tables, the
+// metastore for creating a catalog). Vending a credential needs `external_use`
+// in addition to `read` or `write`: on the schema for table, volume, model
+// version and staging table credentials, and on the external location for path
+// credentials.
+namespace UnityCatalog {
+  entity Metastore;
+  entity Catalog in [Metastore];
+  entity Schema in [Catalog, Metastore];
+
+  // Securables in a schema.
+  entity Table, Volume, Function, RegisteredModel, Agent, AgentSkill, StagingTable
+    in [Schema, Catalog, Metastore];
+  entity ModelVersion in [RegisteredModel, Schema, Catalog, Metastore];
+  entity Column in [Table, Schema, Catalog, Metastore];
+
+  // Securables of the metastore.
+  entity ExternalLocation, Credential, Share, Recipient, Provider, TagPolicy, Policy
+    in [Metastore];
+
+  // The standard context olai-auth's `AuthContext` builds.
+  type RequestContext = {
+    auth_method: String,
+    scopes: Set<String>,
+    client_id?: String,
+    token_issued_at?: Long,
+    source_ip?: ipaddr,
+    request_time?: datetime,
+    branch?: String,
+  };
+
+  action read, write, manage, create, use, browse, select, external_use appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [
+      Metastore, Catalog, Schema,
+      Table, Volume, Function, RegisteredModel, Agent, AgentSkill, StagingTable,
+      ModelVersion, Column,
+      ExternalLocation, Credential, Share, Recipient, Provider, TagPolicy, Policy
+    ],
+    context: RequestContext,
+  };
+}

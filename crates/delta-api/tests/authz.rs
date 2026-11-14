@@ -57,6 +57,7 @@ fn label(action: &DeltaAction<'_>) -> &'static str {
         DeltaAction::VendPathCredential { .. } => "VendPathCredential",
         DeltaAction::CreateStaging { .. } => "CreateStaging",
         DeltaAction::AdoptStaging { .. } => "AdoptStaging",
+        DeltaAction::VendStagingCredential { .. } => "VendStagingCredential",
         DeltaAction::ReadCatalog { .. } => "ReadCatalog",
         _ => "Unknown",
     }
@@ -376,8 +377,8 @@ async fn adopt_staging_is_a_backend_decision() {
     ));
 }
 
-/// Staging credentials are authorized by the reservation (the creator match),
-/// not as an arbitrary-path vend.
+/// Staging credentials are authorized by the reservation (the creator match)
+/// and then as a staging vend, not as an arbitrary-path vend.
 #[tokio::test]
 async fn staging_credentials_authorize_the_reservation() {
     let b = RecordingBackend::new(InMemoryDeltaBackend::new());
@@ -394,5 +395,8 @@ async fn staging_credentials_authorize_the_reservation() {
     b.get_staging_table_credentials(staging.table_id, ())
         .await
         .expect("staging credentials");
-    assert_eq!(b.actions(), vec!["CreateStaging", "AdoptStaging"]);
+    assert_eq!(
+        b.actions(),
+        vec!["CreateStaging", "AdoptStaging", "VendStagingCredential"]
+    );
 }

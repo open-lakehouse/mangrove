@@ -219,6 +219,50 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
     Ok(assemble(app, &config.ui, &config.storage_proxy))
 }
 
+/// The policy `config.policy` asks for, resolving securables through `store`.
+///
+/// An authorizer policy needs verified callers (`auth.mode: olai-auth`): it
+/// denies every request without one, so any other mode is a startup error.
+fn build_policy(
+    config: &Config,
+    #[cfg_attr(not(feature = "olai-auth"), allow(unused_variables))] store: Arc<
+        dyn crate::store::ResourceStoreReader,
+    >,
+) -> Result<Arc<dyn Policy<RequestContext>>> {
+    use crate::config::PolicyConfig;
+
+    match &config.policy {
+        PolicyConfig::Constant => Ok(Arc::new(crate::policy::ConstantPolicy::default())),
+        #[cfg(feature = "olai-auth")]
+        PolicyConfig::Authorizer(authorizer) => {
+            use std::time::Duration;
+
+            if config.auth.mode != AuthMode::OlaiAuth {
+                return Err(Error::Generic(
+                    "policy config: `kind: authorizer` needs `auth.mode: olai-auth`, \
+                     since it denies every request without a verified caller"
+                        .into(),
+                ));
+            }
+            let (url, token) = authorizer
+                .endpoint()
+                .map_err(|e| Error::Generic(format!("policy config: {e}")))?;
+            let ttl = authorizer
+                .cache_ttl_secs
+                .unwrap_or(crate::config::DEFAULT_DECISION_CACHE_TTL_SECS);
+            Ok(Arc::new(crate::policy::AuthorizerPolicy::remote(
+                &url,
+                &token,
+                authorizer.timeout_ms.map(Duration::from_millis),
+                Duration::from_secs(ttl),
+                store,
+            )))
+        }
+        #[cfg(not(feature = "olai-auth"))]
+        PolicyConfig::Authorizer(_) => Err(not_compiled("`policy.kind: authorizer`", "olai-auth")),
+    }
+}
+
 /// The startup error for a config that asks for `what`, which needs the cargo
 /// feature `feature` this build was compiled without.
 #[allow(dead_code)] // unused when every feature is on
@@ -242,11 +286,11 @@ async fn connect(config: &Config) -> Result<LocalHandler> {
     }
     match &config.backend {
         #[cfg(feature = "postgres")]
-        Backend::Postgres(pg) => connect_postgres(pg, encryptor(config)?, migrate).await,
+        Backend::Postgres(pg) => connect_postgres(pg, encryptor(config)?, migrate, config).await,
         #[cfg(not(feature = "postgres"))]
         Backend::Postgres(_) => Err(not_compiled("the postgres backend", "postgres")),
         #[cfg(feature = "sqlite")]
-        Backend::Sqlite(cfg) => connect_sqlite(cfg, encryptor(config)?, migrate).await,
+        Backend::Sqlite(cfg) => connect_sqlite(cfg, encryptor(config)?, migrate, config).await,
         #[cfg(not(feature = "sqlite"))]
         Backend::Sqlite(_) => Err(not_compiled("the sqlite backend", "sqlite")),
     }
@@ -587,11 +631,10 @@ async fn connect_postgres(
     pg: &crate::config::PostgresBackendConfig,
     encryptor: unitycatalog_common::services::encryption::EnvelopeEncryptor,
     migrate: bool,
+    config: &Config,
 ) -> Result<LocalHandler> {
     use unitycatalog_common::store::ObjectStoreAdapter;
     use unitycatalog_postgres::PgCommitCoordinator;
-
-    use crate::policy::ConstantPolicy;
 
     let db_url = pg
         .connection_string()
@@ -611,7 +654,6 @@ async fn connect_postgres(
     } else {
         check_postgres_schema(pg, &pool).await?;
     }
-    let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
     // The object/association graph store (lifted to `ResourceStore` by
     // `ObjectStoreAdapter`), the storage-access store and the Delta
     // `CommitCoordinator` are independent handles on the same pool. Sensitive
@@ -620,6 +662,7 @@ async fn connect_postgres(
     // catalog-managed commits are persisted in the `delta_commits` table.
     let graph = unitycatalog_postgres::connect_graph(pool.clone(), encryptor.clone());
     let resource_store = Arc::new(ObjectStoreAdapter::new(graph));
+    let policy = build_policy(config, resource_store.clone())?;
     let storage_access = Arc::new(unitycatalog_postgres::PgStorageAccess::new(
         pool.clone(),
         encryptor,
@@ -666,11 +709,10 @@ async fn connect_sqlite(
     cfg: &crate::config::SqliteBackendConfig,
     encryptor: unitycatalog_common::services::encryption::EnvelopeEncryptor,
     migrate: bool,
+    config: &Config,
 ) -> Result<LocalHandler> {
     use unitycatalog_common::store::ObjectStoreAdapter;
     use unitycatalog_sqlite::SqliteCommitCoordinator;
-
-    use crate::policy::ConstantPolicy;
 
     let path = cfg
         .database_path()
@@ -691,7 +733,6 @@ async fn connect_sqlite(
         crate::schema::ensure_current_sqlite(&unitycatalog_sqlite::unified_migrator(), &pool)
             .await?;
     }
-    let policy: Arc<dyn Policy<RequestContext>> = Arc::new(ConstantPolicy::default());
     // The object/association graph store (lifted to `ResourceStore` by
     // `ObjectStoreAdapter`), the storage-access store and the Delta
     // `CommitCoordinator` are independent handles on the same pool, as on the
@@ -699,6 +740,7 @@ async fn connect_sqlite(
     // tables, Delta catalog-managed commits in the `delta_commits` table.
     let graph = unitycatalog_sqlite::connect_graph(pool.clone(), encryptor.clone());
     let resource_store = Arc::new(ObjectStoreAdapter::new(graph));
+    let policy = build_policy(config, resource_store.clone())?;
     let storage_access = Arc::new(unitycatalog_sqlite::SqliteStorageAccess::new(
         pool.clone(),
         encryptor,

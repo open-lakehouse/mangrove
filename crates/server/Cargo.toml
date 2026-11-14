@@ -120,6 +120,9 @@ swagger-ui-dist = { version = "5.18.3", optional = true }
 olai-auth = { workspace = true, optional = true }
 
 [dev-dependencies]
+# The in-process Cedar authorizer, to test `AuthorizerPolicy` against the published
+# schema fragment.
+olai-auth = { workspace = true, features = ["cedar"] }
 # Signs the test tokens of the `olai-auth` mode.
 base64 = "0.22"
 ed25519-dalek = { version = "2.1", default-features = false, features = ["std"] }
@@ -156,12 +159,14 @@ sqlite = ["embed", "dep:unitycatalog-sqlite", "sqlx/sqlite"]
 # `auth.mode: olai-auth`: verified callers (Neon Auth JWTs over a JWKS URL, and
 # `olk_` API keys from the `authz` schema). Users' admin and ban status come from
 # `neon_auth."user"`. The identity tables are read through their own Postgres pool,
-# whatever the storage backend.
+# whatever the storage backend. Also `policy.kind: authorizer`: decisions from a
+# Cedar policy decision point over HTTPS (`policy::AuthorizerPolicy`).
 olai-auth = [
   "embed",
   "dep:olai-auth",
   "olai-auth/http",
   "olai-auth/postgres",
+  "olai-auth/pdp-client",
   "sqlx/postgres",
   "sqlx/runtime-tokio-rustls",
   "unitycatalog-handlers/olai-auth",

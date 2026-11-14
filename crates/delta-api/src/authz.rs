@@ -65,7 +65,8 @@ pub enum DeltaAction<'a> {
     },
     /// `getTemporaryPathCredentials` — vend a credential for an arbitrary path.
     /// (Staging-table credentials are authorized by
-    /// [`AdoptStaging`](Self::AdoptStaging) instead.)
+    /// [`AdoptStaging`](Self::AdoptStaging) and
+    /// [`VendStagingCredential`](Self::VendStagingCredential) instead.)
     VendPathCredential {
         location: &'a str,
         access: CredentialAccess,
@@ -81,4 +82,9 @@ pub enum DeltaAction<'a> {
     /// principals). The crate still enforces the genuine Delta semantics around
     /// adoption (`stage_committed`, the `tableId` property match).
     AdoptStaging { reservation: &'a StagingReservation },
+    /// `getStagingTableCredentials` — vend the staging reservation's READ_WRITE
+    /// credential to its creator, checked after [`AdoptStaging`](Self::AdoptStaging).
+    /// It lets a backend gate handing out storage credentials (e.g. on an
+    /// "external use" grant) separately from using the reservation.
+    VendStagingCredential { reservation: &'a StagingReservation },
 }

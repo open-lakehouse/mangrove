@@ -438,6 +438,13 @@ where
                  credentials endpoint"
             )));
         }
+        self.authorize(
+            DeltaAction::VendStagingCredential {
+                reservation: &staging,
+            },
+            &context,
+        )
+        .await?;
         let creds = self
             .vend_path_credential(&staging.location, CredentialAccess::ReadWrite, &context)
             .await?;
