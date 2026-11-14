@@ -138,6 +138,16 @@ fn decision(allowed: bool) -> Decision {
     }
 }
 
+/// Keep the ids of the policies behind an allow on the request's
+/// [`DecisionTrail`](unitycatalog_handlers::DecisionTrail), for audit records.
+fn record_allowing(context: &RequestContext, response: &olai_auth::AuthorizeResponse) {
+    if response.is_allowed() {
+        context
+            .decision_trail()
+            .record(response.policies.iter().cloned());
+    }
+}
+
 fn log_denial(request: &AuthorizeRequest, errors: &[String]) {
     if !errors.is_empty() {
         tracing::warn!(
@@ -162,6 +172,7 @@ impl Policy<RequestContext> for AuthorizerPolicy {
         };
         let response = self.authorizer.authorize(&request).await;
         log_denial(&request, &response.errors);
+        record_allowing(context, &response);
         Ok(decision(response.is_allowed()))
     }
 
@@ -184,6 +195,7 @@ impl Policy<RequestContext> for AuthorizerPolicy {
                 // A short batch answer denies the rest.
                 Some(request) => responses.next().map_or(Decision::Deny, |response| {
                     log_denial(request, &response.errors);
+                    record_allowing(context, &response);
                     decision(response.is_allowed())
                 }),
             })

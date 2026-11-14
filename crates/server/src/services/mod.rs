@@ -23,7 +23,7 @@ pub(crate) mod vending;
 mod storage_proxy_backend;
 
 pub use location_policy::LocalStoragePolicy;
-pub use vending::NeonVending;
+pub use vending::{AUDIT_TARGET, NeonVending};
 
 /// Access to the server's [`LocalStoragePolicy`].
 ///

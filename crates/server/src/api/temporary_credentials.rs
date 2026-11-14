@@ -8,7 +8,7 @@ use super::RequestContext;
 use crate::error::from_store;
 use crate::policy::{Permission, Policy};
 use crate::services::location::StorageLocationUrl;
-use crate::services::vending::{mint, to_temporary_credential};
+use crate::services::vending::{VendAudit, VendSurface, mint, to_temporary_credential};
 use crate::services::{ProvidesManagedStorageRoot, ServerHandler};
 use crate::store::ResourceStoreReader;
 use crate::{Error, Result};
@@ -26,12 +26,14 @@ use unitycatalog_storage_access::ProvidesStorageAccessStore;
 /// other location is minted from the credential of the external location
 /// governing it, or from the metastore root's credential for managed storage
 /// under the root. The caller has authorized the securable.
+/// Every vend emits one audit event for `audit`.
 pub(crate) async fn vend_location<Cx: Send + Sync + 'static>(
     handler: &ServerHandler<Cx>,
     location: &StorageLocationUrl,
     access: AccessLevel,
+    audit: &VendAudit<'_>,
 ) -> Result<VendedCredential> {
-    mint(handler.vendor(), location, access).await
+    mint(handler.vendor(), location, access, audit).await
 }
 
 /// [`vend_location`] as the UC REST response.
@@ -39,8 +41,9 @@ pub(crate) async fn vend_for_location<Cx: Send + Sync + 'static>(
     handler: &ServerHandler<Cx>,
     location: &StorageLocationUrl,
     access: AccessLevel,
+    audit: &VendAudit<'_>,
 ) -> Result<TemporaryCredential> {
-    let vended = vend_location(handler, location, access).await?;
+    let vended = vend_location(handler, location, access, audit).await?;
     Ok(to_temporary_credential(&vended, location))
 }
 
@@ -122,12 +125,19 @@ pub(crate) async fn vend_table(
     handler: &ServerHandler<RequestContext>,
     table: Table,
     access: AccessLevel,
+    surface: VendSurface,
+    context: &RequestContext,
 ) -> Result<(VendedCredential, StorageLocationUrl)> {
+    let full_name = format!(
+        "{}.{}.{}",
+        table.catalog_name, table.schema_name, table.name
+    );
     let location = table
         .storage_location
         .ok_or_else(|| Error::invalid_argument("table does not have a storage location"))?;
     let storage_url = StorageLocationUrl::parse(&location)?;
-    let vended = vend_location(handler, &storage_url, access).await?;
+    let audit = VendAudit::new(surface, full_name, context);
+    let vended = vend_location(handler, &storage_url, access, &audit).await?;
     Ok((vended, storage_url))
 }
 
@@ -187,7 +197,8 @@ impl TemporaryCredentialHandler<RequestContext> for ServerHandler<RequestContext
         // Authorize against the concrete external location and the operation
         // actually requested, rather than the unscoped `SecuredAction` default.
         authorize_path_vend(self, &storage_url, operation, &context).await?;
-        vend_for_location(self, &storage_url, operation).await
+        let audit = VendAudit::new(VendSurface::UcRest, storage_url.raw().as_str(), &context);
+        vend_for_location(self, &storage_url, operation, &audit).await
     }
 
     /// Generate temporary credentials for a volume.
@@ -217,7 +228,12 @@ impl TemporaryCredentialHandler<RequestContext> for ServerHandler<RequestContext
         authorize_external_use(self, &volume.catalog_name, &volume.schema_name, &context).await?;
         let location = volume.storage_location;
         let storage_url = StorageLocationUrl::parse(&location)?;
-        vend_for_location(self, &storage_url, operation).await
+        let full_name = format!(
+            "{}.{}.{}",
+            volume.catalog_name, volume.schema_name, volume.name
+        );
+        let audit = VendAudit::new(VendSurface::UcRest, full_name, &context);
+        vend_for_location(self, &storage_url, operation, &audit).await
     }
 
     /// Generate temporary credentials for a model version.
@@ -254,7 +270,12 @@ impl TemporaryCredentialHandler<RequestContext> for ServerHandler<RequestContext
             Error::invalid_argument("model version does not have a storage location")
         })?;
         let storage_url = StorageLocationUrl::parse(&location)?;
-        vend_for_location(self, &storage_url, operation).await
+        let full_name = format!(
+            "{}.{}.{}/{}",
+            request.catalog_name, request.schema_name, request.model_name, request.version
+        );
+        let audit = VendAudit::new(VendSurface::UcRest, full_name, &context);
+        vend_for_location(self, &storage_url, operation, &audit).await
     }
 
     #[tracing::instrument(skip(self, context))]
@@ -273,7 +294,8 @@ impl TemporaryCredentialHandler<RequestContext> for ServerHandler<RequestContext
             .await?;
         let table = table_to_vend(self, &table_ident).await?;
         authorize_external_use(self, &table.catalog_name, &table.schema_name, &context).await?;
-        let (vended, storage_url) = vend_table(self, table, operation).await?;
+        let (vended, storage_url) =
+            vend_table(self, table, operation, VendSurface::UcRest, &context).await?;
         Ok(to_temporary_credential(&vended, &storage_url))
     }
 }
@@ -350,7 +372,9 @@ mod tests {
         let handler = ServerHandler::try_new_tokio(policy, store).unwrap();
 
         let location = StorageLocationUrl::parse("file:///tmp/uc/tables/t1").unwrap();
-        let credential = vend_for_location(&handler, &location, AccessLevel::ReadWrite)
+        let cx = RequestContext::anonymous();
+        let audit = VendAudit::new(VendSurface::UcRest, "local", &cx);
+        let credential = vend_for_location(&handler, &location, AccessLevel::ReadWrite, &audit)
             .await
             .unwrap();
         assert!(credential.credentials.is_none());
@@ -359,7 +383,7 @@ mod tests {
 
         // Cloud storage still needs a governing external location.
         let location = StorageLocationUrl::parse("s3://bucket/tables/t1").unwrap();
-        let result = vend_for_location(&handler, &location, AccessLevel::Read).await;
+        let result = vend_for_location(&handler, &location, AccessLevel::Read, &audit).await;
         assert!(matches!(result, Err(Error::NotFound)), "{result:?}");
     }
 

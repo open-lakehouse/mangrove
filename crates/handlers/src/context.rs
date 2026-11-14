@@ -1,7 +1,6 @@
 //! The default request context of the handler traits.
 
-#[cfg(feature = "olai-auth")]
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError};
 
 /// The identity a request is made on behalf of.
 ///
@@ -29,6 +28,36 @@ impl Principal {
     }
 }
 
+/// The ids of the policies that allowed a request's authorization checks, for
+/// audit records (e.g. of a credential vend).
+///
+/// Shared by every clone of a [`RequestContext`], so a policy recording into the
+/// context it is handed is seen by the handler holding the original. A policy
+/// that has no policy ids (the allow-all constant policy) records nothing.
+#[derive(Debug, Clone, Default)]
+pub struct DecisionTrail(Arc<Mutex<Vec<String>>>);
+
+impl DecisionTrail {
+    /// Record `policies` as having allowed a check. Ids already recorded are kept
+    /// once.
+    pub fn record(&self, policies: impl IntoIterator<Item = String>) {
+        let mut recorded = self.0.lock().unwrap_or_else(PoisonError::into_inner);
+        for policy in policies {
+            if !recorded.contains(&policy) {
+                recorded.push(policy);
+            }
+        }
+    }
+
+    /// The recorded policy ids, in the order first recorded.
+    pub fn policies(&self) -> Vec<String> {
+        self.0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+}
+
 /// The context a handler method receives unless the trait is instantiated with
 /// another `Cx`.
 ///
@@ -45,6 +74,8 @@ pub struct RequestContext {
     /// [`subject`](olai_auth::Principal::subject).
     #[cfg(feature = "olai-auth")]
     pub authenticated: Option<Arc<olai_auth::Principal>>,
+    /// The policies that allowed this request's checks so far.
+    decisions: DecisionTrail,
 }
 
 impl RequestContext {
@@ -54,6 +85,7 @@ impl RequestContext {
             recipient,
             #[cfg(feature = "olai-auth")]
             authenticated: None,
+            decisions: DecisionTrail::default(),
         }
     }
 
@@ -69,12 +101,19 @@ impl RequestContext {
         Self {
             recipient: Principal::User(principal.subject().to_owned()),
             authenticated: Some(Arc::new(principal)),
+            decisions: DecisionTrail::default(),
         }
     }
 
     /// Who the request is made on behalf of.
     pub fn recipient(&self) -> &Principal {
         &self.recipient
+    }
+
+    /// The ids of the policies that allowed this request's checks (see
+    /// [`DecisionTrail`]).
+    pub fn decision_trail(&self) -> &DecisionTrail {
+        &self.decisions
     }
 
     /// The verified caller, when the request was authenticated by `olai-auth`.

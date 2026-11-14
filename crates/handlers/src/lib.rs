@@ -29,7 +29,7 @@
 //! of the trestle-emitted `codegen/mod.rs`, which is kept as the reference the
 //! drift test below checks against.
 
-pub use context::{Principal, RequestContext};
+pub use context::{DecisionTrail, Principal, RequestContext};
 pub use error::{Error, Result};
 
 mod context;

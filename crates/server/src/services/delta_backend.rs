@@ -48,6 +48,7 @@ use crate::policy::{Permission, Policy, Principal};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::validate_external_storage_location;
+use crate::services::vending::{VendAudit, VendSurface};
 use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
 
@@ -578,7 +579,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         &self,
         table_id: &str,
         access: CredentialAccess,
-        _cx: &RequestContext,
+        cx: &RequestContext,
     ) -> BackendResult<VendedCredential> {
         let uuid = uuid::Uuid::parse_str(table_id).map_err(|_| {
             DeltaBackendError::InvalidArgument("table id is not a valid UUID".into())
@@ -586,7 +587,7 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         let table = table_to_vend(self, &ResourceIdent::Table(ResourceRef::Uuid(uuid)))
             .await
             .map_err(to_backend_err)?;
-        let (credential, url) = vend_table(self, table, access)
+        let (credential, url) = vend_table(self, table, access, VendSurface::DeltaApi, cx)
             .await
             .map_err(to_backend_err)?;
         Ok(VendedCredential::new(url.raw().to_string(), credential))
@@ -596,10 +597,11 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         &self,
         location: &str,
         access: CredentialAccess,
-        _cx: &RequestContext,
+        cx: &RequestContext,
     ) -> BackendResult<VendedCredential> {
         let url = StorageLocationUrl::parse(location).map_err(to_backend_err)?;
-        let credential = vend_location(self, &url, access)
+        let audit = VendAudit::new(VendSurface::DeltaApi, url.raw().as_str(), cx);
+        let credential = vend_location(self, &url, access, &audit)
             .await
             .map_err(to_backend_err)?;
         Ok(VendedCredential::new(url.raw().to_string(), credential))

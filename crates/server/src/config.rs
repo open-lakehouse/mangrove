@@ -138,6 +138,36 @@ pub struct VendingConfig {
     pub neon: NeonVendingConfig,
 }
 
+impl VendingConfig {
+    /// The config error (if any) that should refuse server startup.
+    ///
+    /// Trusted Neon keys reach a whole branch, so they must never be one URL
+    /// away: [`NeonVendingConfig::enabled`] needs verified callers
+    /// (`auth.mode: olai-auth`) **and** real authorization (`policy.kind:
+    /// authorizer`). Anonymous, reverse-proxy and bearer callers, and the
+    /// allow-all `constant` policy, are refused.
+    pub fn startup_error(&self, auth: &AuthConfig, policy: &PolicyConfig) -> Option<String> {
+        if !self.neon.enabled {
+            return None;
+        }
+        let mut missing = Vec::new();
+        if auth.mode != AuthMode::OlaiAuth {
+            missing.push("`auth.mode: olai-auth`");
+        }
+        if !matches!(policy, PolicyConfig::Authorizer(_)) {
+            missing.push("`policy.kind: authorizer`");
+        }
+        if missing.is_empty() {
+            return None;
+        }
+        Some(format!(
+            "`vending.neon.enabled` mints keys that reach the whole Neon branch, so it needs \
+             verified callers and real authorization: set {} (or disable `vending.neon`)",
+            missing.join(" and ")
+        ))
+    }
+}
+
 /// Trusted vending for Neon object storage.
 ///
 /// Neon storage has no STS and no prefix-scoped keys. When enabled, a vend
@@ -161,7 +191,8 @@ pub struct VendingConfig {
 ///   accepted again ~13 s later, and rejected for good only after ~20 s), so
 ///   revoking a key does not stop it promptly. Keep the TTL short; to stop
 ///   vending, set `enabled: false`.
-/// - Needs the `neon-trusted-vending` feature.
+/// - Needs the `neon-trusted-vending` feature, `auth.mode: olai-auth` and
+///   `policy.kind: authorizer` (see [`VendingConfig::startup_error`]).
 /// - UC REST credentials carry no endpoint: clients set `AWS_ENDPOINT_URL_S3` to
 ///   the branch's storage endpoint. Delta API credentials carry `s3.endpoint`,
 ///   `s3.region` and `s3.path-style-access`.
@@ -1227,6 +1258,33 @@ mod tests {
     fn neon(yaml: &str) -> NeonVendingConfig {
         let config: Config = serde_yml::from_str(&format!("vending:\n  neon:\n{yaml}")).unwrap();
         config.vending.neon
+    }
+
+    #[test]
+    fn neon_vending_interlock_allows_olai_auth_with_the_authorizer() {
+        let mut vending = VendingConfig::default();
+        let olai = AuthConfig {
+            mode: AuthMode::OlaiAuth,
+            ..Default::default()
+        };
+        let authorizer = PolicyConfig::Authorizer(AuthorizerConfig {
+            url: ConfigValue::Value("https://a".into()),
+            token: ConfigValue::Value("t".into()),
+            cache_ttl_secs: None,
+            timeout_ms: None,
+        });
+        // Disabled vending needs nothing.
+        assert_eq!(
+            vending.startup_error(&AuthConfig::default(), &PolicyConfig::Constant),
+            None
+        );
+        vending.neon.enabled = true;
+        assert_eq!(vending.startup_error(&olai, &authorizer), None);
+        assert!(
+            vending
+                .startup_error(&olai, &PolicyConfig::Constant)
+                .is_some()
+        );
     }
 
     #[test]

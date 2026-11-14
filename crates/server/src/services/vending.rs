@@ -19,6 +19,7 @@
 //! and [`NeonVending`] is enabled; otherwise a vend against such a credential is
 //! a `FAILED_PRECONDITION`, while registering one still works.
 
+use std::cell::Cell;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -27,8 +28,11 @@ use olai_credential_vending::{
     CredentialMinter, CredentialResolver, LocalMinter, MintRequest, RegisteredCredential, Vendor,
     minter_for,
 };
-use olai_storage_credentials::{AccessLevel, StorageLocation, StorageScope, VendedCredential};
+use olai_storage_credentials::{
+    AccessLevel, StorageCredentials, StorageLocation, StorageScope, VendedCredential,
+};
 use unitycatalog_common::models::temporary_credentials::v1::TemporaryCredential;
+use unitycatalog_handlers::{Principal, RequestContext};
 use unitycatalog_storage_access::StorageAccessStore;
 
 use super::location::StorageLocationUrl;
@@ -72,7 +76,7 @@ impl CredentialResolver for CatalogResolver {
         };
         match self.store.as_ref().resolve(location).await {
             Err(olai_credential_vending::Error::NotFound { .. }) => {}
-            other => return other,
+            other => return other.inspect(record_kind),
         }
         let Some(root) = self
             .managed_root
@@ -89,13 +93,25 @@ impl CredentialResolver for CatalogResolver {
                 unitycatalog_common::Error::NotFound => not_found(),
                 other => olai_credential_vending::Error::mint(other),
             })?;
-        RegisteredCredential::try_from(&credential).map_err(|e| {
-            olai_credential_vending::Error::Unsupported {
+        RegisteredCredential::try_from(&credential)
+            .map_err(|e| olai_credential_vending::Error::Unsupported {
                 location: location.to_string(),
                 reason: e.to_string(),
-            }
-        })
+            })
+            .inspect(record_kind)
     }
+}
+
+tokio::task_local! {
+    /// The kind of the registered credential the current [`mint`] resolved to,
+    /// for its audit event. The vendor resolves on every vend, inside the mint's
+    /// task, so no extra store read is needed.
+    static RESOLVED_KIND: Cell<Option<&'static str>>;
+}
+
+fn record_kind(credential: &RegisteredCredential) {
+    // Outside a `mint` (e.g. the storage proxy's minter) there is nothing to record.
+    let _ = RESOLVED_KIND.try_with(|kind| kind.set(Some(credential.kind())));
 }
 
 /// The kind recorded by [`RegisteredCredential::kind`] for Neon storage.
@@ -266,19 +282,144 @@ pub(crate) fn minter_for_location(
     }
 }
 
-/// Mints a credential for `location` at `access`.
+/// The audit log target: one event per credential vend handed to a client.
+pub const AUDIT_TARGET: &str = "unitycatalog::audit";
+
+/// The API a vend was asked for through, for its audit event.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum VendSurface {
+    /// The UC REST `temporary-*-credentials` endpoints.
+    UcRest,
+    /// The UC Delta API `/credentials` endpoints (and staging-table creation).
+    DeltaApi,
+}
+
+impl VendSurface {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::UcRest => "uc_rest",
+            Self::DeltaApi => "delta_api",
+        }
+    }
+}
+
+/// Who asked for a vend, and for what: the subject of its audit event.
+pub(crate) struct VendAudit<'a> {
+    pub(crate) surface: VendSurface,
+    /// The securable the caller was authorized for: a full name, or the path of a
+    /// path vend.
+    pub(crate) securable: String,
+    /// The request, for its principal and the policies that allowed it.
+    pub(crate) context: &'a RequestContext,
+}
+
+impl<'a> VendAudit<'a> {
+    pub(crate) fn new(
+        surface: VendSurface,
+        securable: impl Into<String>,
+        context: &'a RequestContext,
+    ) -> Self {
+        Self {
+            surface,
+            securable: securable.into(),
+            context,
+        }
+    }
+}
+
+/// A short, non-secret id of a vended credential for the audit log: the first
+/// characters of the S3 access key id (a Neon key's token id, an STS key id).
+/// SAS and bearer tokens are secrets through and through, so they get none.
+fn short_credential_id(credentials: &StorageCredentials) -> Option<String> {
+    match credentials {
+        StorageCredentials::Aws { key_id, .. } => Some(key_id.chars().take(8).collect()),
+        _ => None,
+    }
+}
+
+/// Emits the audit event for one vend. Never formats a secret: only the
+/// credential's kind, short id and expiry.
+fn audit_vend(
+    audit: &VendAudit<'_>,
+    location: &StorageLocationUrl,
+    access: AccessLevel,
+    kind: Option<&'static str>,
+    result: &Result<VendedCredential>,
+) {
+    let principal = match audit.context.recipient() {
+        Principal::User(name) => name.as_str(),
+        Principal::Anonymous => "anonymous",
+    };
+    let access = match access {
+        AccessLevel::Read => "read",
+        AccessLevel::ReadWrite => "read_write",
+    };
+    let policies = audit.context.decision_trail().policies();
+    let kind = kind.unwrap_or(if location.is_local() {
+        "local"
+    } else {
+        "unresolved"
+    });
+    match result {
+        Ok(vended) => {
+            let credential_id = short_credential_id(&vended.credentials);
+            let expires_at = vended.expires_at.map(|t| t.to_rfc3339());
+            tracing::info!(
+                target: AUDIT_TARGET,
+                event = "credential_vend",
+                outcome = "ok",
+                surface = audit.surface.as_str(),
+                principal,
+                securable = %audit.securable,
+                location = %location.raw(),
+                access,
+                credential_kind = kind,
+                credential_id = credential_id.as_deref().unwrap_or(""),
+                expires_at = expires_at.as_deref().unwrap_or(""),
+                ?policies,
+                "credential vended"
+            );
+        }
+        Err(err) => {
+            tracing::info!(
+                target: AUDIT_TARGET,
+                event = "credential_vend",
+                outcome = "error",
+                surface = audit.surface.as_str(),
+                principal,
+                securable = %audit.securable,
+                location = %location.raw(),
+                access,
+                credential_kind = kind,
+                error_code = err.error_code(),
+                ?policies,
+                "credential vend failed"
+            );
+        }
+    }
+}
+
+/// Mints a credential for `location` at `access`, emitting one audit event (see
+/// [`AUDIT_TARGET`]) for `audit`, whatever the outcome.
 pub(crate) async fn mint(
     vendor: &Arc<CatalogVendor>,
     location: &StorageLocationUrl,
     access: AccessLevel,
+    audit: &VendAudit<'_>,
 ) -> Result<VendedCredential> {
     let request = MintRequest::new(location.scope(), access);
-    minter_for_location(vendor, location)
-        .mint(&request)
-        .await
-        // Normalize like the store lookups do, so a location no credential
-        // governs is a plain `NotFound`.
-        .map_err(|e| crate::error::from_store(unitycatalog_common::Error::from(e)))
+    let minter = minter_for_location(vendor, location);
+    let (result, kind) = RESOLVED_KIND
+        .scope(Cell::new(None), async {
+            let result = minter.mint(&request).await;
+            (result, RESOLVED_KIND.with(Cell::get))
+        })
+        .await;
+    // Normalize like the store lookups do, so a location no credential governs is
+    // a plain `NotFound`.
+    let result = result.map_err(|e| crate::error::from_store(unitycatalog_common::Error::from(e)));
+    audit_vend(audit, location, access, kind, &result);
+    result
 }
 
 /// The UC REST response for `vended`, naming `location` as the client spelled it

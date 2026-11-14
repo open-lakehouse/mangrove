@@ -124,6 +124,9 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
     if let Some(err) = config.files.startup_error() {
         return Err(Error::Generic(format!("files config: {err}")));
     }
+    if let Some(err) = config.vending.startup_error(&config.auth, &config.policy) {
+        return Err(Error::Generic(format!("vending config: {err}")));
+    }
     let neon_vending = config
         .vending
         .neon
