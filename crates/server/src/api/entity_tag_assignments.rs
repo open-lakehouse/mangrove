@@ -3,9 +3,9 @@ use unitycatalog_common::models::{
     AssociationLabel, ObjectLabel, PropertyMap, ResourceIdent, ResourceName, ResourceRef,
 };
 
-use super::{RequestContext, SecuredAction, UpdateMask};
+use super::{DynamicSecurable, RequestContext, UpdateMask};
 use crate::Result;
-use crate::policy::{Permission, Policy};
+use crate::policy::{Operation, Securable};
 use crate::services::ServerHandler;
 use crate::store::ResourceStore;
 pub use unitycatalog_handlers::entity_tag_assignments::EntityTagAssignmentHandler;
@@ -34,6 +34,38 @@ fn entity_ident(entity_type: &str, entity_name: &str) -> Result<ResourceIdent> {
     let label = entity_label(entity_type)?;
     Ok(label.to_ident(ResourceName::from_naive_str_split(entity_name)))
 }
+
+/// The securable a tag assignment is on: the tagged entity.
+fn entity_securable(entity_type: &str, entity_name: &str) -> Result<Securable> {
+    Ok(Securable::new(
+        entity_label(entity_type)?,
+        entity_name.split('.').map(str::to_string).collect(),
+    ))
+}
+
+macro_rules! tagged_entity {
+    ($($request:ty => $op:ident),* $(,)?) => {
+        $(
+            impl DynamicSecurable for $request {
+                fn operation(&self) -> Operation {
+                    Operation::$op
+                }
+
+                fn securable(&self) -> Result<Securable> {
+                    entity_securable(&self.entity_type, &self.entity_name)
+                }
+            }
+        )*
+    };
+}
+
+tagged_entity!(
+    ListEntityTagAssignmentsRequest => ListEntityTagAssignments,
+    CreateEntityTagAssignmentRequest => CreateEntityTagAssignment,
+    GetEntityTagAssignmentRequest => GetEntityTagAssignment,
+    UpdateEntityTagAssignmentRequest => UpdateEntityTagAssignment,
+    DeleteEntityTagAssignmentRequest => DeleteEntityTagAssignment,
+);
 
 /// Build the [`ResourceIdent`] of the TagPolicy referenced by a tag key.
 fn tag_ident(tag_key: &str) -> ResourceIdent {
@@ -70,7 +102,7 @@ impl EntityTagAssignmentHandler<RequestContext> for ServerHandler<RequestContext
         request: CreateEntityTagAssignmentRequest,
         context: RequestContext,
     ) -> Result<EntityTagAssignment> {
-        self.check_required(&request, &context).await?;
+        super::check_dynamic(self, &request, &context).await?;
         let assignment = EntityTagAssignment {
             entity_type: request.entity_type,
             entity_name: request.entity_name,
@@ -99,7 +131,7 @@ impl EntityTagAssignmentHandler<RequestContext> for ServerHandler<RequestContext
         context: RequestContext,
     ) -> Result<()> {
         tracing::Span::current().record("resource_name", &request.entity_name);
-        self.check_required(&request, &context).await?;
+        super::check_dynamic(self, &request, &context).await?;
         let entity = entity_ident(&request.entity_type, &request.entity_name)?;
         let tag = tag_ident(&request.tag_key);
         self.remove_association(&entity, &tag, &AssociationLabel::Tagged)
@@ -114,7 +146,7 @@ impl EntityTagAssignmentHandler<RequestContext> for ServerHandler<RequestContext
         context: RequestContext,
     ) -> Result<EntityTagAssignment> {
         tracing::Span::current().record("resource_name", &request.entity_name);
-        self.check_required(&request, &context).await?;
+        super::check_dynamic(self, &request, &context).await?;
         let entity = entity_ident(&request.entity_type, &request.entity_name)?;
         let tag = tag_ident(&request.tag_key);
         let (edges, _) = self
@@ -143,7 +175,7 @@ impl EntityTagAssignmentHandler<RequestContext> for ServerHandler<RequestContext
         context: RequestContext,
     ) -> Result<ListEntityTagAssignmentsResponse> {
         tracing::Span::current().record("resource_name", &request.entity_name);
-        self.check_required(&request, &context).await?;
+        super::check_dynamic(self, &request, &context).await?;
         let entity = entity_ident(&request.entity_type, &request.entity_name)?;
         let (edges, next_page_token) = self
             .list_associations_with_properties(
@@ -182,7 +214,7 @@ impl EntityTagAssignmentHandler<RequestContext> for ServerHandler<RequestContext
         context: RequestContext,
     ) -> Result<EntityTagAssignment> {
         tracing::Span::current().record("resource_name", &request.entity_name);
-        self.check_required(&request, &context).await?;
+        super::check_dynamic(self, &request, &context).await?;
         let mask = UpdateMask::parse(request.update_mask.as_deref(), &["tag_value"])?;
         let entity = entity_ident(&request.entity_type, &request.entity_name)?;
         let tag = tag_ident(&request.tag_key);
@@ -249,61 +281,6 @@ async fn tag_key_for<S: ResourceStore>(store: &S, tag_ref: &ResourceIdent) -> Re
 
 // Authorization is checked against the *entity* being tagged: tagging is a modification of the
 // entity's metadata, so the caller needs the corresponding permission on the entity.
-impl SecuredAction for CreateEntityTagAssignmentRequest {
-    fn resource(&self) -> ResourceIdent {
-        entity_ident(&self.entity_type, &self.entity_name)
-            .unwrap_or_else(|_| ResourceIdent::catalog(ResourceRef::Undefined))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for ListEntityTagAssignmentsRequest {
-    fn resource(&self) -> ResourceIdent {
-        entity_ident(&self.entity_type, &self.entity_name)
-            .unwrap_or_else(|_| ResourceIdent::catalog(ResourceRef::Undefined))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetEntityTagAssignmentRequest {
-    fn resource(&self) -> ResourceIdent {
-        entity_ident(&self.entity_type, &self.entity_name)
-            .unwrap_or_else(|_| ResourceIdent::catalog(ResourceRef::Undefined))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for UpdateEntityTagAssignmentRequest {
-    fn resource(&self) -> ResourceIdent {
-        entity_ident(&self.entity_type, &self.entity_name)
-            .unwrap_or_else(|_| ResourceIdent::catalog(ResourceRef::Undefined))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for DeleteEntityTagAssignmentRequest {
-    fn resource(&self) -> ResourceIdent {
-        entity_ident(&self.entity_type, &self.entity_name)
-            .unwrap_or_else(|_| ResourceIdent::catalog(ResourceRef::Undefined))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
@@ -313,7 +290,7 @@ mod tests {
 
     use super::*;
     use crate::memory::InMemoryResourceStore;
-    use crate::policy::ConstantPolicy;
+    use crate::policy::{ConstantPolicy, Policy};
     use crate::services::ServerHandler;
 
     // Seed a catalog (the tagged entity) and two TagPolicy objects, since add_association

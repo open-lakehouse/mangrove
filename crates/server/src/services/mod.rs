@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use crate::Result;
-use crate::policy::{Decision, Permission, Policy, ProvidesPolicy};
+use crate::grants::Grants;
+use crate::policy::{Decision, Facts, Policy, ProvidesPolicy, Securable, ServerAction};
 use crate::store::{ProvidesResourceStore, ResourceStore};
-use unitycatalog_common::models::ResourceIdent;
 use unitycatalog_delta_api::coordinator::{
     CommitCoordinator, InMemoryCommitCoordinator, ProvidesCommitCoordinator,
 };
@@ -86,6 +86,18 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
 }
 
 impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
+    /// Keep grants in `grants` instead of in memory. Call at construction time,
+    /// before the handler is cloned/shared.
+    pub fn with_grants(mut self, grants: Grants) -> Self {
+        self.handler = Arc::new(self.handler.rebuild(|inner| inner.grants = grants));
+        self
+    }
+
+    /// The grants of the securables.
+    pub fn grants(&self) -> &Grants {
+        &self.handler.grants
+    }
+
     /// Set the allowlist governing `file://` storage locations.
     ///
     /// Rebuilds the inner handler with the policy attached. Call at construction
@@ -194,6 +206,9 @@ pub struct ServerHandlerInner<Cx> {
     /// Trusted Neon vending: registration defaults and whether Neon credentials
     /// mint. Disabled by default.
     neon_vending: Arc<NeonVending>,
+    /// The grants of the securables and the directory naming their principals
+    /// (in memory by default).
+    grants: Grants,
     /// The vendor temporary credentials are minted through; derived from
     /// `storage_access`, the managed-root settings and `neon_vending` (see
     /// [`Self::rebuild`]).
@@ -212,6 +227,7 @@ impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
             policy,
             store,
             storage_access,
+            grants: Grants::in_memory(),
             commit_coordinator: Arc::new(InMemoryCommitCoordinator::default()),
             // Deny all local (file://) storage until a policy is configured.
             local_storage_policy: Arc::new(LocalStoragePolicy::deny_all()),
@@ -229,6 +245,7 @@ impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
             policy: self.policy.clone(),
             store: self.store.clone(),
             storage_access: self.storage_access.clone(),
+            grants: self.grants.clone(),
             commit_coordinator: self.commit_coordinator.clone(),
             local_storage_policy: self.local_storage_policy.clone(),
             managed_storage_root: self.managed_storage_root.clone(),
@@ -300,21 +317,25 @@ impl<Cx: Send + Sync + 'static> ProvidesPolicy<Cx> for ServerHandler<Cx> {
 impl<Cx: Send + Sync + 'static> Policy<Cx> for ServerHandlerInner<Cx> {
     async fn authorize(
         &self,
-        resource: &ResourceIdent,
-        permission: &Permission,
+        action: ServerAction,
+        securable: &Securable,
+        facts: &Facts,
         context: &Cx,
     ) -> Result<Decision> {
-        self.policy().authorize(resource, permission, context).await
+        self.policy()
+            .authorize(action, securable, facts, context)
+            .await
     }
 
     async fn authorize_many(
         &self,
-        resources: &[ResourceIdent],
-        permission: &Permission,
+        action: ServerAction,
+        securables: &[Securable],
+        facts: &Facts,
         context: &Cx,
     ) -> Result<Vec<Decision>> {
         self.policy()
-            .authorize_many(resources, permission, context)
+            .authorize_many(action, securables, facts, context)
             .await
     }
 }
@@ -323,25 +344,27 @@ impl<Cx: Send + Sync + 'static> Policy<Cx> for ServerHandlerInner<Cx> {
 impl<Cx: Send + Sync + 'static> Policy<Cx> for ServerHandler<Cx> {
     async fn authorize(
         &self,
-        resource: &ResourceIdent,
-        permission: &Permission,
+        action: ServerAction,
+        securable: &Securable,
+        facts: &Facts,
         context: &Cx,
     ) -> Result<Decision> {
         self.handler
             .policy
-            .authorize(resource, permission, context)
+            .authorize(action, securable, facts, context)
             .await
     }
 
     async fn authorize_many(
         &self,
-        resources: &[ResourceIdent],
-        permission: &Permission,
+        action: ServerAction,
+        securables: &[Securable],
+        facts: &Facts,
         context: &Cx,
     ) -> Result<Vec<Decision>> {
         self.handler
             .policy
-            .authorize_many(resources, permission, context)
+            .authorize_many(action, securables, facts, context)
             .await
     }
 }

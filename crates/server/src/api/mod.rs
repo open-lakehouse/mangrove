@@ -5,6 +5,7 @@ pub use credentials::CredentialHandler;
 pub use entity_tag_assignments::EntityTagAssignmentHandler;
 pub use external_locations::ExternalLocationHandler;
 pub use functions::FunctionHandler;
+pub use grants::GrantHandler;
 pub use model_versions::ModelVersionHandler;
 pub use policies::PolicyHandler;
 pub use registered_models::RegisteredModelHandler;
@@ -15,8 +16,9 @@ pub use tag_policies::TagPolicyHandler;
 pub use temporary_credentials::TemporaryCredentialHandler;
 pub use volumes::VolumeHandler;
 
-use crate::policy::Permission;
-use unitycatalog_common::models::ResourceIdent;
+use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
+
+use crate::policy::{Authorizable, Facts, Operation, Policy, Securable};
 
 // TODO: implement once AssociationLabel::CreatedBy and AssociationLabel::UpdatedBy variants are
 // added to unitycatalog_common (they are currently absent from the AssociationLabel enum in
@@ -38,6 +40,7 @@ pub mod credentials;
 pub mod entity_tag_assignments;
 pub mod external_locations;
 pub mod functions;
+pub mod grants;
 pub mod model_versions;
 pub mod policies;
 pub mod registered_models;
@@ -99,12 +102,52 @@ impl<'a> UpdateMask<'a> {
 
 pub use unitycatalog_handlers::RequestContext;
 
-pub trait SecuredAction: Send + Sync {
-    /// The resource that the action is performed on.
+/// The store ident of the resource a request addresses by name: its
+/// [`Authorizable::securable`], which for gets, updates and deletes is the
+/// resource itself.
+pub trait RequestResource {
+    /// The resource the request addresses.
     fn resource(&self) -> ResourceIdent;
+}
 
-    /// The permission required to perform the action.
-    fn permission(&self) -> &'static Permission;
+impl<T: Authorizable + ?Sized> RequestResource for T {
+    fn resource(&self) -> ResourceIdent {
+        let securable = self.securable();
+        match securable.label {
+            Some(label) => label.to_ident(ResourceName::new(securable.name.iter())),
+            // Only lists act on the root, and they address no single resource.
+            None => ResourceIdent::catalog(ResourceRef::Undefined),
+        }
+    }
+}
+
+/// A request whose securable comes from its content (a securable type and a
+/// name), so codegen leaves it without an [`Authorizable`] impl: tag
+/// assignments, ABAC policies.
+pub(crate) trait DynamicSecurable: Send + Sync {
+    /// The operation the request performs.
+    fn operation(&self) -> Operation;
+
+    /// The securable it acts on, or an error for a type it can't name.
+    fn securable(&self) -> crate::Result<Securable>;
+}
+
+/// Authorize a [`DynamicSecurable`] request: its operation on its securable,
+/// with no facts.
+pub(crate) async fn check_dynamic<Cx: Send + Sync + 'static>(
+    policy: &(impl Policy<Cx> + ?Sized),
+    request: &dyn DynamicSecurable,
+    context: &Cx,
+) -> crate::Result<()> {
+    let securable = request.securable()?;
+    policy
+        .authorize_checked(
+            request.operation().into(),
+            &securable,
+            &Facts::default(),
+            context,
+        )
+        .await
 }
 
 #[cfg(test)]

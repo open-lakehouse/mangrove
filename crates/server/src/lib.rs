@@ -20,10 +20,12 @@
 //!
 //! - [`api`] — the per-resource handler traits (generated into
 //!   `unitycatalog-handlers`) re-exported with their hand-written business logic,
-//!   and the [`SecuredAction`](api::SecuredAction) permission mapping.
-//! - [`policy`] — the [`Policy`](policy::Policy) authorization trait,
-//!   [`Permission`](policy::Permission)/[`Decision`](policy::Decision), and the
-//!   allow-all [`ConstantPolicy`](policy::ConstantPolicy).
+//!   and the grants API.
+//! - [`policy`] — the [`Policy`](policy::Policy) authorization trait over the
+//!   generated [`Operation`](policy::Operation)s, [`Facts`](policy::Facts),
+//!   [`Decision`](policy::Decision), and the allow-all
+//!   [`ConstantPolicy`](policy::ConstantPolicy).
+//! - [`grants`] — the grant store, the principal directory and ownership.
 //! - [`store`] — storage-abstraction traits, re-exported from
 //!   `unitycatalog-common`.
 //! - [`rest`] — the `axum` routers that expose the handlers over HTTP.
@@ -43,6 +45,7 @@
 
 pub mod api;
 pub mod error;
+pub mod grants;
 pub mod handlers;
 #[cfg(feature = "memory")]
 pub mod memory;

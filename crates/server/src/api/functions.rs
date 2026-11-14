@@ -1,11 +1,12 @@
 use itertools::Itertools;
 
 use unitycatalog_common::models::functions::v1::*;
-use unitycatalog_common::models::{ObjectLabel, ResourceIdent, ResourceName};
+use unitycatalog_common::models::{ObjectLabel, ResourceName};
 
-use super::{RequestContext, SecuredAction};
+use super::{RequestContext, RequestResource};
 use crate::Result;
-use crate::policy::{Permission, Policy, process_resources};
+use crate::policy::Authorizable;
+use crate::policy::{Policy, process_resources};
 use crate::services::ServerHandler;
 use crate::store::{ResourceStore, ResourceStoreReader};
 pub use unitycatalog_handlers::functions::FunctionHandler;
@@ -30,7 +31,7 @@ impl FunctionHandler<RequestContext> for ServerHandler<RequestContext> {
                 request.page_token,
             )
             .await?;
-        process_resources(self, &context, &Permission::Read, &mut resources).await?;
+        process_resources(self, &context, &mut resources).await?;
         Ok(ListFunctionsResponse {
             functions: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
@@ -45,6 +46,7 @@ impl FunctionHandler<RequestContext> for ServerHandler<RequestContext> {
         context: RequestContext,
     ) -> Result<Function> {
         self.check_required(&request, &context).await?;
+        let securable = request.securable();
         let function_info = request
             .function_info
             .ok_or_else(|| crate::Error::invalid_argument("function_info must be provided"))?;
@@ -76,7 +78,9 @@ impl FunctionHandler<RequestContext> for ServerHandler<RequestContext> {
             specific_name: function_info.specific_name,
             ..Default::default()
         };
-        Ok(self.create(resource.into()).await?.0.try_into()?)
+        let created: Function = self.create(resource.into()).await?.0.try_into()?;
+        self.own(&securable, &context).await?;
+        Ok(created)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -98,12 +102,17 @@ impl FunctionHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<Function> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
+        let (securable, renamed, owner) =
+            (request.securable(), None::<String>, request.owner.clone());
         let ident = request.resource();
         let resource = Function {
             owner: request.owner,
             ..Default::default()
         };
-        Ok(self.update(&ident, resource.into()).await?.0.try_into()?)
+        let updated: Function = self.update(&ident, resource.into()).await?.0.try_into()?;
+        self.regrant(&securable, renamed.as_deref(), owner.as_deref())
+            .await?;
+        Ok(updated)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -114,64 +123,7 @@ impl FunctionHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<()> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
-        Ok(self.delete(&request.resource()).await?)
-    }
-}
-
-impl SecuredAction for CreateFunctionRequest {
-    fn resource(&self) -> ResourceIdent {
-        let info = self.function_info.as_option();
-        ResourceIdent::function(ResourceName::new([
-            info.map(|i| i.catalog_name.as_str()).unwrap_or_default(),
-            info.map(|i| i.schema_name.as_str()).unwrap_or_default(),
-            info.map(|i| i.name.as_str()).unwrap_or_default(),
-        ]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Create
-    }
-}
-
-impl SecuredAction for ListFunctionsRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::function(ResourceName::new([
-            self.catalog_name.as_str(),
-            self.schema_name.as_str(),
-        ]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetFunctionRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::function(ResourceName::from_naive_str_split(self.name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for UpdateFunctionRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::function(ResourceName::from_naive_str_split(self.name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for DeleteFunctionRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::function(ResourceName::from_naive_str_split(self.name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
+        self.delete(&request.resource()).await?;
+        self.ungrant(&request.securable()).await
     }
 }

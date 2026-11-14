@@ -1,11 +1,12 @@
 use itertools::Itertools;
 
 use unitycatalog_common::models::ObjectLabel;
+use unitycatalog_common::models::ResourceName;
 use unitycatalog_common::models::schemas::v1::*;
-use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 
-use super::{RequestContext, SecuredAction};
-use crate::policy::{Permission, Policy, process_resources};
+use super::{RequestContext, RequestResource};
+use crate::policy::Authorizable;
+use crate::policy::{Policy, process_resources};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::store::{ResourceStore, ResourceStoreReader};
@@ -22,6 +23,7 @@ impl SchemaHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<Schema> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
+        let securable = request.securable();
 
         // When the schema is created with its own storage root, echo the root
         // back on the schema (`storage_root`) and materialize a managed storage
@@ -64,7 +66,9 @@ impl SchemaHandler<RequestContext> for ServerHandler<RequestContext> {
         // TODO:
         // - update the schema with the current actor as owner
         // - create updated_* relations
-        Ok(self.create(resource.into()).await?.0.try_into()?)
+        let created: Schema = self.create(resource.into()).await?.0.try_into()?;
+        self.own(&securable, &context).await?;
+        Ok(created)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -75,7 +79,8 @@ impl SchemaHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<()> {
         tracing::Span::current().record("resource_name", &request.full_name);
         self.check_required(&request, &context).await?;
-        Ok(self.delete(&request.resource()).await?)
+        self.delete(&request.resource()).await?;
+        self.ungrant(&request.securable()).await
     }
 
     #[tracing::instrument(skip(self, context))]
@@ -93,7 +98,7 @@ impl SchemaHandler<RequestContext> for ServerHandler<RequestContext> {
                 request.page_token,
             )
             .await?;
-        process_resources(self, &context, &Permission::Read, &mut resources).await?;
+        process_resources(self, &context, &mut resources).await?;
         Ok(ListSchemasResponse {
             schemas: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
@@ -120,6 +125,11 @@ impl SchemaHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<Schema> {
         tracing::Span::current().record("resource_name", &request.full_name);
         self.check_required(&request, &context).await?;
+        let (securable, renamed, owner) = (
+            request.securable(),
+            request.new_name.clone(),
+            None::<String>,
+        );
         let ident = request.resource();
         let name = ResourceName::from_naive_str_split(request.full_name);
         let [catalog_name, schema_name] = name.as_ref() else {
@@ -139,60 +149,10 @@ impl SchemaHandler<RequestContext> for ServerHandler<RequestContext> {
         // TODO:
         // - add update_* relations
         // - update owner if necessary
-        Ok(self.update(&ident, resource.into()).await?.0.try_into()?)
-    }
-}
-
-impl SecuredAction for CreateSchemaRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::schema(ResourceName::new([
-            self.catalog_name.as_str(),
-            self.name.as_str(),
-        ]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Create
-    }
-}
-
-impl SecuredAction for ListSchemasRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::schema(ResourceRef::Undefined)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetSchemaRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::schema(ResourceName::from_naive_str_split(self.full_name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for UpdateSchemaRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::schema(ResourceName::from_naive_str_split(self.full_name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for DeleteSchemaRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::schema(ResourceName::from_naive_str_split(self.full_name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
+        let updated: Schema = self.update(&ident, resource.into()).await?.0.try_into()?;
+        self.regrant(&securable, renamed.as_deref(), owner.as_deref())
+            .await?;
+        Ok(updated)
     }
 }
 

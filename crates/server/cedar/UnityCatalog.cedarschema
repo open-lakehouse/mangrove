@@ -1,38 +1,80 @@
-// The Unity Catalog server's Cedar vocabulary, for hosts to compose with their
-// own fragments. olai-uc-server publishes it as `policy::CEDAR_SCHEMA`.
+// The Unity Catalog server's Cedar entities, for hosts to compose with their own
+// fragments. olai-uc-server publishes it, together with the generated actions
+// (`olai_uc_handlers::CEDAR_ACTIONS`, one per API operation) and the Delta API's,
+// as `policy::CEDAR_SCHEMA`.
 //
 // Principals are the host's `Lakehouse::User` and `Lakehouse::ServiceAccount`,
 // declared in the `Lakehouse` fragment.
 //
 // Entity ids are full names: `main` (catalog), `main.sales` (schema),
 // `main.sales.orders` (table), `main.sales.model.3` (model version), and
-// `metastore` for the root. A grant on a container covers what is in it,
-// because the server passes every ancestor as a parent of the resource (with
-// `resource_entity`), so a policy can write `resource in UnityCatalog::Schema::"main.sales"`.
-// Grants are keyed by name, so they don't follow a rename.
+// `metastore` for the root. Grants are keyed by name, and a rename re-keys them.
 //
-// Each action is one `Permission` of the server, asked on any securable. List
-// and create requests ask on the container (a schema for listing its tables, the
-// metastore for creating a catalog). Vending a credential needs `external_use`
-// in addition to `read` or `write`: on the schema for table, volume, model
-// version and staging table credentials, and on the external location for path
-// credentials.
+// Each request asks for one action, the operation, on one securable: a list on
+// its container, a create on the new securable, anything else on the securable
+// it addresses. The server sends the securable and every ancestor as entities,
+// each with its ancestors as parents and as the typed attributes below (so a
+// policy can write `resource.schema.privileges`). The decision point's entity
+// loader adds, for the calling principal, on every one of them:
+//
+// - `privileges`: what is granted on that securable itself, to the principal or
+//   a group it is in, plus `OWNER` when it owns the securable;
+// - `inherited_privileges`: the union of `privileges` over the securable and its
+//   ancestors (a `SELECT` on a catalog covers its tables).
+//
+// Privileges are the canonical names of the grants API's `Privilege` enum
+// (`USE_CATALOG`, `SELECT`, `EXTERNAL_USE_SCHEMA`, …). The loader owns both
+// attributes: a request that supplies them is refused.
 namespace UnityCatalog {
-  entity Metastore;
-  entity Catalog in [Metastore];
-  entity Schema in [Catalog, Metastore];
+  entity Metastore = {
+    privileges: Set<String>,
+    inherited_privileges: Set<String>,
+  };
+
+  entity Catalog in [Metastore] = {
+    privileges: Set<String>,
+    inherited_privileges: Set<String>,
+  };
+
+  entity Schema in [Catalog, Metastore] = {
+    catalog: Catalog,
+    privileges: Set<String>,
+    inherited_privileges: Set<String>,
+  };
 
   // Securables in a schema.
   entity Table, Volume, Function, RegisteredModel, Agent, AgentSkill, StagingTable
-    in [Schema, Catalog, Metastore];
-  entity ModelVersion in [RegisteredModel, Schema, Catalog, Metastore];
-  entity Column in [Table, Schema, Catalog, Metastore];
+    in [Schema, Catalog, Metastore] = {
+    catalog: Catalog,
+    schema: Schema,
+    privileges: Set<String>,
+    inherited_privileges: Set<String>,
+  };
+
+  entity ModelVersion in [RegisteredModel, Schema, Catalog, Metastore] = {
+    catalog: Catalog,
+    schema: Schema,
+    registered_model: RegisteredModel,
+    privileges: Set<String>,
+    inherited_privileges: Set<String>,
+  };
+
+  entity Column in [Table, Schema, Catalog, Metastore] = {
+    catalog: Catalog,
+    schema: Schema,
+    table: Table,
+    privileges: Set<String>,
+    inherited_privileges: Set<String>,
+  };
 
   // Securables of the metastore.
-  entity ExternalLocation, Credential, Share, Recipient, Provider, TagPolicy, Policy
-    in [Metastore];
+  entity ExternalLocation, Credential, Share, Recipient, Provider, TagPolicy, PolicyInfo
+    in [Metastore] = {
+    privileges: Set<String>,
+    inherited_privileges: Set<String>,
+  };
 
-  // The standard context olai-auth's `AuthContext` builds.
+  // olai-auth's `AuthContext`, plus the facts of the request a policy may need.
   type RequestContext = {
     auth_method: String,
     scopes: Set<String>,
@@ -41,16 +83,13 @@ namespace UnityCatalog {
     source_ip?: ipaddr,
     request_time?: datetime,
     branch?: String,
-  };
-
-  action read, write, manage, create, use, browse, select, external_use appliesTo {
-    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
-    resource: [
-      Metastore, Catalog, Schema,
-      Table, Volume, Function, RegisteredModel, Agent, AgentSkill, StagingTable,
-      ModelVersion, Column,
-      ExternalLocation, Credential, Share, Recipient, Provider, TagPolicy, Policy
-    ],
-    context: RequestContext,
+    // Credential vends: `READ` or `READ_WRITE`.
+    credential_operation?: String,
+    // Path vends: the storage URL asked for.
+    url?: String,
+    // Updates: the fields the request changes (its update mask, or the fields it sets).
+    update_fields?: Set<String>,
+    // Adopting a staging table: whether the caller reserved it.
+    is_creator?: Bool,
   };
 }

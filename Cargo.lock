@@ -3174,9 +3174,9 @@ dependencies = [
 
 [[package]]
 name = "olai-auth"
-version = "0.0.2"
+version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb4af40329510f302aa3f18aea4f26bfa8d9a90320cf39c9cf27d32285131e53"
+checksum = "5d30d932ac68893410eb2f4d5b461af182250956429d9555c1442317fa74e7a8"
 dependencies = [
  "async-trait",
  "axum",
@@ -3552,6 +3552,7 @@ dependencies = [
  "olai-vended-store",
  "percent-encoding",
  "reqwest 0.13.4",
+ "rstest",
  "serde",
  "serde_json",
  "serde_yml",

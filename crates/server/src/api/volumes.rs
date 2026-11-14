@@ -1,12 +1,13 @@
 use itertools::Itertools;
 
 use unitycatalog_common::models::ObjectLabel;
+use unitycatalog_common::models::ResourceName;
 use unitycatalog_common::models::volumes::v1::*;
-use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 
 use super::staging_tables::{child_location, resolve_managed_parent_location};
-use super::{RequestContext, SecuredAction};
-use crate::policy::{Permission, Policy, process_resources};
+use super::{RequestContext, RequestResource};
+use crate::policy::Authorizable;
+use crate::policy::{Policy, process_resources};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::validate_external_storage_location;
@@ -24,6 +25,7 @@ impl VolumeHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<Volume> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
+        let securable = request.securable();
 
         let volume_type = request.volume_type.as_known().unwrap_or_default();
 
@@ -89,7 +91,9 @@ impl VolumeHandler<RequestContext> for ServerHandler<RequestContext> {
             comment: request.comment,
             ..Default::default()
         };
-        Ok(self.create(resource.into()).await?.0.try_into()?)
+        let created: Volume = self.create(resource.into()).await?.0.try_into()?;
+        self.own(&securable, &context).await?;
+        Ok(created)
     }
 
     #[tracing::instrument(skip(self, context))]
@@ -110,7 +114,7 @@ impl VolumeHandler<RequestContext> for ServerHandler<RequestContext> {
                 request.page_token,
             )
             .await?;
-        process_resources(self, &context, &Permission::Read, &mut resources).await?;
+        process_resources(self, &context, &mut resources).await?;
         Ok(ListVolumesResponse {
             volumes: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
@@ -137,6 +141,11 @@ impl VolumeHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<Volume> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
+        let (securable, renamed, owner) = (
+            request.securable(),
+            request.new_name.clone(),
+            request.owner.clone(),
+        );
         let ident = request.resource();
         let name = ResourceName::from_naive_str_split(request.name.as_str());
         let [catalog_name, schema_name, volume_name] = name.as_ref() else {
@@ -154,7 +163,10 @@ impl VolumeHandler<RequestContext> for ServerHandler<RequestContext> {
             full_name: format!("{}.{}.{}", catalog_name, schema_name, new_name),
             ..Default::default()
         };
-        Ok(self.update(&ident, resource.into()).await?.0.try_into()?)
+        let updated: Volume = self.update(&ident, resource.into()).await?.0.try_into()?;
+        self.regrant(&securable, renamed.as_deref(), owner.as_deref())
+            .await?;
+        Ok(updated)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -165,67 +177,16 @@ impl VolumeHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<()> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
-        Ok(self.delete(&request.resource()).await?)
-    }
-}
-
-impl SecuredAction for CreateVolumeRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::volume(ResourceName::new([
-            self.catalog_name.as_str(),
-            self.schema_name.as_str(),
-            self.name.as_str(),
-        ]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Create
-    }
-}
-
-impl SecuredAction for ListVolumesRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::volume(ResourceRef::Undefined)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetVolumeRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::volume(ResourceName::from_naive_str_split(self.name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for UpdateVolumeRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::volume(ResourceName::from_naive_str_split(self.name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for DeleteVolumeRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::volume(ResourceName::from_naive_str_split(self.name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
+        self.delete(&request.resource()).await?;
+        self.ungrant(&request.securable()).await
     }
 }
 
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
+
+    use unitycatalog_common::models::ResourceIdent;
 
     use unitycatalog_common::models::catalogs::v1::{CreateCatalogRequest, GetCatalogRequest};
     use unitycatalog_common::models::credentials::v1::{

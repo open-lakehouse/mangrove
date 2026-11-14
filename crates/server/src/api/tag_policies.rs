@@ -1,11 +1,11 @@
 use itertools::Itertools;
 
+use unitycatalog_common::models::ObjectLabel;
 use unitycatalog_common::models::tags::v1::*;
-use unitycatalog_common::models::{ObjectLabel, ResourceIdent, ResourceName, ResourceRef};
 
-use super::{RequestContext, SecuredAction, UpdateMask};
+use super::{RequestContext, RequestResource, UpdateMask};
 use crate::Result;
-use crate::policy::{Permission, Policy, process_resources};
+use crate::policy::{Policy, process_resources};
 use crate::services::ServerHandler;
 use crate::store::{ResourceStore, ResourceStoreReader};
 pub use unitycatalog_handlers::tag_policies::TagPolicyHandler;
@@ -76,7 +76,7 @@ impl TagPolicyHandler<RequestContext> for ServerHandler<RequestContext> {
                 request.page_token,
             )
             .await?;
-        process_resources(self, &context, &Permission::Read, &mut resources).await?;
+        process_resources(self, &context, &mut resources).await?;
         Ok(ListTagPoliciesResponse {
             tag_policies: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
@@ -114,56 +114,6 @@ impl TagPolicyHandler<RequestContext> for ServerHandler<RequestContext> {
             }
         }
         Ok(self.update(&ident, resource.into()).await?.0.try_into()?)
-    }
-}
-
-impl SecuredAction for CreateTagPolicyRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::tag_policy(ResourceName::new([self.tag_key.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Create
-    }
-}
-
-impl SecuredAction for ListTagPoliciesRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::tag_policy(ResourceRef::Undefined)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetTagPolicyRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::tag_policy(ResourceName::new([self.tag_key.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for UpdateTagPolicyRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::tag_policy(ResourceName::new([self.tag_key.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for DeleteTagPolicyRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::tag_policy(ResourceName::new([self.tag_key.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
     }
 }
 
