@@ -23,6 +23,7 @@ pub(crate) mod vending;
 mod storage_proxy_backend;
 
 pub use location_policy::LocalStoragePolicy;
+pub use vending::NeonVending;
 
 /// Access to the server's [`LocalStoragePolicy`].
 ///
@@ -132,6 +133,22 @@ impl<Cx: Send + Sync + 'static> ServerHandler<Cx> {
         self
     }
 
+    /// Set trusted Neon vending (see [`NeonVending`]): the defaults registered
+    /// Neon credentials are completed from, and whether they mint.
+    ///
+    /// Rebuilds the inner handler. Call at construction time, before the handler
+    /// is cloned/shared. When unset, Neon credentials register but never mint.
+    pub fn with_neon_vending(mut self, neon: NeonVending) -> Self {
+        let neon = Arc::new(neon);
+        self.handler = Arc::new(self.handler.rebuild(|inner| inner.neon_vending = neon));
+        self
+    }
+
+    /// The trusted Neon vending settings.
+    pub(crate) fn neon_vending(&self) -> &NeonVending {
+        &self.handler.neon_vending
+    }
+
     /// The vendor every temporary credential is minted through.
     pub(crate) fn vendor(&self) -> &Arc<vending::CatalogVendor> {
         &self.handler.vendor
@@ -174,8 +191,12 @@ pub struct ServerHandlerInner<Cx> {
     managed_storage_root: Option<Arc<str>>,
     /// The registered storage credential governing `managed_storage_root`.
     managed_storage_root_credential: Option<Arc<str>>,
+    /// Trusted Neon vending: registration defaults and whether Neon credentials
+    /// mint. Disabled by default.
+    neon_vending: Arc<NeonVending>,
     /// The vendor temporary credentials are minted through; derived from
-    /// `storage_access` and the managed-root settings (see [`Self::rebuild`]).
+    /// `storage_access`, the managed-root settings and `neon_vending` (see
+    /// [`Self::rebuild`]).
     vendor: Arc<vending::CatalogVendor>,
 }
 
@@ -186,7 +207,8 @@ impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
         storage_access: Arc<dyn StorageAccessStore>,
     ) -> Self {
         Self {
-            vendor: vending::catalog_vendor(storage_access.clone(), None),
+            vendor: vending::catalog_vendor(storage_access.clone(), None, &NeonVending::default()),
+            neon_vending: Arc::new(NeonVending::default()),
             policy,
             store,
             storage_access,
@@ -211,10 +233,15 @@ impl<Cx: Send + Sync + 'static> ServerHandlerInner<Cx> {
             local_storage_policy: self.local_storage_policy.clone(),
             managed_storage_root: self.managed_storage_root.clone(),
             managed_storage_root_credential: self.managed_storage_root_credential.clone(),
+            neon_vending: self.neon_vending.clone(),
             vendor: self.vendor.clone(),
         };
         change(&mut inner);
-        inner.vendor = vending::catalog_vendor(inner.storage_access.clone(), inner.managed_root());
+        inner.vendor = vending::catalog_vendor(
+            inner.storage_access.clone(),
+            inner.managed_root(),
+            &inner.neon_vending,
+        );
         inner
     }
 

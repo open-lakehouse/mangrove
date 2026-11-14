@@ -123,6 +123,156 @@ pub struct Config {
     /// [`PolicyConfig::Constant`] (allow everything).
     #[serde(default)]
     pub policy: PolicyConfig,
+
+    /// Credential vending settings (see [`VendingConfig`]).
+    #[serde(default)]
+    pub vending: VendingConfig,
+}
+
+/// Credential vending settings.
+#[derive(Debug, Deserialize, Serialize, Default, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct VendingConfig {
+    /// Trusted vending for Neon object storage (see [`NeonVendingConfig`]).
+    #[serde(default)]
+    pub neon: NeonVendingConfig,
+}
+
+/// Trusted vending for Neon object storage.
+///
+/// Neon storage has no STS and no prefix-scoped keys. When enabled, a vend
+/// against a Neon credential (an `aws_iam_role` whose `role_arn` is
+/// `arn:neon:storage::<project_id>:branch/<branch_id>`) mints an expiring key
+/// that reaches **every bucket on the branch** (and its descendant branches) at
+/// the granted access level, until it expires.
+///
+/// ```yaml
+/// vending:
+///   neon:
+///     enabled: true
+///     project-id: falling-sun-12345678
+///     # api-key: { env: NEON_API_KEY }      # the default
+///     # branch-id: { env: NEON_BRANCH_ID }  # the default
+///     ttl-secs: 900
+/// ```
+///
+/// - **The TTL and `enabled` are the controls.** Neon enforces a key's expiry to
+///   the second, but revocation is eventually consistent (a revoked key was seen
+///   accepted again ~13 s later, and rejected for good only after ~20 s), so
+///   revoking a key does not stop it promptly. Keep the TTL short; to stop
+///   vending, set `enabled: false`.
+/// - Needs the `neon-trusted-vending` feature.
+/// - UC REST credentials carry no endpoint: clients set `AWS_ENDPOINT_URL_S3` to
+///   the branch's storage endpoint. Delta API credentials carry `s3.endpoint`,
+///   `s3.region` and `s3.path-style-access`.
+#[derive(Debug, Deserialize, Serialize, Default, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct NeonVendingConfig {
+    /// Master switch. Default `false`: Neon credentials register but don't vend.
+    #[serde(default)]
+    pub enabled: bool,
+
+    /// The Neon API key minting the keys, never stored with a credential.
+    /// Default `{ env: NEON_API_KEY }`.
+    #[serde(default)]
+    pub api_key: Option<ConfigValue>,
+
+    /// The lifetime of a minted key, in seconds: 900 (15 min) to 43200 (12 h).
+    /// Default 3600.
+    #[serde(default)]
+    pub ttl_secs: Option<u64>,
+
+    /// The Neon project registered credentials default to. Required when
+    /// enabled: Neon Functions don't get `NEON_PROJECT_ID`.
+    #[serde(default)]
+    pub project_id: Option<String>,
+
+    /// The branch registered credentials default to. Default
+    /// `{ env: NEON_BRANCH_ID }`, which Neon Functions get for their branch.
+    #[serde(default)]
+    pub branch_id: Option<ConfigValue>,
+
+    /// The Neon API base URL. Default `https://console.neon.tech/api/v2/`.
+    #[serde(default)]
+    pub api_url: Option<String>,
+}
+
+/// The environment variable [`NeonVendingConfig::api_key`] defaults to.
+pub const NEON_API_KEY_ENV: &str = "NEON_API_KEY";
+/// The environment variable [`NeonVendingConfig::branch_id`] defaults to.
+pub const NEON_BRANCH_ID_ENV: &str = "NEON_BRANCH_ID";
+/// The shortest key lifetime [`NeonVendingConfig::ttl_secs`] accepts.
+pub const NEON_MIN_TTL_SECS: u64 = 15 * 60;
+/// The longest key lifetime [`NeonVendingConfig::ttl_secs`] accepts.
+pub const NEON_MAX_TTL_SECS: u64 = 12 * 60 * 60;
+
+impl NeonVendingConfig {
+    fn resolve_or(value: &Option<ConfigValue>, env: &str) -> Option<String> {
+        match value {
+            Some(value) => value.value(),
+            None => std::env::var(env).ok(),
+        }
+        .filter(|v| !v.is_empty())
+    }
+
+    /// The vending settings this config asks for, or why it can't be served.
+    ///
+    /// Fails when enabled in a build without the `neon-trusted-vending` feature,
+    /// or without a project, an API key, a usable `api-url`, or with a TTL out of
+    /// range.
+    pub fn resolve(&self) -> Result<crate::services::NeonVending, String> {
+        let defaults = crate::services::NeonVending::disabled(
+            self.project_id.clone(),
+            Self::resolve_or(&self.branch_id, NEON_BRANCH_ID_ENV),
+        );
+        if !self.enabled {
+            return Ok(defaults);
+        }
+        self.enable(defaults)
+    }
+
+    #[cfg(not(feature = "neon-trusted-vending"))]
+    fn enable(
+        &self,
+        _defaults: crate::services::NeonVending,
+    ) -> Result<crate::services::NeonVending, String> {
+        Err(
+            "`vending.neon.enabled` needs the `neon-trusted-vending` feature, \
+             which this build was compiled without"
+                .into(),
+        )
+    }
+
+    #[cfg(feature = "neon-trusted-vending")]
+    fn enable(
+        &self,
+        defaults: crate::services::NeonVending,
+    ) -> Result<crate::services::NeonVending, String> {
+        use olai_credential_vending::neon::NeonMinterOptions;
+
+        if defaults.project_id().is_none() {
+            return Err("`vending.neon.enabled` needs `vending.neon.project-id` \
+                 (Neon Functions don't get `NEON_PROJECT_ID`)"
+                .into());
+        }
+        let api_key = Self::resolve_or(&self.api_key, NEON_API_KEY_ENV).ok_or(
+            "`vending.neon.api-key` could not be resolved (default `{ env: NEON_API_KEY }`)",
+        )?;
+        let ttl = self.ttl_secs.unwrap_or(3600);
+        if !(NEON_MIN_TTL_SECS..=NEON_MAX_TTL_SECS).contains(&ttl) {
+            return Err(format!(
+                "`vending.neon.ttl-secs` is {ttl}; it must be {NEON_MIN_TTL_SECS} to {NEON_MAX_TTL_SECS}"
+            ));
+        }
+        let mut options =
+            NeonMinterOptions::default().with_default_ttl(std::time::Duration::from_secs(ttl));
+        if let Some(url) = &self.api_url {
+            let url =
+                url::Url::parse(url).map_err(|e| format!("`vending.neon.api-url` `{url}`: {e}"))?;
+            options = options.with_api_url(url);
+        }
+        Ok(defaults.enabled(api_key, options))
+    }
 }
 
 /// The authorization policy every request is checked against.
@@ -358,6 +508,7 @@ impl Default for Config {
             files: FilesConfig::default(),
             auth: AuthConfig::default(),
             policy: PolicyConfig::default(),
+            vending: VendingConfig::default(),
         }
     }
 }
@@ -1071,6 +1222,85 @@ mod tests {
         };
         let err = authorizer.endpoint().unwrap_err();
         assert!(err.contains("policy.token"), "{err}");
+    }
+
+    fn neon(yaml: &str) -> NeonVendingConfig {
+        let config: Config = serde_yml::from_str(&format!("vending:\n  neon:\n{yaml}")).unwrap();
+        config.vending.neon
+    }
+
+    #[test]
+    fn neon_vending_defaults_to_disabled() {
+        let config = Config::default();
+        assert!(!config.vending.neon.enabled);
+        let vending = config.vending.neon.resolve().unwrap();
+        assert!(!vending.is_enabled());
+        assert_eq!(vending.project_id(), None);
+    }
+
+    #[test]
+    fn disabled_neon_vending_still_carries_registration_defaults() {
+        let vending = neon("    project-id: proj\n    branch-id: br-1\n")
+            .resolve()
+            .unwrap();
+        assert!(!vending.is_enabled());
+        assert_eq!(vending.project_id(), Some("proj"));
+        assert_eq!(vending.branch_id(), Some("br-1"));
+    }
+
+    #[cfg(not(feature = "neon-trusted-vending"))]
+    #[test]
+    fn enabled_neon_vending_needs_the_feature() {
+        let err = neon("    enabled: true\n    project-id: proj\n    api-key: k\n")
+            .resolve()
+            .unwrap_err();
+        assert!(err.contains("neon-trusted-vending"), "{err}");
+    }
+
+    #[cfg(feature = "neon-trusted-vending")]
+    #[test]
+    fn enabled_neon_vending_resolves() {
+        let config = neon(
+            "    enabled: true\n    project-id: proj\n    branch-id: br-1\n    api-key: k\n    \
+             ttl-secs: 900\n    api-url: http://127.0.0.1:1/\n",
+        );
+        assert_eq!(config.ttl_secs, Some(900));
+        let vending = config.resolve().unwrap();
+        assert!(vending.is_enabled());
+        // The key never shows in debug output.
+        let debug = format!("{vending:?}");
+        assert!(!debug.contains("\"k\""), "{debug}");
+    }
+
+    #[cfg(feature = "neon-trusted-vending")]
+    #[test]
+    fn enabled_neon_vending_refuses_incomplete_config() {
+        let cases = [
+            (
+                "    enabled: true\n    api-key: k\n",
+                "vending.neon.project-id",
+            ),
+            (
+                "    enabled: true\n    project-id: p\n    api-key: { env: UC_TEST_UNSET_NEON_KEY }\n",
+                "vending.neon.api-key",
+            ),
+            (
+                "    enabled: true\n    project-id: p\n    api-key: k\n    ttl-secs: 60\n",
+                "vending.neon.ttl-secs",
+            ),
+            (
+                "    enabled: true\n    project-id: p\n    api-key: k\n    ttl-secs: 86400\n",
+                "vending.neon.ttl-secs",
+            ),
+            (
+                "    enabled: true\n    project-id: p\n    api-key: k\n    api-url: 'not a url'\n",
+                "vending.neon.api-url",
+            ),
+        ];
+        for (yaml, expected) in cases {
+            let err = neon(yaml).resolve().unwrap_err();
+            assert!(err.contains(expected), "{yaml}: {err}");
+        }
     }
 
     #[test]

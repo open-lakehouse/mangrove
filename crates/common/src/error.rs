@@ -33,6 +33,12 @@ pub enum Error {
     #[error("Conflict")]
     Conflict,
 
+    /// The request is valid but the server is not set up to serve it, e.g. a
+    /// credential kind whose vending is disabled or not compiled in. The message
+    /// names the missing setup and is shown to the client.
+    #[error("Failed precondition: {0}")]
+    FailedPrecondition(String),
+
     // The resource-store error is native-only (feature `store`); on wasm the store
     // backend is absent so this variant does not exist.
     #[cfg(feature = "store")]
@@ -66,6 +72,12 @@ impl Error {
         Self::InvalidArgument(msg.into())
     }
 
+    /// The server is not set up to serve the request (maps to HTTP `400`
+    /// `FAILED_PRECONDITION`); `msg` is shown to the client.
+    pub fn failed_precondition(msg: impl Into<String>) -> Self {
+        Self::FailedPrecondition(msg.into())
+    }
+
     /// The request could not be authenticated (maps to HTTP `401`).
     pub fn unauthenticated(msg: impl Into<String>) -> Self {
         Self::Unauthenticated(msg.into())
@@ -77,6 +89,7 @@ impl Error {
             Error::NotFound => "RESOURCE_NOT_FOUND",
             Error::AlreadyExists => "RESOURCE_ALREADY_EXISTS",
             Error::Conflict => "RESOURCE_CONFLICT",
+            Error::FailedPrecondition(_) => "FAILED_PRECONDITION",
             Error::InvalidArgument(_) => "INVALID_PARAMETER_VALUE",
             Error::Unauthenticated(_) => "UNAUTHENTICATED",
             Error::InvalidIdentifier(_) => "INVALID_PARAMETER_VALUE",
@@ -109,6 +122,7 @@ impl Error {
         const ALREADY_EXISTS: &str = "The resource already exists.";
         const CONFLICT: &str = "The request conflicts with the current resource state.";
         const UNAUTHENTICATED: &str = "The request could not be authenticated.";
+        const FAILED_PRECONDITION: &str = "The server is not set up to serve this request.";
 
         match self {
             Error::NotFound => (StatusCode::NOT_FOUND, NOT_FOUND),
@@ -118,6 +132,11 @@ impl Error {
             }
             Error::AlreadyExists => (StatusCode::CONFLICT, ALREADY_EXISTS),
             Error::Conflict => (StatusCode::CONFLICT, CONFLICT),
+            // The specific message is returned by the handlers' response layer.
+            Error::FailedPrecondition(msg) => {
+                tracing::warn!("Failed precondition: {msg}");
+                (StatusCode::BAD_REQUEST, FAILED_PRECONDITION)
+            }
             Error::InvalidArgument(msg) => {
                 tracing::error!("Invalid argument: {msg}");
                 (StatusCode::BAD_REQUEST, INVALID)

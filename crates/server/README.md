@@ -159,6 +159,56 @@ credentials. So a caller can read a table's metadata without getting its
 storage keys. The storage proxy, which never hands out a credential, doesn't
 need it. With the default `constant` policy everything stays allowed.
 
+### Trusted vending for Neon object storage
+
+Neon object storage speaks S3 but has no STS and no bucket- or prefix-scoped
+keys. With the `neon-trusted-vending` feature and `vending.neon.enabled`, the
+server mints branch-scoped, expiring keys through Neon's control plane. Such a
+key reaches **every bucket on the branch**, and on the branch's descendants, at
+the granted access level until it expires. So the vendor is *trusted*: enable
+it only behind real authentication and authorization.
+
+A Neon credential stays within the UC credentials API. It is an `aws_iam_role`
+whose `role_arn` is a Neon ARN, with no keys:
+
+```yaml
+# POST /credentials
+name: neon_branch
+purpose: STORAGE
+aws_iam_role:
+  role_arn: arn:neon:storage::<project_id>:branch/<branch_id>
+```
+
+Leave out either id (`arn:neon:storage::` leaves both out) and the server fills
+it in from `vending.neon` before storing. Ids in the ARN always win. External
+locations over `s3://<bucket>` then use the credential like any other.
+
+```yaml
+vending:
+  neon:
+    enabled: false                     # default; Neon credentials register but don't vend
+    project-id: falling-sun-12345678   # required when enabled
+    # branch-id: { env: NEON_BRANCH_ID }  # default; set for Neon Functions
+    # api-key: { env: NEON_API_KEY }      # default; never stored with a credential
+    ttl-secs: 900                      # 900 (15 min) to 43200 (12 h); default 3600
+```
+
+Neon Functions get `NEON_BRANCH_ID` but not `NEON_PROJECT_ID`, so `project-id`
+is required configuration.
+
+- **The TTL and `enabled` are the controls.** Neon enforces a key's expiry to
+  the second, but revocation is eventually consistent. In testing, a revoked key
+  was accepted again about 13 s later and rejected for good only after about
+  20 s. Revoking a key doesn't stop it promptly, so keep the TTL short. To stop
+  vending, set `enabled: false`.
+- The minter reuses one key per access level until half its lifetime has
+  passed, and revokes its own expired `olai-vend-*` keys.
+- Delta API credentials carry `s3.endpoint`, `s3.region` and
+  `s3.path-style-access`. UC REST credentials have no endpoint field, so those
+  clients set `AWS_ENDPOINT_URL_S3` to the branch's storage endpoint.
+- Without the feature, or with `enabled: false`, vending against a Neon
+  credential answers `400 FAILED_PRECONDITION` with the reason.
+
 ## Feature flags
 
 | Feature   | Default | What it enables                                                                          |
@@ -175,7 +225,8 @@ need it. With the default `constant` policy everything stays allowed.
 | `storage-proxy` |   | The same-origin storage byte-proxy (`storage_proxy.enabled`).                            |
 | `files`   |         | The embedded Files API (`files.enabled`).                                                |
 | `olai-auth` |       | `auth.mode: olai-auth`: Neon Auth JWTs over a JWKS URL and service-account API keys, and `policy.kind: authorizer` (implies `embed`). |
-| `bin`     |         | The deployable `uc-server` binary: all of the above, plus the CLI parser and the healthcheck client. |
+| `neon-trusted-vending` | | Trusted vending for Neon object storage (`vending.neon`). Not in `default` or `bin`: a host opts in. |
+| `bin`     |         | The deployable `uc-server` binary: everything above except `neon-trusted-vending`, plus the CLI parser and the healthcheck client. |
 
 A config that asks for a backend or surface the build doesn't include fails at
 startup.
