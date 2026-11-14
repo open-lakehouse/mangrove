@@ -5,8 +5,8 @@ use unitycatalog_common::models::staging_tables::v1::*;
 use unitycatalog_common::models::{ObjectLabel, ResourceIdent};
 use unitycatalog_storage_access::LocationKey;
 
-use super::{RequestContext, SecuredAction};
-use crate::policy::{Permission, Policy, Principal};
+use super::RequestContext;
+use crate::policy::{Policy, Principal};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::{ProvidesLocalStoragePolicy, ProvidesManagedStorageRoot};
@@ -22,20 +22,6 @@ pub use unitycatalog_handlers::staging_tables::StagingTableHandler;
 /// never define a location inside a `__unitystorage` region (see
 /// `validate_external_storage_location`).
 pub(crate) const MANAGED_STORAGE_PREFIX: &str = "__unitystorage";
-
-impl SecuredAction for CreateStagingTableRequest {
-    fn resource(&self) -> ResourceIdent {
-        // Creating a staging table requires CREATE on the parent schema.
-        ResourceIdent::schema(ResourceName::new([
-            self.catalog_name.as_str(),
-            self.schema_name.as_str(),
-        ]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Create
-    }
-}
 
 #[async_trait::async_trait]
 impl StagingTableHandler<RequestContext> for ServerHandler<RequestContext> {

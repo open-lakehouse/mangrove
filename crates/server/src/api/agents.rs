@@ -1,11 +1,12 @@
 use itertools::Itertools;
 
 use unitycatalog_common::models::ObjectLabel;
+use unitycatalog_common::models::ResourceName;
 use unitycatalog_common::models::agents::v0alpha1::*;
-use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 
-use super::{RequestContext, SecuredAction};
-use crate::policy::{Permission, Policy, process_resources};
+use super::{RequestContext, RequestResource};
+use crate::policy::Authorizable;
+use crate::policy::{Policy, process_resources};
 use crate::services::ServerHandler;
 use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
@@ -21,6 +22,7 @@ impl AgentHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<Agent> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
+        let securable = request.securable();
 
         // Agents are metadata-only: validate the invocation protocol is a known
         // variant (a 2-arg `try_from` rejects unspecified/unknown values) and
@@ -53,7 +55,9 @@ impl AgentHandler<RequestContext> for ServerHandler<RequestContext> {
             comment: request.comment,
             ..Default::default()
         };
-        Ok(self.create(resource.into()).await?.0.try_into()?)
+        let created: Agent = self.create(resource.into()).await?.0.try_into()?;
+        self.own(&securable, &context).await?;
+        Ok(created)
     }
 
     #[tracing::instrument(skip(self, context))]
@@ -74,7 +78,7 @@ impl AgentHandler<RequestContext> for ServerHandler<RequestContext> {
                 request.page_token,
             )
             .await?;
-        process_resources(self, &context, &Permission::Read, &mut resources).await?;
+        process_resources(self, &context, &mut resources).await?;
         Ok(ListAgentsResponse {
             agents: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
@@ -97,6 +101,11 @@ impl AgentHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<Agent> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
+        let (securable, renamed, owner) = (
+            request.securable(),
+            request.new_name.clone(),
+            request.owner.clone(),
+        );
         let ident = request.resource();
         let name = ResourceName::from_naive_str_split(request.name.as_str());
         let [catalog_name, schema_name, agent_name] = name.as_ref() else {
@@ -135,7 +144,10 @@ impl AgentHandler<RequestContext> for ServerHandler<RequestContext> {
             owner: request.owner.or(current.owner),
             ..Default::default()
         };
-        Ok(self.update(&ident, resource.into()).await?.0.try_into()?)
+        let updated: Agent = self.update(&ident, resource.into()).await?.0.try_into()?;
+        self.regrant(&securable, renamed.as_deref(), owner.as_deref())
+            .await?;
+        Ok(updated)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -146,61 +158,8 @@ impl AgentHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<()> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
-        Ok(self.delete(&request.resource()).await?)
-    }
-}
-
-impl SecuredAction for CreateAgentRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::agent(ResourceName::new([
-            self.catalog_name.as_str(),
-            self.schema_name.as_str(),
-            self.name.as_str(),
-        ]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Create
-    }
-}
-
-impl SecuredAction for ListAgentsRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::agent(ResourceRef::Undefined)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetAgentRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::agent(ResourceName::from_naive_str_split(self.name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for UpdateAgentRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::agent(ResourceName::from_naive_str_split(self.name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for DeleteAgentRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::agent(ResourceName::from_naive_str_split(self.name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
+        self.delete(&request.resource()).await?;
+        self.ungrant(&request.securable()).await
     }
 }
 

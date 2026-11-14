@@ -1,13 +1,13 @@
 use itertools::Itertools;
 
-use unitycatalog_common::ResourceIdent;
 use unitycatalog_common::metric_view::{MetricView, dependencies as metric_view_dependencies};
 use unitycatalog_common::models::ObjectLabel;
 use unitycatalog_common::models::ResourceName;
 use unitycatalog_common::models::tables::v1::*;
 
-use super::{RequestContext, SecuredAction};
-use crate::policy::{Permission, Policy, process_resources};
+use super::{RequestContext, RequestResource};
+use crate::policy::Authorizable;
+use crate::policy::{Policy, process_resources};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::validate_external_storage_location;
@@ -16,73 +16,6 @@ use crate::{Error, Result};
 pub use unitycatalog_handlers::tables::TableHandler;
 
 const MAX_RESULTS_TABLES: usize = 50;
-
-impl SecuredAction for CreateTableRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::table(ResourceName::new([
-            self.catalog_name.as_str(),
-            self.schema_name.as_str(),
-            self.name.as_str(),
-        ]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Create
-    }
-}
-
-impl SecuredAction for ListTableSummariesRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::table(ResourceName::new([self.catalog_name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for ListTablesRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::table(ResourceName::new([
-            self.catalog_name.as_str(),
-            self.schema_name.as_str(),
-        ]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetTableRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::table(ResourceName::from_naive_str_split(self.full_name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetTableExistsRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::table(ResourceName::from_naive_str_split(self.full_name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for DeleteTableRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::table(ResourceName::from_naive_str_split(self.full_name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
 
 #[async_trait::async_trait]
 impl TableHandler<RequestContext> for ServerHandler<RequestContext> {
@@ -102,7 +35,7 @@ impl TableHandler<RequestContext> for ServerHandler<RequestContext> {
                 request.page_token,
             )
             .await?;
-        process_resources(self, &context, &Permission::Read, &mut resources).await?;
+        process_resources(self, &context, &mut resources).await?;
         let infos: Vec<Table> = resources.into_iter().map(|r| r.try_into()).try_collect()?;
         Ok(ListTableSummariesResponse {
             tables: infos.into_iter().map(|r| r.into()).collect(),
@@ -131,7 +64,7 @@ impl TableHandler<RequestContext> for ServerHandler<RequestContext> {
                 request.page_token,
             )
             .await?;
-        process_resources(self, &context, &Permission::Read, &mut resources).await?;
+        process_resources(self, &context, &mut resources).await?;
         Ok(ListTablesResponse {
             tables: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
@@ -147,6 +80,7 @@ impl TableHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<Table> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
+        let securable = request.securable();
         let info = if request.table_type == TableType::External {
             // External table: a metadata-only registration over data that already
             // exists at `storage_location`. Per the Unity Catalog / Databricks
@@ -233,7 +167,9 @@ impl TableHandler<RequestContext> for ServerHandler<RequestContext> {
         };
         // TODO: update the table with the current actor as owner
         // TODO: create updated_* relations
-        Ok(self.create(info.into()).await?.0.try_into()?)
+        let created: Table = self.create(info.into()).await?.0.try_into()?;
+        self.own(&securable, &context).await?;
+        Ok(created)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -273,7 +209,8 @@ impl TableHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<()> {
         tracing::Span::current().record("resource_name", &request.full_name);
         self.check_required(&request, &context).await?;
-        Ok(self.delete(&request.resource()).await?)
+        self.delete(&request.resource()).await?;
+        self.ungrant(&request.securable()).await
     }
 }
 

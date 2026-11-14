@@ -75,7 +75,9 @@ buffa-types = { version = "0.7", features = ["json"] }
 connectrpc = { version = "0.7", default-features = false }
 http-body = { version = "1" }
 object_store = { version = "0.13.2", features = ["azure", "aws", "gcp"] }
-olai-auth = { version = "0.0.2", default-features = false }
+# Unreleased: trestle#377 (grants, entity slices). Switch back to a crates.io
+# version once it is released, before the next mangrove release.
+olai-auth = { version = "0.0.2", git = "https://github.com/open-lakehouse/trestle", rev = "7796402bd46a1a9c56fac6335046238db48d5e13", default-features = false }
 olai-credential-vending = { version = "0.0.6" }
 olai-http = { version = "0.0.12" }
 olai-http-wasm = { version = "0.0.6" }

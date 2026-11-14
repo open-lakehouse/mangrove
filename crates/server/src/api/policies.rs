@@ -2,13 +2,11 @@ use itertools::Itertools;
 
 use unitycatalog_common::models::policies::v1::policy_info::Options;
 use unitycatalog_common::models::policies::v1::*;
-use unitycatalog_common::models::{
-    ObjectLabel, Resource, ResourceIdent, ResourceName, ResourceRef,
-};
+use unitycatalog_common::models::{ObjectLabel, Resource, ResourceIdent, ResourceName};
 
-use super::{RequestContext, SecuredAction, UpdateMask};
+use super::{DynamicSecurable, RequestContext, UpdateMask};
 use crate::Result;
-use crate::policy::{Permission, Policy, process_resources};
+use crate::policy::{Operation, Securable, process_resources};
 use crate::services::ServerHandler;
 use crate::store::{ResourceStore, ResourceStoreReader};
 pub use unitycatalog_handlers::policies::PolicyHandler;
@@ -228,7 +226,7 @@ impl PolicyHandler<RequestContext> for ServerHandler<RequestContext> {
         request: CreatePolicyRequest,
         context: RequestContext,
     ) -> Result<PolicyInfo> {
-        self.check_required(&request, &context).await?;
+        super::check_dynamic(self, &request, &context).await?;
         let for_securable_type = request
             .for_securable_type
             .as_deref()
@@ -286,7 +284,7 @@ impl PolicyHandler<RequestContext> for ServerHandler<RequestContext> {
         context: RequestContext,
     ) -> Result<()> {
         tracing::Span::current().record("resource_name", &request.name);
-        self.check_required(&request, &context).await?;
+        super::check_dynamic(self, &request, &context).await?;
         let ident = find_policy_ident(
             self,
             securable_type(&request.on_securable_type)?,
@@ -304,7 +302,7 @@ impl PolicyHandler<RequestContext> for ServerHandler<RequestContext> {
         context: RequestContext,
     ) -> Result<PolicyInfo> {
         tracing::Span::current().record("resource_name", &request.name);
-        self.check_required(&request, &context).await?;
+        super::check_dynamic(self, &request, &context).await?;
         let ident = find_policy_ident(
             self,
             securable_type(&request.on_securable_type)?,
@@ -321,7 +319,7 @@ impl PolicyHandler<RequestContext> for ServerHandler<RequestContext> {
         request: ListPoliciesRequest,
         context: RequestContext,
     ) -> Result<ListPoliciesResponse> {
-        self.check_required(&request, &context).await?;
+        super::check_dynamic(self, &request, &context).await?;
         let on_securable_type = securable_type(&request.on_securable_type)?;
 
         let (all, _) = self
@@ -339,7 +337,7 @@ impl PolicyHandler<RequestContext> for ServerHandler<RequestContext> {
         }
 
         let mut resources: Vec<Resource> = policies.into_iter().map(Resource::PolicyInfo).collect();
-        process_resources(self, &context, &Permission::Read, &mut resources).await?;
+        process_resources(self, &context, &mut resources).await?;
 
         let max_results = super::page_size(request.max_results)?.unwrap_or(resources.len());
         let offset = request
@@ -370,7 +368,7 @@ impl PolicyHandler<RequestContext> for ServerHandler<RequestContext> {
         context: RequestContext,
     ) -> Result<PolicyInfo> {
         tracing::Span::current().record("resource_name", &request.name);
-        self.check_required(&request, &context).await?;
+        super::check_dynamic(self, &request, &context).await?;
         let ident = find_policy_ident(
             self,
             securable_type(&request.on_securable_type)?,
@@ -410,68 +408,47 @@ async fn find_policy_ident<S: ResourceStore>(
         .ok_or(crate::Error::NotFound)
 }
 
-impl SecuredAction for CreatePolicyRequest {
-    fn resource(&self) -> ResourceIdent {
-        securable_ident(&self.on_securable_type, &self.on_securable_fullname)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for ListPoliciesRequest {
-    fn resource(&self) -> ResourceIdent {
-        securable_ident(&self.on_securable_type, &self.on_securable_fullname)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetPolicyRequest {
-    fn resource(&self) -> ResourceIdent {
-        securable_ident(&self.on_securable_type, &self.on_securable_fullname)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for UpdatePolicyRequest {
-    fn resource(&self) -> ResourceIdent {
-        securable_ident(&self.on_securable_type, &self.on_securable_fullname)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for DeletePolicyRequest {
-    fn resource(&self) -> ResourceIdent {
-        securable_ident(&self.on_securable_type, &self.on_securable_fullname)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-/// Authorization for policy management is checked against the securable the policy is
-/// defined on, since defining a row-filter/column-mask is a governance action over that
+/// The securable a policy is defined on: policy management is authorized there,
+/// since defining a row filter or column mask is a governance action over that
 /// securable, not over the policy object itself.
-fn securable_ident(on_securable_type: &str, on_securable_fullname: &str) -> ResourceIdent {
-    let name = ResourceName::from_naive_str_split(on_securable_fullname);
-    match securable_type(on_securable_type) {
-        Ok("CATALOG") => ResourceIdent::catalog(name),
-        Ok("SCHEMA") => ResourceIdent::schema(name),
-        Ok("TABLE") => ResourceIdent::table(name),
-        _ => ResourceIdent::catalog(ResourceRef::Undefined),
-    }
+fn policy_securable(on_securable_type: &str, on_securable_fullname: &str) -> Result<Securable> {
+    let label = match securable_type(on_securable_type)? {
+        "CATALOG" => ObjectLabel::Catalog,
+        "SCHEMA" => ObjectLabel::Schema,
+        _ => ObjectLabel::Table,
+    };
+    Ok(Securable::new(
+        label,
+        on_securable_fullname
+            .split('.')
+            .map(str::to_string)
+            .collect(),
+    ))
 }
+
+macro_rules! policy_securable {
+    ($($request:ty => $op:ident),* $(,)?) => {
+        $(
+            impl DynamicSecurable for $request {
+                fn operation(&self) -> Operation {
+                    Operation::$op
+                }
+
+                fn securable(&self) -> Result<Securable> {
+                    policy_securable(&self.on_securable_type, &self.on_securable_fullname)
+                }
+            }
+        )*
+    };
+}
+
+policy_securable!(
+    ListPoliciesRequest => ListPolicies,
+    CreatePolicyRequest => CreatePolicy,
+    GetPolicyRequest => GetPolicy,
+    UpdatePolicyRequest => UpdatePolicy,
+    DeletePolicyRequest => DeletePolicy,
+);
 
 #[cfg(test)]
 mod tests {
@@ -484,7 +461,7 @@ mod tests {
 
     use super::*;
     use crate::memory::InMemoryResourceStore;
-    use crate::policy::ConstantPolicy;
+    use crate::policy::{ConstantPolicy, Policy};
     use crate::services::ServerHandler;
 
     async fn handler() -> ServerHandler<RequestContext> {

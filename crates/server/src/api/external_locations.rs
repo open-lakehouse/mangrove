@@ -1,10 +1,11 @@
 use unitycatalog_common::models::external_locations::v1::*;
-use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 use unitycatalog_storage_access::{ExternalLocationUpdate, Page, ProvidesStorageAccessStore};
 
-use super::{RequestContext, SecuredAction};
+use super::RequestContext;
 use crate::error::from_store;
-use crate::policy::{Permission, Policy, process_resources};
+use unitycatalog_common::models::ObjectLabel;
+
+use crate::policy::{Policy, Securable, process_resources};
 use crate::services::ProvidesLocalStoragePolicy;
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
@@ -44,10 +45,14 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
 
         // TODO: validate we can access the url with the provide credential
 
-        self.storage_access()
+        let securable = request_securable(&location.name);
+        let created = self
+            .storage_access()
             .create_external_location(location)
             .await
-            .map_err(from_store)
+            .map_err(from_store)?;
+        self.own(&securable, &context).await?;
+        Ok(created)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -84,7 +89,8 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
         self.storage_access()
             .delete_external_location(&request.name)
             .await
-            .map_err(from_store)
+            .map_err(from_store)?;
+        self.ungrant(&request_securable(&request.name)).await
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -114,7 +120,7 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
             .list_external_locations(page)
             .await
             .map_err(from_store)?;
-        process_resources(self, &context, &Permission::Read, &mut external_locations).await?;
+        process_resources(self, &context, &mut external_locations).await?;
         Ok(ListExternalLocationsResponse {
             external_locations,
             next_page_token,
@@ -137,6 +143,7 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
             self.local_storage_policy()
                 .check(&StorageLocationUrl::parse(url)?)?;
         }
+        let (new_name, owner) = (request.new_name.clone(), request.owner.clone());
         let update = ExternalLocationUpdate {
             new_name: request.new_name,
             url: request.url,
@@ -145,61 +152,24 @@ impl ExternalLocationHandler<RequestContext> for ServerHandler<RequestContext> {
             comment: request.comment,
             owner: request.owner,
         };
-        self.storage_access()
+        let updated = self
+            .storage_access()
             .update_external_location(&request.name, update)
             .await
-            .map_err(from_store)
+            .map_err(from_store)?;
+        self.regrant(
+            &request_securable(&request.name),
+            new_name.as_deref(),
+            owner.as_deref(),
+        )
+        .await?;
+        Ok(updated)
     }
 }
 
-impl SecuredAction for CreateExternalLocationRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::external_location(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Create
-    }
-}
-
-impl SecuredAction for ListExternalLocationsRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::external_location(ResourceRef::Undefined)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetExternalLocationRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::external_location(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for UpdateExternalLocationRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::external_location(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for DeleteExternalLocationRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::external_location(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
+/// The external location `name` as a securable.
+fn request_securable(name: &str) -> Securable {
+    Securable::new(ObjectLabel::ExternalLocation, vec![name.to_string()])
 }
 
 #[cfg(test)]

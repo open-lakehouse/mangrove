@@ -29,14 +29,19 @@ const MAX_IDENTITY_CONNECTIONS: u32 = 4;
 /// answered with a 503.
 const IDENTITY_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(5);
 
+/// A lazy pool on the identity database at `url` (`auth.olai.database-url`).
+pub(crate) fn identity_pool(url: &str) -> Result<PgPool, String> {
+    PgPoolOptions::new()
+        .max_connections(MAX_IDENTITY_CONNECTIONS)
+        .acquire_timeout(IDENTITY_ACQUIRE_TIMEOUT)
+        .connect_lazy(url)
+        .map_err(|e| format!("auth.olai.database-url: {e}"))
+}
+
 /// The `olai-auth` layer over `router`, plus the public protected-resource
 /// metadata document when [`resource`](ResolvedOlaiAuth::resource) is set.
 pub(crate) fn layer(router: Router, config: &ResolvedOlaiAuth) -> Result<Router, String> {
-    let pool = PgPoolOptions::new()
-        .max_connections(MAX_IDENTITY_CONNECTIONS)
-        .acquire_timeout(IDENTITY_ACQUIRE_TIMEOUT)
-        .connect_lazy(&config.database_url)
-        .map_err(|e| format!("auth.olai.database-url: {e}"))?;
+    let pool = identity_pool(&config.database_url)?;
     let api_keys = config
         .api_keys
         .then(|| PgApiKeyStore::new(pool.clone()).with_schema(&config.authz_schema));
@@ -199,13 +204,12 @@ mod router_tests {
     use olai_auth::{ApiKeyRecord, PushKeySource, api_key_digest};
     use serde_json::{Value, json};
     use tower::ServiceExt as _;
-    use unitycatalog_common::models::ResourceIdent;
     use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 
     use super::*;
     use crate::api::RequestContext;
     use crate::memory::InMemoryResourceStore;
-    use crate::policy::{Decision, Permission, Policy};
+    use crate::policy::{Decision, Facts, Policy, Securable, ServerAction};
     use crate::run::build_rest_router;
     use crate::services::ServerHandler;
 
@@ -295,8 +299,9 @@ mod router_tests {
     impl Policy<RequestContext> for Recording {
         async fn authorize(
             &self,
-            _resource: &ResourceIdent,
-            _permission: &Permission,
+            _action: ServerAction,
+            _securable: &Securable,
+            _facts: &Facts,
             cx: &RequestContext,
         ) -> crate::Result<Decision> {
             self.0

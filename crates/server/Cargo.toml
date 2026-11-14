@@ -42,6 +42,7 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
 # context, with every error source this server raises.
 unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", version = "0.0.4", features = [
   "all-resources",
+  "authz",
   "object-store",
   "store",
   "cloud",
@@ -115,9 +116,11 @@ serde_yml = { workspace = true, optional = true }
 sqlx = { workspace = true, optional = true }
 swagger-ui-dist = { version = "5.18.3", optional = true }
 
-# `olai-auth` authentication (feature `olai-auth`): JWT verification against a JWKS
-# URL, API keys from Postgres, and the verified `Principal` the policy receives.
-olai-auth = { workspace = true, optional = true }
+# The grant store port and its in-memory store (always), plus with feature
+# `olai-auth`: JWT verification against a JWKS URL, API keys and grants from
+# Postgres, the PDP client, and the verified `Principal` the policy receives. The
+# core adds only ed25519-dalek, sha2 and subtle to what the server links anyway.
+olai-auth = { workspace = true }
 
 [dev-dependencies]
 # The in-process Cedar authorizer, to test `AuthorizerPolicy` against the published
@@ -129,6 +132,7 @@ ed25519-dalek = { version = "2.1", default-features = false, features = ["std"] 
 # `#[sqlx::test]` databases for the `integration-pg` tests.
 sqlx = { workspace = true, features = ["postgres", "runtime-tokio-rustls", "macros", "migrate"] }
 mockito = "1.4"
+rstest = "0.18"
 tempfile = "3.1"
 tokio = { version = "1", features = ["full"] }
 
@@ -163,7 +167,6 @@ sqlite = ["embed", "dep:unitycatalog-sqlite", "sqlx/sqlite"]
 # Cedar policy decision point over HTTPS (`policy::AuthorizerPolicy`).
 olai-auth = [
   "embed",
-  "dep:olai-auth",
   "olai-auth/http",
   "olai-auth/postgres",
   "olai-auth/pdp-client",

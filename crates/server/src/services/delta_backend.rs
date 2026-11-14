@@ -21,9 +21,9 @@ use buffa::Enumeration;
 
 use unitycatalog_common::models::staging_tables::v1::{CreateStagingTableRequest, StagingTable};
 use unitycatalog_common::models::tables::v1::{
-    Column as UcColumn, CreateTableRequest, DataSourceFormat, Table, TableType,
+    Column as UcColumn, DataSourceFormat, Table, TableType,
 };
-use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
+use unitycatalog_common::models::{ObjectLabel, ResourceIdent, ResourceName, ResourceRef};
 use unitycatalog_common::store::Precondition;
 
 use unitycatalog_delta_api::authz::DeltaAction;
@@ -41,10 +41,9 @@ use unitycatalog_delta_api::models::DeltaTableType;
 use crate::api::RequestContext;
 use crate::api::staging_tables::{allocate_staging_table, find_staging_table_by_location};
 use crate::api::temporary_credentials::{
-    authorize_external_use, authorize_path_vend, required_permission, table_to_vend, vend_location,
-    vend_table,
+    authorize_path_vend, table_to_vend, vend_location, vend_table,
 };
-use crate::policy::{Permission, Policy, Principal};
+use crate::policy::{Facts, Operation, Policy, Principal, Securable, ServerAction};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::object_store::validate_external_storage_location;
@@ -217,6 +216,36 @@ fn staging_to_reservation(st: StagingTable) -> StagingReservation {
 }
 
 /// The store identity of a three-part table name.
+/// The table `catalog.schema.name` as a securable.
+fn table_securable(catalog: &str, schema: &str, name: &str) -> Securable {
+    Securable::new(
+        ObjectLabel::Table,
+        vec![catalog.to_string(), schema.to_string(), name.to_string()],
+    )
+}
+
+/// The securable of `table`.
+fn of(table: &TableRef) -> Securable {
+    table_securable(&table.catalog, &table.schema, &table.table)
+}
+
+/// A staging table as a securable, by its catalog, schema and name.
+fn staging_securable(staging: &StagingTable) -> Securable {
+    Securable::new(
+        ObjectLabel::StagingTable,
+        vec![
+            staging.catalog_name.clone(),
+            staging.schema_name.clone(),
+            staging.name.clone(),
+        ],
+    )
+}
+
+/// No facts.
+fn none() -> Facts {
+    Facts::default()
+}
+
 fn table_ident(table: &TableRef) -> ResourceIdent {
     ResourceIdent::table(ResourceName::new([
         table.catalog.as_str(),
@@ -283,92 +312,102 @@ impl DeltaBackend<RequestContext> for ServerHandler<RequestContext> {
         // endpoints, so a missing table is denied rather than reported missing.
         let result = match action {
             DeltaAction::ReadCatalog { catalog } => {
-                let ident = ResourceIdent::catalog(ResourceName::new([catalog]));
-                self.authorize_checked(&ident, &Permission::Read, cx).await
+                let catalog = Securable::new(ObjectLabel::Catalog, vec![catalog.to_string()]);
+                self.authorize_checked(Operation::GetCatalog.into(), &catalog, &none(), cx)
+                    .await
             }
-            DeltaAction::CreateTable {
-                at,
-                name,
-                table_type,
-            } => {
-                // CREATE on the target table via the same SecuredAction the
-                // UC-REST createTable uses.
-                let create_action = CreateTableRequest {
-                    name: name.to_string(),
-                    catalog_name: at.catalog.clone(),
-                    schema_name: at.schema.clone(),
-                    table_type: to_uc_table_type(table_type).into(),
-                    data_source_format: DataSourceFormat::Delta.into(),
-                    ..Default::default()
-                };
-                self.check_required(&create_action, cx).await
+            DeltaAction::CreateTable { at, name, .. } => {
+                let table = table_securable(&at.catalog, &at.schema, name);
+                self.authorize_checked(Operation::CreateTable.into(), &table, &none(), cx)
+                    .await
             }
             DeltaAction::ReadTable { table } => {
-                self.authorize_checked(&table_ident(table), &Permission::Read, cx)
+                self.authorize_checked(Operation::GetTable.into(), &of(table), &none(), cx)
                     .await
             }
             DeltaAction::WriteTable { table } => {
-                self.authorize_checked(&table_ident(table), &Permission::Write, cx)
+                self.authorize_checked(ServerAction::CommitTable, &of(table), &none(), cx)
                     .await
             }
-            // Delete and rename change the securable itself: MANAGE, as the UC
-            // REST deleteTable requires.
-            DeltaAction::DeleteTable { table } | DeltaAction::RenameTable { from: table, .. } => {
-                self.authorize_checked(&table_ident(table), &Permission::Manage, cx)
+            DeltaAction::DeleteTable { table } => {
+                self.authorize_checked(Operation::DeleteTable.into(), &of(table), &none(), cx)
                     .await
             }
-            // A vend needs the access on the securable and EXTERNAL USE: on the
-            // schema for table and staging credentials, on the covering external
-            // location for path credentials (`authorize_path_vend`).
-            DeltaAction::VendTableCredential { table, access } => {
+            // A rename is asked on the table under its current name, and as a create
+            // of the new name, so renaming into a schema needs the right to create
+            // there.
+            DeltaAction::RenameTable { from, to } => {
                 async {
-                    self.authorize_checked(&table_ident(table), &required_permission(access), cx)
+                    self.authorize_checked(ServerAction::RenameTable, &of(from), &none(), cx)
                         .await?;
-                    authorize_external_use(self, &table.catalog, &table.schema, cx).await
+                    let target = table_securable(&from.catalog, &from.schema, to);
+                    self.authorize_checked(Operation::CreateTable.into(), &target, &none(), cx)
+                        .await
                 }
+                .await
+            }
+            DeltaAction::VendTableCredential { table, access } => {
+                self.authorize_checked(
+                    Operation::GenerateTemporaryTableCredentials.into(),
+                    &of(table),
+                    &Facts::credential(access),
+                    cx,
+                )
                 .await
             }
             DeltaAction::VendPathCredential { location, access } => {
                 let url = StorageLocationUrl::parse(location).map_err(to_backend_err)?;
                 authorize_path_vend(self, &url, access, cx).await
             }
+            // Creating a staging table over the Delta API hands out its READ_WRITE
+            // credential, which the request's facts say (the REST create doesn't).
             DeltaAction::CreateStaging { at, name } => {
-                let request = CreateStagingTableRequest {
-                    name: name.to_string(),
-                    catalog_name: at.catalog.clone(),
-                    schema_name: at.schema.clone(),
-                    ..Default::default()
-                };
-                // Creating a staging table hands out its READ_WRITE credential.
-                async {
-                    self.check_required(&request, cx).await?;
-                    authorize_external_use(self, &at.catalog, &at.schema, cx).await
-                }
+                let staging = Securable::new(
+                    ObjectLabel::StagingTable,
+                    vec![at.catalog.clone(), at.schema.clone(), name.to_string()],
+                );
+                self.authorize_checked(
+                    Operation::CreateStagingTable.into(),
+                    &staging,
+                    &Facts::credential(CredentialAccess::ReadWrite),
+                    cx,
+                )
                 .await
             }
             DeltaAction::VendStagingCredential { reservation } => {
                 async {
-                    let staging = self.get_staging_by_id(&reservation.table_id).await?;
-                    authorize_external_use(self, &staging.catalog_name, &staging.schema_name, cx)
-                        .await
+                    let staging =
+                        staging_securable(&self.get_staging_by_id(&reservation.table_id).await?);
+                    self.authorize_checked(
+                        ServerAction::GenerateTemporaryStagingTableCredentials,
+                        &staging,
+                        &Facts::credential(CredentialAccess::ReadWrite),
+                        cx,
+                    )
+                    .await
                 }
                 .await
             }
+            // Whether the caller reserved the staging table is a fact for the
+            // policy: the caller's principal name against the reservation's
+            // `created_by` (an anonymous reservation, `created_by == None`, is the
+            // anonymous caller's).
             DeltaAction::AdoptStaging { reservation } => {
-                // The creator-match, in mangrove's identity terms: the caller's
-                // principal name must equal the reservation's `created_by`
-                // (anonymous reservations, `created_by == None`, are usable by
-                // any anonymous caller — the pre-crate behavior).
-                let principal = match cx.recipient() {
-                    Principal::User(name) => Some(name.clone()),
-                    Principal::Anonymous => None,
-                };
-                if reservation.created_by.as_deref() != principal.as_deref() {
-                    return Err(DeltaBackendError::PermissionDenied(
-                        "caller is not the creator of the staging table".to_string(),
-                    ));
+                async {
+                    let principal = match cx.recipient() {
+                        Principal::User(name) => Some(name.as_str()),
+                        Principal::Anonymous => None,
+                    };
+                    let facts = Facts {
+                        is_creator: Some(reservation.created_by.as_deref() == principal),
+                        ..Default::default()
+                    };
+                    let staging =
+                        staging_securable(&self.get_staging_by_id(&reservation.table_id).await?);
+                    self.authorize_checked(ServerAction::AdoptStagingTable, &staging, &facts, cx)
+                        .await
                 }
-                Ok(())
+                .await
             }
             // `DeltaAction` is `#[non_exhaustive]`. Fail closed on an action this
             // adapter has not been taught: a newly added operation must not slip

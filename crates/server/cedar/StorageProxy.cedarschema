@@ -1,0 +1,21 @@
+// The actions of the same-origin storage byte-proxy (`/storage-proxy`): reading
+// and writing a securable's data *through* the server. The caller never receives
+// a storage credential, so these are data access (as `SELECT` / `MODIFY`,
+// `READ VOLUME` / `WRITE VOLUME`, `READ FILES` / `WRITE FILES`), not external
+// use. A path is asked on the external location covering it, with
+// `context.url`.
+namespace UnityCatalog {
+  // Read the data of a table or volume, or the files under an external location.
+  action "ReadData" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Table, Volume, ExternalLocation],
+    context: RequestContext,
+  };
+
+  // Write the data of a table or volume, or the files under an external location.
+  action "WriteData" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Table, Volume, ExternalLocation],
+    context: RequestContext,
+  };
+}
