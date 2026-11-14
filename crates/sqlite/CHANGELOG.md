@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.11](https://github.com/open-lakehouse/mangrove/compare/olai-uc-sqlite-v0.0.10...olai-uc-sqlite-v0.0.11) - 2026-11-14
+
+### Fixed
+
+- commit retries, retention and cap parity for delta_commits (#323)
+
 ## [0.0.9](https://github.com/open-lakehouse/mangrove/compare/olai-uc-sqlite-v0.0.8...olai-uc-sqlite-v0.0.9) - 2026-11-02
 
 ### Added

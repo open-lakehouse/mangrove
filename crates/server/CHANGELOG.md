@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.16](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.15...olai-uc-server-v0.0.16) - 2026-11-14
+
+### Added
+
+- Cedar policy over olai-auth's Authorizer and EXTERNAL USE (#336)
+- olai-auth authentication mode (#335)
+- [**breaking**] atomic apply_update, commit retries, authz order (#321)
+
+### Changed
+
+- move olai-uc-datafusion and the wasm engine to hydrofoil (#317)
+
+### Fixed
+
+- honour the Delta port authz contract and vend through trestle's Vendor (#325)
+
 ## [0.0.15](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.14...olai-uc-server-v0.0.15) - 2026-11-13
 
 ### Changed

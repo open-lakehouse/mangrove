@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.10](https://github.com/open-lakehouse/mangrove/compare/olai-uc-object-store-v0.0.9...olai-uc-object-store-v0.0.10) - 2026-11-14
+
+### Changed
+
+- [**breaking**] use trestle's AccessLevel as Operation (#326)
+
 ## [0.0.7](https://github.com/open-lakehouse/mangrove/compare/olai-uc-object-store-v0.0.6...olai-uc-object-store-v0.0.7) - 2026-10-31
 
 ### Added
