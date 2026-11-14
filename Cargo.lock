@@ -3174,8 +3174,9 @@ dependencies = [
 
 [[package]]
 name = "olai-auth"
-version = "0.0.2"
-source = "git+https://github.com/open-lakehouse/trestle?rev=7796402bd46a1a9c56fac6335046238db48d5e13#7796402bd46a1a9c56fac6335046238db48d5e13"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d30d932ac68893410eb2f4d5b461af182250956429d9555c1442317fa74e7a8"
 dependencies = [
  "async-trait",
  "axum",
