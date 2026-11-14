@@ -115,7 +115,16 @@ serde_yml = { workspace = true, optional = true }
 sqlx = { workspace = true, optional = true }
 swagger-ui-dist = { version = "5.18.3", optional = true }
 
+# `olai-auth` authentication (feature `olai-auth`): JWT verification against a JWKS
+# URL, API keys from Postgres, and the verified `Principal` the policy receives.
+olai-auth = { workspace = true, optional = true }
+
 [dev-dependencies]
+# Signs the test tokens of the `olai-auth` mode.
+base64 = "0.22"
+ed25519-dalek = { version = "2.1", default-features = false, features = ["std"] }
+# `#[sqlx::test]` databases for the `integration-pg` tests.
+sqlx = { workspace = true, features = ["postgres", "runtime-tokio-rustls", "macros", "migrate"] }
 mockito = "1.4"
 tempfile = "3.1"
 tokio = { version = "1", features = ["full"] }
@@ -144,6 +153,20 @@ embed = ["axum", "dep:base64", "dep:serde_yml", "dep:tower-http"]
 postgres = ["embed", "dep:unitycatalog-postgres", "sqlx/postgres"]
 sqlite = ["embed", "dep:unitycatalog-sqlite", "sqlx/sqlite"]
 
+# `auth.mode: olai-auth`: verified callers (Neon Auth JWTs over a JWKS URL, and
+# `olk_` API keys from the `authz` schema). Users' admin and ban status come from
+# `neon_auth."user"`. The identity tables are read through their own Postgres pool,
+# whatever the storage backend.
+olai-auth = [
+  "embed",
+  "dep:olai-auth",
+  "olai-auth/http",
+  "olai-auth/postgres",
+  "sqlx/postgres",
+  "sqlx/runtime-tokio-rustls",
+  "unitycatalog-handlers/olai-auth",
+]
+
 # Optional surfaces on top of `embed`.
 # Swagger UI for the bundled OpenAPI specs (embeds the swagger-ui assets).
 swagger = ["embed", "dep:swagger-ui-dist"]
@@ -164,6 +187,7 @@ files = ["embed", "dep:unitycatalog-files-api", "dep:unitycatalog-object-store"]
 # healthcheck client.
 bin = [
   "embed",
+  "olai-auth",
   "postgres",
   "sqlite",
   "swagger",
@@ -179,6 +203,10 @@ bin = [
 # (`tests/credential_vending_azurite.rs`). Requires a running Azurite blob
 # emulator; run with `just integration-azurite`.
 integration-azurite = ["memory"]
+
+# Postgres-backed integration tests (`tests/neon_user_status.rs`). Need a live
+# database: run with `DATABASE_URL` set; `#[sqlx::test]` provisions one per case.
+integration-pg = ["olai-auth"]
 
 # Gates the storage byte-proxy end-to-end integration test
 # (`tests/storage_proxy_azurite.rs`): drives the proxy router over HTTP against a

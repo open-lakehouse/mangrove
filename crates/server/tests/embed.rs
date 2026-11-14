@@ -126,3 +126,75 @@ async fn a_surface_that_is_not_compiled_in_is_a_startup_error() {
     let err = embed::start(&config).await.err().unwrap();
     assert!(err.to_string().contains("`storage-proxy` feature"), "{err}");
 }
+
+/// `olai-auth` from config: requests without a valid token are answered before
+/// the identity database is ever reached (its pool connects lazily).
+#[cfg(feature = "olai-auth")]
+#[tokio::test]
+async fn olai_auth_rejects_requests_without_a_valid_token() {
+    use unitycatalog_server::config::OlaiAuthConfig;
+
+    let mut config = config(":memory:");
+    config.auth = AuthConfig {
+        mode: AuthMode::OlaiAuth,
+        olai: Some(OlaiAuthConfig {
+            issuer: ConfigValue::Value("https://auth.example.com/neondb/auth".into()),
+            jwks_url: ConfigValue::Value("http://127.0.0.1:1/jwks.json".into()),
+            audiences: vec![ConfigValue::Value("https://uc.example.com".into())],
+            accept_session_tokens: false,
+            api_keys: true,
+            authz_schema: None,
+            users_schema: None,
+            // Nothing listens there; no request below gets far enough to connect.
+            database_url: Some(ConfigValue::Value("postgres://127.0.0.1:1/neondb".into())),
+            resource_metadata_url: None,
+            resource: Some("https://uc.example.com".into()),
+        }),
+        ..Default::default()
+    };
+    let router = embed::start(&config).await.unwrap().router;
+
+    let (status, _) = send(&router, "GET", "/health", None, None).await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _) = send(
+        &router,
+        "GET",
+        "/.well-known/oauth-protected-resource",
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let catalogs = "/api/2.1/unity-catalog/catalogs";
+    for token in [None, Some("garbage"), Some("a.b.c")] {
+        let (status, _) = send(&router, "GET", catalogs, token, None).await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "{token:?}");
+    }
+}
+
+/// `auth.mode: olai-auth` needs its `auth.olai` block, and an identity database
+/// when the backend isn't Postgres.
+#[cfg(feature = "olai-auth")]
+#[tokio::test]
+async fn olai_auth_without_its_config_is_a_startup_error() {
+    let mut config = config(":memory:");
+    config.auth = AuthConfig {
+        mode: AuthMode::OlaiAuth,
+        ..Default::default()
+    };
+    let err = embed::start(&config).await.err().unwrap();
+    assert!(err.to_string().contains("auth.olai"), "{err}");
+}
+
+#[cfg(not(feature = "olai-auth"))]
+#[tokio::test]
+async fn olai_auth_that_is_not_compiled_in_is_a_startup_error() {
+    let mut config = config(":memory:");
+    config.auth = AuthConfig {
+        mode: AuthMode::OlaiAuth,
+        ..Default::default()
+    };
+    let err = embed::start(&config).await.err().unwrap();
+    assert!(err.to_string().contains("`olai-auth` feature"), "{err}");
+}

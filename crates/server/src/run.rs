@@ -203,6 +203,17 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
                 .map_err(|e| Error::Generic(format!("auth config: {e}")))?;
             api_router.layer(AuthenticationLayer::new(BearerAuthenticator::new(tokens)))
         }
+        #[cfg(feature = "olai-auth")]
+        AuthMode::OlaiAuth => {
+            let olai = config
+                .auth
+                .olai_auth(&config.backend)
+                .map_err(|e| Error::Generic(format!("auth config: {e}")))?;
+            crate::rest::olai_auth::layer(api_router, &olai)
+                .map_err(|e| Error::Generic(format!("auth config: {e}")))?
+        }
+        #[cfg(not(feature = "olai-auth"))]
+        AuthMode::OlaiAuth => return Err(not_compiled("`auth.mode: olai-auth`", "olai-auth")),
     };
 
     Ok(assemble(app, &config.ui, &config.storage_proxy))
@@ -328,16 +339,11 @@ async fn build_storage_proxy_router(
             )
             .await
             .map_err(|e| Error::Generic(format!("storage-proxy client connect: {e}")))?;
-            use crate::policy::Principal;
             use std::sync::Arc;
             use unitycatalog_storage_proxy::{ContextExtractor, router_with_context};
             let extract_cx: ContextExtractor<RequestContext> = Arc::new(|parts| {
-                let recipient = parts
-                    .extensions
-                    .get::<Principal>()
-                    .cloned()
-                    .unwrap_or_else(Principal::anonymous);
-                Box::pin(async move { Ok(RequestContext { recipient }) })
+                let cx = RequestContext::from_extensions(&parts.extensions);
+                Box::pin(async move { Ok(cx) })
             });
             Ok(router_with_context::<(), _>(Arc::new(backend), extract_cx).with_state(()))
         }

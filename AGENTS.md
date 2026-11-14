@@ -122,7 +122,7 @@ pre-commit. Trim trailing whitespace; end files with a newline.
 cargo fmt --all --check \
   && cargo clippy --workspace --all-targets --all-features -- -D warnings \
   && cargo nextest run --workspace --all-features --profile ci \
-       -E 'not (package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access) or binary(graph_store)))' \
+       -E 'not ((package(olai-uc-postgres) and (binary(commit_coordinator) or binary(storage_access) or binary(graph_store))) or (package(olai-uc-server) and binary(neon_user_status)))' \
   && cargo test --workspace --all-features --doc
 ```
 

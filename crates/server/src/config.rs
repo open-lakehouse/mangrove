@@ -473,6 +473,156 @@ pub struct AuthConfig {
     /// Required (non-empty) in [`AuthMode::Bearer`]; ignored otherwise.
     #[serde(default)]
     pub tokens: Vec<BearerTokenConfig>,
+
+    /// The verifier settings of [`AuthMode::OlaiAuth`]. Required in that mode;
+    /// ignored otherwise.
+    #[serde(default)]
+    pub olai: Option<OlaiAuthConfig>,
+}
+
+/// The settings of [`AuthMode::OlaiAuth`].
+///
+/// Callers present `Authorization: Bearer` with either an EdDSA JWT from the
+/// configured issuer (Neon Auth) or an `olk_` API key of a service account. Users'
+/// admin and ban status come from `neon_auth."user"`, never from token claims.
+///
+/// ```yaml
+/// auth:
+///   mode: olai-auth
+///   olai:
+///     issuer: https://ep-example.neonauth.us-east-2.aws.neon.tech/neondb/auth
+///     jwks-url: https://ep-example.neonauth.us-east-2.aws.neon.tech/neondb/auth/.well-known/jwks.json
+///     audiences: [https://unitycatalog.example.com]
+///     database-url: { env: AUTH_DATABASE_URL }
+/// ```
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct OlaiAuthConfig {
+    /// The exact `iss` of accepted tokens, e.g. the Neon Auth URL
+    /// (`…/neondb/auth`) for OAuth access tokens.
+    pub issuer: ConfigValue,
+
+    /// Where the issuer publishes its signing keys (JWKS).
+    pub jwks_url: ConfigValue,
+
+    /// Accepted `aud` values: a token is accepted when it names any of them. At
+    /// least one is required.
+    pub audiences: Vec<ConfigValue>,
+
+    /// Also accept Neon Auth session tokens (the web app's): `iss` and `aud` are
+    /// both the origin of [`issuer`](Self::issuer). Default `false`.
+    #[serde(default)]
+    pub accept_session_tokens: bool,
+
+    /// Accept `olk_` API keys of service accounts. Default `true`.
+    #[serde(default = "default_true")]
+    pub api_keys: bool,
+
+    /// The schema of the `service_accounts` and `api_keys` tables. Default
+    /// `authz`.
+    #[serde(default)]
+    pub authz_schema: Option<String>,
+
+    /// The schema of Neon Auth's `user` table. Default `neon_auth`.
+    #[serde(default)]
+    pub users_schema: Option<String>,
+
+    /// Postgres holding the identity tables (`authz.*`, `neon_auth."user"`).
+    /// Defaults to the Postgres storage backend's URL; required with any other
+    /// backend. On Neon the catalog lives in its own database while the identity
+    /// tables are in the branch's `neondb`, so this is usually set.
+    #[serde(default)]
+    pub database_url: Option<ConfigValue>,
+
+    /// The URL of this server's OAuth protected-resource metadata (RFC 9728),
+    /// advertised in the `WWW-Authenticate` challenge of a 401.
+    #[serde(default)]
+    pub resource_metadata_url: Option<String>,
+
+    /// This server's resource identifier. When set, the server publishes
+    /// `/.well-known/oauth-protected-resource` (outside authentication) naming it
+    /// and [`issuer`](Self::issuer) as its authorization server.
+    #[serde(default)]
+    pub resource: Option<String>,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+/// [`OlaiAuthConfig`] with every value resolved, as the authenticator is built from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedOlaiAuth {
+    pub issuer: String,
+    pub jwks_url: String,
+    pub audiences: Vec<String>,
+    pub accept_session_tokens: bool,
+    pub api_keys: bool,
+    pub authz_schema: String,
+    pub users_schema: String,
+    pub database_url: String,
+    pub resource_metadata_url: Option<String>,
+    pub resource: Option<String>,
+}
+
+impl OlaiAuthConfig {
+    /// Resolve every value, with the identity database defaulting to `backend`'s
+    /// Postgres URL.
+    ///
+    /// Fails on an unresolved or empty issuer, JWKS URL or audience, no audience
+    /// at all, or no identity database.
+    pub fn resolve(&self, backend: &Backend) -> Result<ResolvedOlaiAuth, String> {
+        let required = |what: &str, v: &ConfigValue| {
+            v.value()
+                .filter(|v| !v.is_empty())
+                .ok_or_else(|| format!("`auth.olai.{what}` could not be resolved"))
+        };
+        let audiences = self
+            .audiences
+            .iter()
+            .map(|a| required("audiences", a))
+            .collect::<Result<Vec<_>, _>>()?;
+        if audiences.is_empty() {
+            return Err("`auth.olai.audiences` needs at least one audience".into());
+        }
+        let database_url = match (&self.database_url, backend) {
+            (Some(url), _) => required("database-url", url)?,
+            (None, Backend::Postgres(pg)) => pg.connection_string().ok_or(
+                "`auth.olai.database-url` is unset and the Postgres backend has no connection string",
+            )?,
+            (None, _) => {
+                return Err(
+                    "`auth.olai.database-url` is required unless the storage backend is Postgres"
+                        .into(),
+                );
+            }
+        };
+        Ok(ResolvedOlaiAuth {
+            issuer: required("issuer", &self.issuer)?,
+            jwks_url: required("jwks-url", &self.jwks_url)?,
+            audiences,
+            accept_session_tokens: self.accept_session_tokens,
+            api_keys: self.api_keys,
+            authz_schema: self.authz_schema.clone().unwrap_or_else(|| "authz".into()),
+            users_schema: self
+                .users_schema
+                .clone()
+                .unwrap_or_else(|| "neon_auth".into()),
+            database_url,
+            resource_metadata_url: self.resource_metadata_url.clone(),
+            resource: self.resource.clone(),
+        })
+    }
+}
+
+impl AuthConfig {
+    /// The resolved [`OlaiAuthConfig`] of [`AuthMode::OlaiAuth`].
+    pub fn olai_auth(&self, backend: &Backend) -> Result<ResolvedOlaiAuth, String> {
+        self.olai
+            .as_ref()
+            .ok_or("`auth.mode: olai-auth` needs an `auth.olai` block")?
+            .resolve(backend)
+    }
 }
 
 /// A bearer token accepted in [`AuthMode::Bearer`].
@@ -524,6 +674,10 @@ pub enum AuthMode {
     /// [`tokens`](AuthConfig::tokens); the request acts as that token's
     /// principal. For a server reachable directly, without a gateway in front.
     Bearer,
+    /// Verify `Authorization: Bearer` with `olai-auth`: JWTs of the configured
+    /// issuer and service-account API keys (see [`OlaiAuthConfig`]). The request
+    /// acts as the verified caller. Needs the `olai-auth` feature.
+    OlaiAuth,
 }
 
 /// Configuration for the upstream Unity Catalog instance.
@@ -814,6 +968,60 @@ impl EncryptionConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn olai_auth_yaml(extra: &str) -> AuthConfig {
+        serde_yml::from_str(&format!(
+            "mode: olai-auth\nolai:\n  issuer: https://auth.example.com/neondb/auth\n  \
+             jwks-url: https://auth.example.com/neondb/auth/.well-known/jwks.json\n  \
+             audiences: [https://uc.example.com]\n{extra}"
+        ))
+        .unwrap()
+    }
+
+    #[test]
+    fn olai_auth_defaults_to_the_postgres_backend() {
+        let auth = olai_auth_yaml("");
+        assert_eq!(auth.mode, AuthMode::OlaiAuth);
+        let backend = Backend::Postgres(PostgresBackendConfig {
+            url: Some(ConfigValue::Value("postgres://db/unitycatalog".into())),
+            ..Default::default()
+        });
+        let resolved = auth.olai_auth(&backend).unwrap();
+        assert_eq!(resolved.database_url, "postgres://db/unitycatalog");
+        assert_eq!(resolved.audiences, ["https://uc.example.com"]);
+        assert!(resolved.api_keys);
+        assert!(!resolved.accept_session_tokens);
+        assert_eq!(resolved.authz_schema, "authz");
+        assert_eq!(resolved.users_schema, "neon_auth");
+    }
+
+    #[test]
+    fn olai_auth_takes_its_own_database() {
+        let auth = olai_auth_yaml(
+            "  database-url: postgres://db/neondb\n  api-keys: false\n  accept-session-tokens: true\n",
+        );
+        let resolved = auth.olai_auth(&Backend::default()).unwrap();
+        assert_eq!(resolved.database_url, "postgres://db/neondb");
+        assert!(!resolved.api_keys);
+        assert!(resolved.accept_session_tokens);
+    }
+
+    #[test]
+    fn olai_auth_refuses_incomplete_config() {
+        let err = olai_auth_yaml("")
+            .olai_auth(&Backend::default())
+            .unwrap_err();
+        assert!(err.contains("database-url"), "{err}");
+
+        let mut auth = olai_auth_yaml("  database-url: postgres://db/x\n");
+        auth.olai.as_mut().unwrap().audiences.clear();
+        let err = auth.olai_auth(&Backend::default()).unwrap_err();
+        assert!(err.contains("audiences"), "{err}");
+
+        let auth: AuthConfig = serde_yml::from_str("mode: olai-auth").unwrap();
+        let err = auth.olai_auth(&Backend::default()).unwrap_err();
+        assert!(err.contains("auth.olai"), "{err}");
+    }
 
     #[test]
     fn test_deserialize_config() {

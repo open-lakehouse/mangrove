@@ -352,9 +352,7 @@ mod tests {
 
     #[cfg(feature = "memory")]
     fn ctx() -> RequestContext {
-        RequestContext {
-            recipient: crate::policy::Principal::anonymous(),
-        }
+        RequestContext::anonymous()
     }
 
     #[cfg(feature = "memory")]

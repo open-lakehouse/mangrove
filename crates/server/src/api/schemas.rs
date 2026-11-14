@@ -209,7 +209,7 @@ mod tests {
     use super::*;
     use crate::api::{CredentialHandler, ExternalLocationHandler};
     use crate::memory::InMemoryResourceStore;
-    use crate::policy::{ConstantPolicy, Principal};
+    use crate::policy::ConstantPolicy;
     use crate::services::ServerHandler;
 
     fn handler() -> ServerHandler<RequestContext> {
@@ -221,9 +221,7 @@ mod tests {
     }
 
     fn ctx() -> RequestContext {
-        RequestContext {
-            recipient: Principal::anonymous(),
-        }
+        RequestContext::anonymous()
     }
 
     /// Register a credential + external location at `url` so a managed schema

@@ -231,9 +231,7 @@ mod tests {
     }
 
     fn ctx() -> RequestContext {
-        RequestContext {
-            recipient: crate::policy::Principal::anonymous(),
-        }
+        RequestContext::anonymous()
     }
 
     /// Create catalog `cat` (rooted at a covered storage root) and schema `sch`

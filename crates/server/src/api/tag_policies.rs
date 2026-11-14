@@ -187,9 +187,7 @@ mod tests {
     }
 
     fn ctx() -> RequestContext {
-        RequestContext {
-            recipient: crate::policy::Principal::anonymous(),
-        }
+        RequestContext::anonymous()
     }
 
     fn policy(tag_key: &str) -> TagPolicy {

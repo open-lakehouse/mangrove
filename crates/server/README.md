@@ -100,6 +100,33 @@ auth:
       token: { env: UC_ADMIN_TOKEN }
 ```
 
+With the `olai-auth` feature, `auth.mode: olai-auth` verifies callers with
+[`olai-auth`](https://crates.io/crates/olai-auth) instead. A caller presents an
+EdDSA JWT of the configured issuer (Neon Auth) or an `olk_` API key of a
+service account (`authz.api_keys`). Whether a user is an admin or banned comes
+from Neon Auth's `neon_auth."user"`, never from the token. The policy and the
+Delta API backend see the verified caller as `RequestContext::verified_principal`.
+
+```yaml
+auth:
+  mode: olai-auth
+  olai:
+    issuer: { env: NEON_AUTH_BASE_URL }     # the exact `iss` of OAuth access tokens
+    jwks-url: { env: NEON_AUTH_JWKS_URL }
+    audiences: [https://unitycatalog.example.com]
+    accept-session-tokens: true             # also the web app's session tokens (iss = aud = the Auth URL's origin)
+    database-url: { env: AUTH_DATABASE_URL } # the identity tables; defaults to the Postgres backend
+    resource: https://unitycatalog.example.com
+    resource-metadata-url: https://unitycatalog.example.com/.well-known/oauth-protected-resource
+```
+
+The identity tables are read through their own small pool, so they can live in
+another database than the catalog. On Neon that's the branch's `neondb`, while
+the catalog has a database of its own. A request with no token or a rejected one
+gets a 401 with an RFC 6750 challenge; a banned user gets a 403. With `resource`
+set, `/.well-known/oauth-protected-resource` is served without authentication.
+GitHub Actions OIDC tokens aren't accepted yet.
+
 ## Feature flags
 
 | Feature   | Default | What it enables                                                                          |
@@ -115,6 +142,7 @@ auth:
 | `ui`      |         | Serving the bundled single-page app from `./web` (`ui.serve`).                           |
 | `storage-proxy` |   | The same-origin storage byte-proxy (`storage_proxy.enabled`).                            |
 | `files`   |         | The embedded Files API (`files.enabled`).                                                |
+| `olai-auth` |       | `auth.mode: olai-auth`: Neon Auth JWTs over a JWKS URL and service-account API keys (implies `embed`). |
 | `bin`     |         | The deployable `uc-server` binary: all of the above, plus the CLI parser and the healthcheck client. |
 
 A config that asks for a backend or surface the build doesn't include fails at

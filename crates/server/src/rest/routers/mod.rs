@@ -26,15 +26,10 @@ pub fn create_delta_router(
     use unitycatalog_delta_api::router::{ContextExtractor, router_with_context};
 
     use crate::api::RequestContext;
-    use crate::policy::Principal;
 
     let extract_cx: ContextExtractor<RequestContext> = Arc::new(|parts| {
-        let recipient = parts
-            .extensions
-            .get::<Principal>()
-            .cloned()
-            .unwrap_or_else(Principal::anonymous);
-        Box::pin(async move { Ok(RequestContext { recipient }) })
+        let cx = RequestContext::from_extensions(&parts.extensions);
+        Box::pin(async move { Ok(cx) })
     });
     router_with_context::<(), _>(Arc::new(handler), extract_cx).with_state(())
 }
@@ -58,15 +53,10 @@ pub fn create_storage_proxy_router(
     use unitycatalog_storage_proxy::{ContextExtractor, router_with_context};
 
     use crate::api::RequestContext;
-    use crate::policy::Principal;
 
     let extract_cx: ContextExtractor<RequestContext> = Arc::new(|parts| {
-        let recipient = parts
-            .extensions
-            .get::<Principal>()
-            .cloned()
-            .unwrap_or_else(Principal::anonymous);
-        Box::pin(async move { Ok(RequestContext { recipient }) })
+        let cx = RequestContext::from_extensions(&parts.extensions);
+        Box::pin(async move { Ok(cx) })
     });
     router_with_context::<(), _>(Arc::new(handler), extract_cx).with_state(())
 }

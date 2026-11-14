@@ -256,9 +256,7 @@ mod tests {
     }
 
     fn ctx() -> RequestContext {
-        RequestContext {
-            recipient: Principal::anonymous(),
-        }
+        RequestContext::anonymous()
     }
 
     /// Register a credential + external location at `url` so a managed
