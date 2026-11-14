@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.17](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.16...olai-uc-server-v0.0.17) - 2026-11-14
+
+### Added
+
+- trusted-vending startup interlock and vend audit log (#340)
+- trusted Neon vending via vending.neon config (#339)
+
 ## [0.0.16](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.15...olai-uc-server-v0.0.16) - 2026-11-14
 
 ### Added
