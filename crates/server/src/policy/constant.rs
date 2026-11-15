@@ -1,6 +1,4 @@
-use unitycatalog_common::models::ResourceIdent;
-
-use super::{Decision, Permission, Policy};
+use super::{Decision, Facts, Policy, Securable, ServerAction};
 use crate::Result;
 
 /// Policy that always returns a constant decision.
@@ -29,7 +27,13 @@ impl ConstantPolicy {
 
 #[async_trait::async_trait]
 impl<Cx: Send + Sync + 'static> Policy<Cx> for ConstantPolicy {
-    async fn authorize(&self, _: &ResourceIdent, _: &Permission, _: &Cx) -> Result<Decision> {
+    async fn authorize(
+        &self,
+        _: ServerAction,
+        _: &Securable,
+        _: &Facts,
+        _: &Cx,
+    ) -> Result<Decision> {
         Ok(self.decision)
     }
 }
@@ -37,7 +41,21 @@ impl<Cx: Send + Sync + 'static> Policy<Cx> for ConstantPolicy {
 #[cfg(test)]
 mod test {
     use super::*;
-    use unitycatalog_common::models::resource_name;
+    use crate::policy::Operation;
+    use unitycatalog_common::models::ObjectLabel;
+
+    async fn decide(policy: ConstantPolicy) -> Decision {
+        let catalog = Securable::new(ObjectLabel::Catalog, vec!["test_catalog".to_string()]);
+        policy
+            .authorize(
+                Operation::GetCatalog.into(),
+                &catalog,
+                &Facts::default(),
+                &(),
+            )
+            .await
+            .unwrap()
+    }
 
     #[test]
     fn assert_send_sync() {
@@ -47,34 +65,22 @@ mod test {
 
     #[tokio::test]
     async fn allow_by_default() {
-        let policy = ConstantPolicy::default();
-
-        let resource = ResourceIdent::catalog(resource_name!("test_catalog"));
-        let permission = Permission::Read;
-
-        let decision = policy.authorize(&resource, &permission, &()).await.unwrap();
-        assert_eq!(decision, Decision::Allow);
+        assert_eq!(decide(ConstantPolicy::default()).await, Decision::Allow);
     }
 
     #[tokio::test]
     async fn allow() {
-        let policy = ConstantPolicy::new(Decision::Allow);
-
-        let resource = ResourceIdent::catalog(resource_name!("test_catalog"));
-        let permission = Permission::Read;
-
-        let decision = policy.authorize(&resource, &permission, &()).await.unwrap();
-        assert_eq!(decision, Decision::Allow);
+        assert_eq!(
+            decide(ConstantPolicy::new(Decision::Allow)).await,
+            Decision::Allow
+        );
     }
 
     #[tokio::test]
     async fn deny() {
-        let policy = ConstantPolicy::new(Decision::Deny);
-
-        let resource = ResourceIdent::catalog(resource_name!("test_catalog"));
-        let permission = Permission::Read;
-
-        let decision = policy.authorize(&resource, &permission, &()).await.unwrap();
-        assert_eq!(decision, Decision::Deny);
+        assert_eq!(
+            decide(ConstantPolicy::new(Decision::Deny)).await,
+            Decision::Deny
+        );
     }
 }

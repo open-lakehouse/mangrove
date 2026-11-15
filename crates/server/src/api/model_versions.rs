@@ -1,12 +1,12 @@
 use itertools::Itertools;
 
 use unitycatalog_common::models::ObjectLabel;
+use unitycatalog_common::models::ResourceName;
 use unitycatalog_common::models::model_versions::v1::*;
 use unitycatalog_common::models::registered_models::v1::RegisteredModel;
-use unitycatalog_common::models::{ResourceIdent, ResourceName};
 
-use super::{RegisteredModelHandler, RequestContext, SecuredAction};
-use crate::policy::{Permission, Policy, process_resources};
+use super::{RegisteredModelHandler, RequestContext, RequestResource};
+use crate::policy::{Policy, process_resources};
 use crate::services::ServerHandler;
 use crate::store::{ResourceStore, ResourceStoreReader};
 use crate::{Error, Result};
@@ -22,17 +22,6 @@ fn split_model_full_name(full_name: &str) -> Result<(String, String, String)> {
         ));
     };
     Ok((catalog.clone(), schema.clone(), model.clone()))
-}
-
-/// The store `ResourceIdent` for a specific model version, keyed by the composite
-/// `[catalog, schema, model_name, version]` name — matching `ModelVersion::resource_name`.
-fn model_version_ident(catalog: &str, schema: &str, model: &str, version: i64) -> ResourceIdent {
-    ResourceIdent::model_version(ResourceName::new([
-        catalog.to_string(),
-        schema.to_string(),
-        model.to_string(),
-        version.to_string(),
-    ]))
 }
 
 #[async_trait::async_trait]
@@ -54,7 +43,7 @@ impl ModelVersionHandler<RequestContext> for ServerHandler<RequestContext> {
                 request.page_token,
             )
             .await?;
-        process_resources(self, &context, &Permission::Read, &mut resources).await?;
+        process_resources(self, &context, &mut resources).await?;
         Ok(ListModelVersionsResponse {
             model_versions: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
@@ -212,100 +201,6 @@ trait ModelVersionAllocExt: ResourceStore {
 }
 
 impl<T: ResourceStore> ModelVersionAllocExt for T {}
-
-impl SecuredAction for CreateModelVersionRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::registered_model(ResourceName::new([
-            self.catalog_name.as_str(),
-            self.schema_name.as_str(),
-            self.model_name.as_str(),
-        ]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Create
-    }
-}
-
-impl SecuredAction for ListModelVersionsRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::registered_model(ResourceName::from_naive_str_split(self.full_name.as_str()))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetModelVersionRequest {
-    fn resource(&self) -> ResourceIdent {
-        match split_model_full_name(&self.full_name) {
-            Ok((catalog, schema, model)) => {
-                model_version_ident(&catalog, &schema, &model, self.version)
-            }
-            // A malformed name yields an undefined ref; the handler's name parse
-            // surfaces the real error.
-            Err(_) => ResourceIdent::model_version(ResourceName::from_naive_str_split(
-                self.full_name.as_str(),
-            )),
-        }
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for UpdateModelVersionRequest {
-    fn resource(&self) -> ResourceIdent {
-        match split_model_full_name(&self.full_name) {
-            Ok((catalog, schema, model)) => {
-                model_version_ident(&catalog, &schema, &model, self.version)
-            }
-            Err(_) => ResourceIdent::model_version(ResourceName::from_naive_str_split(
-                self.full_name.as_str(),
-            )),
-        }
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for DeleteModelVersionRequest {
-    fn resource(&self) -> ResourceIdent {
-        match split_model_full_name(&self.full_name) {
-            Ok((catalog, schema, model)) => {
-                model_version_ident(&catalog, &schema, &model, self.version)
-            }
-            Err(_) => ResourceIdent::model_version(ResourceName::from_naive_str_split(
-                self.full_name.as_str(),
-            )),
-        }
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for FinalizeModelVersionRequest {
-    fn resource(&self) -> ResourceIdent {
-        match split_model_full_name(&self.full_name) {
-            Ok((catalog, schema, model)) => {
-                model_version_ident(&catalog, &schema, &model, self.version)
-            }
-            Err(_) => ResourceIdent::model_version(ResourceName::from_naive_str_split(
-                self.full_name.as_str(),
-            )),
-        }
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
 
 #[cfg(test)]
 mod tests {

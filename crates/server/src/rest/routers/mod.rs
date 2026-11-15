@@ -1,6 +1,6 @@
 use crate::api::{
     AgentHandler, AgentSkillHandler, CatalogHandler, CredentialHandler, EntityTagAssignmentHandler,
-    ExternalLocationHandler, FunctionHandler, ModelVersionHandler, PolicyHandler,
+    ExternalLocationHandler, FunctionHandler, GrantHandler, ModelVersionHandler, PolicyHandler,
     RegisteredModelHandler, SchemaHandler, StagingTableHandler, TableHandler, TagPolicyHandler,
     TemporaryCredentialHandler, VolumeHandler,
 };
@@ -337,6 +337,23 @@ where
         .route(
             "/policies/{on_securable_type}/{on_securable_fullname}/{name}",
             delete(delete_policy::<T, Cx>),
+        )
+        .with_state(handler)
+}
+
+/// Router for the grants API (`/permissions/{securable_type}/{full_name}`): the
+/// privileges principals hold on a securable.
+pub fn create_grants_router<T, Cx>(handler: T) -> axum::Router
+where
+    T: GrantHandler<Cx> + Clone,
+    Cx: axum::extract::FromRequestParts<T> + Send + 'static,
+{
+    use unitycatalog_handlers::grants::server::*;
+
+    axum::Router::new()
+        .route(
+            "/permissions/{securable_type}/{full_name}",
+            get(get_grants::<T, Cx>).patch(update_grants::<T, Cx>),
         )
         .with_state(handler)
 }

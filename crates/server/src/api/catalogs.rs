@@ -1,10 +1,11 @@
 use itertools::Itertools;
 
+use unitycatalog_common::models::ObjectLabel;
 use unitycatalog_common::models::catalogs::v1::*;
-use unitycatalog_common::models::{ObjectLabel, ResourceIdent, ResourceName, ResourceRef};
 
-use super::{RequestContext, SecuredAction};
-use crate::policy::{Permission, Policy, process_resources};
+use super::{RequestContext, RequestResource};
+use crate::policy::Authorizable;
+use crate::policy::{Policy, process_resources};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::{ProvidesLocalStoragePolicy, ProvidesManagedStorageRoot};
@@ -22,6 +23,7 @@ impl CatalogHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<Catalog> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
+        let securable = request.securable();
 
         // A Delta Sharing catalog references a share on a remote provider; it is
         // identified by `provider_name`/`share_name`, which must be set together
@@ -123,10 +125,9 @@ impl CatalogHandler<RequestContext> for ServerHandler<RequestContext> {
         };
         let info = self.create(resource.into()).await?.0.try_into()?;
 
-        // TODO:
-        // - make current actor the owner of the catalog including permissions
-        // - create updated_* relations
+        // TODO: create updated_* relations
 
+        self.own(&securable, &context).await?;
         Ok(info)
     }
 
@@ -138,7 +139,8 @@ impl CatalogHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<()> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
-        Ok(self.delete(&request.resource()).await?)
+        self.delete(&request.resource()).await?;
+        self.ungrant(&request.securable()).await
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -167,7 +169,7 @@ impl CatalogHandler<RequestContext> for ServerHandler<RequestContext> {
                 request.page_token,
             )
             .await?;
-        process_resources(self, &context, &Permission::Read, &mut resources).await?;
+        process_resources(self, &context, &mut resources).await?;
         Ok(ListCatalogsResponse {
             catalogs: resources.into_iter().map(|r| r.try_into()).try_collect()?,
             next_page_token,
@@ -183,6 +185,11 @@ impl CatalogHandler<RequestContext> for ServerHandler<RequestContext> {
     ) -> Result<Catalog> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
+        let (securable, renamed, owner) = (
+            request.securable(),
+            request.new_name.clone(),
+            request.owner.clone(),
+        );
         let ident = request.resource();
         let resource = Catalog {
             name: request.new_name.unwrap_or(request.name),
@@ -193,57 +200,10 @@ impl CatalogHandler<RequestContext> for ServerHandler<RequestContext> {
         // TODO:
         // - add update_* relations
         // - update owner if necessary
-        Ok(self.update(&ident, resource.into()).await?.0.try_into()?)
-    }
-}
-
-impl SecuredAction for CreateCatalogRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::catalog(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Create
-    }
-}
-
-impl SecuredAction for ListCatalogsRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::catalog(ResourceRef::Undefined)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetCatalogRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::catalog(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for UpdateCatalogRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::catalog(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for DeleteCatalogRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::catalog(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
+        let updated: Catalog = self.update(&ident, resource.into()).await?.0.try_into()?;
+        self.regrant(&securable, renamed.as_deref(), owner.as_deref())
+            .await?;
+        Ok(updated)
     }
 }
 

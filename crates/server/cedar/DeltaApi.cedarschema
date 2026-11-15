@@ -1,0 +1,50 @@
+// The actions of the Unity Catalog Delta API (`/delta/v1`) that have no REST
+// operation of their own. The rest of its actions reuse the REST operations:
+//
+// | Delta action            | Cedar action                              |
+// |-------------------------|-------------------------------------------|
+// | `ReadCatalog`           | `GetCatalog`                              |
+// | `CreateTable`           | `CreateTable`                             |
+// | `ReadTable`             | `GetTable`                                |
+// | `DeleteTable`           | `DeleteTable`                             |
+// | `VendTableCredential`   | `GenerateTemporaryTableCredentials`       |
+// | `VendPathCredential`    | `GenerateTemporaryPathCredentials`        |
+// | `CreateStaging`         | `CreateStagingTable`                      |
+// | `WriteTable`            | `CommitTable`                             |
+// | `RenameTable`           | `RenameTable`                             |
+// | `AdoptStaging`          | `AdoptStagingTable`                       |
+// | `VendStagingCredential` | `GenerateTemporaryStagingTableCredentials` |
+//
+// Credential actions carry `context.credential_operation` (`READ` or
+// `READ_WRITE`); `AdoptStagingTable` carries `context.is_creator`.
+namespace UnityCatalog {
+  // Commit a new version of a table (writes its data and log).
+  action "CommitTable" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Table],
+    context: RequestContext,
+  };
+
+  // Rename a table; asked on the table under its current name. The server also
+  // asks `CreateTable` on the new name, so a rename into another schema needs
+  // the right to create there.
+  action "RenameTable" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Table],
+    context: RequestContext,
+  };
+
+  // Turn a staging table into a managed table.
+  action "AdoptStagingTable" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [StagingTable],
+    context: RequestContext,
+  };
+
+  // Receive credentials for a staging table's location.
+  action "GenerateTemporaryStagingTableCredentials" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [StagingTable],
+    context: RequestContext,
+  };
+}

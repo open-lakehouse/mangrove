@@ -3,16 +3,16 @@ use unitycatalog_common::models::credentials::v1::{
     CreateCredentialRequest, Credential, DeleteCredentialRequest, GetCredentialRequest,
     ListCredentialsRequest, ListCredentialsResponse, Purpose, UpdateCredentialRequest,
 };
-use unitycatalog_common::models::{ResourceIdent, ResourceName, ResourceRef};
 use unitycatalog_storage_access::{
     CredentialSecrets, CredentialUpdate, Page, ProvidesStorageAccessStore,
 };
 
-use super::{RequestContext, SecuredAction};
+use super::RequestContext;
 use crate::error::from_store;
-use crate::policy::{Permission, Policy, process_resources};
+use crate::policy::{Policy, Securable, process_resources};
 use crate::services::ServerHandler;
 use crate::{Error, Result};
+use unitycatalog_common::models::ObjectLabel;
 pub use unitycatalog_handlers::credentials::CredentialHandler;
 
 #[async_trait::async_trait]
@@ -34,7 +34,7 @@ impl CredentialHandler<RequestContext> for ServerHandler<RequestContext> {
             .list_credentials(purpose, page)
             .await
             .map_err(from_store)?;
-        process_resources(self, &context, &Permission::Read, &mut credentials).await?;
+        process_resources(self, &context, &mut credentials).await?;
         Ok(ListCredentialsResponse {
             credentials,
             next_page_token,
@@ -67,12 +67,16 @@ impl CredentialHandler<RequestContext> for ServerHandler<RequestContext> {
         }
         let mut credential = credential;
         self.complete_neon_arn(&mut credential)?;
+        let securable = credential_securable(&credential.name);
         // The store seals the secrets apart from the row; the response is redacted,
         // which matches the public API contract.
-        self.storage_access()
+        let created = self
+            .storage_access()
             .create_credential(credential)
             .await
-            .map_err(from_store)
+            .map_err(from_store)?;
+        self.own(&securable, &context).await?;
+        Ok(created)
     }
 
     #[tracing::instrument(skip(self, context), fields(resource_name))]
@@ -108,6 +112,7 @@ impl CredentialHandler<RequestContext> for ServerHandler<RequestContext> {
         };
         self.complete_neon_arn(&mut replacement)?;
         let secrets = CredentialSecrets::take(&mut replacement);
+        let (new_name, owner) = (request.new_name.clone(), request.owner.clone());
         let update = CredentialUpdate {
             new_name: request.new_name,
             comment: request.comment,
@@ -123,6 +128,12 @@ impl CredentialHandler<RequestContext> for ServerHandler<RequestContext> {
         // Rotated secrets must not keep minting: drop every cached minter and
         // vended credential (rare admin operation, so a full flush is fine).
         self.forget_vended_credentials();
+        self.regrant(
+            &credential_securable(&request.name),
+            new_name.as_deref(),
+            owner.as_deref(),
+        )
+        .await?;
         Ok(updated)
     }
 
@@ -141,8 +152,13 @@ impl CredentialHandler<RequestContext> for ServerHandler<RequestContext> {
             .map_err(from_store)?;
         // A deleted credential's secrets and vended credentials must not be reused.
         self.forget_vended_credentials();
-        Ok(())
+        self.ungrant(&credential_securable(&request.name)).await
     }
+}
+
+/// The credential `name` as a securable.
+fn credential_securable(name: &str) -> Securable {
+    Securable::new(ObjectLabel::Credential, vec![name.to_string()])
 }
 
 impl ServerHandler<RequestContext> {
@@ -163,55 +179,5 @@ impl ServerHandler<RequestContext> {
             olai_credential_vending::RegisteredCredential::try_from(&*credential)?;
         }
         Ok(())
-    }
-}
-
-impl SecuredAction for CreateCredentialRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::credential(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Create
-    }
-}
-
-impl SecuredAction for ListCredentialsRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::credential(ResourceRef::Undefined)
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for GetCredentialRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::credential(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Read
-    }
-}
-
-impl SecuredAction for UpdateCredentialRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::credential(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
-    }
-}
-
-impl SecuredAction for DeleteCredentialRequest {
-    fn resource(&self) -> ResourceIdent {
-        ResourceIdent::credential(ResourceName::new([self.name.as_str()]))
-    }
-
-    fn permission(&self) -> &'static Permission {
-        &Permission::Manage
     }
 }

@@ -1,105 +1,94 @@
 //! `AuthorizerPolicy` in front of the server handlers, deciding with the
-//! published Cedar fragment (`CedarAuthorizer`) or a remote decision point
-//! (`HttpAuthorizer`).
+//! published Cedar schema, a UC-rules policy (`testdata/uc_rules.cedar`) and the
+//! grants the handlers keep, through an in-process `CedarAuthorizer` whose
+//! `GrantsEntityLoader` reads the handler's own grant store.
 
+use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
-use olai_auth::{
-    AuthMethod, AuthorizeRequest, AuthorizeResponse, Authorizer, BoxError, CedarAuthorizer,
-    EntityLoader, EntityRef, PrincipalKind, async_trait,
+use olai_auth::grants::{
+    Grant, GrantChange, GrantError, GrantStore, GroupMembership, MemoryGrantStore, ObjectRef,
+    Subject,
 };
-use serde_json::{Value, json};
-use unitycatalog_common::models::catalogs::v1::{CreateCatalogRequest, ListCatalogsRequest};
+use olai_auth::{
+    AuthMethod, AuthorizeRequest, AuthorizeResponse, Authorizer, CedarAuthorizer, EntityRef,
+    GrantsEntityLoader, PrincipalKind, SubjectTypes, async_trait,
+};
+use rstest::rstest;
+use unitycatalog_common::models::catalogs::v1::{
+    CreateCatalogRequest, DeleteCatalogRequest, ListCatalogsRequest, UpdateCatalogRequest,
+};
 use unitycatalog_common::models::credentials::v1::{
     AwsIamRoleConfig, CreateCredentialRequest, Purpose,
 };
 use unitycatalog_common::models::external_locations::v1::CreateExternalLocationRequest;
-use unitycatalog_common::models::schemas::v1::CreateSchemaRequest;
+use unitycatalog_common::models::grants::v1::{
+    GetGrantsRequest, GrantChange as ApiChange, UpdateGrantsRequest,
+};
+use unitycatalog_common::models::schemas::v1::{CreateSchemaRequest, DeleteSchemaRequest};
 use unitycatalog_common::models::tables::v1::{
-    CreateTableRequest, DataSourceFormat, GetTableRequest, ListTablesRequest, TableType,
+    CreateTableRequest, DataSourceFormat, DeleteTableRequest, GetTableRequest, ListTablesRequest,
+    TableType,
 };
 use unitycatalog_common::models::temporary_credentials::v1::*;
-use unitycatalog_common::models::volumes::v1::{CreateVolumeRequest, VolumeType};
 use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
-use unitycatalog_delta_api::backend::{CredentialAccess, SchemaRef, TableRef};
+use unitycatalog_delta_api::backend::{CredentialAccess, TableRef};
 use unitycatalog_delta_api::{DeltaAction, DeltaBackend, DeltaBackendError};
 
 use super::*;
 use crate::Error;
 use crate::api::{
-    CatalogHandler, CredentialHandler, ExternalLocationHandler, SchemaHandler, TableHandler,
-    TemporaryCredentialHandler, VolumeHandler,
+    CatalogHandler, CredentialHandler, ExternalLocationHandler, GrantHandler, SchemaHandler,
+    TableHandler, TemporaryCredentialHandler,
 };
+use crate::grants::{Grants, IdentityDirectory, OWNER};
 use crate::memory::InMemoryResourceStore;
+use crate::policy::CEDAR_SCHEMA_FRAGMENTS;
 use crate::services::ServerHandler;
 
-/// The host's principal types, which the fragment refers to.
-const LAKEHOUSE: &str = "namespace Lakehouse { entity User; entity ServiceAccount; }";
+/// The host's principal types, and the groups they are in.
+const LAKEHOUSE: &str = "namespace Lakehouse { entity Group in [Group]; entity User in [Group]; entity ServiceAccount in [Group]; }";
 
-/// `admin` may do anything. `reader` may read, write and create in `cat.sch`
-/// and read the external location, but holds no EXTERNAL USE. `vendor` holds
-/// EXTERNAL USE on both as well.
-const POLICIES: &str = r#"
-@id("admin")
-permit (principal == Lakehouse::User::"admin", action, resource);
+/// The UC rules the tests decide with.
+const POLICIES: &str = include_str!("testdata/uc_rules.cedar");
 
-@id("reader-schema")
-permit (
-  principal == Lakehouse::User::"reader",
-  action in [
-    UnityCatalog::Action::"read", UnityCatalog::Action::"write",
-    UnityCatalog::Action::"create", UnityCatalog::Action::"use"
-  ],
-  resource in UnityCatalog::Schema::"cat.sch"
-);
-
-@id("reader-location")
-permit (
-  principal == Lakehouse::User::"reader",
-  action == UnityCatalog::Action::"read",
-  resource == UnityCatalog::ExternalLocation::"ext"
-);
-
-@id("vendor-schema")
-permit (
-  principal == Lakehouse::User::"vendor",
-  action in [
-    UnityCatalog::Action::"read", UnityCatalog::Action::"write",
-    UnityCatalog::Action::"create", UnityCatalog::Action::"use"
-  ],
-  resource in UnityCatalog::Schema::"cat.sch"
-);
-
-@id("vendor-location")
-permit (
-  principal == Lakehouse::User::"vendor",
-  action == UnityCatalog::Action::"read",
-  resource == UnityCatalog::ExternalLocation::"ext"
-);
-
-@id("vendor-schema-external-use")
-permit (
-  principal == Lakehouse::User::"vendor",
-  action == UnityCatalog::Action::"external_use",
-  resource in UnityCatalog::Schema::"cat.sch"
-);
-
-@id("vendor-location-external-use")
-permit (
-  principal == Lakehouse::User::"vendor",
-  action == UnityCatalog::Action::"external_use",
-  resource == UnityCatalog::ExternalLocation::"ext"
-);
-"#;
-
-/// Only the principal: everything about the resource comes with the request.
-struct Principals;
+/// One grant store, shared by the handler (which writes it) and the loader
+/// (which reads it).
+#[derive(Clone, Default)]
+struct Shared(Arc<MemoryGrantStore>);
 
 #[async_trait]
-impl EntityLoader for Principals {
-    async fn load(&self, request: &AuthorizeRequest) -> Result<Value, BoxError> {
-        Ok(json!([{ "uid": request.principal, "attrs": {}, "parents": [] }]))
+impl GrantStore for Shared {
+    async fn list(&self, object: &ObjectRef) -> Result<Vec<Grant>, GrantError> {
+        self.0.list(object).await
+    }
+    async fn apply(
+        &self,
+        object: &ObjectRef,
+        changes: &[GrantChange],
+    ) -> Result<Vec<Grant>, GrantError> {
+        self.0.apply(object, changes).await
+    }
+    async fn delete_object(&self, object: &ObjectRef, types: &[&str]) -> Result<u64, GrantError> {
+        self.0.delete_object(object, types).await
+    }
+    async fn rename(
+        &self,
+        object: &ObjectRef,
+        new_id: &str,
+        types: &[&str],
+    ) -> Result<u64, GrantError> {
+        self.0.rename(object, new_id, types).await
+    }
+    async fn groups(&self, subject: &Subject) -> Result<Vec<GroupMembership>, GrantError> {
+        self.0.groups(subject).await
+    }
+    async fn effective(
+        &self,
+        subject: &Subject,
+        objects: &[ObjectRef],
+    ) -> Result<Vec<Grant>, GrantError> {
+        self.0.effective(subject, objects).await
     }
 }
 
@@ -117,14 +106,14 @@ impl Recording {
         })
     }
 
-    fn seen(&self) -> Vec<(String, EntityRef)> {
-        self.seen.lock().unwrap().clone()
-    }
-
     fn asked(&self, action: &str, kind: &str, id: &str) -> bool {
-        self.seen().iter().any(|(a, r)| {
+        self.seen.lock().unwrap().iter().any(|(a, r)| {
             a == action && r.entity_type == format!("UnityCatalog::{kind}") && r.id == id
         })
+    }
+
+    fn count(&self) -> usize {
+        self.seen.lock().unwrap().len()
     }
 }
 
@@ -149,33 +138,51 @@ impl Authorizer for Unreachable {
     }
 }
 
-fn cedar() -> CedarAuthorizer {
-    let schema = format!("{LAKEHOUSE}\n{CEDAR_SCHEMA}");
-    CedarAuthorizer::new(&schema, POLICIES, Principals).unwrap()
+/// The host's fragment and the server's.
+fn fragments() -> Vec<&'static str> {
+    let mut fragments = vec![LAKEHOUSE];
+    fragments.extend_from_slice(CEDAR_SCHEMA_FRAGMENTS);
+    fragments
 }
 
-/// The local storage the seeded table and volume live in: local locations vend
-/// without minting, so an authorized vend succeeds without any cloud.
+fn cedar(store: &Shared) -> CedarAuthorizer {
+    let loader = GrantsEntityLoader::new(
+        store.clone(),
+        SubjectTypes::new(
+            "Lakehouse::User",
+            "Lakehouse::ServiceAccount",
+            "Lakehouse::Group",
+        ),
+    );
+    CedarAuthorizer::from_fragments(&fragments(), POLICIES, loader).unwrap()
+}
+
+/// The local storage the seeded tables live in: local locations vend without
+/// minting, so an authorized vend succeeds without any cloud.
 fn local_root() -> std::path::PathBuf {
     let root = std::env::temp_dir().join("uc-authorizer-policy-tests");
     std::fs::create_dir_all(&root).unwrap();
     root.canonicalize().unwrap()
 }
 
-fn handler(authorizer: impl Authorizer) -> ServerHandler<RequestContext> {
+fn local(path: &str) -> String {
+    format!("file://{}/{path}", local_root().display())
+}
+
+fn handler(authorizer: impl Authorizer, store: &Shared) -> ServerHandler<RequestContext> {
     let encryptor =
         EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap());
-    let store = Arc::new(InMemoryResourceStore::new(encryptor));
-    let policy = AuthorizerPolicy::new(authorizer, store.clone());
-    ServerHandler::try_new_tokio(Arc::new(policy), store)
+    let resources = Arc::new(InMemoryResourceStore::new(encryptor));
+    let policy = AuthorizerPolicy::new(authorizer);
+    ServerHandler::try_new_tokio(Arc::new(policy), resources)
         .unwrap()
+        .with_grants(Grants::new(
+            Arc::new(store.clone()),
+            Arc::new(IdentityDirectory),
+        ))
         .with_local_storage_policy(
             crate::services::location_policy::LocalStoragePolicy::new([local_root()]).unwrap(),
         )
-}
-
-fn local(path: &str) -> String {
-    format!("file://{}/{path}", local_root().display())
 }
 
 fn user(sub: &str) -> RequestContext {
@@ -194,9 +201,24 @@ fn user(sub: &str) -> RequestContext {
     })
 }
 
-/// `cat.sch.t` (an external table) and `cat.sch.v` (an external volume) under
-/// external location `ext`, created by `admin`. Returns the table and volume ids.
-async fn seed(h: &ServerHandler<RequestContext>) -> (String, String) {
+fn uc(kind: &str, id: &str) -> ObjectRef {
+    ObjectRef::new(format!("UnityCatalog::{kind}"), id)
+}
+
+/// Grant `privileges` on `object` to `subject`, straight in the store.
+async fn grant(store: &Shared, subject: Subject, object: ObjectRef, privileges: &[&str]) {
+    let change = GrantChange {
+        subject,
+        add: privileges.iter().map(|p| p.to_string()).collect(),
+        remove: vec![],
+    };
+    store.apply(&object, &[change]).await.unwrap();
+}
+
+/// External location `local` over the local root, catalog `cat`, schema
+/// `cat.sch` and the external tables `cat.sch.t` and `cat.sch.t2`, created by
+/// `admin`. Returns the id of `cat.sch.t`.
+async fn seed(h: &ServerHandler<RequestContext>) -> String {
     let admin = || user("admin");
     h.create_credential(
         CreateCredentialRequest {
@@ -215,18 +237,6 @@ async fn seed(h: &ServerHandler<RequestContext>) -> (String, String) {
     .unwrap();
     h.create_external_location(
         CreateExternalLocationRequest {
-            name: "ext".into(),
-            url: "s3://bucket/ext".into(),
-            credential_name: "cred".into(),
-            ..Default::default()
-        },
-        admin(),
-    )
-    .await
-    .unwrap();
-    // Governs the local table and volume.
-    h.create_external_location(
-        CreateExternalLocationRequest {
             name: "local".into(),
             url: format!("file://{}", local_root().display()),
             credential_name: "cred".into(),
@@ -239,7 +249,7 @@ async fn seed(h: &ServerHandler<RequestContext>) -> (String, String) {
     h.create_catalog(
         CreateCatalogRequest {
             name: "cat".into(),
-            storage_root: Some("s3://bucket/ext/cat".into()),
+            storage_root: Some(local("cat")),
             ..Default::default()
         },
         admin(),
@@ -256,248 +266,654 @@ async fn seed(h: &ServerHandler<RequestContext>) -> (String, String) {
     )
     .await
     .unwrap();
-    let table = h
-        .create_table(
-            CreateTableRequest {
-                name: "t".into(),
-                catalog_name: "cat".into(),
-                schema_name: "sch".into(),
-                table_type: TableType::External.into(),
-                data_source_format: DataSourceFormat::Delta.into(),
-                storage_location: Some(local("cat/sch/t")),
-                ..Default::default()
-            },
-            admin(),
-        )
-        .await
-        .unwrap();
-    let volume = h
-        .create_volume(
-            CreateVolumeRequest {
-                name: "v".into(),
-                catalog_name: "cat".into(),
-                schema_name: "sch".into(),
-                volume_type: VolumeType::External.into(),
-                storage_location: Some(local("cat/sch/v")),
-                ..Default::default()
-            },
-            admin(),
-        )
-        .await
-        .unwrap();
-    (table.table_id.unwrap(), volume.volume_id)
+    let mut ids = Vec::new();
+    for name in ["t", "t2"] {
+        let table = h.create_table(create_table(name), admin()).await.unwrap();
+        ids.push(table.table_id.unwrap());
+    }
+    ids.swap_remove(0)
 }
 
-fn table_vend(table_id: &str) -> GenerateTemporaryTableCredentialsRequest {
-    GenerateTemporaryTableCredentialsRequest {
-        table_id: table_id.into(),
-        operation: generate_temporary_table_credentials_request::Operation::READ.into(),
+fn create_table(name: &str) -> CreateTableRequest {
+    CreateTableRequest {
+        name: name.into(),
+        catalog_name: "cat".into(),
+        schema_name: "sch".into(),
+        table_type: TableType::External.into(),
+        data_source_format: DataSourceFormat::Delta.into(),
+        storage_location: Some(local(&format!("cat/sch/{name}"))),
         ..Default::default()
     }
 }
 
-fn authorized<T: std::fmt::Debug>(result: crate::Result<T>) {
-    assert!(result.is_ok(), "{result:?}");
-}
+/// The callers of the matrix, each with the grants that make it what it is.
+const SUBJECTS: [&str; 7] = [
+    "owner",
+    "table_reader",
+    "schema_reader",
+    "catalog_reader",
+    "group_reader",
+    "writer",
+    "nobody",
+];
 
-fn denied<T: std::fmt::Debug>(result: crate::Result<T>) {
-    assert!(matches!(result, Err(Error::NotAllowed)), "{result:?}");
-}
-
-#[tokio::test]
-async fn the_fragment_validates_with_the_host_principals() {
-    let schema = format!("{LAKEHOUSE}\n{CEDAR_SCHEMA}");
-    CedarAuthorizer::new(&schema, POLICIES, Principals).expect("the schema and policies validate");
-}
-
-#[tokio::test]
-async fn reading_a_table_does_not_vend_its_credentials() {
-    let recording = Recording::new(cedar());
-    let h = handler(recording.clone());
-    let (table_id, _) = seed(&h).await;
-
-    let table = h
-        .get_table(
-            GetTableRequest {
-                full_name: "cat.sch.t".into(),
-                ..Default::default()
-            },
-            user("reader"),
-        )
-        .await;
-    assert!(table.is_ok(), "{table:?}");
-
-    denied(
-        h.generate_temporary_table_credentials(table_vend(&table_id), user("reader"))
-            .await,
-    );
-    // The table, addressed by id, was resolved to its name for the decision.
-    assert!(recording.asked("read", "Table", "cat.sch.t"));
-    assert!(recording.asked("external_use", "Schema", "cat.sch"));
-}
-
-#[tokio::test]
-async fn external_use_on_the_schema_vends_table_volume_and_model_credentials() {
-    let h = handler(cedar());
-    let (table_id, volume_id) = seed(&h).await;
-
-    authorized(
-        h.generate_temporary_table_credentials(table_vend(&table_id), user("vendor"))
-            .await,
-    );
-
-    let volume = || GenerateTemporaryVolumeCredentialsRequest {
-        volume_id: volume_id.clone(),
-        operation: generate_temporary_volume_credentials_request::Operation::READ_VOLUME.into(),
-        ..Default::default()
+/// A handler over `cat.sch.{t,t2}` and the grants of [`SUBJECTS`]. Returns the
+/// handler, the store, and the id of `cat.sch.t`.
+async fn world() -> (ServerHandler<RequestContext>, Shared, String) {
+    let store = Shared::default();
+    let h = handler(cedar(&store), &store);
+    let table_id = seed(&h).await;
+    let uses = |who: &'static str| {
+        let store = store.clone();
+        async move {
+            grant(
+                &store,
+                Subject::user(who),
+                uc("Catalog", "cat"),
+                &["USE_CATALOG"],
+            )
+            .await;
+            grant(
+                &store,
+                Subject::user(who),
+                uc("Schema", "cat.sch"),
+                &["USE_SCHEMA"],
+            )
+            .await;
+        }
     };
-    denied(
-        h.generate_temporary_volume_credentials(volume(), user("reader"))
-            .await,
-    );
-    authorized(
-        h.generate_temporary_volume_credentials(volume(), user("vendor"))
-            .await,
-    );
-
-    let model_version = || GenerateTemporaryModelVersionCredentialsRequest {
-        catalog_name: "cat".into(),
-        schema_name: "sch".into(),
-        model_name: "m".into(),
-        version: 1,
-        ..Default::default()
-    };
-    denied(
-        h.generate_temporary_model_version_credentials(model_version(), user("reader"))
-            .await,
-    );
-    // Authorized, and then there is no such model version.
-    let result = h
-        .generate_temporary_model_version_credentials(model_version(), user("vendor"))
-        .await;
-    assert!(
-        result
-            .as_ref()
-            .is_err_and(|e| !matches!(e, Error::NotAllowed)),
-        "{result:?}"
-    );
-}
-
-#[tokio::test]
-async fn path_credentials_need_external_use_on_the_external_location() {
-    let recording = Recording::new(cedar());
-    let h = handler(recording.clone());
-    seed(&h).await;
-    let path = || GenerateTemporaryPathCredentialsRequest {
-        url: "s3://bucket/ext/landing".into(),
-        operation: generate_temporary_path_credentials_request::Operation::PATH_READ.into(),
-        ..Default::default()
-    };
-
-    denied(
-        h.generate_temporary_path_credentials(path(), user("reader"))
-            .await,
-    );
-    assert!(recording.asked("read", "ExternalLocation", "ext"));
-    assert!(recording.asked("external_use", "ExternalLocation", "ext"));
-    // Allowed; minting the credential needs a cloud, so stop at the decision.
-    let url =
-        crate::services::location::StorageLocationUrl::parse("s3://bucket/ext/landing").unwrap();
-    let vendor = user("vendor");
-    crate::api::temporary_credentials::authorize_path_vend(
-        &h,
-        &url,
-        olai_storage_credentials::AccessLevel::Read,
-        &vendor,
+    // The owner of `t`, who may create in the schema.
+    uses("owner").await;
+    grant(
+        &store,
+        Subject::user("owner"),
+        uc("Table", "cat.sch.t"),
+        &[OWNER],
     )
-    .await
-    .unwrap();
+    .await;
+    grant(
+        &store,
+        Subject::user("owner"),
+        uc("Schema", "cat.sch"),
+        &["CREATE_TABLE"],
+    )
+    .await;
+    // SELECT on the table, the schema, the catalog.
+    uses("table_reader").await;
+    grant(
+        &store,
+        Subject::user("table_reader"),
+        uc("Table", "cat.sch.t"),
+        &["SELECT"],
+    )
+    .await;
+    uses("schema_reader").await;
+    grant(
+        &store,
+        Subject::user("schema_reader"),
+        uc("Schema", "cat.sch"),
+        &["SELECT"],
+    )
+    .await;
+    grant(
+        &store,
+        Subject::user("catalog_reader"),
+        uc("Catalog", "cat"),
+        &["USE_CATALOG", "USE_SCHEMA", "SELECT"],
+    )
+    .await;
+    // The catalog reader's grants, through a group.
+    store.0.add_group("g-analysts", "analysts");
+    store
+        .0
+        .add_member("g-analysts", Subject::user("group_reader"));
+    grant(
+        &store,
+        Subject::group("g-analysts"),
+        uc("Catalog", "cat"),
+        &["USE_CATALOG", "USE_SCHEMA", "SELECT"],
+    )
+    .await;
+    // Reads, writes, creates and receives credentials in the schema.
+    uses("writer").await;
+    grant(
+        &store,
+        Subject::user("writer"),
+        uc("Schema", "cat.sch"),
+        &["SELECT", "MODIFY", "CREATE_TABLE", "EXTERNAL_USE_SCHEMA"],
+    )
+    .await;
+    (h, store, table_id)
 }
 
-#[tokio::test]
-async fn delta_vends_need_external_use() {
-    let h = handler(cedar());
-    seed(&h).await;
+/// An operation of the matrix, run as `who`. `Ok` when it was allowed.
+#[derive(Debug, Clone, Copy)]
+enum Op {
+    Get,
+    Create,
+    Delete,
+    VendRead,
+    VendReadWrite,
+    Commit,
+    Rename,
+}
+
+async fn run(op: Op, h: &ServerHandler<RequestContext>, table_id: &str, who: &str) -> bool {
+    let cx = user(who);
     let table = TableRef {
         catalog: "cat".into(),
         schema: "sch".into(),
         table: "t".into(),
     };
-    let vend = || DeltaAction::VendTableCredential {
-        table: &table,
-        access: CredentialAccess::Read,
+    let vend = |operation: generate_temporary_table_credentials_request::Operation| {
+        GenerateTemporaryTableCredentialsRequest {
+            table_id: table_id.into(),
+            operation: operation.into(),
+            ..Default::default()
+        }
     };
-    let result = DeltaBackend::authorize(&h, vend(), &user("reader")).await;
-    assert!(
-        matches!(result, Err(DeltaBackendError::PermissionDenied(_))),
-        "{result:?}"
-    );
-    DeltaBackend::authorize(&h, vend(), &user("vendor"))
-        .await
-        .unwrap();
-
-    let at = SchemaRef {
-        catalog: "cat".into(),
-        schema: "sch".into(),
-    };
-    let staging = || DeltaAction::CreateStaging {
-        at: &at,
-        name: "staged",
-    };
-    let result = DeltaBackend::authorize(&h, staging(), &user("reader")).await;
-    assert!(
-        matches!(result, Err(DeltaBackendError::PermissionDenied(_))),
-        "{result:?}"
-    );
-    DeltaBackend::authorize(&h, staging(), &user("vendor"))
-        .await
-        .unwrap();
-
-    let path = || DeltaAction::VendPathCredential {
-        location: "s3://bucket/ext/landing",
-        access: CredentialAccess::Read,
-    };
-    assert!(
-        DeltaBackend::authorize(&h, path(), &user("reader"))
+    let result: std::result::Result<(), String> = match op {
+        Op::Get => h
+            .get_table(
+                GetTableRequest {
+                    full_name: "cat.sch.t".into(),
+                    ..Default::default()
+                },
+                cx,
+            )
             .await
-            .is_err()
-    );
-    DeltaBackend::authorize(&h, path(), &user("vendor"))
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        Op::Create => h
+            .create_table(create_table("t3"), cx)
+            .await
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        Op::Delete => TableHandler::delete_table(
+            h,
+            DeleteTableRequest {
+                full_name: "cat.sch.t".into(),
+                ..Default::default()
+            },
+            cx,
+        )
         .await
-        .unwrap();
+        .map_err(|e| e.to_string()),
+        Op::VendRead => h
+            .generate_temporary_table_credentials(
+                vend(generate_temporary_table_credentials_request::Operation::READ),
+                cx,
+            )
+            .await
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        Op::VendReadWrite => h
+            .generate_temporary_table_credentials(
+                vend(generate_temporary_table_credentials_request::Operation::READ_WRITE),
+                cx,
+            )
+            .await
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        Op::Commit => DeltaBackend::authorize(h, DeltaAction::WriteTable { table: &table }, &cx)
+            .await
+            .map_err(|e| e.to_string()),
+        Op::Rename => DeltaBackend::authorize(
+            h,
+            DeltaAction::RenameTable {
+                from: &table,
+                to: "t9",
+            },
+            &cx,
+        )
+        .await
+        .map_err(|e| e.to_string()),
+    };
+    match result {
+        Ok(()) => true,
+        Err(e) if e.to_lowercase().contains("not allowed") || e.contains("ermission") => false,
+        Err(e) => panic!("{op:?} as {who} failed for another reason: {e}"),
+    }
+}
+
+/// Who may do what: each operation on `cat.sch.t` (or creating `cat.sch.t3`).
+#[rstest]
+#[case::get(
+    Op::Get,
+    &["owner", "table_reader", "schema_reader", "catalog_reader", "group_reader", "writer"]
+)]
+#[case::create(Op::Create, &["owner", "writer"])]
+#[case::delete(Op::Delete, &["owner"])]
+#[case::vend_read(Op::VendRead, &["writer"])]
+#[case::vend_read_write(Op::VendReadWrite, &["writer"])]
+#[case::delta_commit(Op::Commit, &["owner", "writer"])]
+// Renaming needs the table (owner) and creating the new name (CREATE_TABLE).
+#[case::delta_rename(Op::Rename, &["owner"])]
+#[tokio::test]
+async fn the_matrix(#[case] op: Op, #[case] allowed: &[&str]) {
+    for who in SUBJECTS {
+        // A fresh world per caller: deletes and creates change it.
+        let (h, _, table_id) = world().await;
+        assert_eq!(
+            run(op, &h, &table_id, who).await,
+            allowed.contains(&who),
+            "{op:?} as {who}"
+        );
+    }
 }
 
 #[tokio::test]
-async fn lists_are_filtered_by_name_without_lookups() {
-    let h = handler(cedar());
-    seed(&h).await;
-    let tables = h
-        .list_tables(
-            ListTablesRequest {
-                catalog_name: "cat".into(),
-                schema_name: "sch".into(),
-                ..Default::default()
-            },
-            user("reader"),
+async fn lists_show_what_the_caller_may_see() {
+    let (h, _, _) = world().await;
+    let visible = |who: &'static str| {
+        let h = h.clone();
+        async move {
+            h.list_tables(
+                ListTablesRequest {
+                    catalog_name: "cat".into(),
+                    schema_name: "sch".into(),
+                    ..Default::default()
+                },
+                user(who),
+            )
+            .await
+            .map(|r| {
+                r.tables
+                    .into_iter()
+                    .map(|t| t.name)
+                    .collect::<BTreeSet<_>>()
+            })
+        }
+    };
+    let both: BTreeSet<String> = ["t".to_string(), "t2".to_string()].into();
+    let only_t: BTreeSet<String> = ["t".to_string()].into();
+    assert_eq!(visible("owner").await.unwrap(), only_t);
+    assert_eq!(visible("table_reader").await.unwrap(), only_t);
+    for who in ["schema_reader", "catalog_reader", "group_reader", "writer"] {
+        assert_eq!(visible(who).await.unwrap(), both, "{who}");
+    }
+    assert!(matches!(visible("nobody").await, Err(Error::NotAllowed)));
+
+    // Everyone lists catalogs; only those with a grant see `cat`.
+    let catalogs = |who: &'static str| {
+        let h = h.clone();
+        async move {
+            h.list_catalogs(ListCatalogsRequest::default(), user(who))
+                .await
+                .unwrap()
+                .catalogs
+                .len()
+        }
+    };
+    assert_eq!(catalogs("catalog_reader").await, 1);
+    assert_eq!(catalogs("nobody").await, 0);
+}
+
+#[tokio::test]
+async fn the_schema_validates_with_the_host_principals() {
+    let store = Shared::default();
+    let loader = GrantsEntityLoader::new(
+        store,
+        SubjectTypes::new(
+            "Lakehouse::User",
+            "Lakehouse::ServiceAccount",
+            "Lakehouse::Group",
+        ),
+    );
+    CedarAuthorizer::from_fragments(&fragments(), POLICIES, loader)
+        .expect("the schema and policies validate");
+}
+
+#[tokio::test]
+async fn creators_own_what_they_create() {
+    let (_, store, _) = world().await;
+    for object in [
+        uc("Catalog", "cat"),
+        uc("Schema", "cat.sch"),
+        uc("Table", "cat.sch.t2"),
+        uc("ExternalLocation", "local"),
+        uc("Credential", "cred"),
+    ] {
+        let grants = store.list(&object).await.unwrap();
+        assert!(
+            grants
+                .iter()
+                .any(|g| g.privilege == OWNER && g.subject == Subject::user("admin")),
+            "{object}: {grants:?}"
+        );
+    }
+}
+
+fn change(principal: &str, add: &[&str], remove: &[&str]) -> ApiChange {
+    ApiChange {
+        principal: principal.into(),
+        add: add.iter().map(|p| p.to_string()).collect(),
+        remove: remove.iter().map(|p| p.to_string()).collect(),
+        ..Default::default()
+    }
+}
+
+fn update_grants(
+    securable_type: &str,
+    full_name: &str,
+    changes: Vec<ApiChange>,
+) -> UpdateGrantsRequest {
+    UpdateGrantsRequest {
+        securable_type: securable_type.into(),
+        full_name: full_name.into(),
+        changes,
+        ..Default::default()
+    }
+}
+
+#[tokio::test]
+async fn a_grant_allows_and_a_revoke_denies() {
+    let (h, _, _) = world().await;
+    let get = |who: &'static str| {
+        let h = h.clone();
+        async move {
+            h.get_table(
+                GetTableRequest {
+                    full_name: "cat.sch.t".into(),
+                    ..Default::default()
+                },
+                user(who),
+            )
+            .await
+        }
+    };
+    assert!(matches!(get("nobody").await, Err(Error::NotAllowed)));
+
+    // Both spellings of a privilege.
+    let granted = h
+        .update_grants(
+            update_grants(
+                "catalog",
+                "cat",
+                vec![change(
+                    "nobody",
+                    &["USE CATALOG", "use_schema", "SELECT"],
+                    &[],
+                )],
+            ),
+            user("admin"),
         )
         .await
         .unwrap();
-    assert_eq!(tables.tables.len(), 1);
+    let nobody = granted
+        .privilege_assignments
+        .iter()
+        .find(|a| a.principal == "nobody")
+        .unwrap();
+    assert_eq!(nobody.privileges, ["SELECT", "USE CATALOG", "USE SCHEMA"]);
+    // Ownership is not a grant the API shows.
+    assert!(
+        granted
+            .privilege_assignments
+            .iter()
+            .all(|a| a.privileges.iter().all(|p| p != OWNER))
+    );
+    get("nobody").await.unwrap();
 
-    // No grant on the metastore: no catalogs to list.
-    let catalogs = h
-        .list_catalogs(ListCatalogsRequest::default(), user("reader"))
+    h.update_grants(
+        update_grants("catalog", "cat", vec![change("nobody", &[], &["SELECT"])]),
+        user("admin"),
+    )
+    .await
+    .unwrap();
+    assert!(matches!(get("nobody").await, Err(Error::NotAllowed)));
+
+    let read = h
+        .get_grants(
+            GetGrantsRequest {
+                securable_type: "catalog".into(),
+                full_name: "cat".into(),
+                principal: Some("nobody".into()),
+                ..Default::default()
+            },
+            user("admin"),
+        )
+        .await
+        .unwrap();
+    assert_eq!(read.privilege_assignments.len(), 1);
+    assert_eq!(
+        read.privilege_assignments[0].privileges,
+        ["USE CATALOG", "USE SCHEMA"]
+    );
+}
+
+#[rstest]
+#[case::owner("OWNER")]
+#[case::unknown("FLY")]
+#[case::empty("")]
+#[tokio::test]
+async fn only_known_privileges_are_granted(#[case] privilege: &str) {
+    let (h, _, _) = world().await;
+    let result = h
+        .update_grants(
+            update_grants("catalog", "cat", vec![change("nobody", &[privilege], &[])]),
+            user("admin"),
+        )
         .await;
     assert!(
-        matches!(&catalogs, Err(Error::NotAllowed))
-            || catalogs.as_ref().is_ok_and(|c| c.catalogs.is_empty()),
-        "{catalogs:?}"
+        matches!(result, Err(Error::InvalidArgument(_))),
+        "{result:?}"
     );
+}
+
+#[tokio::test]
+async fn grants_are_their_owners_to_manage() {
+    let (h, _, _) = world().await;
+    // The owner of the table manages its grants; a reader doesn't.
+    h.update_grants(
+        update_grants(
+            "table",
+            "cat.sch.t",
+            vec![change("nobody", &["SELECT"], &[])],
+        ),
+        user("owner"),
+    )
+    .await
+    .unwrap();
+    let result = h
+        .update_grants(
+            update_grants(
+                "table",
+                "cat.sch.t",
+                vec![change("nobody", &["MODIFY"], &[])],
+            ),
+            user("table_reader"),
+        )
+        .await;
+    assert!(matches!(result, Err(Error::NotAllowed)), "{result:?}");
+    // A securable that doesn't exist.
+    let result = h
+        .get_grants(
+            GetGrantsRequest {
+                securable_type: "table".into(),
+                full_name: "cat.sch.nope".into(),
+                ..Default::default()
+            },
+            user("admin"),
+        )
+        .await;
+    assert!(
+        result
+            .as_ref()
+            .is_err_and(|e| e.to_string().to_lowercase().contains("not found")),
+        "{result:?}"
+    );
+}
+
+#[tokio::test]
+async fn deletes_drop_the_grants_in_the_securable() {
+    let (h, store, _) = world().await;
+    for name in ["t", "t2"] {
+        TableHandler::delete_table(
+            &h,
+            DeleteTableRequest {
+                full_name: format!("cat.sch.{name}"),
+                ..Default::default()
+            },
+            user("admin"),
+        )
+        .await
+        .unwrap();
+    }
+    assert!(
+        store
+            .list(&uc("Table", "cat.sch.t"))
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    h.delete_schema(
+        DeleteSchemaRequest {
+            full_name: "cat.sch".into(),
+            ..Default::default()
+        },
+        user("admin"),
+    )
+    .await
+    .unwrap();
+    assert!(
+        store
+            .list(&uc("Schema", "cat.sch"))
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    h.delete_catalog(
+        DeleteCatalogRequest {
+            name: "cat".into(),
+            force: Some(true),
+            ..Default::default()
+        },
+        user("admin"),
+    )
+    .await
+    .unwrap();
+    assert!(store.list(&uc("Catalog", "cat")).await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn renames_take_the_grants_along() {
+    let (h, store, _) = world().await;
+    h.update_catalog(
+        UpdateCatalogRequest {
+            name: "cat".into(),
+            new_name: Some("kat".into()),
+            ..Default::default()
+        },
+        user("admin"),
+    )
+    .await
+    .unwrap();
+    assert!(store.list(&uc("Catalog", "cat")).await.unwrap().is_empty());
+    assert!(!store.list(&uc("Catalog", "kat")).await.unwrap().is_empty());
+    // The grants inside it moved with it.
+    let readers = store.list(&uc("Table", "kat.sch.t")).await.unwrap();
+    assert!(
+        readers
+            .iter()
+            .any(|g| g.subject == Subject::user("table_reader") && g.privilege == "SELECT"),
+        "{readers:?}"
+    );
+}
+
+#[tokio::test]
+async fn an_owner_update_moves_ownership() {
+    let (h, store, _) = world().await;
+    h.update_catalog(
+        UpdateCatalogRequest {
+            name: "cat".into(),
+            owner: Some("writer".into()),
+            ..Default::default()
+        },
+        user("admin"),
+    )
+    .await
+    .unwrap();
+    let owners: Vec<Subject> = store
+        .list(&uc("Catalog", "cat"))
+        .await
+        .unwrap()
+        .into_iter()
+        .filter(|g| g.privilege == OWNER)
+        .map(|g| g.subject)
+        .collect();
+    assert_eq!(owners, [Subject::user("writer")]);
+}
+
+#[tokio::test]
+async fn delta_staging_adoption_asks_whether_the_caller_reserved_it() {
+    let store = Shared::default();
+    let recording = Recording::new(cedar(&store));
+    let h = handler(recording.clone(), &store);
+    seed(&h).await;
+    let at = unitycatalog_delta_api::backend::SchemaRef {
+        catalog: "cat".into(),
+        schema: "sch".into(),
+    };
+    DeltaBackend::authorize(
+        &h,
+        DeltaAction::CreateStaging {
+            at: &at,
+            name: "st",
+        },
+        &user("admin"),
+    )
+    .await
+    .unwrap();
+    assert!(recording.asked("CreateStagingTable", "StagingTable", "cat.sch.st"));
+    let vend = DeltaBackend::authorize(
+        &h,
+        DeltaAction::VendTableCredential {
+            table: &TableRef {
+                catalog: "cat".into(),
+                schema: "sch".into(),
+                table: "t".into(),
+            },
+            access: CredentialAccess::Read,
+        },
+        &user("nobody"),
+    )
+    .await;
+    assert!(
+        matches!(vend, Err(DeltaBackendError::PermissionDenied(_))),
+        "{vend:?}"
+    );
+    assert!(recording.asked("GenerateTemporaryTableCredentials", "Table", "cat.sch.t"));
+}
+
+#[tokio::test]
+async fn path_credentials_are_asked_on_the_covering_location() {
+    let store = Shared::default();
+    let recording = Recording::new(cedar(&store));
+    let h = handler(recording.clone(), &store);
+    seed(&h).await;
+    let result = h
+        .generate_temporary_path_credentials(
+            GenerateTemporaryPathCredentialsRequest {
+                url: local("cat/landing"),
+                operation: generate_temporary_path_credentials_request::Operation::PATH_READ.into(),
+                ..Default::default()
+            },
+            user("nobody"),
+        )
+        .await;
+    assert!(matches!(result, Err(Error::NotAllowed)), "{result:?}");
+    assert!(recording.asked(
+        "GenerateTemporaryPathCredentials",
+        "ExternalLocation",
+        "local"
+    ));
 }
 
 #[tokio::test]
 async fn an_undecidable_request_is_denied() {
-    let h = handler(Unreachable);
+    let store = Shared::default();
+    let h = handler(Unreachable, &store);
     let result = h
         .get_table(
             GetTableRequest {
@@ -507,13 +923,14 @@ async fn an_undecidable_request_is_denied() {
             user("admin"),
         )
         .await;
-    denied(result);
+    assert!(matches!(result, Err(Error::NotAllowed)), "{result:?}");
 }
 
 #[tokio::test]
 async fn an_unverified_caller_is_denied_without_asking() {
-    let recording = Recording::new(cedar());
-    let h = handler(recording.clone());
+    let store = Shared::default();
+    let recording = Recording::new(cedar(&store));
+    let h = handler(recording.clone(), &store);
     for cx in [
         RequestContext::anonymous(),
         RequestContext::new(crate::policy::Principal::user("admin")),
@@ -527,213 +944,7 @@ async fn an_unverified_caller_is_denied_without_asking() {
                 cx,
             )
             .await;
-        denied(result);
+        assert!(matches!(result, Err(Error::NotAllowed)), "{result:?}");
     }
-    assert!(recording.seen().is_empty());
-}
-
-/// The work package's end-to-end check: behind a decision point that denies
-/// everything, every securable route and every vend answers 403. The catalog is
-/// seeded through an allow-all handler on the same stores, so each request
-/// reaches the decision point instead of stopping at a missing object.
-#[tokio::test]
-async fn a_denying_decision_point_forbids_every_route_and_vend() {
-    use std::sync::atomic::{AtomicUsize, Ordering};
-
-    use axum::body::Body;
-    use axum::http::{Request, StatusCode, header};
-    use axum::routing::post;
-    use axum::{Extension, Json, Router};
-    use olai_auth::wire::{
-        AUTHORIZE_BATCH_PATH, AUTHORIZE_PATH, BatchAuthorizeRequest, BatchAuthorizeResponse,
-    };
-    use tower::ServiceExt as _;
-    use unitycatalog_delta_api::coordinator::InMemoryCommitCoordinator;
-    use unitycatalog_storage_access::InMemoryStorageAccess;
-
-    use crate::policy::ConstantPolicy;
-    use crate::run::build_rest_router;
-
-    // The decision point: denies, and counts what it is asked.
-    let asked = Arc::new(AtomicUsize::new(0));
-    let deny = || AuthorizeResponse {
-        decision: olai_auth::Decision::Deny,
-        policies: vec![],
-        errors: vec![],
-    };
-    let pdp = Router::new()
-        .route(
-            AUTHORIZE_PATH,
-            post({
-                let asked = asked.clone();
-                move || async move {
-                    asked.fetch_add(1, Ordering::SeqCst);
-                    Json(deny())
-                }
-            }),
-        )
-        .route(
-            AUTHORIZE_BATCH_PATH,
-            post({
-                let asked = asked.clone();
-                move |Json(batch): Json<BatchAuthorizeRequest>| async move {
-                    asked.fetch_add(batch.requests.len(), Ordering::SeqCst);
-                    Json(BatchAuthorizeResponse {
-                        responses: batch.requests.iter().map(|_| deny()).collect(),
-                    })
-                }
-            }),
-        );
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let pdp_url = format!("http://{}", listener.local_addr().unwrap());
-    tokio::spawn(async move { axum::serve(listener, pdp).await.unwrap() });
-
-    let encryptor =
-        EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap());
-    let store = Arc::new(InMemoryResourceStore::new(encryptor));
-    let storage_access = Arc::new(InMemoryStorageAccess::new());
-    let coordinator = Arc::new(InMemoryCommitCoordinator::default());
-    let local = |h: ServerHandler<RequestContext>| {
-        h.with_local_storage_policy(
-            crate::services::location_policy::LocalStoragePolicy::new([local_root()]).unwrap(),
-        )
-    };
-    let seeder = local(
-        ServerHandler::try_new_tokio_with_coordinator(
-            Arc::new(ConstantPolicy::default()),
-            store.clone(),
-            storage_access.clone(),
-            coordinator.clone(),
-        )
-        .unwrap(),
-    );
-    let (table_id, volume_id) = seed(&seeder).await;
-
-    let policy =
-        AuthorizerPolicy::remote(&pdp_url, "pdp-secret", None, Duration::ZERO, store.clone());
-    let handler = local(
-        ServerHandler::try_new_tokio_with_coordinator(
-            Arc::new(policy),
-            store,
-            storage_access,
-            coordinator,
-        )
-        .unwrap(),
-    );
-    let verified = user("admin").verified_principal().unwrap().clone();
-    let app = build_rest_router(handler).layer(Extension(verified));
-
-    let uc = "/api/2.1/unity-catalog";
-    let delta = format!("{uc}/delta/v1");
-    let forbidden: Vec<(&str, String, Option<String>)> = vec![
-        ("GET", format!("{uc}/catalogs/cat"), None),
-        ("POST", format!("{uc}/catalogs"), Some(r#"{"name":"other"}"#.into())),
-        ("GET", format!("{uc}/schemas/cat.sch"), None),
-        ("GET", format!("{uc}/tables/cat.sch.t"), None),
-        ("DELETE", format!("{uc}/tables/cat.sch.t"), None),
-        ("GET", format!("{uc}/volumes/cat.sch.v"), None),
-        ("GET", format!("{uc}/credentials/cred"), None),
-        ("GET", format!("{uc}/external-locations/ext"), None),
-        (
-            "POST",
-            format!("{uc}/temporary-table-credentials"),
-            Some(format!(r#"{{"table_id":"{table_id}","operation":"READ"}}"#)),
-        ),
-        (
-            "POST",
-            format!("{uc}/temporary-volume-credentials"),
-            Some(format!(r#"{{"volume_id":"{volume_id}","operation":"READ_VOLUME"}}"#)),
-        ),
-        (
-            "POST",
-            format!("{uc}/temporary-path-credentials"),
-            Some(r#"{"url":"s3://bucket/ext/landing","operation":"PATH_READ"}"#.into()),
-        ),
-        (
-            "POST",
-            format!("{uc}/temporary-model-version-credentials"),
-            Some(
-                r#"{"catalog_name":"cat","schema_name":"sch","model_name":"m","version":1,"operation":"READ_MODEL_VERSION"}"#
-                    .into(),
-            ),
-        ),
-        ("GET", format!("{delta}/config?catalog=cat&protocol-versions=1.0"), None),
-        ("GET", format!("{delta}/catalogs/cat/schemas/sch/tables/t"), None),
-        (
-            "GET",
-            format!("{delta}/catalogs/cat/schemas/sch/tables/t/credentials?operation=READ"),
-            None,
-        ),
-        (
-            "GET",
-            format!("{delta}/temporary-path-credentials?location=s3://bucket/ext/landing&operation=READ"),
-            None,
-        ),
-    ];
-    for (method, uri, body) in forbidden {
-        let mut request = Request::builder().method(method).uri(&uri);
-        if body.is_some() {
-            request = request.header(header::CONTENT_TYPE, "application/json");
-        }
-        let request = request
-            .body(body.map(Body::from).unwrap_or_else(Body::empty))
-            .unwrap();
-        let before = asked.load(Ordering::SeqCst);
-        let response = app.clone().oneshot(request).await.unwrap();
-        assert_eq!(response.status(), StatusCode::FORBIDDEN, "{method} {uri}");
-        assert!(
-            asked.load(Ordering::SeqCst) > before,
-            "{method} {uri} asked nobody"
-        );
-    }
-
-    // Lists answer, with nothing in them.
-    let request = Request::builder()
-        .uri(format!("{uc}/tables?catalog_name=cat&schema_name=sch"))
-        .body(Body::empty())
-        .unwrap();
-    let response = app.clone().oneshot(request).await.unwrap();
-    let status = response.status();
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
-        .await
-        .unwrap();
-    let body: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
-    assert!(
-        status == StatusCode::FORBIDDEN || body["tables"].as_array().is_none_or(|t| t.is_empty()),
-        "{status} {body}"
-    );
-}
-
-#[path = "../../tests/support/audit_capture.rs"]
-mod audit_capture;
-
-/// A vend's audit event names the caller and the policies that allowed its
-/// checks: read on the table and EXTERNAL USE on its schema.
-#[tokio::test]
-async fn vend_audit_events_carry_the_determining_policies() {
-    let h = handler(cedar());
-    let (table_id, _) = seed(&h).await;
-
-    let (captured, _guard) = audit_capture::capture();
-    h.generate_temporary_table_credentials(table_vend(&table_id), user("vendor"))
-        .await
-        .unwrap();
-    let [event] = captured.events().try_into().unwrap();
-    assert_eq!(event["principal"], "vendor");
-    assert_eq!(event["securable"], "cat.sch.t");
-    assert_eq!(event["credential_kind"], "local");
-    let policies = &event["policies"];
-    assert!(policies.contains("vendor-schema"), "{policies}");
-    assert!(
-        policies.contains("vendor-schema-external-use"),
-        "{policies}"
-    );
-    assert!(!policies.contains("admin"), "{policies}");
-
-    // A denied caller never reaches the vend, so nothing is audited for it.
-    denied(
-        h.generate_temporary_table_credentials(table_vend(&table_id), user("reader"))
-            .await,
-    );
-    assert_eq!(captured.events().len(), 1);
+    assert_eq!(recording.count(), 0);
 }

@@ -143,21 +143,32 @@ policy:
 
 Each check becomes a Cedar request in the `UnityCatalog` namespace: the
 verified caller as `Lakehouse::User` or `Lakehouse::ServiceAccount`, one action
-per permission (`read`, `write`, `manage`, `create`, `use`, `browse`, `select`,
-`external_use`), and the securable by its full name, e.g.
-`UnityCatalog::Table::"main.sales.orders"`. The securable goes along with its
-schema, catalog and the metastore as parents, so policies can grant on a
-container and the decision point never reads the catalog. Anything it can't
-decide, and any request without a verified caller, is denied. The schema
-fragment is `cedar/UnityCatalog.cedarschema`, also exported as
-`policy::CEDAR_SCHEMA`, for a host to compose with its `Lakehouse` fragment.
+per API operation (`GetTable`, `CreateTable`, `GenerateTemporaryTableCredentials`,
+… generated from the protos, plus the Delta API's `CommitTable`, `RenameTable`,
+`AdoptStagingTable`, `GenerateTemporaryStagingTableCredentials` and the storage
+proxy's `ReadData` / `WriteData`), and the securable by its full name, e.g.
+`UnityCatalog::Table::"main.sales.orders"`. The securable and each ancestor
+(schema, catalog, metastore) go along as entities, each with its ancestors as
+parents and typed attributes (`resource.schema`, `resource.catalog`). The
+decision point's entity loader adds what the caller holds on each, from the
+grants: `privileges` (granted on that securable, `OWNER` for its owner) and
+`inherited_privileges` (also from its ancestors). Request facts go in the
+context: `credential_operation` (`READ` / `READ_WRITE`) on every vend, `url`
+on path vends, `is_creator` on adopting a staging table. What an operation
+requires is the policy's business. Anything it can't decide, and any request
+without a verified caller, is denied. The schema is published as
+`policy::CEDAR_SCHEMA_FRAGMENTS` (entities in `cedar/UnityCatalog.cedarschema`,
+the generated actions, `cedar/DeltaApi.cedarschema`,
+`cedar/StorageProxy.cedarschema`), for a host to compose with its `Lakehouse`
+fragment. With the default `constant` policy everything stays allowed.
 
-Vending a credential needs `external_use` in addition to `read` or `write`: on
-the schema for table, volume, model-version and staging-table credentials (UC
-REST and the Delta API), and on the covering external location for path
-credentials. So a caller can read a table's metadata without getting its
-storage keys. The storage proxy, which never hands out a credential, doesn't
-need it. With the default `constant` policy everything stays allowed.
+Grants are kept through the grants API (`GET` / `PATCH
+/permissions/{securable_type}/{full_name}`, the Unity Catalog OSS shape;
+privileges in either spelling, `USE CATALOG` or `USE_CATALOG`). The creator of
+a securable owns it, an `owner` update moves ownership, and deletes and renames
+take the grants inside along. With `auth.mode: olai-auth` grants live in the
+`authz` schema of the identity database (`auth.olai.database-url`), where the
+decision point's loader reads them; otherwise in memory.
 
 ### Trusted vending for Neon object storage
 

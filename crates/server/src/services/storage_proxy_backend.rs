@@ -4,7 +4,7 @@
 //! [`ServerHandler<RequestContext>`], expressing the narrow proxy port over the
 //! server's existing surfaces: name → resource resolution
 //! ([`TableHandler::get_table`] / [`VolumeHandler::get_volume`]),
-//! [`Policy::authorize_checked`], the credential-vending pipeline (the handler's
+//! [`Policy::authorize_checked`] (`ReadData` / `WriteData`), the credential-vending pipeline (the handler's
 //! trestle `Vendor`, resolving the [`governing_location`]), and
 //! object-store construction from the minted credential ([`build_store`]).
 //!
@@ -37,10 +37,11 @@ use crate::api::RequestContext;
 use crate::api::tables::TableHandler;
 use crate::api::volumes::VolumeHandler;
 use crate::error::from_store;
-use crate::policy::{Permission, Policy};
+use crate::policy::{Facts, Policy, Securable as PolicySecurable, ServerAction};
 use crate::services::ServerHandler;
 use crate::services::location::StorageLocationUrl;
 use crate::services::vending::minter_for_location;
+use unitycatalog_common::models::ObjectLabel;
 
 /// Map a server [`Error`] onto a [`ProxyError`], preserving status semantics
 /// (not-found → 404, not-allowed → 403, …).
@@ -60,14 +61,31 @@ fn to_proxy_err_location(e: Error) -> ProxyError {
     }
 }
 
-/// The permission a verb requires: reads need [`Permission::Read`], writes
-/// [`Permission::Write`].
-fn required_permission(write: bool) -> Permission {
+/// The action a verb requires: `ReadData` for reads, `WriteData` for writes.
+/// Data goes through the server, and the caller never receives a credential, so
+/// this is data access rather than external use.
+fn data_action(write: bool) -> ServerAction {
     if write {
-        Permission::Write
+        ServerAction::WriteData
     } else {
-        Permission::Read
+        ServerAction::ReadData
     }
+}
+
+/// Authorize `write` (or a read) of the data of `label` named `full_name`.
+async fn authorize_data(
+    handler: &ServerHandler<RequestContext>,
+    label: ObjectLabel,
+    full_name: &str,
+    write: bool,
+    facts: &Facts,
+    cx: &RequestContext,
+) -> ProxyResult<()> {
+    let securable = PolicySecurable::new(label, full_name.split('.').map(str::to_string).collect());
+    handler
+        .authorize_checked(data_action(write), &securable, facts, cx)
+        .await
+        .map_err(to_proxy_err)
 }
 
 /// The access level for a verb.
@@ -109,7 +127,6 @@ async fn authorize_and_locate(
     write: bool,
     cx: &RequestContext,
 ) -> ProxyResult<String> {
-    let permission = required_permission(write);
     match securable {
         Securable::Table { full_name } => {
             // Name → Table. `get_table` runs its own read authorization; a write
@@ -124,12 +141,15 @@ async fn authorize_and_locate(
             )
             .await
             .map_err(to_proxy_err)?;
-            if write {
-                let id = table.table_id.as_deref().ok_or_else(|| {
-                    ProxyError::Internal("table has no id to authorize write".into())
-                })?;
-                authorize_table_write(handler, id, cx).await?;
-            }
+            authorize_data(
+                handler,
+                ObjectLabel::Table,
+                full_name,
+                write,
+                &Facts::default(),
+                cx,
+            )
+            .await?;
             table
                 .storage_location
                 .filter(|s| !s.is_empty())
@@ -146,9 +166,15 @@ async fn authorize_and_locate(
             )
             .await
             .map_err(to_proxy_err)?;
-            if write {
-                authorize_volume_write(handler, &volume.volume_id, cx).await?;
-            }
+            authorize_data(
+                handler,
+                ObjectLabel::Volume,
+                full_name,
+                write,
+                &Facts::default(),
+                cx,
+            )
+            .await?;
             Ok(volume.storage_location)
         }
         Securable::Path { url } => {
@@ -162,45 +188,18 @@ async fn authorize_and_locate(
                 .await
                 .map_err(|e| to_proxy_err(from_store(e)))?
                 .ok_or_else(|| to_proxy_err(Error::NotFound))?;
-            handler
-                .authorize_checked(&(&ext_loc).into(), &permission, cx)
-                .await
-                .map_err(to_proxy_err)?;
+            authorize_data(
+                handler,
+                ObjectLabel::ExternalLocation,
+                &ext_loc.name,
+                write,
+                &Facts::default().with_url(url.as_str()),
+                cx,
+            )
+            .await?;
             Ok(url.to_string())
         }
     }
-}
-
-/// Authorize a write against a concrete table UUID.
-async fn authorize_table_write(
-    handler: &ServerHandler<RequestContext>,
-    table_id: &str,
-    cx: &RequestContext,
-) -> ProxyResult<()> {
-    use unitycatalog_common::models::{ResourceIdent, ResourceRef};
-    let uuid = uuid::Uuid::parse_str(table_id)
-        .map_err(|_| ProxyError::Internal("table id is not a valid UUID".into()))?;
-    let ident = ResourceIdent::Table(ResourceRef::Uuid(uuid));
-    handler
-        .authorize_checked(&ident, &Permission::Write, cx)
-        .await
-        .map_err(to_proxy_err)
-}
-
-/// Authorize a write against a concrete volume UUID.
-async fn authorize_volume_write(
-    handler: &ServerHandler<RequestContext>,
-    volume_id: &str,
-    cx: &RequestContext,
-) -> ProxyResult<()> {
-    use unitycatalog_common::models::{ResourceIdent, ResourceRef};
-    let uuid = uuid::Uuid::parse_str(volume_id)
-        .map_err(|_| ProxyError::Internal("volume id is not a valid UUID".into()))?;
-    let ident = ResourceIdent::Volume(ResourceRef::Uuid(uuid));
-    handler
-        .authorize_checked(&ident, &Permission::Write, cx)
-        .await
-        .map_err(to_proxy_err)
 }
 
 /// Vend a credential for a resolved storage location and build a store from it.

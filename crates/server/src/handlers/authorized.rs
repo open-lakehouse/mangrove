@@ -2,8 +2,10 @@
 //!
 //! [`Authorized`] wraps any per-resource handler and enforces this server's
 //! [`Policy`] in front of it: every request is policy-checked before it is
-//! delegated, and `list_*` responses are filtered on [`Permission::Read`], so the
-//! wrapped handler never returns resources the caller is not allowed to see.
+//! delegated (its generated [`Authorizable`](crate::policy::Authorizable)
+//! operation on its securable), and `list_*` responses are filtered with the
+//! `Get` operation of each entry, so the wrapped handler never returns
+//! resources the caller is not allowed to see.
 //!
 //! The inner handler is typically a leaf that does no authorization of its own.
 //! With the `proxy` feature, the `olai-uc-client` service clients implement the
@@ -12,13 +14,14 @@
 //! upstream under the local policy, which is how the hybrid server proxies a
 //! surface.
 //!
-//! Implemented for every handler trait whose requests implement
-//! [`SecuredAction`](crate::api::SecuredAction). Temporary credentials are not
-//! covered: their authorization resolves the securable first.
+//! Implemented for every handler trait whose requests name their securable.
+//! Temporary credentials and grants are not covered: their authorization
+//! resolves the securable first.
 
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use unitycatalog_common::models::ObjectLabel;
 use unitycatalog_common::models::agent_skills::v0alpha1::*;
 use unitycatalog_common::models::agents::v0alpha1::*;
 use unitycatalog_common::models::catalogs::v1::*;
@@ -33,16 +36,16 @@ use unitycatalog_common::models::staging_tables::v1::*;
 use unitycatalog_common::models::tables::v1::*;
 use unitycatalog_common::models::tags::v1::*;
 use unitycatalog_common::models::volumes::v1::*;
-use unitycatalog_common::models::{ResourceIdent, ResourceName};
 
 use crate::Result;
+use crate::api::check_dynamic;
 use crate::api::{
     AgentHandler, AgentSkillHandler, CatalogHandler, CredentialHandler, EntityTagAssignmentHandler,
     ExternalLocationHandler, FunctionHandler, ModelVersionHandler, PolicyHandler,
     RegisteredModelHandler, SchemaHandler, StagingTableHandler, TableHandler, TagPolicyHandler,
     VolumeHandler,
 };
-use crate::policy::{Decision, Permission, Policy, filter_authorized};
+use crate::policy::{Policy, Securable, allowed, filter_authorized};
 
 /// A handler that checks every request against a [`Policy`] before delegating
 /// to `inner`, and filters `list_*` responses down to readable resources.
@@ -71,40 +74,40 @@ impl<H: Clone, Cx> Clone for Authorized<H, Cx> {
     }
 }
 
-/// Keep the `items` whose ident (per `ident`) the policy allows reading, for
+/// Keep the `items` the policy lets the caller see (per their `securable`), for
 /// list items that do not implement `ResourceExt`.
 async fn retain_authorized<Cx: Send + Sync + 'static, R>(
     policy: &dyn Policy<Cx>,
     context: &Cx,
     items: &mut Vec<R>,
-    ident: fn(&R) -> ResourceIdent,
+    securable: fn(&R) -> Securable,
 ) -> Result<()> {
-    let idents: Vec<_> = items.iter().map(ident).collect();
-    let decisions = policy
-        .authorize_many(&idents, &Permission::Read, context)
-        .await?;
-    // `decisions[i]` corresponds to `items[i]`; pair them in forward order.
-    let mut allow = decisions.into_iter().map(|d| d == Decision::Allow);
+    let securables: Vec<_> = items.iter().map(securable).collect();
+    let mut allow = allowed(policy, context, &securables).await?.into_iter();
     items.retain(|_| allow.next().unwrap_or(false));
     Ok(())
 }
 
-/// `TableSummary` carries only the full name, so rebuild the table ident from
-/// it (mirrors the `GetTableRequest` secured action).
-fn table_summary_ident(summary: &TableSummary) -> ResourceIdent {
-    ResourceIdent::table(ResourceName::from_naive_str_split(&summary.full_name))
+/// `TableSummary` carries only the full name, so rebuild the table from it.
+fn table_summary_securable(summary: &TableSummary) -> Securable {
+    Securable::new(
+        ObjectLabel::Table,
+        summary.full_name.split('.').map(str::to_string).collect(),
+    )
 }
 
 /// Implement a handler trait for [`Authorized`].
 ///
 /// `list` methods filter the named response field after delegating, through
 /// `filter_authorized` or, with `by <fn>`, through [`retain_authorized`]. `fn`
-/// methods only check the request.
+/// methods only check the request; `dyn fn` methods check a request whose
+/// securable comes from its content ([`DynamicSecurable`](crate::api::DynamicSecurable)).
 macro_rules! authorized {
     (
         $trait:ident {
             $(list $list:ident($list_req:ty) -> $list_resp:ty => $field:ident $(by $by:path)?;)*
             $(fn $method:ident($req:ty) -> $resp:ty;)*
+            $(dyn fn $dyn_method:ident($dyn_req:ty) -> $dyn_resp:ty;)*
         }
     ) => {
         #[async_trait]
@@ -127,10 +130,16 @@ macro_rules! authorized {
                     self.inner.$method(request, context).await
                 }
             )*
+            $(
+                async fn $dyn_method(&self, request: $dyn_req, context: Cx) -> Result<$dyn_resp> {
+                    check_dynamic(&*self.policy, &request, &context).await?;
+                    self.inner.$dyn_method(request, context).await
+                }
+            )*
         }
     };
     (@filter $self:ident, $context:ident, $items:expr) => {
-        filter_authorized(&*$self.policy, &$context, &Permission::Read, $items).await?
+        filter_authorized(&*$self.policy, &$context, $items).await?
     };
     (@filter $self:ident, $context:ident, $items:expr, $by:path) => {
         retain_authorized(&*$self.policy, &$context, $items, $by).await?
@@ -172,11 +181,11 @@ authorized!(CredentialHandler {
 // The assignments are all on the one entity the request names, so the request
 // check covers them and the list is not filtered.
 authorized!(EntityTagAssignmentHandler {
-    fn list_entity_tag_assignments(ListEntityTagAssignmentsRequest) -> ListEntityTagAssignmentsResponse;
-    fn create_entity_tag_assignment(CreateEntityTagAssignmentRequest) -> EntityTagAssignment;
-    fn get_entity_tag_assignment(GetEntityTagAssignmentRequest) -> EntityTagAssignment;
-    fn update_entity_tag_assignment(UpdateEntityTagAssignmentRequest) -> EntityTagAssignment;
-    fn delete_entity_tag_assignment(DeleteEntityTagAssignmentRequest) -> ();
+    dyn fn list_entity_tag_assignments(ListEntityTagAssignmentsRequest) -> ListEntityTagAssignmentsResponse;
+    dyn fn create_entity_tag_assignment(CreateEntityTagAssignmentRequest) -> EntityTagAssignment;
+    dyn fn get_entity_tag_assignment(GetEntityTagAssignmentRequest) -> EntityTagAssignment;
+    dyn fn update_entity_tag_assignment(UpdateEntityTagAssignmentRequest) -> EntityTagAssignment;
+    dyn fn delete_entity_tag_assignment(DeleteEntityTagAssignmentRequest) -> ();
 });
 
 authorized!(ExternalLocationHandler {
@@ -204,12 +213,14 @@ authorized!(ModelVersionHandler {
     fn finalize_model_version(FinalizeModelVersionRequest) -> ModelVersion;
 });
 
+// Policies are authorized on the securable they are defined on, which the list
+// request names, so the list is not filtered further.
 authorized!(PolicyHandler {
-    list list_policies(ListPoliciesRequest) -> ListPoliciesResponse => policies;
-    fn create_policy(CreatePolicyRequest) -> PolicyInfo;
-    fn get_policy(GetPolicyRequest) -> PolicyInfo;
-    fn update_policy(UpdatePolicyRequest) -> PolicyInfo;
-    fn delete_policy(DeletePolicyRequest) -> ();
+    dyn fn list_policies(ListPoliciesRequest) -> ListPoliciesResponse;
+    dyn fn create_policy(CreatePolicyRequest) -> PolicyInfo;
+    dyn fn get_policy(GetPolicyRequest) -> PolicyInfo;
+    dyn fn update_policy(UpdatePolicyRequest) -> PolicyInfo;
+    dyn fn delete_policy(DeletePolicyRequest) -> ();
 });
 
 authorized!(RegisteredModelHandler {
@@ -233,7 +244,7 @@ authorized!(StagingTableHandler {
 });
 
 authorized!(TableHandler {
-    list list_table_summaries(ListTableSummariesRequest) -> ListTableSummariesResponse => tables by table_summary_ident;
+    list list_table_summaries(ListTableSummariesRequest) -> ListTableSummariesResponse => tables by table_summary_securable;
     list list_tables(ListTablesRequest) -> ListTablesResponse => tables;
     fn create_table(CreateTableRequest) -> Table;
     fn get_table(GetTableRequest) -> Table;
@@ -261,23 +272,24 @@ authorized!(VolumeHandler {
 mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
-    use unitycatalog_common::models::resource_name;
-
     use super::*;
     use crate::Error;
 
-    /// Denies the listed resources and allows everything else.
-    struct DenyList(Vec<ResourceIdent>);
+    use crate::policy::{Decision, Facts, ServerAction};
+
+    /// Denies the listed securables (by full name) and allows everything else.
+    struct DenyList(Vec<&'static str>);
 
     #[async_trait]
     impl Policy<()> for DenyList {
         async fn authorize(
             &self,
-            resource: &ResourceIdent,
-            _permission: &Permission,
+            _action: ServerAction,
+            securable: &Securable,
+            _facts: &Facts,
             _context: &(),
         ) -> Result<Decision> {
-            Ok(if self.0.contains(resource) {
+            Ok(if self.0.contains(&securable.name.join(".").as_str()) {
                 Decision::Deny
             } else {
                 Decision::Allow
@@ -285,8 +297,8 @@ mod tests {
         }
     }
 
-    fn deny(idents: impl IntoIterator<Item = ResourceIdent>) -> Arc<dyn Policy<()>> {
-        Arc::new(DenyList(idents.into_iter().collect()))
+    fn deny(names: impl IntoIterator<Item = &'static str>) -> Arc<dyn Policy<()>> {
+        Arc::new(DenyList(names.into_iter().collect()))
     }
 
     fn catalog(name: &str) -> Catalog {
@@ -359,10 +371,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_denied_request_is_not_delegated() {
-        let handler = Authorized::new(
-            Catalogs::default(),
-            deny([ResourceIdent::catalog(resource_name!("secret"))]),
-        );
+        let handler = Authorized::new(Catalogs::default(), deny(["secret"]));
 
         let err = handler.get_catalog(get("secret"), ()).await.unwrap_err();
         assert!(matches!(err, Error::NotAllowed), "{err:?}");
@@ -382,13 +391,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_keeps_only_readable_resources_in_order() {
-        let handler = Authorized::new(
-            Catalogs::default(),
-            deny([
-                ResourceIdent::catalog(resource_name!("b")),
-                ResourceIdent::catalog(resource_name!("d")),
-            ]),
-        );
+        let handler = Authorized::new(Catalogs::default(), deny(["b", "d"]));
         let resp = handler
             .list_catalogs(ListCatalogsRequest::default(), ())
             .await
@@ -448,10 +451,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_table_summaries_filtered_by_full_name() {
-        let handler = Authorized::new(
-            Tables,
-            deny([ResourceIdent::table(resource_name!("c.s.hidden"))]),
-        );
+        let handler = Authorized::new(Tables, deny(["c.s.hidden"]));
         let request = ListTableSummariesRequest {
             catalog_name: "c".to_string(),
             ..Default::default()

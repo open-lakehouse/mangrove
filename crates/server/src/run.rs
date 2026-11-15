@@ -39,10 +39,10 @@ use crate::rest::{
     ReverseProxyAuthenticator, create_agent_skills_router, create_agents_router,
     create_catalogs_router, create_credentials_router, create_delta_router,
     create_entity_tag_assignments_router, create_external_locations_router,
-    create_functions_router, create_model_versions_router, create_policies_router,
-    create_registered_models_router, create_schemas_router, create_staging_tables_router,
-    create_tables_router, create_tag_policies_router, create_temporary_credentials_router,
-    create_volumes_router,
+    create_functions_router, create_grants_router, create_model_versions_router,
+    create_policies_router, create_registered_models_router, create_schemas_router,
+    create_staging_tables_router, create_tables_router, create_tag_policies_router,
+    create_temporary_credentials_router, create_volumes_router,
 };
 use crate::services::{LocalStoragePolicy, ServerHandler, location::StorageLocationUrl};
 
@@ -134,6 +134,7 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
         .map_err(|e| Error::Generic(format!("vending config: {e}")))?;
 
     let (handler, policy) = connect(config).await?;
+    let handler = with_grants(handler, config)?;
     let handler = handler
         .with_neon_vending(neon_vending)
         .with_local_storage_policy(local_storage_policy)
@@ -228,16 +229,11 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
     Ok(assemble(app, &config.ui, &config.storage_proxy))
 }
 
-/// The policy `config.policy` asks for, resolving securables through `store`.
+/// The policy `config.policy` asks for.
 ///
 /// An authorizer policy needs verified callers (`auth.mode: olai-auth`): it
 /// denies every request without one, so any other mode is a startup error.
-fn build_policy(
-    config: &Config,
-    #[cfg_attr(not(feature = "olai-auth"), allow(unused_variables))] store: Arc<
-        dyn crate::store::ResourceStoreReader,
-    >,
-) -> Result<Arc<dyn Policy<RequestContext>>> {
+fn build_policy(config: &Config) -> Result<Arc<dyn Policy<RequestContext>>> {
     use crate::config::PolicyConfig;
 
     match &config.policy {
@@ -264,12 +260,41 @@ fn build_policy(
                 &token,
                 authorizer.timeout_ms.map(Duration::from_millis),
                 Duration::from_secs(ttl),
-                store,
             )))
         }
         #[cfg(not(feature = "olai-auth"))]
         PolicyConfig::Authorizer(_) => Err(not_compiled("`policy.kind: authorizer`", "olai-auth")),
     }
+}
+
+/// `handler` keeping its grants where the deployment's decision point reads them.
+///
+/// With `auth.mode: olai-auth`, grants live in the `authz` schema of the
+/// identity database, next to the groups and service accounts their principals
+/// name; otherwise they stay in memory. The connecting role needs `SELECT`,
+/// `INSERT`, `UPDATE` and `DELETE` on `authz.grants`, and `SELECT` on the user
+/// table's `id` and `email` and on `authz.groups` and `authz.service_accounts`.
+fn with_grants(
+    handler: ServerHandler<RequestContext>,
+    #[cfg_attr(not(feature = "olai-auth"), allow(unused_variables))] config: &Config,
+) -> Result<ServerHandler<RequestContext>> {
+    #[cfg(feature = "olai-auth")]
+    if config.auth.mode == AuthMode::OlaiAuth {
+        let olai = config
+            .auth
+            .olai_auth(&config.backend)
+            .map_err(|e| Error::Generic(format!("auth config: {e}")))?;
+        let pool = crate::rest::olai_auth::identity_pool(&olai.database_url)
+            .map_err(|e| Error::Generic(format!("auth config: {e}")))?;
+        let store = olai_auth::PgGrantStore::new(pool.clone()).with_schema(&olai.authz_schema);
+        let principals =
+            crate::grants::PgPrincipalDirectory::new(pool, &olai.users_schema, &olai.authz_schema);
+        return Ok(handler.with_grants(crate::grants::Grants::new(
+            Arc::new(store),
+            Arc::new(principals),
+        )));
+    }
+    Ok(handler)
 }
 
 /// The startup error for a config that asks for `what`, which needs the cargo
@@ -545,7 +570,8 @@ pub(crate) fn build_rest_router(handler: ServerHandler<RequestContext>) -> Route
         .merge(create_model_versions_router(handler.clone()))
         .merge(create_delta_router(handler.clone()))
         .merge(create_entity_tag_assignments_router(handler.clone()))
-        .merge(create_policies_router(handler.clone()));
+        .merge(create_policies_router(handler.clone()))
+        .merge(create_grants_router(handler.clone()));
 
     Router::new()
         .nest("/api/2.1/unity-catalog", api_routes)
@@ -671,7 +697,7 @@ async fn connect_postgres(
     // catalog-managed commits are persisted in the `delta_commits` table.
     let graph = unitycatalog_postgres::connect_graph(pool.clone(), encryptor.clone());
     let resource_store = Arc::new(ObjectStoreAdapter::new(graph));
-    let policy = build_policy(config, resource_store.clone())?;
+    let policy = build_policy(config)?;
     let storage_access = Arc::new(unitycatalog_postgres::PgStorageAccess::new(
         pool.clone(),
         encryptor,
@@ -749,7 +775,7 @@ async fn connect_sqlite(
     // tables, Delta catalog-managed commits in the `delta_commits` table.
     let graph = unitycatalog_sqlite::connect_graph(pool.clone(), encryptor.clone());
     let resource_store = Arc::new(ObjectStoreAdapter::new(graph));
-    let policy = build_policy(config, resource_store.clone())?;
+    let policy = build_policy(config)?;
     let storage_access = Arc::new(unitycatalog_sqlite::SqliteStorageAccess::new(
         pool.clone(),
         encryptor,
