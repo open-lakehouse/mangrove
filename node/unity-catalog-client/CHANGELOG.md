@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.9](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-client-v0.0.8...unity-catalog-client-v0.0.9) - 2026-11-15
+
+### Added
+
+- an IdentityHost over the SCIM API (#356)
+
 ## [0.0.8](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-client-v0.0.7...unity-catalog-client-v0.0.8) - 2026-11-15
 
 ### Added

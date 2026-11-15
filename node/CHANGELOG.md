@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7](https://github.com/open-lakehouse/mangrove/compare/uc-app-v0.0.6...uc-app-v0.0.7) - 2026-11-15
+
+### Added
+
+- an IdentityHost over the SCIM API (#356)
+
 ## [0.0.6](https://github.com/open-lakehouse/mangrove/compare/uc-app-v0.0.5...uc-app-v0.0.6) - 2026-11-15
 
 ### Added
