@@ -47,8 +47,9 @@ pub trait PrincipalDirectory: Send + Sync + 'static {
 }
 
 /// A directory without a user database: a principal is the user of that name,
-/// and a subject is shown by its id. Fits the in-memory and reverse-proxy
-/// deployments, where the caller's name is its identity.
+/// and a subject is shown by its id. Fits deployments without a
+/// [`Directory`](crate::directory::Directory), where the caller's name is its
+/// identity.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct IdentityDirectory;
 
@@ -350,100 +351,6 @@ pub(crate) fn grant_error(e: GrantError) -> Error {
 fn logged(e: GrantError, what: &str, object: &ObjectRef) -> Error {
     tracing::error!(%object, error = %e, "{what} {object} failed");
     grant_error(e)
-}
-
-/// A [`PrincipalDirectory`] over Neon Auth's users and the `authz` schema's
-/// groups and service accounts.
-///
-/// A principal with an `@` is the user with that email (`neon_auth."user"`);
-/// any other name is a group, else a service account, of that name. The
-/// connecting role needs `SELECT` on `id` and `email` of the user table, and on
-/// `id` and `name` of `groups` and `service_accounts`.
-#[cfg(feature = "olai-auth")]
-#[derive(Debug, Clone)]
-pub struct PgPrincipalDirectory {
-    pool: sqlx::PgPool,
-    users: String,
-    authz: String,
-}
-
-#[cfg(feature = "olai-auth")]
-impl PgPrincipalDirectory {
-    /// Users from the `user` table of `users_schema`, groups and service
-    /// accounts from `authz_schema`.
-    pub fn new(pool: sqlx::PgPool, users_schema: &str, authz_schema: &str) -> Self {
-        Self {
-            pool,
-            users: quote_ident(users_schema),
-            authz: quote_ident(authz_schema),
-        }
-    }
-
-    async fn id(&self, query: &str, value: &str) -> Result<Option<String>> {
-        sqlx::query_scalar::<_, String>(query)
-            .bind(value)
-            .fetch_optional(&self.pool)
-            .await
-            .map_err(|e| Error::Generic(format!("principal directory: {e}")))
-    }
-}
-
-#[cfg(feature = "olai-auth")]
-fn quote_ident(ident: &str) -> String {
-    format!("\"{}\"", ident.replace('"', "\"\""))
-}
-
-#[cfg(feature = "olai-auth")]
-#[async_trait]
-impl PrincipalDirectory for PgPrincipalDirectory {
-    async fn resolve(&self, principal: &str) -> Result<Subject> {
-        let unknown = || Error::invalid_argument(format!("unknown principal '{principal}'"));
-        if principal.contains('@') {
-            let query = format!(
-                "SELECT id::text FROM {}.\"user\" WHERE lower(email) = lower($1)",
-                self.users
-            );
-            return self
-                .id(&query, principal)
-                .await?
-                .map(Subject::user)
-                .ok_or_else(unknown);
-        }
-        let group = format!("SELECT id::text FROM {}.groups WHERE name = $1", self.authz);
-        if let Some(id) = self.id(&group, principal).await? {
-            return Ok(Subject::group(id));
-        }
-        let account = format!(
-            "SELECT id::text FROM {}.service_accounts WHERE name = $1",
-            self.authz
-        );
-        self.id(&account, principal)
-            .await?
-            .map(Subject::service_account)
-            .ok_or_else(unknown)
-    }
-
-    async fn name(&self, subject: &Subject) -> Result<String> {
-        use olai_auth::grants::SubjectKind;
-        let query = match subject.kind {
-            SubjectKind::User => format!(
-                "SELECT email FROM {}.\"user\" WHERE id::text = $1",
-                self.users
-            ),
-            SubjectKind::Group => {
-                format!("SELECT name FROM {}.groups WHERE id::text = $1", self.authz)
-            }
-            SubjectKind::ServiceAccount => format!(
-                "SELECT name FROM {}.service_accounts WHERE id::text = $1",
-                self.authz
-            ),
-        };
-        // A subject that is gone (a deleted user) is shown by its id.
-        Ok(self
-            .id(&query, &subject.id)
-            .await?
-            .unwrap_or_else(|| subject.id.clone()))
-    }
 }
 
 #[cfg(test)]

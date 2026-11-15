@@ -23,7 +23,7 @@ sync-server-openapi-check:
     #!/usr/bin/env bash
     set -euo pipefail
     server_openapi_dir="crates/server/openapi"
-    for f in openapi.yaml delta.yaml; do
+    for f in openapi.yaml delta.yaml scim.yaml; do
         if ! diff -q {{ justfile_directory() }}/openapi/"$f" \
             {{ justfile_directory() }}/"$server_openapi_dir"/"$f" >/dev/null; then
             echo "::error::$server_openapi_dir/$f is out of sync with openapi/$f — run \`just codegen sync-server-openapi\` and commit the result." >&2

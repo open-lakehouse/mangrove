@@ -134,7 +134,8 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
         .map_err(|e| Error::Generic(format!("vending config: {e}")))?;
 
     let (handler, policy) = connect(config).await?;
-    let handler = with_grants(handler, config)?;
+    let directory = build_directory(config)?;
+    let handler = with_grants(handler, config, directory.as_ref())?;
     let handler = handler
         .with_neon_vending(neon_vending)
         .with_local_storage_policy(local_storage_policy)
@@ -190,6 +191,19 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
     if config.files.enabled {
         return Err(not_compiled("`files.enabled`", "files"));
     }
+
+    // The read-only SCIM API over the directory (`/api/2.0/preview/scim/v2`),
+    // behind the same authenticator as the UC API.
+    #[cfg(feature = "scim")]
+    let api_router = {
+        let directory = directory
+            .clone()
+            .map(|d| d.directory)
+            .unwrap_or_else(crate::directory::Directory::empty);
+        let state =
+            crate::rest::scim::ScimState::new(directory, config.auth.mode == AuthMode::Anonymous);
+        api_router.merge(crate::rest::scim::router(state))
+    };
 
     // Apply the configured authenticator. Each arm yields the same erased
     // `Router` type, so they can share one binding despite distinct authenticator
@@ -267,34 +281,147 @@ fn build_policy(config: &Config) -> Result<Arc<dyn Policy<RequestContext>>> {
     }
 }
 
+/// The principal directory `config` asks for, and the Postgres pool of its
+/// authorization store when that is `postgres`.
+#[derive(Clone)]
+pub(crate) struct BuiltDirectory {
+    pub(crate) directory: crate::directory::Directory,
+    #[cfg(feature = "olai-auth")]
+    authz_pool: Option<(sqlx::PgPool, String)>,
+}
+
+/// The directory of `config.directory`, else, with `auth.mode: olai-auth`, Neon
+/// Auth's users and the `authz` schema of its identity database. `None` for
+/// any other mode without a `directory` block: principals are named as given.
+fn build_directory(config: &Config) -> Result<Option<BuiltDirectory>> {
+    use crate::config::{AuthzStoreConfig, UserSourceConfig};
+    use crate::directory::{Directory, MemoryAuthz, StaticUsers, UserSource};
+
+    #[cfg(feature = "olai-auth")]
+    let directory_error = |e: String| Error::Generic(format!("directory config: {e}"));
+    #[cfg(feature = "olai-auth")]
+    let olai = (config.auth.mode == AuthMode::OlaiAuth)
+        .then(|| config.auth.olai_auth(&config.backend))
+        .transpose()
+        .map_err(|e| Error::Generic(format!("auth config: {e}")))?;
+
+    #[cfg(feature = "olai-auth")]
+    let derived = olai.as_ref().map(|_| crate::config::DirectoryConfig {
+        users: UserSourceConfig::Neon { schema: None },
+        authz: AuthzStoreConfig::Postgres,
+        database_url: None,
+        authz_schema: None,
+    });
+    #[cfg(not(feature = "olai-auth"))]
+    let derived: Option<crate::config::DirectoryConfig> = None;
+    let Some(directory_config) = config.directory.as_ref().or(derived.as_ref()) else {
+        return Ok(None);
+    };
+
+    // The identity database: the directory's own, else olai-auth's, else the
+    // Postgres backend's.
+    #[cfg(feature = "olai-auth")]
+    let pool = || -> Result<sqlx::PgPool> {
+        let url = match (&directory_config.database_url, &olai, &config.backend) {
+            (Some(url), _, _) => url.value().filter(|v| !v.is_empty()).ok_or_else(|| {
+                directory_error("`directory.database-url` could not be resolved".into())
+            })?,
+            (None, Some(olai), _) => olai.database_url.clone(),
+            (None, None, crate::config::Backend::Postgres(pg)) => {
+                pg.connection_string().ok_or_else(|| {
+                    directory_error("the Postgres backend has no connection string".into())
+                })?
+            }
+            (None, None, _) => {
+                return Err(directory_error(
+                    "`directory.database-url` is required unless the storage backend is Postgres"
+                        .into(),
+                ));
+            }
+        };
+        crate::rest::olai_auth::identity_pool(&url).map_err(directory_error)
+    };
+
+    let users: Arc<dyn UserSource> = match &directory_config.users {
+        UserSourceConfig::Static { users } => Arc::new(StaticUsers::new(
+            users.iter().cloned().map(Into::into).collect(),
+        )),
+        #[cfg(feature = "scim")]
+        UserSourceConfig::Authelia { users_file } => {
+            Arc::new(crate::directory::authelia::AutheliaUsers::new(users_file))
+        }
+        #[cfg(not(feature = "scim"))]
+        UserSourceConfig::Authelia { .. } => {
+            return Err(not_compiled("`directory.users.source: authelia`", "scim"));
+        }
+        #[cfg(feature = "olai-auth")]
+        UserSourceConfig::Neon { schema } => {
+            let schema = schema
+                .clone()
+                .or_else(|| olai.as_ref().map(|o| o.users_schema.clone()))
+                .unwrap_or_else(|| "neon_auth".into());
+            Arc::new(crate::directory::postgres::NeonUsers::new(pool()?, &schema))
+        }
+        #[cfg(not(feature = "olai-auth"))]
+        UserSourceConfig::Neon { .. } => {
+            return Err(not_compiled("`directory.users.source: neon`", "olai-auth"));
+        }
+    };
+
+    match directory_config.authz {
+        AuthzStoreConfig::Memory => Ok(Some(BuiltDirectory {
+            directory: Directory::new(users, Arc::new(MemoryAuthz::default())),
+            #[cfg(feature = "olai-auth")]
+            authz_pool: None,
+        })),
+        #[cfg(feature = "olai-auth")]
+        AuthzStoreConfig::Postgres => {
+            let schema = directory_config
+                .authz_schema
+                .clone()
+                .or_else(|| olai.as_ref().map(|o| o.authz_schema.clone()))
+                .unwrap_or_else(|| "authz".into());
+            let pool = pool()?;
+            let authz = crate::directory::postgres::PgAuthz::new(pool.clone(), &schema);
+            Ok(Some(BuiltDirectory {
+                directory: Directory::new(users, Arc::new(authz)),
+                authz_pool: Some((pool, schema)),
+            }))
+        }
+        #[cfg(not(feature = "olai-auth"))]
+        AuthzStoreConfig::Postgres => {
+            let _ = users;
+            Err(not_compiled("`directory.authz: postgres`", "olai-auth"))
+        }
+    }
+}
+
 /// `handler` keeping its grants where the deployment's decision point reads them.
 ///
-/// With `auth.mode: olai-auth`, grants live in the `authz` schema of the
-/// identity database, next to the groups and service accounts their principals
-/// name; otherwise they stay in memory. The connecting role needs `SELECT`,
-/// `INSERT`, `UPDATE` and `DELETE` on `authz.grants`, and `SELECT` on the user
-/// table's `id` and `email` and on `authz.groups` and `authz.service_accounts`.
+/// With an authorization store in Postgres (`directory.authz: postgres`, the
+/// default of `auth.mode: olai-auth`), grants live in its `authz` schema, next
+/// to the groups and service accounts their principals name. Otherwise they
+/// stay in memory. Principals resolve through the directory when there is one,
+/// else as named. The connecting role needs `SELECT`, `INSERT`, `UPDATE` and
+/// `DELETE` on `authz.grants`, and `SELECT` on the directory's tables.
 fn with_grants(
     handler: ServerHandler<RequestContext>,
-    #[cfg_attr(not(feature = "olai-auth"), allow(unused_variables))] config: &Config,
+    _config: &Config,
+    directory: Option<&BuiltDirectory>,
 ) -> Result<ServerHandler<RequestContext>> {
+    let Some(built) = directory else {
+        return Ok(handler);
+    };
+    let principals = Arc::new(built.directory.clone());
     #[cfg(feature = "olai-auth")]
-    if config.auth.mode == AuthMode::OlaiAuth {
-        let olai = config
-            .auth
-            .olai_auth(&config.backend)
-            .map_err(|e| Error::Generic(format!("auth config: {e}")))?;
-        let pool = crate::rest::olai_auth::identity_pool(&olai.database_url)
-            .map_err(|e| Error::Generic(format!("auth config: {e}")))?;
-        let store = olai_auth::PgGrantStore::new(pool.clone()).with_schema(&olai.authz_schema);
-        let principals =
-            crate::grants::PgPrincipalDirectory::new(pool, &olai.users_schema, &olai.authz_schema);
-        return Ok(handler.with_grants(crate::grants::Grants::new(
-            Arc::new(store),
-            Arc::new(principals),
-        )));
+    if let Some((pool, schema)) = &built.authz_pool {
+        let store = olai_auth::PgGrantStore::new(pool.clone()).with_schema(schema);
+        return Ok(handler.with_grants(crate::grants::Grants::new(Arc::new(store), principals)));
     }
-    Ok(handler)
+    Ok(handler.with_grants(crate::grants::Grants::new(
+        Arc::new(olai_auth::grants::MemoryGrantStore::new()),
+        principals,
+    )))
 }
 
 /// The startup error for a config that asks for `what`, which needs the cargo
@@ -543,6 +670,13 @@ pub(crate) fn swagger_api_defs() -> Vec<swagger_ui_dist::ApiDefinition<&'static 
             // reason as above).
             api_definition: OpenApiSource::Inline(include_str!("../openapi/delta.yaml")),
             title: Some("UC Delta API"),
+        },
+        #[cfg(feature = "scim")]
+        ApiDefinition {
+            uri_prefix: crate::rest::scim::SCIM_BASE_PATH,
+            // In-crate copy of repo-root `openapi/scim.yaml` (same reason).
+            api_definition: OpenApiSource::Inline(include_str!("../openapi/scim.yaml")),
+            title: Some("SCIM API"),
         },
     ]
 }

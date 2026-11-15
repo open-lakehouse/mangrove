@@ -1,0 +1,328 @@
+openapi: 3.1.1
+info:
+  title: SCIM API (read-only)
+  version: 2.0.0
+  description: |
+    The users, groups and service principals the server knows, read-only and
+    shaped like Databricks' SCIM API. Users come from the identity provider
+    (Neon Auth, Authelia, or a fixed list); groups and service principals from
+    the authorization store. Register users through the identity provider's own
+    flow.
+
+    List endpoints take RFC 7644 filters (`filter=userName co "ali"`; `and`,
+    `or`, `not`, `eq ne co sw ew gt ge lt le pr`, value paths) and paging
+    (`startIndex`, 1-based, and `count`). Attribute selection and sorting are
+    not supported.
+
+    Every endpoint needs a signed-in caller, unless the server runs without
+    authentication.
+servers:
+  - url: "{scheme}://{host}:{port}/api/2.0/preview/scim/v2"
+    variables:
+      scheme:
+        default: https
+        enum: [http, https]
+      host:
+        default: localhost
+      port:
+        default: "8080"
+paths:
+  /Me:
+    get:
+      operationId: GetMe
+      summary: The caller, as a user or a service principal.
+      responses:
+        "200":
+          description: The caller.
+          content:
+            application/scim+json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/User"
+                  - $ref: "#/components/schemas/ServicePrincipal"
+        "401":
+          $ref: "#/components/responses/Error"
+  /Users:
+    get:
+      operationId: ListUsers
+      summary: The users of the identity provider.
+      parameters:
+        - $ref: "#/components/parameters/filter"
+        - $ref: "#/components/parameters/startIndex"
+        - $ref: "#/components/parameters/count"
+      responses:
+        "200":
+          description: A page of users.
+          content:
+            application/scim+json:
+              schema:
+                $ref: "#/components/schemas/ListUsersResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+  /Users/{id}:
+    get:
+      operationId: GetUser
+      summary: One user.
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: The user.
+          content:
+            application/scim+json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          $ref: "#/components/responses/Error"
+  /Groups:
+    get:
+      operationId: ListGroups
+      summary: The groups of the authorization store, with their direct members.
+      parameters:
+        - $ref: "#/components/parameters/filter"
+        - $ref: "#/components/parameters/startIndex"
+        - $ref: "#/components/parameters/count"
+      responses:
+        "200":
+          description: A page of groups.
+          content:
+            application/scim+json:
+              schema:
+                $ref: "#/components/schemas/ListGroupsResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+  /Groups/{id}:
+    get:
+      operationId: GetGroup
+      summary: One group.
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: The group.
+          content:
+            application/scim+json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "404":
+          $ref: "#/components/responses/Error"
+  /ServicePrincipals:
+    get:
+      operationId: ListServicePrincipals
+      summary: The service accounts of the authorization store.
+      parameters:
+        - $ref: "#/components/parameters/filter"
+        - $ref: "#/components/parameters/startIndex"
+        - $ref: "#/components/parameters/count"
+      responses:
+        "200":
+          description: A page of service principals.
+          content:
+            application/scim+json:
+              schema:
+                $ref: "#/components/schemas/ListServicePrincipalsResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/Error"
+  /ServicePrincipals/{id}:
+    get:
+      operationId: GetServicePrincipal
+      summary: One service principal.
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: The service principal.
+          content:
+            application/scim+json:
+              schema:
+                $ref: "#/components/schemas/ServicePrincipal"
+        "404":
+          $ref: "#/components/responses/Error"
+components:
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    filter:
+      name: filter
+      in: query
+      description: An RFC 7644 filter, e.g. `userName co "ali"`.
+      schema:
+        type: string
+    startIndex:
+      name: startIndex
+      in: query
+      description: The 1-based index of the first result. Default 1.
+      schema:
+        type: integer
+        minimum: 1
+    count:
+      name: count
+      in: query
+      description: The page size. Default 100, at most 1000.
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 1000
+  responses:
+    Error:
+      description: A SCIM error.
+      content:
+        application/scim+json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Ref:
+      type: object
+      required: [value]
+      properties:
+        value:
+          type: string
+          description: The id of the referenced resource.
+        display:
+          type: string
+          description: Its name.
+        $ref:
+          type: string
+          description: Its path, e.g. `Groups/<id>`.
+    Email:
+      type: object
+      required: [value]
+      properties:
+        value:
+          type: string
+        type:
+          type: string
+        primary:
+          type: boolean
+    User:
+      type: object
+      required: [schemas, id, userName, active]
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+          description: The grant subject id (Neon Auth's user id, Authelia's user name).
+        userName:
+          type: string
+          description: The name grants use, the email address where there is one.
+        displayName:
+          type: string
+        active:
+          type: boolean
+          description: False for a banned or disabled user.
+        emails:
+          type: array
+          items:
+            $ref: "#/components/schemas/Email"
+        groups:
+          type: array
+          description: The groups the user is directly in.
+          items:
+            $ref: "#/components/schemas/Ref"
+    Group:
+      type: object
+      required: [schemas, id, displayName]
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+        displayName:
+          type: string
+        members:
+          type: array
+          description: The direct members (users, groups, service principals).
+          items:
+            $ref: "#/components/schemas/Ref"
+    ServicePrincipal:
+      type: object
+      required: [schemas, id, displayName, active]
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+        id:
+          type: string
+        applicationId:
+          type: string
+        displayName:
+          type: string
+          description: The name grants use.
+        active:
+          type: boolean
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/Ref"
+    ListResponse:
+      type: object
+      required: [schemas, totalResults, startIndex, itemsPerPage]
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+        totalResults:
+          type: integer
+        startIndex:
+          type: integer
+        itemsPerPage:
+          type: integer
+    ListUsersResponse:
+      allOf:
+        - $ref: "#/components/schemas/ListResponse"
+        - type: object
+          properties:
+            Resources:
+              type: array
+              items:
+                $ref: "#/components/schemas/User"
+    ListGroupsResponse:
+      allOf:
+        - $ref: "#/components/schemas/ListResponse"
+        - type: object
+          properties:
+            Resources:
+              type: array
+              items:
+                $ref: "#/components/schemas/Group"
+    ListServicePrincipalsResponse:
+      allOf:
+        - $ref: "#/components/schemas/ListResponse"
+        - type: object
+          properties:
+            Resources:
+              type: array
+              items:
+                $ref: "#/components/schemas/ServicePrincipal"
+    Error:
+      type: object
+      required: [schemas, detail, status]
+      properties:
+        schemas:
+          type: array
+          items:
+            type: string
+        detail:
+          type: string
+        status:
+          type: string
+        scimType:
+          type: string
+          description: E.g. `invalidFilter`.

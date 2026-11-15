@@ -229,9 +229,42 @@ Grants are kept through the grants API (`GET` / `PATCH
 /permissions/{securable_type}/{full_name}`, the Unity Catalog OSS shape;
 privileges in either spelling, `USE CATALOG` or `USE_CATALOG`). The creator of
 a securable owns it, an `owner` update moves ownership, and deletes and renames
-take the grants inside along. With `auth.mode: olai-auth` grants live in the
-`authz` schema of the identity database (`auth.olai.database-url`), where the
-decision point's loader reads them; otherwise in memory.
+take the grants inside along. With an authorization store in Postgres
+(`directory.authz: postgres`, the default with `auth.mode: olai-auth`) grants
+live in its `authz` schema, where the decision point's loader reads them;
+otherwise in memory.
+
+### Directory and SCIM
+
+The `directory` block says where users, groups and service accounts come from.
+The grants API resolves principals through it (a user's email, a group's or
+service account's name), and the `scim` feature serves it read-only as a
+Databricks-shaped SCIM API under `/api/2.0/preview/scim/v2` (`Me`, `Users`,
+`Groups`, `ServicePrincipals`, with RFC 7644 filters and paging; spec in
+`openapi/scim.yaml`).
+
+Users come from the identity provider. Groups, their members and service
+accounts always come from the authorization store (olai-auth's `authz` schema),
+whichever provider signs users in:
+
+```yaml
+directory:
+  # Neon Auth's `neon_auth."user"` (schema defaults to auth.olai.users-schema):
+  users: { source: neon }
+  # or Authelia's file user database, re-read when it changes; a user's id is
+  # its key (Envoy's Remote-User), its name its email:
+  # users: { source: authelia, users-file: /config/users.yml }
+  # or a fixed list:
+  # users: { source: static, users: [{ user-name: alice@example.com }] }
+  authz: postgres                       # or memory (no groups or service accounts)
+  database-url: { env: AUTHZ_DATABASE_URL }   # defaults to auth.olai.database-url, then the Postgres backend
+```
+
+Without a `directory` block, `auth.mode: olai-auth` uses Neon Auth's users and
+the `authz` schema of its identity database. Any other mode names principals
+as given and SCIM lists nobody. SCIM needs a signed-in caller unless
+`auth.mode` is `anonymous`. Users register through their provider's own flow;
+the directory is read-only.
 
 ### Trusted vending for Neon object storage
 
@@ -327,6 +360,7 @@ leave the server, aren't audited.
 | `ui`      |         | Serving the bundled single-page app from `./web` (`ui.serve`).                           |
 | `storage-proxy` |   | The same-origin storage byte-proxy (`storage_proxy.enabled`).                            |
 | `files`   |         | The embedded Files API (`files.enabled`).                                                |
+| `scim`    |         | The read-only SCIM API over the directory, and Authelia's user file as a user source (implies `embed`). |
 | `olai-auth` |       | `auth.mode: olai-auth`: Neon Auth JWTs over a JWKS URL and service-account API keys, and `policy.kind: authorizer` (implies `embed`). |
 | `neon-trusted-vending` | | Trusted vending for Neon object storage (`vending.neon`). Not in `default` or `bin`: a host opts in. |
 | `bin`     |         | The deployable `uc-server` binary: everything above except `neon-trusted-vending`, plus the CLI parser and the healthcheck client. |
