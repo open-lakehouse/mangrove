@@ -111,6 +111,22 @@ export const fixtureVolumes: VolumeInfo[] = [
   },
 ];
 
+/**
+ * Grants beyond ownership, by `securable_type/full_name`. Each securable's
+ * owner also holds `OWNER` on it.
+ */
+export const fixtureGrants: Record<
+  string,
+  { principal: string; privileges: string[] }[]
+> = {
+  "catalog/main": [
+    { principal: "analysts", privileges: ["USE CATALOG", "BROWSE"] },
+  ],
+  "schema/main.sales": [
+    { principal: "analysts", privileges: ["USE SCHEMA", "SELECT"] },
+  ],
+};
+
 /** The path prefix the UC REST API is served under. */
 const API_ROOT = "/api/2.1/unity-catalog";
 
@@ -168,7 +184,37 @@ const routes: Record<
   models: () => Response.json({ registered_models: [] }),
   credentials: () => Response.json({ credentials: [] }),
   "external-locations": () => Response.json({ external_locations: [] }),
+  permissions: (id) => {
+    const [type, fullName] = splitOnce(id ?? "", "/");
+    const securables: Record<
+      string,
+      { full_name?: string; name?: string; owner?: string }[]
+    > = {
+      catalog: fixtureCatalogs,
+      schema: fixtureSchemas,
+      table: fixtureTables,
+      volume: fixtureVolumes,
+    };
+    const securable = securables[type]?.find(
+      (s) => (s.full_name ?? s.name) === fullName,
+    );
+    if (!securable) return notFound(`${type} '${fullName}'`);
+    const owner = securable.owner
+      ? [{ principal: securable.owner, privileges: ["OWNER"] }]
+      : [];
+    return Response.json({
+      privilege_assignments: [
+        ...owner,
+        ...(fixtureGrants[`${type}/${fullName}`] ?? []),
+      ],
+    });
+  },
 };
+
+function splitOnce(value: string, separator: string): [string, string] {
+  const at = value.indexOf(separator);
+  return at < 0 ? [value, ""] : [value.slice(0, at), value.slice(at + 1)];
+}
 
 /**
  * A fetch-shaped handler serving the fixture catalog's read API under

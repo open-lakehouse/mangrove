@@ -45,7 +45,14 @@ bundler).
    browser only light up once the host registers their runners
    (`registerQueryRunner`, `registerLogQueryRunner`, `registerFilesRunner`). SQL
    completion in the volume editor needs `registerCatalogProvider(ucCatalogProvider)`.
-4. **Tailwind.** Define the ui-kit tokens ([ui-kit's `DESIGN.md`](https://github.com/open-lakehouse/trestle/blob/ui-kit-v0.0.1/node/ui-kit/DESIGN.md))
+4. **Identity (optional).** Every securable's detail has a Permissions tab
+   (the grants API). Its principal field searches an identity directory when
+   one is in scope: the host's `identity` capability, or an
+   `<IdentityProvider identity={...}>` from the client package. Users live in
+   the environment's IdP (Neon Auth, Authelia, and so on), so the host
+   implements the directory over whatever backs it. Without one, principals
+   are typed by name and the server rejects unknown ones.
+5. **Tailwind.** Define the ui-kit tokens ([ui-kit's `DESIGN.md`](https://github.com/open-lakehouse/trestle/blob/ui-kit-v0.0.1/node/ui-kit/DESIGN.md))
    plus the `--action-*` palette. The copied block files live in the host, so its
    Tailwind build scans them already; scan **every npm package they render**:
 
@@ -67,6 +74,7 @@ bundler).
 | `ExternalDataPage`, `StorageTable`, `StorageLocationPicker`, `StorageKind` | credentials / external locations |
 | `CatalogDialogsProvider` | create/edit/delete dialogs for hosts composing their own layout |
 | `Meta`, `MetaGrid`, `TreeRow`, `ListStates` | building blocks reused by hosts |
+| `PermissionsTab` | the grants of one securable, with grant/revoke controls |
 | `EnvironmentScopeProvider` | the environment-scope seam |
 | `ucCatalogProvider` | the editor's `CatalogProvider` backed by Unity Catalog |
 
@@ -101,6 +109,8 @@ const uc = createUnityCatalogClient({ baseUrl: "/api/2.1/unity-catalog" });
   `just codegen generate-node-openapi`) after UC proto changes rather than
   editing `src/forms/request-fields.gen.ts`. See "Resource forms" below.
 - **Don't** import this package from a leaf; leaves stay UC-agnostic.
+- **Don't** offer `OWNER` as a grantable privilege. It is reported by the
+  grants API, but ownership moves through the securable's `owner` field.
 
 ## Resource forms
 

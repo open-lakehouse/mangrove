@@ -25,6 +25,7 @@ import { useCatalogSelection } from "../selection.js";
 import type { ObjectKind } from "../types.js";
 import { DetailStates } from "./DetailStates.js";
 import { formatTimestamp, Meta, MetaGrid, toEpochMillis } from "./Meta.js";
+import { PermissionsTab } from "./PermissionsTab.js";
 
 // Minimal shape shared by every child list item we render in the table. The
 // per-kind list payloads are wider than this, but Name / Owner / Created are the
@@ -61,6 +62,8 @@ function useSchemaChildren(
   } as unknown as Record<ObjectKind, ChildQuery>;
 }
 
+type SchemaView = "overview" | "details" | "permissions";
+
 export function SchemaDetail({ fullName }: { fullName: string }) {
   const { data: schema, isLoading, error } = useSchemaDetail(fullName);
   // Active kind lives in the URL (`tab`), so the tree's kind rows, deep links,
@@ -78,7 +81,7 @@ export function SchemaDetail({ fullName }: { fullName: string }) {
   // deep link) sets `schemaTab`, which should always surface the Overview list —
   // so we snap back to it whenever that changes, while still letting the user
   // toggle to Details manually.
-  const [view, setView] = useState<"overview" | "details">("overview");
+  const [view, setView] = useState<SchemaView>("overview");
   useEffect(() => {
     if (schemaTab) setView("overview");
   }, [schemaTab]);
@@ -92,13 +95,11 @@ export function SchemaDetail({ fullName }: { fullName: string }) {
   const activeGroup = GROUPS.find((g) => g.kind === activeKind) ?? GROUPS[0];
 
   return (
-    <Tabs
-      value={view}
-      onValueChange={(v) => setView(v as "overview" | "details")}
-    >
+    <Tabs value={view} onValueChange={(v) => setView(v as SchemaView)}>
       <TabsList>
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="details">Details</TabsTrigger>
+        <TabsTrigger value="permissions">Permissions</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="space-y-3">
@@ -155,6 +156,10 @@ export function SchemaDetail({ fullName }: { fullName: string }) {
             <Meta label="Comment" value={schema.comment} wide />
           </MetaGrid>
         </section>
+      </TabsContent>
+
+      <TabsContent value="permissions">
+        <PermissionsTab securableType="schema" fullName={fullName} />
       </TabsContent>
     </Tabs>
   );

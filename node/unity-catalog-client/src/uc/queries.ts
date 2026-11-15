@@ -27,6 +27,7 @@ import {
 import { useEffect } from "react";
 import { $api } from "../api.js";
 import { fetchClient } from "../fetch.js";
+import type { GrantSecurableType } from "../grants.js";
 import { objectFullName } from "../names.js";
 import { useUnityCatalog } from "./context.js";
 
@@ -253,6 +254,48 @@ export function useExternalLocationDetail(
     ...$api.queryOptions("get", "/external-locations/{name}", {
       params: { path: { name } },
     }),
+    ...opts,
+  });
+}
+
+// ── Grants ──────────────────────────────────────────────────────────────────
+//
+// The privileges granted directly on one securable (inherited ones are not
+// included). The server returns every assignment in one page.
+
+function grantsInit(securableType: GrantSecurableType, fullName: string) {
+  return {
+    params: { path: { securable_type: securableType, full_name: fullName } },
+  } as const;
+}
+
+/** The canonical query options for a securable's grants. */
+export function grantsQuery(
+  securableType: GrantSecurableType,
+  fullName: string,
+) {
+  return $api.queryOptions(
+    "get",
+    "/permissions/{securable_type}/{full_name}",
+    grantsInit(securableType, fullName),
+  );
+}
+
+/** The privileges granted directly on a securable, by principal. */
+export function useGrants(
+  securableType: GrantSecurableType,
+  fullName: string,
+  opts?: DetailHookOptions,
+) {
+  const { $api } = useUnityCatalog();
+  return useQuery({
+    ...$api.queryOptions(
+      "get",
+      "/permissions/{securable_type}/{full_name}",
+      grantsInit(securableType, fullName),
+    ),
+    // Callers retry by hand: a 403 means "you can't see these", not a blip.
+    retry: false,
     ...opts,
   });
 }

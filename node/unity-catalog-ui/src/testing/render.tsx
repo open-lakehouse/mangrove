@@ -17,9 +17,14 @@ export type FakeUc = ReturnType<typeof createFakeUc>;
 
 export function renderWithUc(
   ui: ReactNode,
-  opts: { initialSel?: string } = {},
+  opts: {
+    initialSel?: string;
+    /** Runs before the first render, e.g. to `respond()` to its first reads. */
+    setup?: (uc: FakeUc) => void;
+  } = {},
 ): RenderResult & { uc: FakeUc; queryClient: QueryClient } {
   const uc = createFakeUc();
+  opts.setup?.(uc);
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });

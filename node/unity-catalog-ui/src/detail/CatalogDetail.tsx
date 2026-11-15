@@ -3,6 +3,7 @@ import { useCatalogDetail } from "@open-lakehouse/unity-catalog-client/react";
 import { SectionLabel } from "../SectionLabel.js";
 import { DetailStates } from "./DetailStates.js";
 import { formatTimestamp, Meta, MetaGrid } from "./Meta.js";
+import { OverviewTabs } from "./OverviewTabs.js";
 
 export function CatalogDetail({ name }: { name: string }) {
   const { data: catalog, isLoading, error } = useCatalogDetail(name);
@@ -13,25 +14,27 @@ export function CatalogDetail({ name }: { name: string }) {
   // set value. When neither is present the catalog inherits managed storage
   // from the metastore.
   return (
-    <section className="space-y-3">
-      <SectionLabel>About this catalog</SectionLabel>
-      <MetaGrid>
-        <Meta label="Owner" value={catalog.owner} />
-        <Meta label="Catalog ID" value={catalog.id} mono copyable />
-        {catalog.storage_root ? (
-          <Meta label="Storage root" value={catalog.storage_root} wide mono />
-        ) : (
-          <Meta label="Storage" value="Managed by Unity Catalog" wide />
-        )}
-        <Meta label="Created" value={formatTimestamp(catalog.created_at)} />
-        <Meta label="Created by" value={catalog.created_by} />
-        <Meta
-          label="Last updated"
-          value={formatTimestamp(catalog.updated_at)}
-        />
-        <Meta label="Updated by" value={catalog.updated_by} />
-        <Meta label="Comment" value={catalog.comment} wide />
-      </MetaGrid>
-    </section>
+    <OverviewTabs securableType="catalog" fullName={name}>
+      <section className="space-y-3">
+        <SectionLabel>About this catalog</SectionLabel>
+        <MetaGrid>
+          <Meta label="Owner" value={catalog.owner} />
+          <Meta label="Catalog ID" value={catalog.id} mono copyable />
+          {catalog.storage_root ? (
+            <Meta label="Storage root" value={catalog.storage_root} wide mono />
+          ) : (
+            <Meta label="Storage" value="Managed by Unity Catalog" wide />
+          )}
+          <Meta label="Created" value={formatTimestamp(catalog.created_at)} />
+          <Meta label="Created by" value={catalog.created_by} />
+          <Meta
+            label="Last updated"
+            value={formatTimestamp(catalog.updated_at)}
+          />
+          <Meta label="Updated by" value={catalog.updated_by} />
+          <Meta label="Comment" value={catalog.comment} wide />
+        </MetaGrid>
+      </section>
+    </OverviewTabs>
   );
 }

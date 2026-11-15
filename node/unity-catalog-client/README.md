@@ -90,6 +90,13 @@ Two entry points:
   instance), `setDefaultUnityCatalogFetch`, `UNITY_CATALOG_MODULE_ID`,
   `UnityCatalogFetchClient`, `CreateUnityCatalogClientOptions`.
 - **Helpers:** `parseUcError`, `objectFullName`.
+- **Grants vocabulary:** `GrantSecurableType`, `GRANTABLE_PRIVILEGES` (the
+  privileges each securable type takes), `normalizePrivilege` /
+  `displayPrivilege` (the server answers `USE CATALOG`, accepts `USE_CATALOG`
+  too), `OWNER_PRIVILEGE`.
+- **Identity seam types:** `IdentityHost`, `PrincipalRef`, `PrincipalKind`,
+  `PrincipalSearchOptions`, re-exported from `@open-lakehouse/host`: the
+  principal directory a host provides as its `identity` capability.
 - **UC OpenAPI types:** `CatalogInfo`, `SchemaInfo`, `TableInfo`, `Create*`,
   `List*`, `components`, `paths`, … (re-exported from `uc-types`).
 
@@ -108,12 +115,14 @@ re-exports everything above):
 - **Provider:** `UnityCatalogProvider`, `useUnityCatalog`.
 - **Host helpers:** `useOptionalEnvironmentKey` (the host's environment key, or
   `null` without a host; unlike the host's own hook, it doesn't throw).
+- **Identity:** `IdentityProvider`, `useIdentityHost` (the provider's
+  directory, else the host's `identity`, else `undefined`).
 - **Read hooks / query helpers:** `useCatalogs`, `useSchemas`, `useTables`,
   `useVolumes`, `useFunctions`, `useModels`, `useCredentials`,
   `useExternalLocations`, the `*Detail` hooks, `prefetch*`, `*DetailQuery`,
-  `ucListKeys`.
+  `ucListKeys`, and `useGrants` / `grantsQuery` for a securable's grants.
 - **Mutations / invalidators:** the `useCreate*` / `useUpdate*` / `useDelete*`
-  hooks and the `invalidate*` / `remove*` helpers.
+  hooks (including `useUpdateGrants`) and the `invalidate*` / `remove*` helpers.
 
 `@open-lakehouse/host` is a **required** peer: the host app supplies the one
 copy, so the client sees the host it registers. `react`, `react-dom` and

@@ -10,10 +10,11 @@ import { useState } from "react";
 import { SectionLabel } from "../SectionLabel.js";
 import { DetailStates } from "./DetailStates.js";
 import { formatTimestamp, Meta, MetaGrid } from "./Meta.js";
+import { PermissionsTab } from "./PermissionsTab.js";
 import { TypePill } from "./TypePill.js";
 import { VolumeEditor } from "./VolumeEditor.js";
 
-type VolumeView = "overview" | "files";
+type VolumeView = "overview" | "files" | "permissions";
 
 // The volume file editor is additive and dark-launched behind a flag (mirrors
 // the preview/delta-log gating on TableDetail). Vite statically replaces
@@ -63,18 +64,21 @@ export function VolumeDetail({ fullName }: { fullName: string }) {
     </section>
   );
 
-  // Without the flag there's only metadata — render it directly (no lone tab).
-  if (!FILES_ENABLED) return overview;
-
   return (
     <Tabs value={view} onValueChange={(v) => setView(v as VolumeView)}>
       <TabsList>
         <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="files">Files</TabsTrigger>
+        {FILES_ENABLED && <TabsTrigger value="files">Files</TabsTrigger>}
+        <TabsTrigger value="permissions">Permissions</TabsTrigger>
       </TabsList>
       <TabsContent value="overview">{overview}</TabsContent>
-      <TabsContent value="files">
-        <VolumeEditor fullName={fullName} />
+      {FILES_ENABLED && (
+        <TabsContent value="files">
+          <VolumeEditor fullName={fullName} />
+        </TabsContent>
+      )}
+      <TabsContent value="permissions">
+        <PermissionsTab securableType="volume" fullName={fullName} />
       </TabsContent>
     </Tabs>
   );

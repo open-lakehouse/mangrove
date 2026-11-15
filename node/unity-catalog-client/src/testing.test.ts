@@ -70,3 +70,18 @@ test("rejects writes", async () => {
   const created = await uc.POST("/catalogs", { body: { name: "new" } });
   expect(created.response.status).toBe(404);
 });
+
+test("serves grants: the owner's OWNER plus the fixture grants", async () => {
+  const uc = client();
+  const { data } = await uc.GET("/permissions/{securable_type}/{full_name}", {
+    params: { path: { securable_type: "catalog", full_name: "main" } },
+  });
+  expect(data?.privilege_assignments).toEqual([
+    { principal: "data-platform", privileges: ["OWNER"] },
+    { principal: "analysts", privileges: ["USE CATALOG", "BROWSE"] },
+  ]);
+  const missing = await uc.GET("/permissions/{securable_type}/{full_name}", {
+    params: { path: { securable_type: "table", full_name: "main.nope.x" } },
+  });
+  expect(missing.response.status).toBe(404);
+});

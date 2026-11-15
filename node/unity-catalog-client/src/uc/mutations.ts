@@ -10,6 +10,7 @@
 
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
+import type { GrantSecurableType } from "../grants.js";
 import {
   type InfiniteListSnapshot,
   inScope,
@@ -25,6 +26,7 @@ import {
   credentialDetailQuery,
   externalLocationDetailQuery,
   functionDetailQuery,
+  grantsQuery,
   modelDetailQuery,
   schemaDetailQuery,
   tableDetailQuery,
@@ -621,4 +623,28 @@ export function useDeleteExternalLocation() {
     },
     onSettled: () => invalidateExternalLocations(queryClient),
   });
+}
+
+// ── Grants ──────────────────────────────────────────────────────────────────
+
+/**
+ * Grant and revoke privileges on a securable. The response is the full set of
+ * assignments after the change, so it replaces the grants cache directly.
+ */
+export function useUpdateGrants() {
+  const { $api } = useUnityCatalog();
+  const queryClient = useQueryClient();
+  return $api.useMutation(
+    "patch",
+    "/permissions/{securable_type}/{full_name}",
+    {
+      onSuccess: (data, { params }) => {
+        const { securable_type, full_name } = params.path;
+        queryClient.setQueryData(
+          grantsQuery(securable_type as GrantSecurableType, full_name).queryKey,
+          { privilege_assignments: data?.privilege_assignments ?? [] },
+        );
+      },
+    },
+  );
 }
