@@ -11,6 +11,7 @@
     "node/editor",
     "node/unity-catalog-client",
     "node/unity-catalog-ui",
+    "node/uc-a2ui",
     "node/app"
   ],
   "scripts": {

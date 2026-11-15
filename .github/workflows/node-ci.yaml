@@ -104,6 +104,13 @@ jobs:
         run: bun run build
         working-directory: node/app
 
+      # `uc mcp serve` embeds the MCP App bundle (crates/cli/assets/mcp), which
+      # is committed because the cli crate can't run the node build. Rebuild it
+      # and fail if the committed copy is stale. See `just build mcp-app`.
+      - name: Check the MCP App bundle is in sync
+        run: bun run build && bun run check:cli
+        working-directory: node/uc-a2ui
+
       # Every story renders on the fake host (@open-lakehouse/host/testing) with
       # the UC fixture catalog, so a build break here means a story no longer
       # compiles against the packages.

@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noEmit": true,
+    "types": ["vite/client"],
+    "paths": {
+      "@open-lakehouse/unity-catalog-ui/grants": [
+        "../unity-catalog-ui/src/grants.ts"
+      ],
+      "@open-lakehouse/unity-catalog-client": [
+        "../unity-catalog-client/src/index.ts"
+      ],
+      "@open-lakehouse/unity-catalog-client/react": [
+        "../unity-catalog-client/src/react.ts"
+      ],
+      "@open-lakehouse/unity-catalog-client/testing": [
+        "../unity-catalog-client/src/testing.ts"
+      ]
+    }
+  },
+  "include": ["env.d.ts", "src", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]
+}
