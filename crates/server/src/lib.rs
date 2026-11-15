@@ -44,6 +44,7 @@
 //! `uc-server` binary. See the crate README for the full table.
 
 pub mod api;
+pub mod directory;
 pub mod error;
 pub mod grants;
 pub mod handlers;

@@ -127,6 +127,82 @@ pub struct Config {
     /// Credential vending settings (see [`VendingConfig`]).
     #[serde(default)]
     pub vending: VendingConfig,
+
+    /// Where users, groups and service accounts come from (see
+    /// [`DirectoryConfig`]), for the grants API and the SCIM API.
+    ///
+    /// Unset, `auth.mode: olai-auth` reads Neon Auth's users and the `authz`
+    /// schema of its identity database; any other mode names principals as
+    /// given and lists none.
+    #[serde(default)]
+    pub directory: Option<DirectoryConfig>,
+}
+
+/// Where users, groups and service accounts come from.
+///
+/// Users come from the identity provider (`users`); groups, their members and
+/// service accounts from the authorization store (`authz`), whichever provider
+/// signs users in.
+///
+/// ```yaml
+/// directory:
+///   users: { source: authelia, users-file: /config/users.yml }
+///   authz: postgres
+///   database-url: { env: AUTHZ_DATABASE_URL }
+/// ```
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct DirectoryConfig {
+    /// The identity provider's users.
+    pub users: UserSourceConfig,
+
+    /// The store of groups and service accounts. Default `memory` (none).
+    #[serde(default)]
+    pub authz: AuthzStoreConfig,
+
+    /// Postgres holding Neon Auth's users and the `authz` schema, for
+    /// `source: neon` and `authz: postgres`. Defaults to `auth.olai.database-url`,
+    /// then the Postgres storage backend's URL.
+    #[serde(default)]
+    pub database_url: Option<ConfigValue>,
+
+    /// The schema of the authorization store. Defaults to `auth.olai.authz-schema`,
+    /// else `authz`.
+    #[serde(default)]
+    pub authz_schema: Option<String>,
+}
+
+/// Where the users come from.
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(tag = "source", rename_all = "kebab-case")]
+pub enum UserSourceConfig {
+    /// Neon Auth's `user` table.
+    Neon {
+        /// Its schema. Defaults to `auth.olai.users-schema`, else `neon_auth`.
+        #[serde(default)]
+        schema: Option<String>,
+    },
+    /// An Authelia file user database (`users.yml`), re-read when it changes.
+    Authelia {
+        #[serde(rename = "users-file")]
+        users_file: String,
+    },
+    /// A fixed list.
+    Static {
+        #[serde(default)]
+        users: Vec<crate::directory::StaticUser>,
+    },
+}
+
+/// Where groups and service accounts come from.
+#[derive(Debug, Deserialize, Serialize, Default, PartialEq, Eq, Clone, Copy)]
+#[serde(rename_all = "kebab-case")]
+pub enum AuthzStoreConfig {
+    /// None.
+    #[default]
+    Memory,
+    /// olai-auth's `authz` schema. Grants are kept there too.
+    Postgres,
 }
 
 /// Credential vending settings.
@@ -540,6 +616,7 @@ impl Default for Config {
             auth: AuthConfig::default(),
             policy: PolicyConfig::default(),
             vending: VendingConfig::default(),
+            directory: None,
         }
     }
 }

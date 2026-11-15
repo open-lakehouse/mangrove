@@ -194,6 +194,10 @@ storage-proxy = [
   "unitycatalog-storage-proxy/handlers",
   "dep:olai-vended-store",
 ]
+# The read-only SCIM API (`/api/2.0/preview/scim/v2`: Me, Users, Groups,
+# ServicePrincipals) over the principal directory, and Authelia's user file as a
+# user source (`directory.users.source: authelia`).
+scim = ["embed", "tokio/fs", "tokio/sync"]
 # The embedded Files API (`files.enabled`).
 files = ["embed", "dep:unitycatalog-files-api", "dep:unitycatalog-object-store"]
 
@@ -209,6 +213,7 @@ bin = [
   "ui",
   "storage-proxy",
   "files",
+  "scim",
   "proxy",
   "dep:clap",
   "dep:reqwest",
@@ -219,7 +224,7 @@ bin = [
 # emulator; run with `just integration-azurite`.
 integration-azurite = ["memory"]
 
-# Postgres-backed integration tests (`tests/neon_user_status.rs`). Need a live
+# Postgres-backed integration tests (`tests/neon_user_status.rs`, # `tests/directory_pg.rs`). Need a live
 # database: run with `DATABASE_URL` set; `#[sqlx::test]` provisions one per case.
 integration-pg = ["olai-auth"]
 

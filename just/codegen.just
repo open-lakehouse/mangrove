@@ -76,10 +76,10 @@ sync-server-openapi:
     #!/usr/bin/env bash
     set -euo pipefail
     mkdir -p {{ justfile_directory() }}/{{ SERVER_OPENAPI_DIR }}
-    for f in openapi.yaml delta.yaml; do
+    for f in openapi.yaml delta.yaml scim.yaml; do
         cp {{ justfile_directory() }}/openapi/"$f" {{ justfile_directory() }}/{{ SERVER_OPENAPI_DIR }}/"$f"
     done
-    echo "→ synced openapi.yaml, delta.yaml into {{ SERVER_OPENAPI_DIR }}"
+    echo "→ synced openapi.yaml, delta.yaml, scim.yaml into {{ SERVER_OPENAPI_DIR }}"
 
 # generate rest server and client code with the build crate
 [group('codegen')]
