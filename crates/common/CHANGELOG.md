@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.11](https://github.com/open-lakehouse/mangrove/compare/olai-uc-common-v0.0.10...olai-uc-common-v0.0.11) - 2026-11-15
+
+### Added
+
+- grants API and the generated authorization vocabulary (#343)
+
 ## [0.0.10](https://github.com/open-lakehouse/mangrove/compare/olai-uc-common-v0.0.9...olai-uc-common-v0.0.10) - 2026-11-14
 
 ### Added
