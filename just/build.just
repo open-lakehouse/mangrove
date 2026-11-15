@@ -18,6 +18,11 @@ PG_LOCAL_DB := "postgres"
 ui-build:
     bun run --filter @open-lakehouse/uc-app build
 
+# build the MCP App (node/uc-a2ui) and copy it to where `uc mcp serve` embeds it
+[group('build')]
+mcp-app:
+    cd {{ justfile_directory() }}/node/uc-a2ui && bun run build && bun run sync:cli
+
 # build python bindings
 [group('build')]
 build-py: build-py-client

@@ -1,0 +1,63 @@
+[
+  {
+    "version": "v0.9",
+    "createSurface": {
+      "surfaceId": "uc-grant-form",
+      "catalogId": "https://open-lakehouse.dev/a2ui/uc/v1/catalog.json"
+    }
+  },
+  {
+    "version": "v0.9",
+    "updateComponents": {
+      "surfaceId": "uc-grant-form",
+      "components": [
+        {
+          "id": "root",
+          "component": "UcGrantForm",
+          "securableType": { "path": "/securable/type" },
+          "fullName": { "path": "/securable/fullName" },
+          "principal": { "path": "/principal" },
+          "privileges": { "path": "/privileges" },
+          "assignments": { "path": "/assignments" },
+          "candidates": { "path": "/candidates" },
+          "status": { "path": "/status" },
+          "submit": {
+            "event": {
+              "name": "apply_grants",
+              "context": {
+                "securable_type": { "path": "/securable/type" },
+                "full_name": { "path": "/securable/fullName" },
+                "principal": { "path": "/principal" },
+                "privileges": { "path": "/privileges" }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "version": "v0.9",
+    "updateDataModel": {
+      "surfaceId": "uc-grant-form",
+      "path": "/",
+      "value": {
+        "securable": { "type": "table", "fullName": "main.sales.orders" },
+        "principal": "bob",
+        "privileges": ["SELECT"],
+        "assignments": [
+          { "principal": "data-eng", "privileges": ["MODIFY", "SELECT"] }
+        ],
+        "candidates": [
+          {
+            "kind": "user",
+            "name": "bob@example.com",
+            "displayName": "Bob Builder"
+          },
+          { "kind": "user", "name": "bobby@example.com" }
+        ],
+        "status": { "state": "idle" }
+      }
+    }
+  }
+]

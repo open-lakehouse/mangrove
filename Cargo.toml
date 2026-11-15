@@ -153,6 +153,9 @@ files.extend-exclude = [
   # random-looking substrings the spellchecker flags.
   "crates/files-proto/src/generated/**/*",
   "openapi/**/*",
+  # The MCP App bundle `uc mcp serve` embeds: minified JS + CSS built by
+  # node/uc-a2ui (`@generated`, never hand-edited).
+  "crates/cli/assets/mcp/**/*",
   "node/client/unitycatalog/codegen/models/gen/**/*",
   # protoc-gen-es output (`@generated`, never hand-edited): the base64 `fileDesc`
   # descriptor blob contains random substrings the spellchecker flags as typos
