@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.10](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-node-v0.0.9...unity-catalog-node-v0.0.10) - 2026-11-15
+
+### Fixed
+
+- *(node)* declare the grants methods in the client's native.d.ts (#348)
+
 ## [0.0.9](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-node-v0.0.8...unity-catalog-node-v0.0.9) - 2026-11-15
 
 ### Added
