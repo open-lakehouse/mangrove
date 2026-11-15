@@ -89,7 +89,8 @@ when {
 };
 
 // Table credentials: SELECT (and MODIFY to write), plus EXTERNAL USE SCHEMA,
-// which nothing else implies. Every vend says which access it asks for.
+// which nothing else implies, unless the request comes from trusted compute
+// (which enforces governance itself). Every vend says which access it asks for.
 @id("vend-table")
 permit (
   principal,
@@ -102,7 +103,8 @@ when {
     resource.catalog.inherited_privileges.containsAny(["USE_CATALOG", "ALL_PRIVILEGES"])) &&
   (resource.schema.privileges.contains("OWNER") ||
     resource.schema.inherited_privileges.containsAny(["USE_SCHEMA", "ALL_PRIVILEGES"])) &&
-  resource.schema.inherited_privileges.contains("EXTERNAL_USE_SCHEMA") &&
+  (resource.schema.inherited_privileges.contains("EXTERNAL_USE_SCHEMA") ||
+    (context has actor && context.actor.trusted)) &&
   (resource.privileges.contains("OWNER") ||
     resource.inherited_privileges.containsAny(["SELECT", "ALL_PRIVILEGES"])) &&
   (context.credential_operation == "READ" ||

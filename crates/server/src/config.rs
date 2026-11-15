@@ -786,10 +786,241 @@ pub struct OlaiAuthConfig {
     /// and [`issuer`](Self::issuer) as its authorization server.
     #[serde(default)]
     pub resource: Option<String>,
+
+    /// The compute this server trusts (see [`TrustedComputeConfig`]). Unset, no
+    /// request has an actor and none is trusted compute.
+    #[serde(default)]
+    pub trusted_compute: Option<TrustedComputeConfig>,
 }
 
 fn default_true() -> bool {
     true
+}
+
+/// The compute the server trusts: the engines that enforce governance on their
+/// users' behalf, and so get credentials without `EXTERNAL USE`.
+///
+/// A request still authenticates its user with `Authorization: Bearer`. The
+/// compute it runs on adds a workload token of its own in `X-Olai-Actor-Token`: a
+/// Kubernetes service account token, a SPIFFE JWT-SVID, a CI OIDC token. The
+/// token's issuer must be one of [`issuers`](Self::issuers), and the workload is
+/// trusted compute when one of the [`compute`](Self::compute) rules covers it.
+/// Policies see it in `context.actor`. An invalid actor token is a 401.
+///
+/// Workloads are identified by URI: a SPIFFE ID as it is, any other token
+/// subject as `<iss>#<sub>`.
+///
+/// ```yaml
+/// auth:
+///   mode: olai-auth
+///   olai:
+///     # … the user issuer
+///     trusted-compute:
+///       max-lifetime-secs: 600
+///       issuers:
+///         - issuer: https://oidc.eks.us-east-2.amazonaws.com/id/EXAMPLE
+///           jwks-url: https://oidc.eks.us-east-2.amazonaws.com/id/EXAMPLE/keys
+///       compute:
+///         - id: spark-prod
+///           match: { prefix: "https://oidc.eks.us-east-2.amazonaws.com/id/EXAMPLE#system:serviceaccount:etl:" }
+///         - id: nightly
+///           match: { exact: "spiffe://prod.example/ns/jobs/sa/nightly" }
+///           issuer: https://oidc.eks.us-east-2.amazonaws.com/id/EXAMPLE
+/// ```
+#[derive(Debug, Deserialize, Serialize, PartialEq, Default)]
+#[serde(rename_all = "kebab-case")]
+pub struct TrustedComputeConfig {
+    /// The issuers of accepted workload tokens. Each must differ from the users'
+    /// [`issuer`](OlaiAuthConfig::issuer), so a user's token is never a workload's.
+    #[serde(default)]
+    pub issuers: Vec<ActorIssuerConfig>,
+
+    /// The longest lifetime (`exp - iat`) of an accepted workload token, in
+    /// seconds. Default 3600, Kubernetes' default for projected tokens.
+    #[serde(default)]
+    pub max_lifetime_secs: Option<u64>,
+
+    /// The trusted compute, by the workloads it covers. The first matching rule
+    /// names the compute.
+    #[serde(default)]
+    pub compute: Vec<ComputeRuleConfig>,
+}
+
+/// An issuer of workload tokens.
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct ActorIssuerConfig {
+    /// The exact `iss` of its tokens.
+    pub issuer: ConfigValue,
+
+    /// Where it publishes its signing keys (JWKS).
+    pub jwks_url: ConfigValue,
+
+    /// Accepted `aud` values. Defaults to the users'
+    /// [`audiences`](OlaiAuthConfig::audiences): this server.
+    #[serde(default)]
+    pub audiences: Vec<ConfigValue>,
+}
+
+/// One trusted compute: an id for policies and audit records, and the workloads
+/// it covers.
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct ComputeRuleConfig {
+    /// The compute's id, `context.actor.compute` in policies.
+    pub id: String,
+
+    /// The workload ids it covers.
+    #[serde(rename = "match")]
+    pub matcher: ActorMatchConfig,
+
+    /// Only cover workloads whose token this issuer signed. Required for a
+    /// `spiffe://` match when there is more than one issuer, since SPIFFE IDs
+    /// carry no issuer of their own.
+    #[serde(default)]
+    pub issuer: Option<String>,
+}
+
+/// How a [`ComputeRuleConfig`] matches workload ids: exactly one of
+/// [`exact`](Self::exact) and [`prefix`](Self::prefix).
+#[derive(Debug, Deserialize, Serialize, PartialEq, Default)]
+#[serde(rename_all = "kebab-case", deny_unknown_fields)]
+pub struct ActorMatchConfig {
+    /// Exactly this id.
+    #[serde(default)]
+    pub exact: Option<String>,
+    /// This id or one under it, by path segment: `spiffe://prod.example/ns/etl`
+    /// covers `spiffe://prod.example/ns/etl/sa/spark` but not
+    /// `spiffe://prod.example/ns/etl-test/…`. A prefix ending in `/`, `#` or `:`
+    /// covers anything after it.
+    #[serde(default)]
+    pub prefix: Option<String>,
+}
+
+/// An [`ActorIssuerConfig`] with every value resolved.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedActorIssuer {
+    pub issuer: String,
+    pub jwks_url: String,
+    pub audiences: Vec<String>,
+}
+
+/// [`TrustedComputeConfig`] with every value resolved, as the authenticator is
+/// built from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedTrustedCompute {
+    pub issuers: Vec<ResolvedActorIssuer>,
+    pub max_lifetime: std::time::Duration,
+    pub rules: olai_auth::TrustedCompute,
+}
+
+/// The default [`TrustedComputeConfig::max_lifetime_secs`].
+const DEFAULT_ACTOR_MAX_LIFETIME_SECS: u64 = 3600;
+
+impl TrustedComputeConfig {
+    /// Resolve every value. `user_issuer` and `user_audiences` are the resolved
+    /// [`OlaiAuthConfig::issuer`] and [`OlaiAuthConfig::audiences`].
+    ///
+    /// Fails when there is no issuer, an issuer is unresolved, repeated or the
+    /// users' own, a compute id is empty or repeated, a rule names an issuer that
+    /// isn't configured, or a `spiffe://` rule has no issuer while several are
+    /// configured.
+    pub(crate) fn resolve(
+        &self,
+        user_issuer: &str,
+        user_audiences: &[String],
+    ) -> Result<ResolvedTrustedCompute, String> {
+        let required = |what: &str, v: &ConfigValue| {
+            v.value().filter(|v| !v.is_empty()).ok_or_else(|| {
+                format!("`auth.olai.trusted-compute.issuers[].{what}` could not be resolved")
+            })
+        };
+        if self.issuers.is_empty() {
+            return Err("`auth.olai.trusted-compute` needs at least one issuer".into());
+        }
+        let mut issuers: Vec<ResolvedActorIssuer> = Vec::with_capacity(self.issuers.len());
+        for config in &self.issuers {
+            let issuer = required("issuer", &config.issuer)?;
+            if issuer == user_issuer {
+                return Err(format!(
+                    "`auth.olai.trusted-compute` issuer `{issuer}` is the users' issuer: \
+                     workload tokens need an issuer of their own"
+                ));
+            }
+            if issuers.iter().any(|i| i.issuer == issuer) {
+                return Err(format!(
+                    "`auth.olai.trusted-compute` lists issuer `{issuer}` twice"
+                ));
+            }
+            let mut audiences = config
+                .audiences
+                .iter()
+                .map(|a| required("audiences", a))
+                .collect::<Result<Vec<_>, _>>()?;
+            if audiences.is_empty() {
+                audiences = user_audiences.to_vec();
+            }
+            issuers.push(ResolvedActorIssuer {
+                jwks_url: required("jwks-url", &config.jwks_url)?,
+                issuer,
+                audiences,
+            });
+        }
+        let mut rules = olai_auth::TrustedCompute::new();
+        let mut ids = std::collections::BTreeSet::new();
+        for rule in &self.compute {
+            if rule.id.is_empty() || !ids.insert(rule.id.as_str()) {
+                return Err(format!(
+                    "`auth.olai.trusted-compute.compute` ids must be non-empty and unique: `{}`",
+                    rule.id
+                ));
+            }
+            let (matcher, pattern) = match (&rule.matcher.exact, &rule.matcher.prefix) {
+                (Some(id), None) if !id.is_empty() => {
+                    (olai_auth::ActorMatch::Exact(id.clone()), id)
+                }
+                (None, Some(id)) if !id.is_empty() => {
+                    (olai_auth::ActorMatch::Prefix(id.clone()), id)
+                }
+                _ => {
+                    return Err(format!(
+                        "`auth.olai.trusted-compute.compute` `{}` needs a non-empty `match` \
+                         of either `exact` or `prefix`",
+                        rule.id
+                    ));
+                }
+            };
+            let mut compiled = olai_auth::ComputeRule::new(&rule.id, matcher);
+            match &rule.issuer {
+                Some(issuer) if !issuers.iter().any(|i| i.issuer == *issuer) => {
+                    return Err(format!(
+                        "`auth.olai.trusted-compute.compute` `{}` names issuer `{issuer}`, \
+                         which is not in `issuers`",
+                        rule.id
+                    ));
+                }
+                Some(issuer) => compiled = compiled.with_issuer(issuer),
+                None if pattern.starts_with("spiffe://") && issuers.len() > 1 => {
+                    return Err(format!(
+                        "`auth.olai.trusted-compute.compute` `{}` matches SPIFFE IDs and \
+                         needs an `issuer`: any of the issuers could vouch for them",
+                        rule.id
+                    ));
+                }
+                None => {}
+            }
+            rules = rules.with(compiled);
+        }
+        let max_lifetime = std::time::Duration::from_secs(
+            self.max_lifetime_secs
+                .unwrap_or(DEFAULT_ACTOR_MAX_LIFETIME_SECS),
+        );
+        Ok(ResolvedTrustedCompute {
+            issuers,
+            max_lifetime,
+            rules,
+        })
+    }
 }
 
 /// [`OlaiAuthConfig`] with every value resolved, as the authenticator is built from.
@@ -805,6 +1036,7 @@ pub struct ResolvedOlaiAuth {
     pub database_url: String,
     pub resource_metadata_url: Option<String>,
     pub resource: Option<String>,
+    pub trusted_compute: Option<ResolvedTrustedCompute>,
 }
 
 impl OlaiAuthConfig {
@@ -812,7 +1044,8 @@ impl OlaiAuthConfig {
     /// Postgres URL.
     ///
     /// Fails on an unresolved or empty issuer, JWKS URL or audience, no audience
-    /// at all, or no identity database.
+    /// at all, no identity database, or an invalid
+    /// [`trusted_compute`](Self::trusted_compute).
     pub fn resolve(&self, backend: &Backend) -> Result<ResolvedOlaiAuth, String> {
         let required = |what: &str, v: &ConfigValue| {
             v.value()
@@ -839,8 +1072,14 @@ impl OlaiAuthConfig {
                 );
             }
         };
+        let issuer = required("issuer", &self.issuer)?;
+        let trusted_compute = self
+            .trusted_compute
+            .as_ref()
+            .map(|config| config.resolve(&issuer, &audiences))
+            .transpose()?;
         Ok(ResolvedOlaiAuth {
-            issuer: required("issuer", &self.issuer)?,
+            issuer,
             jwks_url: required("jwks-url", &self.jwks_url)?,
             audiences,
             accept_session_tokens: self.accept_session_tokens,
@@ -853,6 +1092,7 @@ impl OlaiAuthConfig {
             database_url,
             resource_metadata_url: self.resource_metadata_url.clone(),
             resource: self.resource.clone(),
+            trusted_compute,
         })
     }
 }
@@ -1218,6 +1458,132 @@ mod tests {
              audiences: [https://uc.example.com]\n{extra}"
         ))
         .unwrap()
+    }
+
+    fn trusted_compute(yaml: &str) -> Result<ResolvedTrustedCompute, String> {
+        let config: TrustedComputeConfig = serde_yml::from_str(yaml).unwrap();
+        config.resolve(
+            "https://auth.example.com/neondb/auth",
+            &["https://uc.example.com".into()],
+        )
+    }
+
+    const EKS: &str =
+        "{ issuer: https://oidc.eks.example.com, jwks-url: https://oidc.eks.example.com/keys }";
+    const SPIRE: &str = "{ issuer: https://spire.example.com, jwks-url: https://spire.example.com/keys, audiences: [uc] }";
+
+    #[test]
+    fn trusted_compute_resolves() {
+        let config = olai_auth_yaml(&format!(
+            "  database-url: postgres://localhost/neondb\n  trusted-compute:\n    \
+             max-lifetime-secs: 600\n    issuers: [{EKS}, {SPIRE}]\n    compute:\n      \
+             - {{ id: spark, match: {{ prefix: \"https://oidc.eks.example.com#system:serviceaccount:etl:\" }} }}\n      \
+             - {{ id: nightly, match: {{ exact: \"spiffe://prod.example/nightly\" }}, issuer: https://spire.example.com }}\n"
+        ));
+        let resolved = config.olai_auth(&Backend::default()).unwrap();
+        let trusted = resolved.trusted_compute.unwrap();
+        assert_eq!(trusted.max_lifetime, std::time::Duration::from_secs(600));
+        assert_eq!(trusted.issuers.len(), 2);
+        // The users' audiences unless the issuer names its own.
+        assert_eq!(trusted.issuers[0].audiences, ["https://uc.example.com"]);
+        assert_eq!(trusted.issuers[1].audiences, ["uc"]);
+        let ids: Vec<&str> = trusted.rules.rules().iter().map(|r| r.compute()).collect();
+        assert_eq!(ids, ["spark", "nightly"]);
+
+        let resolve = |id: &str, issuer: &str| {
+            trusted
+                .rules
+                .resolve(olai_auth::ActorIdentity::new(
+                    id,
+                    issuer,
+                    olai_auth::ActorMethod::Jwt,
+                ))
+                .compute
+        };
+        assert_eq!(
+            resolve(
+                "https://oidc.eks.example.com#system:serviceaccount:etl:spark",
+                "https://oidc.eks.example.com"
+            )
+            .as_deref(),
+            Some("spark")
+        );
+        assert_eq!(
+            resolve("spiffe://prod.example/nightly", "https://spire.example.com").as_deref(),
+            Some("nightly")
+        );
+        // Another issuer can't vouch for the pinned SPIFFE ID.
+        assert_eq!(
+            resolve(
+                "spiffe://prod.example/nightly",
+                "https://oidc.eks.example.com"
+            ),
+            None
+        );
+
+        let without = olai_auth_yaml("  database-url: postgres://localhost/neondb\n");
+        assert_eq!(
+            without
+                .olai_auth(&Backend::default())
+                .unwrap()
+                .trusted_compute,
+            None
+        );
+    }
+
+    #[test]
+    fn trusted_compute_defaults() {
+        let trusted = trusted_compute(&format!("issuers: [{EKS}]\n")).unwrap();
+        assert_eq!(trusted.max_lifetime, std::time::Duration::from_secs(3600));
+        assert!(trusted.rules.rules().is_empty());
+    }
+
+    #[rstest::rstest]
+    #[case::no_issuer("compute: []\n", "at least one issuer")]
+    #[case::users_issuer(
+        "issuers: [{ issuer: https://auth.example.com/neondb/auth, jwks-url: k }]\n",
+        "the users' issuer"
+    )]
+    #[case::repeated_issuer(&format!("issuers: [{EKS}, {EKS}]\n"), "twice")]
+    #[case::unresolved(
+        "issuers: [{ issuer: { env: UC_TEST_UNSET_ISSUER }, jwks-url: k }]\n",
+        "could not be resolved"
+    )]
+    #[case::repeated_id(
+        &format!("issuers: [{EKS}]\ncompute: [{{ id: a, match: {{ exact: x }} }}, {{ id: a, match: {{ exact: y }} }}]\n"),
+        "unique"
+    )]
+    #[case::no_match(
+        &format!("issuers: [{EKS}]\ncompute: [{{ id: a, match: {{}} }}]\n"),
+        "either `exact` or `prefix`"
+    )]
+    #[case::both_matches(
+        &format!("issuers: [{EKS}]\ncompute: [{{ id: a, match: {{ exact: x, prefix: y }} }}]\n"),
+        "either `exact` or `prefix`"
+    )]
+    #[case::empty_match(
+        &format!("issuers: [{EKS}]\ncompute: [{{ id: a, match: {{ prefix: '' }} }}]\n"),
+        "either `exact` or `prefix`"
+    )]
+    #[case::unknown_issuer(
+        &format!("issuers: [{EKS}]\ncompute: [{{ id: a, match: {{ exact: x }}, issuer: https://evil.example.com }}]\n"),
+        "not in `issuers`"
+    )]
+    #[case::unpinned_spiffe(
+        &format!("issuers: [{EKS}, {SPIRE}]\ncompute: [{{ id: a, match: {{ prefix: spiffe://prod.example/ns }} }}]\n"),
+        "needs an `issuer`"
+    )]
+    fn trusted_compute_rejects(#[case] yaml: &str, #[case] error: &str) {
+        let err = trusted_compute(yaml).unwrap_err();
+        assert!(err.contains(error), "{err}");
+    }
+
+    #[test]
+    fn a_single_issuer_may_vouch_for_spiffe_ids() {
+        let trusted = trusted_compute(&format!(
+            "issuers: [{SPIRE}]\ncompute: [{{ id: a, match: {{ prefix: spiffe://prod.example/ns }} }}]\n"
+        ));
+        assert!(trusted.is_ok(), "{trusted:?}");
     }
 
     #[test]

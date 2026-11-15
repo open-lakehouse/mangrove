@@ -195,6 +195,7 @@ mod tests {
             auth_method: olai_auth::AuthMethod::Jwt,
             admin: false,
             issued_at: None,
+            actor: None,
         };
         let mut ext = Extensions::new();
         ext.insert(Principal::user("ignored"));

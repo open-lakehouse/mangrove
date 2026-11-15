@@ -149,6 +149,7 @@ async fn olai_auth_rejects_requests_without_a_valid_token() {
             database_url: Some(ConfigValue::Value("postgres://127.0.0.1:1/neondb".into())),
             resource_metadata_url: None,
             resource: Some("https://uc.example.com".into()),
+            trusted_compute: None,
         }),
         ..Default::default()
     };

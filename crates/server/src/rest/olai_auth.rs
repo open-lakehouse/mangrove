@@ -8,13 +8,18 @@
 //!
 //! Whether a user is an admin or banned comes from Neon Auth's `user` table
 //! ([`PgNeonUserStatus`]), never from token claims.
+//!
+//! With `auth.olai.trusted-compute`, a request may also carry the workload token
+//! of the compute it runs on (`X-Olai-Actor-Token`), which becomes the
+//! principal's [`actor`](olai_auth::Principal::actor). See
+//! [`TrustedComputeConfig`](crate::config::TrustedComputeConfig).
 
 use std::time::Duration;
 
 use axum::Router;
 use olai_auth::{
-    ApiKeyStore, Authenticator, BoxError, HttpKeySource, JwtVerifier, KeySource, PgApiKeyStore,
-    ProtectedResourceMetadata, UserStatus, UserStatusStore, async_trait, auth_layer,
+    ApiKeyStore, Authenticator, BoxError, HttpKeySource, JwtActorVerifier, JwtVerifier, KeySource,
+    PgApiKeyStore, ProtectedResourceMetadata, UserStatus, UserStatusStore, async_trait, auth_layer,
 };
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
@@ -48,6 +53,7 @@ pub(crate) fn layer(router: Router, config: &ResolvedOlaiAuth) -> Result<Router,
     let authenticator = build_authenticator(
         config,
         HttpKeySource::new(&config.jwks_url),
+        |url: &str| HttpKeySource::new(url),
         PgNeonUserStatus::new(pool, &config.users_schema),
         api_keys,
     )?;
@@ -76,14 +82,20 @@ pub(crate) fn with_authenticator(
 /// [`accept_session_tokens`](ResolvedOlaiAuth::accept_session_tokens), Neon Auth
 /// session tokens are accepted too: their `iss` and `aud` are both the origin of
 /// the issuer URL.
-pub(crate) fn build_authenticator<K>(
+///
+/// With [`trusted_compute`](ResolvedOlaiAuth::trusted_compute), workload tokens
+/// of its issuers are accepted as actor credentials, with keys from
+/// `actor_keys(jwks_url)`, and its rules decide which actors are trusted compute.
+pub(crate) fn build_authenticator<K, A>(
     config: &ResolvedOlaiAuth,
     keys: K,
+    actor_keys: impl Fn(&str) -> A,
     user_status: impl UserStatusStore,
     api_keys: Option<impl ApiKeyStore>,
 ) -> Result<Authenticator, String>
 where
     K: KeySource + Clone,
+    A: KeySource,
 {
     let mut access = JwtVerifier::new(&config.issuer, keys.clone());
     for audience in &config.audiences {
@@ -107,6 +119,20 @@ where
     }
     if let Some(url) = &config.resource_metadata_url {
         builder = builder.resource_metadata_url(url);
+    }
+    if let Some(trusted) = &config.trusted_compute {
+        let verifiers = trusted.issuers.iter().map(|issuer| {
+            issuer.audiences.iter().fold(
+                JwtVerifier::new(&issuer.issuer, actor_keys(&issuer.jwks_url)),
+                |verifier, audience| verifier.with_audience(audience),
+            )
+        });
+        let actors = JwtActorVerifier::new(verifiers)
+            .map_err(|e| format!("auth.olai.trusted-compute: {e}"))?
+            .with_max_lifetime(trusted.max_lifetime);
+        builder = builder
+            .actor_verifier(actors)
+            .trusted_compute(trusted.rules.clone());
     }
     builder.build().map_err(|e| format!("auth.olai: {e}"))
 }
@@ -324,23 +350,75 @@ mod router_tests {
             database_url: "unused".into(),
             resource_metadata_url: Some(format!("{AUDIENCE}/.well-known/oauth-protected-resource")),
             resource: Some(AUDIENCE.into()),
+            trusted_compute: None,
+        }
+    }
+
+    /// The issuer of the workloads' tokens, and the one trusted compute it covers.
+    const WORKLOAD_ISSUER: &str = "https://oidc.cluster.example.com";
+    const SPARK: &str = "system:serviceaccount:etl:spark";
+
+    fn workload_key() -> SigningKey {
+        SigningKey::from_bytes(&[9; 32])
+    }
+
+    fn workload_keys(_jwks_url: &str) -> PushKeySource {
+        let keys = PushKeySource::new();
+        let jwk = json!({
+            "kty": "OKP", "crv": "Ed25519", "alg": "EdDSA", "kid": "k1",
+            "x": URL_SAFE_NO_PAD.encode(workload_key().verifying_key().as_bytes()),
+        });
+        keys.set_jwks(json!({ "keys": [jwk] }).to_string().as_bytes())
+            .unwrap();
+        keys
+    }
+
+    fn workload_token(sub: &str) -> String {
+        sign(&claims(WORKLOAD_ISSUER, AUDIENCE, sub), &workload_key())
+    }
+
+    fn trusting_spark() -> ResolvedOlaiAuth {
+        let yaml = format!(
+            "issuers: [{{ issuer: {WORKLOAD_ISSUER}, jwks-url: unused }}]\n\
+             compute: [{{ id: spark, match: {{ exact: \"{WORKLOAD_ISSUER}#{SPARK}\" }} }}]\n"
+        );
+        let trusted: crate::config::TrustedComputeConfig = serde_yml::from_str(&yaml).unwrap();
+        ResolvedOlaiAuth {
+            trusted_compute: Some(trusted.resolve(ISSUER, &[AUDIENCE.into()]).unwrap()),
+            ..config(false)
         }
     }
 
     fn app(policy: Arc<Recording>, accept_session_tokens: bool) -> Router {
+        app_with(policy, config(accept_session_tokens))
+    }
+
+    fn app_with(policy: Arc<Recording>, config: ResolvedOlaiAuth) -> Router {
         let encryptor =
             EnvelopeEncryptor::local(LocalKeyProvider::single("test", vec![0x42; 32]).unwrap());
         let store = Arc::new(InMemoryResourceStore::new(encryptor));
         let handler = ServerHandler::try_new_tokio(policy, store).unwrap();
-        let config = config(accept_session_tokens);
-        let authenticator = build_authenticator(&config, keys(), Users, Some(Keys)).unwrap();
+        let authenticator =
+            build_authenticator(&config, keys(), workload_keys, Users, Some(Keys)).unwrap();
         with_authenticator(build_rest_router(handler), &config, authenticator)
     }
 
     async fn get(app: &Router, uri: &str, token: Option<&str>) -> axum::response::Response {
+        get_from(app, uri, token, None).await
+    }
+
+    async fn get_from(
+        app: &Router,
+        uri: &str,
+        token: Option<&str>,
+        actor: Option<&str>,
+    ) -> axum::response::Response {
         let mut request = Request::builder().uri(uri);
         if let Some(token) = token {
             request = request.header(header::AUTHORIZATION, format!("Bearer {token}"));
+        }
+        if let Some(actor) = actor {
+            request = request.header(olai_auth::ACTOR_TOKEN_HEADER, actor);
         }
         app.clone()
             .oneshot(request.body(Body::empty()).unwrap())
@@ -451,5 +529,68 @@ mod router_tests {
         )
         .await;
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn a_workload_token_names_the_compute() {
+        let policy = Arc::new(Recording::default());
+        let app = app_with(policy.clone(), trusting_spark());
+        let user = token(claims(ISSUER, AUDIENCE, USER));
+
+        for (workload, trusted) in [(SPARK, true), ("system:serviceaccount:dev:notebook", false)] {
+            let response =
+                get_from(&app, CATALOG, Some(&user), Some(&workload_token(workload))).await;
+            assert_eq!(response.status(), StatusCode::NOT_FOUND, "{workload}");
+            let seen = policy.0.lock().unwrap().pop().unwrap().unwrap();
+            assert_eq!(seen.subject(), USER);
+            let actor = seen.actor.as_ref().expect("an actor");
+            assert_eq!(actor.id, format!("{WORKLOAD_ISSUER}#{workload}"));
+            assert_eq!(seen.is_trusted_compute(), trusted, "{workload}");
+        }
+    }
+
+    #[tokio::test]
+    async fn invalid_workload_tokens_are_401() {
+        let policy = Arc::new(Recording::default());
+        let app = app_with(policy.clone(), trusting_spark());
+        let user = token(claims(ISSUER, AUDIENCE, USER));
+        let mut long_lived = claims(WORKLOAD_ISSUER, AUDIENCE, SPARK);
+        long_lived["exp"] = json!(now() + 7200);
+        for actor in [
+            "garbage".to_string(),
+            // A user's token is not a workload's.
+            user.clone(),
+            sign(&claims(WORKLOAD_ISSUER, AUDIENCE, SPARK), &signing_key()),
+            sign(
+                &claims(WORKLOAD_ISSUER, "https://other.example.com", SPARK),
+                &workload_key(),
+            ),
+            sign(&long_lived, &workload_key()),
+        ] {
+            let response = get_from(&app, CATALOG, Some(&user), Some(&actor)).await;
+            assert_eq!(response.status(), StatusCode::UNAUTHORIZED, "{actor}");
+            let challenge = response.headers()[header::WWW_AUTHENTICATE]
+                .to_str()
+                .unwrap();
+            assert!(
+                challenge.contains("invalid actor credential"),
+                "{challenge}"
+            );
+        }
+        // Nor does a workload token stand in for the user.
+        let response = get_from(&app, CATALOG, None, Some(&workload_token(SPARK))).await;
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+        assert!(policy.0.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn without_trusted_compute_workload_tokens_are_ignored() {
+        let policy = Arc::new(Recording::default());
+        let app = app(policy.clone(), false);
+        let user = token(claims(ISSUER, AUDIENCE, USER));
+        let response = get_from(&app, CATALOG, Some(&user), Some("garbage")).await;
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let seen = policy.0.lock().unwrap().pop().unwrap().unwrap();
+        assert_eq!(seen.actor, None);
     }
 }

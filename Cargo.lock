@@ -3174,9 +3174,9 @@ dependencies = [
 
 [[package]]
 name = "olai-auth"
-version = "0.0.3"
+version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d30d932ac68893410eb2f4d5b461af182250956429d9555c1442317fa74e7a8"
+checksum = "e85129d49df873aafa875e897480292398ead10e9736d133bab2b05e19e2c2bb"
 dependencies = [
  "async-trait",
  "axum",
