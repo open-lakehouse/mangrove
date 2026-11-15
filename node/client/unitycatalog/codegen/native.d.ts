@@ -123,6 +123,8 @@ export declare class NapiUnityCatalogClient {
   listFunctions(catalogName: string, schemaName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
   listFunctionsStream(catalogName: string, schemaName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
   createFunction(functionInfo: Buffer): Promise<Buffer>
+  getGrants(securableType: string, fullName: string, principal?: string | undefined | null, maxResults?: number | undefined | null, pageToken?: string | undefined | null): Promise<Buffer>
+  updateGrants(securableType: string, fullName: string): Promise<Buffer>
   listModelVersions(fullName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): Promise<Array<Buffer>>
   listModelVersionsStream(fullName: string, maxResults?: number | undefined | null, includeBrowse?: boolean | undefined | null): ReadableStream<Buffer>
   createModelVersion(modelName: string, catalogName: string, schemaName: string, source: string, runId?: string | undefined | null, comment?: string | undefined | null): Promise<Buffer>
