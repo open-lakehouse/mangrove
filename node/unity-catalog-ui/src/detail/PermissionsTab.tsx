@@ -7,11 +7,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Label,
 } from "@open-lakehouse/ui-kit";
 import {
   displayPrivilege,
-  GRANTABLE_PRIVILEGES,
   type GrantAssignment,
   type GrantSecurableType,
   normalizePrivilege,
@@ -23,12 +21,16 @@ import {
   useUpdateGrants,
 } from "@open-lakehouse/unity-catalog-client/react";
 import { Plus, X } from "lucide-react";
-import { type FormEvent, useId, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { SectionLabel } from "../SectionLabel.js";
 import { DetailStates } from "./DetailStates.js";
-import { PrincipalInput } from "./PrincipalInput.js";
+import {
+  GrantForm,
+  type GrantFormSubmission,
+  type GrantFormValue,
+} from "./GrantForm.js";
 
 /** What the grants API calls each securable type, for messages. */
 const NOUN: Record<GrantSecurableType, string> = {
@@ -233,39 +235,25 @@ function GrantDialog({
   onClose: () => void;
 }) {
   const update = useUpdateGrants();
-  const principalId = useId();
-  const [principal, setPrincipal] = useState("");
-  const [selected, setSelected] = useState<string[]>([]);
+  const [value, setValue] = useState<GrantFormValue>({
+    principal: "",
+    privileges: [],
+  });
   const [error, setError] = useState<string | null>(null);
-  const privileges = GRANTABLE_PRIVILEGES[securableType];
 
-  const canSubmit =
-    principal.trim().length > 0 && selected.length > 0 && !update.isPending;
-
-  function toggle(privilege: string, on: boolean) {
-    setSelected((current) =>
-      on ? [...current, privilege] : current.filter((p) => p !== privilege),
-    );
-  }
-
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!canSubmit) return;
-    const name = principal.trim();
-    // Keep the menu's order, whatever order they were ticked in.
-    const add = privileges.filter((p) => selected.includes(p));
+  function submit({ principal, add }: GrantFormSubmission) {
     setError(null);
     update.mutate(
       {
         params: {
           path: { securable_type: securableType, full_name: fullName },
         },
-        body: { changes: [{ principal: name, add }] },
+        body: { changes: [{ principal, add }] },
       },
       {
         onSuccess: () => {
           toast.success(
-            `Granted ${add.map(displayPrivilege).join(", ")} to ${name}`,
+            `Granted ${add.map(displayPrivilege).join(", ")} to ${principal}`,
           );
           onClose();
         },
@@ -277,61 +265,33 @@ function GrantDialog({
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
-        <form onSubmit={submit} className="space-y-4">
-          <DialogHeader>
-            <DialogTitle>Grant privileges</DialogTitle>
-            <DialogDescription>
-              On {NOUN[securableType]}{" "}
-              <span className="font-mono">{fullName}</span>
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-1.5">
-            <Label htmlFor={principalId}>Principal</Label>
-            <PrincipalInput
-              id={principalId}
-              value={principal}
-              onChange={setPrincipal}
-              disabled={update.isPending}
-            />
-          </div>
-
-          <fieldset className="space-y-1.5">
-            <legend className="mb-1.5 text-sm font-medium">Privileges</legend>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-              {privileges.map((privilege) => (
-                <label
-                  key={privilege}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    className="accent-primary"
-                    checked={selected.includes(privilege)}
-                    disabled={update.isPending}
-                    onChange={(e) => toggle(privilege, e.target.checked)}
-                  />
-                  {displayPrivilege(privilege)}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
+        <GrantForm
+          securableType={securableType}
+          value={value}
+          onChange={setValue}
+          onSubmit={submit}
+          pending={update.isPending}
+          error={error}
+          header={
+            <DialogHeader>
+              <DialogTitle>Grant privileges</DialogTitle>
+              <DialogDescription>
+                On {NOUN[securableType]}{" "}
+                <span className="font-mono">{fullName}</span>
+              </DialogDescription>
+            </DialogHeader>
+          }
+          footer={({ canSubmit, pending }) => (
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!canSubmit}>
+                {pending ? "Granting…" : "Grant"}
+              </Button>
+            </DialogFooter>
           )}
-
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={!canSubmit}>
-              {update.isPending ? "Granting…" : "Grant"}
-            </Button>
-          </DialogFooter>
-        </form>
+        />
       </DialogContent>
     </Dialog>
   );
