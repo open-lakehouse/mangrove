@@ -26,6 +26,10 @@ export { CatalogExplorer } from "./CatalogExplorer.js";
 // EnvironmentDetail renders entity metadata; the editor's file browser reuses
 // the tree row + list-state primitives.
 export { Meta, MetaGrid } from "./detail/Meta.js";
+// The grants view of one securable, for hosts that show securables elsewhere
+// (e.g. a storage admin page). The principal field searches the host's
+// `identity` directory when there is one.
+export { PermissionsTab } from "./detail/PermissionsTab.js";
 // Dialog orchestration the environment manager mounts around catalog actions.
 export { CatalogDialogsProvider } from "./dialogs.js";
 export { ExternalDataPage } from "./ExternalDataPage.js";

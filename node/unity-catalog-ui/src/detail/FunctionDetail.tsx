@@ -2,13 +2,14 @@ import { useFunctionDetail } from "@open-lakehouse/unity-catalog-client/react";
 
 import { DetailStates } from "./DetailStates.js";
 import { Meta, MetaGrid } from "./Meta.js";
+import { OverviewTabs } from "./OverviewTabs.js";
 
 export function FunctionDetail({ fullName }: { fullName: string }) {
   const { data: fn, isLoading, error } = useFunctionDetail(fullName);
   if (!fn) return <DetailStates isLoading={isLoading} error={error} />;
 
   return (
-    <>
+    <OverviewTabs securableType="function" fullName={fullName}>
       <MetaGrid>
         <Meta label="Owner" value={fn.owner} />
         <Meta label="Return type" value={fn.full_data_type ?? fn.data_type} />
@@ -26,6 +27,6 @@ export function FunctionDetail({ fullName }: { fullName: string }) {
           </pre>
         </div>
       )}
-    </>
+    </OverviewTabs>
   );
 }

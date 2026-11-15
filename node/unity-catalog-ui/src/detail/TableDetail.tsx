@@ -13,10 +13,16 @@ import { DeltaLogTab } from "./DeltaLogTab.js";
 import { DetailStates } from "./DetailStates.js";
 import { FormatIcon } from "./FormatIcon.js";
 import { formatTimestamp, Meta, MetaGrid } from "./Meta.js";
+import { PermissionsTab } from "./PermissionsTab.js";
 import { TablePreview, useTablePreviewVisible } from "./TablePreview.js";
 import { TypePill } from "./TypePill.js";
 
-type TableView = "overview" | "details" | "preview" | "delta-log";
+type TableView =
+  | "overview"
+  | "details"
+  | "preview"
+  | "delta-log"
+  | "permissions";
 
 export function TableDetail({ fullName }: { fullName: string }) {
   const { data: table, isLoading, error } = useTableDetail(fullName);
@@ -49,6 +55,7 @@ export function TableDetail({ fullName }: { fullName: string }) {
         <TabsTrigger value="details">Details</TabsTrigger>
         {showPreview && <TabsTrigger value="preview">Preview</TabsTrigger>}
         {showLog && <TabsTrigger value="delta-log">Delta log</TabsTrigger>}
+        <TabsTrigger value="permissions">Permissions</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview" className="space-y-6">
@@ -165,6 +172,10 @@ export function TableDetail({ fullName }: { fullName: string }) {
           />
         </TabsContent>
       )}
+
+      <TabsContent value="permissions">
+        <PermissionsTab securableType="table" fullName={fullName} />
+      </TabsContent>
     </Tabs>
   );
 }
