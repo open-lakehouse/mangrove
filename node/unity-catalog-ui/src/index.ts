@@ -1,5 +1,6 @@
-// Public surface of the Unity Catalog PRESENTATIONAL package — the ONLY entry
-// point other code may import from. Everything else (tree internals, detail
+// Public surface of the Unity Catalog PRESENTATIONAL package — the main entry
+// point other code may import from (the other is ./grants, the grant fields
+// alone, for single-form hosts). Everything else (tree internals, detail
 // panes, dialog wiring, selection, ExpansionContext, the *EntityDialog and
 // storage dialogs, the forms renderer) is package-internal; the `exports` map
 // reaches only this barrel.

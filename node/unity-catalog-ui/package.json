@@ -26,6 +26,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./grants": {
+      "source": "./src/grants.ts",
+      "types": "./dist/grants.d.ts",
+      "import": "./dist/grants.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
