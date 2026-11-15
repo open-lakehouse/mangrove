@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-client"
-version = "0.0.12"
+version = "0.0.13"
 description = "Async Rust client for the Unity Catalog REST API."
 edition.workspace = true
 license.workspace = true
@@ -24,7 +24,7 @@ unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api",
 
 # Handler traits the clients implement (feature `handlers`); resources follow the
 # client's own resource features.
-unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", version = "0.0.5", default-features = false, optional = true }
+unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", version = "0.0.6", default-features = false, optional = true }
 async-trait = { workspace = true, optional = true }
 
 # Generated request builders wrap enum query params in `buffa::EnumValue::Known`.
