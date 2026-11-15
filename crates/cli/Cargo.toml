@@ -36,5 +36,26 @@ console = "0.15"
 crossterm = { version = "0.28", features = ["event-stream"] }
 futures = "0.3"
 ratatui = "0.29"
+# `uc mcp serve`: the official Rust MCP SDK, server role over stdio. Tool input
+# schemas are written by hand, so no schemars-derived tools/macros.
+rmcp = { version = "3.9", default-features = false, features = ["server", "transport-io"], optional = true }
 tokio = { version = "1", features = ["full"] }
 tui-tree-widget = "0.23"
+
+[features]
+default = []
+# `uc mcp serve`: an MCP server over stdio for agents, with the grant form as
+# an A2UI surface in an MCP App (see crates/cli/src/mcp).
+mcp = ["dep:rmcp"]
+
+[dev-dependencies]
+# The in-process server the `mcp` tools are tested against, with the read-only
+# SCIM directory the principal search reads.
+axum = { workspace = true }
+rmcp = { version = "3.9", default-features = false, features = ["client", "server", "transport-async-rw"] }
+tempfile = "3.1"
+unitycatalog-server = { package = "olai-uc-server", path = "../server", version = "0.0.20", default-features = false, features = [
+  "embed",
+  "scim",
+  "sqlite",
+] }

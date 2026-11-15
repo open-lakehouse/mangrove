@@ -25,6 +25,8 @@ const UC_API_PREFIX: &str = "/api/2.1/unity-catalog";
 mod client;
 mod error;
 mod explore;
+#[cfg(feature = "mcp")]
+mod mcp;
 mod render;
 // mod test;
 
@@ -92,21 +94,30 @@ impl GlobalOpts {
     /// `DATABRICKS_TOKEN`) the client authenticates with it; otherwise it is
     /// unauthenticated (the default for a local dev server).
     fn client(&self) -> Result<UnityCatalogClient> {
-        let mut url = url::Url::parse(&self.server)
-            .map_err(|e| Error::Usage(format!("invalid server url `{}`: {e}", self.server)))?;
+        let mut url = self.server_url()?;
         let path = url.path().trim_end_matches('/');
         if !path.ends_with(UC_API_PREFIX) {
             url.set_path(&format!("{path}{UC_API_PREFIX}"));
         }
+        Ok(UnityCatalogClient::new(self.cloud(), url))
+    }
+
+    /// The `--server` URL as given.
+    fn server_url(&self) -> Result<url::Url> {
+        url::Url::parse(&self.server)
+            .map_err(|e| Error::Usage(format!("invalid server url `{}`: {e}", self.server)))
+    }
+
+    /// The HTTP transport, with the bearer token when one is set.
+    fn cloud(&self) -> olai_http::CloudClient {
         let token = self
             .token
             .clone()
             .or_else(|| std::env::var("DATABRICKS_TOKEN").ok());
-        let cloud = match token {
+        match token {
             Some(t) if !t.is_empty() => olai_http::CloudClient::new_with_token(t),
             _ => olai_http::CloudClient::new_unauthenticated(),
-        };
-        Ok(UnityCatalogClient::new(cloud, url))
+        }
     }
 }
 
@@ -129,6 +140,13 @@ enum Commands {
 
     #[clap(about = "print the machine-readable capabilities primer for agents")]
     Schema,
+
+    #[cfg(feature = "mcp")]
+    #[clap(
+        arg_required_else_help = true,
+        about = "serve Unity Catalog to agents over MCP (stdio)"
+    )]
+    Mcp(mcp::McpCommand),
 }
 
 #[derive(Parser)]
@@ -160,6 +178,8 @@ async fn run(args: Cli) -> Result<()> {
             render::print_schema(args.global_opts.output.resolve());
             Ok(())
         }
+        #[cfg(feature = "mcp")]
+        Commands::Mcp(cmd) => mcp::handle_mcp(cmd, args.global_opts).await,
     }
 }
 
