@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-client-v0.0.6...unity-catalog-client-v0.0.7) - 2026-11-15
+
+### Added
+
+- grants API and the generated authorization vocabulary (#343)
+
 ## [0.0.6](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-client-v0.0.5...unity-catalog-client-v0.0.6) - 2026-11-13
 
 ### Fixed

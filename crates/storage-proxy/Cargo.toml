@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-storage-proxy"
-version = "0.0.11"
+version = "0.0.12"
 description = "Same-origin Unity Catalog storage byte-proxy based on governed Volumes."
 categories = ["web-programming::http-server"]
 edition.workspace = true
@@ -26,9 +26,9 @@ required-features = ["bin"]
 
 [dependencies]
 # local dependencies
-unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.11", optional = true }
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.12", optional = true }
 # `ForwardedUser` for the handlers' `RequestContext` (feature `handlers`).
-unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", version = "0.0.4", default-features = false, optional = true }
+unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", version = "0.0.5", default-features = false, optional = true }
 
 # workspace dependecies in alphabetical order
 async-trait = { workspace = true }

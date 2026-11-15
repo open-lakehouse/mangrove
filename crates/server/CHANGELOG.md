@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.18](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.17...olai-uc-server-v0.0.18) - 2026-11-15
+
+### Added
+
+- [**breaking**] authorize API operations against Cedar grants (#344)
+- grants API and the generated authorization vocabulary (#343)
+
 ## [0.0.17](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.16...olai-uc-server-v0.0.17) - 2026-11-14
 
 ### Added
