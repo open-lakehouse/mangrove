@@ -97,6 +97,12 @@ Two entry points:
 - **Identity seam types:** `IdentityHost`, `PrincipalRef`, `PrincipalKind`,
   `PrincipalSearchOptions`, re-exported from `@open-lakehouse/host`: the
   principal directory a host provides as its `identity` capability.
+- **SCIM identity host:** `createScimIdentityHost({ fetch?, baseUrl? })`, an
+  `IdentityHost` over the server's read-only SCIM API
+  (`/api/2.0/preview/scim/v2`): `search` asks `Users`, `Groups` and
+  `ServicePrincipals`, `current` asks `Me` (`null` when signed out). It uses
+  the client's default transport, so it follows the host's `unity-catalog`
+  binding. The reference app mounts it with `<IdentityProvider>`.
 - **UC OpenAPI types:** `CatalogInfo`, `SchemaInfo`, `TableInfo`, `Create*`,
   `List*`, `components`, `paths`, … (re-exported from `uc-types`).
 
