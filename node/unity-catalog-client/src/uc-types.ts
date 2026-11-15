@@ -73,3 +73,9 @@ export type CreateVolumeRequestContent = Schemas["CreateVolumeRequestContent"];
 export type CreateRegisteredModel = Schemas["CreateRegisteredModel"];
 export type CreateCredentialRequest = Schemas["CreateCredentialRequest"];
 export type CreateExternalLocation = Schemas["CreateExternalLocation"];
+
+/** The privileges granted to one principal on a securable. */
+export type GrantAssignment = Schemas["GrantAssignment"];
+
+/** A change of one principal's privileges on a securable. */
+export type GrantChange = Schemas["GrantChange"];

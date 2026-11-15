@@ -17,6 +17,8 @@ export * from "./index.js";
 export { UnityCatalogProvider, useUnityCatalog } from "./uc/context.js";
 // Host-contract helpers.
 export { useOptionalEnvironmentKey } from "./uc/host.js";
+// Identity seam.
+export { IdentityProvider, useIdentityHost } from "./uc/identity.js";
 // Mutations + cache invalidators.
 export * from "./uc/mutations.js";
 // Read hooks + query helpers + list keys.

@@ -27,6 +27,21 @@ export {
   UNITY_CATALOG_MODULE_ID,
   type UnityCatalogFetchClient,
 } from "./fetch.js";
+// Grants vocabulary.
+export {
+  displayPrivilege,
+  GRANTABLE_PRIVILEGES,
+  type GrantSecurableType,
+  normalizePrivilege,
+  OWNER_PRIVILEGE,
+} from "./grants.js";
+// Identity seam types.
+export type {
+  IdentityHost,
+  PrincipalKind,
+  PrincipalRef,
+  PrincipalSearchOptions,
+} from "./identity.js";
 // Name helpers.
 export { objectFullName, tableFullName } from "./names.js";
 // Error helper.
