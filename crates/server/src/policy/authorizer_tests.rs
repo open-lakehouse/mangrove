@@ -198,7 +198,39 @@ fn user(sub: &str) -> RequestContext {
         auth_method: AuthMethod::Jwt,
         admin: false,
         issued_at: None,
+        actor: None,
     })
+}
+
+/// The compute a request comes from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Compute {
+    /// None named: a plain client.
+    None,
+    /// A workload no `trusted-compute` rule covers.
+    Untrusted,
+    /// Trusted compute.
+    Trusted,
+}
+
+/// `sub`'s request, from `compute`.
+fn user_from(sub: &str, compute: Compute) -> RequestContext {
+    let trusted = olai_auth::TrustedCompute::new().with(olai_auth::ComputeRule::new(
+        "spark-prod",
+        olai_auth::ActorMatch::Prefix("spiffe://prod.example/ns/etl".into()),
+    ));
+    let id = match compute {
+        Compute::None => return user(sub),
+        Compute::Untrusted => "spiffe://prod.example/ns/sandbox/sa/notebook",
+        Compute::Trusted => "spiffe://prod.example/ns/etl/sa/spark",
+    };
+    let mut principal = user(sub).verified_principal().unwrap().clone();
+    principal.actor = Some(trusted.resolve(olai_auth::ActorIdentity::new(
+        id,
+        "https://spire.example.com",
+        olai_auth::ActorMethod::Jwt,
+    )));
+    RequestContext::from_verified(principal)
 }
 
 fn uc(kind: &str, id: &str) -> ObjectRef {
@@ -399,7 +431,18 @@ enum Op {
 }
 
 async fn run(op: Op, h: &ServerHandler<RequestContext>, table_id: &str, who: &str) -> bool {
-    let cx = user(who);
+    run_from(op, h, table_id, who, Compute::None).await
+}
+
+/// [`run`], from `compute`.
+async fn run_from(
+    op: Op,
+    h: &ServerHandler<RequestContext>,
+    table_id: &str,
+    who: &str,
+    compute: Compute,
+) -> bool {
+    let cx = user_from(who, compute);
     let table = TableRef {
         catalog: "cat".into(),
         schema: "sch".into(),
@@ -472,7 +515,7 @@ async fn run(op: Op, h: &ServerHandler<RequestContext>, table_id: &str, who: &st
     match result {
         Ok(()) => true,
         Err(e) if e.to_lowercase().contains("not allowed") || e.contains("ermission") => false,
-        Err(e) => panic!("{op:?} as {who} failed for another reason: {e}"),
+        Err(e) => panic!("{op:?} as {who} from {compute:?} failed for another reason: {e}"),
     }
 }
 
@@ -498,6 +541,41 @@ async fn the_matrix(#[case] op: Op, #[case] allowed: &[&str]) {
             run(op, &h, &table_id, who).await,
             allowed.contains(&who),
             "{op:?} as {who}"
+        );
+    }
+}
+
+/// Trusted compute stands in for `EXTERNAL_USE_SCHEMA` and nothing else: a vend
+/// still needs the caller's own SELECT (and MODIFY to write), and a workload no
+/// rule covers changes nothing.
+#[rstest]
+#[case::vend_read_trusted(
+    Op::VendRead,
+    Compute::Trusted,
+    &["owner", "table_reader", "schema_reader", "catalog_reader", "group_reader", "writer"]
+)]
+#[case::vend_read_write_trusted(Op::VendReadWrite, Compute::Trusted, &["owner", "writer"])]
+#[case::vend_read_untrusted(Op::VendRead, Compute::Untrusted, &["writer"])]
+#[case::vend_read_write_untrusted(Op::VendReadWrite, Compute::Untrusted, &["writer"])]
+// Only vends require EXTERNAL USE, so the rest is the same from anywhere.
+#[case::get_trusted(
+    Op::Get,
+    Compute::Trusted,
+    &["owner", "table_reader", "schema_reader", "catalog_reader", "group_reader", "writer"]
+)]
+#[case::delete_trusted(Op::Delete, Compute::Trusted, &["owner"])]
+#[tokio::test]
+async fn trusted_compute_waives_external_use(
+    #[case] op: Op,
+    #[case] compute: Compute,
+    #[case] allowed: &[&str],
+) {
+    for who in SUBJECTS {
+        let (h, _, table_id) = world().await;
+        assert_eq!(
+            run_from(op, &h, &table_id, who, compute).await,
+            allowed.contains(&who),
+            "{op:?} as {who} from {compute:?}"
         );
     }
 }

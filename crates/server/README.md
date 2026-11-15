@@ -127,6 +127,68 @@ gets a 401 with an RFC 6750 challenge; a banned user gets a 403. With `resource`
 set, `/.well-known/oauth-protected-resource` is served without authentication.
 GitHub Actions OIDC tokens aren't accepted yet.
 
+### Trusted compute
+
+Unity Catalog's `EXTERNAL USE SCHEMA` and `EXTERNAL USE LOCATION` gate
+credentials for engines *outside* the platform. Compute the platform trusts to
+enforce governance on its users' behalf gets credentials without them. A request
+says which compute it runs on with a second credential, the compute's own
+workload token, next to the user's:
+
+```text
+Authorization:      Bearer <the user's token>
+X-Olai-Actor-Token: <the workload's token, aud = this server, short-lived>
+```
+
+The workload token can be a Kubernetes projected service account token, a
+SPIFFE JWT-SVID or any OIDC token of an issuer listed under
+`auth.olai.trusted-compute`. The server checks its signature against that
+issuer's JWKS, its audience (this server's `audiences` by default), its expiry
+and its lifetime (`exp - iat`). The workload is then identified by URI: a SPIFFE
+ID as it is, any other subject as `<iss>#<sub>`. It is trusted compute when a
+`compute` rule covers it.
+
+```yaml
+auth:
+  mode: olai-auth
+  olai:
+    # … issuer, jwks-url, audiences as above
+    trusted-compute:
+      max-lifetime-secs: 600                # the longest accepted exp - iat (default 3600)
+      issuers:
+        - issuer: https://oidc.eks.us-east-2.amazonaws.com/id/EXAMPLE
+          jwks-url: https://oidc.eks.us-east-2.amazonaws.com/id/EXAMPLE/keys
+          # audiences: [...]                # default: auth.olai.audiences
+      compute:
+        - id: spark-prod                    # context.actor.compute in policies
+          match: { prefix: "https://oidc.eks.us-east-2.amazonaws.com/id/EXAMPLE#system:serviceaccount:etl:" }
+        - id: nightly
+          match: { exact: "spiffe://prod.example/ns/jobs/sa/nightly" }
+          issuer: https://oidc.eks.us-east-2.amazonaws.com/id/EXAMPLE
+```
+
+- **The workload adds no privileges.** Grants are still the user's. Policies
+  see the workload as `context.actor` (`id`, `issuer`, `method`, `trusted`,
+  `compute`) and decide what it changes, typically that
+  `context.actor.trusted` stands in for `EXTERNAL_USE_SCHEMA`.
+- **Trust comes only from the workload's own token** and the server's
+  config, never from claims in the user's token. A workload issuer can't be the
+  users' issuer.
+- **An invalid workload token is a 401**, not a request without one, so a
+  misconfigured engine is noticed. A valid token no rule covers is an untrusted
+  actor: it is audited and changes nothing. A workload token alone
+  authenticates no one.
+- Prefix matches stop at path segments: `spiffe://prod.example/ns/etl` covers
+  `…/ns/etl/sa/spark`, not `…/ns/etl-test/…`. A `spiffe://` rule names its
+  `issuer` when there are several, since any of them could otherwise vouch for
+  the ID.
+- Never list compute that runs on a user's machine, such as the in-browser
+  engine: it can't enforce anything.
+
+The workload's identity is a URI whatever the method, so a later mTLS
+(X.509-SVID) handshake can prove the same SPIFFE ID without changing the
+`compute` rules or the policies.
+
 ### Authorization
 
 By default every request is allowed (`policy.kind: constant`). With the
@@ -154,7 +216,8 @@ decision point's entity loader adds what the caller holds on each, from the
 grants: `privileges` (granted on that securable, `OWNER` for its owner) and
 `inherited_privileges` (also from its ancestors). Request facts go in the
 context: `credential_operation` (`READ` / `READ_WRITE`) on every vend, `url`
-on path vends, `is_creator` on adopting a staging table. What an operation
+on path vends, `is_creator` on adopting a staging table, and `actor` when the
+request names the compute it runs on (see [Trusted compute](#trusted-compute)). What an operation
 requires is the policy's business. Anything it can't decide, and any request
 without a verified caller, is denied. The schema is published as
 `policy::CEDAR_SCHEMA_FRAGMENTS` (entities in `cedar/UnityCatalog.cedarschema`,
@@ -234,6 +297,9 @@ emits one `tracing` event at target `unitycatalog::audit` (`event =
 - `outcome`: `ok`, or `error` with an `error_code`
 - `surface`: `uc_rest` or `delta_api`
 - `principal`
+- `actor` and `compute`: the workload the request came from and, when it is
+  trusted compute, which (see [Trusted compute](#trusted-compute)); empty
+  otherwise
 - `securable`: the full name, or the path for path vends
 - `location`
 - `access`: `read` or `read_write`

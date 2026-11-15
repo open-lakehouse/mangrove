@@ -80,6 +80,17 @@ namespace UnityCatalog {
     scopes: Set<String>,
     client_id?: String,
     token_issued_at?: Long,
+    // The compute the request is made from, when it sent a workload token
+    // (`auth.olai.trusted-compute`): its id (a URI), who vouched for it, how it
+    // proved itself (`jwt`, `mtls`), whether it is trusted compute and, if so,
+    // which (the rule's id). The grants are still the principal's own.
+    actor?: {
+      id: String,
+      issuer: String,
+      method: String,
+      trusted: Bool,
+      compute?: String,
+    },
     source_ip?: ipaddr,
     request_time?: datetime,
     branch?: String,

@@ -337,6 +337,18 @@ fn short_credential_id(credentials: &StorageCredentials) -> Option<String> {
     }
 }
 
+/// The id of the compute a request is made from and, when it is trusted
+/// compute, which; empty when the request names none.
+fn actor_of(context: &RequestContext) -> (&str, &str) {
+    #[cfg(feature = "olai-auth")]
+    if let Some(actor) = context.verified_principal().and_then(|p| p.actor.as_ref()) {
+        return (actor.id.as_str(), actor.compute.as_deref().unwrap_or(""));
+    }
+    #[cfg(not(feature = "olai-auth"))]
+    let _ = context;
+    ("", "")
+}
+
 /// Emits the audit event for one vend. Never formats a secret: only the
 /// credential's kind, short id and expiry.
 fn audit_vend(
@@ -355,6 +367,7 @@ fn audit_vend(
         AccessLevel::ReadWrite => "read_write",
     };
     let policies = audit.context.decision_trail().policies();
+    let (actor, compute) = actor_of(audit.context);
     let kind = kind.unwrap_or(if location.is_local() {
         "local"
     } else {
@@ -370,6 +383,8 @@ fn audit_vend(
                 outcome = "ok",
                 surface = audit.surface.as_str(),
                 principal,
+                actor,
+                compute,
                 securable = %audit.securable,
                 location = %location.raw(),
                 access,
@@ -387,6 +402,8 @@ fn audit_vend(
                 outcome = "error",
                 surface = audit.surface.as_str(),
                 principal,
+                actor,
+                compute,
                 securable = %audit.securable,
                 location = %location.raw(),
                 access,
