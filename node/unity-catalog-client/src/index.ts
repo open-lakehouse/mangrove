@@ -44,6 +44,13 @@ export type {
 } from "./identity.js";
 // Name helpers.
 export { objectFullName, tableFullName } from "./names.js";
+// The identity seam over the server's SCIM API.
+export {
+  createScimIdentityHost,
+  SCIM_BASE_PATH,
+  type ScimIdentityHostOptions,
+  ScimRequestError,
+} from "./scim.js";
 // Error helper.
 export { parseUcError } from "./uc/errors.js";
 // Generated UC OpenAPI types (from the canonical ../../openapi/openapi.yaml via `gen:api`).

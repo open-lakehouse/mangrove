@@ -8,7 +8,9 @@ import {
   TooltipProvider,
 } from "@open-lakehouse/ui-kit";
 import {
+  createScimIdentityHost,
   createUnityCatalogClient,
+  IdentityProvider,
   UnityCatalogProvider,
 } from "@open-lakehouse/unity-catalog-client/react";
 import {
@@ -32,6 +34,11 @@ import "./globals.css";
 const ucClient = createUnityCatalogClient({
   baseUrl: `${window.location.origin}/api/2.1/unity-catalog`,
 });
+
+// The principal directory behind the Permissions tab's principal search: the
+// same server's read-only SCIM API (same origin, like the UC API). A server
+// without a `directory` lists nobody, and the field takes typed names.
+const identity = createScimIdentityHost();
 
 // The Delta-log tab (in TableDetail) is gated on hasLogQueryRunner(). This build
 // registers the dev fixture stub runner, which renders a canned reconciled-log
@@ -64,31 +71,33 @@ createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <UnityCatalogProvider client={ucClient}>
-        {/* The preview seam. This standalone build registers NO query runner, so
+        <IdentityProvider identity={identity}>
+          {/* The preview seam. This standalone build registers NO query runner, so
             the default service's runner throws and TableDetail keeps its preview
             gated off (see @open-lakehouse/query-runner). A host registers a runner
             via registerQueryRunner to light it up. */}
-        <QueryServiceProvider>
-          {/* The Delta-log seam, beside the preview seam. The stub runner above
+          <QueryServiceProvider>
+            {/* The Delta-log seam, beside the preview seam. The stub runner above
               backs it in this build; a host swaps in a real runner via
               registerLogQueryRunner (see @open-lakehouse/delta-log). */}
-          <LogQueryServiceProvider>
-            {/* The volume-files seam, backing the VolumeDetail Files tab. The
+            <LogQueryServiceProvider>
+              {/* The volume-files seam, backing the VolumeDetail Files tab. The
                 stub runner registered above serves it; the editor reads
                 files through this service. */}
-            <FilesServiceProvider>
-              {/* Single-environment app: one stable scope namespace for the UC tree. */}
-              <EnvironmentScopeProvider scopeId="uc">
-                <ThemeProvider>
-                  <TooltipProvider delayDuration={300}>
-                    <RouterProvider router={router} />
-                    <Toaster position="bottom-right" />
-                  </TooltipProvider>
-                </ThemeProvider>
-              </EnvironmentScopeProvider>
-            </FilesServiceProvider>
-          </LogQueryServiceProvider>
-        </QueryServiceProvider>
+              <FilesServiceProvider>
+                {/* Single-environment app: one stable scope namespace for the UC tree. */}
+                <EnvironmentScopeProvider scopeId="uc">
+                  <ThemeProvider>
+                    <TooltipProvider delayDuration={300}>
+                      <RouterProvider router={router} />
+                      <Toaster position="bottom-right" />
+                    </TooltipProvider>
+                  </ThemeProvider>
+                </EnvironmentScopeProvider>
+              </FilesServiceProvider>
+            </LogQueryServiceProvider>
+          </QueryServiceProvider>
+        </IdentityProvider>
       </UnityCatalogProvider>
     </QueryClientProvider>
   </StrictMode>,
