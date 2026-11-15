@@ -51,6 +51,7 @@ all-resources = [
   "credentials",
   "external_locations",
   "functions",
+  "grants",
   "model_versions",
   "policies",
   "providers",
@@ -70,6 +71,7 @@ catalogs = ["unitycatalog-common/catalogs", "unitycatalog-handlers?/catalogs"]
 credentials = ["unitycatalog-common/credentials", "unitycatalog-handlers?/credentials"]
 external_locations = ["unitycatalog-common/external_locations", "unitycatalog-handlers?/external_locations"]
 functions = ["unitycatalog-common/functions", "unitycatalog-handlers?/functions"]
+grants = ["unitycatalog-common/grants", "unitycatalog-handlers?/grants"]
 model_versions = ["unitycatalog-common/model_versions", "unitycatalog-handlers?/model_versions"]
 policies = ["unitycatalog-common/policies", "unitycatalog-handlers?/policies"]
 providers = ["unitycatalog-common/providers", "unitycatalog-handlers?/providers"]

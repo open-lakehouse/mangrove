@@ -48,7 +48,7 @@ impl EntityTagAssignmentClient {
             url.query_pairs_mut()
                 .append_pair("page_token", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -64,7 +64,7 @@ impl EntityTagAssignmentClient {
         request: &CreateEntityTagAssignmentRequest,
     ) -> Result<EntityTagAssignment> {
         let url = self.base_url.join("entity-tag-assignments")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -86,7 +86,7 @@ impl EntityTagAssignmentClient {
             encode_path_value(&request.tag_key, false)
         );
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -112,7 +112,7 @@ impl EntityTagAssignmentClient {
         body.entity_type = Default::default();
         body.entity_name = Default::default();
         body.tag_key = Default::default();
-        let response = self.client.patch(url).json(&body).send().await?;
+        let response = self.client.patch(url).json(&body).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -134,7 +134,7 @@ impl EntityTagAssignmentClient {
             encode_path_value(&request.tag_key, false)
         );
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.delete(url).send().await?;
+        let response = self.client.delete(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }

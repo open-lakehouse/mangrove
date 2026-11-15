@@ -36,7 +36,7 @@ impl TemporaryCredentialClient {
         request: &GenerateTemporaryTableCredentialsRequest,
     ) -> Result<TemporaryCredential> {
         let url = self.base_url.join("temporary-table-credentials")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -47,7 +47,8 @@ impl TemporaryCredentialClient {
     /// Generate a new set of credentials for a path.
     ///
     /// Only external storage paths (external locations and external tables) are
-    /// supported; managed tables are not. The metastore must have the
+    /// supported; managed tables are not. The server asks on the covering external
+    /// location, or on the metastore for a path none covers. The metastore must have the
     /// `external_access_enabled` flag set to true (default false). The caller must
     /// have the `EXTERNAL_USE_LOCATION` privilege on the external location
     /// (granted by its owner) and, for existing external tables, the
@@ -57,7 +58,7 @@ impl TemporaryCredentialClient {
         request: &GenerateTemporaryPathCredentialsRequest,
     ) -> Result<TemporaryCredential> {
         let url = self.base_url.join("temporary-path-credentials")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -75,7 +76,7 @@ impl TemporaryCredentialClient {
         request: &GenerateTemporaryVolumeCredentialsRequest,
     ) -> Result<TemporaryCredential> {
         let url = self.base_url.join("temporary-volume-credentials")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -93,7 +94,7 @@ impl TemporaryCredentialClient {
         request: &GenerateTemporaryModelVersionCredentialsRequest,
     ) -> Result<TemporaryCredential> {
         let url = self.base_url.join("temporary-model-version-credentials")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }

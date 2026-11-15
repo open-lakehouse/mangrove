@@ -7,6 +7,7 @@ import "gnostic/openapi/v3/annotations.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
+import "olai/trestle/v1/annotations.proto";
 import "unitycatalog/staging_tables/v1/models.proto";
 
 // Create a new staging table.
@@ -42,6 +43,14 @@ service StagingTablesService {
   // location under the parent schema/catalog managed storage root. The caller
   // must have the CREATE privilege on the parent schema.
   rpc CreateStagingTable(CreateStagingTableRequest) returns (StagingTable) {
+    option (olai.trestle.v1.authz) = {
+      securable_type: "unitycatalog.io/StagingTable"
+      securable_fields: [
+        "catalog_name",
+        "schema_name",
+        "name"
+      ]
+    };
     option (google.api.http) = {
       post: "/staging-tables"
       body: "*"

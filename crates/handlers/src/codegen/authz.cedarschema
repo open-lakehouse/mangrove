@@ -1,0 +1,684 @@
+// @generated — do not edit by hand.
+// The actions of the API: one per operation (RPC), on the entity type of the resource
+// its request acts on. The entity types are named after the resource kinds and are
+// declared alongside, in this namespace.
+namespace UnityCatalog {
+  // Lists agent skills.
+  action "ListAgentSkills" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Schema],
+    context: RequestContext,
+  };
+
+  action "CreateAgentSkill" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [AgentSkill],
+    context: RequestContext,
+  };
+
+  action "GetAgentSkill" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [AgentSkill],
+    context: RequestContext,
+  };
+
+  action "UpdateAgentSkill" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [AgentSkill],
+    context: RequestContext,
+  };
+
+  action "DeleteAgentSkill" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [AgentSkill],
+    context: RequestContext,
+  };
+
+  // Lists agents.
+  action "ListAgents" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Schema],
+    context: RequestContext,
+  };
+
+  action "CreateAgent" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Agent],
+    context: RequestContext,
+  };
+
+  action "GetAgent" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Agent],
+    context: RequestContext,
+  };
+
+  action "UpdateAgent" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Agent],
+    context: RequestContext,
+  };
+
+  action "DeleteAgent" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Agent],
+    context: RequestContext,
+  };
+
+  // List catalogs
+  action "ListCatalogs" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore],
+    context: RequestContext,
+  };
+
+  // Create a new catalog
+  action "CreateCatalog" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Catalog],
+    context: RequestContext,
+  };
+
+  // Get a catalog
+  action "GetCatalog" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Catalog],
+    context: RequestContext,
+  };
+
+  // Update a catalog
+  action "UpdateCatalog" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Catalog],
+    context: RequestContext,
+  };
+
+  // Delete a catalog
+  action "DeleteCatalog" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Catalog],
+    context: RequestContext,
+  };
+
+  action "ListCredentials" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore],
+    context: RequestContext,
+  };
+
+  action "CreateCredential" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Credential],
+    context: RequestContext,
+  };
+
+  action "GetCredential" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Credential],
+    context: RequestContext,
+  };
+
+  action "UpdateCredential" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Credential],
+    context: RequestContext,
+  };
+
+  action "DeleteCredential" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Credential],
+    context: RequestContext,
+  };
+
+  // List entity tag assignments
+  action "ListEntityTagAssignments" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // Create an entity tag assignment
+  action "CreateEntityTagAssignment" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // Get an entity tag assignment
+  action "GetEntityTagAssignment" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // Update an entity tag assignment
+  action "UpdateEntityTagAssignment" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // Delete an entity tag assignment
+  action "DeleteEntityTagAssignment" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // List external locations
+  action "ListExternalLocations" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore],
+    context: RequestContext,
+  };
+
+  // Create a new external location
+  action "CreateExternalLocation" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [ExternalLocation],
+    context: RequestContext,
+  };
+
+  // Get an external location
+  action "GetExternalLocation" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [ExternalLocation],
+    context: RequestContext,
+  };
+
+  // Update an external location
+  action "UpdateExternalLocation" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [ExternalLocation],
+    context: RequestContext,
+  };
+
+  // Delete an external location
+  action "DeleteExternalLocation" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [ExternalLocation],
+    context: RequestContext,
+  };
+
+  // List functions
+  action "ListFunctions" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Schema],
+    context: RequestContext,
+  };
+
+  // Create a function
+  action "CreateFunction" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Function],
+    context: RequestContext,
+  };
+
+  // Get a function
+  action "GetFunction" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Function],
+    context: RequestContext,
+  };
+
+  // Update a function
+  action "UpdateFunction" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Function],
+    context: RequestContext,
+  };
+
+  // Delete a function
+  action "DeleteFunction" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Function],
+    context: RequestContext,
+  };
+
+  // Gets the privileges granted on a securable. Does not include inherited ones.
+  action "GetGrants" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // Grants and revokes privileges on a securable.
+  action "UpdateGrants" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // List model versions
+  action "ListModelVersions" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [RegisteredModel],
+    context: RequestContext,
+  };
+
+  // Create a model version
+  action "CreateModelVersion" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [RegisteredModel],
+    context: RequestContext,
+  };
+
+  // Get a model version
+  action "GetModelVersion" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [ModelVersion],
+    context: RequestContext,
+  };
+
+  // Update a model version
+  action "UpdateModelVersion" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [ModelVersion],
+    context: RequestContext,
+  };
+
+  // Delete a model version
+  action "DeleteModelVersion" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [ModelVersion],
+    context: RequestContext,
+  };
+
+  // Finalize a model version
+  action "FinalizeModelVersion" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [ModelVersion],
+    context: RequestContext,
+  };
+
+  // List policies
+  action "ListPolicies" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // Create a new policy
+  action "CreatePolicy" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // Get a policy
+  action "GetPolicy" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // Update a policy
+  action "UpdatePolicy" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // Delete a policy
+  action "DeletePolicy" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // List providers.
+  action "ListProviders" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore],
+    context: RequestContext,
+  };
+
+  // Create a new provider.
+  action "CreateProvider" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Provider],
+    context: RequestContext,
+  };
+
+  // Get a provider by name.
+  action "GetProvider" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Provider],
+    context: RequestContext,
+  };
+
+  // Update a provider.
+  action "UpdateProvider" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Provider],
+    context: RequestContext,
+  };
+
+  // Delete a provider.
+  action "DeleteProvider" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Provider],
+    context: RequestContext,
+  };
+
+  // List recipients.
+  action "ListRecipients" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore],
+    context: RequestContext,
+  };
+
+  // Create a new recipient.
+  action "CreateRecipient" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Recipient],
+    context: RequestContext,
+  };
+
+  // Get a recipient by name.
+  action "GetRecipient" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Recipient],
+    context: RequestContext,
+  };
+
+  // Update a recipient.
+  action "UpdateRecipient" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Recipient],
+    context: RequestContext,
+  };
+
+  // Delete a recipient.
+  action "DeleteRecipient" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Recipient],
+    context: RequestContext,
+  };
+
+  // Rotate a recipient's token: issue a new token (and activation link) and
+  // retire the existing one.
+  action "RotateRecipientToken" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Recipient],
+    context: RequestContext,
+  };
+
+  // List registered models
+  action "ListRegisteredModels" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Schema],
+    context: RequestContext,
+  };
+
+  // Create a registered model
+  action "CreateRegisteredModel" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [RegisteredModel],
+    context: RequestContext,
+  };
+
+  // Get a registered model
+  action "GetRegisteredModel" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [RegisteredModel],
+    context: RequestContext,
+  };
+
+  // Update a registered model
+  action "UpdateRegisteredModel" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [RegisteredModel],
+    context: RequestContext,
+  };
+
+  // Delete a registered model
+  action "DeleteRegisteredModel" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [RegisteredModel],
+    context: RequestContext,
+  };
+
+  // Gets an array of schemas for a catalog in the metastore. If the caller is the metastore
+  // admin or the owner of the parent catalog, all schemas for the catalog will be retrieved.
+  // Otherwise, only schemas owned by the caller (or for which the caller has the USE_SCHEMA privilege)
+  // will be retrieved. There is no guarantee of a specific ordering of the elements in the array.
+  action "ListSchemas" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Catalog],
+    context: RequestContext,
+  };
+
+  // Creates a new schema for catalog in the Metatastore. The caller must be a metastore admin,
+  // or have the CREATE_SCHEMA privilege in the parent catalog.
+  action "CreateSchema" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Schema],
+    context: RequestContext,
+  };
+
+  // Gets the specified schema within the metastore.
+  // The caller must be a metastore admin, the owner of the schema,
+  // or a user that has the USE_SCHEMA privilege on the schema.
+  action "GetSchema" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Schema],
+    context: RequestContext,
+  };
+
+  // Updates a schema for a catalog. The caller must be the owner of the schema or a metastore admin.
+  // If the caller is a metastore admin, only the owner field can be changed in the update.
+  // If the name field must be updated, the caller must be a metastore admin or have the CREATE_SCHEMA
+  // privilege on the parent catalog.
+  action "UpdateSchema" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Schema],
+    context: RequestContext,
+  };
+
+  // Deletes the specified schema from the parent catalog. The caller must be the owner
+  // of the schema or an owner of the parent catalog.
+  action "DeleteSchema" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Schema],
+    context: RequestContext,
+  };
+
+  // List shares.
+  action "ListShares" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore],
+    context: RequestContext,
+  };
+
+  // Create a new share.
+  action "CreateShare" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Share],
+    context: RequestContext,
+  };
+
+  // Get a share by name.
+  action "GetShare" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Share],
+    context: RequestContext,
+  };
+
+  // Update a share.
+  action "UpdateShare" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Share],
+    context: RequestContext,
+  };
+
+  // Deletes a share.
+  action "DeleteShare" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Share],
+    context: RequestContext,
+  };
+
+  // Gets the permissions for a data share from the metastore.
+  action "GetPermissions" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Share],
+    context: RequestContext,
+  };
+
+  // Updates the permissions for a data share in the metastore.
+  action "UpdatePermissions" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Share],
+    context: RequestContext,
+  };
+
+  // Creates a new staging table, allocating an immutable table id and a storage
+  // location under the parent schema/catalog managed storage root. The caller
+  // must have the CREATE privilege on the parent schema.
+  action "CreateStagingTable" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [StagingTable],
+    context: RequestContext,
+  };
+
+  // Gets an array of summaries for tables for a schema and catalog within the metastore. The table summaries returned are either:
+  // - summaries for tables (within the current metastore and parent catalog and schema), when the user is a metastore admin, or:
+  // - summaries for tables and schemas (within the current metastore and parent catalog) for which the user has ownership or the
+  // SELECT privilege on the table and ownership or USE_SCHEMA privilege on the schema, provided that the user also has ownership
+  // or the USE_CATALOG privilege on the parent catalog.
+  action "ListTableSummaries" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Catalog],
+    context: RequestContext,
+  };
+
+  // Gets an array of all tables for the current metastore under the parent catalog and schema.
+  action "ListTables" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Schema],
+    context: RequestContext,
+  };
+
+  // Create a table
+  action "CreateTable" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Table],
+    context: RequestContext,
+  };
+
+  // Get a table
+  action "GetTable" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Table],
+    context: RequestContext,
+  };
+
+  // Get boolean reflecting if table exists
+  action "GetTableExists" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Table],
+    context: RequestContext,
+  };
+
+  // Delete a table
+  action "DeleteTable" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Table],
+    context: RequestContext,
+  };
+
+  // List tag policies
+  action "ListTagPolicies" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore],
+    context: RequestContext,
+  };
+
+  // Create a new tag policy
+  action "CreateTagPolicy" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [TagPolicy],
+    context: RequestContext,
+  };
+
+  // Get a tag policy
+  action "GetTagPolicy" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [TagPolicy],
+    context: RequestContext,
+  };
+
+  // Update a tag policy
+  action "UpdateTagPolicy" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [TagPolicy],
+    context: RequestContext,
+  };
+
+  // Delete a tag policy
+  action "DeleteTagPolicy" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [TagPolicy],
+    context: RequestContext,
+  };
+
+  // Generate a new set of credentials for a table.
+  action "GenerateTemporaryTableCredentials" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Table],
+    context: RequestContext,
+  };
+
+  // Generate a new set of credentials for a path.
+  action "GenerateTemporaryPathCredentials" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore, Agent, AgentSkill, Catalog, Column, Credential, ExternalLocation, Function, ModelVersion, PolicyInfo, Provider, Recipient, RegisteredModel, Schema, Share, StagingTable, Table, TagPolicy, Volume],
+    context: RequestContext,
+  };
+
+  // Generate a new set of credentials for a volume.
+  action "GenerateTemporaryVolumeCredentials" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Volume],
+    context: RequestContext,
+  };
+
+  // Generate a new set of credentials for a model version.
+  action "GenerateTemporaryModelVersionCredentials" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [ModelVersion],
+    context: RequestContext,
+  };
+
+  // Lists volumes.
+  action "ListVolumes" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Schema],
+    context: RequestContext,
+  };
+
+  action "CreateVolume" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Volume],
+    context: RequestContext,
+  };
+
+  action "GetVolume" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Volume],
+    context: RequestContext,
+  };
+
+  action "UpdateVolume" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Volume],
+    context: RequestContext,
+  };
+
+  action "DeleteVolume" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Volume],
+    context: RequestContext,
+  };
+}

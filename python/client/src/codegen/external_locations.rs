@@ -32,12 +32,9 @@ impl PyExternalLocationClient {
         include_browse: Option<bool>,
     ) -> PyUnityCatalogResult<PyExternalLocation> {
         let request = self.client.get().with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyExternalLocation::from(result))
     }
 
     /// Update an external location
@@ -90,12 +87,9 @@ impl PyExternalLocationClient {
             .with_new_name(new_name)
             .with_force(force)
             .with_skip_validation(skip_validation);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyExternalLocation::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyExternalLocation::from(result))
     }
 
     /// Delete an external location
@@ -105,12 +99,9 @@ impl PyExternalLocationClient {
     #[pyo3(signature = (force = None))]
     pub fn delete(&self, py: Python, force: Option<bool>) -> PyUnityCatalogResult<()> {
         let request = self.client.delete().with_force(force);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(result)
     }
 }
 

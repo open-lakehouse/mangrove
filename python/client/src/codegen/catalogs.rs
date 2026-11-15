@@ -31,12 +31,9 @@ impl PyCatalogClient {
     #[pyo3(signature = (include_browse = None))]
     pub fn get(&self, py: Python, include_browse: Option<bool>) -> PyUnityCatalogResult<PyCatalog> {
         let request = self.client.get().with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyCatalog::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyCatalog::from(result))
     }
 
     /// Update a catalog
@@ -72,12 +69,9 @@ impl PyCatalogClient {
             .with_comment(comment)
             .with_properties(properties.unwrap_or_default())
             .with_new_name(new_name);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyCatalog::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyCatalog::from(result))
     }
 
     /// Delete a catalog
@@ -90,12 +84,9 @@ impl PyCatalogClient {
     #[pyo3(signature = (force = None))]
     pub fn delete(&self, py: Python, force: Option<bool>) -> PyUnityCatalogResult<()> {
         let request = self.client.delete().with_force(force);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(result)
     }
 }
 

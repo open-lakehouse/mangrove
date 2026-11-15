@@ -48,6 +48,7 @@ use unitycatalog_common::models::catalogs::v1::*;
 use unitycatalog_common::models::credentials::v1::*;
 use unitycatalog_common::models::external_locations::v1::*;
 use unitycatalog_common::models::functions::v1::*;
+use unitycatalog_common::models::grants::v1::*;
 use unitycatalog_common::models::model_versions::v1::*;
 use unitycatalog_common::models::policies::v1::*;
 use unitycatalog_common::models::providers::v1::*;
@@ -567,6 +568,40 @@ impl NapiUnityCatalogClient {
                 },
             )?,
         );
+        request
+            .await
+            .map(|item| Buffer::from(item.encode_to_vec()))
+            .default_error()
+    }
+
+    #[napi(catch_unwind)]
+    pub async fn get_grants(
+        &self,
+        securable_type: String,
+        full_name: String,
+        principal: Option<String>,
+        max_results: Option<i32>,
+        page_token: Option<String>,
+    ) -> napi::Result<Buffer> {
+        let request = self
+            .client
+            .get_grants(securable_type, full_name)
+            .with_principal(principal)
+            .with_max_results(max_results)
+            .with_page_token(page_token);
+        request
+            .await
+            .map(|item| Buffer::from(item.encode_to_vec()))
+            .default_error()
+    }
+
+    #[napi(catch_unwind)]
+    pub async fn update_grants(
+        &self,
+        securable_type: String,
+        full_name: String,
+    ) -> napi::Result<Buffer> {
+        let request = self.client.update_grants(securable_type, full_name);
         request
             .await
             .map(|item| Buffer::from(item.encode_to_vec()))

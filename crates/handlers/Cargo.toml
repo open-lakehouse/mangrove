@@ -48,6 +48,10 @@ olai-auth = { workspace = true, optional = true }
 [features]
 default = ["all-resources"]
 
+# The authorization vocabulary (`authz`): an `Operation` per RPC and `Authorizable`
+# per request. The securables name every resource type, so it needs them all.
+authz = ["all-resources", "unitycatalog-common/all-resources"]
+
 # One feature per generated model package, matching `olai-uc-common`. Each gates
 # the handler traits of the services built on that package.
 all-resources = [
@@ -57,6 +61,7 @@ all-resources = [
   "credentials",
   "external_locations",
   "functions",
+  "grants",
   "model_versions",
   "policies",
   "providers",
@@ -76,6 +81,7 @@ catalogs = ["unitycatalog-common/catalogs"]
 credentials = ["unitycatalog-common/credentials"]
 external_locations = ["unitycatalog-common/external_locations"]
 functions = ["unitycatalog-common/functions"]
+grants = ["unitycatalog-common/grants"]
 model_versions = ["unitycatalog-common/model_versions"]
 policies = ["unitycatalog-common/policies"]
 providers = ["unitycatalog-common/providers"]

@@ -74,6 +74,12 @@ pub mod functions {
     }
 }
 
+pub mod grants {
+    pub mod v1 {
+        include!("./unitycatalog.grants.v1.rs");
+    }
+}
+
 pub mod model_versions {
     pub mod v1 {
         include!("./unitycatalog.model_versions.v1.rs");

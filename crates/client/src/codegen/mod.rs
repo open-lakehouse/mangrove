@@ -13,6 +13,8 @@ pub mod entity_tag_assignments;
 pub mod external_locations;
 #[cfg(feature = "functions")]
 pub mod functions;
+#[cfg(feature = "grants")]
+pub mod grants;
 #[cfg(feature = "model_versions")]
 pub mod model_versions;
 #[cfg(feature = "policies")]

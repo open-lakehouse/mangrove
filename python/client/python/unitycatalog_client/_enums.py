@@ -103,6 +103,99 @@ class SqlDataAccess(enum.StrEnum):
     """Function does not use SQL and does not access data."""
 
 
+class Privilege(enum.StrEnum):
+    """A privilege that can be granted on a securable.
+    
+    The canonical (Databricks) names. On the wire, privileges are strings: the
+    server accepts both these names and the Unity Catalog OSS spelling with spaces
+    (`USE CATALOG`), and answers in the OSS spelling. The first block is the OSS
+    `Privilege` enum; the rest are the Databricks privileges this server enforces
+    beyond it.
+    
+    Ownership is not a privilege: it is the securable's `owner`, changed by
+    updating the securable.
+    """
+
+    CREATE_CATALOG = "CREATE_CATALOG"
+    """Create a catalog in the metastore."""
+    USE_CATALOG = "USE_CATALOG"
+    """Use the catalog, required to interact with any object in it."""
+    CREATE_SCHEMA = "CREATE_SCHEMA"
+    """Create a schema in the catalog."""
+    USE_SCHEMA = "USE_SCHEMA"
+    """Use the schema, required to interact with any object in it."""
+    CREATE_TABLE = "CREATE_TABLE"
+    """Create a table or view in the schema."""
+    SELECT = "SELECT"
+    """Query tables and views."""
+    MODIFY = "MODIFY"
+    """Add, update and delete data in tables."""
+    CREATE_FUNCTION = "CREATE_FUNCTION"
+    """Create a function in the schema."""
+    EXECUTE = "EXECUTE"
+    """Invoke a function, or load a registered model."""
+    CREATE_VOLUME = "CREATE_VOLUME"
+    """Create a volume in the schema."""
+    READ_VOLUME = "READ_VOLUME"
+    """Read the files and directories of volumes."""
+    CREATE_MODEL = "CREATE_MODEL"
+    """Create a registered model in the schema."""
+    CREATE_EXTERNAL_LOCATION = "CREATE_EXTERNAL_LOCATION"
+    """Create an external location (on the metastore and the storage credential)."""
+    READ_FILES = "READ_FILES"
+    """Read files under an external location directly."""
+    WRITE_FILES = "WRITE_FILES"
+    """Write files under an external location directly."""
+    CREATE_EXTERNAL_TABLE = "CREATE_EXTERNAL_TABLE"
+    """Create an external table through an external location."""
+    CREATE_EXTERNAL_VOLUME = "CREATE_EXTERNAL_VOLUME"
+    """Create an external volume through an external location."""
+    CREATE_MANAGED_STORAGE = "CREATE_MANAGED_STORAGE"
+    """Designate a managed storage location for a catalog or schema."""
+    CREATE_STORAGE_CREDENTIAL = "CREATE_STORAGE_CREDENTIAL"
+    """Create a storage credential in the metastore."""
+    BROWSE = "BROWSE"
+    """Discover the securable and its descendants' metadata without usage grants
+    or data access.
+    """
+    MANAGE = "MANAGE"
+    """Inspect and change metadata and grants, and delete the securable. Data
+    access, execution and creation still take their own privileges.
+    """
+    WRITE_VOLUME = "WRITE_VOLUME"
+    """Create, change and delete the files of volumes."""
+    CREATE_MODEL_VERSION = "CREATE_MODEL_VERSION"
+    """Publish versions of registered models."""
+    READ_METADATA = "READ_METADATA"
+    """Read full metadata and grants, without data access or grant changes."""
+    ALL_PRIVILEGES = "ALL_PRIVILEGES"
+    """Every privilege applicable to the securable, except EXTERNAL_USE_SCHEMA and
+    EXTERNAL_USE_LOCATION.
+    """
+    EXTERNAL_USE_SCHEMA = "EXTERNAL_USE_SCHEMA"
+    """Receive credentials for the data of the schema's securables, to read or
+    write it from outside the server.
+    """
+    EXTERNAL_USE_LOCATION = "EXTERNAL_USE_LOCATION"
+    """Receive credentials for paths under the external location."""
+    APPLY_TAG = "APPLY_TAG"
+    """Apply tags to the securable."""
+    CREATE_SHARE = "CREATE_SHARE"
+    """Create a share in the metastore."""
+    CREATE_RECIPIENT = "CREATE_RECIPIENT"
+    """Create a recipient in the metastore."""
+    CREATE_PROVIDER = "CREATE_PROVIDER"
+    """Create a provider in the metastore."""
+    USE_SHARE = "USE_SHARE"
+    """Use shares."""
+    USE_RECIPIENT = "USE_RECIPIENT"
+    """Use recipients."""
+    USE_PROVIDER = "USE_PROVIDER"
+    """Use providers."""
+    SET_SHARE_PERMISSION = "SET_SHARE_PERMISSION"
+    """Grant recipients access to a share."""
+
+
 class ModelVersionStatus(enum.StrEnum):
     """The status of a model version, reflecting the lifecycle of its artifacts in
     external storage.

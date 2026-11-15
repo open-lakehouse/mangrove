@@ -6,6 +6,7 @@ pub mod credentials;
 pub mod entity_tag_assignments;
 pub mod external_locations;
 pub mod functions;
+pub mod grants;
 pub mod model_versions;
 pub mod policies;
 pub mod providers;
@@ -18,3 +19,5 @@ pub mod tables;
 pub mod tag_policies;
 pub mod temporary_credentials;
 pub mod volumes;
+#[cfg(feature = "authz")]
+pub mod authz;

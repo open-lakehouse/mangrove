@@ -26,12 +26,9 @@ impl PySchemaClient {
     #[pyo3(signature = (include_browse = None))]
     pub fn get(&self, py: Python, include_browse: Option<bool>) -> PyUnityCatalogResult<PySchema> {
         let request = self.client.get().with_include_browse(include_browse);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PySchema::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PySchema::from(result))
     }
 
     /// Updates a schema for a catalog. The caller must be the owner of the schema or a metastore admin.
@@ -62,12 +59,9 @@ impl PySchemaClient {
             .with_comment(comment)
             .with_properties(properties.unwrap_or_default())
             .with_new_name(new_name);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PySchema::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PySchema::from(result))
     }
 
     /// Deletes the specified schema from the parent catalog. The caller must be the owner of the schema or
@@ -78,12 +72,9 @@ impl PySchemaClient {
     #[pyo3(signature = (force = None))]
     pub fn delete(&self, py: Python, force: Option<bool>) -> PyUnityCatalogResult<()> {
         let request = self.client.delete().with_force(force);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(result)
     }
 }
 

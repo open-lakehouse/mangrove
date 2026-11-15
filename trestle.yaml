@@ -87,6 +87,18 @@ generate:
     object_conversions: true
     resource_clients: true
     resource_store_crate_name: olai_store
+    # The authorization vocabulary: an `Operation` per RPC, `impl Authorizable`
+    # per request, and the Cedar actions fragment (`codegen/authz.cedarschema`),
+    # mounted in olai-uc-handlers as `crate::authz`.
+    authz:
+      module_path: crate::authz
+      # Behind olai-uc-handlers' `authz` feature: `ObjectLabel` needs every resource.
+      feature: authz
+      cedar:
+        namespace: UnityCatalog
+        principals: [Lakehouse::User, Lakehouse::ServiceAccount]
+        context: RequestContext
+        root: Metastore
 
 enrich_openapi:
   spec: openapi/openapi.yaml

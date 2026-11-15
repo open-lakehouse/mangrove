@@ -781,6 +781,148 @@ impl<'py> ::pyo3::IntoPyObject<'py> for PySqlDataAccess {
     }
 }
 
+/// A member of `unitycatalog_client._enums.Privilege`, or its name.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct PyPrivilege(pub super::grants::v1::Privilege);
+impl PyPrivilege {
+    /// The name of the value, or `None` for a value without a Python member.
+    fn __name(&self) -> ::core::option::Option<&'static str> {
+        match <super::grants::v1::Privilege as ::buffa::Enumeration>::to_i32(&self.0) {
+            1i32 => ::core::option::Option::Some("CREATE_CATALOG"),
+            2i32 => ::core::option::Option::Some("USE_CATALOG"),
+            3i32 => ::core::option::Option::Some("CREATE_SCHEMA"),
+            4i32 => ::core::option::Option::Some("USE_SCHEMA"),
+            5i32 => ::core::option::Option::Some("CREATE_TABLE"),
+            6i32 => ::core::option::Option::Some("SELECT"),
+            7i32 => ::core::option::Option::Some("MODIFY"),
+            8i32 => ::core::option::Option::Some("CREATE_FUNCTION"),
+            9i32 => ::core::option::Option::Some("EXECUTE"),
+            10i32 => ::core::option::Option::Some("CREATE_VOLUME"),
+            11i32 => ::core::option::Option::Some("READ_VOLUME"),
+            12i32 => ::core::option::Option::Some("CREATE_MODEL"),
+            13i32 => ::core::option::Option::Some("CREATE_EXTERNAL_LOCATION"),
+            14i32 => ::core::option::Option::Some("READ_FILES"),
+            15i32 => ::core::option::Option::Some("WRITE_FILES"),
+            16i32 => ::core::option::Option::Some("CREATE_EXTERNAL_TABLE"),
+            17i32 => ::core::option::Option::Some("CREATE_EXTERNAL_VOLUME"),
+            18i32 => ::core::option::Option::Some("CREATE_MANAGED_STORAGE"),
+            19i32 => ::core::option::Option::Some("CREATE_STORAGE_CREDENTIAL"),
+            20i32 => ::core::option::Option::Some("BROWSE"),
+            21i32 => ::core::option::Option::Some("MANAGE"),
+            22i32 => ::core::option::Option::Some("WRITE_VOLUME"),
+            23i32 => ::core::option::Option::Some("CREATE_MODEL_VERSION"),
+            24i32 => ::core::option::Option::Some("READ_METADATA"),
+            100i32 => ::core::option::Option::Some("ALL_PRIVILEGES"),
+            101i32 => ::core::option::Option::Some("EXTERNAL_USE_SCHEMA"),
+            102i32 => ::core::option::Option::Some("EXTERNAL_USE_LOCATION"),
+            103i32 => ::core::option::Option::Some("APPLY_TAG"),
+            104i32 => ::core::option::Option::Some("CREATE_SHARE"),
+            105i32 => ::core::option::Option::Some("CREATE_RECIPIENT"),
+            106i32 => ::core::option::Option::Some("CREATE_PROVIDER"),
+            107i32 => ::core::option::Option::Some("USE_SHARE"),
+            108i32 => ::core::option::Option::Some("USE_RECIPIENT"),
+            109i32 => ::core::option::Option::Some("USE_PROVIDER"),
+            110i32 => ::core::option::Option::Some("SET_SHARE_PERMISSION"),
+            _ => ::core::option::Option::None,
+        }
+    }
+}
+
+impl ::core::convert::From<super::grants::v1::Privilege> for PyPrivilege {
+    fn from(value: super::grants::v1::Privilege) -> Self {
+        Self(value)
+    }
+}
+
+impl ::core::convert::From<PyPrivilege> for super::grants::v1::Privilege {
+    fn from(value: PyPrivilege) -> Self {
+        value.0
+    }
+}
+
+impl<'a, 'py> ::pyo3::FromPyObject<'a, 'py> for PyPrivilege {
+    type Error = ::pyo3::PyErr;
+    const INPUT_TYPE: ::pyo3::inspect::PyStaticExpr = {
+        use ::pyo3::type_hint_union;
+        type_hint_union!(
+            ::pyo3::type_hint_identifier!("unitycatalog_client._enums", "Privilege"),
+            ::pyo3::type_hint_identifier!("builtins", "str")
+        )
+    };
+
+    fn extract(obj: ::pyo3::Borrowed<'a, 'py, ::pyo3::PyAny>) -> ::pyo3::PyResult<Self> {
+        let name: ::pyo3::pybacked::PyBackedStr = ::pyo3::types::PyAnyMethods::extract(&*obj)?;
+        let n: i32 = match &*name {
+            "CREATE_CATALOG" => 1i32,
+            "USE_CATALOG" => 2i32,
+            "CREATE_SCHEMA" => 3i32,
+            "USE_SCHEMA" => 4i32,
+            "CREATE_TABLE" => 5i32,
+            "SELECT" => 6i32,
+            "MODIFY" => 7i32,
+            "CREATE_FUNCTION" => 8i32,
+            "EXECUTE" => 9i32,
+            "CREATE_VOLUME" => 10i32,
+            "READ_VOLUME" => 11i32,
+            "CREATE_MODEL" => 12i32,
+            "CREATE_EXTERNAL_LOCATION" => 13i32,
+            "READ_FILES" => 14i32,
+            "WRITE_FILES" => 15i32,
+            "CREATE_EXTERNAL_TABLE" => 16i32,
+            "CREATE_EXTERNAL_VOLUME" => 17i32,
+            "CREATE_MANAGED_STORAGE" => 18i32,
+            "CREATE_STORAGE_CREDENTIAL" => 19i32,
+            "BROWSE" => 20i32,
+            "MANAGE" => 21i32,
+            "WRITE_VOLUME" => 22i32,
+            "CREATE_MODEL_VERSION" => 23i32,
+            "READ_METADATA" => 24i32,
+            "ALL_PRIVILEGES" => 100i32,
+            "EXTERNAL_USE_SCHEMA" => 101i32,
+            "EXTERNAL_USE_LOCATION" => 102i32,
+            "APPLY_TAG" => 103i32,
+            "CREATE_SHARE" => 104i32,
+            "CREATE_RECIPIENT" => 105i32,
+            "CREATE_PROVIDER" => 106i32,
+            "USE_SHARE" => 107i32,
+            "USE_RECIPIENT" => 108i32,
+            "USE_PROVIDER" => 109i32,
+            "SET_SHARE_PERMISSION" => 110i32,
+            other => {
+                return ::core::result::Result::Err(::pyo3::exceptions::PyValueError::new_err(
+                    ::std::format!(
+                        "invalid Privilege: {:?}; expected one of: CREATE_CATALOG, USE_CATALOG, CREATE_SCHEMA, USE_SCHEMA, CREATE_TABLE, SELECT, MODIFY, CREATE_FUNCTION, EXECUTE, CREATE_VOLUME, READ_VOLUME, CREATE_MODEL, CREATE_EXTERNAL_LOCATION, READ_FILES, WRITE_FILES, CREATE_EXTERNAL_TABLE, CREATE_EXTERNAL_VOLUME, CREATE_MANAGED_STORAGE, CREATE_STORAGE_CREDENTIAL, BROWSE, MANAGE, WRITE_VOLUME, CREATE_MODEL_VERSION, READ_METADATA, ALL_PRIVILEGES, EXTERNAL_USE_SCHEMA, EXTERNAL_USE_LOCATION, APPLY_TAG, CREATE_SHARE, CREATE_RECIPIENT, CREATE_PROVIDER, USE_SHARE, USE_RECIPIENT, USE_PROVIDER, SET_SHARE_PERMISSION",
+                        other
+                    ),
+                ));
+            }
+        };
+        ::core::result::Result::Ok(Self(
+            <super::grants::v1::Privilege as ::buffa::Enumeration>::from_i32(n).unwrap_or_default(),
+        ))
+    }
+}
+
+impl<'py> ::pyo3::IntoPyObject<'py> for PyPrivilege {
+    type Target = ::pyo3::PyAny;
+    type Output = ::pyo3::Bound<'py, ::pyo3::PyAny>;
+    type Error = ::pyo3::PyErr;
+    const OUTPUT_TYPE: ::pyo3::inspect::PyStaticExpr =
+        ::pyo3::type_hint_identifier!("unitycatalog_client._enums", "Privilege");
+    fn into_pyobject(self, py: ::pyo3::Python<'py>) -> ::pyo3::PyResult<Self::Output> {
+        static CLASS: ::pyo3::sync::PyOnceLock<::pyo3::Py<::pyo3::types::PyType>> =
+            ::pyo3::sync::PyOnceLock::new();
+        let class = CLASS.import(py, "unitycatalog_client._enums", "Privilege")?;
+        let name = self.__name().ok_or_else(|| {
+            ::pyo3::exceptions::PyValueError::new_err(::std::format!(
+                "Privilege value {} has no Python member",
+                <super::grants::v1::Privilege as ::buffa::Enumeration>::to_i32(&self.0)
+            ))
+        })?;
+        ::pyo3::types::PyAnyMethods::getattr(class.as_any(), name)
+    }
+}
+
 /// A member of `unitycatalog_client._enums.ModelVersionStatus`, or its name.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct PyModelVersionStatus(pub super::model_versions::v1::ModelVersionStatus);
@@ -4937,6 +5079,211 @@ impl ::core::convert::From<PyListFunctionsResponse>
     for super::functions::v1::ListFunctionsResponse
 {
     fn from(value: PyListFunctionsResponse) -> Self {
+        value.0
+    }
+}
+
+/// The privileges granted on a securable, not including inherited ones.
+#[::pyo3::pyclass(
+    name = "GetGrantsResponse",
+    eq,
+    frozen,
+    module = "unitycatalog_client._client.grants",
+    from_py_object
+)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct PyGetGrantsResponse(pub super::grants::v1::GetGrantsResponse);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGetGrantsResponse {
+    /// The privileges granted to each principal.
+    #[getter]
+    fn privilege_assignments(&self) -> ::std::vec::Vec<PyGrantAssignment> {
+        self.0
+            .privilege_assignments
+            .iter()
+            .cloned()
+            .map(PyGrantAssignment::from)
+            .collect()
+    }
+
+    /// Opaque pagination token to go to next page based on previous query.
+    #[getter]
+    fn next_page_token(&self) -> ::core::option::Option<::std::string::String> {
+        self.0.next_page_token.clone()
+    }
+
+    fn __repr__(slf: &::pyo3::Bound<'_, Self>) -> ::pyo3::PyResult<::std::string::String> {
+        __python_repr(
+            slf.as_any(),
+            &[("privilege_assignments", false), ("next_page_token", false)],
+        )
+    }
+}
+
+impl ::core::convert::From<super::grants::v1::GetGrantsResponse> for PyGetGrantsResponse {
+    fn from(value: super::grants::v1::GetGrantsResponse) -> Self {
+        Self(value)
+    }
+}
+
+impl ::core::convert::From<PyGetGrantsResponse> for super::grants::v1::GetGrantsResponse {
+    fn from(value: PyGetGrantsResponse) -> Self {
+        value.0
+    }
+}
+
+/// The privileges granted to one principal on a securable.
+#[::pyo3::pyclass(
+    name = "GrantAssignment",
+    eq,
+    frozen,
+    module = "unitycatalog_client._client.grants",
+    from_py_object
+)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct PyGrantAssignment(pub super::grants::v1::GrantAssignment);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGrantAssignment {
+    /// The principal: a user's email address, a group's name, or a service
+    /// account's name.
+    #[getter]
+    fn principal(&self) -> ::std::string::String {
+        self.0.principal.clone()
+    }
+
+    /// The privileges granted to the principal (see `Privilege`).
+    #[getter]
+    fn privileges(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.privileges.clone()
+    }
+
+    fn __repr__(slf: &::pyo3::Bound<'_, Self>) -> ::pyo3::PyResult<::std::string::String> {
+        __python_repr(slf.as_any(), &[("principal", false), ("privileges", false)])
+    }
+}
+
+impl ::core::convert::From<super::grants::v1::GrantAssignment> for PyGrantAssignment {
+    fn from(value: super::grants::v1::GrantAssignment) -> Self {
+        Self(value)
+    }
+}
+
+impl ::core::convert::From<PyGrantAssignment> for super::grants::v1::GrantAssignment {
+    fn from(value: PyGrantAssignment) -> Self {
+        value.0
+    }
+}
+
+/// A change of one principal's privileges on a securable.
+#[::pyo3::pyclass(
+    name = "GrantChange",
+    eq,
+    frozen,
+    module = "unitycatalog_client._client.grants",
+    from_py_object
+)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct PyGrantChange(pub super::grants::v1::GrantChange);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyGrantChange {
+    #[new]
+    #[pyo3(signature = (principal = None, add = None, remove = None))]
+    fn new(
+        principal: ::core::option::Option<::std::string::String>,
+        add: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+        remove: ::core::option::Option<::std::vec::Vec<::std::string::String>>,
+    ) -> Self {
+        let mut inner = <super::grants::v1::GrantChange as ::core::default::Default>::default();
+        if let ::core::option::Option::Some(value) = principal {
+            inner.principal = value;
+        }
+        if let ::core::option::Option::Some(value) = add {
+            inner.add = value;
+        }
+        if let ::core::option::Option::Some(value) = remove {
+            inner.remove = value;
+        }
+        Self(inner)
+    }
+
+    /// The principal whose privileges change.
+    #[getter]
+    fn principal(&self) -> ::std::string::String {
+        self.0.principal.clone()
+    }
+
+    /// The privileges to grant (see `Privilege`).
+    #[getter]
+    fn add(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.add.clone()
+    }
+
+    /// The privileges to revoke (see `Privilege`).
+    #[getter]
+    fn remove(&self) -> ::std::vec::Vec<::std::string::String> {
+        self.0.remove.clone()
+    }
+
+    fn __repr__(slf: &::pyo3::Bound<'_, Self>) -> ::pyo3::PyResult<::std::string::String> {
+        __python_repr(
+            slf.as_any(),
+            &[("principal", false), ("add", false), ("remove", false)],
+        )
+    }
+}
+
+impl ::core::convert::From<super::grants::v1::GrantChange> for PyGrantChange {
+    fn from(value: super::grants::v1::GrantChange) -> Self {
+        Self(value)
+    }
+}
+
+impl ::core::convert::From<PyGrantChange> for super::grants::v1::GrantChange {
+    fn from(value: PyGrantChange) -> Self {
+        value.0
+    }
+}
+
+/// The privileges granted on a securable after an update.
+#[::pyo3::pyclass(
+    name = "UpdateGrantsResponse",
+    eq,
+    frozen,
+    module = "unitycatalog_client._client.grants",
+    from_py_object
+)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct PyUpdateGrantsResponse(pub super::grants::v1::UpdateGrantsResponse);
+#[allow(clippy::too_many_arguments, clippy::useless_conversion)]
+#[::pyo3::pymethods]
+impl PyUpdateGrantsResponse {
+    /// The privileges granted to each principal.
+    #[getter]
+    fn privilege_assignments(&self) -> ::std::vec::Vec<PyGrantAssignment> {
+        self.0
+            .privilege_assignments
+            .iter()
+            .cloned()
+            .map(PyGrantAssignment::from)
+            .collect()
+    }
+
+    fn __repr__(slf: &::pyo3::Bound<'_, Self>) -> ::pyo3::PyResult<::std::string::String> {
+        __python_repr(slf.as_any(), &[("privilege_assignments", false)])
+    }
+}
+
+impl ::core::convert::From<super::grants::v1::UpdateGrantsResponse> for PyUpdateGrantsResponse {
+    fn from(value: super::grants::v1::UpdateGrantsResponse) -> Self {
+        Self(value)
+    }
+}
+
+impl ::core::convert::From<PyUpdateGrantsResponse> for super::grants::v1::UpdateGrantsResponse {
+    fn from(value: PyUpdateGrantsResponse) -> Self {
         value.0
     }
 }

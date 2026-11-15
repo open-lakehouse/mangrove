@@ -25,12 +25,9 @@ impl PyPolicyClient {
     ///     `when_condition` is stored and returned opaque — this service does not parse or evaluate it.
     pub fn get(&self, py: Python) -> PyUnityCatalogResult<PyPolicyInfo> {
         let request = self.client.get();
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyPolicyInfo::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyPolicyInfo::from(result))
     }
 
     /// Update a policy
@@ -115,12 +112,9 @@ impl PyPolicyClient {
             .with_deny(deny.map(::core::convert::Into::into))
             .with_grant(grant.map(::core::convert::Into::into))
             .with_update_mask(update_mask);
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(PyPolicyInfo::from(result))
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(PyPolicyInfo::from(result))
     }
 
     /// Delete a policy
@@ -128,12 +122,9 @@ impl PyPolicyClient {
     /// Deletes the policy that matches the supplied name, defined on the specified securable.
     pub fn delete(&self, py: Python) -> PyUnityCatalogResult<()> {
         let request = self.client.delete();
-        let runtime = crate::codegen::runtime::rt();
-        py.detach(|| {
-            #[allow(clippy::let_unit_value)]
-            let result = runtime.block_on(request.into_future())?;
-            Ok::<_, PyUnityCatalogError>(result)
-        })
+        #[allow(clippy::let_unit_value)]
+        let result = crate::codegen::runtime::block_on(py, request.into_future())??;
+        Ok(result)
     }
 }
 

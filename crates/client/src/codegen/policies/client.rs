@@ -53,7 +53,7 @@ impl PolicyServiceClient {
             url.query_pairs_mut()
                 .append_pair("page_token", &value.to_string());
         }
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -66,7 +66,7 @@ impl PolicyServiceClient {
     /// Creates a new row-filter or column-mask policy on the specified securable.
     pub async fn create_policy(&self, request: &CreatePolicyRequest) -> Result<PolicyInfo> {
         let url = self.base_url.join("policies")?;
-        let response = self.client.post(url).json(request).send().await?;
+        let response = self.client.post(url).json(request).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -85,7 +85,7 @@ impl PolicyServiceClient {
             encode_path_value(&request.name, false)
         );
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.get(url).send().await?;
+        let response = self.client.get(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -108,7 +108,7 @@ impl PolicyServiceClient {
         body.on_securable_type = Default::default();
         body.on_securable_fullname = Default::default();
         body.name = Default::default();
-        let response = self.client.patch(url).json(&body).send().await?;
+        let response = self.client.patch(url).json(&body).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }
@@ -127,7 +127,7 @@ impl PolicyServiceClient {
             encode_path_value(&request.name, false)
         );
         let url = self.base_url.join(&formatted_path)?;
-        let response = self.client.delete(url).send().await?;
+        let response = self.client.delete(url).send_unchecked().await?;
         if !response.status().is_success() {
             return Err(crate::error::parse_error_response(response).await);
         }

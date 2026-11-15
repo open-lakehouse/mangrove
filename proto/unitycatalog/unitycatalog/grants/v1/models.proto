@@ -1,0 +1,152 @@
+syntax = "proto3";
+
+package unitycatalog.grants.v1;
+
+import "google/api/field_behavior.proto";
+
+// A privilege that can be granted on a securable.
+//
+// The canonical (Databricks) names. On the wire, privileges are strings: the
+// server accepts both these names and the Unity Catalog OSS spelling with spaces
+// (`USE CATALOG`), and answers in the OSS spelling. The first block is the OSS
+// `Privilege` enum; the rest are the Databricks privileges this server enforces
+// beyond it.
+//
+// Ownership is not a privilege: it is the securable's `owner`, changed by
+// updating the securable.
+enum Privilege {
+  PRIVILEGE_UNSPECIFIED = 0;
+
+  // Create a catalog in the metastore.
+  CREATE_CATALOG = 1;
+
+  // Use the catalog, required to interact with any object in it.
+  USE_CATALOG = 2;
+
+  // Create a schema in the catalog.
+  CREATE_SCHEMA = 3;
+
+  // Use the schema, required to interact with any object in it.
+  USE_SCHEMA = 4;
+
+  // Create a table or view in the schema.
+  CREATE_TABLE = 5;
+
+  // Query tables and views.
+  SELECT = 6;
+
+  // Add, update and delete data in tables.
+  MODIFY = 7;
+
+  // Create a function in the schema.
+  CREATE_FUNCTION = 8;
+
+  // Invoke a function, or load a registered model.
+  EXECUTE = 9;
+
+  // Create a volume in the schema.
+  CREATE_VOLUME = 10;
+
+  // Read the files and directories of volumes.
+  READ_VOLUME = 11;
+
+  // Create a registered model in the schema.
+  CREATE_MODEL = 12;
+
+  // Create an external location (on the metastore and the storage credential).
+  CREATE_EXTERNAL_LOCATION = 13;
+
+  // Read files under an external location directly.
+  READ_FILES = 14;
+
+  // Write files under an external location directly.
+  WRITE_FILES = 15;
+
+  // Create an external table through an external location.
+  CREATE_EXTERNAL_TABLE = 16;
+
+  // Create an external volume through an external location.
+  CREATE_EXTERNAL_VOLUME = 17;
+
+  // Designate a managed storage location for a catalog or schema.
+  CREATE_MANAGED_STORAGE = 18;
+
+  // Create a storage credential in the metastore.
+  CREATE_STORAGE_CREDENTIAL = 19;
+
+  // Discover the securable and its descendants' metadata without usage grants
+  // or data access.
+  BROWSE = 20;
+
+  // Inspect and change metadata and grants, and delete the securable. Data
+  // access, execution and creation still take their own privileges.
+  MANAGE = 21;
+
+  // Create, change and delete the files of volumes.
+  WRITE_VOLUME = 22;
+
+  // Publish versions of registered models.
+  CREATE_MODEL_VERSION = 23;
+
+  // Read full metadata and grants, without data access or grant changes.
+  READ_METADATA = 24;
+
+  // Databricks privileges beyond the OSS set.
+
+  // Every privilege applicable to the securable, except EXTERNAL_USE_SCHEMA and
+  // EXTERNAL_USE_LOCATION.
+  ALL_PRIVILEGES = 100;
+
+  // Receive credentials for the data of the schema's securables, to read or
+  // write it from outside the server.
+  EXTERNAL_USE_SCHEMA = 101;
+
+  // Receive credentials for paths under the external location.
+  EXTERNAL_USE_LOCATION = 102;
+
+  // Apply tags to the securable.
+  APPLY_TAG = 103;
+
+  // Create a share in the metastore.
+  CREATE_SHARE = 104;
+
+  // Create a recipient in the metastore.
+  CREATE_RECIPIENT = 105;
+
+  // Create a provider in the metastore.
+  CREATE_PROVIDER = 106;
+
+  // Use shares.
+  USE_SHARE = 107;
+
+  // Use recipients.
+  USE_RECIPIENT = 108;
+
+  // Use providers.
+  USE_PROVIDER = 109;
+
+  // Grant recipients access to a share.
+  SET_SHARE_PERMISSION = 110;
+}
+
+// The privileges granted to one principal on a securable.
+message GrantAssignment {
+  // The principal: a user's email address, a group's name, or a service
+  // account's name.
+  string principal = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The privileges granted to the principal (see `Privilege`).
+  repeated string privileges = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// A change of one principal's privileges on a securable.
+message GrantChange {
+  // The principal whose privileges change.
+  string principal = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The privileges to grant (see `Privilege`).
+  repeated string add = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The privileges to revoke (see `Privilege`).
+  repeated string remove = 3 [(google.api.field_behavior) = REQUIRED];
+}
