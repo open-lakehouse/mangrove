@@ -3317,7 +3317,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-client"
-version = "0.0.12"
+version = "0.0.13"
 dependencies = [
  "async-trait",
  "buffa",
@@ -3412,7 +3412,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-files-api"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "async-trait",
  "axum",
@@ -3452,7 +3452,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-handlers"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "async-trait",
  "axum",
@@ -3469,7 +3469,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-object-store"
-version = "0.0.12"
+version = "0.0.13"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3517,7 +3517,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-server"
-version = "0.0.18"
+version = "0.0.19"
 dependencies = [
  "async-trait",
  "axum",
@@ -3628,7 +3628,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-storage-proxy"
-version = "0.0.12"
+version = "0.0.13"
 dependencies = [
  "async-trait",
  "axum",
@@ -6017,7 +6017,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 
 [[package]]
 name = "uc-app"
-version = "0.0.5"
+version = "0.0.6"
 
 [[package]]
 name = "unicase"
@@ -6105,11 +6105,11 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "unity-catalog-client"
-version = "0.0.7"
+version = "0.0.8"
 
 [[package]]
 name = "unity-catalog-node"
-version = "0.0.10"
+version = "0.0.11"
 dependencies = [
  "buffa",
  "env_logger 0.11.11",
@@ -6126,7 +6126,7 @@ dependencies = [
 
 [[package]]
 name = "unity-catalog-ui"
-version = "0.0.3"
+version = "0.0.4"
 
 [[package]]
 name = "unitycatalog-acceptance"

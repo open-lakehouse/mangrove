@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.19](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.18...olai-uc-server-v0.0.19) - 2026-11-15
+
+### Added
+
+- [**breaking**] trusted compute waives EXTERNAL USE on vends (#350)
+- manage grants from a Permissions tab (#351)
+
 ## [0.0.18](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.17...olai-uc-server-v0.0.18) - 2026-11-15
 
 ### Added

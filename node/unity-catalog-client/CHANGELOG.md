@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-client-v0.0.7...unity-catalog-client-v0.0.8) - 2026-11-15
+
+### Added
+
+- manage grants from a Permissions tab (#351)
+
 ## [0.0.7](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-client-v0.0.6...unity-catalog-client-v0.0.7) - 2026-11-15
 
 ### Added

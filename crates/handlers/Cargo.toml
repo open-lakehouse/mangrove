@@ -4,7 +4,7 @@
 # `unitycatalog(_)handlers` via each dependent's `package =` alias, so no source
 # changes. See release-plz.toml / CONTRIBUTING.md.
 name = "olai-uc-handlers"
-version = "0.0.5"
+version = "0.0.6"
 description = "Resource-gated Unity Catalog handler traits and axum route functions, with the error and request-context types they need."
 edition.workspace = true
 homepage.workspace = true

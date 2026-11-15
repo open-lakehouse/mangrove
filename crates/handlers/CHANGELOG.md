@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/open-lakehouse/mangrove/compare/olai-uc-handlers-v0.0.5...olai-uc-handlers-v0.0.6) - 2026-11-15
+
+### Added
+
+- [**breaking**] trusted compute waives EXTERNAL USE on vends (#350)
+
 ## [0.0.5](https://github.com/open-lakehouse/mangrove/compare/olai-uc-handlers-v0.0.4...olai-uc-handlers-v0.0.5) - 2026-11-15
 
 ### Added
