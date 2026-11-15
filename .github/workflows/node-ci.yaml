@@ -44,6 +44,16 @@ jobs:
         run: bunx napi build --platform --release --output-dir unitycatalog/codegen --dts native.d.ts --js native.js -- --locked
         working-directory: node/client
 
+      # The release's "Build and pack" job type-checks against the *committed*
+      # `native.d.ts`, so it must match what the binding generates. Regenerate it
+      # with `bun run --filter @unitycatalog/client build:debug` and commit it.
+      - name: Check committed native.d.ts is current
+        run: |
+          if ! git diff --exit-code -- node/client/unitycatalog/codegen/native.d.ts; then
+            echo "::error::node/client/unitycatalog/codegen/native.d.ts is stale; run 'bun run --filter @unitycatalog/client build:debug' and commit it"
+            exit 1
+          fi
+
       - name: Compile TypeScript
         run: bun run tsc
         working-directory: node/client
