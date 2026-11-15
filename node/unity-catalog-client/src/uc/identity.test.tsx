@@ -2,7 +2,6 @@
 // `identity` capability, else nothing.
 
 import { expect, test } from "bun:test";
-import type { LakehouseHost } from "@open-lakehouse/host";
 import { HostProvider } from "@open-lakehouse/host/react";
 import { createFakeHost } from "@open-lakehouse/host/testing";
 import type { ReactNode } from "react";
@@ -24,8 +23,8 @@ function identityIn(wrap: (probe: ReactNode) => ReactNode) {
   return seen as IdentityHost | undefined;
 }
 
-const hostWithIdentity = (identity: IdentityHost): LakehouseHost =>
-  Object.assign(createFakeHost({ services: {} }), { identity });
+const hostWithIdentity = (identity: IdentityHost) =>
+  createFakeHost({ services: {}, capabilities: { identity } });
 
 test("without a provider or a host identity there is no directory", () => {
   expect(identityIn((probe) => probe)).toBeUndefined();

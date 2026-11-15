@@ -29,8 +29,6 @@ export function IdentityProvider({
  *  search and "you" hints on it; without one, take principals as typed. */
 export function useIdentityHost(): IdentityHost | undefined {
   const provided = useContext(IdentityContext);
-  // `identity` is not yet part of the published host contract, so read it
-  // structurally.
-  const host = useOptionalHost() as { identity?: IdentityHost } | null;
+  const host = useOptionalHost();
   return provided ?? host?.identity ?? undefined;
 }

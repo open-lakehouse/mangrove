@@ -95,8 +95,8 @@ Two entry points:
   `displayPrivilege` (the server answers `USE CATALOG`, accepts `USE_CATALOG`
   too), `OWNER_PRIVILEGE`.
 - **Identity seam types:** `IdentityHost`, `PrincipalRef`, `PrincipalKind`,
-  `PrincipalSearchOptions`: the principal directory a host provides as its
-  `identity` capability.
+  `PrincipalSearchOptions`, re-exported from `@open-lakehouse/host`: the
+  principal directory a host provides as its `identity` capability.
 - **UC OpenAPI types:** `CatalogInfo`, `SchemaInfo`, `TableInfo`, `Create*`,
   `List*`, `components`, `paths`, … (re-exported from `uc-types`).
 
