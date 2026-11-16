@@ -1,8 +1,9 @@
 # `uc mcp` — MCP server for Unity Catalog — design
 
 Status: **proposed**, 2026-10-03; §8 (grants as an interactive surface) is
-**implemented**, 2026-11-15, in `crates/cli/src/mcp` and `node/uc-a2ui`. The
-rest is design. Builds on
+**implemented**, 2026-11-15, in `crates/cli/src/mcp` and `node/uc-a2ui`, and
+the Streamable HTTP transport in §1 (`--http`) on 2026-11-16. The rest is
+design. Builds on
 [`docs-agent-cli-design.md`](docs-agent-cli-design.md), which staged a `uc mcp`
 stdio server as a designed-for follow-up.
 
@@ -52,15 +53,41 @@ A new subcommand built on `rmcp` (the official Rust MCP SDK), compiled in
 behind a cargo `mcp` feature so the base CLI stays lean. v1 transport is
 **stdio**: the MCP client spawns `uc mcp serve`, which inherits the user's
 credentials through the existing `GlobalOpts::client()` path (`--token` /
-`UC_TOKEN` / `DATABRICKS_TOKEN`). Streamable HTTP is staged. It needs a real
-OAuth resource-server story, and a shared server changes the threat model in
-§4.
+`UC_TOKEN` / `DATABRICKS_TOKEN`).
 
 A client config entry stays a one-liner:
 
 ```json
 { "command": "uc", "args": ["mcp", "serve", "--functions", "main.tools"] }
 ```
+
+**Streamable HTTP (implemented)** lets several clients share one server, for
+example an agent and the MCP Apps host rendering its forms:
+
+```sh
+uc mcp serve --http 0.0.0.0:8090 [--path /mcp] [--allowed-host uc-mcp]...
+```
+
+- rmcp's `StreamableHttpService` with a local session manager and a 15s SSE
+  keep-alive, at `--path` (default `/mcp`), plus `GET /health` (200 `ok`).
+  It serves legacy sessions and the stateless 2026-07-28 protocol, and shuts
+  down gracefully on ctrl-c.
+- **No inbound auth.** Outbound credentials are fixed at startup
+  (`--server` / `--token`), so every client acts as that identity. Run it
+  behind a gateway that authenticates callers, for one user's environment,
+  never as a shared deployment.
+- **A `Host` allowlist** guards against DNS rebinding: loopback only by
+  default; `--allowed-host` (repeatable, `host` or `host:port`) replaces it,
+  for example with the service name a container network uses. `/health` is
+  not checked.
+- **Gating per connection.** Whether a client sees the app-only tools (§8)
+  comes from its own capabilities: the request's `_meta` in the stateless
+  protocol, else the session's `initialize`. An agent and an MCP Apps host on
+  one server each see their own tool list.
+
+OAuth (the MCP authorization spec) and per-request bearer forwarding stay
+staged: they need a real resource-server story, and a shared server changes
+the threat model in §4.
 
 ### 2. Three tool families, three trust levels
 
@@ -280,7 +307,8 @@ So `uc mcp serve` answers with a form instead of a write.
 
 Tools: `get_grants`, `open_grant_form`, `search_principals` (all read-only),
 plus the app-only `apply_grants` and `whoami`. Run it with
-`{ "command": "uc", "args": ["mcp", "serve"] }`. Build with
+`{ "command": "uc", "args": ["mcp", "serve"] }`, or over Streamable HTTP
+(§1), where each connection is gated on its own capabilities. Build with
 `--features mcp`, and refresh the embedded app with `just build mcp-app`.
 
 Follow-ups: revoke and transfer-ownership surfaces in the same catalog; reuse
@@ -304,7 +332,8 @@ tools add three:
 ## Staged follow-ups
 
 - More A2UI surfaces (§8): revoke, ownership transfer, tag editing.
-- Streamable HTTP transport with OAuth (MCP authorization spec), for a shared
+- Inbound auth on the Streamable HTTP transport (§1): OAuth (MCP
+  authorization spec) and per-request bearer forwarding, for a shared
   deployment next to `olai-uc-server`.
 - The `wasm` sandbox backend.
 - Egress allow-list proxy for functions that need the network.
