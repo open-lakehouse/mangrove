@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.21](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.20...olai-uc-server-v0.0.21) - 2026-11-16
+
+### Added
+
+- *(uc-a2ui)* A2UI grant form and the MCP App that hosts it (#360)
+
+### Build
+
+- *(docker)* ship uc in the mangrove image (#366)
+
+### Changed
+
+- extract a controlled GrantForm (#359)
+
 ## [0.0.20](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.19...olai-uc-server-v0.0.20) - 2026-11-15
 
 ### Added
