@@ -36,7 +36,8 @@ pub fn config(allowed_hosts: &[String]) -> StreamableHttpServerConfig {
     }
 }
 
-/// The MCP endpoint at `path`, and `GET /health`.
+/// The MCP endpoint at `path`, and `GET /health`, which answers `OK` like the server's, so
+/// `uc-server healthcheck --url` can probe it.
 pub fn router(server: UcMcpServer, path: &str, config: StreamableHttpServerConfig) -> Router {
     let mcp = StreamableHttpService::new(
         move || Ok(server.clone()),
@@ -44,7 +45,7 @@ pub fn router(server: UcMcpServer, path: &str, config: StreamableHttpServerConfi
         config,
     );
     Router::new()
-        .route("/health", get(|| async { "ok" }))
+        .route("/health", get(|| async { "OK" }))
         .nest_service(path, mcp)
 }
 
