@@ -7,7 +7,8 @@
 //! app tools are only listed, and only callable, for a client that declared
 //! the extension (per request or session, so one HTTP server can serve an
 //! agent and an MCP Apps host at once): a host without MCP Apps can't render the form, and must not
-//! hand `apply_grants` (a write) to the model.
+//! hand `apply_grants` (a write) to the model. The same gate decides whether a
+//! result carries the A2UI resource and `_meta.ui` (see [`tool_result`]).
 
 use std::sync::Arc;
 
@@ -207,12 +208,25 @@ pub fn tools(apps: bool) -> Vec<Tool> {
     tools
 }
 
-/// `outcome` as a tool result. A2UI messages ride as one embedded resource,
-/// for the user's eyes (the app) only, so their JSON stays out of the model's
-/// context.
-pub fn tool_result(outcome: Outcome, ui: bool) -> CallToolResult {
+/// `outcome` as a tool result, for a client with (`apps`) or without the MCP
+/// Apps extension. Every client gets the text and `structuredContent`.
+///
+/// Only an MCP Apps client also gets:
+/// - The A2UI messages, as one embedded resource for the user's eyes (the
+///   app) only, so their JSON stays out of the model's context.
+/// - When `names_app` is set (`open_grant_form`), `_meta.ui.resourceUri` on
+///   the result.
+///
+/// A client without the extension can't render either one. An agent would
+/// only carry the blob in its context, and some agent hosts fail on embedded
+/// resources outright (Omnigent's result formatter). The app is still
+/// discoverable from the tool's own `_meta.ui` in `tools/list`, which every
+/// client sees. A host that renders apps for an agent's session (the desktop)
+/// re-runs the read-only `open_grant_form` on its own connection, with the
+/// extension, to get the full result.
+pub fn tool_result(outcome: Outcome, apps: bool, names_app: bool) -> CallToolResult {
     let mut content = vec![ContentBlock::text(outcome.text)];
-    if !outcome.a2ui.is_empty() {
+    if apps && !outcome.a2ui.is_empty() {
         let payload = Value::Array(outcome.a2ui).to_string();
         content.push(ContentBlock::Resource(
             EmbeddedResource::new(ResourceContents::TextResourceContents {
@@ -230,7 +244,7 @@ pub fn tool_result(outcome: Outcome, ui: bool) -> CallToolResult {
         CallToolResult::success(content)
     };
     result.structured_content = outcome.structured;
-    if ui {
+    if apps && names_app {
         result.meta = Some(meta(json!({ "ui": { "resourceUri": GRANTS_APP_URI } })));
     }
     result
@@ -287,9 +301,7 @@ impl ServerHandler for UcMcpServer {
         let tools = &self.tools;
         let outcome = match request.name.as_ref() {
             "get_grants" => tools.get_grants(args(&request)).await,
-            "open_grant_form" => {
-                return Ok(tool_result(tools.open_grant_form(args(&request)).await, true).into());
-            }
+            "open_grant_form" => tools.open_grant_form(args(&request)).await,
             "search_principals" => tools.search_principals(args(&request)).await,
             "apply_grants" if apps => tools.apply_grants(args(&request)).await,
             "whoami" if apps => tools.whoami().await,
@@ -300,7 +312,8 @@ impl ServerHandler for UcMcpServer {
                 ));
             }
         };
-        Ok(tool_result(outcome, false).into())
+        let names_app = request.name == "open_grant_form";
+        Ok(tool_result(outcome, apps, names_app).into())
     }
 
     async fn list_resources(

@@ -83,7 +83,8 @@ uc mcp serve --http 0.0.0.0:8090 [--path /mcp] [--allowed-host uc-mcp]...
 - **Gating per connection.** Whether a client sees the app-only tools (§8)
   comes from its own capabilities: the request's `_meta` in the stateless
   protocol, else the session's `initialize`. An agent and an MCP Apps host on
-  one server each see their own tool list.
+  one server each see their own tool list. The same gate decides whether a
+  tool result carries the A2UI resource (§8).
 
 OAuth (the MCP authorization spec) and per-request bearer forwarding stay
 staged: they need a real resource-server story, and a shared server changes
@@ -283,6 +284,19 @@ So `uc mcp serve` answers with a form instead of a write.
   messages ride in the tool result as an embedded `application/a2ui+json`
   resource with `audience: ["user"]`, so their JSON stays out of the model's
   context.
+- **Only MCP Apps clients get the A2UI.** The embedded resource, and the
+  result's `_meta.ui.resourceUri`, go only to a client that declared
+  `io.modelcontextprotocol/ui`. Every client gets the text and
+  `structuredContent` (`status: "awaiting_user"`, the prefill, any
+  candidates), so an agent can still say the form is open and that nothing
+  is granted until the user submits it. An agent can't render the resource,
+  and hosts that flatten results ignore `audience` and put the JSON in the
+  agent's context. Some agent hosts also fail on embedded resources outright
+  (Omnigent's result formatter). The app stays discoverable from the tool's
+  own `_meta.ui` in `tools/list`. A host that renders apps for an agent's
+  session re-runs the read-only `open_grant_form` on its own connection,
+  with the extension, for the full result. The same rule covers
+  `apply_grants`' outcome resource, though only app clients can call it.
 - **The write needs a click.** Submitting the form calls `apply_grants`,
   which carries `_meta.ui.visibility: ["app"]`: the host keeps it from the
   model. `uc` only lists `apply_grants` and `whoami`, and only accepts calls to

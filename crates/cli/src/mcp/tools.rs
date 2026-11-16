@@ -35,7 +35,8 @@ pub struct Outcome {
     pub text: String,
     /// `structuredContent`.
     pub structured: Option<Value>,
-    /// A2UI messages for the app, sent as an embedded resource.
+    /// A2UI messages for the app, sent as an embedded resource to MCP Apps
+    /// clients only.
     pub a2ui: Vec<Value>,
     /// The call failed.
     pub is_error: bool,

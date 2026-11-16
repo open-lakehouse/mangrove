@@ -22,8 +22,8 @@ use rmcp::transport::StreamableHttpClientTransport;
 use super::a2ui::{A2UI_MIME_TYPE, GRANT_SURFACE_ID};
 use super::http;
 use super::scim::Scim;
-use super::server::{GRANTS_APP_URI, MCP_APP_MIME_TYPE, UI_EXTENSION, UcMcpServer};
-use super::tools::Tools;
+use super::server::{GRANTS_APP_URI, MCP_APP_MIME_TYPE, UI_EXTENSION, UcMcpServer, tool_result};
+use super::tools::{Outcome, Tools};
 
 /// A server on a random loopback port; stops with the runtime.
 struct Uc {
@@ -669,6 +669,177 @@ async fn over_http_the_grant_form_keeps_its_structure() {
         m.get("createSurface")
             .is_some_and(|surface| surface["surfaceId"] == GRANT_SURFACE_ID)
     }));
+}
+
+// The A2UI resource goes only to MCP Apps clients (mangrove#371).
+
+/// `open_grant_form` on catalog `main` for `bob`, who matches two principals.
+async fn open_form(client: &RunningService<RoleClient, impl ClientHandler>) -> CallToolResult {
+    let opened = call(
+        client,
+        "open_grant_form",
+        json!({
+            "securable_type": "catalog",
+            "full_name": "main",
+            "principal": "bob",
+            "privileges": ["SELECT"]
+        }),
+    )
+    .await;
+    assert_ne!(opened.is_error, Some(true), "{}", text(&opened));
+    opened
+}
+
+fn resources(result: &CallToolResult) -> usize {
+    result
+        .content
+        .iter()
+        .filter(|block| matches!(block, ContentBlock::Resource(_)))
+        .count()
+}
+
+/// The host's result has the A2UI resource and `_meta.ui`, the agent's has
+/// neither, and both carry the same text and structured content.
+fn assert_gated(host: &CallToolResult, agent: &CallToolResult) {
+    assert_eq!(resources(host), 1);
+    assert!(!a2ui(host).is_empty());
+    assert_eq!(
+        host.meta.as_ref().unwrap().0["ui"]["resourceUri"],
+        GRANTS_APP_URI
+    );
+
+    assert_eq!(resources(agent), 0, "{:?}", agent.content);
+    assert_eq!(agent.content.len(), 1, "only the text");
+    assert!(agent.meta.is_none(), "{:?}", agent.meta);
+
+    assert_eq!(host.structured_content, agent.structured_content);
+    let structured = structured(agent);
+    assert_eq!(structured["status"], "awaiting_user");
+    assert_eq!(
+        structured["candidates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c["name"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        ["bob@example.com", "bobby@example.com"]
+    );
+    assert_eq!(text(host), text(agent));
+    let text = text(agent);
+    assert!(text.contains("Opened a grant form"), "{text}");
+    assert!(text.contains("Nothing is granted until the user"), "{text}");
+    assert!(
+        text.contains("bob@example.com, bobby@example.com"),
+        "{text}"
+    );
+}
+
+#[tokio::test]
+async fn open_grant_form_sends_a2ui_only_to_mcp_apps_hosts() {
+    let uc = start(true).await;
+    uc.catalog("main").await;
+    let host = open_form(&connect(&uc, true).await).await;
+    let agent = open_form(&connect(&uc, false).await).await;
+    assert_gated(&host, &agent);
+}
+
+#[tokio::test]
+async fn over_http_open_grant_form_sends_a2ui_only_to_mcp_apps_hosts() {
+    let uc = start(true).await;
+    uc.catalog("main").await;
+    let base = serve_http(&uc, &[]).await;
+    // One server, both clients.
+    let host = open_form(&connect_http(&base, true).await).await;
+    let agent = open_form(&connect_http(&base, false).await).await;
+    assert_gated(&host, &agent);
+}
+
+/// A stateless (2026-07-28) `tools/call` of `open_grant_form`, with the
+/// client's capabilities in `_meta`. Returns the JSON-RPC result.
+async fn stateless_open_form(base: &Url, apps: bool) -> Value {
+    let body = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+            "name": "open_grant_form",
+            "arguments": { "securable_type": "catalog", "full_name": "main", "principal": "bob" },
+            "_meta": {
+                "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                "io.modelcontextprotocol/clientInfo": { "name": "stateless-host", "version": "0" },
+                "io.modelcontextprotocol/clientCapabilities": capabilities(apps)
+            }
+        }
+    });
+    let headers = [
+        ("MCP-Protocol-Version", "2026-07-28"),
+        ("Mcp-Method", "tools/call"),
+        ("Mcp-Name", "open_grant_form"),
+    ];
+    let (status, message) = post_mcp(base, None, &headers, body).await;
+    assert_eq!(status, 200, "{message:?}");
+    let message = message.expect("a JSON-RPC response");
+    message
+        .get("result")
+        .unwrap_or_else(|| panic!("a result in {message}"))
+        .clone()
+}
+
+#[tokio::test]
+async fn over_http_a_stateless_call_is_gated_on_its_meta() {
+    let uc = start(true).await;
+    uc.catalog("main").await;
+    let base = serve_http(&uc, &[]).await;
+    let host = stateless_open_form(&base, true).await;
+    let agent = stateless_open_form(&base, false).await;
+
+    let kinds = |result: &Value| -> Vec<String> {
+        result["content"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|block| block["type"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    assert_eq!(kinds(&host), ["text", "resource"]);
+    assert_eq!(host["_meta"]["ui"]["resourceUri"], GRANTS_APP_URI);
+    assert_eq!(kinds(&agent), ["text"]);
+    assert!(agent.get("_meta").is_none(), "{agent}");
+    assert_eq!(host["structuredContent"], agent["structuredContent"]);
+    assert_eq!(agent["structuredContent"]["status"], "awaiting_user");
+    assert_eq!(host["content"][0], agent["content"][0]);
+}
+
+/// The rule for every tool, `apply_grants`' outcome included: A2UI messages
+/// only with the extension, and `_meta.ui` only for the tool that names the app.
+#[test]
+fn tool_results_carry_a2ui_only_for_mcp_apps_clients() {
+    let outcome = || Outcome {
+        text: "The user granted SELECT to bob on catalog main.".into(),
+        structured: Some(json!({ "applied": true })),
+        a2ui: vec![json!({ "updateDataModel": { "path": "/status", "value": { "state": "ok" } } })],
+        is_error: false,
+    };
+
+    let agent = tool_result(outcome(), false, false);
+    assert_eq!(resources(&agent), 0);
+    assert!(agent.meta.is_none());
+    assert_eq!(text(&agent), outcome().text);
+    assert_eq!(agent.structured_content, outcome().structured);
+    // Not even for the tool that names the app.
+    let agent = tool_result(outcome(), false, true);
+    assert_eq!(resources(&agent), 0);
+    assert!(agent.meta.is_none());
+
+    let app = tool_result(outcome(), true, false);
+    assert_eq!(a2ui(&app), outcome().a2ui);
+    assert!(app.meta.is_none());
+    let app = tool_result(outcome(), true, true);
+    assert_eq!(resources(&app), 1);
+    assert_eq!(
+        app.meta.as_ref().unwrap().0["ui"]["resourceUri"],
+        GRANTS_APP_URI
+    );
 }
 
 #[tokio::test]
