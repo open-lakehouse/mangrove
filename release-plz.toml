@@ -74,7 +74,9 @@ pr_draft = false
 # client, object-store, postgres, sqlite — these carry NO `release = false`.
 #
 # `olai-uc-cli` is publishable (no git deps, its deps are live) but is
-# intentionally held out of crates.io for now; it keeps `release = false`.
+# intentionally held out of crates.io for now. It is `git_only` + `publish =
+# false` (tagged, never published) rather than `release = false`, because the
+# server's `changelog_include` lists it — see the server block.
 #
 # `olai-uc-server` ships as the `mangrove` Docker image (`git_only = true`); it is
 # eligible to publish (git-free graph, PR #89) but held back until its sibling
@@ -128,6 +130,12 @@ changelog_path = "crates/server/CHANGELOG.md"
 # not to `uc-app`. (This replaced the crates/server/ui.lock fingerprint; it
 # needs release-plz >= 0.4.1.) The image also ships the `uc` CLI, so its
 # commits release the server (and rebuild the image) the same way.
+#
+# Every package listed here must TAKE PART in the release: release-plz builds
+# the included commits only from packages in its diff set, and `release = false`
+# drops a package from that set, so listing one silently contributes nothing
+# (that is why `olai-uc-cli` and `uc-app` are `git_only`, not `release = false`).
+# Included commits count from the included package's own last tag.
 changelog_include = [
   "olai-uc-cli",
   "uc-app",
@@ -156,8 +164,15 @@ changelog_path = "crates/files-api/CHANGELOG.md"
 name = "olai-uc-cli"
 changelog_path = "crates/cli/CHANGELOG.md"
 # Publishable (no git deps; its deps client/common are live), but intentionally
-# held out of crates.io for now. Remove this line to release the `uc` CLI crate.
-release = false
+# held out of crates.io for now. It still has to take part in the release so the
+# server's `changelog_include` sees its commits (`release = false` would drop it
+# from the diff set), so like `uc-app` it is `git_only`: versioned from
+# `olai-uc-cli-v*` tags, nothing published, no GitHub release. To publish the
+# `uc` crate, drop these four lines (and bootstrap the crates.io name).
+git_only = true
+publish = false # required alongside git_only
+semver_check = false
+git_release_enable = false
 
 # --- npm packages, released to npmjs.com and GitHub Packages ---
 # Each npm package is versioned through a crate: the NAPI extension itself
