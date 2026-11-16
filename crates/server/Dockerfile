@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1
 #
 # Build for the `uc-server` binary: the deployable Unity Catalog server, with the
-# bundled web UI baked in. Co-located with the crate it builds (like the
+# bundled web UI baked in. The image also ships the `uc` CLI with its `mcp`
+# feature (`uc mcp serve --http …`, run with `--entrypoint uc`), so one image
+# runs both the server and an MCP server next to it. Co-located with the crate it builds (like the
 # storage-proxy and files-api images); the build context is still the REPO ROOT
 # (`docker build -f crates/server/Dockerfile .`), so the context-relative COPYs
 # below resolve unchanged. cargo-chef caches the dependency graph as a separate
@@ -40,16 +42,21 @@ RUN bun run --filter @open-lakehouse/uc-app build
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 # Build dependencies first — this is the cached Docker layer that survives
-# source-only changes. Scope to the server package + `bin` feature so a bare
-# workspace build doesn't unify features across all members (which would pull
-# pyo3 via python/client and force a libpython link this image lacks).
+# source-only changes. Scope to the server and CLI packages (+ their `bin` /
+# `mcp` features) so a bare workspace build doesn't unify features across all
+# members (which would pull pyo3 via python/client and force a libpython link
+# this image lacks). Both binaries share one dependency build.
 RUN cargo chef cook --release --recipe-path recipe.json \
-    -p olai-uc-server --features bin --bin uc-server
+    -p olai-uc-server -p olai-uc-cli \
+    --features olai-uc-server/bin,olai-uc-cli/mcp \
+    --bin uc-server --bin uc
 # Build the application. SQLX_OFFLINE uses the committed `.sqlx` query cache so no
 # database is required at build time.
 COPY . .
 ENV SQLX_OFFLINE=true
-RUN cargo build --release -p olai-uc-server --features bin --bin uc-server
+RUN cargo build --release -p olai-uc-server -p olai-uc-cli \
+    --features olai-uc-server/bin,olai-uc-cli/mcp \
+    --bin uc-server --bin uc
 
 # Minimal runtime: distroless cc (glibc + openssl + CA certs) for the
 # dynamically-linked binary, nonroot. No shell/package manager, so the
@@ -65,6 +72,9 @@ LABEL org.opencontainers.image.title="mangrove" \
       org.opencontainers.image.vendor="open-lakehouse"
 
 COPY --from=builder /app/target/release/uc-server /usr/local/bin/uc-server
+# The CLI, for `docker run --entrypoint uc …` (e.g. `uc mcp serve --http
+# 0.0.0.0:8090 --server http://<uc-server>:8080`). Not the entrypoint.
+COPY --from=builder /app/target/release/uc /usr/local/bin/uc
 # The server serves the bundled SPA from `./web` relative to its working
 # directory (see UI_DIR in crates/server/src/run.rs), so run from /app and drop
 # the bundle there. Absent the bundle the SPA routes just 404 — the API still serves.
