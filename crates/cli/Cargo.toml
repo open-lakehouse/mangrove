@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-cli"
-version = "0.0.2"
+version = "0.0.3"
 description = "Unity Catalog command-line client (the `uc` binary) for a running server."
 edition.workspace = true
 homepage.workspace = true
@@ -69,7 +69,7 @@ rmcp = { version = "3.9", default-features = false, features = [
   "transport-streamable-http-server",
 ] }
 tempfile = "3.1"
-unitycatalog-server = { package = "olai-uc-server", path = "../server", version = "0.0.22", default-features = false, features = [
+unitycatalog-server = { package = "olai-uc-server", path = "../server", version = "0.0.23", default-features = false, features = [
   "embed",
   "scim",
   "sqlite",
