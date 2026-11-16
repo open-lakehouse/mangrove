@@ -344,7 +344,8 @@ bootstrap. Once every publishable crate is live, delete the bootstrap workflow a
 one-time bootstrap (re-add the workflow if so). The Open Sharing crates
 (`olai-sharing-*`) moved to their own repository,
 [distributary](https://github.com/open-lakehouse/distributary). Not published to crates.io:
-`olai-uc-cli` (held out for now). The DataFusion integration (`olai-uc-datafusion`) and the
+`olai-uc-cli` (held out for now; it is `git_only` in `release-plz.toml`, so it is still
+versioned and tagged, and its commits release `olai-uc-server` and rebuild the image). The DataFusion integration (`olai-uc-datafusion`) and the
 in-browser query engine moved to [hydrofoil](https://github.com/open-lakehouse/hydrofoil).
 
 **Notes:**
