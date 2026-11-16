@@ -677,7 +677,7 @@ async fn over_http_health_is_ok() {
     let base = serve_http(&uc, &[]).await;
     let response = reqwest::get(base.join("health").unwrap()).await.unwrap();
     assert_eq!(response.status(), 200);
-    assert_eq!(response.text().await.unwrap(), "ok");
+    assert_eq!(response.text().await.unwrap(), "OK");
 }
 
 #[tokio::test]
