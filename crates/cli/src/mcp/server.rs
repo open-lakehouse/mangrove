@@ -5,7 +5,8 @@
 //! `ui://uc/grants` beside its result, and the app's own tools carry
 //! `_meta.ui.visibility: ["app"]` so the host keeps them from the model. Those
 //! app tools are only listed, and only callable, for a client that declared
-//! the extension: a host without MCP Apps can't render the form, and must not
+//! the extension (per request or session, so one HTTP server can serve an
+//! agent and an MCP Apps host at once): a host without MCP Apps can't render the form, and must not
 //! hand `apply_grants` (a write) to the model.
 
 use std::sync::Arc;
@@ -235,14 +236,14 @@ pub fn tool_result(outcome: Outcome, ui: bool) -> CallToolResult {
     result
 }
 
-/// Whether the client declared the MCP Apps extension.
+/// Whether the client behind this request declared the MCP Apps extension:
+/// in the request's `_meta` (the stateless 2026-07-28 protocol), else in its
+/// session's `initialize`. Over HTTP each connection is gated on its own.
 fn supports_apps(context: &RequestContext<RoleServer>) -> bool {
-    context.peer.peer_info().is_some_and(|info| {
-        info.capabilities
-            .extensions
-            .as_ref()
-            .is_some_and(|extensions| extensions.contains_key(UI_EXTENSION))
-    })
+    context
+        .client_capabilities()
+        .and_then(|capabilities| capabilities.extensions)
+        .is_some_and(|extensions| extensions.contains_key(UI_EXTENSION))
 }
 
 fn args(request: &CallToolRequestParams) -> Value {

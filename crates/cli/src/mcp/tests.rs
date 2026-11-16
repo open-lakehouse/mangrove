@@ -1,6 +1,7 @@
 //! `uc mcp serve` end to end: an in-process Unity Catalog server (SQLite in
 //! memory, a static SCIM directory) and an MCP client talking to
-//! [`UcMcpServer`] over an in-memory pipe, as an MCP Apps host would.
+//! [`UcMcpServer`] over an in-memory pipe, as an MCP Apps host would; and
+//! the same over Streamable HTTP (`uc mcp serve --http`).
 
 use rmcp::model::{
     CallToolRequestParams, CallToolResult, ClientCapabilities, ClientConfig, ContentBlock,
@@ -16,7 +17,10 @@ use unitycatalog_server::config::{
 };
 use url::Url;
 
+use rmcp::transport::StreamableHttpClientTransport;
+
 use super::a2ui::{A2UI_MIME_TYPE, GRANT_SURFACE_ID};
+use super::http;
 use super::scim::Scim;
 use super::server::{GRANTS_APP_URI, MCP_APP_MIME_TYPE, UI_EXTENSION, UcMcpServer};
 use super::tools::Tools;
@@ -88,6 +92,25 @@ impl Uc {
     }
 }
 
+/// A client's capabilities, with the MCP Apps extension when `apps`.
+fn capabilities(apps: bool) -> ClientCapabilities {
+    if !apps {
+        return ClientCapabilities::default();
+    }
+    let mut extensions = ExtensionCapabilities::new();
+    extensions.insert(
+        UI_EXTENSION.into(),
+        serde_json::from_value(json!({ "mimeTypes": [MCP_APP_MIME_TYPE] })).unwrap(),
+    );
+    ClientCapabilities::builder()
+        .enable_extensions_with(extensions)
+        .build()
+}
+
+fn client_config(apps: bool) -> ClientConfig {
+    ClientConfig::new(capabilities(apps), Implementation::new("test-host", "0"))
+}
+
 /// An MCP client, declaring the MCP Apps extension when `apps`.
 async fn connect(uc: &Uc, apps: bool) -> RunningService<RoleClient, impl ClientHandler> {
     let (server_io, client_io) = tokio::io::duplex(1 << 20);
@@ -97,21 +120,7 @@ async fn connect(uc: &Uc, apps: bool) -> RunningService<RoleClient, impl ClientH
             let _ = running.waiting().await;
         }
     });
-    let mut capabilities = ClientCapabilities::default();
-    if apps {
-        let mut extensions = ExtensionCapabilities::new();
-        extensions.insert(
-            UI_EXTENSION.into(),
-            serde_json::from_value(json!({ "mimeTypes": [MCP_APP_MIME_TYPE] })).unwrap(),
-        );
-        capabilities = ClientCapabilities::builder()
-            .enable_extensions_with(extensions)
-            .build();
-    }
-    ClientConfig::new(capabilities, Implementation::new("test-host", "0"))
-        .serve(client_io)
-        .await
-        .unwrap()
+    client_config(apps).serve(client_io).await.unwrap()
 }
 
 async fn call(
@@ -490,4 +499,210 @@ async fn errors_come_back_as_tool_errors() {
     assert!(empty.is_error);
     assert_eq!(empty.structured.unwrap()["kind"], "usage");
     assert_eq!(empty.a2ui[0]["updateDataModel"]["value"]["state"], "error");
+}
+
+// Streamable HTTP (`uc mcp serve --http`).
+
+/// `uc mcp serve --http` on a random loopback port, accepting `allowed_hosts`
+/// (rmcp's loopback default when empty). Returns its base URL.
+async fn serve_http(uc: &Uc, allowed_hosts: &[&str]) -> Url {
+    let allowed: Vec<String> = allowed_hosts.iter().map(|h| h.to_string()).collect();
+    let router = http::router(UcMcpServer::new(uc.tools()), "/mcp", http::config(&allowed));
+    let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, router).await });
+    Url::parse(&format!("http://{addr}")).unwrap()
+}
+
+/// An MCP client over Streamable HTTP, declaring the MCP Apps extension when `apps`.
+async fn connect_http(base: &Url, apps: bool) -> RunningService<RoleClient, impl ClientHandler> {
+    let transport = StreamableHttpClientTransport::from_uri(base.join("mcp").unwrap().as_str());
+    client_config(apps).serve(transport).await.unwrap()
+}
+
+fn tool_names(tools: Vec<rmcp::model::Tool>) -> Vec<String> {
+    let mut names: Vec<_> = tools.into_iter().map(|t| t.name.to_string()).collect();
+    names.sort();
+    names
+}
+
+const PLAIN_TOOLS: [&str; 3] = ["get_grants", "open_grant_form", "search_principals"];
+const APP_TOOLS: [&str; 5] = [
+    "apply_grants",
+    "get_grants",
+    "open_grant_form",
+    "search_principals",
+    "whoami",
+];
+
+/// POSTs one JSON-RPC message to `/mcp`, optionally with a `Host` override.
+/// Returns the status and the JSON-RPC response (from a JSON or an SSE body).
+async fn post_mcp(
+    base: &Url,
+    host: Option<&str>,
+    headers: &[(&str, &str)],
+    body: Value,
+) -> (reqwest::StatusCode, Option<Value>) {
+    let mut request = reqwest::Client::new()
+        .post(base.join("mcp").unwrap())
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json, text/event-stream")
+        .body(body.to_string());
+    if let Some(host) = host {
+        request = request.header("Host", host);
+    }
+    for (name, value) in headers {
+        request = request.header(*name, *value);
+    }
+    let response = request.send().await.unwrap();
+    let status = response.status();
+    let text = response.text().await.unwrap();
+    let message = serde_json::from_str(&text).ok().or_else(|| {
+        // An SSE body: the response is the `data:` event carrying an `id`.
+        text.lines()
+            .filter_map(|line| line.strip_prefix("data:"))
+            .filter_map(|data| serde_json::from_str::<Value>(data.trim()).ok())
+            .find(|message| message.get("id").is_some())
+    });
+    (status, message)
+}
+
+/// A stateless (2026-07-28) `tools/list`, with the client's capabilities in `_meta`.
+async fn stateless_tool_names(base: &Url, apps: bool) -> Vec<String> {
+    let body = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/list",
+        "params": {
+            "_meta": {
+                "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+                "io.modelcontextprotocol/clientInfo": { "name": "stateless-host", "version": "0" },
+                "io.modelcontextprotocol/clientCapabilities": capabilities(apps)
+            }
+        }
+    });
+    let headers = [
+        ("MCP-Protocol-Version", "2026-07-28"),
+        ("Mcp-Method", "tools/list"),
+    ];
+    let (status, message) = post_mcp(base, None, &headers, body).await;
+    assert_eq!(status, 200, "{message:?}");
+    let message = message.expect("a JSON-RPC response");
+    let mut names: Vec<String> = message["result"]["tools"]
+        .as_array()
+        .unwrap_or_else(|| panic!("tools in {message}"))
+        .iter()
+        .map(|t| t["name"].as_str().unwrap().to_owned())
+        .collect();
+    names.sort();
+    names
+}
+
+#[tokio::test]
+async fn over_http_app_tools_are_gated_per_connection() {
+    let uc = start(false).await;
+    let base = serve_http(&uc, &[]).await;
+
+    // Two clients on one server: each sees the tools its capabilities allow.
+    let host = connect_http(&base, true).await;
+    let agent = connect_http(&base, false).await;
+    assert_eq!(tool_names(host.list_all_tools().await.unwrap()), APP_TOOLS);
+    assert_eq!(
+        tool_names(agent.list_all_tools().await.unwrap()),
+        PLAIN_TOOLS
+    );
+
+    // apply_grants (a write) is refused to the client without the extension.
+    let refused = agent
+        .call_tool(CallToolRequestParams::new("apply_grants"))
+        .await
+        .unwrap_err();
+    let rmcp::ServiceError::McpError(error) = refused else {
+        panic!("an MCP error, got {refused:?}")
+    };
+    assert_eq!(error.code, rmcp::model::ErrorCode::INVALID_PARAMS);
+
+    // The host may call the app tools on the same server (the anonymous test
+    // server has no identity, so whoami answers with a tool error, not a refusal).
+    assert!(
+        host.call_tool(CallToolRequestParams::new("whoami"))
+            .await
+            .is_ok()
+    );
+}
+
+#[tokio::test]
+async fn over_http_a_stateless_request_is_gated_on_its_meta() {
+    let uc = start(false).await;
+    let base = serve_http(&uc, &[]).await;
+    assert_eq!(stateless_tool_names(&base, true).await, APP_TOOLS);
+    assert_eq!(stateless_tool_names(&base, false).await, PLAIN_TOOLS);
+}
+
+#[tokio::test]
+async fn over_http_the_grant_form_keeps_its_structure() {
+    let uc = start(true).await;
+    uc.catalog("main").await;
+    let base = serve_http(&uc, &[]).await;
+    let host = connect_http(&base, true).await;
+
+    let opened = call(
+        &host,
+        "open_grant_form",
+        json!({
+            "securable_type": "catalog",
+            "full_name": "main",
+            "principal": "alice",
+            "privileges": ["USE_CATALOG"]
+        }),
+    )
+    .await;
+    assert!(!opened.is_error.unwrap_or(false), "{}", text(&opened));
+    assert_eq!(
+        opened.meta.as_ref().unwrap().0["ui"]["resourceUri"],
+        GRANTS_APP_URI
+    );
+    assert!(structured(&opened).is_object());
+    let messages = a2ui(&opened);
+    assert!(!messages.is_empty(), "the embedded A2UI resource");
+    assert!(messages.iter().any(|m| {
+        m.get("createSurface")
+            .is_some_and(|surface| surface["surfaceId"] == GRANT_SURFACE_ID)
+    }));
+}
+
+#[tokio::test]
+async fn over_http_health_is_ok() {
+    let uc = start(false).await;
+    let base = serve_http(&uc, &[]).await;
+    let response = reqwest::get(base.join("health").unwrap()).await.unwrap();
+    assert_eq!(response.status(), 200);
+    assert_eq!(response.text().await.unwrap(), "ok");
+}
+
+#[tokio::test]
+async fn over_http_a_foreign_host_is_rejected_unless_allowed() {
+    let uc = start(false).await;
+    let initialize = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {},
+            "clientInfo": { "name": "test", "version": "0" }
+        }
+    });
+
+    let loopback = serve_http(&uc, &[]).await;
+    let (status, _) = post_mcp(&loopback, Some("evil.example"), &[], initialize.clone()).await;
+    assert_eq!(status, 403);
+    let (status, _) = post_mcp(&loopback, None, &[], initialize.clone()).await;
+    assert_eq!(status, 200);
+
+    let allowed = serve_http(&uc, &["uc-mcp"]).await;
+    let (status, _) = post_mcp(&allowed, Some("uc-mcp:8090"), &[], initialize.clone()).await;
+    assert_eq!(status, 200);
+    let (status, _) = post_mcp(&allowed, Some("evil.example"), &[], initialize).await;
+    assert_eq!(status, 403);
 }
