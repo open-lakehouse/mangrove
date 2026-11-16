@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.23](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.22...olai-uc-server-v0.0.23) - 2026-11-16
+
+### Fixed
+
+- send open_grant_form's A2UI resource only to MCP Apps clients (#373)
+
 ## [0.0.22](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.21...olai-uc-server-v0.0.22) - 2026-11-16
 
 ### Fixed
