@@ -126,8 +126,10 @@ changelog_path = "crates/server/CHANGELOG.md"
 # still produces a server tag and a Docker rebuild. Every npm package the app
 # bundles must be listed here: its files belong to its own placeholder crate,
 # not to `uc-app`. (This replaced the crates/server/ui.lock fingerprint; it
-# needs release-plz >= 0.4.1.)
+# needs release-plz >= 0.4.1.) The image also ships the `uc` CLI, so its
+# commits release the server (and rebuild the image) the same way.
 changelog_include = [
+  "olai-uc-cli",
   "uc-app",
   "unity-catalog-client",
   "unity-catalog-ui",
