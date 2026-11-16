@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.22](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.21...olai-uc-server-v0.0.22) - 2026-11-16
+
+### Fixed
+
+- answer OK on uc mcp serve's /health (#368)
+
 ## [0.0.21](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.20...olai-uc-server-v0.0.21) - 2026-11-16
 
 ### Added
