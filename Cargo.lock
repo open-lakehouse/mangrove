@@ -3566,7 +3566,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-server"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "async-trait",
  "axum",
@@ -6155,7 +6155,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
 
 [[package]]
 name = "uc-app"
-version = "0.0.7"
+version = "0.0.8"
 
 [[package]]
 name = "unicase"
@@ -6264,7 +6264,7 @@ dependencies = [
 
 [[package]]
 name = "unity-catalog-ui"
-version = "0.0.4"
+version = "0.0.5"
 
 [[package]]
 name = "unitycatalog-acceptance"
