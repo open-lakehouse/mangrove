@@ -119,24 +119,27 @@ message FunctionParameterInfos {
 message CreateFunction {
   // Name of function, relative to parent schema.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
 
   // Name of parent catalog.
   string catalog_name = 2 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
 
   // Name of parent schema.
   string schema_name = 3 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
@@ -210,22 +213,25 @@ message Function {
 
   // Name of function, relative to parent schema.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 
   // Name of parent catalog.
   string catalog_name = 2 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 
   // Name of parent schema.
   string schema_name = 3 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 
@@ -233,7 +239,7 @@ message Function {
   //
   // Format: catalog_name.schema_name.function_name
   string full_name = 4 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+$",
     (google.api.field_behavior) = OUTPUT_ONLY
   ];
 

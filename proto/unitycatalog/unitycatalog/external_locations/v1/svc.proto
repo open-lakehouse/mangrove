@@ -44,8 +44,9 @@ message ListExternalLocationsResponse {
 message CreateExternalLocationRequest {
   // Name of external location.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 
@@ -57,8 +58,9 @@ message CreateExternalLocationRequest {
 
   // Name of the storage credential used with this location.
   string credential_name = 3 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 
@@ -76,8 +78,9 @@ message CreateExternalLocationRequest {
 message GetExternalLocationRequest {
   // Name of external location.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 
@@ -89,8 +92,9 @@ message GetExternalLocationRequest {
 message UpdateExternalLocationRequest {
   // Name of external location.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 
@@ -118,8 +122,9 @@ message UpdateExternalLocationRequest {
 
   // new name of the external location.
   optional string new_name = 7 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = OPTIONAL
   ];
 
@@ -134,8 +139,9 @@ message UpdateExternalLocationRequest {
 message DeleteExternalLocationRequest {
   // Name of external location.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 

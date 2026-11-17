@@ -12,8 +12,9 @@ export const createCatalog = {
     kind: "string",
     required: true,
     description: "Name of catalog.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   comment: {
     kind: "string",
@@ -34,14 +35,16 @@ export const createCatalog = {
     title: "The name of delta sharing provider.",
     description:
       "A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z-_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   share_name: {
     kind: "string",
     description: "The name of the share under the share provider.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
 } as const satisfies FieldSpecs<Schemas["CreateCatalog"]>;
 
@@ -64,8 +67,9 @@ export const updateCatalog = {
   new_name: {
     kind: "string",
     description: "New name for the catalog.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
 } as const satisfies FieldSpecs<Schemas["UpdateCatalogRequest"]>;
 
@@ -75,15 +79,17 @@ export const createSchema = {
     kind: "string",
     required: true,
     description: "Name of schema, relative to parent catalog.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   catalog_name: {
     kind: "string",
     required: true,
     description: "Name of parent catalog.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   comment: {
     kind: "string",
@@ -116,8 +122,9 @@ export const updateSchema = {
   new_name: {
     kind: "string",
     description: "New name for the schema.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
 } as const satisfies FieldSpecs<Schemas["UpdateSchemaRequest"]>;
 
@@ -127,22 +134,25 @@ export const createVolume = {
     kind: "string",
     required: true,
     description: "The identifier of the catalog",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   schema_name: {
     kind: "string",
     required: true,
     description: "The identifier of the schema",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   name: {
     kind: "string",
     required: true,
     description: "The identifier of the volume",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   volume_type: {
     kind: "enum",
@@ -169,7 +179,9 @@ export const updateVolume = {
   new_name: {
     kind: "string",
     description: "New name for the volume.",
-    minLength: 3,
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   comment: {
     kind: "string",
@@ -189,22 +201,25 @@ export const createRegisteredModel = {
     kind: "string",
     required: true,
     description: "Name of registered model, relative to parent schema.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   catalog_name: {
     kind: "string",
     required: true,
     description: "Name of parent catalog.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   schema_name: {
     kind: "string",
     required: true,
     description: "Name of parent schema.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   comment: {
     kind: "string",
@@ -219,8 +234,9 @@ export const updateRegisteredModel = {
   new_name: {
     kind: "string",
     description: "New name for the registered model.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   comment: {
     kind: "string",
@@ -241,8 +257,9 @@ export const createCredential = {
     required: true,
     description:
       "The credential name. The name must be unique among storage and service credentials within the metastore.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   purpose: {
     kind: "enum",
@@ -376,8 +393,9 @@ export const updateCredential = {
   new_name: {
     kind: "string",
     description: "New name of the credential.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   comment: {
     kind: "string",
@@ -514,8 +532,9 @@ export const createExternalLocation = {
     kind: "string",
     required: true,
     description: "Name of external location.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   url: {
     kind: "string",
@@ -528,8 +547,9 @@ export const createExternalLocation = {
     kind: "string",
     required: true,
     description: "Name of the storage credential used with this location.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   read_only: {
     kind: "boolean",
@@ -573,8 +593,9 @@ export const updateExternalLocation = {
   new_name: {
     kind: "string",
     description: "new name of the external location.",
-    minLength: 3,
-    pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
+    minLength: 1,
+    maxLength: 255,
+    pattern: "^[^./\\x00-\\x20\\x7F]+$",
   },
   force: {
     kind: "boolean",

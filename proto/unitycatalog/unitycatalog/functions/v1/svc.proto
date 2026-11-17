@@ -15,16 +15,18 @@ import "unitycatalog/functions/v1/models.proto";
 message ListFunctionsRequest {
   // Name of parent catalog for functions of interest.
   string catalog_name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {child_type: "unitycatalog.io/Function"}
   ];
 
   // Parent schema of functions.
   string schema_name = 2 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {child_type: "unitycatalog.io/Function"}
   ];
@@ -69,7 +71,7 @@ message CreateFunctionRequest {
 message GetFunctionRequest {
   // The fully-qualified name of the function (three-level name: catalog.schema.function).
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+$",
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "unitycatalog.io/Function"}
@@ -83,7 +85,7 @@ message GetFunctionRequest {
 message UpdateFunctionRequest {
   // The fully-qualified name of the function (three-level name: catalog.schema.function).
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+$",
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "unitycatalog.io/Function"}
@@ -97,7 +99,7 @@ message UpdateFunctionRequest {
 message DeleteFunctionRequest {
   // The fully-qualified name of the function (three-level name: catalog.schema.function).
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]\\.[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+$",
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "unitycatalog.io/Function"}

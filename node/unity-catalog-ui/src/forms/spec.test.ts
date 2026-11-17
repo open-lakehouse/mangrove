@@ -7,12 +7,7 @@ import {
   validateRequest,
 } from "./spec.js";
 
-const name: FieldSpec = {
-  kind: "string",
-  required: true,
-  minLength: 3,
-  pattern: "^[a-z][0-9a-z_]*[0-9a-z]$",
-};
+const name: FieldSpec = fields.createCatalog.name;
 
 describe("validateField", () => {
   test("required fields reject empty values", () => {
@@ -24,10 +19,26 @@ describe("validateField", () => {
     expect(validateField({ kind: "string" }, undefined)).toBeUndefined();
   });
 
-  test("string length and identifier pattern", () => {
-    expect(validateField(name, "ab")).toContain("at least 3");
-    expect(validateField(name, "Bad-Name")).toContain("lowercase");
-    expect(validateField(name, "sales_2026")).toBeUndefined();
+  test("securable names accept what Unity Catalog accepts", () => {
+    for (const ok of ["a", "Sales-2026", "team@acme", "sales_2026", "Ümlaut"]) {
+      expect(validateField(name, ok)).toBeUndefined();
+    }
+    for (const bad of ["a.b", "has space", "a/b", "tab\tname"]) {
+      expect(validateField(name, bad)).toContain("periods, spaces, slashes");
+    }
+    expect(validateField(name, "x".repeat(256))).toContain("at most 255");
+  });
+
+  test("three-level names need three non-empty parts", () => {
+    const fullName: FieldSpec = {
+      kind: "string",
+      required: true,
+      pattern:
+        "^[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+$",
+    };
+    expect(validateField(fullName, "Cat.sch.Tbl-1")).toBeUndefined();
+    expect(validateField(fullName, "cat.sch")).toContain("three-level");
+    expect(validateField(fullName, "cat..tbl")).toContain("three-level");
   });
 
   test("the protovalidate URI pattern compiles and checks", () => {
@@ -56,7 +67,7 @@ describe("validateField", () => {
 
 describe("validateRequest", () => {
   test("collects one error per invalid field", () => {
-    const errors = validateRequest(fields.createSchema, { name: "x" });
+    const errors = validateRequest(fields.createSchema, { name: "has space" });
     expect(Object.keys(errors).sort()).toEqual(["catalog_name", "name"]);
   });
 

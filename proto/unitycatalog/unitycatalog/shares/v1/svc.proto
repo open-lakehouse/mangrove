@@ -42,8 +42,9 @@ message ListSharesResponse {
 message CreateShareRequest {
   // Name of the share.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 
@@ -58,7 +59,7 @@ message CreateShareRequest {
 message GetShareRequest {
   // Name of the share.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
     (google.api.field_behavior) = REQUIRED
   ];
 
@@ -92,8 +93,8 @@ message DataObjectUpdate {
 message UpdateShareRequest {
   // Name of the share.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+(\\.[^./\\x00-\\x20\\x7F]+)*$",
+    (buf.validate.field).string.min_len = 1,
     (google.api.field_behavior) = REQUIRED
   ];
 
@@ -107,8 +108,8 @@ message UpdateShareRequest {
 
   // A new name for the share.
   optional string new_name = 3 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+(\\.[^./\\x00-\\x20\\x7F]+)*$",
+    (buf.validate.field).string.min_len = 1,
     (google.api.field_behavior) = OPTIONAL
   ];
 
@@ -129,8 +130,8 @@ message UpdateShareRequest {
 message DeleteShareRequest {
   // Name of the share.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+(\\.[^./\\x00-\\x20\\x7F]+)*$",
+    (buf.validate.field).string.min_len = 1,
     (google.api.field_behavior) = REQUIRED
   ];
 }
@@ -139,7 +140,7 @@ message DeleteShareRequest {
 message GetPermissionsRequest {
   // Name of the share.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
     (google.api.field_behavior) = REQUIRED
   ];
 
@@ -170,7 +171,7 @@ message GetPermissionsResponse {
 message UpdatePermissionsRequest {
   // Name of the share.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
     (google.api.field_behavior) = REQUIRED
   ];
 

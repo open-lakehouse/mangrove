@@ -14,16 +14,18 @@ import "unitycatalog/agents/v0alpha1/models.proto";
 message ListAgentsRequest {
   // The identifier of the catalog.
   string catalog_name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {child_type: "unitycatalog.io/Agent"}
   ];
 
   // The identifier of the schema.
   string schema_name = 2 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {child_type: "unitycatalog.io/Agent"}
   ];
@@ -59,22 +61,25 @@ message ListAgentsResponse {
 message CreateAgentRequest {
   // The identifier of the catalog.
   string catalog_name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 
   // The identifier of the schema.
   string schema_name = 2 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 
   // The identifier of the agent.
   string name = 3 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = REQUIRED
   ];
 
@@ -135,8 +140,9 @@ message UpdateAgentRequest {
 
   // New name for the agent.
   optional string new_name = 2 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = OPTIONAL
   ];
 

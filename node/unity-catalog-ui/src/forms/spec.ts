@@ -110,11 +110,19 @@ function compile(pattern: string): RegExp {
 
 /** Messages for the identifier and URL patterns the specs use. */
 function patternMessage(pattern: string): string {
-  if (pattern === "^[a-z][0-9a-z_]*[0-9a-z]$") {
-    return "Use lowercase letters, digits and underscores; start with a letter and don't end with an underscore.";
+  // Securable names follow Unity Catalog: anything but `.`, space, `/` and
+  // control characters (one segment, a three-level name, or dotted segments).
+  if (pattern === "^[^./\\x00-\\x20\\x7F]+$") {
+    return "Names can't contain periods, spaces, slashes or control characters.";
   }
-  if (pattern === "^[a-z][0-9a-z-_]*[0-9a-z]$") {
-    return "Use lowercase letters, digits, dashes and underscores; start with a letter.";
+  if (
+    pattern ===
+    "^[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+\\.[^./\\x00-\\x20\\x7F]+$"
+  ) {
+    return "Use a three-level name (catalog.schema.name); parts can't contain spaces, slashes or control characters.";
+  }
+  if (pattern === "^[^./\\x00-\\x20\\x7F]+(\\.[^./\\x00-\\x20\\x7F]+)*$") {
+    return "Name parts can't be empty or contain spaces, slashes or control characters.";
   }
   if (pattern.startsWith("^(?:(?:[a-zA-Z]")) {
     return "Enter a valid URL, e.g. s3://bucket/path.";

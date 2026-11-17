@@ -46,10 +46,10 @@ describe("create schema", () => {
     );
     const user = userEvent.setup();
 
-    await user.type(await screen.findByLabelText(/^Name/), "ab");
+    await user.type(await screen.findByLabelText(/^Name/), "a/b");
     await user.click(screen.getByRole("button", { name: "Create" }));
 
-    expect(await screen.findByText(/at least 3 characters/)).toBeDefined();
+    expect(await screen.findByText(/periods, spaces, slashes/)).toBeDefined();
     expect(uc.writes()).toHaveLength(0);
   });
 
@@ -113,7 +113,7 @@ describe("create catalog", () => {
     await waitFor(() => expect(uc.writes()).toHaveLength(1));
     // Typed capitals and spaces become a valid identifier.
     expect(uc.writes()[0]?.body).toEqual({
-      name: "sales_data",
+      name: "Sales_Data",
       comment: "Revenue",
     });
   });

@@ -65,12 +65,12 @@ describe("validation", () => {
     const { result } = renderHook(() =>
       useResourceForm<Record<string, unknown>>(
         updateCatalog,
-        { new_name: "Legacy-Name" },
+        { new_name: "legacy name" },
         { patch: true },
       ),
     );
     expect(result.current.valid).toBe(true);
-    act(() => result.current.set("new_name", "Still-Bad"));
+    act(() => result.current.set("new_name", "still bad"));
     expect(result.current.valid).toBe(false);
   });
 

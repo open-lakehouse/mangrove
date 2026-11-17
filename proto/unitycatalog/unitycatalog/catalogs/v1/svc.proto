@@ -57,8 +57,9 @@ message CreateCatalogRequest {
 
   // Name of catalog.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
@@ -79,15 +80,17 @@ message CreateCatalogRequest {
   //
   // A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
   optional string provider_name = 5 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z-_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = OPTIONAL
   ];
 
   // The name of the share under the share provider.
   optional string share_name = 6 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = OPTIONAL
   ];
 }
@@ -96,7 +99,7 @@ message CreateCatalogRequest {
 message GetCatalogRequest {
   // Name of catalog.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
@@ -109,8 +112,9 @@ message GetCatalogRequest {
 message UpdateCatalogRequest {
   // Name of catalog.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
@@ -133,8 +137,9 @@ message UpdateCatalogRequest {
 
   // New name for the catalog.
   optional string new_name = 5 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (google.api.field_behavior) = OPTIONAL
   ];
 }
@@ -143,8 +148,9 @@ message UpdateCatalogRequest {
 message DeleteCatalogRequest {
   // Name of catalog.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z_]*[0-9a-z]$",
-    (buf.validate.field).string.min_len = 3,
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+$",
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 255,
     (buf.validate.field).required = true,
     (google.api.field_behavior) = REQUIRED
   ];
