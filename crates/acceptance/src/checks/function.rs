@@ -75,7 +75,7 @@ pub async fn function_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()> {
     .await
 }
 
-/// Function update (owner change). Split from the lifecycle because UC OSS v0.5.0
+/// Function update (owner change). Split from the lifecycle because UC OSS
 /// does not implement function update — quarantined for the oss_java target.
 pub async fn function_update(ctx: &JourneyContext) -> AcceptanceResult<()> {
     let catalog = unique("conf_fnup_cat");

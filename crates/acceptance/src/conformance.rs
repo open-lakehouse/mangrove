@@ -19,7 +19,7 @@
 //! check that unexpectedly *passes* is surfaced loudly so the flag can be dropped.
 //!
 //! The quarantine list is the living inventory of "which API surfaces don't work
-//! yet" — see `JOURNEY_CATALOG.md` for the fuller picture and follow-up issues.
+//! yet"; each entry names its follow-up issue.
 
 use std::future::Future;
 use std::pin::Pin;
@@ -246,7 +246,7 @@ macro_rules! check {
     };
 }
 
-/// Checks portable to any UC implementation, including UC OSS Java v0.5.0.
+/// Checks portable to any UC implementation, including UC OSS Java.
 /// This set is the CI baseline.
 pub fn baseline_checks() -> Vec<Check> {
     vec![
@@ -336,7 +336,7 @@ pub fn extended_checks() -> Vec<Check> {
 ///
 /// `Some(reason)` marks a check as known-failing for that target: it is still
 /// attempted, but a failure is expected and does not break CI. Populate this from
-/// real live runs; every entry is a follow-up worklist item (see `JOURNEY_CATALOG.md`).
+/// real live runs; every entry is a follow-up worklist item with its issue.
 /// Removing an entry is how a fixed surface re-enters the must-pass set.
 fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
     match (target, check_name) {
@@ -368,38 +368,22 @@ fn known_failing(target: Target, check_name: &str) -> Option<&'static str> {
             Some("entity-tag-assignments returns 404 on our server (follow-up: #63)")
         }
 
-        // --- OssJava (unitycatalog/unitycatalog:v0.5.0), from live runs 2026-07-14 ---
-        // Pre-existing baseline gaps against the Java reference server (see #65).
-        // `managed_table_lifecycle` is NO LONGER quarantined here (#66): its `/delta/v1`
-        // staging flow + read-back works against Java v0.5.0 on both Linux and macOS.
-        // The prior 404 was `list_table_summaries` (GET /table-summaries), an endpoint
-        // v0.5.0 does not implement — that call now lives in the Rust-only
-        // `table_summaries` check, and the macOS read-back `/tmp` symlink artifact is
-        // fixed by canonicalizing the local location in `checks::managed_delta`.
-        // `function_lifecycle` is NO LONGER quarantined here (#70): POST /functions now
-        // wraps the payload in a `function_info` envelope (proto `body: "function_info"`),
-        // matching UC OSS Java v0.5.0 and the Databricks SDK.
+        // --- OssJava (unitycatalog/unitycatalog:v0.7.0), from live runs 2026-11-17 ---
         (Target::OssJava, "function_update") => Some(
-            "UC OSS v0.5.0 does not implement function update — PATCH /functions/{name} \
+            "UC OSS does not implement function update — PATCH /functions/{name} \
              returns 405 (follow-up: #70)",
         ),
-        // The models API on UC OSS v0.5.0 reads the create payload *flat*
-        // (`{"name": …}`), but our client sends the request envelope
-        // (`{"model_info": {…}}`) because the codegen doesn't honor the proto
-        // `body: "model_info"` mapping — so Java sees an empty name and 400s with
-        // "Name cannot be empty". (Unlike functions, whose v0.5.0 API *requires*
-        // the `function_info` envelope — the reference server is not uniform.)
-        // Both checks pass against our Rust server; see the wire-format table in
-        // the follow-up.
+        // Up to v0.5.0 these failed with 400 "Name cannot be empty" (UC OSS reads the
+        // create payload flat, our client sends the `model_info` / `model_version`
+        // envelope, #77). On v0.7.0 the create gets further and the server fails to
+        // create the model directory under the bind-mounted storage root.
         (Target::OssJava, "registered_model_lifecycle") => Some(
-            "models create wants a flat body but the client sends the `model_info` \
-             envelope (codegen ignores `body:` mapping) — 400 \"Name cannot be empty\" \
-             (follow-up: #77)",
+            "v0.7.0: 500 \"Failed to create directory\" under the bind-mounted storage \
+             root; previously the `model_info` envelope 400 (follow-up: #77)",
         ),
         (Target::OssJava, "model_version_lifecycle") => Some(
-            "model-version create wants a flat body but the client sends the \
-             `model_version` envelope (codegen ignores `body:` mapping) — 400 \
-             \"Name cannot be empty\" (follow-up: #77)",
+            "v0.7.0: 500 \"Failed to create directory\" under the bind-mounted storage \
+             root; previously the `model_version` envelope 400 (follow-up: #77)",
         ),
         _ => None,
     }

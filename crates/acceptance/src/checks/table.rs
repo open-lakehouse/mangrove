@@ -3,15 +3,18 @@
 use futures::StreamExt;
 use unitycatalog_common::credentials::v1::Purpose;
 use unitycatalog_common::tables::v1::{
-    DataSourceFormat, Dependency, DependencyList, GetTableExistsRequest, TableDependency,
-    TableType, dependency,
+    Column, ColumnTypeName, DataSourceFormat, Dependency, DependencyList, GetTableExistsRequest,
+    TableDependency, TableType, dependency,
 };
 
 use super::{managed_delta, unique, with_cleanup};
 use crate::{AcceptanceResult, JourneyContext};
 
-const METRIC_VIEW_YAML: &str = "version: \"1.1\"\nsource: cat.sch.orders\n\
-                                measures:\n  - name: revenue\n    expr: SUM(price)\n";
+fn metric_view_yaml(source: &str) -> String {
+    format!(
+        "version: \"1.1\"\nsource: {source}\nmeasures:\n  - name: revenue\n    expr: SUM(price)\n"
+    )
+}
 
 /// Managed Delta table, driven through the real `/delta/v1` staging flow:
 /// createStagingTable → write `_delta_log/0.json` → createTable → commit a data
@@ -58,8 +61,8 @@ pub async fn managed_table_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<(
             );
 
             // NOTE: `list_table_summaries` (GET /table-summaries) and `get_table_exists`
-            // (GET /tables/{full_name}/exists) are deliberately NOT exercised here — UC
-            // OSS Java v0.5.0 implements neither (its table surface is /staging-tables,
+            // (GET /tables/{full_name}/exists) are deliberately NOT exercised here:
+            // UC OSS Java implements neither (its table surface is /staging-tables,
             // /tables, /tables/{full_name}), so either call 404s and would make this
             // portable baseline check fail against Java. Both are covered by the
             // Rust-only `table_extended_reads` check.
@@ -74,10 +77,10 @@ pub async fn managed_table_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<(
     .await
 }
 
-/// Extended table read surfaces absent from UC OSS Java v0.5.0: `list_table_summaries`
+/// Extended table read surfaces absent from UC OSS Java: `list_table_summaries`
 /// (GET /table-summaries) and `get_table_exists` (GET /tables/{full_name}/exists).
 ///
-/// Kept separate from [`managed_table_lifecycle`] because v0.5.0 implements neither
+/// Kept separate from [`managed_table_lifecycle`] because UC OSS implements neither
 /// endpoint (see the note in that check); these are Rust-server / managed-Databricks
 /// surfaces only, so this check lives in `extended_checks`. It creates a managed table
 /// via the staging flow, then asserts the table surfaces in the schema's summaries and
@@ -124,17 +127,22 @@ pub async fn table_extended_reads(ctx: &JourneyContext) -> AcceptanceResult<()> 
     .await
 }
 
-/// Metric view: create with a YAML `view_definition`, then verify it round-trips
-/// through create and get (and, when the server derives them, `view_dependencies`).
+/// Metric view over a real managed source table: create with a YAML
+/// `view_definition`, then verify it round-trips through create and get (and, when
+/// the server derives them, `view_dependencies`).
 pub async fn metric_view_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()> {
     let catalog = unique("conf_mv_cat");
     let schema = "s";
     let view = "mv";
     let full_name = format!("{catalog}.{schema}.{view}");
+    // UC OSS (since v0.7.0) checks that the metric view's source table exists.
+    let source = format!("{catalog}.{schema}.orders");
+    let yaml = metric_view_yaml(&source);
     with_cleanup(
         || async {
             ctx.create_catalog(&catalog).await?;
             ctx.client().create_schema(schema, &catalog).await?;
+            managed_delta::create_commit_read(ctx.client(), &catalog, schema, "orders").await?;
 
             let created = ctx
                 .client()
@@ -145,7 +153,20 @@ pub async fn metric_view_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()>
                     TableType::MetricView,
                     DataSourceFormat::Delta,
                 )
-                .with_view_definition(Some(METRIC_VIEW_YAML.to_string()))
+                .with_view_definition(Some(yaml.clone()))
+                // UC OSS (since v0.7.0) rejects a metric view without columns; declare
+                // the YAML's single `revenue` measure.
+                .with_columns([Column {
+                    name: "revenue".to_string(),
+                    type_text: "double".to_string(),
+                    type_json:
+                        r#"{"name":"revenue","type":"double","nullable":true,"metadata":{}}"#
+                            .to_string(),
+                    type_name: ColumnTypeName::DOUBLE.into(),
+                    position: Some(0),
+                    nullable: Some(true),
+                    ..Default::default()
+                }])
                 // Java rejects the create without dependencies (`view_dependencies is
                 // required for metric view`); supplying them matching the YAML `source:`
                 // is target-neutral (Java accepts and returns null, Rust echoes them).
@@ -153,7 +174,7 @@ pub async fn metric_view_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()>
                     dependencies: vec![Dependency {
                         dependency: Some(
                             TableDependency {
-                                table_full_name: "cat.sch.orders".to_string(),
+                                table_full_name: source.clone(),
                                 ..Default::default()
                             }
                             .into(),
@@ -171,7 +192,7 @@ pub async fn metric_view_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()>
             );
             assert_eq!(
                 created.view_definition.as_deref(),
-                Some(METRIC_VIEW_YAML),
+                Some(yaml.as_str()),
                 "view_definition not preserved on create"
             );
 
@@ -179,7 +200,7 @@ pub async fn metric_view_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()>
             assert_eq!(fetched.table_type, TableType::MetricView);
             assert_eq!(
                 fetched.view_definition.as_deref(),
-                Some(METRIC_VIEW_YAML),
+                Some(yaml.as_str()),
                 "view_definition not preserved through get"
             );
             // Servers that echo or derive dependencies populate this (Rust echoes the
@@ -195,7 +216,7 @@ pub async fn metric_view_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()>
                     .collect();
                 assert_eq!(
                     names,
-                    vec!["cat.sch.orders"],
+                    vec![source.as_str()],
                     "view_dependencies not derived from the definition's source"
                 );
             }
@@ -216,6 +237,7 @@ pub async fn metric_view_lifecycle(ctx: &JourneyContext) -> AcceptanceResult<()>
         },
         || async {
             let _ = ctx.client().table_from_full_name(&full_name).delete().await;
+            let _ = ctx.client().table_from_full_name(&source).delete().await;
             let _ = ctx.client().schema(&catalog, schema).delete().await;
             let _ = ctx.client().catalog(&catalog).delete().await;
         },
