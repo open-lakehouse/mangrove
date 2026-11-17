@@ -39,7 +39,7 @@ message ListProvidersResponse {
 message CreateProviderRequest {
   // Name of the provider.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+(\\.[^./\\x00-\\x20\\x7F]+)*$",
     (google.api.field_behavior) = REQUIRED
   ];
 
@@ -70,7 +70,7 @@ message CreateProviderRequest {
 message GetProviderRequest {
   // Name of the provider.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+(\\.[^./\\x00-\\x20\\x7F]+)*$",
     (google.api.field_behavior) = REQUIRED
   ];
 }
@@ -79,13 +79,13 @@ message GetProviderRequest {
 message UpdateProviderRequest {
   // Name of the provider.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+(\\.[^./\\x00-\\x20\\x7F]+)*$",
     (google.api.field_behavior) = REQUIRED
   ];
 
   // New name for the provider.
   optional string new_name = 2 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+(\\.[^./\\x00-\\x20\\x7F]+)*$",
     (google.api.field_behavior) = OPTIONAL
   ];
 
@@ -111,7 +111,7 @@ message UpdateProviderRequest {
 message DeleteProviderRequest {
   // Name of the provider.
   string name = 1 [
-    (buf.validate.field).string.pattern = "^[a-z][0-9a-z._]*[0-9a-z]$",
+    (buf.validate.field).string.pattern = "^[^./\\x00-\\x20\\x7F]+(\\.[^./\\x00-\\x20\\x7F]+)*$",
     (google.api.field_behavior) = REQUIRED
   ];
 }

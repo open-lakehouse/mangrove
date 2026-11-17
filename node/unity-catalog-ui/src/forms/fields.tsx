@@ -131,7 +131,8 @@ export function NameField(props: FieldProps) {
       help={
         props.help === null
           ? undefined
-          : (props.help ?? "Lowercase letters, digits and underscores.")
+          : (props.help ??
+            "Anything but periods, spaces, slashes and control characters.")
       }
     >
       <Input
@@ -147,7 +148,8 @@ export function NameField(props: FieldProps) {
         aria-describedby={meta.describedBy}
         className="font-mono"
         onChange={(e) => {
-          const next = e.target.value.toLowerCase().replace(/\s/g, "_");
+          // Spaces are never valid in a name; type them as underscores.
+          const next = e.target.value.replace(/\s/g, "_");
           form.set(name, next === "" ? undefined : next);
         }}
         onBlur={() => form.touch(name)}

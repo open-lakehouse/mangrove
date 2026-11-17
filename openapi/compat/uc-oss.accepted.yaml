@@ -74,21 +74,28 @@ accepted:
 
   # --- server: stricter request validation ----------------------------------
   # Scoped to the exact constraint values, so a NEW constraint still fails.
+  # Securable names follow managed Unity Catalog: 1-255 characters, anything
+  # but `.`, space, `/` and control characters. That is a superset of what UC
+  # OSS enforces server-side ([a-zA-Z0-9_@-]+, at most 255), so every name an
+  # OSS client can create passes.
   - direction: server
     rule: request-property-pattern-added
-    text: added the pattern `\^\[a-z\]\[0-9a-z_\]\*\[0-9a-z\]\$`
-    reason: >-
-      Intentional stricter validation: securable names must match
-      ^[a-z][0-9a-z_]*[0-9a-z]$. Names that OSS accepts (uppercase, hyphens,
-      a single character) are rejected.
+    text: 'added the pattern `\^\[\^\./\\x00-\\x20\\x7F\]\+\$`'
+    reason: &uc-names >-
+      Securable names: anything but `.`, space, `/` and control characters, as
+      on managed UC. A superset of what UC OSS accepts ([a-zA-Z0-9_@-]+).
+  - direction: server
+    rule: request-property-min-length-set
+    text: "`[a-z_]*name` request property's minLength was set to `1`"
+    reason: *uc-names
+  - direction: server
+    rule: request-property-max-length-set
+    text: maxLength was set to `255`
+    reason: UC OSS and managed UC both cap names at 255 characters (OSS enforces it server-side).
   - direction: server
     rule: request-property-pattern-added
     text: "`storage_root`|`url`|`storage_location`"
     reason: Intentional stricter validation; storage locations must be URLs.
-  - direction: server
-    rule: request-property-min-length-set
-    text: minLength was set to `3`
-    reason: Intentional stricter validation; names have at least 3 characters.
   - direction: server
     rule: request-property-min-length-set
     path: /models.*

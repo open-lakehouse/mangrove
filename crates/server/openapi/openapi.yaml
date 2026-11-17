@@ -3436,23 +3436,26 @@ components:
         name:
           type: string
           description: Name of the agent, relative to parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         full_name:
           readOnly: true
           type: string
           description: The three-level (fully qualified) name of the agent.
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+$
         agent_id:
           readOnly: true
           type: string
@@ -3544,25 +3547,27 @@ components:
              hyphens, but Unity Catalog object names disallow hyphens, so UC stores the
              catalog object name with underscores; the spec-shaped name lives in the
              skill's own SKILL.md.
-          minLength: 3
+          minLength: 1
           maxLength: 64
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+$
           title: Name of the agent skill, relative to parent schema.
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         full_name:
           readOnly: true
           type: string
           description: The three-level (fully qualified) name of the agent skill.
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+$
         storage_location:
           type: string
           description: |-
@@ -3951,18 +3956,21 @@ components:
         catalog_name:
           type: string
           description: The identifier of the catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: The identifier of the schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         name:
           type: string
           description: The identifier of the agent.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         invocation_protocol:
           enum:
             - MCP
@@ -4009,19 +4017,21 @@ components:
         catalog_name:
           type: string
           description: The identifier of the catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: The identifier of the schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         name:
           type: string
           description: The identifier of the agent skill.
-          minLength: 3
+          minLength: 1
           maxLength: 64
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+$
         agent_skill_type:
           enum:
             - EXTERNAL
@@ -4067,8 +4077,9 @@ components:
         name:
           type: string
           description: Name of catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         comment:
           type: string
           description: User-provided free-form text description.
@@ -4084,14 +4095,16 @@ components:
         provider_name:
           type: string
           description: A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z-_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
           title: The name of delta sharing provider.
         share_name:
           type: string
           description: The name of the share under the share provider.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
       description: Create a new catalog
       additionalProperties: false
       title: Create Catalog Request
@@ -4104,8 +4117,9 @@ components:
         name:
           type: string
           description: The credential name. The name must be unique among storage and service credentials within the metastore.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         purpose:
           enum:
             - STORAGE
@@ -4208,8 +4222,9 @@ components:
         name:
           type: string
           description: Name of external location.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         url:
           type: string
           description: Path URL of the external location.
@@ -4217,8 +4232,9 @@ components:
         credential_name:
           type: string
           description: Name of the storage credential used with this location.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         read_only:
           type: boolean
           description: Indicates whether the external location is read-only.
@@ -4249,18 +4265,21 @@ components:
         name:
           type: string
           description: Name of function, relative to parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         data_type:
           type: string
           description: Full data type specification of the return type of the function.
@@ -4358,18 +4377,21 @@ components:
         model_name:
           type: string
           description: Name of the parent registered model, relative to parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         source:
           type: string
           description: |-
@@ -4496,7 +4518,7 @@ components:
         name:
           type: string
           description: Name of the provider.
-          pattern: ^[a-z][0-9a-z._]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+(\.[^./\x00-\x20\x7F]+)*$
         authentication_type:
           enum:
             - TOKEN
@@ -4535,7 +4557,7 @@ components:
         name:
           type: string
           description: Name of the recipient.
-          pattern: ^[a-z][0-9a-z._]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+(\.[^./\x00-\x20\x7F]+)*$
         authentication_type:
           enum:
             - TOKEN
@@ -4572,18 +4594,21 @@ components:
         name:
           type: string
           description: Name of registered model, relative to parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         comment:
           type: string
           description: User-provided free-form text description.
@@ -4601,13 +4626,15 @@ components:
         name:
           type: string
           description: Name of schema, relative to parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         comment:
           type: string
           description: User-provided free-form text description.
@@ -4633,8 +4660,9 @@ components:
         name:
           type: string
           description: Name of the share.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         comment:
           type: string
           description: User-provided free-form text description.
@@ -4656,18 +4684,21 @@ components:
         name:
           type: string
           description: Name of the staging table, relative to the parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of the parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of the parent schema relative to its parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
       description: Create a new staging table.
       additionalProperties: false
       title: Create Staging Table Request
@@ -4683,18 +4714,21 @@ components:
         name:
           type: string
           description: Name of table, relative to parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of parent schema relative to its parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         table_type:
           enum:
             - MANAGED
@@ -4804,18 +4838,21 @@ components:
         catalog_name:
           type: string
           description: The identifier of the catalog
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: The identifier of the schema
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         name:
           type: string
           description: The identifier of the volume
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         volume_type:
           enum:
             - EXTERNAL
@@ -5250,23 +5287,26 @@ components:
         name:
           type: string
           description: Name of function, relative to parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         full_name:
           readOnly: true
           type: string
           description: "Format: catalog_name.schema_name.function_name"
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+$
           title: The three-level (fully qualified) name of the function.
         data_type:
           type: string
@@ -6221,18 +6261,21 @@ components:
         model_name:
           type: string
           description: Name of the parent registered model, relative to parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         version:
           readOnly: true
           type: string
@@ -6733,23 +6776,26 @@ components:
         name:
           type: string
           description: Name of registered model, relative to parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         full_name:
           readOnly: true
           type: string
           description: "Format: catalog_name.schema_name.model_name"
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+$
           title: The three-level (fully qualified) name of the registered model.
         storage_location:
           readOnly: true
@@ -7033,18 +7079,21 @@ components:
         name:
           type: string
           description: Name of table, relative to parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         table_type:
           enum:
             - TABLE_TYPE_UNSPECIFIED
@@ -7126,7 +7175,7 @@ components:
           readOnly: true
           type: string
           description: Full name of table, in form of catalog_name.schema_name.table_name.
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+$
         created_at:
           readOnly: true
           type: string
@@ -7311,8 +7360,9 @@ components:
         new_name:
           type: string
           description: New name for the agent.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         invocation_protocol:
           enum:
             - INVOCATION_PROTOCOL_UNSPECIFIED
@@ -7358,9 +7408,9 @@ components:
         new_name:
           type: string
           description: New name for the agent skill.
-          minLength: 3
+          minLength: 1
           maxLength: 64
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+$
         description:
           type: string
           description: Updated description of what the skill does and when to use it.
@@ -7401,8 +7451,9 @@ components:
         new_name:
           type: string
           description: New name for the catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
       description: Update a catalog
       additionalProperties: false
       title: Update Catalog Request
@@ -7413,8 +7464,9 @@ components:
         new_name:
           type: string
           description: New name of the credential.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         comment:
           type: string
           description: Comment associated with the credential.
@@ -7519,8 +7571,9 @@ components:
         new_name:
           type: string
           description: new name of the external location.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         force:
           type: boolean
           description: force update of the external location.
@@ -7716,7 +7769,7 @@ components:
         new_name:
           type: string
           description: New name for the provider.
-          pattern: ^[a-z][0-9a-z._]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+(\.[^./\x00-\x20\x7F]+)*$
         owner:
           type: string
           description: Username of the provider owner.
@@ -7747,7 +7800,7 @@ components:
         new_name:
           type: string
           description: New name for the recipient
-          pattern: ^[a-z][0-9a-z._]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+(\.[^./\x00-\x20\x7F]+)*$
         owner:
           type: string
           description: Username of the recipient owner.
@@ -7773,8 +7826,9 @@ components:
         new_name:
           type: string
           description: New name for the registered model.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         comment:
           type: string
           description: User-provided free-form text description.
@@ -7804,8 +7858,9 @@ components:
         new_name:
           type: string
           description: New name for the schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
       description: Update a Schema
       additionalProperties: false
       title: Update Schema Request
@@ -7828,8 +7883,8 @@ components:
         new_name:
           type: string
           description: A new name for the share.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z._]*[0-9a-z]$
+          minLength: 1
+          pattern: ^[^./\x00-\x20\x7F]+(\.[^./\x00-\x20\x7F]+)*$
         owner:
           type: string
           description: Owner of the share.
@@ -7874,7 +7929,9 @@ components:
         new_name:
           type: string
           description: New name for the volume.
-          minLength: 3
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         comment:
           type: string
           description: The comment attached to the volume
@@ -7912,23 +7969,26 @@ components:
         name:
           type: string
           description: Name of volume, relative to parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         catalog_name:
           type: string
           description: Name of parent catalog.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         schema_name:
           type: string
           description: Name of parent schema.
-          minLength: 3
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]$
+          minLength: 1
+          maxLength: 255
+          pattern: ^[^./\x00-\x20\x7F]+$
         full_name:
           readOnly: true
           type: string
           description: The three-level (fully qualified) name of the volume
-          pattern: ^[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]\.[a-z][0-9a-z_]*[0-9a-z]$
+          pattern: ^[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+\.[^./\x00-\x20\x7F]+$
         storage_location:
           type: string
           description: The storage location on the cloud
