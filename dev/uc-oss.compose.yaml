@@ -2,7 +2,9 @@
 # for acceptance/journey integration tests. Reused by `just integration-oss-java`
 # and the `integration-oss-java` CI job.
 #
-# The image tag is the UC OSS version the conformance battery runs against.
+# The image tag is the single source of truth for the UC OSS version we test
+# against; `just codegen bump-uc-oss <tag>` updates it together with the
+# vendored reference spec (openapi/reference/uc-oss/).
 # See https://github.com/unitycatalog/unitycatalog for the upstream project.
 #
 # Managed tables land under file:///tmp/uc-test, bind-mounted 1:1 host<->container

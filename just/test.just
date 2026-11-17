@@ -31,6 +31,24 @@ sync-server-openapi-check:
         fi
     done
 
+# Semantic compatibility of our generated specs with the UC OSS reference specs
+# (openapi/reference/uc-oss/). We may serve a superset, so this diffs only the
+# operations both sides serve, in both directions (OSS client -> our server, our
+# client -> OSS server), and gates every finding on the structured accepted-diffs
+# file. Needs `uv` and `oasdiff` (`brew install oasdiff`). Reports land in
+# target/openapi-compat/.
+#
+# CI gate: fail on OpenAPI incompatibilities with UC OSS not in the accepted-diffs file
+[group('test')]
+[no-cd]
+openapi-compat:
+    uv run --script {{ justfile_directory() }}/dev/scripts/openapi_compat.py \
+        --pair openapi/openapi.yaml:openapi/reference/uc-oss/all.yaml \
+        --pair openapi/delta.yaml:openapi/reference/uc-oss/delta.yaml \
+        --accepted openapi/compat/uc-oss.accepted.yaml \
+        --compose dev/uc-oss.compose.yaml \
+        --out target/openapi-compat
+
 # run node binding unit tests
 [group('test')]
 test-node:

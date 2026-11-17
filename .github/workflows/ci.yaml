@@ -70,6 +70,34 @@ jobs:
       - name: Check server OpenAPI copies are in sync
         run: just sync-server-openapi-check
 
+      # Semantic compatibility of our specs with the vendored UC OSS reference
+      # specs: every finding must be listed in openapi/compat/uc-oss.accepted.yaml.
+      # See `just test openapi-compat`.
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
+      - name: Install oasdiff
+        env:
+          OASDIFF_VERSION: 1.38.0
+          OASDIFF_SHA256: 613037fd6a1d3362a1b742d6d86c338c0eb5ab3511f4942ce3948e78720ea2da
+        run: |
+          tarball="oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$tarball" \
+            "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/$tarball"
+          echo "${OASDIFF_SHA256}  $RUNNER_TEMP/$tarball" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/oasdiff"
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP/oasdiff" oasdiff
+          echo "$RUNNER_TEMP/oasdiff" >> "$GITHUB_PATH"
+
+      - name: Check OpenAPI compatibility with UC OSS
+        run: just test openapi-compat
+
+      - name: Upload OpenAPI compatibility report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: openapi-compat
+          path: target/openapi-compat/
+
   clippy:
     name: clippy
     runs-on: ubuntu-latest
