@@ -135,7 +135,7 @@ pub async fn create_commit_read(
         name: table.to_string(),
         location: location.to_string(),
         table_type: DeltaTableType::Managed,
-        // The stock Java UC OSS server (unitycatalog/unitycatalog:v0.5.0) hardcodes
+        // The stock Java UC OSS server (unitycatalog/unitycatalog) hardcodes
         // DELTA and rejects an unrecognized `data-source-format` field on
         // createTable, so omit it. (An older roeap dev build required it — see the
         // field's doc comment in the delta-api models.)

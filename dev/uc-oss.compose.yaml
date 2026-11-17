@@ -2,7 +2,7 @@
 # for acceptance/journey integration tests. Reused by `just integration-oss-java`
 # and the `integration-oss-java` CI job.
 #
-# The image is the same one used by the marimo playground (dev/ucp.compose.yaml).
+# The image tag is the UC OSS version the conformance battery runs against.
 # See https://github.com/unitycatalog/unitycatalog for the upstream project.
 #
 # Managed tables land under file:///tmp/uc-test, bind-mounted 1:1 host<->container
@@ -13,7 +13,7 @@ name: unitycatalog-oss
 
 services:
   unitycatalog:
-    image: unitycatalog/unitycatalog:v0.5.0
+    image: unitycatalog/unitycatalog:v0.7.0
     hostname: unitycatalog
     container_name: unitycatalog-oss
     ports:

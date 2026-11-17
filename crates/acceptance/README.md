@@ -6,8 +6,9 @@ into two batteries and run against a target (our Rust `uc-server`, the UC OSS
 Java server, or managed Databricks).
 
 This crate is a `publish = false` internal test harness and a library only —
-there is no CLI binary. See [`JOURNEY_CATALOG.md`](./JOURNEY_CATALOG.md) for the
-per-securable coverage inventory and the known-failing worklist.
+there is no CLI binary. The check list (`src/conformance.rs`) and its per-target
+quarantine table (`known_failing`) are the coverage inventory and the
+known-failing worklist.
 
 ## How it works
 
