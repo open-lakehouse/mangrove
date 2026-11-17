@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-node-v0.0.11...unity-catalog-node-v0.0.12) - 2026-11-17
+
+### Fixed
+
+- accept every securable name Unity Catalog accepts (#379)
+
 ## [0.0.10](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-node-v0.0.9...unity-catalog-node-v0.0.10) - 2026-11-15
 
 ### Fixed

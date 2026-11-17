@@ -23,7 +23,7 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.10" }
 # The in-process server (`server::TestServer`, the `uc-test-server` binary): the
 # same service `uc-server serve` builds, over an in-memory SQLite backend.
-unitycatalog-server = { package = "olai-uc-server", path = "../server", version = "0.0.23", default-features = false, features = [
+unitycatalog-server = { package = "olai-uc-server", path = "../server", version = "0.0.24", default-features = false, features = [
   "embed",
   "sqlite",
 ] }
