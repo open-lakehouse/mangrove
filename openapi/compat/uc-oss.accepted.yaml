@@ -41,6 +41,7 @@ accepted:
       (created_at, updated_at, version, expiration_time, ...) as JSON strings,
       while UC OSS and Databricks send JSON numbers. Strict clients (e.g. Go's
       encoding/json in the Databricks SDK) fail to parse our responses.
+    issue: "#68"
   - direction: server
     rule: request-property-type-changed
     text: "`version` request property `type/format` changed from `integer/int64` to `string`"
@@ -135,11 +136,13 @@ accepted:
     reason: >-
       BUG (spec only): the wire takes the `function_info` envelope, as OSS does,
       but gnostic renders `body: "function_info"` as the flattened FunctionInfo.
+    issue: "#377"
   - direction: server
     rule: request-property-removed
     path: /functions
     text: function_info
     reason: Same as above; the envelope is on the wire but missing from the spec.
+    issue: "#377"
   - direction: server
     rule: request-property-removed
     path: /models/.*/finalize
@@ -153,11 +156,13 @@ accepted:
       fields (44 in openapi.yaml). In JSON Schema that forbids every property
       of the nested object, e.g. any aws_iam_role or view_dependencies. The
       wire is fine.
+    issue: "open-lakehouse/trestle#397"
   - direction: server
     rule: response-required-property-removed
     path: /credentials.*
     text: aws_iam_role/role_arn
     reason: *allof-bug
+    issue: "open-lakehouse/trestle#397"
 
   # --- client: our client against an OSS server -----------------------------
   - direction: client
@@ -249,17 +254,20 @@ accepted:
     path: /functions
     text: function_info
     reason: BUG (spec only), see the server entry; the client does send the envelope.
+    issue: "#377"
   - direction: client
     rule: new-required-request-property
     path: /credentials.*
     text: aws_iam_role/role_arn
     reason: *allof-bug
+    issue: "open-lakehouse/trestle#397"
   - direction: client
     rule: new-required-request-property
     path: /models/.*/finalize
     reason: >-
       BUG: OSS expects full_name and version in the finalize body, but our
       client sends an empty body.
+    issue: "#378"
   - direction: client
     rule: request-property-min-items-set
     path: /delta/v1/.*
