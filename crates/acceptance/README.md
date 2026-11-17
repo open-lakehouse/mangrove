@@ -10,6 +10,14 @@ there is no CLI binary. The check list (`src/conformance.rs`) and its per-target
 quarantine table (`known_failing`) are the coverage inventory and the
 known-failing worklist.
 
+The battery tests behavior. Spec-level compatibility with UC OSS is checked
+separately by `just test openapi-compat`: it diffs our generated OpenAPI specs
+against the vendored UC OSS specs (`openapi/reference/uc-oss/`) in both
+directions, and every difference must be listed with a reason in
+`openapi/compat/uc-oss.accepted.yaml`. The UC OSS version under test is the
+image tag in `dev/uc-oss.compose.yaml`; bump it with
+`just codegen bump-uc-oss <tag>`.
+
 ## How it works
 
 - **Checks** (`src/checks/*.rs`) — each is a free

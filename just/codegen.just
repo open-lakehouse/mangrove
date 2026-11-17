@@ -81,6 +81,30 @@ sync-server-openapi:
     done
     echo "→ synced openapi.yaml, delta.yaml, scim.yaml into {{ SERVER_OPENAPI_DIR }}"
 
+# The UC OSS version we test against lives in ONE place: the image tag in
+# dev/uc-oss.compose.yaml. This recipe moves it together with the vendored
+# reference specs that `just test openapi-compat` diffs against; the check fails
+# if the two ever disagree. After a bump, re-run `just test integration-oss-java`
+# and `just test openapi-compat` and triage what changed.
+#
+# bump the UC OSS server under test + its vendored reference specs to <tag>
+[group('codegen')]
+[no-cd]
+bump-uc-oss tag:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd {{ justfile_directory() }}
+    sed -i.bak -E 's#(unitycatalog/unitycatalog:)[^[:space:]]+#\1{{ tag }}#' dev/uc-oss.compose.yaml
+    rm dev/uc-oss.compose.yaml.bak
+    mkdir -p openapi/reference/uc-oss
+    for f in all.yaml delta.yaml; do
+        tmp=$(mktemp)
+        curl -fsSL "https://raw.githubusercontent.com/unitycatalog/unitycatalog/{{ tag }}/api/$f" -o "$tmp"
+        { echo "# unitycatalog api/$f @ {{ tag }}"; cat "$tmp"; } > "openapi/reference/uc-oss/$f"
+        rm "$tmp"
+    done
+    echo "→ UC OSS {{ tag }}: dev/uc-oss.compose.yaml + openapi/reference/uc-oss/{all,delta}.yaml"
+
 # generate rest server and client code with the build crate
 [group('codegen')]
 [no-cd]

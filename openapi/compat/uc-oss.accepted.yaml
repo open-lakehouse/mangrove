@@ -1,0 +1,274 @@
+# Accepted semantic differences between our generated OpenAPI specs and the
+# UC OSS reference specs (openapi/reference/uc-oss/), checked by
+# `just test openapi-compat` (dev/scripts/openapi_compat.py).
+#
+# This file is the single hand-maintained record of how we deviate from UC OSS.
+# Every finding must match an entry, and every entry must match a finding: a
+# new incompatibility fails the check, and so does an entry whose cause is gone.
+#
+# Entry keys:
+#   direction  server   - an OSS client talking to our server would notice
+#              client   - our client talking to an OSS server would notice
+#              coverage - an OSS operation we do not serve
+#   rule       oasdiff rule id (https://www.oasdiff.com/docs/breaking-changes)
+#   method     optional, exact HTTP method
+#   path       optional, regex that must match the whole path
+#   text       optional, regex searched in the finding text
+#   reason     why this is acceptable, or what fixes it
+#   issue      optional, tracking issue
+#
+# Entries marked `BUG` are real defects that the check surfaced. They stay here
+# only until fixed.
+
+accepted:
+  # --- coverage ------------------------------------------------------------
+  - direction: coverage
+    rule: operation-not-served
+    path: /delta/preview/commits
+    reason: Legacy commit-coordinator preview API; we serve commits via /delta/v1 instead.
+  - direction: coverage
+    rule: operation-not-served
+    path: /metastore_summary
+    reason: Read-only metastore summary is not implemented yet.
+    issue: "#149"
+
+  # --- server: wire format -------------------------------------------------
+  - direction: server
+    rule: response-property-type-changed
+    text: int64
+    reason: >-
+      BUG: buffa follows the proto3 JSON mapping and writes int64 fields
+      (created_at, updated_at, version, expiration_time, ...) as JSON strings,
+      while UC OSS and Databricks send JSON numbers. Strict clients (e.g. Go's
+      encoding/json in the Databricks SDK) fail to parse our responses.
+    issue: "#68"
+  - direction: server
+    rule: request-property-type-changed
+    text: "`version` request property `type/format` changed from `integer/int64` to `string`"
+    reason: The int64 deserializer accepts JSON numbers as well as strings.
+  - direction: server
+    rule: response-property-enum-value-added
+    reason: >-
+      Superset enum values (purpose SERVICE, extra data_source_format / table_type
+      / column type_name values). They are only returned for resources created
+      with them, which an OSS-only client never creates.
+  - direction: server
+    rule: response-media-type-removed
+    method: DELETE
+    reason: DELETE returns an empty 200 body; OSS declares an empty JSON object.
+  - direction: server
+    rule: response-property-became-not-enum
+    reason: >-
+      functions data_type and grant privileges are modelled as free strings,
+      so we promise no closed set.
+  - direction: server
+    rule: response-property-became-optional
+    path: /permissions/.*
+    reason: proto3 omits empty repeated fields; clients see an absent privileges list as empty.
+  - direction: server
+    rule: response-property-max-length-unset
+    reason: We promise fewer response constraints; clients don't validate responses.
+  - direction: server
+    rule: response-property-min-length-unset
+    reason: We promise fewer response constraints; clients don't validate responses.
+
+  # --- server: stricter request validation ----------------------------------
+  # Scoped to the exact constraint values, so a NEW constraint still fails.
+  - direction: server
+    rule: request-property-pattern-added
+    text: added the pattern `\^\[a-z\]\[0-9a-z_\]\*\[0-9a-z\]\$`
+    reason: >-
+      Intentional stricter validation: securable names must match
+      ^[a-z][0-9a-z_]*[0-9a-z]$. Names that OSS accepts (uppercase, hyphens,
+      a single character) are rejected.
+  - direction: server
+    rule: request-property-pattern-added
+    text: "`storage_root`|`url`|`storage_location`"
+    reason: Intentional stricter validation; storage locations must be URLs.
+  - direction: server
+    rule: request-property-min-length-set
+    text: minLength was set to `3`
+    reason: Intentional stricter validation; names have at least 3 characters.
+  - direction: server
+    rule: request-property-min-length-set
+    path: /models.*
+    text: "`comment` request property's minLength was set to `1`"
+    reason: Model comments must be non-empty when set; an OSS client sending "" is rejected.
+  - direction: server
+    rule: request-property-max-length-set
+    text: "`comment` request property's maxLength was set to `65536`"
+    reason: Intentional stricter validation; comments are capped at 64 KiB.
+  - direction: server
+    rule: request-property-max-set
+    text: max was set to `2147483647.00`
+    reason: int32 column fields are bounded to the int32 range.
+  - direction: server
+    rule: request-property-min-set
+    text: min was set to `-2147483648.00`
+    reason: int32 column fields are bounded to the int32 range.
+  - direction: server
+    rule: request-body-became-required
+    reason: gnostic marks every body required; each of these bodies has required fields anyway.
+  - direction: server
+    rule: request-property-became-required
+    path: /credentials
+    text: "`purpose`"
+    reason: We need the purpose to pick the credential kind; OSS defaults it to STORAGE.
+  - direction: server
+    rule: request-property-became-required
+    path: /tables
+    reason: Table create requires column name/type and data_source_format, as on Databricks.
+  - direction: server
+    rule: request-property-enum-value-removed
+    path: /temporary-.*-credentials
+    text: UNKNOWN_.*_OPERATION
+    reason: OSS's UNKNOWN_* operation sentinel is meaningless to send; we reject it.
+  - direction: server
+    rule: request-parameter-removed
+    reason: >-
+      Optional query flags we don't model (credentials `force`, tables
+      `read_*_as_managed`). Unknown query parameters are ignored.
+
+  # --- server: request body shape ------------------------------------------
+  - direction: server
+    rule: new-required-request-property
+    path: /functions
+    reason: >-
+      BUG (spec only): the wire takes the `function_info` envelope, as OSS does,
+      but gnostic renders `body: "function_info"` as the flattened FunctionInfo.
+    issue: "#377"
+  - direction: server
+    rule: request-property-removed
+    path: /functions
+    text: function_info
+    reason: Same as above; the envelope is on the wire but missing from the spec.
+    issue: "#377"
+  - direction: server
+    rule: request-property-removed
+    path: /models/.*/finalize
+    reason: full_name and version come from the path; extra body fields are ignored.
+  - direction: server
+    rule: request-property-removed
+    text: aws_iam_role/role_arn|view_dependencies/dependencies
+    reason: &allof-bug >-
+      BUG (spec only): trestle enrich-openapi puts `additionalProperties: false`
+      (and `required`) next to the `allOf: [$ref]` wrapper of message-typed
+      fields (44 in openapi.yaml). In JSON Schema that forbids every property
+      of the nested object, e.g. any aws_iam_role or view_dependencies. The
+      wire is fine.
+    issue: "open-lakehouse/trestle#397"
+  - direction: server
+    rule: response-required-property-removed
+    path: /credentials.*
+    text: aws_iam_role/role_arn
+    reason: *allof-bug
+    issue: "open-lakehouse/trestle#397"
+
+  # --- client: our client against an OSS server -----------------------------
+  - direction: client
+    rule: response-property-type-changed
+    text: int64
+    reason: The int64 deserializer accepts JSON numbers as well as strings.
+  - direction: client
+    rule: request-property-type-changed
+    text: "`version` request property `type/format` changed from `string` to `integer/int64`"
+    reason: OSS takes version as a string; we send it as a JSON string too (proto3 int64).
+  - direction: client
+    rule: request-parameter-type-changed
+    text: "path` request parameter `version`"
+    reason: Path parameters are text in the URL, so int64 and string render the same.
+  - direction: client
+    rule: response-property-became-optional
+    reason: >-
+      Our spec marks fields required that OSS leaves optional. proto3 JSON
+      deserializes missing fields to their defaults, so absence doesn't fail.
+  - direction: client
+    rule: response-required-property-removed
+    text: "`(.*/)?(read_only|used_for_managed_storage|full_name|stage_committed)`"
+    reason: Same as above; missing fields deserialize to their defaults.
+  - direction: client
+    rule: response-property-pattern-removed
+    reason: &no-response-validation Our client does not validate response constraints.
+  - direction: client
+    rule: response-property-min-length-unset
+    reason: *no-response-validation
+  - direction: client
+    rule: response-property-max-length-unset
+    reason: *no-response-validation
+  - direction: client
+    rule: response-property-min-unset
+    reason: *no-response-validation
+  - direction: client
+    rule: response-property-max-unset
+    reason: *no-response-validation
+  - direction: client
+    rule: response-property-exclusive-min-unset
+    reason: *no-response-validation
+  - direction: client
+    rule: response-property-property-names-removed
+    reason: *no-response-validation
+  - direction: client
+    rule: response-property-enum-value-added
+    text: MODEL_VERSION_STATUS_UNKNOWN
+    reason: >-
+      OSS may return MODEL_VERSION_STATUS_UNKNOWN, which our enum lacks. It only
+      shows up for broken versions; the conformance battery covers the normal states.
+  - direction: client
+    rule: request-property-removed
+    reason: Superset request fields; they are only serialized when the caller sets them.
+  - direction: client
+    rule: request-parameter-removed
+    reason: Superset query parameters (include_browse, ...); only sent when the caller sets them.
+  - direction: client
+    rule: request-property-enum-value-removed
+    reason: Superset enum values; only sent when the caller picks them.
+  - direction: client
+    rule: request-parameter-enum-value-removed
+    reason: Superset enum values; only sent when the caller picks them.
+  - direction: client
+    rule: request-parameter-max-set
+    text: max_results
+    reason: OSS caps max_results at 1000; callers choose the page size.
+  - direction: client
+    rule: request-parameter-became-required
+    reason: Our spec marks catalog_name/schema_name optional, but the client methods always require and send them.
+  - direction: client
+    rule: request-parameter-became-enum
+    path: /permissions/.*
+    reason: securable_type is a free string for us; callers pass OSS-known values.
+  - direction: client
+    rule: request-property-became-enum
+    path: /permissions/.*
+    reason: Privileges are free strings for us; callers pass OSS-known values.
+  - direction: client
+    rule: request-property-became-required
+    path: /permissions/.*
+    reason: Our client always sends `changes` with add/remove lists.
+  - direction: client
+    rule: request-property-became-required
+    path: /tables
+    text: "`columns`"
+    reason: Callers creating tables against OSS pass columns; the conformance battery covers it.
+  - direction: client
+    rule: new-required-request-property
+    path: /functions
+    text: function_info
+    reason: BUG (spec only), see the server entry; the client does send the envelope.
+    issue: "#377"
+  - direction: client
+    rule: new-required-request-property
+    path: /credentials.*
+    text: aws_iam_role/role_arn
+    reason: *allof-bug
+    issue: "open-lakehouse/trestle#397"
+  - direction: client
+    rule: new-required-request-property
+    path: /models/.*/finalize
+    reason: >-
+      BUG: OSS expects full_name and version in the finalize body, but our
+      client sends an empty body.
+    issue: "#378"
+  - direction: client
+    rule: request-property-min-items-set
+    path: /delta/v1/.*
+    reason: Our client never sends empty requirements/updates lists on a commit.
