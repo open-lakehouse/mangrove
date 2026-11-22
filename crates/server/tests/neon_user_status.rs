@@ -47,7 +47,7 @@ async fn status(store: &PgNeonUserStatus, id: u8) -> Option<UserStatus> {
 #[sqlx::test(migrations = false)]
 async fn reads_role_and_ban(pool: PgPool) {
     neon_auth(&pool, "neon_auth").await;
-    let store = PgNeonUserStatus::new(pool, "neon_auth");
+    let store = PgNeonUserStatus::new(pool);
 
     let admin = UserStatus {
         banned: false,
@@ -76,10 +76,10 @@ async fn reads_role_and_ban(pool: PgPool) {
 #[sqlx::test(migrations = false)]
 async fn reads_another_schema(pool: PgPool) {
     neon_auth(&pool, "auth").await;
-    let store = PgNeonUserStatus::new(pool.clone(), "auth");
+    let store = PgNeonUserStatus::new(pool.clone()).with_schema("auth");
     assert!(status(&store, 1).await.is_some());
 
     // The default schema isn't there, which is an error rather than "unknown".
-    let missing = PgNeonUserStatus::new(pool, "neon_auth");
+    let missing = PgNeonUserStatus::new(pool);
     assert!(missing.status(ISSUER, "x").await.is_err());
 }
