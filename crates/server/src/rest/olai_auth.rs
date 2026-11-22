@@ -18,8 +18,8 @@ use std::time::Duration;
 
 use axum::Router;
 use olai_auth::{
-    ApiKeyStore, Authenticator, BoxError, HttpKeySource, JwtActorVerifier, JwtVerifier, KeySource,
-    PgApiKeyStore, ProtectedResourceMetadata, UserStatus, UserStatusStore, async_trait, auth_layer,
+    ApiKeyStore, Authenticator, HttpKeySource, JwtActorVerifier, JwtVerifier, KeySource,
+    PgApiKeyStore, PgNeonUserStatus, ProtectedResourceMetadata, UserStatusStore, auth_layer,
 };
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
@@ -54,7 +54,7 @@ pub(crate) fn layer(router: Router, config: &ResolvedOlaiAuth) -> Result<Router,
         config,
         HttpKeySource::new(&config.jwks_url),
         |url: &str| HttpKeySource::new(url),
-        PgNeonUserStatus::new(pool, &config.users_schema),
+        PgNeonUserStatus::new(pool).with_schema(&config.users_schema),
         api_keys,
     )?;
     Ok(with_authenticator(router, config, authenticator))
@@ -146,53 +146,6 @@ fn origin(url: &str) -> Result<String, String> {
     }
 }
 
-/// A [`UserStatusStore`] over Neon Auth's user table (`neon_auth."user"` by
-/// default).
-///
-/// A user is an admin when their `role` is (or lists) `admin`, and banned while
-/// `banned` is set and `banExpires` is unset or in the future. A missing user is
-/// unknown, so their token is rejected. The issuer is not consulted: one server
-/// trusts one Neon Auth instance, whose users are all in this table.
-///
-/// The connecting role needs `SELECT` on `id`, `role`, `banned` and `banExpires`,
-/// which luminescent-lakehouse's `authz_reader` holds.
-#[derive(Debug, Clone)]
-pub struct PgNeonUserStatus {
-    pool: PgPool,
-    query: String,
-}
-
-impl PgNeonUserStatus {
-    /// Reads the `user` table of `schema` through `pool`.
-    pub fn new(pool: PgPool, schema: &str) -> Self {
-        Self {
-            pool,
-            query: user_status_query(schema),
-        }
-    }
-}
-
-/// The status lookup against `schema`, quoted as an identifier.
-fn user_status_query(schema: &str) -> String {
-    let schema = format!("\"{}\"", schema.replace('"', "\"\""));
-    format!(
-        "SELECT role, \
-                COALESCE(banned, false) AND (\"banExpires\" IS NULL OR \"banExpires\" > now()) \
-         FROM {schema}.\"user\" WHERE id::text = $1"
-    )
-}
-
-#[async_trait]
-impl UserStatusStore for PgNeonUserStatus {
-    async fn status(&self, _issuer: &str, sub: &str) -> Result<Option<UserStatus>, BoxError> {
-        let row: Option<(Option<String>, bool)> = sqlx::query_as(&self.query)
-            .bind(sub)
-            .fetch_optional(&self.pool)
-            .await?;
-        Ok(row.map(|(role, banned)| UserStatus::from_role(role.as_deref(), banned)))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,12 +162,6 @@ mod tests {
         );
         assert!(origin("not a url").is_err());
     }
-
-    #[test]
-    fn quotes_the_users_schema() {
-        assert!(user_status_query("neon_auth").contains(r#"FROM "neon_auth"."user""#));
-        assert!(user_status_query(r#"a"b"#).contains(r#"FROM "a""b"."user""#));
-    }
 }
 
 /// The layer in front of the real REST router, with in-memory keys and stores.
@@ -227,7 +174,9 @@ mod router_tests {
     use base64::Engine as _;
     use base64::engine::general_purpose::URL_SAFE_NO_PAD;
     use ed25519_dalek::{Signer as _, SigningKey};
-    use olai_auth::{ApiKeyRecord, PushKeySource, api_key_digest};
+    use olai_auth::{
+        ApiKeyRecord, BoxError, PushKeySource, UserStatus, api_key_digest, async_trait,
+    };
     use serde_json::{Value, json};
     use tower::ServiceExt as _;
     use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
