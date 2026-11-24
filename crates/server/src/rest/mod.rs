@@ -1,3 +1,5 @@
+#[cfg(feature = "embed")]
+pub mod admin;
 mod auth;
 #[cfg(feature = "olai-auth")]
 pub(crate) mod olai_auth;
