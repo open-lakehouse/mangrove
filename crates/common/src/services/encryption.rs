@@ -14,4 +14,6 @@
 //! - The AAD name is bound into every AEAD operation, so a ciphertext cannot be
 //!   silently relocated to a different name/object.
 
-pub use olai_store::encryption::{EnvelopeEncryptor, KekId, KeyProvider, LocalKeyProvider};
+pub use olai_store::encryption::{
+    EnvelopeEncryptor, KekId, KeyProvider, LocalKeyProvider, envelope_kek_id,
+};

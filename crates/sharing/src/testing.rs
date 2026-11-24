@@ -168,7 +168,24 @@ pub async fn round_trips(store: &dyn SharingStore) {
     assert_eq!(token_ids(store, "r1").await, ["t5", "t4"]);
 
     // Re-sealing replaces only the copy it read, and never revives one.
-    assert_eq!(store.sealed_tokens().await.unwrap().len(), 2);
+    let ids = |page: Vec<TokenRecord>| page.into_iter().map(|t| t.id).collect::<Vec<_>>();
+    assert_eq!(
+        ids(store.sealed_tokens(None, 10).await.unwrap()),
+        ["t4", "t5"]
+    );
+    // Paged by id.
+    assert_eq!(ids(store.sealed_tokens(None, 1).await.unwrap()), ["t4"]);
+    assert_eq!(
+        ids(store.sealed_tokens(Some("t4"), 10).await.unwrap()),
+        ["t5"]
+    );
+    assert!(
+        store
+            .sealed_tokens(Some("t5"), 10)
+            .await
+            .unwrap()
+            .is_empty()
+    );
     assert!(store.reseal_token("t5", &[9], vec![8]).await.unwrap());
     assert!(!store.reseal_token("t5", &[9], vec![7]).await.unwrap());
     store.redeem_activation(&code("t5"), 300).await.unwrap();

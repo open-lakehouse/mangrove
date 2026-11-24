@@ -23,10 +23,10 @@
 //! Hosts number their own migrations outside 02xx.
 
 use crate::rules::{credential_in_use_error, new_id, now_millis, overlap_error};
-use crate::sql::{db, paginate, rewrap};
+use crate::sql::{db, paginate};
 use crate::{
-    CredentialSecrets, CredentialUpdate, Error, ExternalLocationUpdate, Governed, LocationKey,
-    Page, Result, StorageAccessStore,
+    CredentialSecrets, CredentialUpdate, Error, ExternalLocationUpdate, Governed, KekUsage,
+    LocationKey, Page, Result, RewrapReport, StorageAccessStore,
 };
 use async_trait::async_trait;
 use olai_storage_credentials::StorageLocation;
@@ -35,6 +35,7 @@ use sqlx::migrate::Migrator;
 use sqlx::{QueryBuilder, Sqlite, SqliteConnection, SqlitePool};
 use unitycatalog_common::models::credentials::v1::{Credential, Purpose};
 use unitycatalog_common::models::external_locations::v1::ExternalLocation;
+use unitycatalog_common::rotation::rows::{self, SealedRows};
 
 /// The migrations creating the `uc_credentials` and `uc_external_locations`
 /// tables (version 0201), for the host to merge into its own migrator.
@@ -54,6 +55,12 @@ impl SqliteStorageAccess {
     /// A store over `pool`, sealing secrets with `encryptor`.
     pub fn new(pool: SqlitePool, encryptor: EnvelopeEncryptor) -> Self {
         Self { pool, encryptor }
+    }
+    /// The sealed secrets as a paged table, for driving a rotation sweep
+    /// ([`rows::rewrap`]) or count ([`rows::kek_usage`]) directly. The writes
+    /// are compare-and-swap, as in [`rewrap_secrets`](StorageAccessStore::rewrap_secrets).
+    pub fn sealed_rows(&self) -> impl SealedRows<Error = Error> + '_ {
+        SealedSecrets(&self.pool)
     }
 }
 
@@ -508,29 +515,46 @@ impl StorageAccessStore for SqliteStorageAccess {
             .map(Into::into))
     }
 
-    async fn rewrap_secrets(&self) -> Result<usize> {
-        let rows: Vec<(String, Vec<u8>)> = sqlx::query_as("SELECT id, sealed FROM uc_credentials")
-            .fetch_all(&self.pool)
-            .await
-            .map_err(db)?;
-        let mut rewrapped = 0;
-        for (id, sealed) in rows {
-            let Some(fresh) = rewrap(&self.encryptor, &sealed).await? else {
-                continue;
-            };
-            // Only replace the blob read above: a concurrent update has already
-            // sealed its secrets under the active key.
-            let result =
-                sqlx::query("UPDATE uc_credentials SET sealed = ?1 WHERE id = ?2 AND sealed = ?3")
-                    .bind(&fresh)
-                    .bind(&id)
-                    .bind(&sealed)
-                    .execute(&self.pool)
-                    .await
-                    .map_err(db)?;
-            rewrapped += result.rows_affected() as usize;
-        }
-        Ok(rewrapped)
+    async fn rewrap_secrets(&self) -> Result<RewrapReport> {
+        rows::rewrap(&self.sealed_rows(), &self.encryptor).await
+    }
+
+    async fn kek_usage(&self) -> Result<KekUsage> {
+        rows::kek_usage(&self.sealed_rows()).await
+    }
+}
+
+/// `uc_credentials.sealed`, paged by id, for KEK counts and rewrap sweeps.
+struct SealedSecrets<'a>(&'a SqlitePool);
+
+#[async_trait]
+impl SealedRows for SealedSecrets<'_> {
+    type Error = Error;
+
+    async fn page(&self, after: Option<&str>, limit: usize) -> Result<Vec<(String, Vec<u8>)>> {
+        sqlx::query_as(
+            "SELECT id, sealed FROM uc_credentials \
+             WHERE ?1 IS NULL OR id > ?1 ORDER BY id LIMIT ?2",
+        )
+        .bind(after)
+        .bind(limit as i64)
+        .fetch_all(self.0)
+        .await
+        .map_err(db)
+    }
+
+    async fn replace(&self, id: &str, current: &[u8], fresh: &[u8]) -> Result<bool> {
+        // Only replace the blob read: a concurrent update has already sealed its
+        // secrets under the active key.
+        let result =
+            sqlx::query("UPDATE uc_credentials SET sealed = ?1 WHERE id = ?2 AND sealed = ?3")
+                .bind(fresh)
+                .bind(id)
+                .bind(current)
+                .execute(self.0)
+                .await
+                .map_err(db)?;
+        Ok(result.rows_affected() == 1)
     }
 }
 
@@ -573,7 +597,105 @@ mod tests {
     async fn key_rotation() {
         let pool = pool().await;
         let before = SqliteStorageAccess::new(pool.clone(), encryptor("a", &["a"]));
+        let after = SqliteStorageAccess::new(pool.clone(), encryptor("b", &["a", "b"]));
+        let retired = SqliteStorageAccess::new(pool, encryptor("b", &["b"]));
+        crate::testing::key_rotation(&before, &after, &retired, "a", "b").await;
+    }
+
+    #[tokio::test]
+    async fn rewrap_without_the_old_key() {
+        let pool = pool().await;
+        let before = SqliteStorageAccess::new(pool.clone(), encryptor("a", &["a"]));
+        let retired = SqliteStorageAccess::new(pool, encryptor("b", &["b"]));
+        crate::testing::rewrap_without_the_old_key(&before, &retired, "a").await;
+    }
+
+    /// The sweep pages through more rows than fit on one page.
+    #[tokio::test]
+    async fn rewrap_pages() {
+        let pool = pool().await;
+        let before = SqliteStorageAccess::new(pool.clone(), encryptor("a", &["a"]));
+        let n = rows::PAGE_SIZE + 3;
+        for i in 0..n {
+            before
+                .create_credential(crate::testing::credential(&format!("c{i}"), "arn:1"))
+                .await
+                .unwrap();
+        }
         let after = SqliteStorageAccess::new(pool, encryptor("b", &["a", "b"]));
-        crate::testing::key_rotation(&before, &after).await;
+        assert_eq!(after.kek_usage().await.unwrap().count("a"), n as u64);
+        let report = after.rewrap_secrets().await.unwrap();
+        assert_eq!(report.rewrapped, n as u64);
+        assert_eq!(report.kek_usage.count("b"), n as u64);
+    }
+
+    /// A row updated between the sweep's read and its write keeps the update.
+    #[tokio::test]
+    async fn rewrap_keeps_a_concurrent_update() {
+        let pool = pool().await;
+        let before = SqliteStorageAccess::new(pool.clone(), encryptor("a", &["a"]));
+        let after = SqliteStorageAccess::new(pool.clone(), encryptor("b", &["a", "b"]));
+        before
+            .create_credential(crate::testing::credential("cred", "arn:1"))
+            .await
+            .unwrap();
+
+        // The sweep reads the row, then a writer updates its secrets.
+        struct Racing<'a> {
+            rows: SealedSecrets<'a>,
+            store: &'a SqliteStorageAccess,
+        }
+        #[async_trait]
+        impl SealedRows for Racing<'_> {
+            type Error = Error;
+            async fn page(
+                &self,
+                after: Option<&str>,
+                limit: usize,
+            ) -> Result<Vec<(String, Vec<u8>)>> {
+                let page = self.rows.page(after, limit).await?;
+                if after.is_none() && !page.is_empty() {
+                    let mut updated = crate::testing::credential("cred", "arn:updated");
+                    self.store
+                        .update_credential(
+                            "cred",
+                            CredentialUpdate {
+                                secrets: Some(CredentialSecrets::take(&mut updated)),
+                                ..Default::default()
+                            },
+                        )
+                        .await?;
+                }
+                Ok(page)
+            }
+            async fn replace(&self, id: &str, current: &[u8], fresh: &[u8]) -> Result<bool> {
+                self.rows.replace(id, current, fresh).await
+            }
+        }
+        let racing = Racing {
+            rows: SealedSecrets(&pool),
+            store: &after,
+        };
+        let report = rows::rewrap(&racing, &after.encryptor).await.unwrap();
+        assert_eq!((report.rewrapped, report.superseded), (0, 1));
+        assert_eq!(report.kek_usage.count("b"), 1);
+
+        after
+            .create_external_location(crate::testing::location("loc", "s3://b/", "cred"))
+            .await
+            .unwrap();
+        let governed = after
+            .governing_location(&"s3://b/x".parse::<StorageLocation>().unwrap())
+            .await
+            .unwrap();
+        assert_eq!(
+            governed
+                .credential
+                .aws_iam_role
+                .as_option()
+                .unwrap()
+                .role_arn,
+            "arn:updated"
+        );
     }
 }

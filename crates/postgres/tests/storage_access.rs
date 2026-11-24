@@ -48,6 +48,7 @@ async fn key_rotation(pool: sqlx::PgPool) {
         .await
         .unwrap();
     let before = PgStorageAccess::new(pool.clone(), encryptor("a", &["a"]));
-    let after = PgStorageAccess::new(pool, encryptor("b", &["a", "b"]));
-    unitycatalog_storage_access::testing::key_rotation(&before, &after).await;
+    let after = PgStorageAccess::new(pool.clone(), encryptor("b", &["a", "b"]));
+    let retired = PgStorageAccess::new(pool, encryptor("b", &["b"]));
+    unitycatalog_storage_access::testing::key_rotation(&before, &after, &retired, "a", "b").await;
 }

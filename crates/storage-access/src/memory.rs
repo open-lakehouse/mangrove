@@ -8,8 +8,8 @@ use unitycatalog_common::models::external_locations::v1::ExternalLocation;
 
 use crate::rules::{credential_in_use_error, new_id, now_millis, overlap_error};
 use crate::{
-    CredentialSecrets, CredentialUpdate, Error, ExternalLocationUpdate, Governed, LocationKey,
-    Page, Result, StorageAccessStore,
+    CredentialSecrets, CredentialUpdate, Error, ExternalLocationUpdate, Governed, KekUsage,
+    LocationKey, Page, Result, RewrapReport, StorageAccessStore,
 };
 
 /// A [`StorageAccessStore`] held in process memory.
@@ -362,8 +362,13 @@ impl StorageAccessStore for InMemoryStorageAccess {
     }
 
     /// Secrets are held in the clear, so there is nothing to re-wrap.
-    async fn rewrap_secrets(&self) -> Result<usize> {
-        Ok(0)
+    async fn rewrap_secrets(&self) -> Result<RewrapReport> {
+        Ok(RewrapReport::default())
+    }
+
+    /// Secrets are held in the clear, so no KEK wraps any.
+    async fn kek_usage(&self) -> Result<KekUsage> {
+        Ok(KekUsage::default())
     }
 }
 

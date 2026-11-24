@@ -69,12 +69,21 @@ async fn neon_storage_resolves_from_its_arn(store: &dyn StorageAccessStore) {
     );
 }
 
-/// Checks KEK rotation: `before` seals under the old key; `after` reads the same
-/// data with a new active key and the old one retired.
+/// Checks KEK rotation: `before` seals under `old`; `after` has `new` active and
+/// `old` retired; `retired` holds only `new`.
+///
+/// KEK usage moves from `old` to `new`, a second sweep finds everything already
+/// active, and once `old` is gone from the provider the data still reads.
 ///
 /// Only for backends that seal secrets; the in-memory store has nothing to
 /// re-wrap.
-pub async fn key_rotation(before: &dyn StorageAccessStore, after: &dyn StorageAccessStore) {
+pub async fn key_rotation(
+    before: &dyn StorageAccessStore,
+    after: &dyn StorageAccessStore,
+    retired: &dyn StorageAccessStore,
+    old: &str,
+    new: &str,
+) {
     let mut request = credential("cred", "arn:1");
     request.aws_iam_role = AwsIamRoleConfig {
         role_arn: "arn:1".into(),
@@ -85,17 +94,60 @@ pub async fn key_rotation(before: &dyn StorageAccessStore, after: &dyn StorageAc
     let expected = request.aws_iam_role.clone();
     before.create_credential(request).await.unwrap();
     before
+        .create_credential(credential("other", "arn:2"))
+        .await
+        .unwrap();
+    before
         .create_external_location(location("loc", "s3://bucket/data", "cred"))
         .await
         .unwrap();
+    let usage = after.kek_usage().await.unwrap();
+    assert_eq!((usage.count(old), usage.count(new)), (2, 0));
 
-    assert_eq!(after.rewrap_secrets().await.unwrap(), 1);
-    assert_eq!(after.rewrap_secrets().await.unwrap(), 0);
-    let governed = after
+    let report = after.rewrap_secrets().await.unwrap();
+    assert_eq!((report.rewrapped, report.already_active), (2, 0));
+    assert!(report.failed.is_empty(), "{:?}", report.failed);
+    assert_eq!(
+        (report.kek_usage.count(old), report.kek_usage.count(new)),
+        (0, 2)
+    );
+    assert_eq!(after.kek_usage().await.unwrap(), report.kek_usage);
+
+    let again = after.rewrap_secrets().await.unwrap();
+    assert_eq!((again.rewrapped, again.already_active), (0, 2));
+
+    let governed = retired
         .governing_location(&storage("s3://bucket/data/x"))
         .await
         .unwrap();
     assert_eq!(governed.credential.aws_iam_role, expected);
+}
+
+/// Checks a sweep whose provider no longer holds the KEK a secret is under:
+/// every such secret is reported as failed, the sweep finishes, and the counts
+/// still show them under `old`.
+pub async fn rewrap_without_the_old_key(
+    before: &dyn StorageAccessStore,
+    retired: &dyn StorageAccessStore,
+    old: &str,
+) {
+    for name in ["one", "two"] {
+        before
+            .create_credential(credential(name, "arn:1"))
+            .await
+            .unwrap();
+    }
+    let report = retired.rewrap_secrets().await.unwrap();
+    assert_eq!(report.rewrapped, 0);
+    assert_eq!(report.failed.len(), 2);
+    for failure in &report.failed {
+        assert_eq!(
+            failure.kind,
+            unitycatalog_common::rotation::RewrapFailureKind::KeyProvider
+        );
+        assert_eq!(failure.kek_id.as_deref(), Some(old));
+    }
+    assert_eq!(report.kek_usage.count(old), 2);
 }
 
 /// A storage credential named `name`, carrying an IAM role ARN.
@@ -673,7 +725,9 @@ async fn rewrap_under_the_active_key_is_a_no_op(store: &dyn StorageAccessStore) 
         .create_credential(credential("cred", "arn:1"))
         .await
         .unwrap();
-    assert_eq!(store.rewrap_secrets().await.unwrap(), 0);
+    let report = store.rewrap_secrets().await.unwrap();
+    assert_eq!(report.rewrapped, 0);
+    assert!(report.failed.is_empty());
     assert_eq!(
         role_arn(&governed_credential(store, "cred").await),
         Some("arn:1")

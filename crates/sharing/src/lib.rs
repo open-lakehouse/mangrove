@@ -285,8 +285,9 @@ pub trait RecipientStore: TokenReader {
     /// Exactly one of any number of concurrent redemptions of a code succeeds;
     /// the others, and any later one, get [`Error::NotFound`].
     async fn redeem_activation(&self, code_hash: &[u8], now: i64) -> Result<TokenRecord>;
-    /// Every token still holding a sealed copy (for key rotation).
-    async fn sealed_tokens(&self) -> Result<Vec<TokenRecord>>;
+    /// Up to `limit` tokens still holding a sealed copy, with ids after `after`,
+    /// in id order (for key rotation).
+    async fn sealed_tokens(&self, after: Option<&str>, limit: usize) -> Result<Vec<TokenRecord>>;
     /// Replace a token's sealed copy, if it still is `current`. Returns whether
     /// it was replaced; a token activated in the meantime keeps none.
     async fn reseal_token(&self, token_id: &str, current: &[u8], sealed: Vec<u8>) -> Result<bool>;

@@ -52,14 +52,6 @@ pub(crate) async fn open(
     CredentialSecrets::from_bytes(&plaintext)
 }
 
-/// `sealed` re-wrapped under the active key, or `None` if it already is.
-pub(crate) async fn rewrap(
-    encryptor: &EnvelopeEncryptor,
-    sealed: &[u8],
-) -> Result<Option<Vec<u8>>> {
-    encryptor.rewrap(sealed).await.map_err(sealing)
-}
-
 /// Splits the extra row fetched past `max` off `rows`, returning its token.
 pub(crate) fn paginate<R, T: From<R>>(
     mut rows: Vec<R>,

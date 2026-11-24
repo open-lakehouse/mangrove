@@ -1686,6 +1686,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "envoy-types"
+version = "0.7.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1fdd3fa7e8347872dd5d6e8626441589f0fd87d7fcf3003a4cca2103ecc39c0"
+dependencies = [
+ "futures-core",
+ "prost",
+ "tonic",
+ "tonic-prost",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3300,6 +3312,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "olai-key-service"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eae47d8232e16cd2c70e62b537675077e890b7791fa8d1fddf87cff6dd3473a9"
+dependencies = [
+ "async-trait",
+ "futures",
+ "hyper-util",
+ "olai-store",
+ "prost",
+ "tokio",
+ "tonic",
+ "tonic-prost",
+ "tower",
+ "tracing",
+ "zeroize",
+]
+
+[[package]]
+name = "olai-secret-server"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b55a42bf7352c4657af921a0fff52f9f9b39d03388ea8d19f9862286a58addb"
+dependencies = [
+ "base64 0.22.1",
+ "clap",
+ "envoy-types",
+ "futures",
+ "olai-key-service",
+ "olai-store",
+ "prost",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+ "zeroize",
+]
+
+[[package]]
 name = "olai-storage-credentials"
 version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3316,9 +3373,9 @@ dependencies = [
 
 [[package]]
 name = "olai-store"
-version = "0.0.8"
+version = "0.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6685e24548e57c0093cba3b6b816e71b7b82b143b104c9e928f407b6ba9f929"
+checksum = "87d127e9fb162c997234416d15596d6e95b74e33eeea9aa1e6d5318e82ce2a4d"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -3586,6 +3643,8 @@ dependencies = [
  "olai-auth",
  "olai-credential-vending",
  "olai-http",
+ "olai-key-service",
+ "olai-secret-server",
  "olai-storage-credentials",
  "olai-store",
  "olai-uc-client",
@@ -3595,6 +3654,7 @@ dependencies = [
  "olai-uc-handlers",
  "olai-uc-object-store",
  "olai-uc-postgres",
+ "olai-uc-sharing",
  "olai-uc-sqlite",
  "olai-uc-storage-access",
  "olai-uc-storage-proxy",
@@ -5120,6 +5180,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_yaml"
+version = "0.9.34+deprecated"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a8b1a1a2ebf674015cc02edccce75287f1a0130d394307b36743c2f5d504b47"
+dependencies = [
+ "indexmap 2.14.0",
+ "itoa",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
+]
+
+[[package]]
 name = "serde_yml"
 version = "0.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6315,6 +6388,12 @@ dependencies = [
  "crypto-common 0.1.7",
  "subtle",
 ]
+
+[[package]]
+name = "unsafe-libyaml"
+version = "0.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
 
 [[package]]
 name = "untrusted"

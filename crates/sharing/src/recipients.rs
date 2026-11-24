@@ -12,6 +12,8 @@
 //! [`RecipientStore`] operation.
 
 use olai_store::encryption::EnvelopeEncryptor;
+use unitycatalog_common::rotation::rows::{self, SealedRows};
+use unitycatalog_common::rotation::{KekUsage, RewrapReport, SealedStore, SealedStoreError};
 
 use crate::tokens::{activation_code, random_secret, token_hash};
 use crate::{Error, RecipientRecord, RecipientStore, Result, TokenRecord, now_millis};
@@ -152,22 +154,65 @@ async fn open_token(
     String::from_utf8(clear.to_vec()).map_err(|_| Error::generic("stored token is not valid UTF-8"))
 }
 
-/// Re-wrap every token awaiting activation under the active key. Returns how
-/// many were re-wrapped.
+/// The sealed copies of the tokens awaiting activation, paged by token id.
+struct SealedTokens<'a>(&'a dyn RecipientStore);
+
+#[async_trait::async_trait]
+impl SealedRows for SealedTokens<'_> {
+    type Error = Error;
+
+    async fn page(&self, after: Option<&str>, limit: usize) -> Result<Vec<(String, Vec<u8>)>> {
+        Ok(self
+            .0
+            .sealed_tokens(after, limit)
+            .await?
+            .into_iter()
+            .filter_map(|t| Some((t.id, t.sealed_token?)))
+            .collect())
+    }
+
+    async fn replace(&self, id: &str, current: &[u8], fresh: &[u8]) -> Result<bool> {
+        self.0.reseal_token(id, current, fresh.to_vec()).await
+    }
+}
+
+/// Re-wrap every token awaiting activation under the active key.
+///
+/// The write is a compare-and-swap: a token activated or resealed meanwhile
+/// counts as [`superseded`](RewrapReport::superseded). A token that cannot be
+/// re-wrapped is reported in [`failed`](RewrapReport::failed) and the sweep goes
+/// on. Running it again resumes an interrupted sweep.
 pub async fn rewrap_tokens(
     store: &dyn RecipientStore,
     encryptor: &EnvelopeEncryptor,
-) -> Result<usize> {
-    let mut rewrapped = 0;
-    for token in store.sealed_tokens().await? {
-        let Some(current) = &token.sealed_token else {
-            continue;
-        };
-        if let Some(sealed) = encryptor.rewrap(current).await.map_err(sealing)?
-            && store.reseal_token(&token.id, current, sealed).await?
-        {
-            rewrapped += 1;
-        }
+) -> Result<RewrapReport> {
+    rows::rewrap(&SealedTokens(store), encryptor).await
+}
+
+/// How many tokens awaiting activation each KEK wraps, read from the envelope
+/// headers without decrypting anything.
+pub async fn token_kek_usage(store: &dyn RecipientStore) -> Result<KekUsage> {
+    rows::kek_usage(&SealedTokens(store)).await
+}
+
+/// A recipient store's sealed tokens, as a [`SealedStore`] for a rotation
+/// [`sweep`](unitycatalog_common::rotation::sweep).
+pub struct SealedRecipientTokens {
+    pub store: std::sync::Arc<dyn RecipientStore>,
+    pub encryptor: EnvelopeEncryptor,
+}
+
+#[async_trait::async_trait]
+impl SealedStore for SealedRecipientTokens {
+    fn name(&self) -> &str {
+        "recipient_tokens"
     }
-    Ok(rewrapped)
+
+    async fn kek_usage(&self) -> std::result::Result<KekUsage, SealedStoreError> {
+        Ok(token_kek_usage(self.store.as_ref()).await?)
+    }
+
+    async fn rewrap(&self) -> std::result::Result<RewrapReport, SealedStoreError> {
+        Ok(rewrap_tokens(self.store.as_ref(), &self.encryptor).await?)
+    }
 }

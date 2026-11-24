@@ -92,6 +92,7 @@ axum = { workspace = true, optional = true }
 axum-extra = { workspace = true, optional = true }
 futures-util = { version = "0.3.28" }
 http = { version = "1.2", optional = true }
+olai-key-service = { workspace = true, features = ["client"], optional = true }
 olai-store = { workspace = true, features = ["encryption"] }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "net"] }
 tower = { workspace = true, features = ["make"], optional = true }
@@ -123,6 +124,15 @@ swagger-ui-dist = { version = "5.18.3", optional = true }
 olai-auth = { workspace = true }
 
 [dev-dependencies]
+# An in-process secret server (key service) for the `key-service` tests.
+olai-secret-server = { workspace = true }
+unitycatalog-sharing = { package = "olai-uc-sharing", path = "../sharing", version = "0.0.5", features = [
+  "sqlite",
+] }
+unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.6", features = [
+  "sqlite",
+  "testing",
+] }
 # The in-process Cedar authorizer, to test `AuthorizerPolicy` against the published
 # schema fragment.
 olai-auth = { workspace = true, features = ["cedar"] }
@@ -182,6 +192,11 @@ olai-auth = [
 # or `bin`); a host opts in. Without it such credentials register but don't vend.
 neon-trusted-vending = ["olai-credential-vending/neon-trusted-vending"]
 
+# `encryption.provider.key_service`: wrap data keys through trestle's key service
+# (`olai-key-service`, over the secret server's Unix socket) instead of holding a
+# KEK. Unix only.
+key-service = ["embed", "dep:olai-key-service"]
+
 # Optional surfaces on top of `embed`.
 # Swagger UI for the bundled OpenAPI specs (embeds the swagger-ui assets).
 swagger = ["embed", "dep:swagger-ui-dist"]
@@ -206,6 +221,7 @@ files = ["embed", "dep:unitycatalog-files-api", "dep:unitycatalog-object-store"]
 # healthcheck client.
 bin = [
   "embed",
+  "key-service",
   "olai-auth",
   "postgres",
   "sqlite",

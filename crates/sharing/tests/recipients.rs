@@ -2,7 +2,7 @@
 
 use olai_store::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 use unitycatalog_sharing::recipients::{
-    create_recipient, pending_activation, redeem, rewrap_tokens, rotate_token,
+    create_recipient, pending_activation, redeem, rewrap_tokens, rotate_token, token_kek_usage,
 };
 use unitycatalog_sharing::tokens::token_hash;
 use unitycatalog_sharing::{Error, InMemorySharingStore, RecipientStore, TokenReader};
@@ -80,8 +80,12 @@ async fn sealed_tokens_move_to_the_active_key() {
         .unwrap();
 
     let after = encryptor("b", &["a", "b"]);
-    assert_eq!(rewrap_tokens(&store, &after).await.unwrap(), 1);
-    assert_eq!(rewrap_tokens(&store, &after).await.unwrap(), 0);
+    assert_eq!(token_kek_usage(&store).await.unwrap().count("a"), 1);
+    let report = rewrap_tokens(&store, &after).await.unwrap();
+    assert_eq!((report.rewrapped, report.already_active), (1, 0));
+    assert_eq!(report.kek_usage.count("b"), 1);
+    let again = rewrap_tokens(&store, &after).await.unwrap();
+    assert_eq!((again.rewrapped, again.already_active), (0, 1));
 
     // The retired key is no longer needed to redeem the code.
     let only_b = encryptor("b", &["b"]);

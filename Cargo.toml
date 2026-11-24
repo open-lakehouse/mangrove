@@ -79,8 +79,10 @@ olai-auth = { version = "0.0.6", default-features = false }
 olai-credential-vending = { version = "0.0.6" }
 olai-http = { version = "0.0.12" }
 olai-http-wasm = { version = "0.0.6" }
+olai-key-service = { version = "0.0.2" }
 olai-storage-credentials = { version = "0.0.4" }
-olai-store = { version = "0.0.8" }
+olai-secret-server = { version = "0.0.3" }
+olai-store = { version = "0.0.9" }
 olai-vended-store = { version = "0.0.5", default-features = false }
 pbjson = { version = "0.9" }
 pbjson-types = "0.9"

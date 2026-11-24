@@ -428,10 +428,13 @@ impl RecipientStore for SqliteSharingStore {
         Ok(redeemed)
     }
 
-    async fn sealed_tokens(&self) -> Result<Vec<TokenRecord>> {
+    async fn sealed_tokens(&self, after: Option<&str>, limit: usize) -> Result<Vec<TokenRecord>> {
         sqlx::query(&format!(
-            "SELECT {TOKEN_COLUMNS} FROM uc_recipient_tokens t WHERE t.sealed_token IS NOT NULL"
+            "SELECT {TOKEN_COLUMNS} FROM uc_recipient_tokens t WHERE t.sealed_token IS NOT NULL \
+             AND (?1 IS NULL OR t.id > ?1) ORDER BY t.id LIMIT ?2"
         ))
+        .bind(after)
+        .bind(limit as i64)
         .fetch_all(&self.pool)
         .await
         .map_err(db)?
