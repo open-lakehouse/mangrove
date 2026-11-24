@@ -207,8 +207,9 @@ Each check becomes a Cedar request in the `UnityCatalog` namespace: the
 verified caller as `Lakehouse::User` or `Lakehouse::ServiceAccount`, one action
 per API operation (`GetTable`, `CreateTable`, `GenerateTemporaryTableCredentials`,
 … generated from the protos, plus the Delta API's `CommitTable`, `RenameTable`,
-`AdoptStagingTable`, `GenerateTemporaryStagingTableCredentials` and the storage
-proxy's `ReadData` / `WriteData`), and the securable by its full name, e.g.
+`AdoptStagingTable`, `GenerateTemporaryStagingTableCredentials`, the storage
+proxy's `ReadData` / `WriteData` and the encryption admin API's `GetKekUsage` /
+`RewrapSecrets`), and the securable by its full name, e.g.
 `UnityCatalog::Table::"main.sales.orders"`. The securable and each ancestor
 (schema, catalog, metastore) go along as entities, each with its ancestors as
 parents and typed attributes (`resource.schema`, `resource.catalog`). The
@@ -222,7 +223,7 @@ requires is the policy's business. Anything it can't decide, and any request
 without a verified caller, is denied. The schema is published as
 `policy::CEDAR_SCHEMA_FRAGMENTS` (entities in `cedar/UnityCatalog.cedarschema`,
 the generated actions, `cedar/DeltaApi.cedarschema`,
-`cedar/StorageProxy.cedarschema`), for a host to compose with its `Lakehouse`
+`cedar/StorageProxy.cedarschema`, `cedar/Encryption.cedarschema`), for a host to compose with its `Lakehouse`
 fragment. With the default `constant` policy everything stays allowed.
 
 Grants are kept through the grants API (`GET` / `PATCH
@@ -345,6 +346,78 @@ emits one `tracing` event at target `unitycatalog::audit` (`event =
 Secrets are never logged. The storage proxy's internal vends, whose keys never
 leave the server, aren't audited.
 
+### Encryption at rest
+
+Secrets at rest (storage credentials, the sensitive fields of stored objects,
+recipient tokens) are envelope-encrypted: each value is sealed under its own
+data key (DEK), and a key-encryption key (KEK) wraps the DEK. The `encryption`
+block says where the KEK lives. Set one of its two forms.
+
+**Key service.** The server never holds the KEK. It asks trestle's key service
+(`olai.keys.v1.KeyService`, served by `olai-secret-server` on the server's
+Unix socket) to wrap and unwrap DEKs. This needs the `key-service` feature
+(in `bin`):
+
+```yaml
+encryption:
+  provider:
+    key_service:
+      socket: { env: TRESTLE_SDS_SOCKET }   # or an inline path
+      key: { env: TRESTLE_KEY_SERVER_KEK }  # or inline: the key listed for this consumer
+      dek_cache:                  # on by default; `dek_cache: off` disables it
+        ttl_secs: 300             # default 300
+        max_entries: 1024         # default 1024
+      connect_timeout_secs: 30    # how long startup waits for the service (default 30)
+```
+
+- KEK ids are `<key>@v<version>`, e.g. `uc-server-kek@v2`. A version imported
+  from a local KEK keeps its old id as an alias (`kek-1`), so values sealed
+  before the switch open unchanged.
+- The server follows the key's active version live. A rotation on the secret
+  server reaches it without a restart, and new values are sealed under the new
+  version at once.
+- Startup fails with a clear message when the socket or key is missing, when
+  the socket doesn't exist, or when the key service refuses the key (a key not
+  listed for this consumer, for one). For a service that is still starting,
+  it waits up to `connect_timeout_secs`.
+- Each read of a sealed value costs one unwrap over the local socket. With
+  `dek_cache` on, a DEK already unwrapped opens its value without a round trip
+  until the entry expires. That also keeps recently read values readable while
+  the secret server is recreated, as it is on rotation. Cached DEKs below a
+  raised `min_decrypt` are dropped as soon as the server sees it. Wraps are
+  never cached: new values always need the key service.
+
+**Local KEKs.** The server holds the KEK material. Use this for the Neon
+Function placement and for deployments that don't run trestle:
+
+```yaml
+encryption:
+  active:   { id: v2, key: { env: UC_SERVER_KEK } }     # 32 bytes, base64
+  retired:
+    - { id: v1, key: { env: UC_SERVER_KEK_V1 } }        # still opens; sweep, then drop
+```
+
+The config-less ephemeral `:memory:` backend falls back to a fixed dev KEK. A
+durable backend without an `encryption` block fails at startup.
+
+**Rotation.** Reads never re-wrap. Values move to the active KEK only when a
+sweep runs. The admin API reports and runs it, behind the same authenticator as
+the UC API and asked of the policy on the metastore:
+
+- `GET /api/admin/v1/encryption/kek-usage` (`GetKekUsage`) returns per store
+  (`objects`, `storage_credentials`; `recipient_tokens` is listed under
+  `not_configured`, since this server keeps no sharing store) how many values
+  each KEK wraps (`by_kek`), plus `unreadable` headers. The counts come from
+  envelope headers; nothing is decrypted.
+- `POST /api/admin/v1/encryption/rewrap` (`RewrapSecrets`) re-wraps every value
+  under the active KEK. Per store it returns the usage `before`, then
+  `rewrapped`, `already_active`, `superseded` (replaced by a concurrent write,
+  which is kept), `failed` (each with its id, KEK and reason) and the
+  `kek_usage` after. A value that fails doesn't stop the sweep, nor does a store
+  that fails as a whole. Running it again resumes it.
+
+The step-by-step procedure is in [`docs/kek-rotation.md`](docs/kek-rotation.md).
+
 ## Feature flags
 
 | Feature   | Default | What it enables                                                                          |
@@ -360,6 +433,7 @@ leave the server, aren't audited.
 | `ui`      |         | Serving the bundled single-page app from `./web` (`ui.serve`).                           |
 | `storage-proxy` |   | The same-origin storage byte-proxy (`storage_proxy.enabled`).                            |
 | `files`   |         | The embedded Files API (`files.enabled`).                                                |
+| `key-service` |     | `encryption.provider.key_service`: wrap data keys through trestle's key service over a Unix socket (implies `embed`). |
 | `scim`    |         | The read-only SCIM API over the directory, and Authelia's user file as a user source (implies `embed`). |
 | `olai-auth` |       | `auth.mode: olai-auth`: Neon Auth JWTs over a JWKS URL and service-account API keys, and `policy.kind: authorizer` (implies `embed`). |
 | `neon-trusted-vending` | | Trusted vending for Neon object storage (`vending.neon`). Not in `default` or `bin`: a host opts in. |
