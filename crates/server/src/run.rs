@@ -34,6 +34,7 @@ use unitycatalog_common::{Error, Result};
 use crate::api::RequestContext;
 use crate::config::{AuthMode, Backend, Config, StorageProxyConfig, UiConfig};
 use crate::policy::Policy;
+use crate::rest::admin::EncryptionAdmin;
 use crate::rest::{
     AnonymousAuthenticator, AuthenticationLayer, BearerAuthenticator, OnMissingIdentity,
     ReverseProxyAuthenticator, create_agent_skills_router, create_agents_router,
@@ -133,7 +134,8 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
         .resolve()
         .map_err(|e| Error::Generic(format!("vending config: {e}")))?;
 
-    let (handler, policy) = connect(config).await?;
+    let ((handler, policy), encryption_admin) = connect(config).await?;
+    let admin_policy = policy.clone();
     let directory = build_directory(config)?;
     let handler = with_grants(handler, config, directory.as_ref())?;
     let handler = handler
@@ -204,6 +206,10 @@ pub(crate) async fn build_app(config: &Config) -> Result<Router> {
             crate::rest::scim::ScimState::new(directory, config.auth.mode == AuthMode::Anonymous);
         api_router.merge(crate::rest::scim::router(state))
     };
+
+    // The encryption admin API (KEK usage and the rewrap sweep), behind the same
+    // authenticator and asked of the same policy as the UC API.
+    let api_router = api_router.merge(crate::rest::admin::router(encryption_admin, admin_policy));
 
     // Apply the configured authenticator. Each arm yields the same erased
     // `Router` type, so they can share one binding despite distinct authenticator
@@ -440,18 +446,22 @@ fn not_compiled(what: &str, feature: &str) -> Error {
 /// config-less `serve` works out of the box (see [`Backend::is_ephemeral`]). A
 /// durable backend is never migrated here — the operator runs `migrate` first —
 /// and must already hold this build's schema.
-async fn connect(config: &Config) -> Result<LocalHandler> {
+async fn connect(config: &Config) -> Result<(LocalHandler, EncryptionAdmin)> {
     let migrate = config.backend.is_ephemeral();
     if migrate {
         tracing::info!("ephemeral in-memory backend: applying migrations at startup");
     }
     match &config.backend {
         #[cfg(feature = "postgres")]
-        Backend::Postgres(pg) => connect_postgres(pg, encryptor(config)?, migrate, config).await,
+        Backend::Postgres(pg) => {
+            connect_postgres(pg, encryptor(config).await?, migrate, config).await
+        }
         #[cfg(not(feature = "postgres"))]
         Backend::Postgres(_) => Err(not_compiled("the postgres backend", "postgres")),
         #[cfg(feature = "sqlite")]
-        Backend::Sqlite(cfg) => connect_sqlite(cfg, encryptor(config)?, migrate, config).await,
+        Backend::Sqlite(cfg) => {
+            connect_sqlite(cfg, encryptor(config).await?, migrate, config).await
+        }
         #[cfg(not(feature = "sqlite"))]
         Backend::Sqlite(_) => Err(not_compiled("the sqlite backend", "sqlite")),
     }
@@ -466,13 +476,14 @@ async fn connect(config: &Config) -> Result<LocalHandler> {
 /// config-less default (which also ships the dev KEK). See
 /// [`crate::config::EncryptionConfig::dev_default`].
 #[cfg(any(feature = "postgres", feature = "sqlite"))]
-fn encryptor(
+async fn encryptor(
     config: &Config,
 ) -> Result<unitycatalog_common::services::encryption::EnvelopeEncryptor> {
     match config.encryption.as_ref() {
-        Some(enc) => enc.build_encryptor().map_err(Error::Generic),
+        Some(enc) => enc.build_encryptor().await.map_err(Error::Generic),
         None if config.backend.is_ephemeral() => crate::config::EncryptionConfig::dev_default()
             .build_encryptor()
+            .await
             .map_err(Error::Generic),
         None => Err(Error::Generic(
             "missing `encryption` configuration: an active KEK is required to store secrets \
@@ -480,6 +491,28 @@ fn encryptor(
                 .into(),
         )),
     }
+}
+
+/// The sealed stores of a backend, for the encryption admin API: the object
+/// graph and storage credentials. The server holds no sharing store, so
+/// recipient tokens are reported as not configured.
+#[cfg(any(feature = "postgres", feature = "sqlite"))]
+fn encryption_admin<S: olai_store::ObjectStore<unitycatalog_common::models::ObjectLabel>>(
+    encryptor: unitycatalog_common::services::encryption::EnvelopeEncryptor,
+    graph: olai_store::ManagedObjectStore<unitycatalog_common::models::ObjectLabel, S>,
+    storage_access: Arc<dyn unitycatalog_storage_access::StorageAccessStore>,
+) -> EncryptionAdmin {
+    use crate::rest::admin::SealedObjects;
+    use unitycatalog_storage_access::SealedCredentials;
+
+    EncryptionAdmin::new(
+        encryptor,
+        vec![
+            Arc::new(SealedObjects(graph)),
+            Arc::new(SealedCredentials(storage_access)),
+        ],
+    )
+    .with_not_configured("recipient_tokens")
 }
 
 /// The REST router with the surfaces `config.routing` marks `upstream` proxied
@@ -801,7 +834,7 @@ async fn connect_postgres(
     encryptor: unitycatalog_common::services::encryption::EnvelopeEncryptor,
     migrate: bool,
     config: &Config,
-) -> Result<LocalHandler> {
+) -> Result<(LocalHandler, EncryptionAdmin)> {
     use unitycatalog_common::store::ObjectStoreAdapter;
     use unitycatalog_postgres::PgCommitCoordinator;
 
@@ -830,12 +863,13 @@ async fn connect_postgres(
     // external locations live in their own tables with sealed secrets; Delta
     // catalog-managed commits are persisted in the `delta_commits` table.
     let graph = unitycatalog_postgres::connect_graph(pool.clone(), encryptor.clone());
-    let resource_store = Arc::new(ObjectStoreAdapter::new(graph));
+    let resource_store = Arc::new(ObjectStoreAdapter::new(graph.clone()));
     let policy = build_policy(config)?;
     let storage_access = Arc::new(unitycatalog_postgres::PgStorageAccess::new(
         pool.clone(),
-        encryptor,
+        encryptor.clone(),
     ));
+    let admin = encryption_admin(encryptor, graph, storage_access.clone());
     let coordinator = Arc::new(PgCommitCoordinator::new(pool));
     let handler = ServerHandler::try_new_tokio_with_coordinator(
         policy.clone(),
@@ -844,7 +878,7 @@ async fn connect_postgres(
         coordinator,
     )
     .map_err(|e| Error::Generic(e.to_string()))?;
-    Ok((handler, policy))
+    Ok(((handler, policy), admin))
 }
 
 /// Fail unless the Postgres schema is current, checked over the migration URL
@@ -879,7 +913,7 @@ async fn connect_sqlite(
     encryptor: unitycatalog_common::services::encryption::EnvelopeEncryptor,
     migrate: bool,
     config: &Config,
-) -> Result<LocalHandler> {
+) -> Result<(LocalHandler, EncryptionAdmin)> {
     use unitycatalog_common::store::ObjectStoreAdapter;
     use unitycatalog_sqlite::SqliteCommitCoordinator;
 
@@ -908,12 +942,13 @@ async fn connect_sqlite(
     // Postgres backend: credentials and external locations live in their own
     // tables, Delta catalog-managed commits in the `delta_commits` table.
     let graph = unitycatalog_sqlite::connect_graph(pool.clone(), encryptor.clone());
-    let resource_store = Arc::new(ObjectStoreAdapter::new(graph));
+    let resource_store = Arc::new(ObjectStoreAdapter::new(graph.clone()));
     let policy = build_policy(config)?;
     let storage_access = Arc::new(unitycatalog_sqlite::SqliteStorageAccess::new(
         pool.clone(),
-        encryptor,
+        encryptor.clone(),
     ));
+    let admin = encryption_admin(encryptor, graph, storage_access.clone());
     let coordinator = Arc::new(SqliteCommitCoordinator::new(pool));
     let handler = ServerHandler::try_new_tokio_with_coordinator(
         policy.clone(),
@@ -922,7 +957,7 @@ async fn connect_sqlite(
         coordinator,
     )
     .map_err(|e| Error::Generic(e.to_string()))?;
-    Ok((handler, policy))
+    Ok(((handler, policy), admin))
 }
 
 /// Mount the bundled SPA onto `app`: real asset files off disk, with an

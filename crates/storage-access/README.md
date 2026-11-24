@@ -26,10 +26,15 @@ Implementations:
   the database keeps one `_sqlx_migrations` ledger. `olai-uc-postgres` and
   `olai-uc-sqlite` do exactly that.
 
-`rewrap_secrets` re-wraps sealed secrets under the active key after a KEK
-rotation.
+After a KEK rotation, `rewrap_secrets` re-wraps sealed secrets under the active
+key, page by page, with a compare-and-swap write. It returns a `RewrapReport`:
+rewrapped, already active, superseded by a concurrent update (which is kept),
+failed, and the KEK usage after. `kek_usage` counts sealed secrets per KEK from
+their envelope headers, without decrypting anything. `SealedCredentials` adapts
+a store to `olai-uc-common`'s `rotation::SealedStore` for a sweep across stores.
 
 With the `vending` feature, `dyn StorageAccessStore` implements
 `olai_credential_vending::CredentialResolver`. The `testing` feature exposes the
 conformance suite every backend runs (`testing::conformance`), and
-`testing::key_rotation` for backends that seal secrets.
+`testing::key_rotation` / `testing::rewrap_without_the_old_key` for backends that
+seal secrets.

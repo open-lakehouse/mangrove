@@ -267,14 +267,17 @@ impl RecipientStore for InMemorySharingStore {
         Ok(redeemed)
     }
 
-    async fn sealed_tokens(&self) -> Result<Vec<TokenRecord>> {
-        Ok(self
+    async fn sealed_tokens(&self, after: Option<&str>, limit: usize) -> Result<Vec<TokenRecord>> {
+        let mut tokens: Vec<TokenRecord> = self
             .state()
             .tokens
             .iter()
-            .filter(|t| t.sealed_token.is_some())
+            .filter(|t| t.sealed_token.is_some() && after.is_none_or(|a| t.id.as_str() > a))
             .cloned()
-            .collect())
+            .collect();
+        tokens.sort_by(|a, b| a.id.cmp(&b.id));
+        tokens.truncate(limit);
+        Ok(tokens)
     }
 
     async fn reseal_token(&self, token_id: &str, current: &[u8], sealed: Vec<u8>) -> Result<bool> {

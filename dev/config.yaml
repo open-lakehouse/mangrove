@@ -17,7 +17,14 @@ backend:
   database: { env: PGDATABASE }
 
 # Dev-only KEK so the server starts against the durable Postgres backend without
-# an external key. Do NOT use in production — supply a real `encryption` block.
+# an external key. Do NOT use in production — supply a real `encryption` block,
+# or wrap through trestle's key service instead of holding a KEK:
+#
+# encryption:
+#   provider:
+#     key_service:
+#       socket: { env: TRESTLE_SDS_SOCKET }
+#       key: { env: TRESTLE_KEY_SERVER_KEK }
 encryption:
   active:
     id: dev

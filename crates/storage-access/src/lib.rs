@@ -29,6 +29,8 @@ use olai_storage_credentials::StorageLocation;
 use unitycatalog_common::models::credentials::v1::{Credential, Purpose};
 use unitycatalog_common::models::external_locations::v1::ExternalLocation;
 
+pub use unitycatalog_common::rotation::{KekUsage, RewrapReport};
+use unitycatalog_common::rotation::{SealedStore, SealedStoreError};
 pub use unitycatalog_common::{Error, Result};
 
 pub use crate::secrets::CredentialSecrets;
@@ -197,11 +199,39 @@ pub trait StorageAccessStore: Send + Sync + 'static {
     ) -> Result<Option<ExternalLocation>>;
 
     /// Re-wraps every sealed secret under the active key-encryption key, after a
-    /// key rotation. Returns how many were re-wrapped.
+    /// key rotation.
     ///
-    /// Secrets already under the active key are left alone, so running it again
-    /// returns 0. Backends that keep no sealed secrets return 0.
-    async fn rewrap_secrets(&self) -> Result<usize>;
+    /// Secrets already under the active key count as
+    /// [`already_active`](RewrapReport::already_active), so running it again
+    /// resumes an interrupted sweep. The write is a compare-and-swap: a secret
+    /// updated concurrently keeps the update and counts as
+    /// [`superseded`](RewrapReport::superseded). A secret that cannot be
+    /// re-wrapped is reported in [`failed`](RewrapReport::failed) and the sweep
+    /// goes on. Backends that keep no sealed secrets report nothing.
+    async fn rewrap_secrets(&self) -> Result<RewrapReport>;
+
+    /// How many sealed secrets each key-encryption key wraps, read from the
+    /// envelope headers without decrypting anything.
+    async fn kek_usage(&self) -> Result<KekUsage>;
+}
+
+/// A [`StorageAccessStore`]'s sealed credential secrets, as a [`SealedStore`]
+/// for a rotation [`sweep`](unitycatalog_common::rotation::sweep).
+pub struct SealedCredentials(pub std::sync::Arc<dyn StorageAccessStore>);
+
+#[async_trait]
+impl SealedStore for SealedCredentials {
+    fn name(&self) -> &str {
+        "storage_credentials"
+    }
+
+    async fn kek_usage(&self) -> std::result::Result<KekUsage, SealedStoreError> {
+        Ok(self.0.kek_usage().await?)
+    }
+
+    async fn rewrap(&self) -> std::result::Result<RewrapReport, SealedStoreError> {
+        Ok(self.0.rewrap_secrets().await?)
+    }
 }
 
 /// Access to a [`StorageAccessStore`].

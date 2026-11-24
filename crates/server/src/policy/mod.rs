@@ -114,12 +114,16 @@ pub const CEDAR_DELTA_ACTIONS: &str = include_str!("../../cedar/DeltaApi.cedarsc
 /// securable's data through the server).
 pub const CEDAR_STORAGE_PROXY_ACTIONS: &str = include_str!("../../cedar/StorageProxy.cedarschema");
 
+/// The Cedar actions of the encryption admin API (KEK usage and the rewrap
+/// sweep, on the metastore).
+pub const CEDAR_ENCRYPTION_ACTIONS: &str = include_str!("../../cedar/Encryption.cedarschema");
+
 /// The generated Cedar actions, one per API [`Operation`].
 pub use unitycatalog_handlers::CEDAR_ACTIONS;
 
 /// The server's Cedar vocabulary, as schema fragments: [`CEDAR_ENTITIES`], the
-/// generated [`CEDAR_ACTIONS`], [`CEDAR_DELTA_ACTIONS`] and
-/// [`CEDAR_STORAGE_PROXY_ACTIONS`].
+/// generated [`CEDAR_ACTIONS`], [`CEDAR_DELTA_ACTIONS`],
+/// [`CEDAR_STORAGE_PROXY_ACTIONS`] and [`CEDAR_ENCRYPTION_ACTIONS`].
 ///
 /// Each declares `namespace UnityCatalog`, so they are composed as fragments
 /// (Cedar rejects one schema text declaring a namespace twice). A host adds its
@@ -130,6 +134,7 @@ pub const CEDAR_SCHEMA_FRAGMENTS: &[&str] = &[
     CEDAR_ACTIONS,
     CEDAR_DELTA_ACTIONS,
     CEDAR_STORAGE_PROXY_ACTIONS,
+    CEDAR_ENCRYPTION_ACTIONS,
 ];
 
 /// The Cedar actions of the Delta API without a REST operation, and of the
@@ -153,6 +158,11 @@ pub enum ServerAction {
     ReadData,
     /// Write a securable's data through the storage byte-proxy.
     WriteData,
+    /// Count sealed values per key-encryption key (on the metastore).
+    GetKekUsage,
+    /// Re-wrap every sealed value under the active key-encryption key (on the
+    /// metastore).
+    RewrapSecrets,
 }
 
 impl ServerAction {
@@ -168,6 +178,8 @@ impl ServerAction {
             }
             Self::ReadData => "ReadData",
             Self::WriteData => "WriteData",
+            Self::GetKekUsage => "GetKekUsage",
+            Self::RewrapSecrets => "RewrapSecrets",
         }
     }
 }

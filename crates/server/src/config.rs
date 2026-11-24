@@ -1451,18 +1451,40 @@ impl PostgresBackendConfig {
 
 /// Envelope-encryption configuration for secrets at rest.
 ///
-/// Secrets are sealed with a per-secret data key that is wrapped by a key-encryption key (KEK).
-/// Exactly one KEK is `active` (used for new writes); any number of `retired` KEKs may be listed so
-/// values previously sealed under them can still be decrypted and lazily re-wrapped during
-/// rotation.
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+/// Secrets are sealed with a per-secret data key (DEK) that a key-encryption key (KEK) wraps.
+/// The KEK comes from one of two places:
+///
+/// - **Local** (`active` + `retired`): the server holds the KEK material itself. Exactly one KEK is
+///   `active` (used for new writes); any number of `retired` KEKs may be listed so values sealed
+///   under them still open until a rewrap sweep has moved them. For deployments without a key
+///   service, such as the Neon Function placement.
+/// - **Key service** (`provider.key_service`): the server never sees a KEK. It asks trestle's key
+///   service (`olai.keys.v1.KeyService`, served by `olai-secret-server` on a local Unix socket) to
+///   wrap and unwrap DEKs. The service holds the keyring; rotating it needs no server restart.
+///
+/// ```yaml
+/// encryption:
+///   provider:
+///     key_service:
+///       socket: /run/trestle-sds/uc-server/sds.sock
+///       key: uc-server-kek
+/// ```
+///
+/// Set one form or the other; startup fails if both or neither are set.
+#[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct EncryptionConfig {
-    /// The active KEK that new secrets are wrapped under.
-    pub active: KeyConfig,
+    /// The active local KEK that new secrets are wrapped under.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub active: Option<KeyConfig>,
 
-    /// Retired KEKs retained for decryption during rotation.
-    #[serde(default)]
+    /// Retired local KEKs retained for decryption during rotation.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retired: Vec<KeyConfig>,
+
+    /// An external key provider that holds the KEK instead of this server.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider: Option<KeyProviderConfig>,
 }
 
 impl EncryptionConfig {
@@ -1475,12 +1497,32 @@ impl EncryptionConfig {
     pub fn dev_default() -> Self {
         // 32 zero-derived bytes (`0..32`), base64-encoded. Deliberately not secret.
         const DEV_KEK: &str = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=";
+        Self::local(KeyConfig {
+            id: "dev".to_string(),
+            key: ConfigValue::Value(DEV_KEK.to_string()),
+        })
+    }
+
+    /// A local configuration with `active` as its only KEK.
+    pub fn local(active: KeyConfig) -> Self {
         Self {
-            active: KeyConfig {
-                id: "dev".to_string(),
-                key: ConfigValue::Value(DEV_KEK.to_string()),
-            },
-            retired: Vec::new(),
+            active: Some(active),
+            ..Default::default()
+        }
+    }
+
+    /// A configuration that wraps through the key service on `socket`, under `key`.
+    pub fn key_service(socket: impl Into<String>, key: impl Into<String>) -> Self {
+        Self {
+            provider: Some(KeyProviderConfig {
+                key_service: Some(KeyServiceConfig {
+                    socket: ConfigValue::Value(socket.into()),
+                    key: ConfigValue::Value(key.into()),
+                    dek_cache: DekCacheConfig::default(),
+                    connect_timeout_secs: None,
+                }),
+            }),
+            ..Default::default()
         }
     }
 }
@@ -1496,19 +1538,192 @@ pub struct KeyConfig {
     pub key: ConfigValue,
 }
 
+/// A key provider that holds the KEK outside this server. Exactly one is set.
+#[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct KeyProviderConfig {
+    /// trestle's key service on a local Unix socket.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub key_service: Option<KeyServiceConfig>,
+}
+
+/// Wrap and unwrap data keys through trestle's key service (`olai-key-service`).
+///
+/// The service answers on the server's secret-server socket and only for the keys listed for this
+/// consumer. KEK ids are `<key>@v<version>`; a version imported from a local KEK keeps opening
+/// through its alias (e.g. `kek-1`). The active version is followed live: a rotation reaches the
+/// server without a restart.
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct KeyServiceConfig {
+    /// The key service's Unix socket. Resolved from an inline value or an environment variable.
+    pub socket: ConfigValue,
+
+    /// The name of the key to wrap under, as the secret server lists it for this consumer.
+    /// Resolved from an inline value or an environment variable (trestle sets
+    /// `TRESTLE_KEY_<KEY>`).
+    pub key: ConfigValue,
+
+    /// The cache of unwrapped data keys. On by default.
+    #[serde(default)]
+    pub dek_cache: DekCacheConfig,
+
+    /// How long startup waits for the key service to answer, in seconds. Default 30.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub connect_timeout_secs: Option<u64>,
+}
+
+/// The key service client's cache of unwrapped data keys.
+///
+/// Each read of a sealed value costs one unwrap over the local socket. With the cache on, a data
+/// key already unwrapped opens its value without a round trip until the entry expires, so values
+/// read recently stay readable while the secret server restarts (as it does on rotation). Entries
+/// below a raised `min_decrypt` are dropped as soon as the client sees it. Wraps are never cached:
+/// new values always need the service. `off` turns it off.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DekCacheConfig {
+    /// No cache: every unwrap asks the key service.
+    Off,
+    /// A bounded cache whose entries expire.
+    On {
+        /// How long an entry stays, in seconds.
+        ttl_secs: u64,
+        /// The most entries held; the oldest is dropped first.
+        max_entries: usize,
+    },
+}
+
+impl DekCacheConfig {
+    /// Default entry lifetime: five minutes.
+    pub const DEFAULT_TTL_SECS: u64 = 300;
+    /// Default capacity.
+    pub const DEFAULT_MAX_ENTRIES: usize = 1024;
+}
+
+impl Default for DekCacheConfig {
+    fn default() -> Self {
+        Self::On {
+            ttl_secs: Self::DEFAULT_TTL_SECS,
+            max_entries: Self::DEFAULT_MAX_ENTRIES,
+        }
+    }
+}
+
+/// `off`, or `{ ttl_secs, max_entries }` with either field defaulted.
+#[derive(Deserialize, Serialize)]
+#[serde(untagged)]
+enum DekCacheRepr {
+    Switch(String),
+    On {
+        #[serde(default = "default_dek_ttl")]
+        ttl_secs: u64,
+        #[serde(default = "default_dek_max_entries")]
+        max_entries: usize,
+    },
+}
+
+fn default_dek_ttl() -> u64 {
+    DekCacheConfig::DEFAULT_TTL_SECS
+}
+
+fn default_dek_max_entries() -> usize {
+    DekCacheConfig::DEFAULT_MAX_ENTRIES
+}
+
+impl<'de> Deserialize<'de> for DekCacheConfig {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        use serde::de::Error as _;
+        match DekCacheRepr::deserialize(deserializer)? {
+            DekCacheRepr::Switch(s) if s == "off" => Ok(Self::Off),
+            DekCacheRepr::Switch(s) if s == "on" => Ok(Self::default()),
+            DekCacheRepr::Switch(s) => Err(D::Error::custom(format!(
+                "dek_cache: expected `off`, `on` or {{ ttl_secs, max_entries }}, got `{s}`"
+            ))),
+            DekCacheRepr::On {
+                ttl_secs,
+                max_entries,
+            } => {
+                if ttl_secs == 0 || max_entries == 0 {
+                    return Err(D::Error::custom(
+                        "dek_cache: ttl_secs and max_entries must be positive (use `off` to disable)",
+                    ));
+                }
+                Ok(Self::On {
+                    ttl_secs,
+                    max_entries,
+                })
+            }
+        }
+    }
+}
+
+impl Serialize for DekCacheConfig {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match *self {
+            Self::Off => DekCacheRepr::Switch("off".into()),
+            Self::On {
+                ttl_secs,
+                max_entries,
+            } => DekCacheRepr::On {
+                ttl_secs,
+                max_entries,
+            },
+        }
+        .serialize(serializer)
+    }
+}
+
 impl EncryptionConfig {
-    /// Resolve all configured KEKs and build an [`EnvelopeEncryptor`].
+    /// Resolve the configured KEK source and build an [`EnvelopeEncryptor`].
     ///
-    /// Fails if the active KEK or any retired KEK cannot be resolved or is not valid 32-byte
-    /// base64 material.
-    pub fn build_encryptor(
+    /// For local KEKs, fails if the active KEK or any retired KEK cannot be resolved or is not
+    /// valid 32-byte base64 material. For the key service, fails if the socket or key is missing,
+    /// the socket does not exist, or the service refuses the key; it waits up to
+    /// `connect_timeout_secs` for a service that is starting.
+    ///
+    /// [`EnvelopeEncryptor`]: unitycatalog_common::services::encryption::EnvelopeEncryptor
+    pub async fn build_encryptor(
         &self,
+    ) -> Result<unitycatalog_common::services::encryption::EnvelopeEncryptor, String> {
+        match (&self.active, &self.provider) {
+            (Some(active), None) => self.build_local(active),
+            (
+                None,
+                Some(KeyProviderConfig {
+                    key_service: Some(ks),
+                }),
+            ) => {
+                if !self.retired.is_empty() {
+                    return Err(
+                        "encryption: `retired` KEKs only apply to a local `active` KEK; \
+                         with `provider.key_service` the key service holds every version"
+                            .into(),
+                    );
+                }
+                ks.build_encryptor().await
+            }
+            (Some(_), Some(_)) => {
+                Err("encryption: set either a local `active` KEK or `provider`, not both".into())
+            }
+            (None, Some(KeyProviderConfig { key_service: None })) => {
+                Err("encryption.provider: name a provider, e.g. `key_service`".into())
+            }
+            (None, None) => Err(
+                "encryption: no KEK configured; set a local `active` KEK or `provider.key_service`"
+                    .into(),
+            ),
+        }
+    }
+
+    fn build_local(
+        &self,
+        active: &KeyConfig,
     ) -> Result<unitycatalog_common::services::encryption::EnvelopeEncryptor, String> {
         use base64::Engine as _;
         use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 
         let mut keys = Vec::new();
-        for key in std::iter::once(&self.active).chain(self.retired.iter()) {
+        for key in std::iter::once(active).chain(self.retired.iter()) {
             let encoded = key
                 .key
                 .value()
@@ -1518,9 +1733,77 @@ impl EncryptionConfig {
                 .map_err(|e| format!("KEK '{}' is not valid base64: {e}", key.id))?;
             keys.push((key.id.clone(), bytes));
         }
-        let provider = LocalKeyProvider::new(self.active.id.clone(), keys)
+        let provider = LocalKeyProvider::new(active.id.clone(), keys)
             .map_err(|e| format!("invalid encryption configuration: {e}"))?;
         Ok(EnvelopeEncryptor::local(provider))
+    }
+}
+
+impl KeyServiceConfig {
+    /// Connect to the key service and build an encryptor that wraps through it.
+    #[cfg(not(feature = "key-service"))]
+    pub async fn build_encryptor(
+        &self,
+    ) -> Result<unitycatalog_common::services::encryption::EnvelopeEncryptor, String> {
+        Err(
+            "encryption.provider.key_service needs the `key-service` feature, which this build \
+             of the server doesn't include"
+                .into(),
+        )
+    }
+
+    /// Connect to the key service and build an encryptor that wraps through it.
+    #[cfg(feature = "key-service")]
+    pub async fn build_encryptor(
+        &self,
+    ) -> Result<unitycatalog_common::services::encryption::EnvelopeEncryptor, String> {
+        use olai_key_service::KeyServiceProvider;
+        use std::time::Duration;
+        use unitycatalog_common::services::encryption::EnvelopeEncryptor;
+
+        let socket = self
+            .socket
+            .value()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .ok_or(
+                "encryption.provider.key_service.socket is required (and could not be resolved)",
+            )?;
+        let key = self
+            .key
+            .value()
+            .map(|k| k.trim().to_string())
+            .filter(|k| !k.is_empty())
+            .ok_or("encryption.provider.key_service.key is required (and could not be resolved)")?;
+        // A missing socket would otherwise be retried until the connect timeout,
+        // like a key service that is still starting.
+        if !std::path::Path::new(&socket).exists() {
+            return Err(format!(
+                "encryption: key service socket `{socket}` does not exist; is the secret server running?"
+            ));
+        }
+        let mut builder = KeyServiceProvider::builder(&socket, &key);
+        if let Some(secs) = self.connect_timeout_secs {
+            builder = builder.connect_timeout(Duration::from_secs(secs));
+        }
+        if let DekCacheConfig::On {
+            ttl_secs,
+            max_entries,
+        } = self.dek_cache
+        {
+            builder = builder.dek_cache(Duration::from_secs(ttl_secs), max_entries);
+        }
+        let provider = builder
+            .connect()
+            .await
+            .map_err(|e| format!("encryption: {e}"))?;
+        tracing::info!(
+            socket = %socket,
+            key = %key,
+            active = %unitycatalog_common::services::encryption::KeyProvider::active_kek_id(&provider),
+            "wrapping data keys through the key service"
+        );
+        Ok(EnvelopeEncryptor::new(std::sync::Arc::new(provider)))
     }
 }
 
@@ -1923,8 +2206,8 @@ mod tests {
         assert!(!config.routing.any_upstream());
         // The default ships a dev KEK so the server runs without a config file.
         let enc = config.encryption.as_ref().expect("dev encryption present");
-        assert_eq!(enc.active.id, "dev");
-        assert!(enc.build_encryptor().is_ok());
+        assert_eq!(enc.active.as_ref().unwrap().id, "dev");
+        assert!(enc.build_local(enc.active.as_ref().unwrap()).is_ok());
         // The storage proxy is off by default: announces "direct", no mount.
         assert_eq!(config.storage_proxy, StorageProxyConfig::default());
         assert!(!config.storage_proxy.enabled);
@@ -1941,8 +2224,8 @@ mod tests {
         assert!(!config.routing.any_upstream());
     }
 
-    #[test]
-    fn test_encryption_config_builds_encryptor() {
+    #[tokio::test]
+    async fn test_encryption_config_builds_encryptor() {
         use base64::Engine as _;
         let active = base64::engine::general_purpose::STANDARD.encode([0x11u8; 32]);
         let retired = base64::engine::general_purpose::STANDARD.encode([0x22u8; 32]);
@@ -1962,10 +2245,10 @@ mod tests {
         );
         let config: Config = serde_yml::from_str(&yaml).unwrap();
         let enc = config.encryption.as_ref().expect("encryption present");
-        assert_eq!(enc.active.id, "v2");
+        assert_eq!(enc.active.as_ref().unwrap().id, "v2");
         assert_eq!(enc.retired.len(), 1);
         // Builds a working encryptor.
-        assert!(enc.build_encryptor().is_ok());
+        assert!(enc.build_encryptor().await.is_ok());
 
         // Round-trips through YAML.
         let reparsed: Config =
@@ -1973,8 +2256,8 @@ mod tests {
         assert_eq!(reparsed.encryption, config.encryption);
     }
 
-    #[test]
-    fn test_encryption_config_rejects_bad_key() {
+    #[tokio::test]
+    async fn test_encryption_config_rejects_bad_key() {
         let yaml = r#"
             encryption:
               active:
@@ -1982,7 +2265,136 @@ mod tests {
                 key: "not-base64-and-wrong-size!!"
         "#;
         let config: Config = serde_yml::from_str(yaml).unwrap();
-        assert!(config.encryption.unwrap().build_encryptor().is_err());
+        assert!(config.encryption.unwrap().build_encryptor().await.is_err());
+    }
+
+    fn encryption(yaml: &str) -> Result<EncryptionConfig, serde_yml::Error> {
+        serde_yml::from_str(yaml)
+    }
+
+    #[cfg(not(feature = "key-service"))]
+    #[tokio::test]
+    async fn key_service_needs_its_feature() {
+        let err = EncryptionConfig::key_service("/run/sds.sock", "k")
+            .build_encryptor()
+            .await
+            .unwrap_err();
+        assert!(err.contains("`key-service` feature"), "{err}");
+    }
+
+    #[test]
+    fn key_service_config_parses() {
+        let enc =
+            encryption("provider:\n  key_service:\n    socket: /run/sds.sock\n    key: uc-kek\n")
+                .unwrap();
+        let Some(ks) = enc.provider.as_ref().and_then(|p| p.key_service.as_ref()) else {
+            panic!("expected key_service, got {enc:?}");
+        };
+        assert_eq!(ks.socket.value().as_deref(), Some("/run/sds.sock"));
+        assert_eq!(ks.key.value().as_deref(), Some("uc-kek"));
+        // The DEK cache is on by default.
+        assert_eq!(ks.dek_cache, DekCacheConfig::default());
+        assert!(enc.active.is_none());
+
+        let reparsed = encryption(&serde_yml::to_string(&enc).unwrap()).unwrap();
+        assert_eq!(reparsed, enc);
+        assert_eq!(
+            reparsed,
+            EncryptionConfig::key_service("/run/sds.sock", "uc-kek")
+        );
+    }
+
+    #[test]
+    fn dek_cache_config_parses() {
+        let cache = |yaml: &str| {
+            let enc = encryption(&format!(
+                "provider:\n  key_service:\n    socket: s\n    key: k\n    dek_cache: {yaml}\n"
+            ))?;
+            let Some(ks) = enc.provider.and_then(|p| p.key_service) else {
+                unreachable!()
+            };
+            Ok::<_, serde_yml::Error>(ks.dek_cache)
+        };
+        assert_eq!(cache("off").unwrap(), DekCacheConfig::Off);
+        assert_eq!(cache("on").unwrap(), DekCacheConfig::default());
+        assert_eq!(
+            cache("{ ttl_secs: 60 }").unwrap(),
+            DekCacheConfig::On {
+                ttl_secs: 60,
+                max_entries: DekCacheConfig::DEFAULT_MAX_ENTRIES
+            }
+        );
+        assert!(cache("sometimes").is_err());
+        assert!(cache("{ ttl_secs: 0 }").is_err());
+        // Off round-trips.
+        let mut enc = EncryptionConfig::key_service("s", "k");
+        if let Some(ks) = enc.provider.as_mut().and_then(|p| p.key_service.as_mut()) {
+            ks.dek_cache = DekCacheConfig::Off;
+        }
+        assert_eq!(
+            encryption(&serde_yml::to_string(&enc).unwrap()).unwrap(),
+            enc
+        );
+    }
+
+    #[tokio::test]
+    async fn encryption_config_needs_exactly_one_kek_source() {
+        let both = encryption(
+            "active: { id: v1, key: AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8= }\n\
+             provider: { key_service: { socket: s, key: k } }\n",
+        )
+        .unwrap();
+        let err = both.build_encryptor().await.unwrap_err();
+        assert!(err.contains("not both"), "{err}");
+
+        let err = EncryptionConfig::default()
+            .build_encryptor()
+            .await
+            .unwrap_err();
+        assert!(err.contains("no KEK configured"), "{err}");
+
+        let mut retired = EncryptionConfig::key_service("s", "k");
+        retired.retired.push(KeyConfig {
+            id: "old".into(),
+            key: ConfigValue::Value("x".into()),
+        });
+        let err = retired.build_encryptor().await.unwrap_err();
+        assert!(err.contains("retired"), "{err}");
+
+        assert!(encryption("provider: { kms: {} }\n").is_err());
+        assert!(encryption("provider: { key_service: { socket: s, key: k, typo: 1 } }\n").is_err());
+    }
+
+    #[cfg(feature = "key-service")]
+    #[tokio::test]
+    async fn key_service_config_fails_clearly_without_socket_or_key() {
+        let err = EncryptionConfig::key_service("/nonexistent/uc/sds.sock", "k")
+            .build_encryptor()
+            .await
+            .unwrap_err();
+        assert!(
+            err.contains("/nonexistent/uc/sds.sock") && err.contains("does not exist"),
+            "{err}"
+        );
+
+        let err = EncryptionConfig::key_service("", "k")
+            .build_encryptor()
+            .await
+            .unwrap_err();
+        assert!(err.contains("socket is required"), "{err}");
+
+        let err = EncryptionConfig::key_service("/tmp", " ")
+            .build_encryptor()
+            .await
+            .unwrap_err();
+        assert!(err.contains("key is required"), "{err}");
+
+        let unset = encryption(
+            "provider: { key_service: { socket: { env: UC_TEST_UNSET_KEY_SERVICE_SOCKET }, key: k } }\n",
+        )
+        .unwrap();
+        let err = unset.build_encryptor().await.unwrap_err();
+        assert!(err.contains("socket is required"), "{err}");
     }
 
     #[test]

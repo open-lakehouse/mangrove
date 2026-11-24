@@ -11,6 +11,8 @@
 //!   implemented by backends (feature `store`).
 //! - [`services`] — envelope encryption for sealing sensitive fields inline
 //!   (feature `store`).
+//! - [`rotation`] — KEK usage counts and rewrap sweeps across the stores that
+//!   seal values (paged row helpers behind feature `sealing`).
 //! - [`credentials_ext`] — conversions to the `olai-storage-credentials` /
 //!   `olai-credential-vending` types (features `storage-credentials`, `credential-vending`).
 //! - [`metric_view`] — the single parser for Unity Catalog metric-view definitions
@@ -41,6 +43,7 @@ pub mod location_key;
 pub mod metric_view;
 pub mod models;
 pub mod reference;
+pub mod rotation;
 #[cfg(feature = "store")]
 pub mod services;
 #[cfg(feature = "store")]

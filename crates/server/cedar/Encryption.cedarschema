@@ -1,0 +1,20 @@
+// The actions of the encryption admin API (`/api/admin/v1/encryption`): counting
+// which key-encryption key (KEK) wraps the server's sealed values, and sweeping
+// them onto the active KEK after a rotation. Both act on the metastore. Neither
+// reveals a secret or a key: counts come from envelope headers, and a sweep
+// only re-wraps data keys.
+namespace UnityCatalog {
+  // Count sealed values per KEK, in every store that seals them.
+  action "GetKekUsage" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore],
+    context: RequestContext,
+  };
+
+  // Re-wrap every sealed value under the active KEK.
+  action "RewrapSecrets" appliesTo {
+    principal: [Lakehouse::User, Lakehouse::ServiceAccount],
+    resource: [Metastore],
+    context: RequestContext,
+  };
+}

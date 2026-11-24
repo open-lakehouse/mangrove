@@ -27,7 +27,9 @@ the read-only views.
 `recipients` holds the token rules: issuing a token sealed for activation,
 rotating with a grace period, redeeming an activation code exactly once, and
 `rewrap_tokens` to re-wrap sealed tokens under the active key after a KEK
-rotation. Tokens and activation codes are stored only as sha256 digests
+rotation (paged, compare-and-swap, returning a `RewrapReport`), with
+`token_kek_usage` to count them per KEK and `SealedRecipientTokens` to include
+them in a `rotation::sweep` across stores. Tokens and activation codes are stored only as sha256 digests
 (`tokens::token_hash`).
 
 Implementations:
