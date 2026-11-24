@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-ui-v0.0.5...unity-catalog-ui-v0.0.6) - 2026-11-24
+
+### Fixed
+
+- accept every securable name Unity Catalog accepts (#379)
+
 ## [0.0.5](https://github.com/open-lakehouse/mangrove/compare/unity-catalog-ui-v0.0.4...unity-catalog-ui-v0.0.5) - 2026-11-16
 
 ### Changed

@@ -1,6 +1,6 @@
 [package]
 name = "olai-uc-server"
-version = "0.0.23"
+version = "0.0.24"
 description = "Unity Catalog REST server with pluggable storage backends."
 edition.workspace = true
 license.workspace = true
@@ -29,10 +29,10 @@ path = "src/main.rs"
 required-features = ["bin"]
 
 [dependencies]
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.13", features = [
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.14", features = [
   "handlers",
 ], optional = true }
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.11", features = [
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.12", features = [
   "axum",
   "store",
   "metric-view",
@@ -40,7 +40,7 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
 ] }
 # The generated handler traits + axum route fns, the `Error` and the request
 # context, with every error source this server raises.
-unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", version = "0.0.6", features = [
+unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", version = "0.0.7", features = [
   "all-resources",
   "authz",
   "object-store",
@@ -50,15 +50,15 @@ unitycatalog-handlers = { package = "olai-uc-handlers", path = "../handlers", ve
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.10" }
 # Credentials and external locations, with location resolution. The in-memory
 # store backs handlers built without a durable backend.
-unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.6", features = [
+unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.7", features = [
   "memory",
   "vending",
 ] }
-unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.13", features = [
+unitycatalog-storage-proxy = { package = "olai-uc-storage-proxy", path = "../storage-proxy", version = "0.0.14", features = [
   "client-arm",
 ], optional = true }
-unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.13", optional = true }
-unitycatalog-files-api = { package = "olai-uc-files-api", path = "../files-api", version = "0.0.12", features = [
+unitycatalog-object-store = { package = "olai-uc-object-store", path = "../object-store", version = "0.0.14", optional = true }
+unitycatalog-files-api = { package = "olai-uc-files-api", path = "../files-api", version = "0.0.13", features = [
   "client-arm",
   "testing",
 ], optional = true }
@@ -103,8 +103,8 @@ uuid = { workspace = true, features = ["v4", "v7"] }
 
 # `embed` / `bin` dependencies — all optional so a library build of this crate
 # doesn't pull the config / storage-backend / serve stack.
-unitycatalog-postgres = { package = "olai-uc-postgres", path = "../postgres", version = "0.0.13", optional = true }
-unitycatalog-sqlite = { package = "olai-uc-sqlite", path = "../sqlite", version = "0.0.13", optional = true }
+unitycatalog-postgres = { package = "olai-uc-postgres", path = "../postgres", version = "0.0.14", optional = true }
+unitycatalog-sqlite = { package = "olai-uc-sqlite", path = "../sqlite", version = "0.0.14", optional = true }
 base64 = { version = "0.22", optional = true }
 clap = { version = "4.5", features = ["derive", "env", "wrap_help"], optional = true }
 # `healthcheck` subcommand probes /health with a blocking client off the tokio
@@ -126,10 +126,10 @@ olai-auth = { workspace = true }
 [dev-dependencies]
 # An in-process secret server (key service) for the `key-service` tests.
 olai-secret-server = { workspace = true }
-unitycatalog-sharing = { package = "olai-uc-sharing", path = "../sharing", version = "0.0.5", features = [
+unitycatalog-sharing = { package = "olai-uc-sharing", path = "../sharing", version = "0.0.6", features = [
   "sqlite",
 ] }
-unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.6", features = [
+unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.7", features = [
   "sqlite",
   "testing",
 ] }

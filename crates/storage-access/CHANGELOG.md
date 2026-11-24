@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7](https://github.com/open-lakehouse/mangrove/compare/olai-uc-storage-access-v0.0.6...olai-uc-storage-access-v0.0.7) - 2026-11-24
+
+### Added
+
+- wrap data keys through a key service (#384)
+
 ## [0.0.5](https://github.com/open-lakehouse/mangrove/compare/olai-uc-storage-access-v0.0.4...olai-uc-storage-access-v0.0.5) - 2026-11-14
 
 ### Added
