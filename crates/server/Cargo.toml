@@ -126,7 +126,10 @@ olai-auth = { workspace = true }
 [dev-dependencies]
 # An in-process secret server (key service) for the `key-service` tests.
 olai-secret-server = { workspace = true }
-unitycatalog-sharing = { package = "olai-uc-sharing", path = "../sharing", version = "0.0.6", features = [
+# Path only, no `version`: `cargo publish` drops a path-only dev-dependency.
+# With a version it must resolve on crates.io, but release-plz orders publishing
+# by normal dependencies only, so it publishes the server before this crate.
+unitycatalog-sharing = { package = "olai-uc-sharing", path = "../sharing", features = [
   "sqlite",
 ] }
 unitycatalog-storage-access = { package = "olai-uc-storage-access", path = "../storage-access", version = "0.0.7", features = [
