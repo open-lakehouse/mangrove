@@ -14,8 +14,8 @@ description = "Acceptance testing framework for Unity Catalog"
 
 [dependencies]
 # repository dependencies
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.13" }
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.11" }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.14" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.12" }
 # Drives the managed-table Delta staging flow (createStagingTable -> commit ->
 # loadTable) and builds a catalog-managed kernel snapshot for the read-back, so
 # the managed_table_lifecycle check exercises the real /delta/v1 write+read path
@@ -23,7 +23,7 @@ unitycatalog-common = { package = "olai-uc-common", path = "../common", version 
 unitycatalog-delta-api = { package = "olai-uc-delta-api", path = "../delta-api", version = "0.0.10" }
 # The in-process server (`server::TestServer`, the `uc-test-server` binary): the
 # same service `uc-server serve` builds, over an in-memory SQLite backend.
-unitycatalog-server = { package = "olai-uc-server", path = "../server", version = "0.0.23", default-features = false, features = [
+unitycatalog-server = { package = "olai-uc-server", path = "../server", version = "0.0.24", default-features = false, features = [
   "embed",
   "sqlite",
 ] }

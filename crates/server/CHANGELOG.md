@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.24](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.23...olai-uc-server-v0.0.24) - 2026-11-24
+
+### Added
+
+- wrap data keys through a key service (#384)
+
+### Changed
+
+- use olai-auth 0.0.6's PgNeonUserStatus (#383)
+
+### Fixed
+
+- accept every securable name Unity Catalog accepts (#379)
+
 ## [0.0.23](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.22...olai-uc-server-v0.0.23) - 2026-11-16
 
 ### Fixed
