@@ -3480,7 +3480,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-client"
-version = "0.0.14"
+version = "0.0.15"
 dependencies = [
  "async-trait",
  "buffa",
@@ -3514,7 +3514,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-common"
-version = "0.0.12"
+version = "0.0.13"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -3557,7 +3557,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-delta-api"
-version = "0.0.10"
+version = "0.0.11"
 dependencies = [
  "async-trait",
  "axum",
@@ -3575,7 +3575,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-files-api"
-version = "0.0.13"
+version = "0.0.14"
 dependencies = [
  "async-trait",
  "axum",
@@ -3615,7 +3615,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-handlers"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "async-trait",
  "axum",
@@ -3632,7 +3632,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-object-store"
-version = "0.0.14"
+version = "0.0.15"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3659,7 +3659,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-postgres"
-version = "0.0.14"
+version = "0.0.15"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3757,7 +3757,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-sqlite"
-version = "0.0.14"
+version = "0.0.15"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3778,7 +3778,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-storage-access"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3794,7 +3794,7 @@ dependencies = [
 
 [[package]]
 name = "olai-uc-storage-proxy"
-version = "0.0.14"
+version = "0.0.15"
 dependencies = [
  "async-trait",
  "axum",

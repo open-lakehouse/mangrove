@@ -23,7 +23,7 @@ name = "unitycatalog_sharing"
 [dependencies]
 # Only the shared error: the port speaks its own catalog-independent records, so
 # no resource models.
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.12", default-features = false, features = [
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.13", default-features = false, features = [
   "sealing",
 ] }
 

@@ -16,8 +16,8 @@ path = "src/main.rs"
 
 [dependencies]
 # path dependencies (in alphabetical order)
-unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.14" }
-unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.12", features = ["axum", "store"] }
+unitycatalog-client = { package = "olai-uc-client", path = "../client", version = "0.0.15" }
+unitycatalog-common = { package = "olai-uc-common", path = "../common", version = "0.0.13", features = ["axum", "store"] }
 
 # workspace dependencies (in alphabetical order)
 # `uc mcp serve --http`: the router the Streamable HTTP service is nested in.
