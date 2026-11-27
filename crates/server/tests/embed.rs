@@ -95,6 +95,59 @@ async fn serves_the_api_behind_bearer_auth() {
     assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
 }
 
+/// A schema is only created under an existing catalog: a missing catalog
+/// answers 404 and stores nothing (issue #372).
+#[tokio::test]
+async fn a_schema_needs_its_catalog() {
+    let mut config = config(":memory:");
+    // Lets a managed catalog be created without a covering external location.
+    config.managed_storage_root = Some("s3://bucket/meta".into());
+    let router = embed::start(&config).await.unwrap().router;
+    let schemas = "/api/2.1/unity-catalog/schemas";
+
+    let orphan = Some(r#"{"name":"sch","catalog_name":"missing"}"#);
+    let (status, body) = send(&router, "POST", schemas, Some(TOKEN), orphan).await;
+    assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+    let (status, body) = send(
+        &router,
+        "GET",
+        &format!("{schemas}/missing.sch"),
+        Some(TOKEN),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+    let (status, body) = send(
+        &router,
+        "GET",
+        &format!("{schemas}?catalog_name=missing"),
+        Some(TOKEN),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert!(!body.contains("\"sch\""), "{body}");
+
+    // Once the catalog exists, the same request creates the schema.
+    let catalogs = "/api/2.1/unity-catalog/catalogs";
+    let catalog = Some(r#"{"name":"cat"}"#);
+    let (status, body) = send(&router, "POST", catalogs, Some(TOKEN), catalog).await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    let schema = Some(r#"{"name":"sch","catalog_name":"cat"}"#);
+    let (status, body) = send(&router, "POST", schemas, Some(TOKEN), schema).await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    let (status, body) = send(
+        &router,
+        "GET",
+        &format!("{schemas}/cat.sch"),
+        Some(TOKEN),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert!(body.contains("\"full_name\":\"cat.sch\""), "{body}");
+}
+
 #[tokio::test]
 async fn refuses_an_unmigrated_database_until_migrated() {
     let dir = tempfile::tempdir().unwrap();
