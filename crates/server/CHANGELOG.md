@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.25](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.24...olai-uc-server-v0.0.25) - 2026-11-28
+
+### Fixed
+
+- refuse a schema whose catalog does not exist (#390)
+
 ## [0.0.24](https://github.com/open-lakehouse/mangrove/compare/olai-uc-server-v0.0.23...olai-uc-server-v0.0.24) - 2026-11-24
 
 ### Added
