@@ -1,8 +1,8 @@
 use itertools::Itertools;
 
 use unitycatalog_common::models::ObjectLabel;
-use unitycatalog_common::models::ResourceName;
 use unitycatalog_common::models::schemas::v1::*;
+use unitycatalog_common::models::{ResourceIdent, ResourceName};
 
 use super::{RequestContext, RequestResource};
 use crate::policy::Authorizable;
@@ -24,6 +24,17 @@ impl SchemaHandler<RequestContext> for ServerHandler<RequestContext> {
         tracing::Span::current().record("resource_name", &request.name);
         self.check_required(&request, &context).await?;
         let securable = request.securable();
+
+        // The parent catalog must exist before anything is validated or stored,
+        // else the schema is persisted as an orphan (#372). A missing catalog
+        // surfaces as the store's not-found error (404 `RESOURCE_NOT_FOUND`).
+        // TODO: answer `CATALOG_DOES_NOT_EXIST` like the reference server; that
+        // needs a new `CatalogDoesNotExist` variant in olai-uc-handlers' `Error`
+        // (a breaking `feat(handlers)!` change, tracked separately).
+        self.get(&ResourceIdent::catalog(ResourceName::new([
+            &request.catalog_name
+        ])))
+        .await?;
 
         // When the schema is created with its own storage root, echo the root
         // back on the schema (`storage_root`) and materialize a managed storage
@@ -166,6 +177,8 @@ mod tests {
     use unitycatalog_common::models::external_locations::v1::CreateExternalLocationRequest;
     use unitycatalog_common::services::encryption::{EnvelopeEncryptor, LocalKeyProvider};
 
+    use unitycatalog_common::models::catalogs::v1::Catalog;
+
     use super::*;
     use crate::api::{CredentialHandler, ExternalLocationHandler};
     use crate::memory::InMemoryResourceStore;
@@ -185,8 +198,7 @@ mod tests {
     }
 
     /// Register a credential + external location at `url` so a managed schema
-    /// `storage_root` under it passes the coverage check. (`create_schema` does
-    /// not look up the parent catalog, so no catalog needs to exist.)
+    /// `storage_root` under it passes the coverage check.
     async fn make_covering_location(h: &ServerHandler<RequestContext>, name: &str, url: &str) {
         h.create_credential(
             CreateCredentialRequest {
@@ -216,6 +228,16 @@ mod tests {
         .unwrap();
     }
 
+    /// Store the parent catalog `name` directly, bypassing `create_catalog`'s
+    /// managed-storage-root resolution (these tests configure no metastore root).
+    async fn seed_catalog(h: &ServerHandler<RequestContext>, name: &str) {
+        let catalog = Catalog {
+            name: name.to_string(),
+            ..Default::default()
+        };
+        h.create(catalog.into()).await.unwrap();
+    }
+
     fn create_req(catalog: &str, name: &str, storage_root: Option<&str>) -> CreateSchemaRequest {
         CreateSchemaRequest {
             name: name.to_string(),
@@ -230,6 +252,7 @@ mod tests {
         // No storage_root ⇒ no coverage check, no materialized location; managed
         // securables fall back to the catalog at table-create time.
         let h = handler();
+        seed_catalog(&h, "cat").await;
         let schema = h
             .create_schema(create_req("cat", "sch", None), ctx())
             .await
@@ -243,6 +266,7 @@ mod tests {
         // A client-supplied root under a registered external location is accepted;
         // the location is materialized under the schema id.
         let h = handler();
+        seed_catalog(&h, "cat").await;
         make_covering_location(&h, "el", "s3://bucket").await;
         let schema = h
             .create_schema(create_req("cat", "sch", Some("s3://bucket/sch")), ctx())
@@ -260,6 +284,7 @@ mod tests {
     async fn schema_with_uncovered_root_is_rejected() {
         // No registered external location covers the root ⇒ reject.
         let h = handler();
+        seed_catalog(&h, "cat").await;
         let res = h
             .create_schema(create_req("cat", "sch", Some("s3://bucket/sch")), ctx())
             .await;
@@ -271,6 +296,7 @@ mod tests {
         // A root inside a reserved `__unitystorage` region is rejected even when an
         // external location covers it.
         let h = handler();
+        seed_catalog(&h, "cat").await;
         make_covering_location(&h, "el", "s3://bucket").await;
         let res = h
             .create_schema(
@@ -279,5 +305,28 @@ mod tests {
             )
             .await;
         assert!(matches!(res, Err(Error::InvalidArgument(_))), "{res:?}");
+    }
+
+    #[tokio::test]
+    async fn schema_in_missing_catalog_is_not_found() {
+        // The parent catalog is checked before the storage root, so a missing
+        // catalog wins over an uncovered root, and nothing is stored (#372).
+        let h = handler();
+        let res = h
+            .create_schema(create_req("nope", "sch", Some("s3://bucket/sch")), ctx())
+            .await;
+        let err = res.expect_err("schema in a missing catalog must be refused");
+        assert_eq!(err.error_code(), "RESOURCE_NOT_FOUND", "{err:?}");
+        let res = h
+            .get_schema(
+                GetSchemaRequest {
+                    full_name: "nope.sch".to_string(),
+                    ..Default::default()
+                },
+                ctx(),
+            )
+            .await;
+        let err = res.expect_err("no orphan schema may be stored");
+        assert_eq!(err.error_code(), "RESOURCE_NOT_FOUND", "{err:?}");
     }
 }
